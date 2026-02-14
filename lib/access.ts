@@ -1,16 +1,10 @@
 /**
  * Role-based access: allowed routes and route guards for loro-web.
- * Standard users can only access dashboard, leads, claims, and profile/settings.
+ * Standard users can only access dashboard.
  */
 
 /** Paths any signed-in user with "standard" role can access (view-only scope) */
-export const STANDARD_USER_PATHS = [
-  '/dashboard',
-  '/leads',
-  '/claims',
-  '/profile',
-  '/settings',
-] as const;
+export const STANDARD_USER_PATHS = ['/dashboard'] as const;
 
 export type StandardUserPath = (typeof STANDARD_USER_PATHS)[number];
 
@@ -104,17 +98,13 @@ export interface AllowedRoute {
 
 /**
  * Staff sidebar nav items (path + label). Visible only to admin, manager, owner, etc.
- * Icons are applied in the sidebar component.
  */
 export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
   { path: '/dashboard', label: 'Dashboard' },
-  { path: '/staff', label: 'Staff' },
-  { path: '/settings', label: 'Settings' },
-  { path: '/reports', label: 'Reports' },
 ];
 
 /**
- * Returns whether the staff dashboard (sidebar with Staff, Settings, Reports) is visible.
+ * Returns whether the staff dashboard (e.g. expanded nav) is visible.
  * True for admin, manager, owner and other non-restricted roles; false for user and empty.
  */
 export function isStaffDashboardVisible(accessLevel: string | undefined): boolean {
@@ -125,17 +115,12 @@ export function isStaffDashboardVisible(accessLevel: string | undefined): boolea
 
 /**
  * Returns nav items (path + label) to show for the given access level.
- * Standard users see only Dashboard, Leads, Claims, Profile.
+ * Standard users see only Dashboard.
  */
 export function getAllowedRoutes(accessLevel: string | undefined): AllowedRoute[] {
   const level = normalize(accessLevel);
 
-  const fullNav: AllowedRoute[] = [
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/leads', label: 'Leads' },
-    { path: '/claims', label: 'Claims' },
-    { path: '/profile', label: 'Profile' },
-  ];
+  const fullNav: AllowedRoute[] = [{ path: '/dashboard', label: 'Dashboard' }];
 
   if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {
     return fullNav;
