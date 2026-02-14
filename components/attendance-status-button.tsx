@@ -23,10 +23,10 @@ export function AttendanceStatusButton({
   return (
     <div className="flex w-full justify-center px-2">
       <div
-        className={`flex w-full max-w-md items-center justify-between gap-4 rounded-xl border-2 p-4 sm:p-6 md:p-8 ${
+        className={`flex w-full max-w-md items-center justify-between gap-4 rounded-xl p-4 sm:p-6 md:p-8 ${
           checkedIn
-            ? 'border-gray-300 bg-destructive text-destructive-foreground'
-            : 'border-gray-300 bg-green-600 text-white'
+            ? 'bg-destructive text-white'
+            : 'bg-green-600 text-white'
         }`}
       >
         <span className="text-base font-medium uppercase sm:text-lg md:text-xl">
@@ -38,7 +38,7 @@ export function AttendanceStatusButton({
           <Button
             variant="secondary"
             size="lg"
-            className="min-h-12 rounded-lg px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl"
+            className="min-h-12 rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
             onClick={onCheckOut}
           >
             End Shift
@@ -47,7 +47,7 @@ export function AttendanceStatusButton({
           <Button
             variant="secondary"
             size="lg"
-            className="min-h-12 rounded-lg px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl"
+            className="min-h-12 rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
             onClick={onCheckIn}
           >
             Start Shift

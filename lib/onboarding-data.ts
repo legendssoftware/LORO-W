@@ -7,7 +7,7 @@ export const onboardingData = [
     uid: 1,
     title: 'One Platform, Everything Connected',
     description:
-      'Stop juggling multiple systems. Loro combines CRM, field service management, inventory tracking, quotation system, task management, and real-time analytics in one powerful platform. Order directly from CRM — everything connected.',
+      'Stop juggling multiple systems. Loro combines field service management, inventory tracking, quotation system, task management, and real-time analytics in one powerful platform. Order directly from Loro — everything connected.',
   },
   {
     uid: 2,

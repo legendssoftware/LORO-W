@@ -8,7 +8,8 @@ export type GetTokenFn = () => Promise<string | null>;
 /**
  * Creates an Axios instance with base URL, JSON headers, and optional token injection.
  * Request interceptor calls getToken() and sets Authorization: Bearer <token> when available.
- * Error interceptor normalizes 4xx/5xx to a consistent shape and rethrows.
+ * Error interceptor normalizes 4xx/5xx to a consistent shape, shows a toast for each error, and rethrows.
+ * To suppress the error toast for a specific request, pass meta: { skipErrorToast: true } in the config.
  */
 export function createApiClient(getToken?: GetTokenFn): AxiosInstance {
   const instance = axios.create({

@@ -10,6 +10,15 @@ const projectRoot =
 const nextConfig: NextConfig = {
   turbopack: { root: projectRoot },
   outputFileTracingRoot: projectRoot,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        pathname: '/**',
+      },
+    ],
+  },
   webpack: (config) => {
     config.resolve ??= {};
     config.resolve.alias = {

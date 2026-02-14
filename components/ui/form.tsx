@@ -4,8 +4,8 @@ import * as React from "react"
 import type { Label as LabelPrimitive } from "radix-ui"
 import { Slot } from "radix-ui"
 import {
-  Controller,
   FormProvider,
+  useController,
   useFormContext,
   useFormState,
   type ControllerProps,
@@ -29,6 +29,18 @@ const FormFieldContext = React.createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
 
+function FormFieldInner<TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>>({
+  render,
+  ...props
+}: ControllerProps<TFieldValues, TName>) {
+  const result = useController<TFieldValues, TName>(props)
+  return render({
+    field: result.field,
+    fieldState: result.fieldState,
+    formState: result.formState,
+  })
+}
+
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -37,7 +49,7 @@ const FormField = <
 }: ControllerProps<TFieldValues, TName>) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
+      <FormFieldInner {...props} />
     </FormFieldContext.Provider>
   )
 }

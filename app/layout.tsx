@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Urbanist } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
@@ -6,10 +5,11 @@ import { Toaster } from 'react-hot-toast';
 import { QueryProvider } from '@/api/providers/query-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { AppHeader } from '@/components/app-header';
+import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { AccessGuard } from '@/components/access-guard';
 import { SidebarProvider } from '@/components/sidebar/sidebar-provider';
 import { DashboardSidebar } from '@/components/sidebar/dashboard-sidebar';
+import { defaultMetadata } from '@/lib/seo';
 import './globals.css';
 
 const urbanist = Urbanist({
@@ -18,10 +18,7 @@ const urbanist = Urbanist({
   weight: ['300', '400', '500', '600', '700'],
 });
 
-export const metadata: Metadata = {
-  title: 'LORO | Business Management',
-  description: 'Automate What Matters, Control What Counts',
-};
+export const metadata = defaultMetadata;
 
 export default function RootLayout({
   children,
@@ -30,12 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" className="light" suppressHydrationWarning>
         <body className={`${urbanist.variable} font-sans antialiased`}>
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider>
-              <AppHeader />
+              <ConditionalAppHeader />
               <DashboardSidebar />
               <ErrorBoundary>
                 <AccessGuard>

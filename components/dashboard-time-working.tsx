@@ -28,10 +28,13 @@ export function DashboardTimeWorking({
     const tick = () => {
       const now = Date.now();
       const totalMs = Math.max(0, now - start);
-      const totalMins = Math.floor(totalMs / 60_000);
-      const hours = Math.floor(totalMins / 60);
-      const mins = totalMins % 60;
-      setElapsed(`${hours}h ${mins}m`);
+      const totalSecs = Math.floor(totalMs / 1000);
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      setElapsed(
+        hours > 0 ? `${hours}h ${mins}m` : `${mins}m ${secs}s`
+      );
     };
     tick();
     const id = setInterval(tick, 1000);

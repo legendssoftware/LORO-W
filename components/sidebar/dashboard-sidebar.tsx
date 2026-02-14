@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth, useClerk } from '@clerk/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { useSyncClerk } from '@/api/hooks';
+import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks';
+import { useSessionStore } from '@/store/session-store';
 import {
   getAllowedRoutes,
   isStaffDashboardVisible,
@@ -12,13 +15,16 @@ import {
 } from '@/lib/access';
 import {
   BarChart3Icon,
+  KnowledgeIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   SettingsIcon,
   UsersIcon,
+  VapiSupportCallIcon,
   XIcon,
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
+import { FaqModal } from '@/components/faq-modal';
 import { useSidebar } from './sidebar-provider';
 import { cn } from '@/lib/utils';
 
@@ -41,20 +47,23 @@ export function DashboardSidebar() {
   const { open, setOpen } = useSidebar();
   const { isSignedIn } = useAuth();
   const { signOut } = useClerk();
-  const syncQuery = useSyncClerk({ enabled: isSignedIn ?? false });
-  const profile = syncQuery.data?.profileData;
+  const [faqOpen, setFaqOpen] = useState(false);
+  const { backendUserData: profile } = useSessionSync();
+  const queryClient = useQueryClient();
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    toast('See you soon! 👋', { icon: '👋', duration: 3000 });
+    queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
+    useSessionStore.getState().endSession();
+    await signOut({ redirectUrl: '/' });
+  };
 
   if (!isSignedIn) return null;
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const routes = isStaff ? STAFF_SIDEBAR_ROUTES : getAllowedRoutes(profile?.accessLevel);
   const routeIcons = isStaff ? STAFF_ROUTE_ICONS : STANDARD_ROUTE_ICONS;
-
-  const handleSignOut = async () => {
-    setOpen(false);
-    toast('See you soon! 👋', { icon: '👋', duration: 3000 });
-    await signOut({ redirectUrl: '/' });
-  };
 
   return (
     <>
@@ -82,7 +91,7 @@ export function DashboardSidebar() {
             size="icon"
             aria-label="Close sidebar"
             onClick={() => setOpen(false)}
-            className="rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/30"
+            className="rounded-full border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/30"
           >
             <XIcon className="size-5" />
           </Button>
@@ -111,7 +120,24 @@ export function DashboardSidebar() {
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-border p-3">
+        <div className="mt-auto border-t border-border p-3 space-y-1">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="Vapi support call"
+          >
+            <VapiSupportCallIcon className="size-5 shrink-0" />
+            Support call
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="FAQ / Knowledge base"
+            onClick={() => setFaqOpen(true)}
+          >
+            <KnowledgeIcon className="size-5 shrink-0" />
+            FAQ / Knowledge base
+          </Button>
           <button
             type="button"
             onClick={handleSignOut}
@@ -122,6 +148,7 @@ export function DashboardSidebar() {
           </button>
         </div>
       </aside>
+      <FaqModal open={faqOpen} onOpenChange={setFaqOpen} />
     </>
   );
 }

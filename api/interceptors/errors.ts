@@ -1,5 +1,7 @@
 import type { AxiosInstance } from 'axios';
+import toast from 'react-hot-toast';
 import { ApiError } from '@/api/types';
+import { showErrorToast } from '@/lib/utils/toast-helpers';
 
 /**
  * Normalizes Axios error response body to ApiError shape.
@@ -41,6 +43,10 @@ export function applyErrorInterceptors(axiosInstance: AxiosInstance): void {
     (response) => response,
     (error) => {
       const apiError = normalizeError(error);
+      const skipToast = (error.config as { meta?: { skipErrorToast?: boolean } })?.meta?.skipErrorToast;
+      if (!skipToast) {
+        showErrorToast(apiError.message, toast);
+      }
       const enhanced = new Error(apiError.message) as Error & { apiError?: ApiError };
       enhanced.apiError = apiError;
       throw enhanced;
