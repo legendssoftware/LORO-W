@@ -12,3 +12,4 @@ export {
 export { useAttMetrics } from './use-att-metrics';
 export { useMonthlyAttendance } from './use-monthly-attendance';
 export { useLeaves } from './use-leaves';
+export { useBranches } from './use-branches';

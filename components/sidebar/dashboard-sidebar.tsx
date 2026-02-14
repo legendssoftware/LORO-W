@@ -14,12 +14,9 @@ import {
   STAFF_SIDEBAR_ROUTES,
 } from '@/lib/access';
 import {
-  BarChart3Icon,
   KnowledgeIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  SettingsIcon,
-  UsersIcon,
   VapiSupportCallIcon,
   XIcon,
 } from '@/lib/icons';
@@ -28,18 +25,8 @@ import { FaqModal } from '@/components/faq-modal';
 import { useSidebar } from './sidebar-provider';
 import { cn } from '@/lib/utils';
 
-const STAFF_ROUTE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const ROUTE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/dashboard': LayoutDashboardIcon,
-  '/staff': UsersIcon,
-  '/settings': SettingsIcon,
-  '/reports': BarChart3Icon,
-};
-
-const STANDARD_ROUTE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  '/dashboard': LayoutDashboardIcon,
-  '/leads': UsersIcon,
-  '/claims': BarChart3Icon,
-  '/profile': SettingsIcon,
 };
 
 export function DashboardSidebar() {
@@ -59,44 +46,47 @@ export function DashboardSidebar() {
     await signOut({ redirectUrl: '/' });
   };
 
+  const closeSidebar = () => setOpen(false);
+
   if (!isSignedIn) return null;
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const routes = isStaff ? STAFF_SIDEBAR_ROUTES : getAllowedRoutes(profile?.accessLevel);
-  const routeIcons = isStaff ? STAFF_ROUTE_ICONS : STANDARD_ROUTE_ICONS;
+  const routeIcons = ROUTE_ICONS;
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Mobile backdrop: only on small screens when sidebar is open */}
       <button
         type="button"
         aria-label="Close sidebar"
         className={cn(
-          'fixed inset-0 z-40 bg-black/50 transition-opacity',
+          'fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden',
           open ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'
         )}
-        onClick={() => setOpen(false)}
+        onClick={closeSidebar}
       />
-      {/* Panel */}
+      {/* Sidebar: overlay on mobile (toggle), always visible on md+ */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-border bg-background shadow-lg transition-transform duration-200 ease-out',
-          open ? 'translate-x-0' : '-translate-x-full'
+          'flex h-svh w-64 flex-shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out',
+          'fixed inset-y-0 left-0 z-50 md:sticky md:top-0 md:z-40',
+          open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-          <span className="text-lg font-bold text-foreground">LORO</span>
+        <div className="flex h-14 shrink-0 items-center justify-between px-4">
+          <span className="text-lg font-bold text-sidebar-foreground">LORO</span>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Close sidebar"
-            onClick={() => setOpen(false)}
-            className="rounded-full border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/30"
+            onClick={closeSidebar}
+            className="md:hidden rounded-full size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <XIcon className="size-5" />
           </Button>
         </div>
-        <nav className="flex flex-1 flex-col gap-4 overflow-auto p-3">
+        <nav className="flex flex-1 flex-col gap-1 overflow-auto p-3">
           {routes.map((route) => {
             const Icon = routeIcons[route.path];
             const isActive =
@@ -106,12 +96,12 @@ export function DashboardSidebar() {
               <Link
                 key={route.path}
                 href={route.path}
-                onClick={() => setOpen(false)}
+                onClick={closeSidebar}
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 )}
               >
                 {Icon && <Icon className="size-5 shrink-0" />}
@@ -120,10 +110,10 @@ export function DashboardSidebar() {
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-border p-3 space-y-1">
+        <div className="mt-auto space-y-1 p-3">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             aria-label="Vapi support call"
           >
             <VapiSupportCallIcon className="size-5 shrink-0" />
@@ -131,7 +121,7 @@ export function DashboardSidebar() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="w-full justify-start gap-3 px-3 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             aria-label="FAQ / Knowledge base"
             onClick={() => setFaqOpen(true)}
           >
@@ -141,7 +131,7 @@ export function DashboardSidebar() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <LogOutIcon className="size-5 shrink-0" />
             Sign out

@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { QueryProvider } from '@/api/providers/query-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { SiteBanner } from '@/components/site-banner';
 import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { AccessGuard } from '@/components/access-guard';
 import { SidebarProvider } from '@/components/sidebar/sidebar-provider';
@@ -32,21 +33,26 @@ export default function RootLayout({
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider>
-              <ConditionalAppHeader />
-              <DashboardSidebar />
-              <ErrorBoundary>
-                <AccessGuard>
-                  <Suspense
-                    fallback={
-                      <div className="flex min-h-[200px] items-center justify-center">
-                        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      </div>
-                    }
-                  >
-                    {children}
-                  </Suspense>
-                </AccessGuard>
-              </ErrorBoundary>
+              <div className="flex min-h-svh">
+                <DashboardSidebar />
+                <div className="flex-1 flex flex-col min-w-0 el">
+                  <SiteBanner />
+                  <ConditionalAppHeader />
+                  <ErrorBoundary>
+                    <AccessGuard>
+                      <Suspense
+                        fallback={
+                          <div className="flex min-h-[200px] items-center justify-center">
+                            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          </div>
+                        }
+                      >
+                        {children}
+                      </Suspense>
+                    </AccessGuard>
+                  </ErrorBoundary>
+                </div>
+              </div>
             </SidebarProvider>
             <Toaster
             position="bottom-center"
