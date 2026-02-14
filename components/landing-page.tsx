@@ -20,43 +20,33 @@ import { ScrollToTop } from '@/components/animations/scroll-to-top';
 import { SmoothScroll } from '@/components/smooth-scroll';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast-helpers';
 import { handleVapiError, retryVapiOperation } from '@/lib/utils/vapi-error-handler';
+import { getShuffledCoverPaths, COVER_FALLBACK_URLS } from '@/lib/cover-images';
 
 const CALL_MAX_DURATION_MS =
   (parseInt(process.env.NEXT_PUBLIC_MAX_CALL_DURATION_MINUTES ?? '5', 10) * 60 * 1000);
 const WARNING_TIME_REMAINING_MS =
   (parseInt(process.env.NEXT_PUBLIC_CALL_WARNING_SECONDS ?? '60', 10) * 1000);
 
-const HERO_PHRASES = [
-  'LORO: Complete Business Control',
-  'Stop Juggling Multiple Systems',
-  'One Platform, Everything Connected',
-  'Built for South African Businesses',
-  'Field Service + Analytics + Operations',
-  'Transform Your Business Operations',
-  'Real-Time Insights & Offline Ready',
-  'Enterprise Features, SME Pricing',
-];
-
 export function LandingPage() {
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [isCallActive, setIsCallActive] = useState(false);
   const [isCallInitializing, setIsCallInitializing] = useState(false);
   const [demoVapi, setDemoVapi] = useState<Vapi | null>(null);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  /** Random cover assignment for hero and feature sections (stable per session). */
+  const [coverSlots] = useState(() => getShuffledCoverPaths());
+  /** When a cover image 404s, use fallback URL for that slot. */
+  const [coverFallback, setCoverFallback] = useState<Record<number, boolean>>({});
+  const useCoverSrc = (slotIndex: number) =>
+    coverFallback[slotIndex] ? COVER_FALLBACK_URLS[slotIndex] : coverSlots[slotIndex];
+  const setCoverError = useCallback((slotIndex: number) => {
+    setCoverFallback((prev) => ({ ...prev, [slotIndex]: true }));
+  }, []);
   const initAttemptedRef = useRef(false);
   const callStartTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const warningShownRef = useRef(false);
-
-  useEffect(() => {
-    const id = setInterval(
-      () => setCurrentPhraseIndex((i) => (i + 1) % HERO_PHRASES.length),
-      4000
-    );
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = () => setIsMobileMenuOpen(false);
@@ -288,41 +278,68 @@ export function LandingPage() {
         </FadeIn>
 
         <main className="flex-1">
-          {/* Hero */}
+          {/* Hero — three fanned phone frames with first 3 cover images */}
           <MotionSection className="py-8 md:py-16 lg:py-24" duration={0.8}>
             <div className="container mx-auto px-4 md:px-6">
-              <div className="flex w-full flex-col items-center justify-center gap-2 text-center">
-                <StaggerContainer className="flex flex-col items-center justify-center space-y-4" staggerChildren={0.2}>
-                  <StaggerItem className="space-y-3" direction="right">
-                    <div className="flex w-full justify-center">
-                      <Image src="https://picsum.photos/id/10/800/600" height={600} width={800} alt="Loro Dashboard" className="max-h-[400px] w-auto object-contain" />
+              <div className="flex w-full flex-col items-center justify-center gap-6 text-center">
+                {/* Fanned phone stack: left, center, right */}
+                <div className="relative flex items-center justify-center" style={{ minHeight: 'clamp(280px, 45vw, 420px)' }}>
+                  {/* Left phone — angled left, behind */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className="absolute left-1/2 z-[1] w-[clamp(100px,22vw,180px)] origin-bottom"
+                    style={{ transform: 'translateX(-78%) rotate(-12deg)' }}
+                  >
+                    <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-900 bg-neutral-900 shadow-xl dark:border-neutral-800 dark:bg-neutral-800" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[1.25rem] bg-muted">
+                        <Image src={useCoverSrc(0)} fill alt="Loro — Productivity on the move" className="object-cover" sizes="(max-width:768px) 120px, 180px" onError={() => setCoverError(0)} />
+                      </div>
                     </div>
-                  </StaggerItem>
-                </StaggerContainer>
-                <StaggerContainer className="-mt-5 flex w-full max-h-[600px] flex-col items-center justify-center gap-3 overflow-hidden lg:max-h-none lg:gap-4" delay={0.3} staggerChildren={0.15}>
+                  </motion.div>
+                  {/* Center phone — upright, forward */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+                    className="relative z-[2] w-[clamp(120px,28vw,220px)] shadow-2xl"
+                  >
+                    <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-neutral-900 bg-neutral-900 dark:border-neutral-800 dark:bg-neutral-800" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[1.4rem] bg-muted">
+                        <Image src={useCoverSrc(1)} fill alt="Loro — Real-time updates" className="object-cover" sizes="(max-width:768px) 140px, 220px" onError={() => setCoverError(1)} />
+                      </div>
+                    </div>
+                  </motion.div>
+                  {/* Right phone — angled right, behind */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+                    className="absolute left-1/2 z-[1] w-[clamp(100px,22vw,180px)] origin-bottom"
+                    style={{ transform: 'translateX(-22%) rotate(12deg)' }}
+                  >
+                    <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-900 bg-neutral-900 shadow-xl dark:border-neutral-800 dark:bg-neutral-800" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[1.25rem] bg-muted">
+                        <Image src={useCoverSrc(2)} fill alt="Loro — Enterprise-grade security" className="object-cover" sizes="(max-width:768px) 120px, 180px" onError={() => setCoverError(2)} />
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+                {/* Tagline */}
+                <StaggerContainer className="flex w-full max-h-[600px] flex-col items-center justify-center gap-3 overflow-hidden lg:max-h-none lg:gap-4" delay={0.3} staggerChildren={0.15}>
                   <StaggerItem className="flex w-full flex-col items-center space-y-2">
-                    <div className="relative h-32 w-full overflow-hidden p-1 sm:h-40 md:h-48">
-                      <AnimatePresence mode="wait">
-                        <motion.h1
-                          key={currentPhraseIndex}
-                          initial={{ y: 50, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          exit={{ y: -50, opacity: 0 }}
-                          transition={{ duration: 0.5, ease: 'easeInOut' }}
-                          className="font-body absolute inset-0 flex items-center justify-center text-center text-2xl font-normal tracking-tighter uppercase sm:text-3xl md:text-5xl xl:text-6xl/none"
-                        >
-                          {HERO_PHRASES[currentPhraseIndex]}
-                        </motion.h1>
-                      </AnimatePresence>
-                    </div>
+                    <p className="font-body text-2xl font-normal tracking-tighter text-muted-foreground/90 sm:text-3xl md:text-4xl xl:text-5xl/none uppercase">
+                      Enterprise features, SME pricing
+                    </p>
                     <p className="font-body mx-auto max-w-[600px] text-center text-xs uppercase text-muted-foreground md:text-xs">
                       Stop juggling multiple systems. Loro combines field service management, inventory tracking, quotation system, task management, and real-time analytics in one powerful platform.
                     </p>
                   </StaggerItem>
                   <StaggerItem className="flex min-[400px]:flex-row flex-col justify-center items-center gap-2">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button size="lg" className="font-body text-xs font-normal uppercase" asChild>
-                        <a href="https://storage.googleapis.com/crmapplications/resources/apk.apk" target="_blank" rel="noopener noreferrer"><span className="text-white">Try our Android App</span></a>
+                      <Button size="lg" className="font-body text-xs font-normal uppercase bg-purple-600 text-white hover:bg-purple-700 border-0" asChild>
+                        <a href="/apk.apk" download="apk.apk">Try our Android App</a>
                       </Button>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -461,20 +478,19 @@ export function LandingPage() {
 
           {/* Take Control / Automate */}
           <MotionSection className="py-20" direction="up">
-            <div className="container mx-auto px-4 md:px-6">
-              <StaggerContainer className="mb-12 text-center" staggerChildren={0.2}>
-                <StaggerItem><h2 className="font-body text-3xl font-normal tracking-tighter uppercase sm:text-4xl md:text-5xl">Take Control of Your Business Operations</h2></StaggerItem>
-                <StaggerItem><p className="font-body mt-4 text-xs uppercase text-muted-foreground md:text-xs">Stop chasing information across multiple systems. Loro puts you in the driver&apos;s seat.</p></StaggerItem>
-              </StaggerContainer>
-              <div className="mb-16 grid items-center gap-8 md:grid-cols-2">
-                <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
-                  <Image src="https://picsum.photos/id/20/400/400" alt="Automation" width={400} height={400} className="h-auto w-full rounded-xl" />
+            <div className="container mx-auto px-4 md:px-6 flex flex-col items-center">
+              <p className="font-body mb-8 max-w-4xl text-center text-xs uppercase leading-relaxed text-muted-foreground md:text-xs">
+                Stop chasing information across multiple systems and spreadsheets. Loro puts you in the driver&apos;s seat with intelligent automation that handles the routine work while you focus on growing your business.
+              </p>
+              <div className="mb-16 flex flex-col items-center gap-4 md:flex-row md:justify-center md:max-w-4xl">
+                <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="max-w-[96px] shrink-0">
+                  <Image src={useCoverSrc(1)} alt="Automation" width={400} height={400} className="h-auto w-full rounded-xl object-cover" onError={() => setCoverError(1)} />
                 </motion.div>
-                <StaggerContainer className="space-y-6" staggerChildren={0.15} delay={0.3}>
+                <StaggerContainer className="space-y-6 text-center" staggerChildren={0.15} delay={0.3}>
                   <StaggerItem><h3 className="font-body mb-4 text-2xl font-normal uppercase">Automate What Matters, Control What Counts</h3></StaggerItem>
                   {['Smart Lead Distribution', 'Intelligent Follow-Up Sequences', 'Dynamic Route Planning', 'Order Directly from the Platform', 'Live ERP Visibility'].map((item, i) => (
                     <StaggerItem key={i} direction="left">
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-center justify-center gap-4 md:justify-center">
                         <motion.div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10" whileHover={{ scale: 1.1 }}><CheckIcon size={20} className="text-primary" /></motion.div>
                         <div><h4 className="font-body mb-2 text-lg font-normal uppercase">{item}</h4></div>
                       </div>
@@ -482,22 +498,28 @@ export function LandingPage() {
                   ))}
                 </StaggerContainer>
               </div>
-              <div className="grid items-center gap-8 md:grid-cols-2">
-                <StaggerContainer className="space-y-6 md:order-2" staggerChildren={0.15} delay={0.3}>
+              <div className="flex flex-col items-center gap-4 md:flex-row md:justify-center md:max-w-4xl">
+                <motion.div className="max-w-[144px] shrink-0" initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
+                  <Image src={useCoverSrc(2)} alt="Client management" width={600} height={400} className="h-auto w-full rounded-xl object-cover" onError={() => setCoverError(2)} />
+                </motion.div>
+                <StaggerContainer className="space-y-6 text-center" staggerChildren={0.15} delay={0.3}>
                   <StaggerItem><h3 className="font-body mb-4 text-2xl font-normal uppercase">Effortless Client Relationship Management</h3></StaggerItem>
                   {['Unified Client Timeline', 'Predictive Insights', 'Seamless Communication'].map((item, i) => (
                     <StaggerItem key={i} direction="right">
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-center justify-center gap-4 md:justify-center">
                         <motion.div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10" whileHover={{ scale: 1.1 }}><CheckIcon size={20} className="text-primary" /></motion.div>
                         <div><h4 className="font-body mb-2 text-lg font-normal uppercase">{item}</h4></div>
                       </div>
                     </StaggerItem>
                   ))}
                 </StaggerContainer>
-                <motion.div className="md:order-1" initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
-                  <Image src="https://picsum.photos/id/30/600/400" alt="Client management" width={600} height={400} className="h-auto w-full rounded-xl" />
-                </motion.div>
               </div>
+              <motion.div className="mt-16 text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }}>
+                <h3 className="font-body mb-3 text-2xl font-normal tracking-tighter uppercase sm:text-3xl">Data-Driven Decision Making Made Simple</h3>
+                <p className="font-body mx-auto max-w-2xl text-xs uppercase text-muted-foreground md:text-xs">
+                  Transform your business intelligence from guesswork to precision with real-time analytics that actually help you grow.
+                </p>
+              </motion.div>
               <div className="mt-12 text-center">
                 <Button asChild className="font-body text-xs font-normal uppercase"><Link href="/onboarding">Start Your Free Trial</Link></Button>
               </div>

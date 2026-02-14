@@ -52,8 +52,8 @@ export interface MonthlyAttendanceResponse {
 export interface CheckInBody {
   status: string;
   checkIn: string;
-  checkInLatitude: number;
-  checkInLongitude: number;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
   checkInNotes: string;
   branch?: { uid: number };
 }
@@ -61,6 +61,6 @@ export interface CheckInBody {
 export interface CheckOutBody {
   checkOut: string;
   checkOutNotes: string;
-  checkOutLatitude: number;
-  checkOutLongitude: number;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
 }

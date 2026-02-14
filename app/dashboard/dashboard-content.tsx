@@ -57,13 +57,14 @@ export function DashboardContent() {
 
   const handleCheckIn = async () => {
     const position = await getPosition();
+    const noLocationNote = 'Clocked in without location (browser location not granted).';
     checkInMutation.mutate(
       {
         status: 'present',
         checkIn: new Date().toISOString(),
-        checkInLatitude: position.lat,
-        checkInLongitude: position.lng,
-        checkInNotes: '',
+        ...(position !== null
+          ? { checkInLatitude: position.lat, checkInLongitude: position.lng, checkInNotes: '' }
+          : { checkInNotes: noLocationNote }),
         ...(profile?.branch?.uid != null && { branch: { uid: profile.branch.uid } }),
       },
       {
@@ -76,12 +77,17 @@ export function DashboardContent() {
 
   const handleCheckOut = async () => {
     const position = await getPosition();
+    const noLocationNote = 'Clocked out without location (browser location not granted).';
     checkOutMutation.mutate(
       {
         checkOut: new Date().toISOString(),
-        checkOutNotes: '',
-        checkOutLatitude: position.lat,
-        checkOutLongitude: position.lng,
+        ...(position !== null
+          ? {
+              checkOutNotes: '',
+              checkOutLatitude: position.lat,
+              checkOutLongitude: position.lng,
+            }
+          : { checkOutNotes: noLocationNote }),
       },
       {
         onSuccess: () => {
@@ -140,15 +146,15 @@ export function DashboardContent() {
   );
 }
 
-function getPosition(): Promise<{ lat: number; lng: number }> {
+function getPosition(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve({ lat: 0, lng: 0 });
+      resolve(null);
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => resolve({ lat: 0, lng: 0 })
+      () => resolve(null)
     );
   });
 }
