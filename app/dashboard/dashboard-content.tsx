@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import toast from 'react-hot-toast';
+import { useMemo, useState, useEffect } from 'react';
 import {
-  useSyncClerk,
+  useSessionSync,
   useAttStatus,
   useAttMetrics,
   useLeaves,
@@ -11,24 +12,22 @@ import {
 } from '@/api/hooks';
 import type { SyncProfile } from '@/api/types';
 import { Loader2Icon } from '@/lib/icons';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { DashboardNextAction } from '@/components/dashboard-next-action';
-import { DashboardTimeWorking } from '@/components/dashboard-time-working';
 import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 
 export function DashboardContent() {
-  const syncQuery = useSyncClerk();
-  const profile: SyncProfile | undefined = syncQuery.data?.profileData;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const { backendUserData: profile, isSyncing: syncing } = useSessionSync();
   const attQuery = useAttStatus({
-    enabled: !syncQuery.isLoading && !!syncQuery.data?.profileData,
+    enabled: !syncing && !!profile,
   });
   const metricsQuery = useAttMetrics({
-    enabled:
-      !syncQuery.isLoading &&
-      !!syncQuery.data?.profileData &&
-      syncQuery.data.profileData.accessLevel !== 'client',
+    enabled: !syncing && !!profile && profile.accessLevel !== 'client',
   });
   const now = useMemo(() => new Date(), []);
   const leavesQuery = useLeaves(profile?.clerkUserId, {
@@ -36,17 +35,12 @@ export function DashboardContent() {
   });
   const checkInMutation = useCheckInMutation();
   const checkOutMutation = useCheckOutMutation();
-  const syncing = syncQuery.isLoading;
   const attStatus = attQuery.data;
   const checkedIn = attStatus?.checkedIn ?? false;
   const attLoading = checkInMutation.isPending || checkOutMutation.isPending;
-  const attError =
-    checkInMutation.error?.message ?? checkOutMutation.error?.message ?? null;
 
   const isClient = profile?.accessLevel === 'client';
   const nextAction = attStatus?.nextAction ?? null;
-  const checkInTime =
-    attStatus?.attendance?.checkIn ?? attStatus?.startTime ?? null;
 
   const leaveDaysAccrued = useMemo(() => {
     const leaves = leavesQuery.data ?? [];
@@ -73,8 +67,8 @@ export function DashboardContent() {
         ...(profile?.branch?.uid != null && { branch: { uid: profile.branch.uid } }),
       },
       {
-        onError: () => {
-          // Error is surfaced via checkInMutation.error
+        onSuccess: () => {
+          showSuccessToast('Shift started', toast);
         },
       }
     );
@@ -82,13 +76,34 @@ export function DashboardContent() {
 
   const handleCheckOut = async () => {
     const position = await getPosition();
-    checkOutMutation.mutate({
-      checkOut: new Date().toISOString(),
-      checkOutNotes: '',
-      checkOutLatitude: position.lat,
-      checkOutLongitude: position.lng,
-    });
+    checkOutMutation.mutate(
+      {
+        checkOut: new Date().toISOString(),
+        checkOutNotes: '',
+        checkOutLatitude: position.lat,
+        checkOutLongitude: position.lng,
+      },
+      {
+        onSuccess: () => {
+          showSuccessToast('Shift ended', toast);
+        },
+      }
+    );
   };
+
+  // Render a single consistent tree until mounted to avoid hydration mismatch:
+  // server and initial client render both show the same loading placeholder.
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto max-w-4xl px-4 py-8 sm:px-6">
+          <div className="flex justify-center py-12">
+            <Loader2Icon className="size-8 animate-spin text-primary" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,11 +118,6 @@ export function DashboardContent() {
           </p>
         ) : (
           <div className="space-y-4">
-            {attError && (
-              <Alert variant="destructive">
-                <AlertDescription>{attError}</AlertDescription>
-              </Alert>
-            )}
             <AttendanceStatusButton
               checkedIn={checkedIn}
               loading={attLoading}
@@ -116,10 +126,6 @@ export function DashboardContent() {
             />
             <div className="space-y-1">
               <DashboardNextAction nextAction={nextAction} />
-              <DashboardTimeWorking
-                checkedIn={checkedIn}
-                checkInTime={checkInTime}
-              />
             </div>
             <DashboardMetricsCard
               metrics={metricsQuery.data}
