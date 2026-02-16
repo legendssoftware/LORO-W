@@ -44,6 +44,10 @@ import Link from 'next/link';
 
 const EXPECTED_MONTHLY_HOURS = 180;
 
+/** Shared TabsTrigger styles: purple active state, white text, equal width for all report tabs. */
+const REPORTS_TAB_TRIGGER_CLASS =
+    'focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:!bg-purple-600 data-[state=active]:!text-white rounded-md px-3 py-1.5 border-0 data-[state=active]:shadow-none w-[7.7rem] min-w-[7.7rem] flex-shrink-0 justify-center text-sm';
+
 type StatusFilter = 'all' | 'present' | 'absent' | 'late' | 'early';
 
 /** Unified card item: user identity + hours + present/absent for the period. */
@@ -281,52 +285,52 @@ export function ReportsContent() {
                     Reports
                 </h1>
                 <Tabs defaultValue="attendance" className="w-full">
-                    <TabsList className="bg-transparent border-0 p-0 flex flex-wrap gap-3">
+                    <TabsList className="bg-transparent border-0 p-0 flex flex-nowrap gap-3 overflow-x-auto">
                         <TabsTrigger
                             value="attendance"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
-                            Attendance report
+                            Attendance
                         </TabsTrigger>
                         <TabsTrigger
                             value="visits"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Visits
                         </TabsTrigger>
                         <TabsTrigger
                             value="quotations"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Quotations
                         </TabsTrigger>
                         <TabsTrigger
                             value="leads"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Leads
                         </TabsTrigger>
                         <TabsTrigger
                             value="claims"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Claims
                         </TabsTrigger>
                         <TabsTrigger
                             value="leave"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Leave
                         </TabsTrigger>
                         <TabsTrigger
                             value="iot"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             IOT
                         </TabsTrigger>
                         <TabsTrigger
                             value="tasks"
-                            className="focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md px-4 py-2 border-0 data-[state=active]:shadow-none"
+                            className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Tasks
                         </TabsTrigger>
