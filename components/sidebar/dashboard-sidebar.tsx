@@ -70,7 +70,7 @@ export function DashboardSidebar() {
                 type="button"
                 aria-label="Close sidebar"
                 className={cn(
-                    "fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden",
+                    "fixed inset-0 z-[45] bg-black/50 transition-opacity md:hidden",
                     open
                         ? "visible opacity-100"
                         : "invisible opacity-0 pointer-events-none"
@@ -81,7 +81,7 @@ export function DashboardSidebar() {
             <aside
                 className={cn(
                     "flex h-svh w-[9.6rem] flex-shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out",
-                    "fixed inset-y-0 left-0 z-50 md:sticky md:top-0 md:z-40",
+                    "fixed inset-y-0 left-0 z-[55] md:sticky md:top-0 md:z-40",
                     open
                         ? "translate-x-0"
                         : "-translate-x-full md:translate-x-0"

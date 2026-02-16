@@ -1,10 +1,18 @@
 import type { AxiosInstance } from 'axios';
-import type { CheckInsListResponse } from '@/api/types/reports';
+import type {
+  CheckInsListResponse,
+  DomainReportResponse,
+} from '@/api/types/reports';
 
 export interface GetCheckInsParams {
   userUid?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface GetCheckInsReportParams {
+  from: string; // YYYY-MM-DD
+  to: string;   // YYYY-MM-DD
 }
 
 /**
@@ -21,6 +29,23 @@ export async function getCheckIns(
   const qs = search.toString();
   const { data } = await client.get<CheckInsListResponse>(
     `/check-ins${qs ? `?${qs}` : ''}`
+  );
+  return data;
+}
+
+/**
+ * GET /check-ins/report - aggregated report (total, byDay) for date range.
+ */
+export async function getCheckInsReport(
+  client: AxiosInstance,
+  params: GetCheckInsReportParams
+): Promise<DomainReportResponse> {
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  const { data } = await client.get<DomainReportResponse>(
+    `/check-ins/report?${search.toString()}`
   );
   return data;
 }

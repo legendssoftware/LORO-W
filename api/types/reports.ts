@@ -37,17 +37,46 @@ export interface LeadsListResponse {
   meta?: { total: number };
 }
 
+/** Address shape for contactAddress (export/display). */
+export interface CheckInContactAddress {
+  formattedAddress?: string;
+  streetNumber?: string;
+  street?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+/** Single check-in item with all fields needed for 12-column export (APK parity). */
+export interface VisitExportItem {
+  uid: number;
+  checkInTime: string;
+  checkOutTime?: string | null;
+  duration?: string | null;
+  checkInLocation: string;
+  checkOutLocation?: string | null;
+  methodOfContact?: string | null;
+  companyName?: string | null;
+  businessType?: string | null;
+  contactFullName?: string | null;
+  personSeenPosition?: string | null;
+  contactCellPhone?: string | null;
+  contactLandline?: string | null;
+  contactEmail?: string | null;
+  contactAddress?: CheckInContactAddress | null;
+  notes?: string | null;
+  quotationNumber?: string | null;
+  salesValue?: number | null;
+  followUp?: string | null;
+  meetingLink?: string | null;
+  owner?: { name?: string; surname?: string };
+  client?: { name?: string } | null;
+}
+
 export interface CheckInsListResponse {
   message?: string;
-  checkIns: Array<{
-    uid: number;
-    checkInTime: string;
-    checkOutTime?: string | null;
-    checkInLocation: string;
-    duration?: string | null;
-    owner?: { name?: string };
-    client?: { name?: string } | null;
-  }>;
+  checkIns: VisitExportItem[];
 }
 
 export interface ApprovalsListResponse {

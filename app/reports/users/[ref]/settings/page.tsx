@@ -142,7 +142,7 @@ export default function UserSettingsPage() {
 
   if (!ref) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="h-full overflow-auto flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground">Invalid user reference.</p>
         <Link href="/reports" className="text-primary hover:underline mt-2 inline-block">
           Back to Reports
@@ -153,7 +153,7 @@ export default function UserSettingsPage() {
 
   if (userLoading || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="h-full overflow-auto flex flex-col items-center justify-center px-4">
         {userError ? (
           <div>
             <p className="text-destructive">{userError.message}</p>
@@ -176,7 +176,7 @@ export default function UserSettingsPage() {
   ) as string[];
 
   return (
-    <div className="min-h-screen flex flex-col items-center">
+    <div className="h-full overflow-auto flex flex-col items-center">
       <div className="max-w-4xl w-full mx-auto px-4 py-8">
         <Link
           href="/reports"

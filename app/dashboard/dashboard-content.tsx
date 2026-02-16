@@ -101,8 +101,8 @@ export function DashboardContent() {
   // server and initial client render both show the same loading placeholder.
   if (!mounted) {
     return (
-      <div className="min-h-screen">
-        <main className="container mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <div className="h-full overflow-auto">
+        <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
           <div className="flex justify-center py-12">
             <Loader2Icon className="size-8 animate-spin text-primary" />
           </div>
@@ -112,8 +112,8 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen">
-      <main className="container mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div className="h-full overflow-auto">
+      <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
         {syncing ? (
           <div className="flex justify-center py-12">
             <Loader2Icon className="size-8 animate-spin text-primary" />

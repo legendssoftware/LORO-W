@@ -1,20 +1,31 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useMemo, useState, useEffect } from 'react';
-import { format, subDays } from 'date-fns';
+import { format, getDate, getDaysInMonth, subDays } from 'date-fns';
 import {
     useSessionSync,
     useMonthlyMetrics,
     useDailyOverview,
     useMonthlyAttendance,
+    useCheckIns,
+    useCheckInsReport,
+    useUsers,
 } from '@/api/hooks';
 import type {
     DailyOverviewUser,
     MonthlyMetricsUserItem,
 } from '@/api/types';
-import { Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
+import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,11 +49,65 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { isStaffDashboardVisible } from '@/lib/access';
 import Link from 'next/link';
+import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
+import type { VisitExportItem } from '@/api/types/reports';
+import {
+    exportVisits,
+    formatContactAddress,
+    formatMethodOfContact,
+    visitToExportRow,
+} from '@/lib/utils/visits-export';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import toast from 'react-hot-toast';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    ChartContainer,
+    ChartLegend,
+    ChartLegendContent,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from '@/components/ui/chart';
+import {
+    BarChart as RechartsBarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    PieChart as RechartsPieChart,
+    Pie,
+    Cell,
+    Label,
+    LabelList,
+    CartesianGrid,
+} from 'recharts';
 
 const EXPECTED_MONTHLY_HOURS = 180;
+
+/**
+ * Prorated expected hours by a given date: (day of month / days in month) × EXPECTED_MONTHLY_HOURS.
+ * Used to show "expected by this time of month" on cards and in the detail modal.
+ */
+function getExpectedHoursByDate(asOfDate: Date): number {
+    const day = getDate(asOfDate);
+    const daysInMonth = getDaysInMonth(asOfDate);
+    return Math.round((day / daysInMonth) * EXPECTED_MONTHLY_HOURS);
+}
 
 /** Shared TabsTrigger styles: purple active state, white text, equal width for all report tabs. */
 const REPORTS_TAB_TRIGGER_CLASS =
@@ -190,6 +255,1370 @@ function ReportProgressBar({ value }: { value: number }) {
     );
 }
 
+/** Chart config for present/absent pie and bar. */
+const PRESENT_ABSENT_CHART_CONFIG: ChartConfig = {
+    present: { label: 'Present', color: 'var(--chart-1)' },
+    absent: { label: 'Absent', color: 'var(--chart-2)' },
+    label: { color: 'var(--background)' },
+};
+
+/** Present vs absent – donut with center label (attendance rate). */
+function PresentAbsentPieChart({
+    presentCount,
+    absentCount,
+    attendanceRate,
+}: {
+    presentCount: number;
+    absentCount: number;
+    attendanceRate: number;
+}) {
+    const data = [
+        { name: 'present', value: presentCount, fill: 'var(--color-present)' },
+        { name: 'absent', value: absentCount, fill: 'var(--color-absent)' },
+    ].filter((d) => d.value > 0);
+
+    return (
+        <Card className="flex flex-col">
+            <CardHeader className="items-center pb-0">
+                <CardTitle>Attendance – Present vs Absent</CardTitle>
+                <CardDescription>Today&apos;s present vs absent</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+                {data.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                        No attendance data for today.
+                    </p>
+                ) : (
+                    <ChartContainer
+                        config={PRESENT_ABSENT_CHART_CONFIG}
+                        className="mx-auto aspect-square max-h-[250px]"
+                    >
+                        <RechartsPieChart>
+                            <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent hideLabel />}
+                            />
+                            <Pie
+                                data={data}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={60}
+                                strokeWidth={5}
+                            >
+                                {data.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                                <Label
+                                    content={({ viewBox }) => {
+                                        if (
+                                            viewBox &&
+                                            'cx' in viewBox &&
+                                            'cy' in viewBox
+                                        ) {
+                                            return (
+                                                <text
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        className="fill-foreground text-3xl font-bold"
+                                                    >
+                                                        {attendanceRate}%
+                                                    </tspan>
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={(viewBox.cy ?? 0) + 24}
+                                                        className="fill-muted-foreground"
+                                                    >
+                                                        Attendance rate
+                                                    </tspan>
+                                                </text>
+                                            );
+                                        }
+                                    }}
+                                />
+                            </Pie>
+                            <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                        </RechartsPieChart>
+                    </ChartContainer>
+                )}
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                    Today&apos;s attendance
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
+
+/** Chart config for late vs on-time. */
+const LATE_ON_TIME_CHART_CONFIG: ChartConfig = {
+    late: { label: 'Late', color: 'var(--chart-1)' },
+    onTime: { label: 'On-time', color: 'var(--chart-2)' },
+    label: { color: 'var(--background)' },
+};
+
+/** Users – Late vs On-time vertical bar chart. */
+function LateVsOnTimeBarChart({
+    lateCount,
+    onTimeCount,
+}: {
+    lateCount: number;
+    onTimeCount: number;
+}) {
+    const data = [
+        { name: 'Late', count: lateCount, fill: 'var(--color-late)' },
+        { name: 'On-time', count: onTimeCount, fill: 'var(--color-onTime)' },
+    ];
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Users – Late vs On-time</CardTitle>
+                <CardDescription>Today</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer
+                    config={LATE_ON_TIME_CHART_CONFIG}
+                    className="aspect-auto h-[250px] w-full"
+                >
+                    <RechartsBarChart
+                        accessibilityLayer
+                        data={data}
+                        layout="vertical"
+                        margin={{ right: 16 }}
+                    >
+                        <CartesianGrid horizontal={false} />
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            tickFormatter={(v) => v}
+                            hide
+                        />
+                        <XAxis dataKey="count" type="number" hide />
+                        <ChartTooltip
+                            cursor={false}
+                            content={
+                                <ChartTooltipContent indicator="line" />
+                            }
+                        />
+                        <Bar
+                            dataKey="count"
+                            layout="vertical"
+                            radius={4}
+                        >
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                            <LabelList
+                                dataKey="name"
+                                position="insideLeft"
+                                offset={8}
+                                className="fill-(--color-label)"
+                                fontSize={12}
+                            />
+                            <LabelList
+                                dataKey="count"
+                                position="right"
+                                offset={8}
+                                className="fill-foreground"
+                                fontSize={12}
+                            />
+                        </Bar>
+                        <ChartLegend
+                            content={
+                                <ChartLegendContent
+                                    nameKey="name"
+                                    payload={[
+                                        {
+                                            value: 'Late',
+                                            dataKey: 'late',
+                                            color: 'var(--color-late)',
+                                        },
+                                        {
+                                            value: 'On-time',
+                                            dataKey: 'onTime',
+                                            color: 'var(--color-onTime)',
+                                        },
+                                    ]}
+                                />
+                            }
+                        />
+                    </RechartsBarChart>
+                </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                    Today&apos;s attendance
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
+
+/** Chart config for hours target top 5. */
+const HOURS_TOP5_CHART_CONFIG: ChartConfig = {
+    hours: { label: 'Hours', color: 'var(--chart-1)' },
+    label: { color: 'var(--background)' },
+};
+
+/** Hours target (180h) – top 5 users by hours (vertical bar). */
+function HoursTargetTop5Chart({
+    userMetrics,
+}: {
+    userMetrics: MonthlyMetricsUserItem[];
+}) {
+    const data = useMemo(() => {
+        const sorted = [...userMetrics].sort((a, b) => b.totalHours - a.totalHours);
+        return sorted.slice(0, 5).map((u) => ({
+            name: u.userName.length > 20 ? `${u.userName.slice(0, 17)}…` : u.userName,
+            hours: Math.round(u.totalHours * 10) / 10,
+            fill: 'var(--color-hours)',
+        }));
+    }, [userMetrics]);
+
+    if (data.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Hours target ({EXPECTED_MONTHLY_HOURS}h)</CardTitle>
+                    <CardDescription>Top 5 by hours this month</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                        No monthly metrics yet.
+                    </p>
+                </CardContent>
+                <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">
+                        Hours target this month
+                    </div>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Hours target ({EXPECTED_MONTHLY_HOURS}h)</CardTitle>
+                <CardDescription>Top 5 by hours this month</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer
+                    config={HOURS_TOP5_CHART_CONFIG}
+                    className="aspect-auto h-[250px] w-full"
+                >
+                    <RechartsBarChart
+                        accessibilityLayer
+                        data={data}
+                        layout="vertical"
+                        margin={{ right: 16 }}
+                    >
+                        <CartesianGrid horizontal={false} />
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            width={100}
+                            tick={{ fontSize: 11 }}
+                        />
+                        <XAxis dataKey="hours" type="number" hide />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent nameKey="name" />}
+                        />
+                        <Bar dataKey="hours" layout="vertical" radius={4} fill="var(--color-hours)">
+                            <LabelList
+                                dataKey="hours"
+                                position="right"
+                                offset={8}
+                                className="fill-foreground"
+                                fontSize={12}
+                                formatter={(v: number) => `${v}h`}
+                            />
+                        </Bar>
+                    </RechartsBarChart>
+                </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                    Hours target this month
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
+
+/** Chart config for overtime vs regular. */
+const OVERTIME_CHART_CONFIG: ChartConfig = {
+    regular: { label: 'Regular hours', color: 'var(--chart-1)' },
+    overtime: { label: 'Overtime hours', color: 'var(--chart-2)' },
+};
+
+/** Donut – overtime vs regular hours (monthly summary). */
+function OvertimeVsRegularPieChart({
+    totalHours,
+    totalOvertimeHours,
+}: {
+    totalHours: number;
+    totalOvertimeHours: number;
+}) {
+    const regularHours = Math.max(0, totalHours - totalOvertimeHours);
+    const data = [
+        { name: 'regular', value: regularHours, fill: 'var(--color-regular)' },
+        { name: 'overtime', value: totalOvertimeHours, fill: 'var(--color-overtime)' },
+    ].filter((d) => d.value > 0);
+    const total = totalHours;
+
+    if (data.length === 0) {
+        return (
+            <Card className="flex flex-col">
+                <CardHeader className="items-center pb-0">
+                    <CardTitle>Hours – Regular vs Overtime</CardTitle>
+                    <CardDescription>This month</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                        No hours data this month.
+                    </p>
+                </CardContent>
+                <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">
+                        This month&apos;s hours
+                    </div>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    return (
+        <Card className="flex flex-col">
+            <CardHeader className="items-center pb-0">
+                <CardTitle>Hours – Regular vs Overtime</CardTitle>
+                <CardDescription>This month</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+                <ChartContainer
+                    config={OVERTIME_CHART_CONFIG}
+                    className="mx-auto aspect-square max-h-[250px]"
+                >
+                    <RechartsPieChart>
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Pie
+                            data={data}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={60}
+                            strokeWidth={5}
+                        >
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                            <Label
+                                content={({ viewBox }) => {
+                                    if (
+                                        viewBox &&
+                                        'cx' in viewBox &&
+                                        'cy' in viewBox
+                                    ) {
+                                        return (
+                                            <text
+                                                x={viewBox.cx}
+                                                y={viewBox.cy}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                            >
+                                                <tspan
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    className="fill-foreground text-3xl font-bold"
+                                                >
+                                                    {total.toLocaleString()}h
+                                                </tspan>
+                                                <tspan
+                                                    x={viewBox.cx}
+                                                    y={(viewBox.cy ?? 0) + 24}
+                                                    className="fill-muted-foreground"
+                                                >
+                                                    Total hours
+                                                </tspan>
+                                            </text>
+                                        );
+                                    }
+                                }}
+                            />
+                        </Pie>
+                        <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                    </RechartsPieChart>
+                </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                    This month&apos;s hours
+                </div>
+            </CardFooter>
+        </Card>
+    );
+}
+
+/** Live tab: today’s attendance + current month hours, charts from metrics response. */
+function LiveReportTab() {
+    const [mounted, setMounted] = useState(false);
+    const [exportLoading, setExportLoading] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const { backendUserData: profile } = useSessionSync();
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+
+    const dailyQuery = useDailyOverview(
+        { date: todayStr },
+        { enabled: mounted && !!profile }
+    );
+    const monthlyQuery = useMonthlyMetrics(
+        { year, month },
+        { enabled: mounted && !!profile }
+    );
+
+    const presentCount = dailyQuery.data?.data?.presentEmployees ?? 0;
+    const absentCount = dailyQuery.data?.data?.absentEmployees ?? 0;
+    const attendanceRate = dailyQuery.data?.data?.attendanceRate ?? 0;
+
+    const { reachedHoursCount, notReachedHoursCount } = useMemo(() => {
+        const list = monthlyQuery.data?.data?.userMetrics ?? [];
+        const reached = list.filter((u) => u.totalHours >= EXPECTED_MONTHLY_HOURS).length;
+        return {
+            reachedHoursCount: reached,
+            notReachedHoursCount: list.length - reached,
+        };
+    }, [monthlyQuery.data]);
+
+    const { totalHours, totalOvertimeHours } = useMemo(() => {
+        const summary = monthlyQuery.data?.data?.summary;
+        return {
+            totalHours: summary?.totalHours ?? 0,
+            totalOvertimeHours: summary?.totalOvertimeHours ?? 0,
+        };
+    }, [monthlyQuery.data]);
+
+    const { lateCount, onTimeCount } = useMemo(() => {
+        const present = dailyQuery.data?.data?.presentUsers ?? [];
+        const late = present.filter((u) => (u.lateMinutes ?? 0) > 0).length;
+        return {
+            lateCount: late,
+            onTimeCount: present.length - late,
+        };
+    }, [dailyQuery.data?.data?.presentUsers]);
+
+    const isLoading = dailyQuery.isLoading || monthlyQuery.isLoading;
+
+    const visitsStartStr = format(subDays(today, 30), 'yyyy-MM-dd');
+    const visitsEndStr = format(today, 'yyyy-MM-dd');
+    const checkInsQuery = useCheckIns(
+        { startDate: visitsStartStr, endDate: visitsEndStr },
+        { enabled: mounted && !!profile }
+    );
+    const reportQuery = useCheckInsReport(
+        { from: visitsStartStr, to: visitsEndStr },
+        { enabled: mounted && !!profile }
+    );
+    const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+
+    const handleVisitsExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
+        if (checkIns.length === 0) {
+            toast.error('No visits to export');
+            return;
+        }
+        setExportLoading(true);
+        const baseName = `visits-${visitsStartStr}-${visitsEndStr}`;
+        try {
+            exportVisits(checkIns, exportFormat, baseName);
+            toast.success('Export downloaded');
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Export failed');
+        } finally {
+            setExportLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Card key={i}>
+                            <CardHeader>
+                                <Skeleton className="h-5 w-40" />
+                                <Skeleton className="h-4 w-28 mt-1" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-[250px] w-full rounded-md" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                    Today ({format(today, 'PPP')}) · Attendance rate: <strong>{attendanceRate}%</strong>
+                </p>
+                <ExportReportDropdown singleDate={today} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                <PresentAbsentPieChart
+                    presentCount={presentCount}
+                    absentCount={absentCount}
+                    attendanceRate={attendanceRate}
+                />
+                <LateVsOnTimeBarChart
+                    lateCount={lateCount}
+                    onTimeCount={onTimeCount}
+                />
+                <HoursTargetTop5Chart userMetrics={monthlyQuery.data?.data?.userMetrics ?? []} />
+                <OvertimeVsRegularPieChart
+                    totalHours={totalHours}
+                    totalOvertimeHours={totalOvertimeHours}
+                />
+            </div>
+
+            <Separator className="my-6" />
+
+            <section className="pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <p className="text-sm text-muted-foreground">
+                        Last 30 days · Total visits: <strong>{(reportQuery.data?.total ?? checkIns.length).toLocaleString()}</strong>
+                    </p>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
+                                disabled={exportLoading || checkIns.length === 0}
+                            >
+                                {exportLoading ? (
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                ) : (
+                                    <DownloadIcon className="size-4" />
+                                )}
+                                Export
+                                <ChevronDownIcon className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[10rem]">
+                            <DropdownMenuItem onClick={() => handleVisitsExport('csv')}>
+                                CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleVisitsExport('excel')}>
+                                Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleVisitsExport('pdf')}>
+                                PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                <VisitsChartsSection
+                    checkIns={checkIns}
+                    reportTotal={reportQuery.data?.total}
+                    reportLoading={reportQuery.isLoading}
+                />
+            </section>
+        </div>
+    );
+}
+
+/** Chart config for visits by method. */
+const VISITS_METHOD_CHART_CONFIG: ChartConfig = {
+    count: { label: 'Visits', color: 'var(--chart-1)' },
+    ...['var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'].reduce(
+        (acc, color, i) => ({ ...acc, [`method_${i}`]: { label: `Method ${i + 1}`, color } }),
+        {} as ChartConfig
+    ),
+};
+
+/** Chart config for visits by day / by user. */
+const VISITS_COUNT_CHART_CONFIG: ChartConfig = {
+    count: { label: 'Visits', color: 'var(--chart-1)' },
+};
+
+/** Parse duration string "Xh Ym" to total minutes. */
+function parseDurationToMinutes(duration: string | null | undefined): number {
+    if (!duration || typeof duration !== 'string') return 0;
+    const hoursMatch = duration.match(/(\d+)h/);
+    const minutesMatch = duration.match(/(\d+)m/);
+    const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+    return hours * 60 + minutes;
+}
+
+/** Format minutes as "Xh Ym". */
+function formatMinutesToDuration(totalMinutes: number): string {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
+function VisitsChartsSection({
+    checkIns,
+    reportTotal,
+    reportLoading,
+}: {
+    checkIns: VisitExportItem[];
+    reportTotal?: number;
+    reportLoading: boolean;
+}) {
+    const totalVisits = reportTotal ?? checkIns.length;
+
+    const byMethodData = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of checkIns) {
+            const key = c.methodOfContact || 'Not set';
+            map.set(key, (map.get(key) ?? 0) + 1);
+        }
+        const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+        return Array.from(map.entries()).map(([name, value], i) => ({
+            name,
+            value,
+            fill: colors[i % colors.length],
+        }));
+    }, [checkIns]);
+
+    const byUserData = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of checkIns) {
+            const name =
+                c.owner?.name != null
+                    ? [c.owner.name, (c.owner as { surname?: string }).surname].filter(Boolean).join(' ').trim()
+                    : 'Unknown';
+            const displayName = name.length > 18 ? `${name.slice(0, 15)}…` : name;
+            map.set(displayName, (map.get(displayName) ?? 0) + 1);
+        }
+        return Array.from(map.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+    }, [checkIns]);
+
+    const byRegionData = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of checkIns) {
+            const addr = c.contactAddress;
+            const region =
+                (addr && (addr.city ?? addr.state ?? addr.country))?.trim() || 'Not set';
+            map.set(region, (map.get(region) ?? 0) + 1);
+        }
+        return Array.from(map.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+    }, [checkIns]);
+
+    const durationByUserData = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of checkIns) {
+            const name =
+                c.owner?.name != null
+                    ? [c.owner.name, (c.owner as { surname?: string }).surname].filter(Boolean).join(' ').trim()
+                    : 'Unknown';
+            const displayName = name.length > 18 ? `${name.slice(0, 15)}…` : name;
+            const mins = parseDurationToMinutes(c.duration);
+            map.set(displayName, (map.get(displayName) ?? 0) + mins);
+        }
+        return Array.from(map.entries())
+            .filter(([, totalMinutes]) => totalMinutes > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([name, totalMinutes]) => ({
+                name,
+                totalMinutes,
+                displayDuration: formatMinutesToDuration(totalMinutes),
+                fill: 'var(--color-count)',
+            }));
+    }, [checkIns]);
+
+    if (reportLoading && checkIns.length === 0) {
+        return (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                    <Card key={i}>
+                        <CardHeader>
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-4 w-24 mt-1" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-[250px] w-full rounded-md" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            {/* 1. Methods of visits – donut with total in center */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Methods of visits</CardTitle>
+                    <CardDescription>Total visits in center</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {byMethodData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
+                    ) : (
+                        <ChartContainer
+                            config={VISITS_METHOD_CHART_CONFIG}
+                            className="mx-auto aspect-square max-h-[250px]"
+                        >
+                            <RechartsPieChart>
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                                <Pie
+                                    data={byMethodData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    innerRadius={60}
+                                    strokeWidth={5}
+                                >
+                                    {byMethodData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                    <Label
+                                        content={({ viewBox }) => {
+                                            if (
+                                                viewBox &&
+                                                'cx' in viewBox &&
+                                                'cy' in viewBox
+                                            ) {
+                                                return (
+                                                    <text
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                    >
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={viewBox.cy}
+                                                            className="fill-foreground text-3xl font-bold"
+                                                        >
+                                                            {totalVisits.toLocaleString()}
+                                                        </tspan>
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={(viewBox.cy ?? 0) + 24}
+                                                            className="fill-muted-foreground"
+                                                        >
+                                                            Visits
+                                                        </tspan>
+                                                    </text>
+                                                );
+                                            }
+                                        }}
+                                    />
+                                </Pie>
+                                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                            </RechartsPieChart>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+                <CardFooter className="flex-col items-start gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">Contact method</div>
+                </CardFooter>
+            </Card>
+
+            {/* 2. Visits by user */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Visits by user</CardTitle>
+                    <CardDescription>Top 10 users</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {byUserData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
+                    ) : (
+                        <ChartContainer
+                            config={VISITS_COUNT_CHART_CONFIG}
+                            className="aspect-auto h-[250px] w-full"
+                        >
+                            <RechartsBarChart
+                                accessibilityLayer
+                                data={byUserData}
+                                layout="vertical"
+                                margin={{ right: 16 }}
+                            >
+                                <CartesianGrid horizontal={false} />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    width={100}
+                                    tick={{ fontSize: 11 }}
+                                />
+                                <XAxis dataKey="count" type="number" hide />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
+                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                    <LabelList
+                                        dataKey="count"
+                                        position="right"
+                                        offset={8}
+                                        className="fill-foreground"
+                                        fontSize={12}
+                                    />
+                                </Bar>
+                            </RechartsBarChart>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+                <CardFooter className="flex-col items-start gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">Visits per user</div>
+                </CardFooter>
+            </Card>
+
+            {/* 3. Visits by region */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Visits by region</CardTitle>
+                    <CardDescription>Top 10 regions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {byRegionData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
+                    ) : (
+                        <ChartContainer
+                            config={VISITS_COUNT_CHART_CONFIG}
+                            className="aspect-auto h-[250px] w-full"
+                        >
+                            <RechartsBarChart
+                                accessibilityLayer
+                                data={byRegionData}
+                                layout="vertical"
+                                margin={{ right: 16 }}
+                            >
+                                <CartesianGrid horizontal={false} />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    width={100}
+                                    tick={{ fontSize: 11 }}
+                                />
+                                <XAxis dataKey="count" type="number" hide />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
+                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                    <LabelList
+                                        dataKey="count"
+                                        position="right"
+                                        offset={8}
+                                        className="fill-foreground"
+                                        fontSize={12}
+                                    />
+                                </Bar>
+                            </RechartsBarChart>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+                <CardFooter className="flex-col items-start gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">Visits per region</div>
+                </CardFooter>
+            </Card>
+
+            {/* 4. Visit duration by user */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Visit duration by user</CardTitle>
+                    <CardDescription>Top 10 by total duration</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {durationByUserData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
+                    ) : (
+                        <ChartContainer
+                            config={VISITS_COUNT_CHART_CONFIG}
+                            className="aspect-auto h-[250px] w-full"
+                        >
+                            <RechartsBarChart
+                                accessibilityLayer
+                                data={durationByUserData}
+                                layout="vertical"
+                                margin={{ right: 16 }}
+                            >
+                                <CartesianGrid horizontal={false} />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    width={100}
+                                    tick={{ fontSize: 11 }}
+                                />
+                                <XAxis dataKey="totalMinutes" type="number" hide />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={
+                                        <ChartTooltipContent
+                                            nameKey="name"
+                                            formatter={(value, _name, _item, _index, payload) => [
+                                                (payload as { displayDuration?: string } | undefined)?.displayDuration ?? formatMinutesToDuration(Number(value)),
+                                                'Duration',
+                                            ]}
+                                        />
+                                    }
+                                />
+                                <Bar dataKey="totalMinutes" layout="vertical" radius={4} fill="var(--color-count)">
+                                    <LabelList
+                                        dataKey="displayDuration"
+                                        position="right"
+                                        offset={8}
+                                        className="fill-foreground"
+                                        fontSize={12}
+                                    />
+                                </Bar>
+                            </RechartsBarChart>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+                <CardFooter className="flex-col items-start gap-2 text-sm">
+                    <div className="text-muted-foreground leading-none">Total visit duration per user</div>
+                </CardFooter>
+            </Card>
+        </div>
+    );
+}
+
+/** True if string looks like "lat,lng" coordinates. */
+function isCoordLike(s: string): boolean {
+  const t = s.trim();
+  return /^-?\d{1,3}\.?\d*\s*,\s*-?\d{1,3}\.?\d*$/.test(t);
+}
+
+/** Google Maps URL for coordinates or address search. */
+function buildMapsUrl(location: string): string {
+  const t = location.trim();
+  if (!t || t === '-') return '#';
+  if (isCoordLike(t)) return `https://www.google.com/maps?q=${encodeURIComponent(t)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t)}`;
+}
+
+/** tel: URL for phone numbers (strip spaces/dashes). */
+function buildTelUrl(phone: string): string {
+  const normalized = phone.replace(/[\s\-()]/g, '');
+  return `tel:${normalized}`;
+}
+
+const VISITS_TABLE_LINK_CLASS = 'text-primary underline hover:opacity-80';
+
+interface VisitsDisplayColumn {
+  key: string;
+  label: string;
+  render: (c: VisitExportItem) => ReactNode;
+}
+
+const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
+  {
+    key: 'date',
+    label: 'Date and time',
+    render: (c) => {
+      const datePart = format(new Date(c.checkInTime), 'MMM d, yyyy, HH:mm');
+      const outPart = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
+      const durationPart = c.duration || '-';
+      return (
+        <span className="whitespace-normal">
+          {datePart} – {outPart}
+          <span className="block text-muted-foreground text-xs">{durationPart}</span>
+        </span>
+      );
+    },
+  },
+  {
+    key: 'checkIn',
+    label: 'Check-In',
+    render: (c) => {
+      const inLoc = c.checkInLocation || '-';
+      const outLoc = c.checkOutLocation || '-';
+      const inUrl = inLoc !== '-' ? buildMapsUrl(inLoc) : null;
+      const outUrl = outLoc !== '-' ? buildMapsUrl(outLoc) : null;
+      return (
+        <span className="whitespace-normal space-y-1 block">
+          <span className="block">
+            <span className="text-muted-foreground">In: </span>
+            {inUrl && inUrl !== '#' ? (
+              <a href={inUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
+                {inLoc}
+              </a>
+            ) : (
+              inLoc
+            )}
+          </span>
+          <span className="block">
+            <span className="text-muted-foreground">Out: </span>
+            {outUrl && outUrl !== '#' ? (
+              <a href={outUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
+                {outLoc}
+              </a>
+            ) : (
+              outLoc
+            )}
+          </span>
+        </span>
+      );
+    },
+  },
+  {
+    key: 'method',
+    label: 'Method',
+    render: (c) => formatMethodOfContact(c.methodOfContact),
+  },
+  {
+    key: 'company',
+    label: 'Company Name',
+    render: (c) => {
+      const name = c.companyName || '-';
+      const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
+      return (
+        <span className="block">
+          {name}
+          {type && <span className="block text-xs text-muted-foreground">{type}</span>}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'contactPerson',
+    label: 'Contact Person',
+    render: (c) => {
+      const name = c.contactFullName || '-';
+      const position = c.personSeenPosition;
+      return (
+        <span className="block">
+          {name}
+          {position && <span className="block text-xs text-muted-foreground">{position}</span>}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'contactDetails',
+    label: 'Contact Details',
+    render: (c) => {
+      const parts: ReactNode[] = [];
+      if (c.contactCellPhone) {
+        parts.push(
+          <span key="cell" className="block">
+            <span className="text-muted-foreground">Cell: </span>
+            <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
+              {c.contactCellPhone}
+            </a>
+          </span>
+        );
+      }
+      if (c.contactLandline) {
+        parts.push(
+          <span key="landline" className="block">
+            <span className="text-muted-foreground">Landline: </span>
+            <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
+              {c.contactLandline}
+            </a>
+          </span>
+        );
+      }
+      if (c.contactEmail) {
+        parts.push(
+          <span key="email" className="block">
+            <span className="text-muted-foreground">Email: </span>
+            <a
+              href={`mailto:${c.contactEmail}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={VISITS_TABLE_LINK_CLASS}
+            >
+              {c.contactEmail}
+            </a>
+          </span>
+        );
+      }
+      const addr = formatContactAddress(c.contactAddress);
+      if (addr && addr !== '-') {
+        parts.push(
+          <span key="addr" className="block">
+            <span className="text-muted-foreground">Address: </span>
+            <a
+              href={buildMapsUrl(addr)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={VISITS_TABLE_LINK_CLASS}
+            >
+              {addr}
+            </a>
+          </span>
+        );
+      }
+      if (parts.length === 0) return '-';
+      return <span className="whitespace-normal space-y-0.5 block">{parts}</span>;
+    },
+  },
+  {
+    key: 'notes',
+    label: 'Notes',
+    render: (c) => c.notes || '-',
+  },
+  {
+    key: 'quoteNumber',
+    label: 'Quote Number',
+    render: (c) => c.quotationNumber || '-',
+  },
+  {
+    key: 'value',
+    label: 'Value - ex-VAT',
+    render: (c) =>
+      c.salesValue != null
+        ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : '-',
+  },
+  {
+    key: 'followUp',
+    label: 'Follow Up',
+    render: (c) => (c.meetingLink ? (c.followUp || 'Open link') : (c.followUp || '-')),
+  },
+];
+
+/** Visits tab: date range + optional user filter, export (CSV/Excel/PDF), table, then four charts. */
+function VisitsReportTab() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    const today = new Date();
+    const defaultEnd = today;
+    const defaultStart = subDays(today, 30);
+
+    const [startDate, setStartDate] = useState<Date>(defaultStart);
+    const [endDate, setEndDate] = useState<Date>(defaultEnd);
+    const [selectedUserUid, setSelectedUserUid] = useState<string>('');
+    const [exportLoading, setExportLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const { backendUserData: profile } = useSessionSync();
+    const isManager = isStaffDashboardVisible(profile?.accessLevel);
+
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+
+    const checkInsQuery = useCheckIns(
+        {
+            startDate: startStr,
+            endDate: endStr,
+            ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
+        },
+        { enabled: mounted && !!profile }
+    );
+
+    const usersQuery = useUsers({ enabled: isManager && mounted });
+
+    const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+    const isLoading = checkInsQuery.isLoading;
+
+    const filteredCheckIns = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return checkIns;
+        return checkIns.filter((c) => {
+            const searchable = [
+                c.contactFullName,
+                c.companyName,
+                c.notes,
+                c.contactCellPhone,
+                c.contactLandline,
+                c.contactEmail,
+                c.businessType,
+                c.personSeenPosition,
+                c.quotationNumber,
+                c.followUp,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            const rowText = visitToExportRow(c).join(' ').toLowerCase();
+            return searchable.includes(q) || rowText.includes(q);
+        });
+    }, [checkIns, searchQuery]);
+
+    const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
+        if (filteredCheckIns.length === 0) {
+            toast.error('No visits to export');
+            return;
+        }
+        setExportLoading(true);
+        try {
+            const baseName = `visits-${startStr}-${endStr}`;
+            exportVisits(filteredCheckIns, exportFormat, baseName);
+            toast.success('Export downloaded');
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Export failed';
+            toast.error(msg);
+        } finally {
+            setExportLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
+                            >
+                                <CalendarIcon className="size-4" />
+                                {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-2 space-y-2">
+                                <p className="text-sm font-medium">Start date</p>
+                                <Calendar
+                                    mode="single"
+                                    selected={startDate}
+                                    onSelect={(d) => d && setStartDate(d)}
+                                />
+                                <p className="text-sm font-medium pt-2">End date</p>
+                                <Calendar
+                                    mode="single"
+                                    selected={endDate}
+                                    onSelect={(d) => d && setEndDate(d)}
+                                />
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    {isManager && (
+                        <Select
+                            value={selectedUserUid || 'all'}
+                            onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+                        >
+                            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                                <SelectValue placeholder="All users" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All users</SelectItem>
+                                {(usersQuery.data ?? []).map((u) => (
+                                    <SelectItem key={u.uid} value={String(u.uid)}>
+                                        {[u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                </div>
+                <div className="flex flex-nowrap items-center gap-2">
+                    <Input
+                        placeholder="Search visits…"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64 h-9"
+                    />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
+                                disabled={exportLoading || isLoading || filteredCheckIns.length === 0}
+                            >
+                                {exportLoading ? (
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                ) : (
+                                    <DownloadIcon className="size-4" />
+                                )}
+                                Export
+                                <ChevronDownIcon className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[10rem]">
+                            <DropdownMenuItem onClick={() => handleExport('csv')}>
+                                CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('excel')}>
+                                Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                                PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="flex justify-center py-12">
+                    <Loader2Icon className="size-8 animate-spin text-primary" />
+                </div>
+            ) : checkIns.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">
+                    No visits in this date range.
+                </p>
+            ) : filteredCheckIns.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">
+                    No visits match your search.
+                </p>
+            ) : (
+                <div className="rounded border overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                {VISITS_DISPLAY_COLUMNS.map((col) => (
+                                    <TableHead key={col.key} className="whitespace-nowrap">
+                                        {col.label}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredCheckIns.map((c) => (
+                                <TableRow key={c.uid}>
+                                    {VISITS_DISPLAY_COLUMNS.map((col) => (
+                                        <TableCell
+                                            key={col.key}
+                                            className="text-sm whitespace-normal align-top min-w-0"
+                                        >
+                                            {col.render(c)}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function ReportsContent() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
@@ -256,8 +1685,8 @@ export function ReportsContent() {
 
     if (!mounted) {
         return (
-            <div className="min-h-screen">
-                <main className="container mx-auto max-w-6xl px-4 py-8 sm:px-6">
+            <div className="flex flex-col h-full min-h-0">
+                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
                     <div className="flex justify-center py-12">
                         <Loader2Icon className="size-8 animate-spin text-primary" />
                     </div>
@@ -268,8 +1697,8 @@ export function ReportsContent() {
 
     if (!isStaff) {
         return (
-            <div className="min-h-screen">
-                <main className="container mx-auto max-w-6xl px-4 py-8 sm:px-6">
+            <div className="flex flex-col h-full min-h-0">
+                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6">
                     <p className="text-center text-muted-foreground">
                         Reports are available to staff only.
                     </p>
@@ -279,19 +1708,26 @@ export function ReportsContent() {
     }
 
     return (
-        <div className="min-h-screen">
-            <main className="container mx-auto max-w-6xl px-4 py-8 sm:px-6">
-                <h1 className="text-2xl font-semibold text-foreground mb-6">
+        <div className="flex flex-col h-full min-h-0">
+            <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
+                <h1 className="text-2xl font-semibold text-foreground mb-6 shrink-0">
                     Reports
                 </h1>
-                <Tabs defaultValue="attendance" className="w-full">
-                    <TabsList className="bg-transparent border-0 p-0 flex flex-nowrap gap-3 overflow-x-auto">
-                        <TabsTrigger
-                            value="attendance"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Attendance
-                        </TabsTrigger>
+                <Tabs defaultValue="live" className="w-full min-w-0 flex flex-col flex-1 min-h-0">
+                    <div className="w-full min-w-0 overflow-x-auto pb-2 overscroll-x-contain shrink-0">
+                        <TabsList className="bg-transparent border-0 p-0 flex flex-nowrap gap-3 w-fit">
+                            <TabsTrigger
+                                value="live"
+                                className={REPORTS_TAB_TRIGGER_CLASS}
+                            >
+                                Live
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="attendance"
+                                className={REPORTS_TAB_TRIGGER_CLASS}
+                            >
+                                Attendance
+                            </TabsTrigger>
                         <TabsTrigger
                             value="visits"
                             className={REPORTS_TAB_TRIGGER_CLASS}
@@ -335,45 +1771,52 @@ export function ReportsContent() {
                             Tasks
                         </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="attendance" className="mt-6">
-                        <AttendanceReportTab
-                            singleDate={singleDate}
-                            setSingleDate={setSingleDate}
-                            search={search}
-                            setSearch={setSearch}
-                            statusFilter={statusFilter}
-                            setStatusFilter={setStatusFilter}
-                            filteredUsers={filteredUsers}
-                            isLoading={isLoading}
-                            onCardClick={setDetailUser}
-                        />
-                    </TabsContent>
-                    <TabsContent value="visits" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="quotations" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="leads" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="claims" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="leave" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="iot" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
-                    <TabsContent value="tasks" className="mt-6">
-                        <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                    </TabsContent>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-y-auto mt-6">
+                        <TabsContent value="live" className="mt-0">
+                            <LiveReportTab />
+                        </TabsContent>
+                        <TabsContent value="attendance" className="mt-0">
+                            <AttendanceReportTab
+                                singleDate={singleDate}
+                                setSingleDate={setSingleDate}
+                                search={search}
+                                setSearch={setSearch}
+                                statusFilter={statusFilter}
+                                setStatusFilter={setStatusFilter}
+                                filteredUsers={filteredUsers}
+                                isLoading={isLoading}
+                                onCardClick={setDetailUser}
+                            />
+                        </TabsContent>
+                        <TabsContent value="visits" className="mt-0">
+                            <VisitsReportTab />
+                        </TabsContent>
+                        <TabsContent value="quotations" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                        <TabsContent value="leads" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                        <TabsContent value="claims" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                        <TabsContent value="leave" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                        <TabsContent value="iot" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                        <TabsContent value="tasks" className="mt-0">
+                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
+                        </TabsContent>
+                    </div>
                 </Tabs>
             </main>
 
             <ReportUserDetailModal
                 user={detailUser}
+                endDate={singleDate ?? new Date()}
                 onClose={() => setDetailUser(null)}
             />
         </div>
@@ -404,8 +1847,9 @@ function AttendanceReportTab({
     onCardClick,
 }: AttendanceReportTabProps) {
     return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col flex-1 min-h-0">
+            {/* Fixed: date, filter, search, export – no scroll */}
+            <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
@@ -446,14 +1890,19 @@ function AttendanceReportTab({
                         </SelectContent>
                     </Select>
                 </div>
-                <Input
-                    placeholder="Search by name or email"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-xs bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0"
-                />
+                <div className="flex flex-nowrap items-center gap-2">
+                    <Input
+                        placeholder="Search by name or email"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64"
+                    />
+                    <ExportReportDropdown singleDate={singleDate} />
+                </div>
             </div>
 
+            {/* Scrollable: only the user cards list */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
             {isLoading ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {Array.from({ length: 6 }).map((_, i) => (
@@ -520,7 +1969,52 @@ function AttendanceReportTab({
                     No users to show. Select a date and ensure you have access.
                 </p>
             )}
+            </div>
         </div>
+    );
+}
+
+/** Skeleton that mirrors ReportUserCard layout 1:1 for loading state. */
+function ReportUserCardSkeleton() {
+    return (
+        <Card className="rounded-lg border border-gray-200 bg-white min-h-[220px]">
+            <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
+                <div className="flex flex-col gap-3 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <Skeleton className="size-10 shrink-0 rounded-full" />
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <Skeleton className="h-4 w-24 rounded-md" />
+                                <Skeleton className="h-3 w-20 rounded-md" />
+                            </div>
+                        </div>
+                        <Skeleton className="size-8 shrink-0 rounded-md" />
+                    </div>
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-full max-w-[180px] rounded-md" />
+                        <Skeleton className="h-4 w-28 rounded-md" />
+                    </div>
+                    <div className="w-full">
+                        <Skeleton className="h-3 w-16 rounded-md mb-1" />
+                        <div className="w-full grid grid-cols-7 gap-0">
+                            {Array.from({ length: 7 }).map((_, j) => (
+                                <Skeleton
+                                    key={j}
+                                    className="size-2.5 rounded-full justify-self-center"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-3 space-y-1 shrink-0">
+                    <Skeleton className="h-4 w-32 rounded-md" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-2 flex-1 w-full rounded-full" />
+                        <Skeleton className="h-3 w-8 rounded-md" />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -535,6 +2029,7 @@ function ReportUserCard({
     onClick: () => void;
     onSettingsClick: (e: React.MouseEvent) => void;
 }) {
+    const expectedByNow = getExpectedHoursByDate(endDate);
     return (
         <Card
             className={cn(
@@ -602,10 +2097,12 @@ function ReportUserCard({
                     </div>
                 </div>
                 <div className="mt-3 space-y-1 shrink-0">
-                    <p className="text-sm text-muted-foreground">
-                        <strong className="text-foreground">{user.hoursThisMonth}h</strong>
-                        {' / '}
-                        {EXPECTED_MONTHLY_HOURS}h this month
+                    <p className="text-sm text-muted-foreground flex items-center justify-between gap-2">
+                        <span>
+                            <strong className="text-foreground">{user.hoursThisMonth}h</strong>
+                            /{EXPECTED_MONTHLY_HOURS}h this month
+                        </span>
+                        <span className="shrink-0">~{expectedByNow}h expected</span>
                     </p>
                     <div className="flex items-center gap-2">
                         <ReportProgressBar value={user.progressPercent} />
@@ -626,12 +2123,15 @@ function ReportUserCard({
 
 function ReportUserDetailModal({
     user,
+    endDate,
     onClose,
 }: {
     user: ReportCardUser | null;
+    endDate: Date;
     onClose: () => void;
 }) {
     const open = !!user;
+    const expectedByNow = getExpectedHoursByDate(endDate);
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
             <DialogContent
@@ -697,10 +2197,15 @@ function ReportUserDetailModal({
                             <div>
                                 <span className="text-muted-foreground">
                                     Hours this month:
-                                </span>{' '}
-                                <span className="font-medium">
-                                    {user.hoursThisMonth}h of {EXPECTED_MONTHLY_HOURS}h
                                 </span>
+                                <div className="flex items-center justify-between gap-2 mt-0.5">
+                                    <span className="font-medium">
+                                        {user.hoursThisMonth}h/{EXPECTED_MONTHLY_HOURS}h this month
+                                    </span>
+                                    <span className="text-muted-foreground shrink-0">
+                                        ~{expectedByNow}h expected
+                                    </span>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <ReportProgressBar value={user.progressPercent} />

@@ -34,21 +34,23 @@ export default function RootLayout({
           <TooltipProvider>
             <SidebarProvider>
               <SiteBanner />
-              <div className="flex min-h-svh">
+              <div className="flex h-svh">
                 <DashboardSidebar />
-                <div className="flex-1 flex flex-col min-w-0 el bg-sidebar pt-10">
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 el bg-sidebar pt-10">
                   <ConditionalAppHeader />
                   <ErrorBoundary>
                     <AccessGuard>
-                      <Suspense
-                        fallback={
-                          <div className="flex min-h-[200px] items-center justify-center">
-                            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                          </div>
-                        }
-                      >
-                        {children}
-                      </Suspense>
+                      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                        <Suspense
+                          fallback={
+                            <div className="flex min-h-[200px] items-center justify-center">
+                              <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            </div>
+                          }
+                        >
+                          {children}
+                        </Suspense>
+                      </div>
                     </AccessGuard>
                   </ErrorBoundary>
                 </div>

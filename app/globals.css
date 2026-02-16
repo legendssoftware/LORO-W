@@ -84,6 +84,27 @@ body {
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Thin scrollbars (vertical and horizontal) – native overflow */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--muted);
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
 /* Center Clerk sign-in/sign-up modal on viewport (x and y) */
 .cl-modalContent {
   position: fixed !important;
