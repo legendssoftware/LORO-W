@@ -60,30 +60,27 @@ export function AppHeader() {
   }, [isLoaded, isSignedIn, user]);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">
       {isSignedIn ? (
-        <>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Open menu"
-            onClick={sidebar.toggle}
-            className="md:hidden shrink-0"
-          >
-            <LayoutDashboardIcon className="size-6" />
-          </Button>
-          <span className="hidden md:inline text-xl font-bold text-foreground">LORO</span>
-        </>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Open menu"
+          onClick={sidebar.toggle}
+          className="md:hidden shrink-0"
+        >
+          <LayoutDashboardIcon className="size-6" />
+        </Button>
       ) : (
         <Link
           href="/"
           className="text-xl font-bold text-foreground"
         >
-          LORO
+          Home
         </Link>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-1 items-center justify-end gap-3">
         <SignedOut>
           <SignInButton mode="modal">
             <Button variant="ghost" size="sm">

@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { AttendanceMetrics } from '@/api/types';
 import { TimerIcon } from '@/lib/icons';
 
@@ -19,9 +20,20 @@ export function DashboardMetricsCard({
 }) {
   if (isLoading) {
     return (
-      <Card className="border-muted">
-        <CardContent className="flex items-center justify-center py-8">
-          <p className="text-sm text-muted-foreground">Loading metrics…</p>
+      <Card>
+        <CardContent className="px-4 pt-6 sm:px-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded-md" />
+            <Skeleton className="h-4 w-32 rounded-md" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 gap-y-4 sm:grid-cols-4 sm:gap-4 md:gap-6 lg:grid-cols-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="min-w-0 text-center">
+                <Skeleton className="mx-auto h-8 w-12 rounded-md sm:h-9 sm:w-14" />
+                <Skeleton className="mx-auto mt-1 h-3 w-14 rounded-md" />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 const siteName = 'LORO';
 const title =
-  'LORO | HR, Payroll & Time Management for South African Businesses';
+  'Home | South Africa\'s all-in-one platform for HR, time tracking, payroll, leave management and more';
 const description =
   'South Africa\'s all-in-one platform: HR, employee time tracking, payroll, leave management, IoT devices, ERP-linked performance, and B2B procurement. ZAR pricing, local support.';
 
@@ -32,9 +32,13 @@ const author = {
 /**
  * Default app metadata: SA-focused SEO for HR, payroll, time/leave, IoT, ERP, B2B.
  * Authored by Brandon N Kawu. Used in root layout; pages can extend or override.
+ * Title uses a template so child pages get "Page name | Description | LORO".
  */
 export const defaultMetadata: Metadata = {
-  title,
+  title: {
+    default: title,
+    template: '%s | LORO',
+  },
   description,
   keywords,
   authors: [author],

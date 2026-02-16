@@ -35,8 +35,16 @@ function shuffle<T>(array: readonly T[]): T[] {
 }
 
 /**
+ * Deterministic initial cover paths for slots 0, 1, 2. Used for SSR and first client render
+ * to avoid hydration mismatch; shuffle is applied client-side after mount.
+ */
+export function getDefaultCoverSlots(): CoverImagePath[] {
+  return COVER_IMAGE_PATHS.slice(0, 3);
+}
+
+/**
  * Returns a shuffled copy of cover paths for random assignment to hero and feature sections.
- * Call once per mount (e.g. in useState initializer) to get stable assignment per session.
+ * Call only on the client after mount (e.g. in useEffect) to get stable assignment per session.
  */
 export function getShuffledCoverPaths(): CoverImagePath[] {
   return shuffle(COVER_IMAGE_PATHS);

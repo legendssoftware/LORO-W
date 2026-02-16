@@ -33,10 +33,10 @@ export default function RootLayout({
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider>
+              <SiteBanner />
               <div className="flex min-h-svh">
                 <DashboardSidebar />
-                <div className="flex-1 flex flex-col min-w-0 el">
-                  <SiteBanner />
+                <div className="flex-1 flex flex-col min-w-0 el bg-sidebar pt-10">
                   <ConditionalAppHeader />
                   <ErrorBoundary>
                     <AccessGuard>

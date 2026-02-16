@@ -20,7 +20,7 @@ import { ScrollToTop } from '@/components/animations/scroll-to-top';
 import { SmoothScroll } from '@/components/smooth-scroll';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast-helpers';
 import { handleVapiError, retryVapiOperation } from '@/lib/utils/vapi-error-handler';
-import { getShuffledCoverPaths, COVER_FALLBACK_URLS } from '@/lib/cover-images';
+import { getDefaultCoverSlots, getShuffledCoverPaths, COVER_FALLBACK_URLS } from '@/lib/cover-images';
 
 const CALL_MAX_DURATION_MS =
   (parseInt(process.env.NEXT_PUBLIC_MAX_CALL_DURATION_MINUTES ?? '5', 10) * 60 * 1000);
@@ -34,10 +34,13 @@ export function LandingPage() {
   const [connectionError, setConnectionError] = useState<Error | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  /** Random cover assignment for hero and feature sections (stable per session). */
-  const [coverSlots] = useState(() => getShuffledCoverPaths());
+  /** Random cover assignment for hero and feature sections (stable per session). Initial value is deterministic to avoid hydration mismatch; shuffle runs client-side after mount. */
+  const [coverSlots, setCoverSlots] = useState(() => getDefaultCoverSlots());
   /** When a cover image 404s, use fallback URL for that slot. */
   const [coverFallback, setCoverFallback] = useState<Record<number, boolean>>({});
+  useEffect(() => {
+    setCoverSlots(getShuffledCoverPaths());
+  }, []);
   const useCoverSrc = (slotIndex: number) =>
     coverFallback[slotIndex] ? COVER_FALLBACK_URLS[slotIndex] : coverSlots[slotIndex];
   const setCoverError = useCallback((slotIndex: number) => {

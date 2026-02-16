@@ -1,5 +1,11 @@
 import { SignUp } from '@clerk/nextjs';
 
+export const metadata = {
+  title:
+    'Sign up | Create your LORO account to get started with time tracking and workforce management',
+  description: 'Create your LORO account. Get started with HR, time tracking, payroll and more.',
+};
+
 export default function SignUpPage() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-muted/30 px-4 py-8">

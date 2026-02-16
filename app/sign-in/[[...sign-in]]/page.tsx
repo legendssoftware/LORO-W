@@ -2,6 +2,12 @@ import { SignIn } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
+export const metadata = {
+  title:
+    'Sign in | Sign in to your LORO account to access the dashboard and manage your time',
+  description: 'Sign in to LORO to access your dashboard, attendance and workforce tools.',
+};
+
 export default function SignInPage() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-muted/30 px-4 py-8">

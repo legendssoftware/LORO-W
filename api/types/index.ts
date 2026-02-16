@@ -4,6 +4,7 @@
  */
 
 export * from './user';
+export * from './role';
 export * from './status';
 export * from './errors';
 export * from './auth';

@@ -10,6 +10,9 @@ function Progress({
   value,
   ...props
 }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+  // Ensure indicator has minimum visible width at 0% (e.g. 2%) so the bar is always visible
+  const effectivePercent =
+    value == null || value === 0 ? 2 : Math.max(2, Math.min(100, value));
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -21,8 +24,8 @@ function Progress({
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
-        className="bg-primary h-full w-full flex-1 transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+        className="bg-primary h-full w-full flex-1 transition-all min-w-[4px]"
+        style={{ transform: `translateX(-${100 - effectivePercent}%)` }}
       />
     </ProgressPrimitive.Root>
   )

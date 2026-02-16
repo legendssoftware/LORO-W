@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useMonthlyAttendance } from '@/api/hooks';
 import type { MonthlyAttendanceDay } from '@/api/types';
 import { cn } from '@/lib/utils';
@@ -71,95 +72,121 @@ export function AttendanceStreakCalendar({ userRef }: AttendanceStreakCalendarPr
 
   return (
     <div className="rounded border border-gray-200 bg-card p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-foreground">Attendance</h2>
-        <Select
-          value={valueKey}
-          onValueChange={(v) => {
-            const [y, m] = v.split('-').map(Number);
-            setSelectedYear(y);
-            setSelectedMonth(m);
-          }}
-        >
-          <SelectTrigger className="h-9 w-[140px] rounded border border-gray-200 bg-background">
-            <SelectValue placeholder="Month" />
-          </SelectTrigger>
-          <SelectContent>
-            {monthOptions.map((opt) => {
-              const k = `${opt.year}-${opt.month}`;
-              return (
-                <SelectItem key={k} value={k}>
-                  {opt.label}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </div>
-
       {isLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center py-8">
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        </div>
-      ) : !data?.days?.length ? (
-        <div className="flex min-h-[200px] items-center justify-center py-8">
-          <p className="text-sm text-muted-foreground">No attendance data for this month.</p>
-        </div>
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <Skeleton className="h-6 w-28 rounded-md" />
+            <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+          </div>
+          <div className="mx-auto max-w-full lg:max-w-[50%]">
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="mx-auto h-3 w-8 rounded-md" />
+              ))}
+            </div>
+            <div className="mt-1 grid grid-cols-7 gap-1">
+              {Array.from({ length: 35 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square rounded-full" />
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4">
+              {[1, 2, 3].map((i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  <Skeleton className="size-4 shrink-0 rounded-full" />
+                  <Skeleton className="h-3 w-14 rounded-md" />
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
       ) : (
-        <div className="mx-auto max-w-full lg:max-w-[50%]">
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {DAY_LABELS.map((label) => (
-              <div
-                key={label}
-                className="text-xs font-medium text-muted-foreground"
-              >
-                {label}
-              </div>
-            ))}
-            {(() => {
-              const firstDay = data.days[0];
-              const leadingEmpty = firstDay
-                ? colIndex(firstDay.dayOfWeek)
-                : 0;
-              const cells: React.ReactNode[] = [];
-              for (let i = 0; i < leadingEmpty; i++) {
-                cells.push(<div key={`empty-${i}`} className="aspect-square" />);
-              }
-              data.days.forEach((day) => {
-                cells.push(
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Attendance</h2>
+            <Select
+              value={valueKey}
+              onValueChange={(v) => {
+                const [y, m] = v.split('-').map(Number);
+                setSelectedYear(y);
+                setSelectedMonth(m);
+              }}
+            >
+              <SelectTrigger className="h-9 w-[140px] rounded border border-gray-200 bg-background">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((opt) => {
+                  const k = `${opt.year}-${opt.month}`;
+                  return (
+                    <SelectItem key={k} value={k}>
+                      {opt.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          {!data?.days?.length ? (
+            <div className="flex min-h-[200px] items-center justify-center py-8">
+              <p className="text-sm text-muted-foreground">No attendance data for this month.</p>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-full lg:max-w-[50%]">
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {DAY_LABELS.map((label) => (
                   <div
-                    key={day.date}
-                    className={cn(
-                      'flex aspect-square flex-col items-center justify-center gap-0 rounded-full',
-                      getDayBg(day),
-                      day.status === 'future' && 'opacity-50'
-                    )}
+                    key={label}
+                    className="text-xs font-medium text-muted-foreground"
                   >
-                    <span className="text-[10px] font-semibold leading-none text-white drop-shadow-sm">
-                      {day.dayNumber}
-                    </span>
-                    {getDayIcon(day)}
+                    {label}
                   </div>
-                );
-              });
-              return cells;
-            })()}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="size-4 rounded-full bg-emerald-500" />
-              Attended
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-4 rounded-full bg-orange-500" />
-              Missed
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-4 rounded-full bg-gray-200" />
-              Future
-            </span>
-          </div>
-        </div>
+                ))}
+                {(() => {
+                  const firstDay = data.days[0];
+                  const leadingEmpty = firstDay
+                    ? colIndex(firstDay.dayOfWeek)
+                    : 0;
+                  const cells: React.ReactNode[] = [];
+                  for (let i = 0; i < leadingEmpty; i++) {
+                    cells.push(<div key={`empty-${i}`} className="aspect-square" />);
+                  }
+                  data.days.forEach((day) => {
+                    cells.push(
+                      <div
+                        key={day.date}
+                        className={cn(
+                          'flex aspect-square flex-col items-center justify-center gap-0 rounded-full',
+                          getDayBg(day),
+                          day.status === 'future' && 'opacity-50'
+                        )}
+                      >
+                        <span className="text-[10px] font-semibold leading-none text-white drop-shadow-sm">
+                          {day.dayNumber}
+                        </span>
+                        {getDayIcon(day)}
+                      </div>
+                    );
+                  });
+                  return cells;
+                })()}
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-4 rounded-full bg-emerald-500" />
+                  Attended
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-4 rounded-full bg-orange-500" />
+                  Missed
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-4 rounded-full bg-gray-200" />
+                  Future
+                </span>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
