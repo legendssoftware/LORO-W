@@ -76,7 +76,8 @@ function getToastKey(apiError: ApiError): string {
 /**
  * Applies response/error interceptors to the Axios instance.
  * On 4xx/5xx, normalizes to ApiError and rethrows so TanStack Query sees failures.
- * Error toasts are deduplicated by key within DEDUP_WINDOW_MS so repeated failures show one toast per burst.
+ * Network/connection errors fail silently for users (no toast); devs see details via console.error.
+ * Other error toasts are deduplicated by key within DEDUP_WINDOW_MS.
  */
 export function applyErrorInterceptors(axiosInstance: AxiosInstance): void {
   axiosInstance.interceptors.response.use(

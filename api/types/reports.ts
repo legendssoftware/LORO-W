@@ -37,7 +37,7 @@ export interface LeadsListResponse {
   meta?: { total: number };
 }
 
-/** Address shape for contactAddress (export/display). */
+/** Address shape for contactAddress and fullAddress (export/display). */
 export interface CheckInContactAddress {
   formattedAddress?: string;
   streetNumber?: string;
@@ -46,9 +46,10 @@ export interface CheckInContactAddress {
   city?: string;
   state?: string;
   country?: string;
+  postalCode?: string;
 }
 
-/** Single check-in item with all fields needed for 12-column export (APK parity). */
+/** Single check-in item with all fields needed for 12-column export and visit detail dialog. */
 export interface VisitExportItem {
   uid: number;
   checkInTime: string;
@@ -66,10 +67,19 @@ export interface VisitExportItem {
   contactEmail?: string | null;
   contactAddress?: CheckInContactAddress | null;
   notes?: string | null;
+  resolution?: string | null;
   quotationNumber?: string | null;
+  quotationStatus?: string | null;
   salesValue?: number | null;
   followUp?: string | null;
   meetingLink?: string | null;
+  checkInPhoto?: string | null;
+  checkOutPhoto?: string | null;
+  contactImage?: string | null;
+  fullAddress?: CheckInContactAddress | null;
+  checkOutFullAddress?: CheckInContactAddress | null;
+  buildingType?: string | null;
+  contactMade?: boolean | null;
   owner?: {
     name?: string;
     surname?: string;
@@ -78,7 +88,10 @@ export interface VisitExportItem {
     photoURL?: string;
     avatar?: string;
   };
-  client?: { name?: string } | null;
+  client?: { name?: string; email?: string; phone?: string; address?: CheckInContactAddress } | null;
+  branch?: { uid?: number; name?: string; address?: { street?: string; suburb?: string; city?: string } } | null;
+  organisation?: { uid?: number; name?: string; logo?: string; email?: string; phone?: string } | null;
+  lead?: { uid?: number; name?: string; status?: string } | null;
 }
 
 export interface CheckInsListResponse {

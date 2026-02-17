@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -1006,11 +1007,28 @@ function VisitsChartsSection({
     }, [checkIns]);
 
     const byRegionData = useMemo(() => {
+        const extractRegion = (c: VisitExportItem): string => {
+            const addr = c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
+            if (!addr) return 'Not set';
+            const cityOrRegion = (addr.city ?? addr.state ?? '').trim();
+            const postalCode = addr.postalCode?.trim() ?? '';
+            const country = (addr.country ?? '').trim();
+            const fromStructured = [cityOrRegion, postalCode, country].filter(Boolean).join(', ');
+            if (fromStructured) return fromStructured;
+            const formatted = (addr.formattedAddress ?? '').trim();
+            if (!formatted) return 'Not set';
+            const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
+            if (parts.length < 2) return 'Not set';
+            const last = parts[parts.length - 1];
+            const secondLast = parts[parts.length - 2];
+            const countryPart = last;
+            const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
+            const cityPart = codePart ? parts[parts.length - 3] ?? '' : secondLast;
+            return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
+        };
         const map = new Map<string, number>();
         for (const c of checkIns) {
-            const addr = c.contactAddress;
-            const region =
-                (addr && (addr.city ?? addr.state ?? addr.country))?.trim() || 'Not set';
+            const region = extractRegion(c);
             map.set(region, (map.get(region) ?? 0) + 1);
         }
         return Array.from(map.entries())
@@ -1020,24 +1038,32 @@ function VisitsChartsSection({
     }, [checkIns]);
 
     const durationByUserData = useMemo(() => {
-        const map = new Map<string, number>();
+        const totalMap = new Map<string, number>();
+        const countMap = new Map<string, number>();
         for (const c of checkIns) {
+            const mins = parseDurationToMinutes(c.duration);
+            if (mins <= 0) continue;
             const name =
                 c.owner?.name != null
                     ? [c.owner.name, (c.owner as { surname?: string }).surname].filter(Boolean).join(' ').trim()
                     : 'Unknown';
             const displayName = name.length > 18 ? `${name.slice(0, 15)}…` : name;
-            const mins = parseDurationToMinutes(c.duration);
-            map.set(displayName, (map.get(displayName) ?? 0) + mins);
+            totalMap.set(displayName, (totalMap.get(displayName) ?? 0) + mins);
+            countMap.set(displayName, (countMap.get(displayName) ?? 0) + 1);
         }
-        return Array.from(map.entries())
-            .filter(([, totalMinutes]) => totalMinutes > 0)
-            .sort((a, b) => b[1] - a[1])
+        return Array.from(totalMap.entries())
+            .map(([name, totalMinutes]) => {
+                const visitCount = countMap.get(name) ?? 1;
+                const averageMinutes = Math.round(totalMinutes / visitCount);
+                return { name, averageMinutes, visitCount };
+            })
+            .filter(({ averageMinutes }) => averageMinutes > 0)
+            .sort((a, b) => b.averageMinutes - a.averageMinutes)
             .slice(0, 10)
-            .map(([name, totalMinutes]) => ({
+            .map(({ name, averageMinutes }) => ({
                 name,
-                totalMinutes,
-                displayDuration: formatMinutesToDuration(totalMinutes),
+                averageMinutes,
+                displayDuration: formatMinutesToDuration(averageMinutes),
                 fill: 'var(--color-count)',
             }));
     }, [checkIns]);
@@ -1238,7 +1264,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visit duration by user</CardTitle>
-                    <CardDescription>Top 10 by total duration</CardDescription>
+                    <CardDescription>Top 10 by average duration</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {durationByUserData.length === 0 ? (
@@ -1264,7 +1290,7 @@ function VisitsChartsSection({
                                     width={100}
                                     tick={{ fontSize: 11 }}
                                 />
-                                <XAxis dataKey="totalMinutes" type="number" hide />
+                                <XAxis dataKey="averageMinutes" type="number" hide />
                                 <ChartTooltip
                                     cursor={false}
                                     content={
@@ -1277,7 +1303,7 @@ function VisitsChartsSection({
                                         />
                                     }
                                 />
-                                <Bar dataKey="totalMinutes" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="averageMinutes" layout="vertical" radius={4} fill="var(--color-count)">
                                     <LabelList
                                         dataKey="displayDuration"
                                         position="right"
@@ -1291,7 +1317,7 @@ function VisitsChartsSection({
                     )}
                 </CardContent>
                 <CardFooter className="flex-col items-start gap-2 text-sm">
-                    <div className="text-muted-foreground leading-none">Total visit duration per user</div>
+                    <div className="text-muted-foreground leading-none">Average visit duration per user</div>
                 </CardFooter>
             </Card>
         </div>
@@ -1319,6 +1345,303 @@ function buildTelUrl(phone: string): string {
 }
 
 const VISITS_TABLE_LINK_CLASS = 'text-primary underline hover:opacity-80';
+
+/** Format address for display; falls back to raw string when no address. */
+function formatAddressForDisplay(
+    address?: { formattedAddress?: string; street?: string; suburb?: string; city?: string; state?: string; country?: string; postalCode?: string } | null,
+    fallback?: string
+): string {
+    if (!address) return fallback ?? '-';
+    if (address.formattedAddress) return address.formattedAddress;
+    const parts = [
+        (address as { streetNumber?: string }).streetNumber,
+        address.street,
+        address.suburb,
+        address.city,
+        address.state,
+        address.country,
+        address.postalCode,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : fallback ?? '-';
+}
+
+/** tel: URL for phone numbers (strip spaces/dashes). */
+function buildTelUrlSafe(phone: string | null | undefined): string {
+    if (!phone || typeof phone !== 'string') return '#';
+    const normalized = phone.replace(/[\s\-()]/g, '');
+    return normalized ? `tel:${normalized}` : '#';
+}
+
+/** Visit Detail Dialog: full check-in data including images. */
+function VisitDetailDialog({
+    visit,
+    open,
+    onOpenChange,
+}: {
+    visit: VisitExportItem | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    if (!visit) return null;
+    const ownerFullName = visit.owner ? [visit.owner.name, visit.owner.surname].filter(Boolean).join(' ').trim() : '-';
+    const inAddr = formatAddressForDisplay(visit.fullAddress, visit.checkInLocation || '-');
+    const outAddr = formatAddressForDisplay(visit.checkOutFullAddress, visit.checkOutLocation || '-');
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent
+                className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <DialogHeader>
+                    <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
+                    <DialogDescription>
+                        {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 text-sm">
+                    {/* Timing */}
+                    <div>
+                        <h4 className="font-semibold mb-2">Timing</h4>
+                        <div className="space-y-1 text-muted-foreground">
+                            <p>Check-in: {format(new Date(visit.checkInTime), 'MMM d, yyyy – h:mm a')}</p>
+                            {visit.checkOutTime && (
+                                <p>Check-out: {format(new Date(visit.checkOutTime), 'MMM d, yyyy – h:mm a')}</p>
+                            )}
+                            {visit.duration && <p>Duration: {normalizeDurationDisplay(visit.duration)}</p>}
+                        </div>
+                    </div>
+                    <Separator />
+                    {/* Location */}
+                    <div>
+                        <h4 className="font-semibold mb-2">Location</h4>
+                        <div className="space-y-1">
+                            <p>
+                                In:{' '}
+                                {inAddr !== '#' ? (
+                                    <a
+                                        href={buildMapsUrl(visit.checkInLocation || inAddr)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={VISITS_TABLE_LINK_CLASS}
+                                    >
+                                        {inAddr}
+                                    </a>
+                                ) : (
+                                    inAddr
+                                )}
+                            </p>
+                            {(visit.checkOutLocation || outAddr !== '-') && (
+                                <p>
+                                    Out:{' '}
+                                    {outAddr !== '-' && outAddr !== '#' ? (
+                                        <a
+                                            href={buildMapsUrl(visit.checkOutLocation || outAddr)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={VISITS_TABLE_LINK_CLASS}
+                                        >
+                                            {outAddr}
+                                        </a>
+                                    ) : (
+                                        outAddr
+                                    )}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    {/* Photos */}
+                    {(visit.checkInPhoto || visit.checkOutPhoto || visit.contactImage) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Photos</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {visit.checkInPhoto && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs mb-1">Check-in photo</p>
+                                            <img
+                                                src={visit.checkInPhoto}
+                                                alt="Check-in"
+                                                className="rounded-lg border w-full max-h-48 object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    {visit.checkOutPhoto && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs mb-1">Check-out photo</p>
+                                            <img
+                                                src={visit.checkOutPhoto}
+                                                alt="Check-out"
+                                                className="rounded-lg border w-full max-h-48 object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    {visit.contactImage && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs mb-1">Contact photo</p>
+                                            <img
+                                                src={visit.contactImage}
+                                                alt="Contact"
+                                                className="rounded-lg border w-full max-h-48 object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Contact */}
+                    {(visit.contactFullName || visit.contactCellPhone || visit.contactLandline || visit.contactEmail || formatContactAddress(visit.contactAddress) !== '-') && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Contact</h4>
+                                <div className="space-y-1">
+                                    {visit.contactFullName && <p>{visit.contactFullName}</p>}
+                                    {visit.personSeenPosition && <p className="text-muted-foreground">{visit.personSeenPosition}</p>}
+                                    {visit.contactCellPhone && (
+                                        <p>
+                                            <a href={buildTelUrlSafe(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
+                                                {visit.contactCellPhone}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {visit.contactLandline && (
+                                        <p>
+                                            <a href={buildTelUrlSafe(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
+                                                {visit.contactLandline}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {visit.contactEmail && (
+                                        <p>
+                                            <a href={`mailto:${visit.contactEmail}`} className={VISITS_TABLE_LINK_CLASS}>
+                                                {visit.contactEmail}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {visit.contactAddress && formatContactAddress(visit.contactAddress) !== '-' && (
+                                        <p>
+                                            <a
+                                                href={buildMapsUrl(formatContactAddress(visit.contactAddress) || '')}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={VISITS_TABLE_LINK_CLASS}
+                                            >
+                                                {formatContactAddress(visit.contactAddress)}
+                                            </a>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Company */}
+                    {(visit.companyName || visit.businessType || visit.meetingLink) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Company & Business</h4>
+                                <div className="space-y-1">
+                                    {visit.companyName && <p>{visit.companyName}</p>}
+                                    {visit.businessType && (
+                                        <p className="text-muted-foreground">{String(visit.businessType).replace(/_/g, ' ')}</p>
+                                    )}
+                                    {visit.meetingLink && (
+                                        <p>
+                                            <a
+                                                href={visit.meetingLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={VISITS_TABLE_LINK_CLASS}
+                                            >
+                                                {visit.followUp || 'Open meeting link'}
+                                            </a>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Enhancement fields */}
+                    {(visit.methodOfContact || visit.buildingType || visit.contactMade != null) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Visit Details</h4>
+                                <div className="space-y-1">
+                                    {visit.methodOfContact && <p>Method: {formatMethodOfContact(visit.methodOfContact)}</p>}
+                                    {visit.buildingType && <p>Building type: {visit.buildingType.replace(/_/g, ' ')}</p>}
+                                    {visit.contactMade != null && <p>Contact made: {visit.contactMade ? 'Yes' : 'No'}</p>}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Sales */}
+                    {(visit.salesValue != null || visit.quotationNumber || visit.quotationStatus) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Sales</h4>
+                                <div className="space-y-1">
+                                    {visit.salesValue != null && (
+                                        <p>
+                                            R {Number(visit.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (ex VAT)
+                                        </p>
+                                    )}
+                                    {visit.quotationNumber && <p>Quotation: {visit.quotationNumber}</p>}
+                                    {visit.quotationStatus && (
+                                        <p className="text-muted-foreground">{String(visit.quotationStatus).replace(/_/g, ' ')}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Lead */}
+                    {visit.lead && (visit.lead.name || visit.lead.uid) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Lead</h4>
+                                <p>{visit.lead.name || `#${visit.lead.uid}`}</p>
+                                {visit.lead.status && <p className="text-muted-foreground">{visit.lead.status}</p>}
+                            </div>
+                        </>
+                    )}
+                    {/* Notes / Resolution / Follow-up */}
+                    {(visit.notes || visit.resolution || visit.followUp) && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Notes & Follow-up</h4>
+                                <div className="space-y-2">
+                                    {visit.notes && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Notes</p>
+                                            <p className="whitespace-pre-wrap">{visit.notes}</p>
+                                        </div>
+                                    )}
+                                    {visit.resolution && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Resolution</p>
+                                            <p className="whitespace-pre-wrap">{visit.resolution}</p>
+                                        </div>
+                                    )}
+                                    {visit.followUp && !visit.meetingLink && (
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Follow-up</p>
+                                            <p className="whitespace-pre-wrap">{visit.followUp}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 interface VisitsDisplayColumn {
   key: string;
@@ -1392,10 +1715,12 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
     key: 'checkIn',
     label: 'Check-In',
     render: (c) => {
-      const inLoc = c.checkInLocation || '-';
-      const outLoc = c.checkOutLocation || '-';
-      const inUrl = inLoc !== '-' ? buildMapsUrl(inLoc) : null;
-      const outUrl = outLoc !== '-' ? buildMapsUrl(outLoc) : null;
+      const inAddr = formatAddressForDisplay(c.fullAddress, c.checkInLocation || '-');
+      const outAddr = formatAddressForDisplay(c.checkOutFullAddress, c.checkOutLocation || '-');
+      const inMapTarget = c.checkInLocation || inAddr;
+      const outMapTarget = c.checkOutLocation || outAddr;
+      const inUrl = inMapTarget !== '-' ? buildMapsUrl(inMapTarget) : null;
+      const outUrl = outMapTarget !== '-' ? buildMapsUrl(outMapTarget) : null;
       const locRowClass = 'flex min-w-0 gap-1 items-start';
       const locValueClass = 'min-w-0 overflow-hidden text-ellipsis';
       const locLinkClass = cn(VISITS_TABLE_LINK_CLASS, 'block truncate text-left');
@@ -1405,14 +1730,14 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
             <span className="text-muted-foreground shrink-0">In: </span>
             <span
               className={locValueClass}
-              title={inLoc !== '-' ? inLoc : undefined}
+              title={inAddr !== '-' ? inAddr : undefined}
             >
               {inUrl && inUrl !== '#' ? (
-                <a href={inUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={inLoc}>
-                  {inLoc}
+                <a href={inUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={inAddr}>
+                  {inAddr}
                 </a>
               ) : (
-                <span className="block truncate">{inLoc}</span>
+                <span className="block truncate">{inAddr}</span>
               )}
             </span>
           </span>
@@ -1420,14 +1745,14 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
             <span className="text-muted-foreground shrink-0">Out: </span>
             <span
               className={locValueClass}
-              title={outLoc !== '-' ? outLoc : undefined}
+              title={outAddr !== '-' ? outAddr : undefined}
             >
               {outUrl && outUrl !== '#' ? (
-                <a href={outUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={outLoc}>
-                  {outLoc}
+                <a href={outUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={outAddr}>
+                  {outAddr}
                 </a>
               ) : (
-                <span className="block truncate">{outLoc}</span>
+                <span className="block truncate">{outAddr}</span>
               )}
             </span>
           </span>
@@ -1573,6 +1898,8 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [selectedUserUid, setSelectedUserUid] = useState<string>('');
     const [exportLoading, setExportLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
+    const [visitDetailOpen, setVisitDetailOpen] = useState(false);
 
     const { backendUserData: profile } = useSessionSync();
     const isManager = isStaffDashboardVisible(profile?.accessLevel);
@@ -1830,7 +2157,14 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                         </TableHeader>
                         <TableBody>
                             {filteredCheckIns.map((c) => (
-                                <TableRow key={c.uid}>
+                                <TableRow
+                                    key={c.uid}
+                                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={() => {
+                                        setSelectedVisit(c);
+                                        setVisitDetailOpen(true);
+                                    }}
+                                >
                                     {VISITS_DISPLAY_COLUMNS.map((col) => (
                                         <TableCell
                                             key={col.key}
@@ -1845,6 +2179,11 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                     </Table>
                 </div>
             )}
+            <VisitDetailDialog
+                visit={selectedVisit}
+                open={visitDetailOpen}
+                onOpenChange={setVisitDetailOpen}
+            />
         </div>
     );
 }
