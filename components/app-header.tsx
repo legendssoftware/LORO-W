@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
 import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks';
 import { useSessionStore } from '@/store/session-store';
@@ -145,7 +145,9 @@ export function AppHeader() {
           overlayClassName="z-[9999] bg-black"
           className="z-[9999] flex min-w-[280px] max-w-[calc(100%-2rem)] items-center justify-center bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0 text-center left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         >
-          <p className="text-white text-lg font-medium">Signing you out 👋</p>
+          <DialogTitle className="text-white text-lg font-medium">
+            Signing you out 👋
+          </DialogTitle>
         </DialogContent>
       </Dialog>
     </header>

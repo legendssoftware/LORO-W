@@ -17,7 +17,7 @@ import type {
     MonthlyMetricsUserItem,
 } from '@/api/types';
 import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Card,
     CardContent,
@@ -65,6 +65,8 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import toast from 'react-hot-toast';
@@ -706,6 +708,65 @@ function OvertimeVsRegularPieChart({
     );
 }
 
+/** Props for the shared attendance charts section (Present/Absent, Late/On-time, Hours top 5, Regular/Overtime). */
+export interface AttendanceChartsSectionProps {
+    presentCount: number;
+    absentCount: number;
+    attendanceRate: number;
+    lateCount: number;
+    onTimeCount: number;
+    userMetrics: MonthlyMetricsUserItem[];
+    totalHours: number;
+    totalOvertimeHours: number;
+    chartsLoading?: boolean;
+}
+
+/** Reusable 4-chart grid: Present vs Absent, Late vs On-time, Hours target top 5, Regular vs Overtime. */
+function AttendanceChartsSection({
+    presentCount,
+    absentCount,
+    attendanceRate,
+    lateCount,
+    onTimeCount,
+    userMetrics,
+    totalHours,
+    totalOvertimeHours,
+    chartsLoading = false,
+}: AttendanceChartsSectionProps) {
+    if (chartsLoading) {
+        return (
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                    <Card key={i}>
+                        <CardHeader>
+                            <Skeleton className="h-5 w-40" />
+                            <Skeleton className="h-4 w-28 mt-1" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-[250px] w-full rounded-md" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        );
+    }
+    return (
+        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <PresentAbsentPieChart
+                presentCount={presentCount}
+                absentCount={absentCount}
+                attendanceRate={attendanceRate}
+            />
+            <LateVsOnTimeBarChart lateCount={lateCount} onTimeCount={onTimeCount} />
+            <HoursTargetTop5Chart userMetrics={userMetrics} />
+            <OvertimeVsRegularPieChart
+                totalHours={totalHours}
+                totalOvertimeHours={totalOvertimeHours}
+            />
+        </div>
+    );
+}
+
 /** Live tab: today’s attendance + current month hours, charts from metrics response. */
 function LiveReportTab() {
     const [mounted, setMounted] = useState(false);
@@ -787,26 +848,6 @@ function LiveReportTab() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <Card key={i}>
-                            <CardHeader>
-                                <Skeleton className="h-5 w-40" />
-                                <Skeleton className="h-4 w-28 mt-1" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[250px] w-full rounded-md" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -815,22 +856,17 @@ function LiveReportTab() {
                 </p>
                 <ExportReportDropdown singleDate={today} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                <PresentAbsentPieChart
-                    presentCount={presentCount}
-                    absentCount={absentCount}
-                    attendanceRate={attendanceRate}
-                />
-                <LateVsOnTimeBarChart
-                    lateCount={lateCount}
-                    onTimeCount={onTimeCount}
-                />
-                <HoursTargetTop5Chart userMetrics={monthlyQuery.data?.data?.userMetrics ?? []} />
-                <OvertimeVsRegularPieChart
-                    totalHours={totalHours}
-                    totalOvertimeHours={totalOvertimeHours}
-                />
-            </div>
+            <AttendanceChartsSection
+                presentCount={presentCount}
+                absentCount={absentCount}
+                attendanceRate={attendanceRate}
+                lateCount={lateCount}
+                onTimeCount={onTimeCount}
+                userMetrics={monthlyQuery.data?.data?.userMetrics ?? []}
+                totalHours={totalHours}
+                totalOvertimeHours={totalOvertimeHours}
+                chartsLoading={isLoading}
+            />
 
             <Separator className="my-6" />
 
@@ -1411,13 +1447,36 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
     key: 'companyAndContact',
     label: 'Company / Contact',
     render: (c) => {
-      const companyName = c.companyName || '-';
-      const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
-      const contactName = c.contactFullName || '-';
-      const position = c.personSeenPosition;
-      const contactDetailsParts: ReactNode[] = [];
-      if (c.contactCellPhone) {
-        contactDetailsParts.push(
+      const blocks: ReactNode[] = [];
+
+      if (c.companyName?.trim()) {
+        const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
+        blocks.push(
+          <span key="company" className="block">
+            <span className="font-medium">{c.companyName.trim()}</span>
+            {type && <span className="block text-xs text-muted-foreground">{type}</span>}
+          </span>
+        );
+      }
+
+      const contactName = c.contactFullName?.trim();
+      const position = c.personSeenPosition?.trim();
+      if (contactName || position) {
+        blocks.push(
+          <span key="contact" className="block">
+            {contactName && (
+              <>
+                <span className="text-muted-foreground">Contact person: </span>
+                {contactName}
+              </>
+            )}
+            {position && <span className="block text-xs text-muted-foreground">{position}</span>}
+          </span>
+        );
+      }
+
+      if (c.contactCellPhone?.trim()) {
+        blocks.push(
           <span key="cell" className="block">
             <span className="text-muted-foreground">Cell: </span>
             <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
@@ -1426,8 +1485,8 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
           </span>
         );
       }
-      if (c.contactLandline) {
-        contactDetailsParts.push(
+      if (c.contactLandline?.trim()) {
+        blocks.push(
           <span key="landline" className="block">
             <span className="text-muted-foreground">Landline: </span>
             <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
@@ -1436,8 +1495,8 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
           </span>
         );
       }
-      if (c.contactEmail) {
-        contactDetailsParts.push(
+      if (c.contactEmail?.trim()) {
+        blocks.push(
           <span key="email" className="block">
             <span className="text-muted-foreground">Email: </span>
             <a
@@ -1452,8 +1511,8 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
         );
       }
       const addr = formatContactAddress(c.contactAddress);
-      if (addr && addr !== '-') {
-        contactDetailsParts.push(
+      if (addr?.trim() && addr !== '-') {
+        blocks.push(
           <span key="addr" className="block">
             <span className="text-muted-foreground">Address: </span>
             <a
@@ -1467,24 +1526,9 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
           </span>
         );
       }
-      return (
-        <span className="whitespace-normal space-y-1 block">
-          <span className="block">
-            <span className="font-medium">{companyName}</span>
-            {type && <span className="block text-xs text-muted-foreground">{type}</span>}
-          </span>
-          <span className="block">
-            <span className="text-muted-foreground">Contact person: </span>
-            {contactName}
-            {position && <span className="block text-xs text-muted-foreground">{position}</span>}
-          </span>
-          {contactDetailsParts.length > 0 ? (
-            <span className="space-y-0.5 block">{contactDetailsParts}</span>
-          ) : (
-            <span className="block text-muted-foreground text-xs">-</span>
-          )}
-        </span>
-      );
+
+      if (blocks.length === 0) return null;
+      return <span className="whitespace-normal space-y-1 block">{blocks}</span>;
     },
   },
   {
@@ -1512,7 +1556,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
 ];
 
-/** Visits tab: date range + optional user filter, export (CSV/Excel/PDF), table, then four charts. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
+/** Visits tab: four charts at top (same as Live), then date range + optional user filter, search, export, and table. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
 function VisitsReportTab() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
@@ -1578,6 +1622,28 @@ function VisitsReportTab() {
         });
     }, [checkIns, searchQuery]);
 
+    const exportScopeLabel = useMemo(() => {
+        if (!selectedUserUid) return 'All users';
+        const users = usersQuery.data ?? [];
+        const u = users.find((x) => String(x.uid) === selectedUserUid);
+        if (u) {
+            const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
+            return name || `User ${selectedUserUid}`;
+        }
+        const first = checkIns[0]?.owner;
+        if (first) {
+            const name = [first.name, (first as { surname?: string }).surname].filter(Boolean).join(' ').trim();
+            return name || `User ${selectedUserUid}`;
+        }
+        return `User ${selectedUserUid}`;
+    }, [selectedUserUid, usersQuery.data, checkIns]);
+
+    const exportUserSlug = useMemo(() => {
+        if (!selectedUserUid) return '';
+        const label = exportScopeLabel.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+        return label ? `-${label}` : `-${selectedUserUid}`;
+    }, [selectedUserUid, exportScopeLabel]);
+
     const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
         if (filteredCheckIns.length === 0) {
             toast.error('No visits to export');
@@ -1585,7 +1651,7 @@ function VisitsReportTab() {
         }
         setExportLoading(true);
         try {
-            const baseName = `visits-${startStr}-${endStr}`;
+            const baseName = `visits-${startStr}-${endStr}${exportUserSlug}`;
             exportVisits(filteredCheckIns, exportFormat, baseName);
             toast.success('Export downloaded');
         } catch (e) {
@@ -1598,6 +1664,22 @@ function VisitsReportTab() {
 
     return (
         <div className="space-y-4">
+            {/* Visits charts at top – same 4 cards as Live tab, driven by selected date range */}
+            <div className="shrink-0 mb-6">
+                {!isLoading && (
+                    <p className="text-sm text-muted-foreground mb-3">
+                        {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')} · Total visits:{' '}
+                        <strong>{checkIns.length.toLocaleString()}</strong>
+                    </p>
+                )}
+                <VisitsChartsSection
+                    checkIns={checkIns}
+                    reportTotal={checkIns.length}
+                    reportLoading={isLoading}
+                />
+            </div>
+
+            {/* Toolbar: date range, user filter, search, export */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
                     <Popover>
@@ -1633,8 +1715,22 @@ function VisitsReportTab() {
                             value={selectedUserUid || 'all'}
                             onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
                         >
-                            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
                                 <SelectValue placeholder="All users" />
+                                {selectedUserUid ? (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            setSelectedUserUid('');
+                                        }}
+                                        className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                                        aria-label="Clear user filter"
+                                    >
+                                        <XIcon className="size-4 text-muted-foreground" />
+                                    </button>
+                                ) : null}
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All users</SelectItem>
@@ -1648,12 +1744,27 @@ function VisitsReportTab() {
                     )}
                 </div>
                 <div className="flex flex-nowrap items-center gap-2">
-                    <Input
-                        placeholder="Search visits…"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64 h-9"
-                    />
+                    <div className="relative w-56 min-w-0 shrink sm:w-64">
+                        <Input
+                            placeholder="Search visits…"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={cn(
+                                'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
+                                searchQuery && 'pr-8'
+                            )}
+                        />
+                        {searchQuery ? (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                aria-label="Clear search"
+                            >
+                                <XIcon className="size-4" />
+                            </button>
+                        ) : null}
+                    </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -1672,6 +1783,10 @@ function VisitsReportTab() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-[10rem]">
+                            <DropdownMenuLabel className="text-muted-foreground font-normal">
+                                Exporting: {exportScopeLabel}
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleExport('csv')}>
                                 CSV
                             </DropdownMenuItem>
@@ -1732,10 +1847,8 @@ function VisitsReportTab() {
 }
 
 export function ReportsContent() {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-
     const { backendUserData: profile } = useSessionSync();
+    const [activeTab, setActiveTab] = useState('live');
     const [singleDate, setSingleDate] = useState<Date | null>(() => new Date());
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -1747,12 +1860,12 @@ export function ReportsContent() {
 
     const monthlyQuery = useMonthlyMetrics(
         { year: yearForSingle, month: monthForSingle },
-        { enabled: mounted && !!profile }
+        { enabled: !!profile && activeTab === 'attendance' }
     );
 
     const dailyQuery = useDailyOverview(
         { date: singleDateStr ?? undefined },
-        { enabled: mounted && !!singleDateStr && !!profile }
+        { enabled: !!profile && !!singleDateStr && activeTab === 'attendance' }
     );
 
     const monthlyByUserId = useMemo(() => {
@@ -1796,29 +1909,30 @@ export function ReportsContent() {
     const isLoading =
         (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
-    if (!mounted) {
-        return (
-            <div className="flex flex-col h-full min-h-0">
-                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-                    <div className="flex justify-center py-12">
-                        <Loader2Icon className="size-8 animate-spin text-primary" />
-                    </div>
-                </main>
-            </div>
-        );
-    }
+    const attendanceChartsProps = useMemo(() => {
+        const presentCount = dailyQuery.data?.data?.presentEmployees ?? 0;
+        const absentCount = dailyQuery.data?.data?.absentEmployees ?? 0;
+        const attendanceRate = dailyQuery.data?.data?.attendanceRate ?? 0;
+        const presentUsers = dailyQuery.data?.data?.presentUsers ?? [];
+        const lateCount = presentUsers.filter((u) => (u.lateMinutes ?? 0) > 0).length;
+        const onTimeCount = presentUsers.length - lateCount;
+        const userMetrics = monthlyQuery.data?.data?.userMetrics ?? [];
+        const summary = monthlyQuery.data?.data?.summary;
+        const totalHours = summary?.totalHours ?? 0;
+        const totalOvertimeHours = summary?.totalOvertimeHours ?? 0;
+        return {
+            presentCount,
+            absentCount,
+            attendanceRate,
+            lateCount,
+            onTimeCount,
+            userMetrics,
+            totalHours,
+            totalOvertimeHours,
+        };
+    }, [dailyQuery.data, monthlyQuery.data]);
 
-    if (!isStaff) {
-        return (
-            <div className="flex flex-col h-full min-h-0">
-                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6">
-                    <p className="text-center text-muted-foreground">
-                        Reports are available to staff only.
-                    </p>
-                </main>
-            </div>
-        );
-    }
+    const chartsLoading = (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
     return (
         <div className="flex flex-col h-full min-h-0">
@@ -1826,7 +1940,7 @@ export function ReportsContent() {
                 <h1 className="text-2xl font-semibold text-foreground mb-6 shrink-0">
                     Reports
                 </h1>
-                <Tabs defaultValue="live" className="w-full min-w-0 flex flex-col flex-1 min-h-0">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0 flex flex-col flex-1 min-h-0">
                     <div className="w-full min-w-0 overflow-x-auto pb-2 overscroll-x-contain shrink-0">
                         <TabsList className="bg-transparent border-0 p-0 flex flex-nowrap gap-3 w-fit">
                             <TabsTrigger
@@ -1849,84 +1963,38 @@ export function ReportsContent() {
                             Visits
                         </TabsTrigger>
                         )}
-                            <TabsTrigger
-                            value="quotations"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Quotations
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="leads"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Leads
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="claims"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Claims
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="leave"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Leave
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="iot"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            IOT
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="tasks"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Tasks
-                        </TabsTrigger>
                     </TabsList>
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto mt-6">
-                        <TabsContent value="live" className="mt-0">
-                            <LiveReportTab />
-                        </TabsContent>
-                        <TabsContent value="attendance" className="mt-0">
-                            <AttendanceReportTab
-                                singleDate={singleDate}
-                                setSingleDate={setSingleDate}
-                                search={search}
-                                setSearch={setSearch}
-                                statusFilter={statusFilter}
-                                setStatusFilter={setStatusFilter}
-                                filteredUsers={filteredUsers}
-                                isLoading={isLoading}
-                                onCardClick={setDetailUser}
-                            />
-                        </TabsContent>
-                        {isVisitsAdmin && (
-                        <TabsContent value="visits" className="mt-0">
-                            <VisitsReportTab />
-                        </TabsContent>
+                        {!profile ? (
+                            <div className="flex justify-center py-12">
+                                <Loader2Icon className="size-8 animate-spin text-primary" />
+                            </div>
+                        ) : !isStaff ? (
+                            <p className="text-center text-muted-foreground py-12">
+                                Reports are available to staff only.
+                            </p>
+                        ) : (
+                            <>
+                                {activeTab === 'live' && <LiveReportTab />}
+                                {activeTab === 'attendance' && (
+                                    <AttendanceReportTab
+                                        singleDate={singleDate}
+                                        setSingleDate={setSingleDate}
+                                        search={search}
+                                        setSearch={setSearch}
+                                        statusFilter={statusFilter}
+                                        setStatusFilter={setStatusFilter}
+                                        filteredUsers={filteredUsers}
+                                        isLoading={isLoading}
+                                        onCardClick={setDetailUser}
+                                        attendanceChartsProps={attendanceChartsProps}
+                                        chartsLoading={chartsLoading}
+                                    />
+                                )}
+                                {activeTab === 'visits' && isVisitsAdmin && <VisitsReportTab />}
+                            </>
                         )}
-                        <TabsContent value="quotations" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="leads" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="claims" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="leave" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="iot" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="tasks" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
                     </div>
                 </Tabs>
             </main>
@@ -1950,6 +2018,8 @@ interface AttendanceReportTabProps {
     filteredUsers: ReportCardUser[];
     isLoading: boolean;
     onCardClick: (u: ReportCardUser) => void;
+    attendanceChartsProps: Omit<AttendanceChartsSectionProps, 'chartsLoading'>;
+    chartsLoading: boolean;
 }
 
 function AttendanceReportTab({
@@ -1962,9 +2032,24 @@ function AttendanceReportTab({
     filteredUsers,
     isLoading,
     onCardClick,
+    attendanceChartsProps,
+    chartsLoading,
 }: AttendanceReportTabProps) {
     return (
         <div className="flex flex-col flex-1 min-h-0">
+            {/* Charts section: same 4 cards as Live tab, driven by selected date and month */}
+            <div className="shrink-0 mb-6">
+                {singleDate && !chartsLoading && (
+                    <p className="text-sm text-muted-foreground mb-3">
+                        {format(singleDate, 'PPP')} · Attendance rate: <strong>{attendanceChartsProps.attendanceRate}%</strong>
+                    </p>
+                )}
+                <AttendanceChartsSection
+                    {...attendanceChartsProps}
+                    chartsLoading={chartsLoading}
+                />
+            </div>
+
             {/* Fixed: date, filter, search, export – no scroll */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1993,10 +2078,22 @@ function AttendanceReportTab({
                         value={statusFilter}
                         onValueChange={(v) => setStatusFilter(v as StatusFilter)}
                     >
-                        <SelectTrigger
-                            className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground"
-                        >
+                        <SelectTrigger className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
                             <SelectValue placeholder="Status" />
+                            {statusFilter !== 'all' ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        setStatusFilter('all');
+                                    }}
+                                    className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                                    aria-label="Clear status filter"
+                                >
+                                    <XIcon className="size-4 text-muted-foreground" />
+                                </button>
+                            ) : null}
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All</SelectItem>
@@ -2008,12 +2105,27 @@ function AttendanceReportTab({
                     </Select>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2">
-                    <Input
-                        placeholder="Search by name or email"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64"
-                    />
+                    <div className="relative w-56 min-w-0 shrink sm:w-64">
+                        <Input
+                            placeholder="Search by name or email"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className={cn(
+                                'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
+                                search && 'pr-8'
+                            )}
+                        />
+                        {search ? (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                aria-label="Clear search"
+                            >
+                                <XIcon className="size-4" />
+                            </button>
+                        ) : null}
+                    </div>
                     <ExportReportDropdown singleDate={singleDate} />
                 </div>
             </div>
@@ -2021,7 +2133,7 @@ function AttendanceReportTab({
             {/* Scrollable: only the user cards list */}
             <div className="flex-1 min-h-0 overflow-y-auto">
             {isLoading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <Card
                                 key={i}
@@ -2067,7 +2179,7 @@ function AttendanceReportTab({
                         ))}
                 </div>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {filteredUsers.map((user) => (
                         <ReportUserCard
                             key={user.userId}

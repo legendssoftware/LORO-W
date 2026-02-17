@@ -84,25 +84,25 @@ body {
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Thin scrollbars (vertical and horizontal) – native overflow */
+/* Thin purple scrollbars (vertical and horizontal) – native overflow */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--muted);
+  scrollbar-color: #7c3aed #f3e8ff;
 }
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 *::-webkit-scrollbar-track {
-  background: var(--muted);
-  border-radius: 3px;
+  background: #f3e8ff;
+  border-radius: 2px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: #7c3aed;
+  border-radius: 2px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: #6d28d9;
 }
 
 /* Center Clerk sign-in/sign-up modal on viewport (x and y) */
