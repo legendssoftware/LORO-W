@@ -2,14 +2,32 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { useUser, usePatchUser, useBranches, useUsers } from '@/api/hooks';
+import {
+  useUser,
+  usePatchUser,
+  useDeleteUser,
+  useRestoreUser,
+  useDeleteUserPermanently,
+  useBranches,
+  useUsers,
+} from '@/api/hooks';
 import type { PatchUserBody } from '@/api/endpoints/user';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon } from '@/lib/icons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -69,10 +87,20 @@ export default function UserSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const ref = typeof params.ref === 'string' ? params.ref : null;
-  const { data: user, isLoading: userLoading, error: userError } = useUser(ref);
+  const { data: user, isLoading: userLoading, error: userError } = useUser(ref, {
+    includeDeleted: true,
+  });
   const patchUser = usePatchUser(ref);
+  const deleteUserMutation = useDeleteUser(ref);
+  const restoreUserMutation = useRestoreUser(ref);
+  const deletePermanentMutation = useDeleteUserPermanently(ref);
   const { data: branches = [] } = useBranches({ enabled: !!ref });
   const { data: users = [] } = useUsers({ enabled: !!ref, limit: 200 });
+
+  const [permanentConfirmText, setPermanentConfirmText] = useState('');
+  const [softDeleteOpen, setSoftDeleteOpen] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [permanentOpen, setPermanentOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -667,6 +695,73 @@ export default function UserSettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Danger zone: remove / restore / permanent delete */}
+            <Card className="border-destructive/50">
+              <CardHeader>
+                <CardTitle className="text-destructive">Danger zone</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Remove user from the system or restore a removed user. Permanent delete cannot be undone.
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {(user as { isDeleted?: boolean })?.isDeleted ? (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setRestoreOpen(true)}
+                        disabled={restoreUserMutation.isPending}
+                      >
+                        {restoreUserMutation.isPending ? (
+                          <Loader2Icon className="size-4 animate-spin" />
+                        ) : (
+                          'Restore user'
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => {
+                          setPermanentConfirmText('');
+                          setPermanentOpen(true);
+                        }}
+                        disabled={deletePermanentMutation.isPending}
+                      >
+                        {deletePermanentMutation.isPending ? (
+                          <Loader2Icon className="size-4 animate-spin" />
+                        ) : (
+                          'Permanently delete'
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      This user is removed from the system. You can restore them or permanently delete their account.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => setSoftDeleteOpen(true)}
+                      disabled={deleteUserMutation.isPending}
+                    >
+                      {deleteUserMutation.isPending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                      ) : (
+                        'Remove from system'
+                      )}
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      Deactivate this user. They can be restored later. For permanent removal, remove first then use
+                      &quot;Permanently delete&quot; from this page.
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="flex gap-2">
               <Button type="submit" disabled={patchUser.isPending}>
                 {patchUser.isPending ? (
@@ -685,6 +780,125 @@ export default function UserSettingsPage() {
             </div>
           </form>
         </Form>
+
+        {/* Soft delete confirmation */}
+        <AlertDialog open={softDeleteOpen} onOpenChange={setSoftDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove user from system?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will deactivate the user. They will no longer be able to sign in. You can restore them later from
+                this page. Related records (leads, orders, etc.) will be kept and still linked to this user.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  deleteUserMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.success('User removed from system');
+                      setSoftDeleteOpen(false);
+                      router.push('/reports');
+                    },
+                    onError: (err: Error) => {
+                      toast.error(err.message || 'Failed to remove user');
+                    },
+                  });
+                }}
+              >
+                Remove from system
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Restore confirmation */}
+        <AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restore user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will restore the user so they can sign in again. Their status will be set to inactive until you
+                update it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  restoreUserMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.success('User restored');
+                      setRestoreOpen(false);
+                    },
+                    onError: (err: Error) => {
+                      toast.error(err.message || 'Failed to restore user');
+                    },
+                  });
+                }}
+              >
+                Restore
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Permanent delete confirmation */}
+        <AlertDialog
+          open={permanentOpen}
+          onOpenChange={(open) => {
+            setPermanentOpen(open);
+            if (!open) setPermanentConfirmText('');
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This cannot be undone. The user row will be removed from the database. Related records (leads,
+                quotations, etc.) will be kept but no longer linked to this user. Type <strong>PERMANENT</strong> below
+                to confirm.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-2">
+              <Input
+                placeholder="Type PERMANENT to confirm"
+                value={permanentConfirmText}
+                onChange={(e) => setPermanentConfirmText(e.target.value)}
+                className="font-mono"
+                data-testid="permanent-delete-confirm"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                disabled={permanentConfirmText !== 'PERMANENT'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (permanentConfirmText !== 'PERMANENT') return;
+                  deletePermanentMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.success('User permanently deleted');
+                      setPermanentOpen(false);
+                      setPermanentConfirmText('');
+                      router.push('/reports');
+                    },
+                    onError: (err: Error) => {
+                      toast.error(err.message || 'Failed to permanently delete user');
+                    },
+                  });
+                }}
+              >
+                Permanently delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

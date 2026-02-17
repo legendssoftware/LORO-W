@@ -143,7 +143,7 @@ export function AppHeader() {
         <DialogContent
           showCloseButton={false}
           overlayClassName="z-[9999] bg-black"
-          className="z-[9999] bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0"
+          className="z-[9999] flex min-w-[280px] max-w-[calc(100%-2rem)] items-center justify-center bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0 text-center left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         >
           <p className="text-white text-lg font-medium">Signing you out 👋</p>
         </DialogContent>

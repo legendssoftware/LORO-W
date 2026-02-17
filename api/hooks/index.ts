@@ -14,5 +14,11 @@ export { useDailyOverview } from "./use-daily-overview";
 export { useCheckIns, useCheckInsReport } from "./use-check-ins";
 export { useLeaves } from "./use-leaves";
 export { useBranches } from "./use-branches";
-export { useUser, usePatchUser } from "./use-user";
+export {
+  useUser,
+  usePatchUser,
+  useDeleteUser,
+  useRestoreUser,
+  useDeleteUserPermanently,
+} from "./use-user";
 export { useUsers } from "./use-users";

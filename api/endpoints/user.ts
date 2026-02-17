@@ -22,6 +22,7 @@ export interface UserResponse {
   managedStaff?: number[];
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
+  isDeleted?: boolean;
   [key: string]: unknown;
 }
 
@@ -107,12 +108,17 @@ export async function getUsers(
 
 /**
  * GET /user/:ref - get user by uid or Clerk user ID.
+ * @param includeDeleted - if true, includes soft-deleted users (for settings restore/permanent-delete flow)
  */
 export async function getUserByRef(
   client: AxiosInstance,
-  ref: string
+  ref: string,
+  options?: { includeDeleted?: boolean }
 ): Promise<GetUserByRefResponse> {
-  const { data } = await client.get<GetUserByRefResponse>(`/user/${ref}`);
+  const params = new URLSearchParams();
+  if (options?.includeDeleted) params.set('includeDeleted', 'true');
+  const qs = params.toString();
+  const { data } = await client.get<GetUserByRefResponse>(`/user/${ref}${qs ? `?${qs}` : ''}`);
   return data;
 }
 
@@ -128,5 +134,43 @@ export async function patchUser(
     `/user/${ref}`,
     body
   );
+  return data;
+}
+
+/** Response shape for delete/restore endpoints. */
+export interface UserMessageResponse {
+  message: string;
+}
+
+/**
+ * DELETE /user/:ref - soft delete (remove from system). User can be restored later.
+ */
+export async function deleteUser(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.delete<UserMessageResponse>(`/user/${ref}`);
+  return data;
+}
+
+/**
+ * PATCH /user/restore/:ref - restore a soft-deleted user.
+ */
+export async function restoreUser(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.patch<UserMessageResponse>(`/user/restore/${ref}`);
+  return data;
+}
+
+/**
+ * DELETE /user/:ref/permanent - permanently delete user (must be soft-deleted first). Irreversible.
+ */
+export async function deleteUserPermanently(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.delete<UserMessageResponse>(`/user/${ref}/permanent`);
   return data;
 }
