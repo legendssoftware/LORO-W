@@ -1,4 +1,5 @@
 export { useApiClient } from "./use-api-client";
+export { useTokenReady } from "./use-token-ready";
 export { useSyncClerk } from "./use-sync-clerk";
 export { useSessionSync, getSessionSyncQueryKey } from "./use-session-sync";
 export {

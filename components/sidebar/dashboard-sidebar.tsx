@@ -65,29 +65,29 @@ export function DashboardSidebar() {
 
     return (
         <>
-            {/* Mobile backdrop: only on small screens when sidebar is open */}
+            {/* Backdrop: tablet and down when sidebar is open (collapsible below lg) */}
             <button
                 type="button"
                 aria-label="Close sidebar"
                 className={cn(
-                    "fixed inset-0 z-[45] bg-black/50 transition-opacity md:hidden",
+                    "fixed inset-0 z-[45] bg-black/50 transition-opacity lg:hidden",
                     open
                         ? "visible opacity-100"
                         : "invisible opacity-0 pointer-events-none"
                 )}
                 onClick={closeSidebar}
             />
-            {/* Sidebar: overlay on mobile (toggle), always visible on md+ */}
+            {/* Sidebar: overlay on tablet and down (toggle), always visible on lg+; narrower width below lg */}
             <aside
                 className={cn(
-                    "flex h-svh w-[9.6rem] flex-shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out",
-                    "fixed inset-y-0 left-0 z-[55] md:sticky md:top-0 md:z-40",
+                    "flex h-svh w-[7.5rem] lg:w-[9.6rem] flex-shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out",
+                    "fixed inset-y-0 left-0 z-[55] lg:sticky lg:top-0 lg:z-40",
                     open
                         ? "translate-x-0"
-                        : "-translate-x-full md:translate-x-0"
+                        : "-translate-x-full lg:translate-x-0"
                 )}
             >
-                <div className="flex h-14 shrink-0 items-center justify-between px-4">
+                <div className="flex h-14 shrink-0 items-center justify-between px-3 lg:px-4">
                     <span className="text-lg font-bold text-sidebar-foreground">
                         LORO
                     </span>
@@ -96,7 +96,7 @@ export function DashboardSidebar() {
                         size="icon"
                         aria-label="Close sidebar"
                         onClick={closeSidebar}
-                        className="md:hidden rounded-full size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        className="lg:hidden rounded-full size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     >
                         <XIcon className="size-5" />
                     </Button>

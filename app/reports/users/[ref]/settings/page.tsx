@@ -83,6 +83,72 @@ function formatEnumLabel(value: string): string {
     .join(' ');
 }
 
+/** User shape used for diffing (subset of API response). */
+type UserBaseline = {
+  name?: string | null;
+  surname?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  userref?: string | null;
+  hrID?: number | null;
+  role?: string | null;
+  status?: string | null;
+  accessLevel?: string | null;
+  departmentId?: number | null;
+  branch?: { uid?: number } | null;
+  managedBranches?: number[];
+  managedStaff?: number[];
+};
+
+/** Build PATCH body with only fields that changed. Never sends empty string for enum fields. */
+function buildPatchBody(user: UserBaseline | null | undefined, values: FormValues): PatchUserBody {
+  if (!user) return {};
+
+  const norm = (s: string | null | undefined) => (s ?? '').trim();
+  const sameStr = (a: string | null | undefined, b: string | null | undefined) =>
+    norm(a) === norm(b);
+  const sameNum = (a: number | null | undefined, b: number | null | undefined) =>
+    (a ?? null) === (b ?? null);
+  const sameArr = (a?: number[], b?: number[]) => {
+    const x = [...(a ?? [])].sort((i, j) => i - j);
+    const y = [...(b ?? [])].sort((i, j) => i - j);
+    return x.length === y.length && x.every((v, i) => v === y[i]);
+  };
+
+  const body: PatchUserBody = {};
+
+  if (!sameStr(user.name, values.name)) body.name = values.name;
+  if (!sameStr(user.surname, values.surname)) body.surname = values.surname;
+  if (!sameStr(user.email, values.email)) body.email = values.email;
+  if (norm(user.phone) !== norm(values.phone ?? null))
+    body.phone = values.phone ?? undefined;
+  if (norm(user.userref) !== norm(values.userref ?? null))
+    body.userref = values.userref ?? undefined;
+  if (!sameNum(user.hrID, values.hrID)) body.hrID = values.hrID ?? undefined;
+
+  if (!sameStr(user.role, values.role))
+    body.role = values.role?.trim() || undefined;
+  if (!sameStr(user.status, values.status))
+    body.status = values.status?.trim() || undefined;
+  if (!sameStr(user.accessLevel, values.accessLevel))
+    body.accessLevel = values.accessLevel?.trim() || undefined;
+
+  if (!sameNum(user.departmentId ?? undefined, values.departmentId))
+    body.departmentId = values.departmentId ?? undefined;
+
+  const userBranchUid = user.branch?.uid ?? null;
+  if (!sameNum(userBranchUid, values.branchUid))
+    body.branch = values.branchUid != null ? { uid: values.branchUid } : undefined;
+
+  if (!sameArr(user.managedBranches, values.managedBranches))
+    body.managedBranches =
+      values.managedBranches?.length ? values.managedBranches : undefined;
+  if (!sameArr(user.managedStaff, values.managedStaff))
+    body.managedStaff = values.managedStaff?.length ? values.managedStaff : undefined;
+
+  return body;
+}
+
 export default function UserSettingsPage() {
   const params = useParams();
   const router = useRouter();
@@ -142,21 +208,12 @@ export default function UserSettingsPage() {
   }, [user, form]);
 
   const onSubmit = (values: FormValues) => {
-    const body: PatchUserBody = {
-      name: values.name,
-      surname: values.surname,
-      email: values.email,
-      phone: values.phone ?? undefined,
-      userref: values.userref ?? undefined,
-      hrID: values.hrID ?? undefined,
-      role: values.role || undefined,
-      status: values.status || undefined,
-      accessLevel: values.accessLevel as PatchUserBody['accessLevel'] | undefined,
-      departmentId: values.departmentId ?? undefined,
-      branch: values.branchUid ? { uid: values.branchUid } : undefined,
-      managedBranches: values.managedBranches?.length ? values.managedBranches : undefined,
-      managedStaff: values.managedStaff?.length ? values.managedStaff : undefined,
-    };
+    const body = buildPatchBody(user ?? undefined, values);
+    const hasChanges = Object.keys(body).length > 0;
+    if (!hasChanges) {
+      toast.success('No changes to save');
+      return;
+    }
     patchUser.mutate(body, {
       onSuccess: () => {
         toast.success('User updated');

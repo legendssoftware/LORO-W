@@ -164,7 +164,7 @@ export function ExportReportDropdown({ singleDate }: ExportReportDropdownProps) 
         const month = date.getMonth() + 1;
         setLoading(true);
         try {
-            const res = await getMonthlyMetrics(client, { year, month });
+            const res = await getMonthlyMetrics(client, { year, month, includeCheckIns: false });
             const list = res.data?.userMetrics ?? [];
             const rows = list.map(metricsUserToRow);
             const baseName = `metrics-${year}-${String(month).padStart(2, '0')}`;

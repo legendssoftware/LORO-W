@@ -109,6 +109,8 @@ export interface MonthlyMetricsBody {
     branchId?: number;
     orgId?: number;
     excludeOvertimeDates?: string[];
+    /** Include full checkIns per user. Default true. Set false for summary-only (smaller payload, faster). */
+    includeCheckIns?: boolean;
 }
 
 /**

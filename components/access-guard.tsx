@@ -8,8 +8,9 @@ import { canAccess } from '@/lib/access';
 
 /**
  * Client-side route guard: redirects to /dashboard when the current path
- * is not allowed for the user's access level. Only runs when signed in
- * and after backend profile sync is done.
+ * is not allowed for the user's access level. Children always render (data
+ * requests use Clerk token and run immediately). Redirect runs only after
+ * backend profile sync completes so we know access level.
  */
 export function AccessGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,7 +19,8 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
   const { backendUserData, isSyncing } = useSessionSync();
 
   useEffect(() => {
-    if (!isSignedIn || isSyncing) return;
+    if (!isSignedIn) return;
+    if (isSyncing) return; // Wait for sync to know access level before redirect
     const accessLevel = backendUserData?.accessLevel;
     const allowed = canAccess(pathname ?? '', accessLevel);
     if (!allowed) {

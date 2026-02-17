@@ -2,7 +2,9 @@
 
 import toast from 'react-hot-toast';
 import { useMemo, useState, useEffect } from 'react';
+import { useAuth, useUser } from '@clerk/nextjs';
 import {
+  useTokenReady,
   useSessionSync,
   useAttStatus,
   useAttMetrics,
@@ -10,8 +12,7 @@ import {
   useCheckInMutation,
   useCheckOutMutation,
 } from '@/api/hooks';
-import type { SyncProfile } from '@/api/types';
-import { Loader2Icon } from '@/lib/icons';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { DashboardNextAction } from '@/components/dashboard-next-action';
@@ -22,16 +23,21 @@ export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const { backendUserData: profile, isSyncing: syncing } = useSessionSync();
+  const { isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+  const clerkUserId = clerkUser?.id ?? null;
+  const { isTokenReady } = useTokenReady();
+  const { backendUserData: profile } = useSessionSync();
+
   const attQuery = useAttStatus({
-    enabled: !syncing && !!profile,
+    enabled: isTokenReady,
   });
   const metricsQuery = useAttMetrics({
-    enabled: !syncing && !!profile && profile.accessLevel !== 'client',
+    enabled: isTokenReady,
   });
   const now = useMemo(() => new Date(), []);
-  const leavesQuery = useLeaves(profile?.clerkUserId, {
-    enabled: !!profile?.clerkUserId && profile?.accessLevel !== 'client',
+  const leavesQuery = useLeaves(clerkUserId, {
+    enabled: isTokenReady && !!clerkUserId,
   });
   const checkInMutation = useCheckInMutation();
   const checkOutMutation = useCheckOutMutation();
@@ -103,9 +109,18 @@ export function DashboardContent() {
     return (
       <div className="h-full overflow-auto">
         <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
-          <div className="flex justify-center py-12">
-            <Loader2Icon className="size-8 animate-spin text-primary" />
-          </div>
+          <LoadingSpinner wrapperClassName="py-12" />
+        </main>
+      </div>
+    );
+  }
+
+  // Show loading until Clerk token is ready (avoids firing requests before token is available).
+  if (isSignedIn && !isTokenReady) {
+    return (
+      <div className="h-full overflow-auto">
+        <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
+          <LoadingSpinner wrapperClassName="py-12" />
         </main>
       </div>
     );
@@ -114,11 +129,7 @@ export function DashboardContent() {
   return (
     <div className="h-full overflow-auto">
       <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
-        {syncing ? (
-          <div className="flex justify-center py-12">
-            <Loader2Icon className="size-8 animate-spin text-primary" />
-          </div>
-        ) : isClient ? (
+        {!isSignedIn ? null : profile && isClient ? (
           <p className="text-center text-muted-foreground">
             Attendance tracking is for employees only.
           </p>

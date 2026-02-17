@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Loader2Icon } from '@/lib/icons';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface AttendanceStatusButtonProps {
   checkedIn: boolean;
@@ -20,10 +21,15 @@ export function AttendanceStatusButton({
   onCheckIn,
   onCheckOut,
 }: AttendanceStatusButtonProps) {
+  const isMobile = useIsMobile();
+  const buttonMinHeight = isMobile
+    ? 'min-h-24'
+    : 'min-h-12 sm:min-h-14 md:min-h-16';
+
   return (
     <div className="flex w-full justify-center px-2">
       <div
-        className={`flex w-full max-w-md items-center justify-between gap-4 rounded-xl p-4 sm:p-6 md:p-8 ${
+        className={`flex w-full max-w-md items-center justify-between gap-4 rounded-xl p-8 sm:p-6 md:p-8 ${
           checkedIn
             ? 'bg-destructive text-white'
             : 'bg-green-600 text-white'
@@ -38,7 +44,7 @@ export function AttendanceStatusButton({
           <Button
             variant="secondary"
             size="lg"
-            className="min-h-12 rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+            className={`${buttonMinHeight} rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:px-8 sm:text-lg md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0`}
             onClick={onCheckOut}
           >
             End Shift
@@ -47,7 +53,7 @@ export function AttendanceStatusButton({
           <Button
             variant="secondary"
             size="lg"
-            className="min-h-12 rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:min-h-14 sm:px-8 sm:text-lg md:min-h-16 md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+            className={`${buttonMinHeight} rounded-lg border-0 outline-none ring-0 bg-white px-6 text-base font-semibold sm:px-8 sm:text-lg md:px-10 md:text-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0`}
             onClick={onCheckIn}
           >
             Start Shift

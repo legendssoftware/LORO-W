@@ -34,6 +34,7 @@ export function useCheckInMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['att', 'monthly'] });
     },
   });
 }
@@ -49,6 +50,7 @@ export function useCheckOutMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['att', 'monthly'] });
     },
   });
 }

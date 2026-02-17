@@ -87,22 +87,22 @@ body {
 /* Thin purple scrollbars (vertical and horizontal) – native overflow */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #7c3aed #f3e8ff;
+  scrollbar-color: #ffffff #ffffff;
 }
 *::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 1px;
+  height: 1px;
 }
 *::-webkit-scrollbar-track {
-  background: #f3e8ff;
-  border-radius: 2px;
+  background: #ffffff;
+  border-radius: 1px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #7c3aed;
-  border-radius: 2px;
+  background: #ffffff;
+  border-radius: 1px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #6d28d9;
+  background: #ffffff;
 }
 
 /* Center Clerk sign-in/sign-up modal on viewport (x and y) */

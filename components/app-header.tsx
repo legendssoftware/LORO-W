@@ -70,7 +70,7 @@ export function AppHeader() {
           size="icon"
           aria-label="Open menu"
           onClick={sidebar.toggle}
-          className="md:hidden shrink-0"
+          className="lg:hidden shrink-0"
         >
           <LayoutDashboardIcon className="size-6" />
         </Button>

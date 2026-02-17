@@ -1,14 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useCallback, useMemo } from 'react';
+import { useAuth, useOrganization } from '@clerk/nextjs';
 import { createApiClient } from '@/api/client';
 
 /**
  * Returns an Axios instance that injects the current Clerk token on each request.
- * Use this inside components that run under ClerkProvider and QueryClientProvider.
+ * Token is requested with active organization context so the backend receives org via
+ * Bearer token only (no x-org-id or orgId in query/body). Use inside ClerkProvider and QueryClientProvider.
  */
 export function useApiClient() {
   const { getToken } = useAuth();
-  return useMemo(() => createApiClient(getToken), [getToken]);
+  const { organization } = useOrganization();
+
+  const getTokenWithOrg = useCallback(async () => {
+    return getToken({ organizationId: organization?.id ?? undefined });
+  }, [getToken, organization?.id]);
+
+  return useMemo(() => createApiClient(getTokenWithOrg), [getTokenWithOrg]);
 }

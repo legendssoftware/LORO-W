@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useMemo, useEffect, useRef } from 'react';
 import { useApiClient } from '@/api/hooks/use-api-client';
+import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { syncClerk } from '@/api/endpoints/auth';
 import type { SyncResult, SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
@@ -27,6 +28,7 @@ export function useSessionSync() {
   const client = useApiClient();
   const { isSignedIn, isLoaded: isClerkLoaded, getToken, sessionId } = useAuth();
   const { user: clerkUser } = useUser();
+  const { isTokenReady } = useTokenReady();
   const queryClient = useQueryClient();
   const updateSessionMetadata = useSessionStore((s) => s.updateSessionMetadata);
   const startSession = useSessionStore((s) => s.startSession);
@@ -47,7 +49,7 @@ export function useSessionSync() {
 
   const { data, isLoading, error } = useQuery({
     queryKey,
-    enabled: shouldSync,
+    enabled: shouldSync && isTokenReady,
     queryFn: async (): Promise<SyncResult> => {
       const token = await getToken();
       if (!token) throw new Error('No token available');

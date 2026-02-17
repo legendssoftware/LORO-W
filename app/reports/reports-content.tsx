@@ -2,8 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { useMemo, useState, useEffect } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { format, getDate, getDaysInMonth, subDays } from 'date-fns';
 import {
+    useTokenReady,
     useSessionSync,
     useMonthlyMetrics,
     useDailyOverview,
@@ -16,6 +18,7 @@ import type {
     DailyOverviewUser,
     MonthlyMetricsUserItem,
 } from '@/api/types';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -52,6 +55,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { isStaffDashboardVisible } from '@/lib/access';
+import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
 import type { VisitExportItem } from '@/api/types/reports';
@@ -321,7 +325,7 @@ function PresentAbsentPieChart({
                 ) : (
                     <ChartContainer
                         config={PRESENT_ABSENT_CHART_CONFIG}
-                        className="mx-auto aspect-square max-h-[250px]"
+                        className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px]"
                     >
                         <RechartsPieChart>
                             <ChartTooltip
@@ -416,7 +420,7 @@ function LateVsOnTimeBarChart({
             <CardContent>
                 <ChartContainer
                     config={LATE_ON_TIME_CHART_CONFIG}
-                    className="aspect-auto h-[250px] w-full"
+                    className="aspect-auto h-[200px] sm:h-[250px] w-full"
                 >
                     <RechartsBarChart
                         accessibilityLayer
@@ -546,7 +550,7 @@ function HoursTargetTop5Chart({
             <CardContent>
                 <ChartContainer
                     config={HOURS_TOP5_CHART_CONFIG}
-                    className="aspect-auto h-[250px] w-full"
+                    className="aspect-auto h-[200px] sm:h-[250px] w-full"
                 >
                     <RechartsBarChart
                         accessibilityLayer
@@ -642,7 +646,7 @@ function OvertimeVsRegularPieChart({
             <CardContent className="flex-1 pb-0">
                 <ChartContainer
                     config={OVERTIME_CHART_CONFIG}
-                    className="mx-auto aspect-square max-h-[250px]"
+                    className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px]"
                 >
                     <RechartsPieChart>
                         <ChartTooltip
@@ -735,7 +739,7 @@ function AttendanceChartsSection({
 }: AttendanceChartsSectionProps) {
     if (chartsLoading) {
         return (
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
                     <Card key={i}>
                         <CardHeader>
@@ -743,7 +747,7 @@ function AttendanceChartsSection({
                             <Skeleton className="h-4 w-28 mt-1" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-[250px] w-full rounded-md" />
+                            <Skeleton className="h-[200px] sm:h-[250px] w-full rounded-md" />
                         </CardContent>
                     </Card>
                 ))}
@@ -751,7 +755,7 @@ function AttendanceChartsSection({
         );
     }
     return (
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             <PresentAbsentPieChart
                 presentCount={presentCount}
                 absentCount={absentCount}
@@ -768,11 +772,10 @@ function AttendanceChartsSection({
 }
 
 /** Live tab: today’s attendance + current month hours, charts from metrics response. */
-function LiveReportTab() {
+function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [mounted, setMounted] = useState(false);
     const [exportLoading, setExportLoading] = useState(false);
     useEffect(() => setMounted(true), []);
-    const { backendUserData: profile } = useSessionSync();
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     const year = today.getFullYear();
@@ -780,11 +783,11 @@ function LiveReportTab() {
 
     const dailyQuery = useDailyOverview(
         { date: todayStr },
-        { enabled: mounted && !!profile }
+        { enabled: mounted && isTokenReady }
     );
     const monthlyQuery = useMonthlyMetrics(
-        { year, month },
-        { enabled: mounted && !!profile }
+        { year, month, includeCheckIns: false },
+        { enabled: mounted && isTokenReady }
     );
 
     const presentCount = dailyQuery.data?.data?.presentEmployees ?? 0;
@@ -823,11 +826,11 @@ function LiveReportTab() {
     const visitsEndStr = format(today, 'yyyy-MM-dd');
     const checkInsQuery = useCheckIns(
         { startDate: visitsStartStr, endDate: visitsEndStr },
-        { enabled: mounted && !!profile }
+        { enabled: mounted && isTokenReady }
     );
     const reportQuery = useCheckInsReport(
         { from: visitsStartStr, to: visitsEndStr },
-        { enabled: mounted && !!profile }
+        { enabled: mounted && isTokenReady }
     );
     const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
 
@@ -1041,7 +1044,7 @@ function VisitsChartsSection({
 
     if (reportLoading && checkIns.length === 0) {
         return (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
                     <Card key={i}>
                         <CardHeader>
@@ -1049,7 +1052,7 @@ function VisitsChartsSection({
                             <Skeleton className="h-4 w-24 mt-1" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-[250px] w-full rounded-md" />
+                            <Skeleton className="h-[200px] sm:h-[250px] w-full rounded-md" />
                         </CardContent>
                     </Card>
                 ))}
@@ -1058,7 +1061,7 @@ function VisitsChartsSection({
     }
 
     return (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             {/* 1. Methods of visits – donut with total in center */}
             <Card>
                 <CardHeader>
@@ -1071,7 +1074,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_METHOD_CHART_CONFIG}
-                            className="mx-auto aspect-square max-h-[250px]"
+                            className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px]"
                         >
                             <RechartsPieChart>
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -1143,7 +1146,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1193,7 +1196,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1243,7 +1246,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1557,7 +1560,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
 ];
 
 /** Visits tab: four charts at top (same as Live), then date range + optional user filter, search, export, and table. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
-function VisitsReportTab() {
+function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
@@ -1584,10 +1587,10 @@ function VisitsReportTab() {
             endDate: endStr,
             ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
         },
-        { enabled: mounted && !!profile }
+        { enabled: mounted && isTokenReady }
     );
 
-    const usersQuery = useUsers({ enabled: isManager && mounted });
+    const usersQuery = useUsers({ enabled: mounted && isTokenReady });
 
     const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
     const isLoading = checkInsQuery.isLoading;
@@ -1847,6 +1850,8 @@ function VisitsReportTab() {
 }
 
 export function ReportsContent() {
+    const { isSignedIn } = useAuth();
+    const { isTokenReady } = useTokenReady();
     const { backendUserData: profile } = useSessionSync();
     const [activeTab, setActiveTab] = useState('live');
     const [singleDate, setSingleDate] = useState<Date | null>(() => new Date());
@@ -1859,13 +1864,13 @@ export function ReportsContent() {
     const yearForSingle = singleDate ? singleDate.getFullYear() : new Date().getFullYear();
 
     const monthlyQuery = useMonthlyMetrics(
-        { year: yearForSingle, month: monthForSingle },
-        { enabled: !!profile && activeTab === 'attendance' }
+        { year: yearForSingle, month: monthForSingle, includeCheckIns: false },
+        { enabled: isTokenReady && activeTab === 'attendance' }
     );
 
     const dailyQuery = useDailyOverview(
         { date: singleDateStr ?? undefined },
-        { enabled: !!profile && !!singleDateStr && activeTab === 'attendance' }
+        { enabled: isTokenReady && !!singleDateStr && activeTab === 'attendance' }
     );
 
     const monthlyByUserId = useMemo(() => {
@@ -1966,17 +1971,15 @@ export function ReportsContent() {
                     </TabsList>
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto mt-6">
-                        {!profile ? (
-                            <div className="flex justify-center py-12">
-                                <Loader2Icon className="size-8 animate-spin text-primary" />
-                            </div>
-                        ) : !isStaff ? (
+                        {!isSignedIn || !isTokenReady ? (
+                            <LoadingSpinner wrapperClassName="py-12" />
+                        ) : profile && !isStaff ? (
                             <p className="text-center text-muted-foreground py-12">
                                 Reports are available to staff only.
                             </p>
                         ) : (
                             <>
-                                {activeTab === 'live' && <LiveReportTab />}
+                                {activeTab === 'live' && <LiveReportTab isTokenReady={isTokenReady} />}
                                 {activeTab === 'attendance' && (
                                     <AttendanceReportTab
                                         singleDate={singleDate}
@@ -1992,7 +1995,7 @@ export function ReportsContent() {
                                         chartsLoading={chartsLoading}
                                     />
                                 )}
-                                {activeTab === 'visits' && isVisitsAdmin && <VisitsReportTab />}
+                                {activeTab === 'visits' && isVisitsAdmin && <VisitsReportTab isTokenReady={isTokenReady} />}
                             </>
                         )}
                     </div>
@@ -2133,53 +2136,13 @@ function AttendanceReportTab({
             {/* Scrollable: only the user cards list */}
             <div className="flex-1 min-h-0 overflow-y-auto">
             {isLoading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                         {Array.from({ length: 6 }).map((_, i) => (
-                            <Card
-                                key={i}
-                                className="rounded-lg border border-gray-200 bg-white min-h-[220px]"
-                            >
-                                <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
-                                    <div className="flex flex-col gap-3 flex-1">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                                                <Skeleton className="size-10 shrink-0 rounded-full" />
-                                                <div className="min-w-0 flex-1 space-y-1">
-                                                    <Skeleton className="h-4 w-24 rounded-md" />
-                                                    <Skeleton className="h-3 w-20 rounded-md" />
-                                                </div>
-                                            </div>
-                                            <Skeleton className="size-8 shrink-0 rounded-md" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Skeleton className="h-4 w-full max-w-[180px] rounded-md" />
-                                            <Skeleton className="h-4 w-28 rounded-md" />
-                                        </div>
-                                        <div className="w-full">
-                                            <Skeleton className="h-3 w-16 rounded-md mb-1" />
-                                            <div className="w-full grid grid-cols-7 gap-0">
-                                                {Array.from({ length: 7 }).map((_, j) => (
-                                                    <Skeleton
-                                                        key={j}
-                                                        className="size-2.5 rounded-full justify-self-center"
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 space-y-1 shrink-0">
-                                        <Skeleton className="h-4 w-32 rounded-md" />
-                                        <div className="flex items-center gap-2">
-                                            <Skeleton className="h-2 flex-1 w-full rounded-full" />
-                                            <Skeleton className="h-3 w-8 rounded-md" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <ReportUserCardSkeleton key={i} />
                         ))}
                 </div>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                     {filteredUsers.map((user) => (
                         <ReportUserCard
                             key={user.userId}
@@ -2205,9 +2168,15 @@ function AttendanceReportTab({
 
 /** Skeleton that mirrors ReportUserCard layout 1:1 for loading state. */
 function ReportUserCardSkeleton() {
+    const isMobile = useIsMobile();
     return (
-        <Card className="rounded-lg border border-gray-200 bg-white min-h-[220px]">
-            <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
+        <Card className={cn('rounded-lg border border-gray-200 bg-white', isMobile ? 'min-h-[160px]' : 'min-h-[220px]')}>
+            <CardContent
+                className={cn(
+                    'flex flex-col flex-1 justify-between',
+                    isMobile ? 'p-3 min-h-[160px]' : 'p-4 min-h-[220px]'
+                )}
+            >
                 <div className="flex flex-col gap-3 flex-1">
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -2258,6 +2227,7 @@ function ReportUserCard({
     onClick: () => void;
     onSettingsClick: (e: React.MouseEvent) => void;
 }) {
+    const isMobile = useIsMobile();
     const expectedByNow = getExpectedHoursByDate(endDate);
     return (
         <Card
@@ -2267,11 +2237,18 @@ function ReportUserCard({
             )}
             onClick={onClick}
         >
-            <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
-                <div className="flex flex-col gap-3 flex-1">
+            <CardContent
+                className={cn(
+                    'flex flex-col flex-1 justify-between',
+                    isMobile
+                        ? 'p-3 min-h-[160px] gap-2'
+                        : 'p-4 min-h-[220px] gap-3'
+                )}
+            >
+                <div className={cn('flex flex-col flex-1', isMobile ? 'gap-2' : 'gap-3')}>
                     <div className="flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <Avatar className="size-10 shrink-0">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                            <Avatar className={cn('shrink-0', isMobile ? 'size-8' : 'size-10')}>
                                 <AvatarImage src={user.photoURL ?? undefined} />
                                 <AvatarFallback>
                                     {user.name
@@ -2283,7 +2260,7 @@ function ReportUserCard({
                                 </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
-                                <p className="font-medium text-foreground truncate">
+                                <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
                                     {user.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
@@ -2294,13 +2271,13 @@ function ReportUserCard({
                         <Link
                             href={`/reports/users/${user.ref}/settings`}
                             onClick={onSettingsClick}
-                            className="shrink-0 rounded-md p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
+                            className="shrink-0 rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
                             aria-label="User settings"
                         >
-                            <SettingsIcon className="size-4" />
+                            <SettingsIcon className={isMobile ? 'size-3.5' : 'size-4'} />
                         </Link>
                     </div>
-                    <div className="space-y-1 text-sm">
+                    <div className={cn('space-y-0.5 sm:space-y-1', isMobile ? 'text-xs' : 'text-sm')}>
                         <a
                             href={`mailto:${user.email}`}
                             onClick={(e) => e.stopPropagation()}
@@ -2325,8 +2302,8 @@ function ReportUserCard({
                         </div>
                     </div>
                 </div>
-                <div className="mt-3 space-y-1 shrink-0">
-                    <p className="text-sm text-muted-foreground flex items-center justify-between gap-2">
+                <div className={cn('shrink-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
+                    <p className={cn('text-muted-foreground flex items-center justify-between gap-2', isMobile ? 'text-xs' : 'text-sm')}>
                         <span>
                             <strong className="text-foreground">{user.hoursThisMonth}h</strong>
                             /{EXPECTED_MONTHLY_HOURS}h this month
