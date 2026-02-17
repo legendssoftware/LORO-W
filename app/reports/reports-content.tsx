@@ -213,7 +213,7 @@ function LastSevenDaysDots({
                         className={cn(
                             'size-2.5 rounded-full shrink-0',
                             d.status === 'attended' && 'bg-green-500',
-                            d.status === 'missed' && 'bg-muted border border-gray-300',
+                            d.status === 'missed' && 'bg-red-500',
                             d.status === 'future' && 'bg-muted/50'
                         )}
                     />
@@ -230,27 +230,55 @@ function getProgressColorClasses(value: number): { text: string; bg: string } {
     return { text: 'text-red-600', bg: 'bg-red-500' };
 }
 
-/** Continuous progress bar: fill width = value%, min visible when value > 0. Tiered fill color. */
+/** Segment state for 4-quarter progress: full (vibrant), partial (fill % within segment), or empty (pastel track). */
+function getSegmentState(
+    value: number,
+    segmentIndex: number
+): { state: 'empty' | 'partial' | 'full'; partialPercent?: number } {
+    const clamped = Math.min(100, Math.max(0, value));
+    const segmentStart = segmentIndex * 25;
+    const segmentEnd = (segmentIndex + 1) * 25;
+    if (clamped >= segmentEnd) return { state: 'full' };
+    if (clamped <= segmentStart) return { state: 'empty' };
+    const partialPercent = ((clamped - segmentStart) / 25) * 100;
+    return { state: 'partial', partialPercent };
+}
+
+/** Four-segment progress bar: quarters of total expected (0–25%, 25–50%, 50–75%, 75–100%). Pill segments with gaps; vibrant fill + light pastel track. */
 function ReportProgressBar({ value }: { value: number }) {
-    const isEmpty = value === 0;
-    const fillPercent = Math.min(100, Math.max(0, value));
-    const fillWidth = isEmpty ? 0 : Math.max(fillPercent, 2);
-    const colors = getProgressColorClasses(value);
+    const SEGMENT_COUNT = 4;
+    const FILL = 'bg-orange-500';
+    const TRACK = 'bg-orange-100';
+
     return (
         <div
-            className={cn(
-                'h-2 w-full rounded-full overflow-hidden',
-                'bg-muted',
-                isEmpty && 'border border-border/40'
-            )}
+            className="flex w-full gap-1.5 items-stretch"
+            role="progressbar"
+            aria-valuenow={Math.min(100, Math.max(0, value))}
+            aria-valuemin={0}
+            aria-valuemax={100}
         >
-            <div
-                className={cn(
-                    'h-full rounded-full transition-all',
-                    colors.bg
-                )}
-                style={{ width: `${fillWidth}%`, minWidth: isEmpty ? 0 : 4 }}
-            />
+            {Array.from({ length: SEGMENT_COUNT }, (_, i) => {
+                const { state, partialPercent } = getSegmentState(value, i);
+                return (
+                    <div
+                        key={i}
+                        className={cn(
+                            'flex-1 h-2 rounded-full overflow-hidden min-w-0',
+                            state === 'empty' && TRACK,
+                            state === 'full' && FILL,
+                            state === 'partial' && TRACK
+                        )}
+                    >
+                        {state === 'partial' && partialPercent != null && (
+                            <div
+                                className={cn('h-full rounded-full transition-all', FILL)}
+                                style={{ width: `${partialPercent}%`, minWidth: partialPercent > 0 ? 2 : 0 }}
+                            />
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -304,6 +332,8 @@ function PresentAbsentPieChart({
                                 nameKey="name"
                                 innerRadius={60}
                                 strokeWidth={5}
+                                cornerRadius={6}
+                                paddingAngle={2}
                             >
                                 {data.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -623,6 +653,8 @@ function OvertimeVsRegularPieChart({
                             nameKey="name"
                             innerRadius={60}
                             strokeWidth={5}
+                            cornerRadius={6}
+                            paddingAngle={2}
                         >
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -878,6 +910,20 @@ function formatMinutesToDuration(totalMinutes: number): string {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+/** Format minutes for display: always "Xh Ym" (e.g. "0h 9m"). */
+function formatDurationDisplay(totalMinutes: number): string {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${h}h ${m}m`;
+}
+
+/** Normalize duration string to display "Xh Ym"; returns '-' if missing. */
+function normalizeDurationDisplay(duration: string | null | undefined): string {
+    if (duration == null || duration === '') return '-';
+    const mins = parseDurationToMinutes(duration);
+    return formatDurationDisplay(mins);
+}
+
 /** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
 function VisitsChartsSection({
     checkIns,
@@ -999,6 +1045,8 @@ function VisitsChartsSection({
                                     nameKey="name"
                                     innerRadius={60}
                                     strokeWidth={5}
+                                    cornerRadius={6}
+                                    paddingAngle={2}
                                 >
                                     {byMethodData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -1241,16 +1289,62 @@ interface VisitsDisplayColumn {
 
 const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   {
+    key: 'salesPerson',
+    label: 'Sales Person',
+    render: (c) => {
+      const o = c.owner;
+      if (!o) return '-';
+      const fullName = [o.name, o.surname].filter(Boolean).join(' ').trim() || '-';
+      const imgSrc = o.photoURL ?? o.avatar ?? undefined;
+      return (
+        <span className="flex items-start gap-2 whitespace-normal">
+          <Avatar className="h-8 w-8 shrink-0">
+            <AvatarImage src={imgSrc} alt={fullName} />
+            <AvatarFallback className="text-xs">
+              {fullName !== '-' ? fullName.slice(0, 2).toUpperCase() : '-'}
+            </AvatarFallback>
+          </Avatar>
+          <span className="space-y-0.5 block min-w-0">
+            <span className="block font-medium">{fullName}</span>
+            {o.email && (
+              <a
+                href={`mailto:${o.email}`}
+                className={cn('block text-xs truncate', VISITS_TABLE_LINK_CLASS)}
+                title={o.email}
+              >
+                {o.email}
+              </a>
+            )}
+            {o.phone && (
+              <a
+                href={buildTelUrl(o.phone)}
+                className={cn('block text-xs', VISITS_TABLE_LINK_CLASS)}
+              >
+                {o.phone}
+              </a>
+            )}
+            {!o.email && !o.phone && (
+              <span className="block text-xs text-muted-foreground">-</span>
+            )}
+          </span>
+        </span>
+      );
+    },
+  },
+  {
     key: 'date',
     label: 'Date and time',
     render: (c) => {
-      const datePart = format(new Date(c.checkInTime), 'MMM d, yyyy, HH:mm');
-      const outPart = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
-      const durationPart = c.duration || '-';
+      const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
+      const inTime = format(new Date(c.checkInTime), 'HH:mm');
+      const outTime = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
+      const timeLine = `${inTime} – ${outTime}`;
+      const durationLine = normalizeDurationDisplay(c.duration);
       return (
-        <span className="whitespace-normal">
-          {datePart} – {outPart}
-          <span className="block text-muted-foreground text-xs">{durationPart}</span>
+        <span className="whitespace-normal block">
+          <span className="block">{dateLine}</span>
+          <span className="block">{timeLine}</span>
+          <span className="block text-muted-foreground text-xs">{durationLine}</span>
         </span>
       );
     },
@@ -1263,27 +1357,40 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       const outLoc = c.checkOutLocation || '-';
       const inUrl = inLoc !== '-' ? buildMapsUrl(inLoc) : null;
       const outUrl = outLoc !== '-' ? buildMapsUrl(outLoc) : null;
+      const locRowClass = 'flex min-w-0 gap-1 items-start';
+      const locValueClass = 'min-w-0 overflow-hidden text-ellipsis';
+      const locLinkClass = cn(VISITS_TABLE_LINK_CLASS, 'block truncate text-left');
       return (
-        <span className="whitespace-normal space-y-1 block">
-          <span className="block">
-            <span className="text-muted-foreground">In: </span>
-            {inUrl && inUrl !== '#' ? (
-              <a href={inUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
-                {inLoc}
-              </a>
-            ) : (
-              inLoc
-            )}
+        <span className="space-y-1 block max-w-[14rem]">
+          <span className={locRowClass}>
+            <span className="text-muted-foreground shrink-0">In: </span>
+            <span
+              className={locValueClass}
+              title={inLoc !== '-' ? inLoc : undefined}
+            >
+              {inUrl && inUrl !== '#' ? (
+                <a href={inUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={inLoc}>
+                  {inLoc}
+                </a>
+              ) : (
+                <span className="block truncate">{inLoc}</span>
+              )}
+            </span>
           </span>
-          <span className="block">
-            <span className="text-muted-foreground">Out: </span>
-            {outUrl && outUrl !== '#' ? (
-              <a href={outUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
-                {outLoc}
-              </a>
-            ) : (
-              outLoc
-            )}
+          <span className={locRowClass}>
+            <span className="text-muted-foreground shrink-0">Out: </span>
+            <span
+              className={locValueClass}
+              title={outLoc !== '-' ? outLoc : undefined}
+            >
+              {outUrl && outUrl !== '#' ? (
+                <a href={outUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={outLoc}>
+                  {outLoc}
+                </a>
+              ) : (
+                <span className="block truncate">{outLoc}</span>
+              )}
+            </span>
           </span>
         </span>
       );
@@ -1292,43 +1399,25 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   {
     key: 'method',
     label: 'Method',
-    render: (c) => formatMethodOfContact(c.methodOfContact),
+    render: (c) => {
+      if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
+      const hasLocation =
+        (c.checkInLocation && c.checkInLocation !== '-') ||
+        (c.checkOutLocation && c.checkOutLocation !== '-');
+      return hasLocation ? 'In-person visit' : '-';
+    },
   },
   {
-    key: 'company',
-    label: 'Company Name',
+    key: 'companyAndContact',
+    label: 'Company / Contact',
     render: (c) => {
-      const name = c.companyName || '-';
+      const companyName = c.companyName || '-';
       const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
-      return (
-        <span className="block">
-          {name}
-          {type && <span className="block text-xs text-muted-foreground">{type}</span>}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'contactPerson',
-    label: 'Contact Person',
-    render: (c) => {
-      const name = c.contactFullName || '-';
+      const contactName = c.contactFullName || '-';
       const position = c.personSeenPosition;
-      return (
-        <span className="block">
-          {name}
-          {position && <span className="block text-xs text-muted-foreground">{position}</span>}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'contactDetails',
-    label: 'Contact Details',
-    render: (c) => {
-      const parts: ReactNode[] = [];
+      const contactDetailsParts: ReactNode[] = [];
       if (c.contactCellPhone) {
-        parts.push(
+        contactDetailsParts.push(
           <span key="cell" className="block">
             <span className="text-muted-foreground">Cell: </span>
             <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
@@ -1338,7 +1427,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
         );
       }
       if (c.contactLandline) {
-        parts.push(
+        contactDetailsParts.push(
           <span key="landline" className="block">
             <span className="text-muted-foreground">Landline: </span>
             <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
@@ -1348,7 +1437,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
         );
       }
       if (c.contactEmail) {
-        parts.push(
+        contactDetailsParts.push(
           <span key="email" className="block">
             <span className="text-muted-foreground">Email: </span>
             <a
@@ -1364,7 +1453,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       }
       const addr = formatContactAddress(c.contactAddress);
       if (addr && addr !== '-') {
-        parts.push(
+        contactDetailsParts.push(
           <span key="addr" className="block">
             <span className="text-muted-foreground">Address: </span>
             <a
@@ -1378,8 +1467,24 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
           </span>
         );
       }
-      if (parts.length === 0) return '-';
-      return <span className="whitespace-normal space-y-0.5 block">{parts}</span>;
+      return (
+        <span className="whitespace-normal space-y-1 block">
+          <span className="block">
+            <span className="font-medium">{companyName}</span>
+            {type && <span className="block text-xs text-muted-foreground">{type}</span>}
+          </span>
+          <span className="block">
+            <span className="text-muted-foreground">Contact person: </span>
+            {contactName}
+            {position && <span className="block text-xs text-muted-foreground">{position}</span>}
+          </span>
+          {contactDetailsParts.length > 0 ? (
+            <span className="space-y-0.5 block">{contactDetailsParts}</span>
+          ) : (
+            <span className="block text-muted-foreground text-xs">-</span>
+          )}
+        </span>
+      );
     },
   },
   {
@@ -1407,7 +1512,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
 ];
 
-/** Visits tab: date range + optional user filter, export (CSV/Excel/PDF), table, then four charts. */
+/** Visits tab: date range + optional user filter, export (CSV/Excel/PDF), table, then four charts. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
 function VisitsReportTab() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
@@ -1428,6 +1533,7 @@ function VisitsReportTab() {
     const startStr = format(startDate, 'yyyy-MM-dd');
     const endStr = format(endDate, 'yyyy-MM-dd');
 
+    // When no user is selected, backend returns all org check-ins (admin/manager/owner); intended for staff/admins.
     const checkInsQuery = useCheckIns(
         {
             startDate: startStr,
@@ -1446,7 +1552,13 @@ function VisitsReportTab() {
         const q = searchQuery.trim().toLowerCase();
         if (!q) return checkIns;
         return checkIns.filter((c) => {
+            const ownerName = c.owner
+                ? [c.owner.name, c.owner.surname].filter(Boolean).join(' ')
+                : '';
             const searchable = [
+                ownerName,
+                c.owner?.email,
+                c.owner?.phone,
                 c.contactFullName,
                 c.companyName,
                 c.notes,
@@ -1680,6 +1792,7 @@ export function ReportsContent() {
     }, [statusFilteredUsers, search]);
 
     const isStaff = isStaffDashboardVisible(profile?.accessLevel);
+    const isVisitsAdmin = profile?.accessLevel?.toLowerCase() === 'admin';
     const isLoading =
         (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
@@ -1728,13 +1841,15 @@ export function ReportsContent() {
                             >
                                 Attendance
                             </TabsTrigger>
+                        {isVisitsAdmin && (
                         <TabsTrigger
                             value="visits"
                             className={REPORTS_TAB_TRIGGER_CLASS}
                         >
                             Visits
                         </TabsTrigger>
-                        <TabsTrigger
+                        )}
+                            <TabsTrigger
                             value="quotations"
                             className={REPORTS_TAB_TRIGGER_CLASS}
                         >
@@ -1789,9 +1904,11 @@ export function ReportsContent() {
                                 onCardClick={setDetailUser}
                             />
                         </TabsContent>
+                        {isVisitsAdmin && (
                         <TabsContent value="visits" className="mt-0">
                             <VisitsReportTab />
                         </TabsContent>
+                        )}
                         <TabsContent value="quotations" className="mt-0">
                             <p className="text-center text-muted-foreground py-12">Coming soon</p>
                         </TabsContent>

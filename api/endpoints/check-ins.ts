@@ -30,6 +30,12 @@ export async function getCheckIns(
   const { data } = await client.get<CheckInsListResponse>(
     `/check-ins${qs ? `?${qs}` : ''}`
   );
+  console.log('[check-ins] GET /check-ins response', {
+    params: { userUid: params.userUid, startDate: params.startDate, endDate: params.endDate },
+    message: data?.message,
+    checkInsCount: Array.isArray(data?.checkIns) ? data.checkIns.length : 0,
+    response: data,
+  });
   return data;
 }
 
@@ -47,5 +53,11 @@ export async function getCheckInsReport(
   const { data } = await client.get<DomainReportResponse>(
     `/check-ins/report?${search.toString()}`
   );
+  console.log('[check-ins] GET /check-ins/report response', {
+    params: { from: params.from, to: params.to },
+    total: data?.total,
+    byDayLength: Array.isArray(data?.byDay) ? data.byDay.length : 0,
+    response: data,
+  });
   return data;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   SignInButton,
   SignUpButton,
@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
 import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks';
 import { useSessionStore } from '@/store/session-store';
@@ -33,12 +34,14 @@ export function AppHeader() {
   const { signOut, openUserProfile } = useClerk();
   const queryClient = useQueryClient();
   const welcomeShown = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { backendUserData } = useSessionSync();
   const sidebar = useSidebar();
   const accessLevel = backendUserData?.accessLevel;
   const role = roleLabel(accessLevel);
 
   const handleSignOut = () => {
+    setIsSigningOut(true);
     queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
     useSessionStore.getState().endSession();
     signOut({ redirectUrl: '/' });
@@ -135,6 +138,16 @@ export function AppHeader() {
           </div>
         </SignedIn>
       </div>
+
+      <Dialog open={isSigningOut} onOpenChange={() => {}}>
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="z-[9999] bg-black"
+          className="z-[9999] bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0"
+        >
+          <p className="text-white text-lg font-medium">Signing you out 👋</p>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

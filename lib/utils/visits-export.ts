@@ -1,5 +1,5 @@
 /**
- * Visits (check-ins) export: 12-column format matching APK export.
+ * Visits (check-ins) export: Sales Person, Date and time, Check-In, Method, Company / Contact, Notes, Quote Number, Value, Follow Up.
  * Row order must be the same as API (checkInTime DESC); do not re-sort.
  */
 
@@ -8,14 +8,11 @@ import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports
 import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
 
 export const VISITS_EXPORT_HEADERS = [
+  'Sales Person',
   'Date and time',
   'Check-In',
   'Method of visit',
-  'Company Name',
-  'Type of Business',
-  'Person Seen',
-  'Position of Person Seen',
-  'Contact Details',
+  'Company / Contact',
   'Notes',
   'Quote Number',
   'Value - ex-VAT',
@@ -30,6 +27,35 @@ const METHOD_OF_CONTACT_LABELS: Record<string, string> = {
   VIDEO_CALL: 'Video call',
   OTHER: 'Other',
 };
+
+function parseDurationToMinutes(duration: string | null | undefined): number {
+  if (!duration || typeof duration !== 'string') return 0;
+  const hoursMatch = duration.match(/(\d+)h/);
+  const minutesMatch = duration.match(/(\d+)m/);
+  const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+  const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+  return hours * 60 + minutes;
+}
+
+/** Format minutes for display: always "Xh Ym" (e.g. "0h 9m"). */
+function formatDurationDisplay(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h ${m}m`;
+}
+
+function normalizeDurationDisplay(duration: string | null | undefined): string {
+  if (duration == null || duration === '') return '-';
+  return formatDurationDisplay(parseDurationToMinutes(duration));
+}
+
+function getMethodDisplay(c: VisitExportItem): string {
+  if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
+  const hasLocation =
+    (c.checkInLocation && c.checkInLocation !== '-') ||
+    (c.checkOutLocation && c.checkOutLocation !== '-');
+  return hasLocation ? 'In-person visit' : '-';
+}
 
 export function formatContactAddress(address: CheckInContactAddress | null | undefined): string {
   if (!address) return '-';
@@ -61,14 +87,39 @@ export function formatMethodOfContact(methodOfContact?: string | null): string {
   return METHOD_OF_CONTACT_LABELS[methodOfContact] ?? methodOfContact.replace(/_/g, ' ');
 }
 
+function formatSalesPerson(c: VisitExportItem): string {
+  const o = c.owner;
+  if (!o) return '-';
+  const fullName = [o.name, o.surname].filter(Boolean).join(' ').trim() || '-';
+  const parts = [fullName];
+  if (o.email) parts.push(o.email);
+  if (o.phone) parts.push(o.phone);
+  return parts.length > 1 ? parts.join(' | ') : fullName;
+}
+
+function formatCompanyAndContact(c: VisitExportItem): string {
+  const lines: string[] = [];
+  const companyName = c.companyName || '-';
+  const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
+  lines.push(companyName + (type ? ` (${type})` : ''));
+  const contactName = c.contactFullName || '-';
+  const position = c.personSeenPosition;
+  lines.push(`Contact person: ${contactName}` + (position ? ` - ${position}` : ''));
+  lines.push(formatContactDetails(c));
+  return lines.join('\n');
+}
+
 /**
- * Build a single row for export (same order as APK).
+ * Build a single row for export (Sales Person, Date and time, Check-In, Method, Company / Contact, Notes, Quote Number, Value, Follow Up).
+ * Date and time: same as table (date, time range with en-dash, normalized duration "Xh Ym"). Method: "In-person visit" when location present and method empty.
  */
 export function visitToExportRow(c: VisitExportItem): string[] {
-  const datePart = format(new Date(c.checkInTime), 'MMM d, yyyy, HH:mm');
-  const outPart = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
-  const durationPart = c.duration || '-';
-  const dateAndTime = `${datePart} - ${outPart} - ${durationPart}`;
+  const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
+  const inTime = format(new Date(c.checkInTime), 'HH:mm');
+  const outTime = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
+  const timeLine = `${inTime} – ${outTime}`;
+  const durationLine = normalizeDurationDisplay(c.duration);
+  const dateAndTime = `${dateLine} ${timeLine} ${durationLine}`;
 
   const checkInCell = `In: ${c.checkInLocation || '-'} | Out: ${c.checkOutLocation || '-'}`;
 
@@ -82,14 +133,11 @@ export function visitToExportRow(c: VisitExportItem): string[] {
     : (c.followUp || '-');
 
   return [
+    formatSalesPerson(c),
     dateAndTime,
     checkInCell,
-    formatMethodOfContact(c.methodOfContact),
-    c.companyName || '-',
-    c.businessType ? String(c.businessType).replace(/_/g, ' ') : '-',
-    c.contactFullName || '-',
-    c.personSeenPosition || '-',
-    formatContactDetails(c),
+    getMethodDisplay(c),
+    formatCompanyAndContact(c),
     c.notes || '-',
     c.quotationNumber || '-',
     valueExVat,

@@ -342,7 +342,7 @@ export function LandingPage() {
                   <StaggerItem className="flex min-[400px]:flex-row flex-col justify-center items-center gap-2">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button size="lg" className="font-body text-xs font-normal uppercase bg-purple-600 text-white hover:bg-purple-700 border-0" asChild>
-                        <a href="/apk.apk" download="apk.apk">Try our Android App</a>
+                        <a href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer">Try our Android App</a>
                       </Button>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

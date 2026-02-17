@@ -72,6 +72,8 @@ export function exportToExcel(
 
 /**
  * Export table data to PDF using jspdf and jspdf-autotable.
+ * Always landscape; simple headers (no blue).
+ * TODO: Embed Urbanist via doc.addFileToVFS + doc.addFont (base64 TTF in web/public/fonts or loaded at build time), then set styles: { font: 'Urbanist' } and headStyles.font for brand consistency.
  */
 export function exportToPdf(
     headers: string[],
@@ -84,10 +86,16 @@ export function exportToPdf(
     const { autoTable } = require('jspdf-autotable');
     const base = filename.replace(/\.pdf$/i, '');
     const name = `${base}.pdf`;
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'l', unit: 'pt' });
     autoTable(doc, {
         head: [headers],
         body: rows,
+        theme: 'plain',
+        headStyles: {
+            fillColor: [242, 242, 242],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+        },
     });
     doc.save(name);
 }

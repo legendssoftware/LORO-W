@@ -70,7 +70,14 @@ export interface VisitExportItem {
   salesValue?: number | null;
   followUp?: string | null;
   meetingLink?: string | null;
-  owner?: { name?: string; surname?: string };
+  owner?: {
+    name?: string;
+    surname?: string;
+    email?: string;
+    phone?: string;
+    photoURL?: string;
+    avatar?: string;
+  };
   client?: { name?: string } | null;
 }
 
