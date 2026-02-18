@@ -975,6 +975,7 @@ function VisitsChartsSection({
     reportLoading: boolean;
 }) {
     const totalVisits = reportTotal ?? checkIns.length;
+    const VISITS_CHART_TOP_N = 5;
 
     const byMethodData = useMemo(() => {
         const map = new Map<string, number>();
@@ -1002,7 +1003,7 @@ function VisitsChartsSection({
         }
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
+            .slice(0, VISITS_CHART_TOP_N)
             .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
     }, [checkIns]);
 
@@ -1033,7 +1034,7 @@ function VisitsChartsSection({
         }
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
+            .slice(0, VISITS_CHART_TOP_N)
             .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
     }, [checkIns]);
 
@@ -1059,7 +1060,7 @@ function VisitsChartsSection({
             })
             .filter(({ averageMinutes }) => averageMinutes > 0)
             .sort((a, b) => b.averageMinutes - a.averageMinutes)
-            .slice(0, 10)
+            .slice(0, VISITS_CHART_TOP_N)
             .map(({ name, averageMinutes }) => ({
                 name,
                 averageMinutes,
@@ -1164,7 +1165,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visits by user</CardTitle>
-                    <CardDescription>Top 10 users</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} users</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {byUserData.length === 0 ? (
@@ -1214,7 +1215,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visits by region</CardTitle>
-                    <CardDescription>Top 10 regions</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} regions</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {byRegionData.length === 0 ? (
@@ -1264,7 +1265,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visit duration by user</CardTitle>
-                    <CardDescription>Top 10 by average duration</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} by average duration</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {durationByUserData.length === 0 ? (
