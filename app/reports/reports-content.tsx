@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { format, getDate, getDaysInMonth, subDays } from 'date-fns';
+import { differenceInCalendarDays, format, getDate, getDaysInMonth, isSameDay, subDays } from 'date-fns';
 import {
     useTokenReady,
     useSessionSync,
@@ -964,6 +964,26 @@ function normalizeDurationDisplay(duration: string | null | undefined): string {
     return formatDurationDisplay(mins);
 }
 
+/** Extract region string from a visit (for charts and region filter). */
+function extractRegionFromVisit(c: VisitExportItem): string {
+    const addr = c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
+    if (!addr) return 'Not set';
+    const cityOrRegion = (addr.city ?? addr.state ?? '').trim();
+    const postalCode = addr.postalCode?.trim() ?? '';
+    const country = (addr.country ?? '').trim();
+    const fromStructured = [cityOrRegion, postalCode, country].filter(Boolean).join(', ');
+    if (fromStructured) return fromStructured;
+    const formatted = (addr.formattedAddress ?? '').trim();
+    if (!formatted) return 'Not set';
+    const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
+    if (parts.length < 2) return 'Not set';
+    const secondLast = parts[parts.length - 2];
+    const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
+    const cityPart = codePart ? parts[parts.length - 3] ?? '' : secondLast;
+    const countryPart = parts[parts.length - 1];
+    return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
+}
+
 /** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
 function VisitsChartsSection({
     checkIns,
@@ -1008,28 +1028,9 @@ function VisitsChartsSection({
     }, [checkIns]);
 
     const byRegionData = useMemo(() => {
-        const extractRegion = (c: VisitExportItem): string => {
-            const addr = c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
-            if (!addr) return 'Not set';
-            const cityOrRegion = (addr.city ?? addr.state ?? '').trim();
-            const postalCode = addr.postalCode?.trim() ?? '';
-            const country = (addr.country ?? '').trim();
-            const fromStructured = [cityOrRegion, postalCode, country].filter(Boolean).join(', ');
-            if (fromStructured) return fromStructured;
-            const formatted = (addr.formattedAddress ?? '').trim();
-            if (!formatted) return 'Not set';
-            const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
-            if (parts.length < 2) return 'Not set';
-            const last = parts[parts.length - 1];
-            const secondLast = parts[parts.length - 2];
-            const countryPart = last;
-            const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
-            const cityPart = codePart ? parts[parts.length - 3] ?? '' : secondLast;
-            return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
-        };
         const map = new Map<string, number>();
         for (const c of checkIns) {
-            const region = extractRegion(c);
+            const region = extractRegionFromVisit(c);
             map.set(region, (map.get(region) ?? 0) + 1);
         }
         return Array.from(map.entries())
@@ -1897,6 +1898,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [startDate, setStartDate] = useState<Date>(defaultStart);
     const [endDate, setEndDate] = useState<Date>(defaultEnd);
     const [selectedUserUid, setSelectedUserUid] = useState<string>('');
+    const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [exportLoading, setExportLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
@@ -1918,15 +1920,27 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
         { enabled: mounted && isTokenReady }
     );
 
-    const usersQuery = useUsers({ enabled: mounted && isTokenReady });
+    const usersQuery = useUsers({ enabled: mounted && isTokenReady && isManager });
 
     const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
     const isLoading = checkInsQuery.isLoading;
 
+    const uniqueRegions = useMemo(() => {
+        const set = new Set<string>();
+        for (const c of checkIns) {
+            set.add(extractRegionFromVisit(c));
+        }
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [checkIns]);
+
     const filteredCheckIns = useMemo(() => {
+        let list = checkIns;
+        if (selectedRegion) {
+            list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
+        }
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return checkIns;
-        return checkIns.filter((c) => {
+        if (!q) return list;
+        return list.filter((c) => {
             const ownerName = c.owner
                 ? [c.owner.name, c.owner.surname].filter(Boolean).join(' ')
                 : '';
@@ -1951,7 +1965,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
             const rowText = visitToExportRow(c).join(' ').toLowerCase();
             return searchable.includes(q) || rowText.includes(q);
         });
-    }, [checkIns, searchQuery]);
+    }, [checkIns, searchQuery, selectedRegion]);
 
     const exportScopeLabel = useMemo(() => {
         if (!selectedUserUid) return 'All users';
@@ -2013,66 +2027,131 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
             {/* Toolbar: date range, user filter, search, export */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
-                            >
-                                <CalendarIcon className="size-4" />
-                                {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <div className="p-2 space-y-2">
-                                <p className="text-sm font-medium">Start date</p>
-                                <Calendar
-                                    mode="single"
-                                    selected={startDate}
-                                    onSelect={(d) => d && setStartDate(d)}
-                                />
-                                <p className="text-sm font-medium pt-2">End date</p>
-                                <Calendar
-                                    mode="single"
-                                    selected={endDate}
-                                    onSelect={(d) => d && setEndDate(d)}
-                                />
-                            </div>
-                        </PopoverContent>
-                    </Popover>
+                    <div className="flex items-center gap-0">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
+                                >
+                                    <CalendarIcon className="size-4" />
+                                    {startDate.getTime() === endDate.getTime()
+                                        ? format(startDate, 'MMM d, yyyy')
+                                        : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto min-w-[480px] p-0" align="start">
+                                <div className="p-2 flex flex-row gap-6">
+                                    <div>
+                                        <p className="text-sm font-medium">Start date</p>
+                                        <Calendar
+                                            mode="single"
+                                            selected={startDate}
+                                            onSelect={(d) => d && setStartDate(d)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium">End date</p>
+                                        <Calendar
+                                            mode="single"
+                                            selected={endDate}
+                                            onSelect={(d) => d && setEndDate(d)}
+                                        />
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        {(() => {
+                            const isDefaultRange =
+                                isSameDay(endDate, today) && differenceInCalendarDays(endDate, startDate) === 30;
+                            return !isDefaultRange ? (
+                                <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setStartDate(subDays(new Date(), 30));
+                                        setEndDate(new Date());
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setStartDate(subDays(new Date(), 30));
+                                            setEndDate(new Date());
+                                        }
+                                    }}
+                                    className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
+                                    aria-label="Clear date filter"
+                                >
+                                    <XIcon className="size-4 text-red-600" />
+                                </span>
+                            ) : null;
+                        })()}
+                    </div>
                     {isManager && (
-                        <Select
-                            value={selectedUserUid || 'all'}
-                            onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-                        >
-                            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                                <SelectValue placeholder="All users" />
-                                {selectedUserUid ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
+                        <div className="flex items-center gap-0">
+                            <Select
+                                value={selectedUserUid || 'all'}
+                                onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+                                disabled={usersQuery.isLoading}
+                            >
+                                <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                                    <SelectValue placeholder={usersQuery.isLoading ? 'Loading…' : 'All users'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All users</SelectItem>
+                                    {!usersQuery.isLoading && (usersQuery.data ?? []).length === 0 ? (
+                                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                            No users in organisation
+                                        </div>
+                                    ) : (
+                                        (usersQuery.data ?? []).map((u) => (
+                                            <SelectItem key={u.uid} value={String(u.uid)}>
+                                                {[u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {selectedUserUid ? (
+                                <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedUserUid('');
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
                                             e.preventDefault();
                                             setSelectedUserUid('');
-                                        }}
-                                        className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-                                        aria-label="Clear user filter"
-                                    >
-                                        <XIcon className="size-4 text-muted-foreground" />
-                                    </button>
-                                ) : null}
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All users</SelectItem>
-                                {(usersQuery.data ?? []).map((u) => (
-                                    <SelectItem key={u.uid} value={String(u.uid)}>
-                                        {[u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                        }
+                                    }}
+                                    className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
+                                    aria-label="Clear user filter"
+                                >
+                                    <XIcon className="size-4 text-red-600" />
+                                </span>
+                            ) : null}
+                        </div>
                     )}
+                    <Select
+                        value={selectedRegion || 'all'}
+                        onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
+                    >
+                        <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                            <SelectValue placeholder="All regions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All regions</SelectItem>
+                            {uniqueRegions.map((region) => (
+                                <SelectItem key={region} value={region}>
+                                    {region}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2">
                     <div className="relative w-56 min-w-0 shrink sm:w-64">
@@ -2089,10 +2168,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                             <button
                                 type="button"
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600"
                                 aria-label="Clear search"
                             >
-                                <XIcon className="size-4" />
+                                <XIcon className="size-4 text-red-600" />
                             </button>
                         ) : null}
                     </div>

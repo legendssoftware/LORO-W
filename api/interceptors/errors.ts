@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { ApiError } from '@/api/types';
 import { showErrorToast } from '@/lib/utils/toast-helpers';
 
-/** User-facing message for network/connection failures. Shown only in logs for devs; no toast. */
+/** Message for network/connection failures; used internally. No toast or console log. */
 const NETWORK_ERROR_MESSAGE = 'Connection problem. Some data may not have loaded.';
 
 /** Time window in ms: same error key only shows one toast within this window. */
@@ -76,7 +76,7 @@ function getToastKey(apiError: ApiError): string {
 /**
  * Applies response/error interceptors to the Axios instance.
  * On 4xx/5xx, normalizes to ApiError and rethrows so TanStack Query sees failures.
- * Network/connection errors fail silently for users (no toast); devs see details via console.error.
+ * Network/connection errors fail silently (no toast, no console log); cached data remains in use.
  * Other error toasts are deduplicated by key within DEDUP_WINDOW_MS.
  */
 export function applyErrorInterceptors(axiosInstance: AxiosInstance): void {
@@ -86,18 +86,7 @@ export function applyErrorInterceptors(axiosInstance: AxiosInstance): void {
       const apiError = normalizeError(error);
       const isNetwork = apiError.message === NETWORK_ERROR_MESSAGE;
 
-      if (isNetwork) {
-        const config = error.config as { url?: string; method?: string } | undefined;
-        console.error(
-          `[API] ${NETWORK_ERROR_MESSAGE}`,
-          {
-            url: config?.url,
-            method: config?.method,
-            error: error instanceof Error ? error.message : error,
-          },
-          error
-        );
-      } else {
+      if (!isNetwork) {
         const skipToast = (error.config as { meta?: { skipErrorToast?: boolean } })?.meta?.skipErrorToast;
         if (!skipToast) {
           const key = getToastKey(apiError);

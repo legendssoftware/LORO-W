@@ -51,8 +51,11 @@ export function exportToCsv(
     downloadBlob(blob, name);
 }
 
+const EXCEL_COLUMN_WIDTH = 18;
+
 /**
  * Export table data to Excel (.xlsx) using SheetJS.
+ * All columns use equal width for consistent layout.
  */
 export function exportToExcel(
     headers: string[],
@@ -65,14 +68,18 @@ export function exportToExcel(
     const name = `${base}.xlsx`;
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const columnCount = headers.length;
+    ws['!cols'] = Array.from({ length: columnCount }, () => ({ wch: EXCEL_COLUMN_WIDTH }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Report');
     XLSX.writeFile(wb, name);
 }
 
+const PDF_MARGIN = 20;
+
 /**
  * Export table data to PDF using jspdf and jspdf-autotable.
- * Always landscape; simple headers (no blue).
+ * Always landscape; equal column widths spread across full page width.
  * TODO: Embed Urbanist via doc.addFileToVFS + doc.addFont (base64 TTF in web/public/fonts or loaded at build time), then set styles: { font: 'Urbanist' } and headStyles.font for brand consistency.
  */
 export function exportToPdf(
@@ -87,10 +94,21 @@ export function exportToPdf(
     const base = filename.replace(/\.pdf$/i, '');
     const name = `${base}.pdf`;
     const doc = new jsPDF({ orientation: 'l', unit: 'pt' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const tableWidth = pageWidth - PDF_MARGIN * 2;
+    const columnCount = headers.length;
+    const columnWidth = columnCount > 0 ? tableWidth / columnCount : tableWidth;
+    const columnStyles: Record<number, { cellWidth: number }> = {};
+    for (let i = 0; i < columnCount; i++) {
+        columnStyles[i] = { cellWidth: columnWidth };
+    }
     autoTable(doc, {
         head: [headers],
         body: rows,
         theme: 'plain',
+        margin: PDF_MARGIN,
+        tableWidth,
+        columnStyles,
         headStyles: {
             fillColor: [242, 242, 242],
             textColor: [0, 0, 0],
