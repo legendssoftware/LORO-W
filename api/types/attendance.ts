@@ -151,6 +151,8 @@ export interface DailyOverviewUser {
     role?: string;
     earlyMinutes?: number;
     lateMinutes?: number;
+    /** Decoded full address of shift start (clock-in) location. Present users only. */
+    shiftStartAddress?: string | null;
 }
 
 export interface DailyOverviewResponse {

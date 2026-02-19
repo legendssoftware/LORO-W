@@ -367,11 +367,15 @@ export function LandingPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="inline-block">
-                            <button type="button" aria-label="Play video" className="group flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-lg transition-all duration-300 hover:bg-white hover:shadow-xl">
-                              <div className="ml-1 h-0 w-0 border-y-[8px] border-y-transparent border-l-[12px] border-l-red-500" />
-                            </button>
-                          </motion.div>
+                          <motion.button
+                            type="button"
+                            aria-label="Play video"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="group flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-lg transition-all duration-300 hover:bg-white hover:shadow-xl"
+                          >
+                            <div className="ml-1 h-0 w-0 border-y-[8px] border-y-transparent border-l-[12px] border-l-red-500" />
+                          </motion.button>
                         </DialogTrigger>
                         <DialogContent className="h-full max-h-[90vh] w-full max-w-[90vw] p-0 sm:max-h-[80vh] sm:max-w-[80vw]">
                           <div className="relative h-full w-full">

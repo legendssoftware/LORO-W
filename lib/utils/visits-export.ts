@@ -110,8 +110,21 @@ function formatCompanyAndContact(c: VisitExportItem): string {
 }
 
 /**
+ * Prefer reverse-geocoded address for export; fall back to coordinates when address is missing.
+ */
+function addressForExport(
+  address: CheckInContactAddress | null | undefined,
+  coordinatesFallback: string | null | undefined
+): string {
+  const formatted = formatContactAddress(address);
+  if (formatted && formatted !== '-') return formatted;
+  return coordinatesFallback && coordinatesFallback !== '-' ? coordinatesFallback : '-';
+}
+
+/**
  * Build a single row for export (Sales Person, Date and time, Check-In, Method, Company / Contact, Notes, Quote Number, Value, Follow Up).
  * Date and time: same as table (date, time range with en-dash, normalized duration "Xh Ym"). Method: "In-person visit" when location present and method empty.
+ * Check-In column uses actual address (fullAddress / checkOutFullAddress) when available, otherwise coordinates.
  */
 export function visitToExportRow(c: VisitExportItem): string[] {
   const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
@@ -121,7 +134,9 @@ export function visitToExportRow(c: VisitExportItem): string[] {
   const durationLine = normalizeDurationDisplay(c.duration);
   const dateAndTime = `${dateLine} ${timeLine} ${durationLine}`;
 
-  const checkInCell = `In: ${c.checkInLocation || '-'} | Out: ${c.checkOutLocation || '-'}`;
+  const inAddr = addressForExport(c.fullAddress, c.checkInLocation);
+  const outAddr = addressForExport(c.checkOutFullAddress, c.checkOutLocation);
+  const checkInCell = `In: ${inAddr} | Out: ${outAddr}`;
 
   const valueExVat =
     c.salesValue != null

@@ -12,3 +12,4 @@ export * from './attendance';
 export * from './leave';
 export * from './reports';
 export * from './branch';
+export * from './map';

@@ -1,9 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { differenceInCalendarDays, format, getDate, getDaysInMonth, isSameDay, subDays } from 'date-fns';
+import { differenceInCalendarDays, endOfDay, format, getDate, getDaysInMonth, isSameDay, startOfDay, subDays } from 'date-fns';
 import {
     useTokenReady,
     useSessionSync,
@@ -59,6 +60,11 @@ import { isStaffDashboardVisible } from '@/lib/access';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
+
+const OverviewMap = dynamic(
+    () => import('@/app/reports/overview-map').then((m) => m.OverviewMap),
+    { ssr: false }
+);
 import type { VisitExportItem } from '@/api/types/reports';
 import {
     exportVisits,
@@ -141,6 +147,7 @@ interface ReportCardUser {
     isPresent: boolean;
     earlyMinutes?: number;
     lateMinutes?: number;
+    shiftStartAddress?: string | null;
 }
 
 function fromDailyOverviewMergeMonthly(
@@ -169,6 +176,7 @@ function fromDailyOverviewMergeMonthly(
             isPresent: present,
             earlyMinutes: present ? (u.earlyMinutes ?? 0) : undefined,
             lateMinutes: present ? (u.lateMinutes ?? 0) : undefined,
+            shiftStartAddress: present ? (u.shiftStartAddress ?? null) : null,
         };
     };
     const presentCards = presentUsers.map((u) => toCard(u, true));
@@ -832,8 +840,14 @@ function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const visitsEndStr = format(today, 'yyyy-MM-dd');
     const reportStartStr = liveVisitsAllTime ? format(subDays(today, 365), 'yyyy-MM-dd') : visitsStartStr;
     const reportEndStr = liveVisitsAllTime ? visitsEndStr : visitsEndStr;
+    // Request same as mobile: full-day boundaries (startOfDay/endOfDay ISO) so today's visits are included
     const checkInsQuery = useCheckIns(
-        liveVisitsAllTime ? {} : { startDate: visitsStartStr, endDate: visitsEndStr },
+        liveVisitsAllTime
+            ? {}
+            : {
+                  startDate: startOfDay(subDays(today, 30)).toISOString(),
+                  endDate: endOfDay(today).toISOString(),
+              },
         { enabled: mounted && isTokenReady }
     );
     const reportQuery = useCheckInsReport(
@@ -878,6 +892,12 @@ function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                 totalOvertimeHours={totalOvertimeHours}
                 chartsLoading={isLoading}
             />
+
+            <Separator className="my-6" />
+
+            <section className="pt-2">
+                <OverviewMap />
+            </section>
 
             <Separator className="my-6" />
 
@@ -1937,13 +1957,13 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const startStr = format(startDate, 'yyyy-MM-dd');
     const endStr = format(endDate, 'yyyy-MM-dd');
 
-    // When no user is selected, backend returns all org check-ins (admin/manager/owner). When useAllTime, no date filter = all logs.
+    // Request same as mobile: full-day boundaries (startOfDay/endOfDay ISO) so the end date includes all visits that day.
     const checkInsQuery = useCheckIns(
         useAllTime
             ? { ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}) }
             : {
-                  startDate: startStr,
-                  endDate: endStr,
+                  startDate: startOfDay(startDate).toISOString(),
+                  endDate: endOfDay(endDate).toISOString(),
                   ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
               },
         { enabled: mounted && isTokenReady }
@@ -2800,6 +2820,27 @@ function ReportUserCard({
                             {user.progressPercent}%
                         </span>
                     </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs">
+                        <div className="min-w-0">
+                            {user.shiftStartAddress ? (
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline truncate block"
+                                    title={user.shiftStartAddress}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {user.shiftStartAddress}
+                                </a>
+                            ) : (
+                                <p className="text-foreground truncate">—</p>
+                            )}
+                        </div>
+                        <div className="shrink-0">
+                            <p className="text-foreground">~20m away</p>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -2917,6 +2958,26 @@ function ReportUserDetailModal({
                                 >
                                     {user.isPresent ? 'Present' : 'Absent'}
                                 </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/50 text-xs">
+                                <div>
+                                    {user.shiftStartAddress ? (
+                                        <a
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline truncate block"
+                                            title={user.shiftStartAddress}
+                                        >
+                                            {user.shiftStartAddress}
+                                        </a>
+                                    ) : (
+                                        <p className="text-foreground truncate">—</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-foreground">~20m away</p>
+                                </div>
                             </div>
                         </div>
                         <Link

@@ -23,3 +23,4 @@ export {
   useDeleteUserPermanently,
 } from "./use-user";
 export { useUsers } from "./use-users";
+export { useMapReport } from "./use-map-report";
