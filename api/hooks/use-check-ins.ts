@@ -28,7 +28,14 @@ export function useCheckIns(
   return useQuery({
     queryKey: [...CHECK_INS_KEY_PREFIX, params],
     queryFn: async (): Promise<CheckInsListResponse> => {
-      return getCheckIns(client, params);
+      console.log('[useCheckIns] fetch data (params)', params);
+      const result = await getCheckIns(client, params);
+      console.log('[useCheckIns] response', {
+        checkInsCount: Array.isArray(result?.checkIns) ? result.checkIns.length : 0,
+        message: result?.message,
+        data: result,
+      });
+      return result;
     },
     enabled: options?.enabled !== false,
     staleTime: 1 * 60 * 1000,
@@ -47,7 +54,10 @@ export function useCheckInsReport(
   return useQuery({
     queryKey: [...CHECK_INS_REPORT_KEY_PREFIX, params],
     queryFn: async (): Promise<DomainReportResponse> => {
-      return getCheckInsReport(client, params);
+      console.log('[useCheckInsReport] fetch data (params)', params);
+      const result = await getCheckInsReport(client, params);
+      console.log('[useCheckInsReport] response', { total: result?.total, byDayLength: result?.byDay?.length, data: result });
+      return result;
     },
     enabled: options?.enabled !== false && !!params.from && !!params.to,
     staleTime: 1 * 60 * 1000,

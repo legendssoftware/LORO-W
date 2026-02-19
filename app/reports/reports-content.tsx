@@ -106,6 +106,10 @@ import {
 
 const EXPECTED_MONTHLY_HOURS = 180;
 
+/** Fallback image when visit photo upload fails or URL is broken. */
+const VISIT_IMAGE_FALLBACK_URL =
+    'https://images.pexels.com/photos/163194/old-retro-antique-vintage-163194.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
+
 /**
  * Prorated expected hours by a given date: (day of month / days in month) × EXPECTED_MONTHLY_HOURS.
  * Used to show "expected by this time of month" on cards and in the detail modal.
@@ -776,6 +780,7 @@ function AttendanceChartsSection({
 function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [mounted, setMounted] = useState(false);
     const [exportLoading, setExportLoading] = useState(false);
+    const [liveVisitsAllTime, setLiveVisitsAllTime] = useState(false);
     useEffect(() => setMounted(true), []);
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
@@ -825,12 +830,14 @@ function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
 
     const visitsStartStr = format(subDays(today, 30), 'yyyy-MM-dd');
     const visitsEndStr = format(today, 'yyyy-MM-dd');
+    const reportStartStr = liveVisitsAllTime ? format(subDays(today, 365), 'yyyy-MM-dd') : visitsStartStr;
+    const reportEndStr = liveVisitsAllTime ? visitsEndStr : visitsEndStr;
     const checkInsQuery = useCheckIns(
-        { startDate: visitsStartStr, endDate: visitsEndStr },
+        liveVisitsAllTime ? {} : { startDate: visitsStartStr, endDate: visitsEndStr },
         { enabled: mounted && isTokenReady }
     );
     const reportQuery = useCheckInsReport(
-        { from: visitsStartStr, to: visitsEndStr },
+        { from: reportStartStr, to: reportEndStr },
         { enabled: mounted && isTokenReady }
     );
     const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
@@ -841,7 +848,7 @@ function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
             return;
         }
         setExportLoading(true);
-        const baseName = `visits-${visitsStartStr}-${visitsEndStr}`;
+        const baseName = liveVisitsAllTime ? 'visits-all-time' : `visits-${visitsStartStr}-${visitsEndStr}`;
         try {
             exportVisits(checkIns, exportFormat, baseName);
             toast.success('Export downloaded');
@@ -877,7 +884,17 @@ function LiveReportTab({ isTokenReady }: { isTokenReady: boolean }) {
             <section className="pt-2">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <p className="text-sm text-muted-foreground">
-                        Last 30 days · Total visits: <strong>{(reportQuery.data?.total ?? checkIns.length).toLocaleString()}</strong>
+                        {liveVisitsAllTime ? 'All time' : 'Last 30 days'} · Total visits:{' '}
+                        <strong>{(reportQuery.data?.total ?? checkIns.length).toLocaleString()}</strong>
+                        <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 ml-2 text-muted-foreground"
+                            onClick={() => setLiveVisitsAllTime((v) => !v)}
+                        >
+                            {liveVisitsAllTime ? 'Show last 30 days' : 'Show all time'}
+                        </Button>
                     </p>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1465,6 +1482,9 @@ function VisitDetailDialog({
                                                 src={visit.checkInPhoto}
                                                 alt="Check-in"
                                                 className="rounded-lg border w-full max-h-48 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                }}
                                             />
                                         </div>
                                     )}
@@ -1475,6 +1495,9 @@ function VisitDetailDialog({
                                                 src={visit.checkOutPhoto}
                                                 alt="Check-out"
                                                 className="rounded-lg border w-full max-h-48 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                }}
                                             />
                                         </div>
                                     )}
@@ -1485,6 +1508,9 @@ function VisitDetailDialog({
                                                 src={visit.contactImage}
                                                 alt="Contact"
                                                 className="rounded-lg border w-full max-h-48 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                }}
                                             />
                                         </div>
                                     )}
@@ -1897,6 +1923,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
 
     const [startDate, setStartDate] = useState<Date>(defaultStart);
     const [endDate, setEndDate] = useState<Date>(defaultEnd);
+    const [useAllTime, setUseAllTime] = useState(false);
     const [selectedUserUid, setSelectedUserUid] = useState<string>('');
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [exportLoading, setExportLoading] = useState(false);
@@ -1910,13 +1937,15 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const startStr = format(startDate, 'yyyy-MM-dd');
     const endStr = format(endDate, 'yyyy-MM-dd');
 
-    // When no user is selected, backend returns all org check-ins (admin/manager/owner); intended for staff/admins.
+    // When no user is selected, backend returns all org check-ins (admin/manager/owner). When useAllTime, no date filter = all logs.
     const checkInsQuery = useCheckIns(
-        {
-            startDate: startStr,
-            endDate: endStr,
-            ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
-        },
+        useAllTime
+            ? { ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}) }
+            : {
+                  startDate: startStr,
+                  endDate: endStr,
+                  ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
+              },
         { enabled: mounted && isTokenReady }
     );
 
@@ -1996,7 +2025,9 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
         }
         setExportLoading(true);
         try {
-            const baseName = `visits-${startStr}-${endStr}${exportUserSlug}`;
+            const baseName = useAllTime
+                ? `visits-all-time${exportUserSlug}`
+                : `visits-${startStr}-${endStr}${exportUserSlug}`;
             exportVisits(filteredCheckIns, exportFormat, baseName);
             toast.success('Export downloaded');
         } catch (e) {
@@ -2013,8 +2044,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
             <div className="shrink-0 mb-6">
                 {!isLoading && (
                     <p className="text-sm text-muted-foreground mb-3">
-                        {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')} · Total visits:{' '}
-                        <strong>{checkIns.length.toLocaleString()}</strong>
+                        {useAllTime
+                            ? 'All time'
+                            : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}{' '}
+                        · Total visits: <strong>{checkIns.length.toLocaleString()}</strong>
                     </p>
                 )}
                 <VisitsChartsSection
@@ -2036,53 +2069,80 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                                     className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
                                 >
                                     <CalendarIcon className="size-4" />
-                                    {startDate.getTime() === endDate.getTime()
-                                        ? format(startDate, 'MMM d, yyyy')
-                                        : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                                    {useAllTime
+                                        ? 'All time'
+                                        : startDate.getTime() === endDate.getTime()
+                                          ? format(startDate, 'MMM d, yyyy')
+                                          : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto min-w-[480px] p-0" align="start">
-                                <div className="p-2 flex flex-row gap-6">
-                                    <div>
-                                        <p className="text-sm font-medium">Start date</p>
-                                        <Calendar
-                                            mode="single"
-                                            selected={startDate}
-                                            onSelect={(d) => d && setStartDate(d)}
-                                        />
+                                <div className="p-2 flex flex-col gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant={useAllTime ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setUseAllTime(true)}
+                                        >
+                                            All time
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground">or pick a date range below</span>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium">End date</p>
-                                        <Calendar
-                                            mode="single"
-                                            selected={endDate}
-                                            onSelect={(d) => d && setEndDate(d)}
-                                        />
+                                    <div className="flex flex-row gap-6">
+                                        <div>
+                                            <p className="text-sm font-medium">Start date</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={startDate}
+                                                onSelect={(d) => {
+                                                    if (d) {
+                                                        setUseAllTime(false);
+                                                        setStartDate(d);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">End date</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={endDate}
+                                                onSelect={(d) => {
+                                                    if (d) {
+                                                        setUseAllTime(false);
+                                                        setEndDate(d);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </PopoverContent>
                         </Popover>
                         {(() => {
                             const isDefaultRange =
-                                isSameDay(endDate, today) && differenceInCalendarDays(endDate, startDate) === 30;
-                            return !isDefaultRange ? (
+                                !useAllTime && isSameDay(endDate, today) && differenceInCalendarDays(endDate, startDate) === 30;
+                            return useAllTime || !isDefaultRange ? (
                                 <span
                                     role="button"
                                     tabIndex={0}
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        setUseAllTime(false);
                                         setStartDate(subDays(new Date(), 30));
                                         setEndDate(new Date());
                                     }}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' || e.key === ' ') {
                                             e.preventDefault();
+                                            setUseAllTime(false);
                                             setStartDate(subDays(new Date(), 30));
                                             setEndDate(new Date());
                                         }
                                     }}
                                     className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
-                                    aria-label="Clear date filter"
+                                    aria-label="Reset to last 30 days"
                                 >
                                     <XIcon className="size-4 text-red-600" />
                                 </span>
