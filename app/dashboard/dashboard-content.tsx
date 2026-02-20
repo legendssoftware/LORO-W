@@ -13,6 +13,7 @@ import {
   useCheckOutMutation,
 } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { DashboardNextAction } from '@/components/dashboard-next-action';
@@ -27,7 +28,7 @@ export function DashboardContent() {
   const { user: clerkUser } = useUser();
   const clerkUserId = clerkUser?.id ?? null;
   const { isTokenReady } = useTokenReady();
-  const { backendUserData: profile } = useSessionSync();
+  const { backendUserData: profile, isSyncing } = useSessionSync();
 
   const attQuery = useAttStatus({
     enabled: isTokenReady,
@@ -137,19 +138,51 @@ export function DashboardContent() {
           <div className="space-y-4">
             <AttendanceStatusButton
               checkedIn={checkedIn}
-              loading={attLoading}
+              loading={attLoading || attQuery.isLoading}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
             />
             <div className="space-y-1">
-              <DashboardNextAction nextAction={nextAction} />
+              <DashboardNextAction
+                nextAction={nextAction}
+                isLoading={attQuery.isLoading}
+              />
             </div>
             <DashboardMetricsCard
               metrics={metricsQuery.data}
               isLoading={metricsQuery.isLoading}
               leaveDaysAccrued={leaveDaysAccrued}
             />
-            <AttendanceStreakCalendar userRef={profile?.uid} />
+            {isSyncing ? (
+              <div className="rounded border border-gray-200 bg-card p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <Skeleton className="h-6 w-28 rounded-md" />
+                  <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+                </div>
+                <div className="mx-auto max-w-full lg:max-w-[50%]">
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <Skeleton key={i} className="mx-auto h-3 w-8 rounded-md" />
+                    ))}
+                  </div>
+                  <div className="mt-1 grid grid-cols-7 gap-1">
+                    {Array.from({ length: 35 }).map((_, i) => (
+                      <Skeleton key={i} className="aspect-square rounded-full" />
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4">
+                    {[1, 2, 3].map((i) => (
+                      <span key={i} className="flex items-center gap-1.5">
+                        <Skeleton className="size-4 shrink-0 rounded-full" />
+                        <Skeleton className="h-3 w-14 rounded-md" />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <AttendanceStreakCalendar userRef={profile?.uid} />
+            )}
           </div>
         )}
       </main>

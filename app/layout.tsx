@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SiteBanner } from '@/components/site-banner';
 import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { AccessGuard } from '@/components/access-guard';
+import { InactivityGuard } from '@/components/inactivity-guard';
 import { SidebarProvider } from '@/components/sidebar/sidebar-provider';
 import { DashboardSidebar } from '@/components/sidebar/dashboard-sidebar';
 import { defaultMetadata } from '@/lib/seo';
@@ -17,6 +18,7 @@ const urbanist = Urbanist({
   variable: '--font-urbanist',
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
 });
 
 export const metadata = defaultMetadata;
@@ -33,6 +35,7 @@ export default function RootLayout({
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider>
+              <InactivityGuard />
               <SiteBanner />
               <div className="flex h-svh">
                 <DashboardSidebar />

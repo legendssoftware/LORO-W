@@ -9,15 +9,14 @@ import {
   useClerk,
   useUser,
 } from '@clerk/nextjs';
-import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
-import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks';
-import { useSessionStore } from '@/store/session-store';
+import { useSessionSync } from '@/api/hooks';
+import { useSignOut } from '@/hooks/use-sign-out';
 import { useSidebar } from '@/components/sidebar/sidebar-provider';
 
 const WELCOME_KEY = 'loro_welcome_shown';
@@ -31,8 +30,8 @@ function roleLabel(accessLevel: string | undefined): string {
 
 export function AppHeader() {
   const { isLoaded, isSignedIn, user } = useUser();
-  const { signOut, openUserProfile } = useClerk();
-  const queryClient = useQueryClient();
+  const { openUserProfile } = useClerk();
+  const { performSignOut } = useSignOut();
   const welcomeShown = useRef(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { backendUserData } = useSessionSync();
@@ -42,9 +41,7 @@ export function AppHeader() {
 
   const handleSignOut = () => {
     setIsSigningOut(true);
-    queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
-    useSessionStore.getState().endSession();
-    signOut({ redirectUrl: '/' });
+    performSignOut();
   };
 
   useEffect(() => {

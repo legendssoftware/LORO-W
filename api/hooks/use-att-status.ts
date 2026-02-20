@@ -3,7 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getAttStatus, checkIn, checkOut } from '@/api/endpoints/attendance';
-import type { CheckInBody, CheckOutBody } from '@/api/types';
+import type {
+  CheckInBody,
+  CheckOutBody,
+  AttStatusResponse,
+} from '@/api/types';
 
 const QUERY_KEY = ['att', 'status'] as const;
 
@@ -19,18 +23,37 @@ export function useAttStatus(options?: { enabled?: boolean }) {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchInterval: (query) =>
+      (query.state.data as AttStatusResponse | undefined)?.checkedIn
+        ? 60_000
+        : false,
   });
 }
 
 /**
- * Check-in mutation. Invalidates att status on success.
+ * Check-in mutation. Optimistic update for instant UI; invalidates on success.
  */
 export function useCheckInMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CheckInBody) => checkIn(client, body),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const previous = queryClient.getQueryData<AttStatusResponse>(QUERY_KEY);
+      queryClient.setQueryData<AttStatusResponse>(QUERY_KEY, (old) => ({
+        ...(old ?? ({} as AttStatusResponse)),
+        checkedIn: true,
+        nextAction: 'End Shift',
+      }));
+      return { previous };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(QUERY_KEY, context.previous);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
@@ -40,13 +63,28 @@ export function useCheckInMutation() {
 }
 
 /**
- * Check-out mutation. Invalidates att status and metrics on success.
+ * Check-out mutation. Optimistic update for instant UI; invalidates on success.
  */
 export function useCheckOutMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CheckOutBody) => checkOut(client, body),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const previous = queryClient.getQueryData<AttStatusResponse>(QUERY_KEY);
+      queryClient.setQueryData<AttStatusResponse>(QUERY_KEY, (old) => ({
+        ...(old ?? ({} as AttStatusResponse)),
+        checkedIn: false,
+        nextAction: 'Start Shift',
+      }));
+      return { previous };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(QUERY_KEY, context.previous);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
