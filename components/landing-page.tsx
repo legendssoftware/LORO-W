@@ -3,14 +3,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
 // Icons from local lib (no lucide-react dependency in this component)
-import { CheckIcon, MenuIcon, PhoneCallIcon, XIcon } from '@/lib/icons';
+import {
+  ArrowRightIcon,
+  CpuIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  MenuIcon,
+  PhoneCallIcon,
+  TwitterIcon,
+  WifiIcon,
+  XIcon,
+  YoutubeIcon,
+} from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import Vapi from '@vapi-ai/web';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { PageTransition } from '@/components/animations/page-transition';
 import { MotionSection } from '@/components/animations/motion-section';
 import { StaggerContainer } from '@/components/animations/stagger-container';
@@ -194,198 +204,178 @@ export function LandingPage() {
 
   return (
     <PageTransition>
-      <div className="flex min-h-screen flex-col bg-neutral-950 text-white">
-        <SmoothScroll />
-        <FadeIn duration={0.8}>
-          <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-sm">
-            <div className="container mx-auto flex h-16 items-center justify-between px-4">
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="font-body text-xl font-normal uppercase tracking-tight text-white"
-              >
-                <span className="md:hidden">LORO</span>
-                <span className="hidden md:inline">LORO</span>
-              </motion.span>
+      <div className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100">
+        <div className="flex flex-col">
+          <SmoothScroll />
+          <FadeIn duration={0.8}>
+            <header className="sticky top-0 z-50 border-b border-white/10 bg-zinc-900/80 backdrop-blur-md">
+              <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                <Link href="#" className="flex items-center gap-2">
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="font-body text-xl font-normal tracking-tight text-white"
+                  >
+                    LORO
+                  </motion.span>
+                </Link>
 
-              <nav className="hidden items-center gap-6 md:flex">
-                <Link href="#features" className="font-body text-xs font-normal uppercase text-white/80 hover:text-white">About</Link>
-                <Link href="#benefits" className="font-body text-xs font-normal uppercase text-white/80 hover:text-white">Products</Link>
-                <Link href="#testimonials" className="font-body text-xs font-normal uppercase text-white/80 hover:text-white">Pricing</Link>
-                <Link href="#faq" className="font-body text-xs font-normal uppercase text-white/80 hover:text-white">Contact</Link>
-                {isCallActive ? (
-                  <Button variant="ghost" size="sm" onClick={endDemoCall} className="font-body text-xs font-normal uppercase text-red-400 hover:bg-white/10 hover:text-red-300">
-                    END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}
+                <nav className="hidden items-center gap-8 md:flex">
+                  <Link href="#features" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Product</Link>
+                  <Link href="#solutions" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Solutions</Link>
+                  <Link href="#" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Careers</Link>
+                  <Link href="#" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Research</Link>
+                </nav>
+
+                <div className="hidden items-center gap-4 md:flex">
+                  <Link href="/sign-in" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Sign In</Link>
+                  {isCallActive ? (
+                    <Button variant="outline" size="sm" onClick={endDemoCall} className="font-body text-xs font-normal text-red-400 border-0 bg-transparent hover:bg-red-500/20 hover:text-red-300">
+                      END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}
+                    </Button>
+                  ) : connectionError ? (
+                    <Button variant="outline" size="sm" onClick={retryDemoCall} className="font-body text-xs font-normal text-amber-400 border-0 bg-transparent hover:bg-amber-500/20">RETRY CALL</Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={startDemoCall} disabled={isCallInitializing} className="font-body text-xs font-normal text-zinc-300 border-0 bg-transparent hover:bg-white/10">
+                      {isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}
+                    </Button>
+                  )}
+                  <Button asChild className="font-body text-sm font-normal rounded-lg border-0 bg-transparent text-white hover:bg-white/10">
+                    <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer">Download Now</Link>
                   </Button>
-                ) : connectionError ? (
-                  <Button variant="ghost" size="sm" onClick={retryDemoCall} className="font-body text-xs font-normal uppercase text-amber-400 hover:bg-white/10 hover:text-amber-300">RETRY CALL</Button>
-                ) : (
-                  <Button variant="ghost" size="sm" onClick={startDemoCall} disabled={isCallInitializing} className="font-body text-xs font-normal uppercase text-white/90 hover:bg-white/10 hover:text-white">
-                    {isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}
-                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2 md:hidden">
+                  <motion.button onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen(!isMobileMenuOpen); }} className="rounded-lg p-2 hover:bg-white/10 text-zinc-300" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <MenuIcon size={24} className="size-6" />
+                  </motion.button>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {isMobileMenuOpen && (
+                  <>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+                    <motion.div initial={{ opacity: 0, x: '100%' }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: '100%' }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="fixed inset-0 z-[80] flex h-screen w-full flex-col bg-zinc-950/95 shadow-xl backdrop-blur-md border-l border-white/10" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-between items-center border-b border-white/10 bg-zinc-900/80 p-4">
+                        <span className="font-body text-lg tracking-tight text-white">LORO</span>
+                        <motion.button onClick={() => setIsMobileMenuOpen(false)} className="rounded-full p-2 border border-white/20 bg-white/5 text-zinc-300 hover:bg-white/10" aria-label="Close menu"><XIcon size={24} className="size-6" /></motion.button>
+                      </div>
+                      <div className="flex flex-1 flex-col space-y-2 bg-zinc-950/90 p-4">
+                        <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Product</Link>
+                        <Link href="#solutions" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Solutions</Link>
+                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Careers</Link>
+                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Research</Link>
+                        <div className="border-t border-white/10 pt-4 space-y-2">
+                          {isCallActive ? (
+                            <Button variant="outline" onClick={endDemoCall} className="font-body w-full text-xs text-red-400 border-0 hover:bg-red-500/20">END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}</Button>
+                          ) : connectionError ? (
+                            <Button variant="outline" onClick={retryDemoCall} className="font-body w-full text-xs text-amber-400 border-0 hover:bg-amber-500/20"><PhoneCallIcon size={16} className="mr-2 inline" />RETRY CALL</Button>
+                          ) : (
+                            <Button onClick={startDemoCall} disabled={isCallInitializing} className="font-body w-full text-xs bg-white/10 text-white border-0 hover:bg-white/20"><PhoneCallIcon size={16} className="mr-2 inline" />{isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}</Button>
+                          )}
+                        </div>
+                        <div className="border-t border-white/10 pt-4 space-y-2">
+                          <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="font-body block rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white">Sign In</Link>
+                          <Button asChild className="font-body w-full text-sm rounded-lg border-0 bg-transparent text-white hover:bg-white/10">
+                            <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>Download Now</Link>
+                          </Button>
+                          <Button asChild className="font-body w-full text-xs bg-white text-zinc-900 hover:bg-zinc-200 border-0 hover:bg-purple-600 hover:text-white">
+                            <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
-              </nav>
-
-              <div className="hidden items-center gap-4 md:flex">
-                <Link href="/sign-in" className="font-body text-xs font-normal uppercase text-white/80 hover:text-white">Sign In</Link>
-                <Button asChild className="font-body text-xs font-normal uppercase bg-white text-neutral-900 hover:bg-white/90">
-                  <Link href="/onboarding">Get Started</Link>
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2 md:hidden">
-                <motion.button onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen(!isMobileMenuOpen); }} className="rounded-lg p-2 hover:bg-white/10 text-white" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <MenuIcon size={24} className="size-6" />
-                </motion.button>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {isMobileMenuOpen && (
-                <>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-                  <motion.div initial={{ opacity: 0, x: '100%' }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: '100%' }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="fixed inset-y-0 right-0 z-[80] flex h-screen w-80 flex-1 flex-col border-l border-white/10 bg-neutral-900/98 shadow-xl backdrop-blur-md" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-between items-center border-b border-white/10 p-4">
-                      <span className="font-body text-lg uppercase text-white">LORO</span>
-                      <motion.button onClick={() => setIsMobileMenuOpen(false)} className="rounded-lg p-2 hover:bg-white/10 text-white"><XIcon size={24} className="size-6" /></motion.button>
-                    </div>
-                    <div className="flex flex-1 flex-col space-y-4 p-4">
-                      <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm uppercase text-white/90 hover:bg-white/10 hover:text-white">About</Link>
-                      <Link href="#benefits" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm uppercase text-white/90 hover:bg-white/10 hover:text-white">Products</Link>
-                      <Link href="#testimonials" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm uppercase text-white/90 hover:bg-white/10 hover:text-white">Pricing</Link>
-                      <Link href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm uppercase text-white/90 hover:bg-white/10 hover:text-white">Contact</Link>
-                      <div className="border-t border-white/10 pt-4 space-y-2">
-                        <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="block font-body rounded-lg p-3 text-sm uppercase text-white/90 hover:bg-white/10 hover:text-white">Sign In</Link>
-                      </div>
-                      <div className="border-t border-white/10 pt-4">
-                        {isCallActive ? (
-                          <Button variant="outline" onClick={endDemoCall} className="font-body w-full text-xs uppercase text-red-400 border-white/20 hover:bg-white/10">END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}</Button>
-                        ) : connectionError ? (
-                          <Button variant="outline" onClick={retryDemoCall} className="font-body w-full text-xs uppercase text-amber-400 border-white/20 hover:bg-white/10"><PhoneCallIcon size={16} className="mr-2 inline" />RETRY CALL</Button>
-                        ) : (
-                          <Button onClick={startDemoCall} disabled={isCallInitializing} className="font-body w-full text-xs uppercase bg-white text-neutral-900 hover:bg-white/90"><PhoneCallIcon size={16} className="mr-2 inline" />{isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}</Button>
-                        )}
-                      </div>
-                      <div className="border-t border-white/10 pt-4">
-                        <Button asChild className="font-body w-full text-xs uppercase bg-white text-neutral-900 hover:bg-white/90">
-                          <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </header>
-        </FadeIn>
+              </AnimatePresence>
+            </header>
+          </FadeIn>
 
         <main className="flex-1">
-          {/* Hero — dark radial gradient, two-line headline, phones + floating frosted cards */}
-          <MotionSection className="relative overflow-hidden py-12 md:py-20 lg:py-28" duration={0.8}>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_0%,rgba(120,119,198,0.15),transparent)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_100%,rgba(30,30,40,0.8),transparent)]" />
-            <div className="container relative mx-auto px-4 md:px-6">
+          {/* Hero — headline, email CTA, social proof, overlapping phones */}
+          <MotionSection className="relative min-h-screen flex flex-col justify-center py-12 md:py-20 lg:py-28 md:min-h-0" duration={0.8}>
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.12),transparent)]" aria-hidden />
+            <div className="container relative mx-auto px-4 md:px-6 flex-1 flex flex-col justify-center">
               <div className="flex w-full flex-col items-center justify-center gap-8 text-center">
-                <StaggerContainer className="flex w-full flex-col items-center gap-4 lg:gap-5" delay={0.2} staggerChildren={0.12}>
-                  <StaggerItem className="flex flex-col items-center">
-                    <h1 className="font-body text-3xl font-normal tracking-tight text-white sm:text-4xl md:text-5xl xl:text-6xl">
-                      <span className="block">Intelligence Beneath</span>
-                      <span className="mt-1 block font-serif italic tracking-wide text-white/95">The Surface</span>
+                <StaggerContainer className="flex flex-col items-center gap-4 lg:gap-6" delay={0.2} staggerChildren={0.12}>
+                  <StaggerItem>
+                    <h1 className="font-body text-3xl font-normal tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+                      Operations that scale.{' '}
+                      <span className="font-serif italic">Business, simplified.</span>
                     </h1>
-                    <p className="font-body mx-auto mt-4 max-w-[540px] text-sm text-white/70 md:text-base">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.
+                  </StaggerItem>
+                  <StaggerItem>
+                    <p className="font-body mx-auto max-w-[560px] text-sm text-zinc-400 md:text-base">
+                      Stop juggling multiple systems. Loro combines field service, quotes, tasks, and real-time analytics in one platform.
                     </p>
                   </StaggerItem>
-                  <StaggerItem className="flex min-[400px]:flex-row flex-col justify-center items-center gap-3">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button size="lg" className="font-body text-xs font-normal uppercase border border-white/30 bg-transparent text-white hover:bg-white/10" asChild>
-                        <Link href="/onboarding">Get Started</Link>
+                  <StaggerItem className="flex flex-col items-center gap-3 w-full max-w-md">
+                    <div className="flex w-full gap-0 rounded-xl overflow-hidden bg-white/5 backdrop-blur-sm">
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        className="flex-1 rounded-none border-0 bg-transparent text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:border-0"
+                      />
+                      <Button className="font-body rounded-none shrink-0 bg-transparent text-white hover:bg-purple-600 hover:text-white border-0">
+                        Get Started
                       </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button size="lg" className="font-body text-xs font-normal uppercase bg-white text-neutral-900 hover:bg-white/90" asChild>
-                        <a href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer">Download App</a>
-                      </Button>
-                    </motion.div>
-                  </StaggerItem>
-                  <StaggerItem className="flex items-center justify-center gap-2">
+                    </div>
+                    <p className="font-body text-xs text-zinc-500">
+                      Join LORO Community with 90+ members
+                    </p>
                     <div className="flex -space-x-2">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-8 w-8 rounded-full border-2 border-neutral-800 bg-neutral-600" />
+                      {['SM', 'JT', 'PR'].map((initials, i) => (
+                        <div
+                          key={i}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-zinc-900 bg-zinc-600 text-[10px] font-medium text-white"
+                        >
+                          {initials}
+                        </div>
                       ))}
                     </div>
-                    <span className="font-body text-xs uppercase text-white/60">Trusted by 2k+ users</span>
                   </StaggerItem>
                 </StaggerContainer>
-
-                {/* Phone stack + floating frosted glass cards */}
-                <div className="relative mt-10 flex items-center justify-center" style={{ minHeight: 'clamp(300px, 50vw, 460px)' }}>
-                  {/* Floating frosted cards — Framer Motion reveal */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.5 }}
-                    className="absolute left-[5%] top-[15%] z-[3] rounded-xl border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md md:left-[12%]"
-                  >
-                    <span className="font-body text-xs uppercase text-white/90">Smart Home</span>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.65 }}
-                    className="absolute right-[8%] top-[25%] z-[3] rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-md md:right-[15%]"
-                  >
-                    <span className="font-body text-2xl font-semibold text-white">22</span>
-                    <span className="font-body ml-1 text-xs text-white/70">°C</span>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 }}
-                    className="absolute bottom-[20%] left-[10%] z-[3] rounded-xl border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md md:left-[18%]"
-                  >
-                    <span className="font-body text-sm text-white/90">10:24</span>
-                  </motion.div>
-
-                  {/* Left phone */}
+                <div className="relative mt-8 flex items-end justify-center" style={{ minHeight: 'clamp(338px, 52vw, 494px)' }}>
+                  <div className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-zinc-300">
+                    Live sync
+                  </div>
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="absolute left-1/2 z-[1] w-[clamp(100px,22vw,180px)] origin-bottom"
-                    style={{ transform: 'translateX(-78%) rotate(-12deg)' }}
+                    className="absolute left-1/2 z-[1] w-[clamp(130px,26vw,208px)] origin-bottom"
+                    style={{ transform: 'translateX(-82%) rotate(-14deg)' }}
                   >
-                    <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-800 bg-neutral-800 shadow-xl" style={{ aspectRatio: '9/19' }}>
-                      <div className="relative h-full w-full overflow-hidden rounded-[1.25rem] bg-neutral-700">
-                        <Image src={useCoverSrc(0)} fill alt="Loro — Productivity on the move" className="object-cover" sizes="(max-width:768px) 120px, 180px" onError={() => setCoverError(0)} />
+                    <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
+                        <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(0)} />
                       </div>
                     </div>
                   </motion.div>
-                  {/* Center phone */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-                    className="relative z-[2] w-[clamp(120px,28vw,220px)] shadow-2xl"
+                    className="relative z-[2] w-[clamp(156px,33.8vw,260px)] shadow-2xl"
                   >
-                    <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-neutral-800 bg-neutral-800" style={{ aspectRatio: '9/19' }}>
-                      <div className="relative h-full w-full overflow-hidden rounded-[1.4rem] bg-neutral-700">
-                        <Image src={useCoverSrc(1)} fill alt="Loro — Real-time updates" className="object-cover" sizes="(max-width:768px) 140px, 220px" onError={() => setCoverError(1)} />
+                    <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
+                        <Image src={useCoverSrc(1)} fill alt="Loro dashboard" className="object-cover" sizes="182px, 260px" onError={() => setCoverError(1)} />
                       </div>
                     </div>
                   </motion.div>
-                  {/* Right phone */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-                    className="absolute left-1/2 z-[1] w-[clamp(100px,22vw,180px)] origin-bottom"
-                    style={{ transform: 'translateX(-22%) rotate(12deg)' }}
+                    className="absolute left-1/2 z-[1] w-[clamp(130px,26vw,208px)] origin-bottom"
+                    style={{ transform: 'translateX(-18%) rotate(14deg)' }}
                   >
-                    <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-800 bg-neutral-800 shadow-xl" style={{ aspectRatio: '9/19' }}>
-                      <div className="relative h-full w-full overflow-hidden rounded-[1.25rem] bg-neutral-700">
-                        <Image src={useCoverSrc(2)} fill alt="Loro — Enterprise-grade security" className="object-cover" sizes="(max-width:768px) 120px, 180px" onError={() => setCoverError(2)} />
+                    <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
+                      <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
+                        <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(2)} />
                       </div>
                     </div>
                   </motion.div>
@@ -394,401 +384,274 @@ export function LandingPage() {
             </div>
           </MotionSection>
 
-          {/* Statistics — Designed for Scale */}
-          <MotionSection className="border-t border-white/5 bg-neutral-900/80 py-16 md:py-20" direction="up" id="features">
+          {/* Stats bar — solid black */}
+          <section className="bg-black py-16 md:py-20" id="solutions">
             <div className="container mx-auto px-4 md:px-6">
-              <motion.h2
-                className="font-body mb-12 text-center text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl"
-                initial={{ opacity: 0, y: 20 }}
+              <h2 className="font-body text-center text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-12 md:mb-16">
+                Built for scale. <span className="font-serif italic">Trusted by real teams.</span>
+              </h2>
+              <div className="grid grid-cols-2 gap-6 gap-y-10 sm:gap-8 md:grid-cols-4 md:gap-12">
+                {[
+                  { label: 'Businesses', value: '2K+', sub: 'on the platform' },
+                  { label: 'Partners', value: '120+', sub: 'collaborating' },
+                  { label: 'Field users', value: '800+', sub: 'active daily' },
+                  { label: 'Spaces', value: '2K+', sub: 'enhanced' },
+                ].map((stat, i) => (
+                  <div key={i} className="text-center">
+                    <p className="font-body text-xs text-zinc-400 uppercase tracking-wide">{stat.label}</p>
+                    <p className="font-body mt-1 text-3xl font-normal text-white md:text-4xl">{stat.value}</p>
+                    <p className="font-body mt-1 text-xs text-zinc-500">{stat.sub}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Technology That Works in Harmony */}
+          <MotionSection className="relative py-16 md:py-24 bg-gradient-to-b from-zinc-950 to-zinc-900" direction="up">
+            <div className="container mx-auto px-4 md:px-6">
+              <div className="mb-12 text-center">
+                <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
+                  Technology That Works in Harmony
+                </h2>
+                <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
+                  Built to simplify daily operations through intelligent connected systems.
+                </p>
+              </div>
+              <motion.div
+                className="relative mx-auto max-w-5xl rounded-2xl overflow-hidden aspect-[16/10] md:aspect-[2/1] bg-zinc-800"
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.8 }}
                 viewport={{ once: true }}
               >
-                Designed for Scale. Trusted by Real Spaces.
-              </motion.h2>
-              <StaggerContainer className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4" staggerChildren={0.15}>
-                {[
-                  { value: '2K+', label: 'Daily devices users in seamless smart technology' },
-                  { value: '120+', label: 'Collaborations Teams Partners' },
-                  { value: '800+', label: 'Retain landlords, users across diverse living environments' },
-                  { value: '2K+', label: 'Thousands of businesses enhanced with intelligent' },
-                ].map((stat, i) => (
-                  <StaggerItem key={i} direction="up">
-                    <motion.div
-                      className="text-center"
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="font-body text-4xl font-semibold text-white md:text-5xl">{stat.value}</div>
-                      <p className="font-body mt-2 text-xs uppercase leading-snug text-white/60">{stat.label}</p>
-                    </motion.div>
-                  </StaggerItem>
-                ))}
-              </StaggerContainer>
+                <Image
+                  src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80"
+                  alt="Modern office"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1200px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute left-[8%] bottom-[20%] rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 w-[200px]">
+                  <p className="font-body text-xs text-zinc-400">Live Sales | Dashboard</p>
+                  <p className="font-body text-2xl font-semibold text-white mt-1">R 125,450</p>
+                  <div className="mt-2 h-2 w-12 rounded-full bg-white/20" />
+                </div>
+                <div className="absolute right-[12%] bottom-[25%] rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 w-[200px]">
+                  <p className="font-body text-xs text-zinc-400">Quotes & Orders</p>
+                  <p className="font-body text-2xl font-semibold text-white mt-1">23 active</p>
+                  <div className="mt-2 h-2 w-12 rounded-full bg-white/20" />
+                </div>
+              </motion.div>
             </div>
           </MotionSection>
 
-          {/* Technology showcase — room image + overlay cards */}
-          <MotionSection className="relative py-16 md:py-24" direction="up">
+          {/* Powerful Features, Thoughtfully Designed — 6-card grid */}
+          <MotionSection className="py-16 md:py-24 bg-zinc-900/50" direction="up" id="features">
             <div className="container mx-auto px-4 md:px-6">
-              <motion.h2
-                className="font-body mb-10 text-center text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                Technology That Works in Harmony
-              </motion.h2>
-              <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl">
-                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-neutral-800">
-                  <Image
-                    src="/images/landing-room.png"
-                    fill
-                    alt="Smart living space"
-                    className="object-cover object-center"
-                    sizes="(max-width: 1024px) 100vw, 1152px"
-                  />
-                </div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  viewport={{ once: true }}
-                  className="absolute left-[15%] top-[30%] rounded-xl border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-md"
-                >
-                  <span className="font-body text-sm font-medium text-white">Air Condition</span>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.35 }}
-                  viewport={{ once: true }}
-                  className="absolute right-[20%] top-[25%] rounded-xl border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-md"
-                >
-                  <span className="font-body text-sm font-medium text-white">Smart Lamp</span>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                  viewport={{ once: true }}
-                  className="absolute right-[25%] bottom-[35%] rounded-xl border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-md"
-                >
-                  <span className="font-body text-sm font-medium text-white">Curtain</span>
-                </motion.div>
+              <div className="mb-12 text-center">
+                <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
+                  Powerful Features, <span className="font-serif italic">Thoughtfully Designed</span>
+                </h2>
+                <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
+                  Everything you need for comfort, clarity, and efficiency—in one place.
+                </p>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  { emoji: '📊', title: 'Smart Lead Management', desc: 'Capture, qualify, and convert leads with AI-powered scoring. Prioritise the best opportunities and never let a hot lead go cold. Your pipeline stays full and your team stays focused.', visual: 'phone' },
+                  { emoji: '📋', title: 'Pipeline by Stage', desc: 'A visual pipeline with drag-and-drop and full deal tracking. Move opportunities through stages at a glance and see exactly where every deal stands. Perfect for team alignment and forecasting.', visual: 'text' },
+                  { emoji: '✅', title: 'Task & Project Management', desc: 'Smart assignment, clear priorities, and real-time progress across the team. Assign work, set due dates, and track completion so nothing slips through the cracks.', visual: 'thumb' },
+                  { emoji: '📈', title: 'Live Analytics', desc: 'Real-time dashboards and ERP-backed metrics in one place. Understand performance, spot trends, and make decisions with up-to-date data—no spreadsheets required.', visual: 'text' },
+                  { emoji: '🔗', title: 'ERP Integration', desc: 'Live sales and quotes with full visibility at a glance. Your existing ERP stays the source of truth while LORO keeps the field and office in sync.', visual: 'text' },
+                  { emoji: '⚙️', title: 'Workflow Automation', desc: 'Schedule tasks and automate follow-ups across devices. Set rules once and let the system handle reminders, status updates, and routine steps so your team can focus on closing.', visual: 'toggles' },
+                ].map((card, i) => (
+                  <motion.div
+                    key={i}
+                    className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 min-h-[220px] flex flex-col"
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                    viewport={{ once: true }}
+                  >
+                    <h3 className="font-body text-lg font-normal text-zinc-100 flex items-center gap-2">
+                      <span aria-hidden>{card.emoji}</span>
+                      {card.title}
+                    </h3>
+                    <p className="font-body mt-2 text-sm text-zinc-400 flex-1">{card.desc}</p>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </MotionSection>
 
-          {/* Features grid — central phone + cards */}
-          <MotionSection className="border-t border-white/5 bg-neutral-950 py-16 md:py-24" direction="up" id="benefits">
-            <div className="container mx-auto px-4 md:px-6">
-              <motion.h2
-                className="font-body mb-12 text-center text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                Powerful Features. Thoughtfully Designed.
-              </motion.h2>
-              <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-8 lg:grid lg:grid-cols-3 lg:gap-6">
-                {/* Central phone */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
-                  className="order-2 flex justify-center lg:order-1 lg:col-span-1 lg:items-center"
-                >
-                  <div className="w-[clamp(100px,20vw,160px)]">
-                    <div className="overflow-hidden rounded-[1.75rem] border-[8px] border-neutral-700 bg-neutral-800" style={{ aspectRatio: '9/19' }}>
-                      <div className="relative h-full w-full overflow-hidden rounded-[1.2rem] bg-neutral-700">
-                        <Image src={useCoverSrc(1)} fill alt="Loro app" className="object-cover" sizes="160px" onError={() => setCoverError(1)} />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-                {/* Feature cards grid */}
-                <div className="order-1 grid gap-4 sm:grid-cols-2 lg:order-2 lg:col-span-2 lg:grid-cols-3">
-                  {[
-                    { title: 'AI Quality Monitoring', icon: '◇' },
-                    { title: 'Smart Clean Cycles', desc: 'Automated maintenance', icon: '◆' },
-                    { title: 'Home Remote', desc: 'Control from anywhere', icon: '◆', thumb: true },
-                    { title: 'Energy Saving, Efficiency', desc: 'Lower costs', icon: '◆' },
-                    { title: '22', sub: '°C', desc: 'Dashboard controls', isTemp: true },
-                    { title: 'Cross-device control', desc: '37.5 kWh', progress: 65, icon: '◆' },
-                    { title: 'Air Quality Monitoring', desc: 'Humidity, CO2', icon: '◆' },
-                  ].map((card, i) => (
+          {/* Every Detail, Precisely Controlled — central phone + radial callouts */}
+          <MotionSection className="relative py-16 md:py-24 bg-gradient-to-b from-zinc-900 to-zinc-950" direction="up">
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_50%)]" aria-hidden />
+            <div className="container relative mx-auto px-4 md:px-6">
+              <div className="mb-12 text-center">
+                <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
+                  Every Detail, <span className="font-serif italic">Precisely Controlled</span>
+                </h2>
+                <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
+                  One platform for routing, ERP, scheduling, and a minimal interface.
+                </p>
+              </div>
+              <div className="relative flex items-center justify-center min-h-[360px] sm:min-h-[420px] md:min-h-[480px]">
+                <div className="absolute inset-0 grid grid-cols-4 gap-px opacity-20 max-w-4xl mx-auto" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+                {[
+                  { label: 'Smart Routing', angle: 0, pos: 'top' },
+                  { label: 'Live ERP', angle: 60, pos: 'top-right' },
+                  { label: 'Unified Control', angle: 120, pos: 'right' },
+                  { label: 'Smart Scheduling', angle: 180, pos: 'bottom' },
+                  { label: 'Minimal Interface', angle: 240, pos: 'bottom-left' },
+                  { label: 'Automation', angle: 300, pos: 'left' },
+                ].map((item, i) => {
+                  const r = 130;
+                  const rad = (item.angle * Math.PI) / 180;
+                  const x = Math.cos(rad) * r;
+                  const y = Math.sin(rad) * r;
+                  return (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      className="absolute z-10 flex flex-col items-center gap-2"
+                      style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.4, delay: i * 0.06 }}
                       viewport={{ once: true }}
-                      whileHover={{ y: -4 }}
-                      className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
                     >
-                      {card.isTemp ? (
-                        <div className="flex items-center gap-2">
-                          <span className="font-body text-2xl font-semibold text-white">{card.title}</span>
-                          <span className="font-body text-sm text-white/70">{card.sub}</span>
-                        </div>
-                      ) : card.progress != null ? (
-                        <>
-                          <h3 className="font-body text-sm font-medium uppercase text-white">{card.title}</h3>
-                          <p className="font-body mt-1 text-xs text-white/60">{card.desc}</p>
-                          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              whileInView={{ width: `${card.progress}%` }}
-                              transition={{ duration: 0.8, delay: 0.3 }}
-                              viewport={{ once: true }}
-                              className="h-full rounded-full bg-white/80"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="font-body text-sm font-medium uppercase text-white">{card.title}</h3>
-                          {card.desc && <p className="font-body mt-1 text-xs text-white/60">{card.desc}</p>}
-                          {card.thumb && (
-                            <div className="mt-2 h-16 w-full rounded-lg bg-neutral-700/50" />
-                          )}
-                        </>
-                      )}
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
+                        <CpuIcon size={20} className="text-zinc-300" />
+                      </div>
+                      <span className="font-body text-xs text-zinc-300 whitespace-nowrap">{item.label}</span>
                     </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </MotionSection>
-
-          {/* Every Detail. Artfully Crafted. */}
-          <MotionSection className="border-t border-white/5 bg-neutral-900/80 py-16 md:py-24" direction="up">
-            <div className="container mx-auto px-4 md:px-6">
-              <StaggerContainer className="text-center" staggerChildren={0.15}>
-                <StaggerItem>
-                  <h2 className="font-body text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl">
-                    Every Detail. Artfully Crafted.
-                  </h2>
-                </StaggerItem>
-                <StaggerItem>
-                  <p className="font-body mx-auto mt-4 max-w-xl text-sm text-white/60">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  </p>
-                </StaggerItem>
-              </StaggerContainer>
-              <div className="relative mx-auto mt-14 h-[320px] w-[320px] sm:h-[380px] sm:w-[380px]">
+                  );
+                })}
                 <motion.div
+                  className="relative z-[2] w-[clamp(140px,22vw,200px)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.6 }}
                   viewport={{ once: true }}
-                  className="absolute left-1/2 top-1/2 z-10 w-[100px] -translate-x-1/2 -translate-y-1/2 sm:w-[120px]"
                 >
-                  <div className="overflow-hidden rounded-[1.5rem] border-[6px] border-neutral-700 bg-neutral-800" style={{ aspectRatio: '9/19' }}>
-                    <div className="relative h-full w-full overflow-hidden rounded-[1.1rem] bg-neutral-700">
-                      <Image src={useCoverSrc(1)} fill alt="Loro" className="object-cover" sizes="120px" onError={() => setCoverError(1)} />
+                  <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900 shadow-2xl" style={{ aspectRatio: '9/19' }}>
+                    <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
+                      <Image src={useCoverSrc(1)} fill alt="Loro control" className="object-cover" sizes="200px" onError={() => setCoverError(1)} />
                     </div>
                   </div>
                 </motion.div>
-                {[
-                  { label: 'Comfortable Control', angle: 0 },
-                  { label: 'Adjustable Airflow', angle: 60 },
-                  { label: 'Power Optimization', angle: 120 },
-                  { label: 'Universal Remote', angle: 180 },
-                  { label: 'Scheduled Efficiency', angle: 240 },
-                  { label: 'Smart Self-clean', angle: 300 },
-                ].map((item, i) => {
-                  const rad = (item.angle * Math.PI) / 180;
-                  const rPct = 42;
-                  const x = 50 + rPct * Math.cos(rad);
-                  const y = 50 + rPct * Math.sin(rad);
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: 0.1 * i }}
-                      viewport={{ once: true }}
-                      className="absolute flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-white/30 bg-neutral-800/90 px-1 backdrop-blur-sm"
-                      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-                    >
-                      <span className="text-center font-body text-[9px] leading-tight uppercase text-white/90 sm:text-[10px]">{item.label}</span>
-                    </motion.div>
-                  );
-                })}
               </div>
             </div>
           </MotionSection>
 
-          {/* A Cleaner Future — text blocks + radar */}
-          <MotionSection className="border-t border-white/5 bg-neutral-950 py-16 md:py-24" direction="up">
-            <div className="container mx-auto grid items-center gap-12 px-4 md:px-6 lg:grid-cols-2 lg:gap-16">
-              <div>
-                <motion.h2
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
-                  className="font-body text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl"
-                >
-                  A Cleaner Future, and More Secure Energy Future
-                </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  viewport={{ once: true }}
-                  className="font-body mt-4 text-sm leading-relaxed text-white/70"
-                >
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.
-                </motion.p>
-                <div className="mt-8 space-y-6">
+          {/* A Smarter, Fairer... — 3 text blocks + concentric diagram */}
+          <MotionSection className="bg-black py-16 md:py-24" direction="up">
+            <div className="container mx-auto px-4 md:px-6">
+              <div className="mb-12 text-center">
+                <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
+                  A Smarter, Fairer, and More Transparent Way to Run Field Operations
+                </h2>
+                <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
+                  Live sync, instant clarity, and full control—not just data.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
+                <div className="space-y-8">
                   {[
-                    { title: 'Zero-Power Scanning. Free by Design.', desc: 'Efficient scanning without draining resources.' },
-                    { title: 'Instant Wi-Fi Sync', desc: 'Seamless sync across all devices.' },
-                    { title: 'Open-Ended Control, Data, and More', desc: 'Full control and transparency.' },
+                    { title: 'Live ERP Sync, Fast by Design', body: 'Bulk data flows and real-time updates from your existing systems.' },
+                    { title: 'Instant Status Clarity', body: 'See who is where and what is due—at a glance.' },
+                    { title: 'Operational Control, Not Just Data', body: 'Act on quotes, orders, and schedules directly from the platform.' },
                   ].map((block, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.15 * i }}
-                      viewport={{ once: true }}
-                      className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
-                    >
-                      <h3 className="font-body text-sm font-semibold uppercase text-white">{block.title}</h3>
-                      <p className="font-body mt-1 text-xs text-white/60">{block.desc}</p>
+                    <motion.div key={i} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }}>
+                      <h3 className="font-body text-lg font-normal text-white">{block.title}</h3>
+                      <p className="font-body mt-2 text-sm text-zinc-400">{block.body}</p>
                     </motion.div>
                   ))}
                 </div>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7 }}
-                viewport={{ once: true }}
-                className="relative flex aspect-square max-w-md items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm"
-              >
-                {[1, 2, 3].map((ring) => (
+                <div className="flex justify-center">
                   <motion.div
-                    key={ring}
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    className="relative h-[280px] w-[280px] md:h-[320px] md:w-[320px]"
+                    initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 * ring }}
+                    transition={{ duration: 0.6 }}
                     viewport={{ once: true }}
-                    className="absolute rounded-full border border-white/20"
-                    style={{ width: `${ring * 28}%`, height: `${ring * 28}%` }}
-                  />
-                ))}
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  viewport={{ once: true }}
-                  className="font-body text-xl font-semibold uppercase text-white"
-                >
-                  LORO
-                </motion.span>
-                {['Secure', 'Private', 'Efficient', 'Sustainable', 'Intelligent'].map((label, i) => {
-                  const a = (i / 5) * 2 * Math.PI - Math.PI / 2;
-                  const r = 42;
-                  return (
-                    <motion.span
-                      key={label}
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
-                      viewport={{ once: true }}
-                      className="absolute font-body text-[10px] uppercase text-white/80"
-                      style={{ left: `${50 + r * Math.cos(a)}%`, top: `${50 + r * Math.sin(a)}%`, transform: 'translate(-50%, -50%)' }}
-                    >
-                      {label}
-                    </motion.span>
-                  );
-                })}
-              </motion.div>
-            </div>
-          </MotionSection>
-
-          {/* Keep Your Air Optimal — two phones */}
-          <MotionSection className="border-t border-white/5 bg-neutral-900/80 py-16 md:py-24" direction="up">
-            <div className="container mx-auto px-4 md:px-6">
-              <motion.h2
-                className="font-body mb-12 text-center text-2xl font-normal uppercase tracking-tight text-white sm:text-3xl md:text-4xl"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                Keep Your Air Optimal, Wear Comfort
-              </motion.h2>
-              <div className="flex flex-wrap items-center justify-center gap-12">
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
-                  className="w-[clamp(120px,22vw,200px)]"
-                >
-                  <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-700 bg-neutral-800" style={{ aspectRatio: '9/19' }}>
-                    <div className="relative h-full w-full overflow-hidden rounded-[1.3rem] bg-neutral-700">
-                      <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="200px" onError={() => setCoverError(0)} />
-                    </div>
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  viewport={{ once: true }}
-                  className="w-[clamp(120px,22vw,200px)]"
-                >
-                  <div className="overflow-hidden rounded-[2rem] border-[10px] border-neutral-700 bg-neutral-800" style={{ aspectRatio: '9/19' }}>
-                    <div className="relative h-full w-full overflow-hidden rounded-[1.3rem] bg-neutral-700">
-                      <Image src={useCoverSrc(2)} fill alt="Loro app" className="object-cover" sizes="200px" onError={() => setCoverError(2)} />
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </MotionSection>
-
-          {/* Video (kept for existing content) */}
-          <MotionSection className="border-t border-white/5 bg-neutral-900/50 py-12 md:py-16" direction="up">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="mx-auto max-w-4xl text-center">
-                <motion.h2 className="font-body mb-8 text-2xl font-normal tracking-tighter uppercase text-white sm:text-3xl md:text-4xl" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>DISCOVER LORO</motion.h2>
-                <motion.div className="relative mx-auto max-w-5xl" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} viewport={{ once: true }}>
-                  <div className="relative overflow-hidden rounded-lg border border-white/10 aspect-video bg-neutral-800">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
+                  >
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <motion.button
-                            type="button"
-                            aria-label="Play video"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="group flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-lg transition-all duration-300 hover:bg-white hover:shadow-xl"
-                          >
-                            <div className="ml-1 h-0 w-0 border-y-[8px] border-y-transparent border-l-[12px] border-l-red-500" />
-                          </motion.button>
-                        </DialogTrigger>
-                        <DialogContent className="h-full max-h-[90vh] w-full max-w-[90vw] p-0 sm:max-h-[80vh] sm:max-w-[80vw]">
-                          <div className="relative h-full w-full">
-                            <div className="aspect-video h-full w-full overflow-hidden rounded-lg bg-black">
-                              <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0&modestbranding=1" title="Discover Loro" className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/5">
+                        <WifiIcon size={28} className="text-white" />
+                      </div>
                     </div>
-                    <div className="absolute inset-x-4 bottom-4 left-4 right-4 text-white">
-                      <p className="font-body text-xs uppercase text-white/80">Watch how Loro transforms your business operations</p>
+                    {[1, 2, 3, 4].map((ring) => (
+                      <div
+                        key={ring}
+                        className="absolute rounded-full border border-white/10"
+                        style={{ inset: `${ring * 14}%`, borderWidth: 1 }}
+                      />
+                    ))}
+                    {[
+                      { label: 'Claims', angle: 0 },
+                      { label: 'Leads', angle: 90 },
+                      { label: 'Visits', angle: 180 },
+                      { label: 'GPR Tracking', angle: 270 },
+                    ].map((item, i) => {
+                      const r = 42;
+                      const rad = (item.angle * Math.PI) / 180;
+                      const x = 50 + Math.cos(rad) * r;
+                      const y = 50 + Math.sin(rad) * r;
+                      return (
+                        <span
+                          key={i}
+                          className="absolute font-body text-xs text-zinc-400 -translate-x-1/2 -translate-y-1/2"
+                          style={{ left: `${x}%`, top: `${y}%` }}
+                        >
+                          {item.label}
+                        </span>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </MotionSection>
+
+          {/* See Your Data. Control Your Operations. — CTA + phones */}
+          <MotionSection className="relative py-16 md:py-24 bg-gradient-to-b from-zinc-950 via-zinc-900 to-black" direction="up">
+            <div className="container mx-auto px-4 md:px-6">
+              <div className="text-center mb-12">
+                <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
+                  See Your Data. <span className="font-serif italic">Control Your Operations.</span>
+                </h2>
+                <p className="font-body mx-auto max-w-xl text-sm text-zinc-400 mb-8">
+                  One app for the field and the office. Get started in minutes.
+                </p>
+                <Button asChild className="font-body rounded-lg border-0 bg-transparent text-white hover:bg-purple-600 hover:text-white gap-2" size="lg">
+                  <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                    Download App
+                    <ArrowRightIcon size={18} />
+                  </Link>
+                </Button>
+              </div>
+              <div className="relative flex items-end justify-center mt-12" style={{ minHeight: 'clamp(220px, 35vw, 320px)' }}>
+                <motion.div className="absolute left-1/2 z-[1] w-[clamp(100px,18vw,150px)] origin-bottom" style={{ transform: 'translateX(-85%) rotate(-12deg)' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                  <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
+                    <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
+                      <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="150px" onError={() => setCoverError(0)} />
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div className="relative z-[2] w-[clamp(120px,22vw,180px)] shadow-2xl" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                  <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
+                    <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
+                      <Image src={useCoverSrc(1)} fill alt="Loro" className="object-cover" sizes="180px" onError={() => setCoverError(1)} />
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div className="absolute left-1/2 z-[1] w-[clamp(100px,18vw,150px)] origin-bottom" style={{ transform: 'translateX(-15%) rotate(12deg)' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                  <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
+                    <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
+                      <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="150px" onError={() => setCoverError(2)} />
                     </div>
                   </div>
                 </motion.div>
@@ -796,139 +659,58 @@ export function LandingPage() {
             </div>
           </MotionSection>
 
-          {/* Testimonials — kept for #testimonials link */}
-          <MotionSection id="testimonials" className="border-t border-white/5 bg-neutral-950 py-16 md:py-20" direction="up">
+          {/* Footer — AERIUM-style: logo, tagline, Company / Solutions / Products, social */}
+          <footer className="border-t border-white/10 bg-black py-12 md:py-16">
             <div className="container mx-auto px-4 md:px-6">
-              <StaggerContainer className="mb-12 text-center" staggerChildren={0.2}>
-                <StaggerItem><h2 className="font-body text-2xl font-normal tracking-tighter uppercase text-white sm:text-3xl md:text-4xl">What Our Users Say</h2></StaggerItem>
-                <StaggerItem><p className="font-body mt-4 text-sm uppercase text-white/60">Hear from professionals who have transformed their operations with Loro</p></StaggerItem>
-              </StaggerContainer>
-              <StaggerContainer className="grid gap-8 md:grid-cols-3" staggerChildren={0.15}>
-                {[
-                  { initials: 'SM', name: 'Sarah M.', role: 'Graphic Designer', quote: 'Loro made it so easy to manage my freelance business! The platform and quoting features have been a game-changer.', stars: 5 },
-                  { initials: 'JT', name: 'James T.', role: 'Startup Founder', quote: "I love the ERP integration—we use Loro for all our business operations, and the analytics help us track performance.", stars: 5 },
-                  { initials: 'PR', name: 'Priya R.', role: 'Small Business Owner', quote: "Affordable and intuitive. I've received so many compliments on how organized we are—and I can update everything in real time.", stars: 4 },
-                ].map((t, i) => (
-                  <StaggerItem key={i} direction="up">
-                    <motion.div className="h-full rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm" whileHover={{ y: -6 }} transition={{ duration: 0.3 }}>
-                      <div className="mb-4 flex items-center gap-4">
-                        <div className="font-body flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl uppercase text-white">{t.initials}</div>
-                        <div><h3 className="font-body font-normal uppercase text-white">{t.name}</h3><p className="font-body text-[10px] uppercase text-white/60">{t.role}</p></div>
-                      </div>
-                      <p className="font-body text-xs italic text-white/70">&quot;{t.quote}&quot;</p>
-                      <div className="mt-4 flex">{[1,2,3,4,5].map((star) => <span key={star} className={star <= t.stars ? 'text-amber-400' : 'text-amber-400/40'}>★</span>)}</div>
-                    </motion.div>
-                  </StaggerItem>
-                ))}
-              </StaggerContainer>
-            </div>
-          </MotionSection>
-
-          {/* FAQ */}
-          <MotionSection id="faq" className="border-t border-white/5 bg-neutral-900/80 py-16 md:py-20" direction="up">
-            <div className="container mx-auto px-4 md:px-6">
-              <StaggerContainer className="mb-12 text-center" staggerChildren={0.2}>
-                <StaggerItem><h2 className="font-body text-3xl font-normal tracking-tighter uppercase sm:text-4xl md:text-5xl">Frequently Asked Questions</h2></StaggerItem>
-                <StaggerItem><p className="font-body mt-4 text-xs uppercase text-muted-foreground md:text-xs">Find answers to common questions about Loro</p></StaggerItem>
-              </StaggerContainer>
-              <div className="mx-auto max-w-4xl space-y-12">
-                <div>
-                  <h3 className="font-body mb-6 text-center text-2xl font-normal uppercase">General</h3>
-                  <StaggerContainer className="grid gap-4 md:gap-6" staggerChildren={0.1}>
-                    {[
-                      { icon: '💰', question: 'Can I switch plans later?', answer: 'Yes! Upgrades and downgrades are prorated automatically.' },
-                      { icon: '🆓', question: 'Is there a free trial?', answer: 'Yes—Basic plan trials are available for all new users.' },
-                      { icon: '❌', question: 'How do I cancel my subscription?', answer: 'You can cancel anytime from your dashboard or by contacting support.' },
-                      { icon: '📊', question: 'What happens to my data if I cancel?', answer: 'Your data remains accessible for 30 days after cancellation for export.' },
-                    ].map((faq, i) => (
-                      <StaggerItem key={i} direction="up">
-                        <motion.div className="rounded-lg bg-card p-6 shadow-sm" whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} transition={{ duration: 0.3 }}>
-                          <div className="flex items-start gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 mt-1"><span className="text-2xl">{faq.icon}</span></div>
-                            <div className="flex-1"><h4 className="font-body mb-2 text-lg font-normal uppercase">{faq.question}</h4><p className="font-body text-xs uppercase text-muted-foreground">{faq.answer}</p></div>
-                          </div>
-                        </motion.div>
-                      </StaggerItem>
-                    ))}
-                  </StaggerContainer>
-                </div>
-                <div>
-                  <h3 className="font-body mb-6 text-center text-2xl font-normal uppercase">Technical</h3>
-                  <StaggerContainer className="grid gap-4 md:gap-6" staggerChildren={0.1}>
-                    {[
-                      { icon: '🔒', question: 'Is my data secure?', answer: 'All data is encrypted both in transit and at rest using bank-grade security.' },
-                      { icon: '📱', question: 'Can I use Loro offline?', answer: 'Yes! Our mobile app supports limited offline functionality; data syncs when back online.' },
-                      { icon: '🔗', question: 'Do you offer API access?', answer: 'Enterprise plans include full API access for custom integrations.' },
-                    ].map((faq, i) => (
-                      <StaggerItem key={i} direction="up">
-                        <motion.div className="rounded-lg bg-card p-6 shadow-sm" whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} transition={{ duration: 0.3 }}>
-                          <div className="flex items-start gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 mt-1"><span className="text-2xl">{faq.icon}</span></div>
-                            <div className="flex-1"><h4 className="font-body mb-2 text-lg font-normal uppercase">{faq.question}</h4><p className="font-body text-xs uppercase text-muted-foreground">{faq.answer}</p></div>
-                          </div>
-                        </motion.div>
-                      </StaggerItem>
-                    ))}
-                  </StaggerContainer>
-                </div>
-              </div>
-              <motion.div className="mt-16 text-center" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }} viewport={{ once: true }}>
-                <p className="font-body mb-4 text-sm uppercase text-muted-foreground">Still have questions?</p>
-                <Button asChild className="font-body text-xs font-normal uppercase"><Link href="/sign-up">Contact Support</Link></Button>
-              </motion.div>
-            </div>
-          </MotionSection>
-
-          {/* Membership CTA */}
-          <MotionSection className="bg-primary py-16 text-primary-foreground" direction="none">
-            <div className="container mx-auto px-4 md:px-6">
-              <StaggerContainer className="mb-8 text-center" staggerChildren={0.2}>
-                <StaggerItem><h2 className="font-body text-3xl font-normal tracking-tighter uppercase">Join Loro And Connect Your Business</h2></StaggerItem>
-                <StaggerItem><p className="font-body mx-auto mt-4 max-w-2xl text-xs uppercase text-white">Level up your operations with one platform. Get access to field service, analytics, and more.</p></StaggerItem>
-              </StaggerContainer>
-              <motion.div className="mx-auto max-w-md" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} viewport={{ once: true }}>
-                <div className="flex">
-                  <Input type="email" placeholder="Enter your email address" className="rounded-r-none border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50" />
-                  <Button variant="secondary" className="font-body rounded-l-none text-xs font-normal uppercase">Subscribe</Button>
-                </div>
-              </motion.div>
-            </div>
-          </MotionSection>
-
-          {/* Footer */}
-          <MotionSection className="border-t bg-muted/30 py-12" direction="none">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="mb-8 flex flex-col justify-between md:flex-row">
-                <div className="mb-8 md:mb-0">
-                  <div className="mb-4 flex items-center gap-2"><span className="font-body text-xl font-normal uppercase">LORO</span></div>
-                  <div className="flex space-x-4">
-                    {['twitter', 'instagram', 'linkedin'].map((s) => (
-                      <Link key={s} href="#" className="text-muted-foreground hover:text-foreground"><span className="sr-only">{s}</span></Link>
-                    ))}
+              <div className="flex flex-col gap-10 md:flex-row md:justify-between md:items-start">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-body text-xl font-normal tracking-tight text-white">LORO</span>
+                  </div>
+                  <p className="font-body max-w-xs text-sm text-zinc-400">
+                    Smarter operations through thoughtfully designed technology.
+                  </p>
+                  <p className="font-body text-xs text-zinc-500">© 2026 LORO. All rights reserved.</p>
+                  <div className="flex gap-4">
+                    <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="Instagram"><InstagramIcon size={20} /></Link>
+                    <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="X"><TwitterIcon size={20} /></Link>
+                    <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="YouTube"><YoutubeIcon size={20} /></Link>
+                    <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="LinkedIn"><LinkedInIcon size={20} /></Link>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-                  {(['Account', 'Help', 'Company', 'Legal'] as const).map((cat) => (
-                    <div key={cat}>
-                      <h3 className="font-body mb-4 text-xs font-normal uppercase">{cat}</h3>
-                      <ul className="space-y-2">
-                        {cat === 'Account' && ['Dashboard', 'Settings', 'Billing'].map((item) => <li key={item}><Link href="#" className="font-body text-xs text-muted-foreground hover:text-foreground">{item}</Link></li>)}
-                        {cat === 'Help' && ['Support', 'FAQ', 'Resources'].map((item) => <li key={item}><Link href="#" className="font-body text-xs text-muted-foreground hover:text-foreground">{item}</Link></li>)}
-                        {cat === 'Company' && ['About', 'Careers', 'Contact'].map((item) => <li key={item}><Link href="#" className="font-body text-xs text-muted-foreground hover:text-foreground">{item}</Link></li>)}
-                        {cat === 'Legal' && (['Privacy Policy', 'Terms', 'Cookies'] as const).map((name) => <li key={name}><Link href={name === 'Privacy Policy' ? '/privacy' : '#'} className="font-body text-xs text-muted-foreground hover:text-foreground">{name}</Link></li>)}
-                      </ul>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+                  <div>
+                    <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Company</h3>
+                    <ul className="space-y-3">
+                      {['About Loro', 'Newsroom', 'Careers', 'Press', 'Contact Us'].map((item) => (
+                        <li key={item}><Link href="#" className="font-body text-sm text-zinc-400 hover:text-white transition-colors">{item}</Link></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Solutions</h3>
+                    <ul className="space-y-3">
+                      {['Field Service', 'ERP Sync', 'Analytics', 'Integrations'].map((item) => (
+                        <li key={item}><Link href="#" className="font-body text-sm text-zinc-400 hover:text-white transition-colors">{item}</Link></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Products</h3>
+                    <ul className="space-y-3">
+                      {['Dashboard', 'Mobile App', 'Quotes'].map((item) => (
+                        <li key={item}><Link href="#" className="font-body text-sm text-zinc-400 hover:text-white transition-colors">{item}</Link></li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              <div className="border-t pt-8 text-center">
-                <p className="font-body text-xs font-normal uppercase text-muted-foreground">© {new Date().getFullYear()} LORO. All rights reserved.</p>
-              </div>
             </div>
-          </MotionSection>
+          </footer>
         </main>
 
         <ScrollToTop />
+        </div>
       </div>
     </PageTransition>
   );

@@ -11,14 +11,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthPageShell } from '@/components/auth-page-shell';
-import { LORO_RESET_EMAIL_KEY } from '@/lib/auth-reset-storage';
+import { LORO_RESET_EMAIL_KEY, LORO_RESET_CODE_KEY } from '@/lib/auth-reset-storage';
 
-export default function ForgotPasswordPage() {
+export default function VerifyOtpPage() {
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn } = useSignIn();
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,33 +27,25 @@ export default function ForgotPasswordPage() {
     if (isSignedIn) router.push('/dashboard');
   }, [isSignedIn, router]);
 
-  async function handleCreate(e: React.FormEvent) {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = sessionStorage.getItem(LORO_RESET_EMAIL_KEY);
+    if (stored) setEmail(stored);
+    else router.replace('/forgot-password');
+  }, [router]);
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!signIn) return;
-    setLoading(true);
     setError('');
-    try {
-      await signIn.create({
-        strategy: 'reset_password_email_code',
-        identifier: email,
-      });
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(LORO_RESET_EMAIL_KEY, email);
-      }
-      router.push('/forgot-password/verify-otp');
-    } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'errors' in err
-          ? (err as { errors: Array<{ longMessage?: string }> }).errors[0]
-              ?.longMessage
-          : 'Something went wrong. Please try again.';
-      setError(message ?? 'Something went wrong.');
-    } finally {
-      setLoading(false);
+    if (typeof window !== 'undefined' && code.trim()) {
+      sessionStorage.setItem(LORO_RESET_CODE_KEY, code.trim());
+      router.push('/forgot-password/new-password');
+    } else {
+      setError('Please enter the code from your email.');
     }
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || email === null) {
     return (
       <AuthPageShell>
         <div className="flex flex-col items-center justify-center">
@@ -66,27 +59,27 @@ export default function ForgotPasswordPage() {
     <AuthPageShell>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Forgot password?</CardTitle>
+          <CardTitle>Verify your email</CardTitle>
           <CardDescription>
-            Enter your email and we&apos;ll send you a code to reset your
-            password.
+            Enter the 6-digit code we sent to {email}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="code">Verification code</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="code"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
                 required
-                placeholder="you@example.com"
+                placeholder="Enter the 6-digit code"
+                maxLength={6}
               />
             </div>
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Sending...' : 'Send password reset code'}
+              {loading ? 'Verifying...' : 'Continue'}
             </Button>
           </form>
 
@@ -98,7 +91,7 @@ export default function ForgotPasswordPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             <Button variant="link" asChild className="p-0 h-auto font-medium">
-              <Link href="/sign-in">Back to sign in</Link>
+              <Link href="/forgot-password">Use a different email</Link>
             </Button>
           </p>
         </CardContent>

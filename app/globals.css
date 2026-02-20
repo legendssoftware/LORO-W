@@ -46,6 +46,7 @@
   --color-muted-foreground: hsl(var(--muted-foreground));
   --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-lora), ui-serif, Georgia, serif;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -82,6 +83,10 @@
 
 body {
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
 }
 
 /* Thin purple scrollbars (vertical and horizontal) – native overflow */
