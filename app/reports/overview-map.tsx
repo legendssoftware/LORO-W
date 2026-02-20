@@ -112,21 +112,21 @@ function MarkerDetailContent({ marker }: { marker: MapMarkerBase }) {
           <span className="font-medium">Status:</span> {String(marker.status)}
         </p>
       )}
-      {addr && (
+      {addr != null && String(addr).trim() !== '' && (
         <p className="text-muted-foreground">
-          <span className="font-medium">Address:</span> {addr}
+          <span className="font-medium">Address:</span> {String(addr)}
         </p>
       )}
       {(marker as { timestamp?: string }).timestamp && (
         <p className="text-muted-foreground">
           <span className="font-medium">Time:</span>{' '}
-          {new Date((marker as { timestamp: string }).timestamp).toLocaleString()}
+          {new Date((marker as unknown as { timestamp: string }).timestamp).toLocaleString()}
         </p>
       )}
       {(marker as { owner?: { name?: string } }).owner?.name && (
         <p className="text-muted-foreground">
           <span className="font-medium">By:</span>{' '}
-          {(marker as { owner: { name: string } }).owner.name}
+          {String((marker as unknown as { owner: { name?: string } }).owner.name)}
         </p>
       )}
     </div>
