@@ -29,7 +29,7 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
   return (
     <div className="flex h-svh">
       <DashboardSidebar />
-      <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar pt-10">
+      <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar">
         <ConditionalAppHeader />
         <ErrorBoundary>
           <AccessGuard>
