@@ -35,6 +35,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className="light" suppressHydrationWarning>
+        <head>
+          <link rel="preload" as="image" href="/images/covers/2.webp" />
+        </head>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
           <QueryProvider>
           <TooltipProvider>

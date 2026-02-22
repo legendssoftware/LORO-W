@@ -10,7 +10,7 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
       {/* Full-page background image */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/images/covers/auth.jpg)' }}
+        style={{ backgroundImage: 'url(/images/covers/auth.webp)' }}
         aria-hidden
       />
       {/* 0.6 black overlay */}

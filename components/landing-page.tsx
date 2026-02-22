@@ -30,7 +30,7 @@ import { ScrollToTop } from '@/components/animations/scroll-to-top';
 import { SmoothScroll } from '@/components/smooth-scroll';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast-helpers';
 import { handleVapiError, retryVapiOperation } from '@/lib/utils/vapi-error-handler';
-import { getDefaultCoverSlots, getShuffledCoverPaths, COVER_FALLBACK_URLS } from '@/lib/cover-images';
+import { getDefaultCoverSlots, getShuffledCoverPaths, COVER_FALLBACK_URLS, HERO_CENTER_IMAGE } from '@/lib/cover-images';
 
 const CALL_MAX_DURATION_MS =
   (parseInt(process.env.NEXT_PUBLIC_MAX_CALL_DURATION_MINUTES ?? '5', 10) * 60 * 1000);
@@ -247,7 +247,7 @@ export function LandingPage() {
                 </div>
 
                 <div className="flex items-center gap-2 md:hidden">
-                  <motion.button onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen(!isMobileMenuOpen); }} className="rounded-lg p-2 hover:bg-white/10 text-zinc-300" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <motion.button onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen(!isMobileMenuOpen); }} className="rounded-lg p-2 hover:bg-white/10 text-zinc-300" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} aria-label="Open menu">
                     <MenuIcon size={24} className="size-6" />
                   </motion.button>
                 </div>
@@ -262,12 +262,12 @@ export function LandingPage() {
                         <span className="font-body text-lg tracking-tight text-white">LORO</span>
                         <motion.button onClick={() => setIsMobileMenuOpen(false)} className="rounded-full p-2 border border-white/20 bg-white/5 text-zinc-300 hover:bg-white/10" aria-label="Close menu"><XIcon size={24} className="size-6" /></motion.button>
                       </div>
-                      <div className="flex flex-1 flex-col space-y-2 bg-zinc-950/90 p-4">
-                        <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Product</Link>
-                        <Link href="#solutions" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Solutions</Link>
-                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Careers</Link>
-                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body rounded-lg p-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Research</Link>
-                        <div className="border-t border-white/10 pt-4 space-y-2">
+                      <div className="flex flex-1 flex-col items-center space-y-2 bg-zinc-950/90 p-4">
+                        <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Product</Link>
+                        <Link href="#solutions" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Solutions</Link>
+                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Careers</Link>
+                        <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Research</Link>
+                        <div className="flex w-full flex-col items-center border-t border-white/10 pt-4 space-y-2">
                           {isCallActive ? (
                             <Button variant="outline" onClick={endDemoCall} className="font-body w-full text-xs text-red-400 border-0 hover:bg-red-500/20">END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}</Button>
                           ) : connectionError ? (
@@ -276,8 +276,8 @@ export function LandingPage() {
                             <Button onClick={startDemoCall} disabled={isCallInitializing} className="font-body w-full text-xs bg-white/10 text-white border-0 hover:bg-white/20"><PhoneCallIcon size={16} className="mr-2 inline" />{isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}</Button>
                           )}
                         </div>
-                        <div className="border-t border-white/10 pt-4 space-y-2">
-                          <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="font-body block rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white">Sign In</Link>
+                        <div className="flex w-full flex-col items-center border-t border-white/10 pt-4 space-y-2">
+                          <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="font-body block w-full rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white">Sign In</Link>
                           <Button asChild className="font-body w-full text-sm rounded-lg border-0 bg-transparent text-white hover:bg-white/10">
                             <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>Download Now</Link>
                           </Button>
@@ -322,7 +322,7 @@ export function LandingPage() {
                         Get Started
                       </Button>
                     </div>
-                    <p className="font-body text-xs text-zinc-500">
+                    <p className="font-body text-xs text-zinc-400">
                       Join LORO Community with 90+ members
                     </p>
                     <div className="flex -space-x-2">
@@ -351,6 +351,7 @@ export function LandingPage() {
                     <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
                         <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(0)} />
+                        <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                       </div>
                     </div>
                   </motion.div>
@@ -362,7 +363,8 @@ export function LandingPage() {
                   >
                     <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
-                        <Image src={useCoverSrc(1)} fill alt="Loro dashboard" className="object-cover" sizes="182px, 260px" onError={() => setCoverError(1)} />
+                        <Image src={coverFallback[1] ? COVER_FALLBACK_URLS[1] : HERO_CENTER_IMAGE} fill alt="Loro dashboard" className="object-cover" sizes="182px, 260px" priority onError={() => setCoverError(1)} />
+                        <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                       </div>
                     </div>
                   </motion.div>
@@ -376,6 +378,7 @@ export function LandingPage() {
                     <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
                         <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(2)} />
+                        <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                       </div>
                     </div>
                   </motion.div>
@@ -400,7 +403,7 @@ export function LandingPage() {
                   <div key={i} className="text-center">
                     <p className="font-body text-xs text-zinc-400 uppercase tracking-wide">{stat.label}</p>
                     <p className="font-body mt-1 text-3xl font-normal text-white md:text-4xl">{stat.value}</p>
-                    <p className="font-body mt-1 text-xs text-zinc-500">{stat.sub}</p>
+                    <p className="font-body mt-1 text-xs text-zinc-400">{stat.sub}</p>
                   </div>
                 ))}
               </div>
@@ -539,6 +542,7 @@ export function LandingPage() {
                   <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900 shadow-2xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
                       <Image src={useCoverSrc(1)} fill alt="Loro control" className="object-cover" sizes="200px" onError={() => setCoverError(1)} />
+                      <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                     </div>
                   </div>
                 </motion.div>
@@ -557,14 +561,14 @@ export function LandingPage() {
                   Live sync, instant clarity, and full control—not just data.
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
-                <div className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto text-center md:text-left">
+                <div className="flex flex-col items-center space-y-8 md:items-start">
                   {[
                     { title: 'Live ERP Sync, Fast by Design', body: 'Bulk data flows and real-time updates from your existing systems.' },
                     { title: 'Instant Status Clarity', body: 'See who is where and what is due—at a glance.' },
                     { title: 'Operational Control, Not Just Data', body: 'Act on quotes, orders, and schedules directly from the platform.' },
                   ].map((block, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }}>
+                    <motion.div key={i} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }} className="max-w-md md:max-w-none">
                       <h3 className="font-body text-lg font-normal text-white">{block.title}</h3>
                       <p className="font-body mt-2 text-sm text-zinc-400">{block.body}</p>
                     </motion.div>
@@ -638,6 +642,7 @@ export function LandingPage() {
                   <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
                       <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="150px" onError={() => setCoverError(0)} />
+                      <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                     </div>
                   </div>
                 </motion.div>
@@ -645,6 +650,7 @@ export function LandingPage() {
                   <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
                       <Image src={useCoverSrc(1)} fill alt="Loro" className="object-cover" sizes="180px" onError={() => setCoverError(1)} />
+                      <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                     </div>
                   </div>
                 </motion.div>
@@ -652,6 +658,7 @@ export function LandingPage() {
                   <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
                       <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="150px" onError={() => setCoverError(2)} />
+                      <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                     </div>
                   </div>
                 </motion.div>
@@ -662,24 +669,24 @@ export function LandingPage() {
           {/* Footer — AERIUM-style: logo, tagline, Company / Solutions / Products, social */}
           <footer className="border-t border-white/10 bg-black py-12 md:py-16">
             <div className="container mx-auto px-4 md:px-6">
-              <div className="flex flex-col gap-10 md:flex-row md:justify-between md:items-start">
-                <div className="space-y-4">
+              <div className="flex flex-col items-center gap-10 text-center md:flex-row md:justify-between md:items-start md:text-left">
+                <div className="flex flex-col items-center space-y-4 max-w-xs mx-auto md:items-start md:mx-0">
                   <div className="flex items-center gap-2">
                     <span className="font-body text-xl font-normal tracking-tight text-white">LORO</span>
                   </div>
                   <p className="font-body max-w-xs text-sm text-zinc-400">
                     Smarter operations through thoughtfully designed technology.
                   </p>
-                  <p className="font-body text-xs text-zinc-500">© 2026 LORO. All rights reserved.</p>
-                  <div className="flex gap-4">
+                  <p className="font-body text-xs text-zinc-400">© 2026 LORO. All rights reserved.</p>
+                  <div className="flex gap-4 justify-center md:justify-start">
                     <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="Instagram"><InstagramIcon size={20} /></Link>
                     <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="X"><TwitterIcon size={20} /></Link>
                     <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="YouTube"><YoutubeIcon size={20} /></Link>
                     <Link href="#" className="text-zinc-400 hover:text-white transition-colors" aria-label="LinkedIn"><LinkedInIcon size={20} /></Link>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-                  <div>
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 w-full sm:w-auto justify-items-center md:justify-items-start">
+                  <div className="flex flex-col items-center md:items-start text-center md:text-left">
                     <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Company</h3>
                     <ul className="space-y-3">
                       {['About Loro', 'Newsroom', 'Careers', 'Press', 'Contact Us'].map((item) => (
@@ -687,7 +694,7 @@ export function LandingPage() {
                       ))}
                     </ul>
                   </div>
-                  <div>
+                  <div className="flex flex-col items-center md:items-start text-center md:text-left">
                     <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Solutions</h3>
                     <ul className="space-y-3">
                       {['Field Service', 'ERP Sync', 'Analytics', 'Integrations'].map((item) => (
@@ -695,7 +702,7 @@ export function LandingPage() {
                       ))}
                     </ul>
                   </div>
-                  <div>
+                  <div className="flex flex-col items-center md:items-start text-center md:text-left">
                     <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Products</h3>
                     <ul className="space-y-3">
                       {['Dashboard', 'Mobile App', 'Quotes'].map((item) => (
