@@ -2,10 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { getAttStatus, checkIn, checkOut } from '@/api/endpoints/attendance';
+import { getAttStatus, checkIn, checkOut, manageBreak } from '@/api/endpoints/attendance';
 import type {
   CheckInBody,
   CheckOutBody,
+  BreakBody,
   AttStatusResponse,
 } from '@/api/types';
 
@@ -77,6 +78,37 @@ export function useCheckOutMutation() {
         ...(old ?? ({} as AttStatusResponse)),
         checkedIn: false,
         nextAction: 'Start Shift',
+      }));
+      return { previous };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(QUERY_KEY, context.previous);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['att', 'monthly'] });
+    },
+  });
+}
+
+/**
+ * Break mutation (start or end break). Optimistic update; invalidates on success.
+ */
+export function useBreakMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: BreakBody) => manageBreak(client, body),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const previous = queryClient.getQueryData<AttStatusResponse>(QUERY_KEY);
+      queryClient.setQueryData<AttStatusResponse>(QUERY_KEY, (old) => ({
+        ...(old ?? ({} as AttStatusResponse)),
+        checkedIn: true,
+        nextAction: variables.isStartingBreak ? 'End Break' : 'End Shift',
       }));
       return { previous };
     },

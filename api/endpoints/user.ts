@@ -22,6 +22,10 @@ export interface UserResponse {
   managedStaff?: number[];
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
+  businesscardURL?: string | null;
+  departmentId?: number | null;
+  assignedClientIds?: number[];
+  userTarget?: Record<string, unknown> | null;
   isDeleted?: boolean;
   [key: string]: unknown;
 }
@@ -54,6 +58,7 @@ export interface PatchUserBody {
   phone?: string | null;
   photoURL?: string | null;
   avatar?: string | null;
+  businesscardURL?: string | null;
   role?: string;
   status?: string;
   accessLevel?: string;
@@ -88,6 +93,46 @@ export interface PatchUserBody {
     email?: string;
     contactNumber?: string;
   };
+}
+
+/** Partial update body for PATCH /user/:ref/target. Matches server UpdateUserTargetDto. */
+export interface PatchUserTargetBody {
+  targetSalesAmount?: number;
+  targetQuotationsAmount?: number;
+  currentSalesAmount?: number;
+  currentQuotationsAmount?: number;
+  currentOrdersAmount?: number;
+  targetCurrency?: string;
+  targetHoursWorked?: number;
+  currentHoursWorked?: number;
+  targetNewClients?: number;
+  currentNewClients?: number;
+  targetNewLeads?: number;
+  currentNewLeads?: number;
+  targetCheckIns?: number;
+  currentCheckIns?: number;
+  targetCalls?: number;
+  currentCalls?: number;
+  targetPeriod?: string;
+  periodStartDate?: string;
+  periodEndDate?: string;
+  isRecurring?: boolean;
+  recurringInterval?: 'daily' | 'weekly' | 'monthly';
+  carryForwardUnfulfilled?: boolean;
+  baseSalary?: number;
+  carInstalment?: number;
+  carInsurance?: number;
+  fuel?: number;
+  cellPhoneAllowance?: number;
+  carMaintenance?: number;
+  cgicCosts?: number;
+  totalCost?: number;
+  erpSalesRepCode?: string;
+}
+
+export interface GetUserTargetResponse {
+  userTarget: Record<string, unknown> | null;
+  message: string;
 }
 
 /**
@@ -172,5 +217,28 @@ export async function deleteUserPermanently(
   ref: string
 ): Promise<UserMessageResponse> {
   const { data } = await client.delete<UserMessageResponse>(`/user/${ref}/permanent`);
+  return data;
+}
+
+/**
+ * GET /user/:ref/target - get user targets (full payload).
+ */
+export async function getUserTarget(
+  client: AxiosInstance,
+  ref: string
+): Promise<GetUserTargetResponse> {
+  const { data } = await client.get<GetUserTargetResponse>(`/user/${ref}/target`);
+  return data;
+}
+
+/**
+ * PATCH /user/:ref/target - update user targets. Ref can be numeric uid string (e.g. "45").
+ */
+export async function patchUserTarget(
+  client: AxiosInstance,
+  ref: string,
+  body: PatchUserTargetBody
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(`/user/${ref}/target`, body);
   return data;
 }

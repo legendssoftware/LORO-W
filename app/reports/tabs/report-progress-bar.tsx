@@ -16,19 +16,18 @@ function getSegmentState(
   return { state: 'partial', partialPercent };
 }
 
-/** Progress tier colors: <50% red, 50–<75% orange, ≥75% green. */
+/** Progress tier colors: <75% red, ≥75% green (same rule for text and bar). */
 export function getProgressColorClasses(value: number): { text: string; bg: string } {
   if (value >= 75) return { text: 'text-green-600', bg: 'bg-green-500' };
-  if (value >= 50) return { text: 'text-orange-600', bg: 'bg-orange-500' };
   return { text: 'text-red-600', bg: 'bg-red-500' };
 }
 
 const SEGMENT_COUNT = 4;
-const FILL = 'bg-orange-500';
-const TRACK = 'bg-orange-100';
+const TRACK = 'bg-muted';
 
-/** Four-segment progress bar: quarters of total expected (0–25%, 25–50%, 50–75%, 75–100%). */
+/** Four-segment progress bar: quarters of total expected (0–25%, 25–50%, 50–75%, 75–100%). Fill is red when <75%, green when ≥75%. */
 export function ReportProgressBar({ value }: { value: number }) {
+  const fillClass = getProgressColorClasses(value).bg;
   return (
     <div
       className="flex w-full gap-1.5 items-stretch"
@@ -45,13 +44,13 @@ export function ReportProgressBar({ value }: { value: number }) {
             className={cn(
               'flex-1 h-2 rounded-full overflow-hidden min-w-0',
               state === 'empty' && TRACK,
-              state === 'full' && FILL,
+              state === 'full' && fillClass,
               state === 'partial' && TRACK
             )}
           >
             {state === 'partial' && partialPercent != null && (
               <div
-                className={cn('h-full rounded-full transition-all', FILL)}
+                className={cn('h-full rounded-full transition-all', fillClass)}
                 style={{ width: `${partialPercent}%`, minWidth: partialPercent > 0 ? 2 : 0 }}
               />
             )}

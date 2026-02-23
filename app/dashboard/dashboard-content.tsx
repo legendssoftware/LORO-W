@@ -11,12 +11,12 @@ import {
   useLeaves,
   useCheckInMutation,
   useCheckOutMutation,
+  useBreakMutation,
 } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
-import { DashboardNextAction } from '@/components/dashboard-next-action';
 import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 
@@ -42,12 +42,15 @@ export function DashboardContent() {
   });
   const checkInMutation = useCheckInMutation();
   const checkOutMutation = useCheckOutMutation();
+  const breakMutation = useBreakMutation();
   const attStatus = attQuery.data;
   const checkedIn = attStatus?.checkedIn ?? false;
-  const attLoading = checkInMutation.isPending || checkOutMutation.isPending;
+  const onBreak =
+    attStatus?.nextAction === 'End Break' || attStatus?.nextAction === 'Resume Work';
+  const attLoading =
+    checkInMutation.isPending || checkOutMutation.isPending || breakMutation.isPending;
 
   const isClient = profile?.accessLevel === 'client';
-  const nextAction = attStatus?.nextAction ?? null;
 
   const leaveDaysAccrued = useMemo(() => {
     const leaves = leavesQuery.data ?? [];
@@ -104,6 +107,44 @@ export function DashboardContent() {
     );
   };
 
+  const handleStartBreak = async () => {
+    const position = await getPosition();
+    breakMutation.mutate(
+      {
+        isStartingBreak: true,
+        breakNotes: '',
+        ...(position !== null && {
+          breakLatitude: position.lat,
+          breakLongitude: position.lng,
+        }),
+      },
+      {
+        onSuccess: () => {
+          showSuccessToast('Break started', toast);
+        },
+      }
+    );
+  };
+
+  const handleEndBreak = async () => {
+    const position = await getPosition();
+    breakMutation.mutate(
+      {
+        isStartingBreak: false,
+        breakNotes: '',
+        ...(position !== null && {
+          breakLatitude: position.lat,
+          breakLongitude: position.lng,
+        }),
+      },
+      {
+        onSuccess: () => {
+          showSuccessToast('Break ended', toast);
+        },
+      }
+    );
+  };
+
   // Render a single consistent tree until mounted to avoid hydration mismatch:
   // server and initial client render both show the same loading placeholder.
   if (!mounted) {
@@ -138,16 +179,15 @@ export function DashboardContent() {
           <div className="space-y-4">
             <AttendanceStatusButton
               checkedIn={checkedIn}
+              onBreak={onBreak}
               loading={attLoading || attQuery.isLoading}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              onStartBreak={handleStartBreak}
+              onEndBreak={handleEndBreak}
+              startTime={attStatus?.startTime ?? null}
+              breakStartTime={attStatus?.breakStartTime ?? null}
             />
-            <div className="space-y-1">
-              <DashboardNextAction
-                nextAction={nextAction}
-                isLoading={attQuery.isLoading}
-              />
-            </div>
             <DashboardMetricsCard
               metrics={metricsQuery.data}
               isLoading={metricsQuery.isLoading}

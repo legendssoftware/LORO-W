@@ -7,7 +7,7 @@ import { useMonthlyAttendance } from '@/api/hooks';
 import { AttendanceChartsSection } from '@/app/reports/tabs/attendance-charts-section';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
-import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS } from '@/app/reports/tabs/constants';
+import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -168,14 +169,28 @@ function ReportUserCard({
 }) {
   const isMobile = useIsMobile();
   const expectedByNow = getExpectedHoursByDate(endDate);
+  const hoursBehind = expectedByNow - user.hoursThisMonth;
+  const isBehindBadge = hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD;
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-colors hover:opacity-90 bg-white border rounded-lg',
+        'relative cursor-pointer transition-colors hover:opacity-90 bg-white border rounded-lg',
         user.isPresent ? 'border-green-500' : 'border-red-500'
       )}
       onClick={onClick}
     >
+      {isBehindBadge && (
+        <div className="absolute top-2 right-2 z-10">
+          <Badge
+            variant="destructive"
+            className="text-[10px] px-1.5 py-0"
+            title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+            aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+          >
+            Behind on hours
+          </Badge>
+        </div>
+      )}
       <CardContent
         className={cn(
           'flex flex-col flex-1 justify-between',

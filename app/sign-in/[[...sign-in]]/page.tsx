@@ -1,6 +1,4 @@
 import { SignIn } from '@clerk/nextjs';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { AuthPageShell } from '@/components/auth-page-shell';
 
 export const metadata = {
@@ -27,11 +25,6 @@ export default function SignInPage() {
           forceRedirectUrl="/dashboard"
           fallbackRedirectUrl="/dashboard"
         />
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          <Button variant="link" asChild className="p-0 h-auto font-medium">
-            <Link href="/forgot-password">Forgot password?</Link>
-          </Button>
-        </p>
       </div>
     </AuthPageShell>
   );

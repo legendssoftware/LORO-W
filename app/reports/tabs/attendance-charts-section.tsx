@@ -31,6 +31,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import type { MonthlyMetricsUserItem } from '@/api/types';
+import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
 import { EXPECTED_MONTHLY_HOURS } from './constants';
 
 /** Props for the shared attendance charts section. */
@@ -62,8 +63,8 @@ function PresentAbsentPieChart({
   attendanceRate: number;
 }) {
   const data = [
-    { name: 'present', value: presentCount, fill: 'var(--color-present)' },
-    { name: 'absent', value: absentCount, fill: 'var(--color-absent)' },
+    { name: 'present', value: presentCount, fill: getChartColor(0) },
+    { name: 'absent', value: absentCount, fill: getChartColor(1) },
   ].filter((d) => d.value > 0);
 
   return (
@@ -161,8 +162,8 @@ function LateVsOnTimeBarChart({
   onTimeCount: number;
 }) {
   const data = [
-    { name: 'Late', count: lateCount, fill: 'var(--color-late)' },
-    { name: 'On-time', count: onTimeCount, fill: 'var(--color-onTime)' },
+    { name: 'Late', count: lateCount, fill: getChartColor(0) },
+    { name: 'On-time', count: onTimeCount, fill: getChartColor(1) },
   ];
   return (
     <Card>
@@ -226,16 +227,8 @@ function LateVsOnTimeBarChart({
                 <ChartLegendContent
                   nameKey="name"
                   payload={[
-                    {
-                      value: 'Late',
-                      dataKey: 'late',
-                      color: 'var(--color-late)',
-                    },
-                    {
-                      value: 'On-time',
-                      dataKey: 'onTime',
-                      color: 'var(--color-onTime)',
-                    },
+                    { value: 'Late', dataKey: 'late', color: getChartColor(0) },
+                    { value: 'On-time', dataKey: 'onTime', color: getChartColor(1) },
                   ]}
                 />
               }
@@ -264,10 +257,10 @@ function HoursTargetTop5Chart({
 }) {
   const data = useMemo(() => {
     const sorted = [...userMetrics].sort((a, b) => b.totalHours - a.totalHours);
-    return sorted.slice(0, 5).map((u) => ({
+    return sorted.slice(0, 5).map((u, i) => ({
       name: u.userName.length > 20 ? `${u.userName.slice(0, 17)}…` : u.userName,
       hours: Math.round(u.totalHours * 10) / 10,
-      fill: 'var(--color-hours)',
+      fill: getChartColor(i),
     }));
   }, [userMetrics]);
 
@@ -324,7 +317,10 @@ function HoursTargetTop5Chart({
               cursor={false}
               content={<ChartTooltipContent nameKey="name" />}
             />
-            <Bar dataKey="hours" layout="vertical" radius={4} fill="var(--color-hours)">
+            <Bar dataKey="hours" layout="vertical" radius={4}>
+              {data.map((entry, i) => (
+                <Cell key={i} fill={entry.fill} />
+              ))}
               <LabelList
                 dataKey="hours"
                 position="right"
@@ -360,8 +356,8 @@ function OvertimeVsRegularPieChart({
 }) {
   const regularHours = Math.max(0, totalHours - totalOvertimeHours);
   const data = [
-    { name: 'regular', value: regularHours, fill: 'var(--color-regular)' },
-    { name: 'overtime', value: totalOvertimeHours, fill: 'var(--color-overtime)' },
+    { name: 'regular', value: regularHours, fill: getChartColor(0) },
+    { name: 'overtime', value: totalOvertimeHours, fill: getChartColor(1) },
   ].filter((d) => d.value > 0);
   const total = totalHours;
 
@@ -433,7 +429,7 @@ function OvertimeVsRegularPieChart({
                           y={viewBox.cy}
                           className="fill-foreground text-3xl font-bold"
                         >
-                          {total.toLocaleString()}h
+                          {formatCompactValue(total, 'h')}
                         </tspan>
                         <tspan
                           x={viewBox.cx}

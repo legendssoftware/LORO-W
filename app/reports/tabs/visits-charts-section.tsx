@@ -31,6 +31,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import type { VisitExportItem } from '@/api/types/reports';
+import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
 
 const VISITS_METHOD_CHART_CONFIG: ChartConfig = {
   count: { label: 'Visits', color: 'var(--chart-1)' },
@@ -107,11 +108,10 @@ export function VisitsChartsSection({
       const key = c.methodOfContact || 'Not set';
       map.set(key, (map.get(key) ?? 0) + 1);
     }
-    const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
     return Array.from(map.entries()).map(([name, value], i) => ({
       name,
       value,
-      fill: colors[i % colors.length],
+      fill: getChartColor(i),
     }));
   }, [checkIns]);
 
@@ -128,7 +128,7 @@ export function VisitsChartsSection({
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, VISITS_CHART_TOP_N)
-      .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+      .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
   }, [checkIns]);
 
   const byRegionData = useMemo(() => {
@@ -140,7 +140,7 @@ export function VisitsChartsSection({
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, VISITS_CHART_TOP_N)
-      .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+      .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
   }, [checkIns]);
 
   const durationByUserData = useMemo(() => {
@@ -166,11 +166,11 @@ export function VisitsChartsSection({
       .filter(({ averageMinutes }) => averageMinutes > 0)
       .sort((a, b) => b.averageMinutes - a.averageMinutes)
       .slice(0, VISITS_CHART_TOP_N)
-      .map(({ name, averageMinutes }) => ({
+      .map(({ name, averageMinutes }, i) => ({
         name,
         averageMinutes,
         displayDuration: formatMinutesToDuration(averageMinutes),
-        fill: 'var(--color-count)',
+        fill: getChartColor(i),
       }));
   }, [checkIns]);
 
@@ -240,7 +240,7 @@ export function VisitsChartsSection({
                               y={viewBox.cy}
                               className="fill-foreground text-3xl font-bold"
                             >
-                              {totalVisits.toLocaleString()}
+                              {formatCompactValue(totalVisits)}
                             </tspan>
                             <tspan
                               x={viewBox.cx}
@@ -296,7 +296,10 @@ export function VisitsChartsSection({
                 />
                 <XAxis dataKey="count" type="number" hide />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                <Bar dataKey="count" layout="vertical" radius={4}>
+                  {byUserData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
                   <LabelList
                     dataKey="count"
                     position="right"
@@ -345,7 +348,10 @@ export function VisitsChartsSection({
                 />
                 <XAxis dataKey="count" type="number" hide />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                <Bar dataKey="count" layout="vertical" radius={4}>
+                  {byRegionData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
                   <LabelList
                     dataKey="count"
                     position="right"
@@ -405,7 +411,10 @@ export function VisitsChartsSection({
                     />
                   }
                 />
-                <Bar dataKey="averageMinutes" layout="vertical" radius={4} fill="var(--color-count)">
+                <Bar dataKey="averageMinutes" layout="vertical" radius={4}>
+                  {durationByUserData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
                   <LabelList
                     dataKey="displayDuration"
                     position="right"

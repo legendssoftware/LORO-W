@@ -3,6 +3,7 @@ import type {
     AttStatusResponse,
     AttendanceMetricsResponse,
     AttendanceReportResponse,
+    BreakBody,
     CheckInBody,
     CheckOutBody,
     DailyOverviewResponse,
@@ -68,6 +69,17 @@ export async function checkOut(
     body: CheckOutBody
 ): Promise<unknown> {
     const { data } = await client.post("/att/out", body);
+    return data;
+}
+
+/**
+ * POST /att/break - start or end a break for the authenticated user.
+ */
+export async function manageBreak(
+    client: AxiosInstance,
+    body: BreakBody
+): Promise<unknown> {
+    const { data } = await client.post("/att/break", body);
     return data;
 }
 

@@ -8,11 +8,15 @@ import {
   deleteUser,
   restoreUser,
   deleteUserPermanently,
+  getUserTarget,
+  patchUserTarget,
   type PatchUserBody,
+  type PatchUserTargetBody,
   type UserResponse,
 } from '@/api/endpoints/user';
 
 const QUERY_KEY_PREFIX = ['user'] as const;
+const TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
 
 export function useUser(
   ref: string | null,
@@ -101,4 +105,36 @@ export function useDeleteUserPermanently(ref: string | null) {
   });
 }
 
-export type { UserResponse, PatchUserBody };
+export function useUserTarget(ref: string | null, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...TARGET_QUERY_KEY_PREFIX, ref],
+    queryFn: async () => {
+      if (!ref) return { userTarget: null, message: '' };
+      const res = await getUserTarget(client, ref);
+      return res;
+    },
+    enabled: (options?.enabled !== false && !!ref) ?? false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePatchUserTarget(ref: string | null) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: PatchUserTargetBody) => {
+      if (!ref) throw new Error('User ref required');
+      return patchUserTarget(client, ref, body);
+    },
+    onSuccess: (_, __, ___) => {
+      if (ref) {
+        queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
+        queryClient.invalidateQueries({ queryKey: [...TARGET_QUERY_KEY_PREFIX, ref] });
+      }
+    },
+  });
+}
+
+export type { UserResponse, PatchUserBody, PatchUserTargetBody };

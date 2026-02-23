@@ -8,11 +8,20 @@ export interface AttStatusResponse {
     nextAction?: string | null;
     startTime?: string | null;
     endTime?: string | null;
+    breakStartTime?: string | null;
     attendance?: {
         checkIn?: string;
         checkOut?: string | null;
         status?: string;
     } | null;
+}
+
+/** POST /att/break - start or end a break. */
+export interface BreakBody {
+    isStartingBreak: boolean;
+    breakNotes?: string;
+    breakLatitude?: number;
+    breakLongitude?: number;
 }
 
 /** GET /att/metrics response (self). Used for Total hours card and streak. */

@@ -39,6 +39,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -58,9 +59,10 @@ import { cn } from '@/lib/utils';
 import { isStaffDashboardVisible } from '@/lib/access';
 import Link from 'next/link';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
+import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
-import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS } from '@/app/reports/tabs/constants';
+import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
 
 const TabSkeleton = () => (
@@ -249,11 +251,10 @@ function VisitsChartsSection({
             const key = c.methodOfContact || 'Not set';
             map.set(key, (map.get(key) ?? 0) + 1);
         }
-        const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
         return Array.from(map.entries()).map(([name, value], i) => ({
             name,
             value,
-            fill: colors[i % colors.length],
+            fill: getChartColor(i),
         }));
     }, [checkIns]);
 
@@ -270,7 +271,7 @@ function VisitsChartsSection({
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, VISITS_CHART_TOP_N)
-            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+            .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
     }, [checkIns]);
 
     const byRegionData = useMemo(() => {
@@ -282,7 +283,7 @@ function VisitsChartsSection({
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, VISITS_CHART_TOP_N)
-            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+            .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
     }, [checkIns]);
 
     const durationByUserData = useMemo(() => {
@@ -308,11 +309,11 @@ function VisitsChartsSection({
             .filter(({ averageMinutes }) => averageMinutes > 0)
             .sort((a, b) => b.averageMinutes - a.averageMinutes)
             .slice(0, VISITS_CHART_TOP_N)
-            .map(({ name, averageMinutes }) => ({
+            .map(({ name, averageMinutes }, i) => ({
                 name,
                 averageMinutes,
                 displayDuration: formatMinutesToDuration(averageMinutes),
-                fill: 'var(--color-count)',
+                fill: getChartColor(i),
             }));
     }, [checkIns]);
 
@@ -383,7 +384,7 @@ function VisitsChartsSection({
                                                             y={viewBox.cy}
                                                             className="fill-foreground text-3xl font-bold"
                                                         >
-                                                            {totalVisits.toLocaleString()}
+                                                            {formatCompactValue(totalVisits)}
                                                         </tspan>
                                                         <tspan
                                                             x={viewBox.cx}
@@ -440,7 +441,10 @@ function VisitsChartsSection({
                                 />
                                 <XAxis dataKey="count" type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="count" layout="vertical" radius={4}>
+                                    {byUserData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="count"
                                         position="right"
@@ -490,7 +494,10 @@ function VisitsChartsSection({
                                 />
                                 <XAxis dataKey="count" type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="count" layout="vertical" radius={4}>
+                                    {byRegionData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="count"
                                         position="right"
@@ -551,7 +558,10 @@ function VisitsChartsSection({
                                         />
                                     }
                                 />
-                                <Bar dataKey="averageMinutes" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="averageMinutes" layout="vertical" radius={4}>
+                                    {durationByUserData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="displayDuration"
                                         position="right"
@@ -620,7 +630,7 @@ function buildTelUrlSafe(phone: string | null | undefined): string {
     return normalized ? `tel:${normalized}` : '#';
 }
 
-/** Visit Detail Dialog: full check-in data including images. */
+/** Visit Detail Dialog: full check-in data including images. Click a photo to expand in a lightbox. */
 function VisitDetailDialog({
     visit,
     open,
@@ -630,11 +640,13 @@ function VisitDetailDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
     if (!visit) return null;
     const ownerFullName = visit.owner ? [visit.owner.name, visit.owner.surname].filter(Boolean).join(' ').trim() : '-';
     const inAddr = formatAddressForDisplay(visit.fullAddress, visit.checkInLocation || '-');
     const outAddr = formatAddressForDisplay(visit.checkOutFullAddress, visit.checkOutLocation || '-');
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-2xl"
@@ -707,40 +719,70 @@ function VisitDetailDialog({
                                     {visit.checkInPhoto && (
                                         <div>
                                             <p className="text-muted-foreground text-xs mb-1">Check-in photo</p>
-                                            <img
-                                                src={visit.checkInPhoto}
-                                                alt="Check-in"
-                                                className="rounded-lg border w-full max-h-48 object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedImageUrl(visit.checkInPhoto ?? null);
                                                 }}
-                                            />
+                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                aria-label="View check-in photo full size"
+                                            >
+                                                <img
+                                                    src={visit.checkInPhoto}
+                                                    alt="Check-in"
+                                                    className="w-full max-h-48 object-cover cursor-pointer"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                    }}
+                                                />
+                                            </button>
                                         </div>
                                     )}
                                     {visit.checkOutPhoto && (
                                         <div>
                                             <p className="text-muted-foreground text-xs mb-1">Check-out photo</p>
-                                            <img
-                                                src={visit.checkOutPhoto}
-                                                alt="Check-out"
-                                                className="rounded-lg border w-full max-h-48 object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedImageUrl(visit.checkOutPhoto ?? null);
                                                 }}
-                                            />
+                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                aria-label="View check-out photo full size"
+                                            >
+                                                <img
+                                                    src={visit.checkOutPhoto}
+                                                    alt="Check-out"
+                                                    className="w-full max-h-48 object-cover cursor-pointer"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                    }}
+                                                />
+                                            </button>
                                         </div>
                                     )}
                                     {visit.contactImage && (
                                         <div>
                                             <p className="text-muted-foreground text-xs mb-1">Contact photo</p>
-                                            <img
-                                                src={visit.contactImage}
-                                                alt="Contact"
-                                                className="rounded-lg border w-full max-h-48 object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedImageUrl(visit.contactImage ?? null);
                                                 }}
-                                            />
+                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                aria-label="View contact photo full size"
+                                            >
+                                                <img
+                                                    src={visit.contactImage}
+                                                    alt="Contact"
+                                                    className="w-full max-h-48 object-cover cursor-pointer"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                                                    }}
+                                                />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -897,6 +939,36 @@ function VisitDetailDialog({
                 </div>
             </DialogContent>
         </Dialog>
+        <Dialog open={!!expandedImageUrl} onOpenChange={(o) => !o && setExpandedImageUrl(null)}>
+            <DialogContent
+                className="max-w-[95vw] max-h-[95vh] w-fit p-2 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="relative flex items-center justify-center">
+                    {expandedImageUrl && (
+                        <img
+                            src={expandedImageUrl}
+                            alt="Expanded view"
+                            className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded"
+                            onError={(e) => {
+                                e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                            }}
+                        />
+                    )}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 rounded-full bg-background/80 hover:bg-background border shadow"
+                        onClick={() => setExpandedImageUrl(null)}
+                        aria-label="Close image"
+                    >
+                        <XIcon className="size-4" />
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }
 
@@ -1730,6 +1802,8 @@ function ReportUserDetailModal({
 }) {
     const open = !!user;
     const expectedByNow = getExpectedHoursByDate(endDate);
+    const hoursBehind = user ? expectedByNow - user.hoursThisMonth : 0;
+    const isBehindBadge = user ? hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD : false;
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
             <DialogContent
@@ -1788,6 +1862,16 @@ function ReportUserDetailModal({
                                             .filter(Boolean)
                                             .join(' · ')}
                                     </p>
+                                )}
+                                {isBehindBadge && (
+                                    <Badge
+                                        variant="destructive"
+                                        className="mt-2 text-xs"
+                                        title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                        aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                    >
+                                        Behind on hours ({Math.round(hoursBehind)}h under expected)
+                                    </Badge>
                                 )}
                             </div>
                         </div>
