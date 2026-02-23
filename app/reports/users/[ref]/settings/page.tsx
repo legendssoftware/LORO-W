@@ -219,7 +219,10 @@ function buildPatchBody(user: UserBaseline | null | undefined, values: FormValue
   if (norm(user.businesscardURL ?? null) !== norm(values.businesscardURL ?? null))
     body.businesscardURL = values.businesscardURL ?? undefined;
 
-  const sameProfile = (a: Record<string, unknown> | null | undefined, b: FormValues['profile']) => {
+  const sameProfile = (
+    a: Record<string, unknown> | null | undefined,
+    b: FormValues['profile'] | FormValues['employmentProfile']
+  ) => {
     if (!a && !b) return true;
     if (!a || !b) return false;
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
