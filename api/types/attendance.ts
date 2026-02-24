@@ -154,6 +154,10 @@ export interface DailyOverviewUser {
     checkOutTime?: string | null;
     status?: string;
     workingHours?: string | null;
+    /** Present users: e.g. "8h 30m" or "In Progress". */
+    shiftDuration?: string | null;
+    /** Present users: true when status is on break. */
+    isOnBreak?: boolean;
     lastSeenDate?: string | null;
     employeeSince?: string;
     isActive?: boolean;

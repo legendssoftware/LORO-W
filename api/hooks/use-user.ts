@@ -10,6 +10,7 @@ import {
   deleteUserPermanently,
   getUserTarget,
   patchUserTarget,
+  getUserPreferences,
   type PatchUserBody,
   type PatchUserTargetBody,
   type UserResponse,
@@ -20,15 +21,16 @@ const TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
 
 export function useUser(
   ref: string | null,
-  options?: { enabled?: boolean; includeDeleted?: boolean }
+  options?: { enabled?: boolean; includeDeleted?: boolean; includeAssignedClients?: boolean }
 ) {
   const client = useApiClient();
   return useQuery({
-    queryKey: [...QUERY_KEY_PREFIX, ref, options?.includeDeleted ?? false],
+    queryKey: [...QUERY_KEY_PREFIX, ref, options?.includeDeleted ?? false, options?.includeAssignedClients],
     queryFn: async () => {
       if (!ref) return null;
       const res = await getUserByRef(client, ref, {
         includeDeleted: options?.includeDeleted,
+        includeAssignedClients: options?.includeAssignedClients,
       });
       return res.user;
     },
@@ -113,6 +115,22 @@ export function useUserTarget(ref: string | null, options?: { enabled?: boolean 
       if (!ref) return { userTarget: null, message: '' };
       const res = await getUserTarget(client, ref);
       return res;
+    },
+    enabled: (options?.enabled !== false && !!ref) ?? false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+const PREFERENCES_QUERY_KEY_PREFIX = ['user', 'preferences'] as const;
+
+export function useUserPreferences(ref: string | null, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...PREFERENCES_QUERY_KEY_PREFIX, ref],
+    queryFn: async () => {
+      if (!ref) return { preferences: {}, message: '' };
+      return getUserPreferences(client, ref);
     },
     enabled: (options?.enabled !== false && !!ref) ?? false,
     staleTime: 60 * 1000,

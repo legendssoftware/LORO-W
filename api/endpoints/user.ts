@@ -135,6 +135,25 @@ export interface GetUserTargetResponse {
   message: string;
 }
 
+/** GET /user/:ref/preferences - user preferences (theme, language, notifications, etc.). */
+export interface GetUserPreferencesResponse {
+  preferences: {
+    theme?: string;
+    language?: string;
+    notifications?: boolean;
+    shiftAutoEnd?: boolean;
+    notificationFrequency?: string;
+    dateFormat?: string;
+    timeFormat?: string;
+    emailNotifications?: boolean;
+    smsNotifications?: boolean;
+    biometricAuth?: boolean;
+    advancedFeatures?: boolean;
+    timezone?: string;
+  };
+  message: string;
+}
+
 /**
  * GET /user - list org-scoped users (paginated).
  */
@@ -154,14 +173,16 @@ export async function getUsers(
 /**
  * GET /user/:ref - get user by uid or Clerk user ID.
  * @param includeDeleted - if true, includes soft-deleted users (for settings restore/permanent-delete flow)
+ * @param includeAssignedClients - if false, omits assignedClients from response (default true)
  */
 export async function getUserByRef(
   client: AxiosInstance,
   ref: string,
-  options?: { includeDeleted?: boolean }
+  options?: { includeDeleted?: boolean; includeAssignedClients?: boolean }
 ): Promise<GetUserByRefResponse> {
   const params = new URLSearchParams();
   if (options?.includeDeleted) params.set('includeDeleted', 'true');
+  if (options?.includeAssignedClients === false) params.set('includeAssignedClients', 'false');
   const qs = params.toString();
   const { data } = await client.get<GetUserByRefResponse>(`/user/${ref}${qs ? `?${qs}` : ''}`);
   return data;
@@ -240,5 +261,16 @@ export async function patchUserTarget(
   body: PatchUserTargetBody
 ): Promise<{ message: string }> {
   const { data } = await client.patch<{ message: string }>(`/user/${ref}/target`, body);
+  return data;
+}
+
+/**
+ * GET /user/:ref/preferences - get user preferences (theme, language, notifications, etc.).
+ */
+export async function getUserPreferences(
+  client: AxiosInstance,
+  ref: string
+): Promise<GetUserPreferencesResponse> {
+  const { data } = await client.get<GetUserPreferencesResponse>(`/user/${ref}/preferences`);
   return data;
 }

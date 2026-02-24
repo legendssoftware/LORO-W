@@ -17,6 +17,7 @@ import {
   useBranches,
   useUsers,
   useClients,
+  useSessionSync,
 } from '@/api/hooks';
 import type { PatchUserBody, PatchUserTargetBody } from '@/api/endpoints/user';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon } from '@/lib/icons';
@@ -314,8 +315,15 @@ export default function UserSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const ref = typeof params.ref === 'string' ? params.ref : null;
-  const { data: user, isLoading: userLoading, error: userError } = useUser(ref, {
+  const { backendUserData: sessionUser } = useSessionSync();
+  // Use clerk ID or "me" when viewing own profile so server hits cache (guard already loaded by clerk ID)
+  const effectiveRef =
+    ref && sessionUser && (String(sessionUser.uid) === ref || sessionUser.clerkUserId === ref)
+      ? (sessionUser.clerkUserId ?? 'me')
+      : ref;
+  const { data: user, isLoading: userLoading, error: userError } = useUser(effectiveRef, {
     includeDeleted: true,
+    includeAssignedClients: false, // Settings page loads clients via useClients
   });
   const patchUser = usePatchUser(ref);
   const patchUserTargetMutation = usePatchUserTarget(ref);
@@ -324,7 +332,7 @@ export default function UserSettingsPage() {
   const deletePermanentMutation = useDeleteUserPermanently(ref);
   const { data: branches = [] } = useBranches({ enabled: !!ref });
   const { data: users = [] } = useUsers({ enabled: !!ref, limit: 200 });
-  const { data: clients = [] } = useClients({ enabled: !!ref, limit: 500 });
+  const { data: clients = [] } = useClients({ enabled: !!ref, limit: 100 });
 
   const [permanentConfirmText, setPermanentConfirmText] = useState('');
   const [softDeleteOpen, setSoftDeleteOpen] = useState(false);

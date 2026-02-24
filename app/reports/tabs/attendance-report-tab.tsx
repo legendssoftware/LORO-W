@@ -379,6 +379,7 @@ export function AttendanceReportTab({
               <SelectItem value="absent">Absent</SelectItem>
               <SelectItem value="late">Late</SelectItem>
               <SelectItem value="early">Early</SelectItem>
+              <SelectItem value="behind_on_hours">Behind on hours</SelectItem>
             </SelectContent>
           </Select>
         </div>

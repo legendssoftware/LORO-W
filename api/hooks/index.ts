@@ -25,6 +25,7 @@ export {
   useDeleteUserPermanently,
   useUserTarget,
   usePatchUserTarget,
+  useUserPreferences,
 } from "./use-user";
 export { useUsers } from "./use-users";
 export { useMapReport } from "./use-map-report";
