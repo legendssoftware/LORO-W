@@ -956,6 +956,7 @@ function VisitDetailDialog({
         </Dialog>
         <Dialog open={!!expandedImageUrl} onOpenChange={(o) => !o && setExpandedImageUrl(null)}>
             <DialogContent
+                showCloseButton={false}
                 className="max-w-[95vw] max-h-[95vh] w-fit p-2 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -974,11 +975,11 @@ function VisitDetailDialog({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2 rounded-full bg-background/80 hover:bg-background border shadow"
+                        className="absolute right-2 top-2 rounded-full border border-red-200 bg-red-50 hover:bg-red-100 shadow-none focus:ring-0"
                         onClick={() => setExpandedImageUrl(null)}
                         aria-label="Close image"
                     >
-                        <XIcon className="size-4" />
+                        <XIcon className="size-4 text-red-600" />
                     </Button>
                 </div>
             </DialogContent>

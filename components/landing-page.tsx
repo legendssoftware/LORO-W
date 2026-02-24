@@ -229,7 +229,7 @@ export function LandingPage() {
                 </nav>
 
                 <div className="hidden items-center gap-4 md:flex">
-                  <Link href="/sign-in" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">Sign In</Link>
+                  <Link href="/sign-in" className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors">My Account</Link>
                   {isCallActive ? (
                     <Button variant="outline" size="sm" onClick={endDemoCall} className="font-body text-xs font-normal text-red-400 border-0 bg-transparent hover:bg-red-500/20 hover:text-red-300">
                       END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}
@@ -237,13 +237,10 @@ export function LandingPage() {
                   ) : connectionError ? (
                     <Button variant="outline" size="sm" onClick={retryDemoCall} className="font-body text-xs font-normal text-amber-400 border-0 bg-transparent hover:bg-amber-500/20">RETRY CALL</Button>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={startDemoCall} disabled={isCallInitializing} className="font-body text-xs font-normal text-zinc-300 border-0 bg-transparent hover:bg-white/10">
+                    <Button variant="outline" size="sm" onClick={startDemoCall} disabled={isCallInitializing} className="font-body text-xs font-normal text-white border-0 bg-purple-600 hover:bg-purple-700 transition-colors">
                       {isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}
                     </Button>
                   )}
-                  <Button asChild className="font-body text-sm font-normal rounded-lg border-0 bg-transparent text-white hover:bg-white/10">
-                    <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer">Download Now</Link>
-                  </Button>
                 </div>
 
                 <div className="flex items-center gap-2 md:hidden">
@@ -268,19 +265,14 @@ export function LandingPage() {
                         <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Careers</Link>
                         <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white">Research</Link>
                         <div className="flex w-full flex-col items-center border-t border-white/10 pt-4 space-y-2">
+                          <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="font-body block w-full rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white">My Account</Link>
                           {isCallActive ? (
                             <Button variant="outline" onClick={endDemoCall} className="font-body w-full text-xs text-red-400 border-0 hover:bg-red-500/20">END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}</Button>
                           ) : connectionError ? (
                             <Button variant="outline" onClick={retryDemoCall} className="font-body w-full text-xs text-amber-400 border-0 hover:bg-amber-500/20"><PhoneCallIcon size={16} className="mr-2 inline" />RETRY CALL</Button>
                           ) : (
-                            <Button onClick={startDemoCall} disabled={isCallInitializing} className="font-body w-full text-xs bg-white/10 text-white border-0 hover:bg-white/20"><PhoneCallIcon size={16} className="mr-2 inline" />{isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}</Button>
+                            <Button onClick={startDemoCall} disabled={isCallInitializing} className="font-body w-full text-xs text-white border-0 bg-purple-600 hover:bg-purple-700 transition-colors"><PhoneCallIcon size={16} className="mr-2 inline" />{isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}</Button>
                           )}
-                        </div>
-                        <div className="flex w-full flex-col items-center border-t border-white/10 pt-4 space-y-2">
-                          <Link href="/sign-in" onClick={() => setIsMobileMenuOpen(false)} className="font-body block w-full rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white">Sign In</Link>
-                          <Button asChild className="font-body w-full text-sm rounded-lg border-0 bg-transparent text-white hover:bg-white/10">
-                            <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>Download Now</Link>
-                          </Button>
                           <Button asChild className="font-body w-full text-xs bg-white text-zinc-900 hover:bg-zinc-200 border-0 hover:bg-purple-600 hover:text-white">
                             <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
                           </Button>
@@ -315,8 +307,8 @@ export function LandingPage() {
                     <div className="flex w-full gap-0 rounded-xl overflow-hidden bg-white/5 backdrop-blur-sm">
                       <Input
                         type="email"
-                        placeholder="Enter your email"
-                        className="flex-1 rounded-none border-0 bg-transparent text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:border-0"
+                        placeholder="enter your email"
+                        className="flex-1 rounded-none border-0 bg-transparent text-white placeholder:italic placeholder:text-white focus-visible:ring-0 focus-visible:border-0"
                       />
                       <Button className="font-body rounded-none shrink-0 bg-transparent text-white hover:bg-purple-600 hover:text-white border-0">
                         Get Started
@@ -337,7 +329,22 @@ export function LandingPage() {
                     </div>
                   </StaggerItem>
                 </StaggerContainer>
-                <div className="relative mt-8 flex items-end justify-center" style={{ minHeight: 'clamp(338px, 52vw, 494px)' }}>
+                <div className="flex justify-center mt-3">
+                  <Button
+                    asChild
+                    className="font-body rounded-lg bg-purple-600 text-white hover:bg-purple-700 border-0"
+                    size="lg"
+                  >
+                    <Link
+                      href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Try Our Android App
+                    </Link>
+                  </Button>
+                </div>
+                <div className="relative mt-4 flex items-end justify-center" style={{ minHeight: 'clamp(338px, 52vw, 494px)' }}>
                   <div className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-zinc-300">
                     Live sync
                   </div>
