@@ -33,4 +33,13 @@ export interface ReportCardUser {
   overtimeHours?: number;
   /** Access level for tags (role/accessLevel/branch) */
   accessLevel?: string | null;
+  /** First/last attendance in 7-day period */
+  firstAttendanceInPeriod?: string | null;
+  lastAttendanceInPeriod?: string | null;
+  /** Last app access (Clerk) in org timezone */
+  lastAppAccessAt?: string | null;
+  /** Distance in meters from branch to clock-in (present only) */
+  distanceFromWorkplaceMeters?: number | null;
+  /** Employee HR ID (Employee Code) */
+  hrID?: number | null;
 }

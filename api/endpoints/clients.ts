@@ -1,11 +1,25 @@
 import type { AxiosInstance } from 'axios';
 
+/** Address shape returned by API for client. */
+export interface ClientAddress {
+  street?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  googleMapsUrl?: string;
+}
+
 /** Minimal client for list/select (from GET /clients). */
 export interface ClientListItem {
   uid: number;
   name: string;
   contactPerson?: string;
   email?: string;
+  phone?: string;
+  alternativePhone?: string;
+  address?: ClientAddress;
   [key: string]: unknown;
 }
 

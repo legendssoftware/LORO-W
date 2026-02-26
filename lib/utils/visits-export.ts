@@ -1,5 +1,5 @@
 /**
- * Visits (check-ins) export: Sales Person, Date and time, Check-In, Method, Company / Contact, Notes, Quote Number, Value, Follow Up.
+ * Visits (check-ins) export: columns aligned with reports table (Sales Person, Date and time, merged location, method, contact fields, notes, quote, value, relations).
  * Row order must be the same as API (checkInTime DESC); do not re-sort.
  */
 
@@ -10,22 +10,41 @@ import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
 export const VISITS_EXPORT_HEADERS = [
   'Sales Person',
   'Date and time',
-  'Check-In',
-  'Method of visit',
-  'Company / Contact',
+  'Check-in / Check-out location',
+  'Method',
+  'Building type',
+  'Contact made',
+  'Company',
+  'Business type',
+  'Person seen position',
+  'Contact name',
+  'Contact image',
+  'Cell',
+  'Landline',
+  'Contact email',
+  'Contact address',
+  'Meeting link',
   'Notes',
-  'Quote Number',
-  'Value - ex-VAT',
+  'Resolution',
   'Follow Up',
+  'Quote Number',
+  'Quotation status',
+  'Value - ex-VAT',
+  'Lead',
+  'Client',
+  'Branch',
 ] as const;
 
+/** Method of contact display labels; new enum values (Physical, Telephone, Email, Whatsapp) pass through; legacy values mapped for backward compatibility. */
 const METHOD_OF_CONTACT_LABELS: Record<string, string> = {
-  PHONE_CALL: 'Phone call',
-  WHATSAPP: 'WhatsApp',
-  EMAIL: 'Email',
-  IN_PERSON_VISIT: 'In-person visit',
-  VIDEO_CALL: 'Video call',
-  OTHER: 'Other',
+  Physical: 'Physical',
+  Telephone: 'Telephone',
+  Email: 'Email',
+  Whatsapp: 'Whatsapp',
+  'in-person': 'Physical',
+  'phone-call': 'Telephone',
+  email: 'Email',
+  whatsapp: 'Whatsapp',
 };
 
 function parseDurationToMinutes(duration: string | null | undefined): number {
@@ -54,7 +73,7 @@ function getMethodDisplay(c: VisitExportItem): string {
   const hasLocation =
     (c.checkInLocation && c.checkInLocation !== '-') ||
     (c.checkOutLocation && c.checkOutLocation !== '-');
-  return hasLocation ? 'In-person visit' : '-';
+  return hasLocation ? 'Physical' : '-';
 }
 
 export function formatContactAddress(address: CheckInContactAddress | null | undefined): string {
@@ -72,14 +91,28 @@ export function formatContactAddress(address: CheckInContactAddress | null | und
   return parts.length > 0 ? parts.join(', ') : '-';
 }
 
-function formatContactDetails(c: VisitExportItem): string {
-  const parts: string[] = [];
-  if (c.contactCellPhone) parts.push(`Cell: ${c.contactCellPhone}`);
-  if (c.contactLandline) parts.push(`Landline: ${c.contactLandline}`);
-  if (c.contactEmail) parts.push(`Email: ${c.contactEmail}`);
-  const addr = formatContactAddress(c.contactAddress);
-  if (addr && addr !== '-') parts.push(addr);
-  return parts.length > 0 ? parts.join(' | ') : '-';
+/**
+ * Extract region string from a visit (for region filter and grouping).
+ * Uses fullAddress, checkOutFullAddress, or contactAddress.
+ */
+export function extractRegionFromVisit(c: VisitExportItem): string {
+  const addr: CheckInContactAddress | null | undefined =
+    c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
+  if (!addr) return 'Not set';
+  const cityOrRegion = (addr.city ?? addr.state ?? '').trim();
+  const postalCode = addr.postalCode?.trim() ?? '';
+  const country = (addr.country ?? '').trim();
+  const fromStructured = [cityOrRegion, postalCode, country].filter(Boolean).join(', ');
+  if (fromStructured) return fromStructured;
+  const formatted = (addr.formattedAddress ?? '').trim();
+  if (!formatted) return 'Not set';
+  const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return 'Not set';
+  const secondLast = parts[parts.length - 2];
+  const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
+  const cityPart = codePart ? parts[parts.length - 3] ?? '' : secondLast;
+  const countryPart = parts[parts.length - 1];
+  return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
 }
 
 export function formatMethodOfContact(methodOfContact?: string | null): string {
@@ -97,18 +130,6 @@ function formatSalesPerson(c: VisitExportItem): string {
   return parts.length > 1 ? parts.join(' | ') : fullName;
 }
 
-function formatCompanyAndContact(c: VisitExportItem): string {
-  const lines: string[] = [];
-  const companyName = c.companyName || '-';
-  const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
-  lines.push(companyName + (type ? ` (${type})` : ''));
-  const contactName = c.contactFullName || '-';
-  const position = c.personSeenPosition;
-  lines.push(`Contact person: ${contactName}` + (position ? ` - ${position}` : ''));
-  lines.push(formatContactDetails(c));
-  return lines.join('\n');
-}
-
 /**
  * Prefer reverse-geocoded address for export; fall back to coordinates when address is missing.
  */
@@ -121,10 +142,14 @@ function addressForExport(
   return coordinatesFallback && coordinatesFallback !== '-' ? coordinatesFallback : '-';
 }
 
+function formatContactMade(value: boolean | string | null | undefined): string {
+  if (value === true || value === 'YES') return 'Yes';
+  if (value === false || value === 'NO') return 'No';
+  return '-';
+}
+
 /**
- * Build a single row for export (Sales Person, Date and time, Check-In, Method, Company / Contact, Notes, Quote Number, Value, Follow Up).
- * Date and time: same as table (date, time range with en-dash, normalized duration "Xh Ym"). Method: "In-person visit" when location present and method empty.
- * Check-In column uses actual address (fullAddress / checkOutFullAddress) when available, otherwise coordinates.
+ * Build a single row for export; column order matches VISITS_EXPORT_HEADERS (same as reports table).
  */
 export function visitToExportRow(c: VisitExportItem): string[] {
   const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
@@ -136,27 +161,41 @@ export function visitToExportRow(c: VisitExportItem): string[] {
 
   const inAddr = addressForExport(c.fullAddress, c.checkInLocation);
   const outAddr = addressForExport(c.checkOutFullAddress, c.checkOutLocation);
-  const checkInCell = `In: ${inAddr} | Out: ${outAddr}`;
+  const locationMerged = `In: ${inAddr} | Out: ${outAddr}`;
 
   const valueExVat =
     c.salesValue != null
       ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : '-';
 
-  const followUpText = c.meetingLink
-    ? (c.followUp || 'Open link')
-    : (c.followUp || '-');
+  const followUpText = c.followUp?.trim() || '-';
 
   return [
     formatSalesPerson(c),
     dateAndTime,
-    checkInCell,
+    locationMerged,
     getMethodDisplay(c),
-    formatCompanyAndContact(c),
+    c.buildingType ? String(c.buildingType).replace(/_/g, ' ') : '-',
+    formatContactMade(c.contactMade),
+    c.companyName?.trim() || '-',
+    c.businessType ? String(c.businessType).replace(/_/g, ' ') : '-',
+    c.personSeenPosition?.trim() || '-',
+    c.contactFullName?.trim() || '-',
+    c.contactImage?.trim() || '-',
+    c.contactCellPhone?.trim() || '-',
+    c.contactLandline?.trim() || '-',
+    c.contactEmail?.trim() || '-',
+    formatContactAddress(c.contactAddress),
+    c.meetingLink?.trim() || '-',
     c.notes || '-',
-    c.quotationNumber || '-',
-    valueExVat,
+    c.resolution || '-',
     followUpText,
+    c.quotationNumber || '-',
+    c.quotationStatus ? String(c.quotationStatus).replace(/_/g, ' ') : '-',
+    valueExVat,
+    c.lead?.name?.trim() || '-',
+    c.client?.name?.trim() || '-',
+    c.branch?.name?.trim() || '-',
   ];
 }
 

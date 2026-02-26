@@ -166,6 +166,16 @@ export interface DailyOverviewUser {
     lateMinutes?: number;
     /** Decoded full address of shift start (clock-in) location. Present users only. */
     shiftStartAddress?: string | null;
+    /** First date (yyyy-MM-dd) user attended in the 7-day period. */
+    firstAttendanceInPeriod?: string | null;
+    /** Last date (yyyy-MM-dd) user attended in the 7-day period. */
+    lastAttendanceInPeriod?: string | null;
+    /** Last app access (Clerk lastSignInAt) in org timezone. */
+    lastAppAccessAt?: string | null;
+    /** Distance in meters from branch to clock-in. Present users only. */
+    distanceFromWorkplaceMeters?: number | null;
+    /** Employee HR ID for reports (Employee Code). */
+    hrID?: number | null;
 }
 
 export interface DailyOverviewResponse {

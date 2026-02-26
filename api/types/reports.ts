@@ -80,6 +80,7 @@ export interface VisitExportItem {
   checkOutFullAddress?: CheckInContactAddress | null;
   buildingType?: string | null;
   contactMade?: boolean | null;
+  media?: string[] | null;
   owner?: {
     name?: string;
     surname?: string;
@@ -92,6 +93,8 @@ export interface VisitExportItem {
   branch?: { uid?: number; name?: string; address?: { street?: string; suburb?: string; city?: string } } | null;
   organisation?: { uid?: number; name?: string; logo?: string; email?: string; phone?: string } | null;
   lead?: { uid?: number; name?: string; status?: string } | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CheckInsListResponse {

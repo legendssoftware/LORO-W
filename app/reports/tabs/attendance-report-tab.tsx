@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useOrganization } from '@clerk/nextjs';
 import { format, subDays } from 'date-fns';
 import { useMonthlyAttendance } from '@/api/hooks';
 import { AttendanceChartsSection } from '@/app/reports/tabs/attendance-charts-section';
@@ -31,10 +32,24 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { XIcon, SettingsIcon } from '@/lib/icons';
+import { XIcon, SettingsIcon, BarChart3Icon } from '@/lib/icons';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export interface AttendanceReportTabProps {
   singleDate: Date | null;
@@ -171,6 +186,12 @@ function ReportUserCard({
   const expectedByNow = getExpectedHoursByDate(endDate);
   const hoursBehind = expectedByNow - user.hoursThisMonth;
   const isBehindBadge = hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD;
+  const distanceText =
+    user.distanceFromWorkplaceMeters != null
+      ? user.distanceFromWorkplaceMeters >= 1000
+        ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)}km away`
+        : `~${user.distanceFromWorkplaceMeters}m away`
+      : '—';
   return (
     <Card
       className={cn(
@@ -179,18 +200,28 @@ function ReportUserCard({
       )}
       onClick={onClick}
     >
-      {isBehindBadge && (
-        <div className="absolute top-2 right-2 z-10">
+      <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+        <Badge
+          variant={user.isPresent ? 'default' : 'destructive'}
+          className={cn(
+            'text-[10px] px-1.5 py-0 text-white',
+            user.isPresent && 'bg-green-600 hover:bg-green-600 text-white'
+          )}
+          aria-label={user.isPresent ? 'Present' : 'Absent'}
+        >
+          {user.isPresent ? 'Present' : 'Absent'}
+        </Badge>
+        {isBehindBadge && (
           <Badge
             variant="destructive"
-            className="text-[10px] px-1.5 py-0"
+            className="text-[10px] px-1.5 py-0 text-white"
             title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
             aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
           >
             Behind on hours
           </Badge>
-        </div>
-      )}
+        )}
+      </div>
       <CardContent
         className={cn(
           'flex flex-col flex-1 justify-between',
@@ -255,6 +286,13 @@ function ReportUserCard({
               <LastSevenDaysDots userRef={user.ref} endDate={endDate} />
             </div>
           </div>
+          {(user.firstAttendanceInPeriod || user.lastAttendanceInPeriod) && (
+            <p className="text-xs text-muted-foreground">
+              First attended: {user.firstAttendanceInPeriod ? format(new Date(user.firstAttendanceInPeriod), 'EEE d') : '—'}
+              {' · '}
+              Last attended: {user.lastAttendanceInPeriod ? format(new Date(user.lastAttendanceInPeriod), 'EEE d') : '—'}
+            </p>
+          )}
         </div>
         <div className={cn('shrink-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
           <p className={cn('text-muted-foreground flex items-center justify-between gap-2', isMobile ? 'text-xs' : 'text-sm')}>
@@ -275,6 +313,11 @@ function ReportUserCard({
               {user.progressPercent}%
             </span>
           </div>
+          {user.lastAppAccessAt && (
+            <p className="text-xs text-muted-foreground">
+              Last app access: {user.lastAppAccessAt}
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs">
             <div className="min-w-0">
               {user.shiftStartAddress ? (
@@ -293,12 +336,109 @@ function ReportUserCard({
               )}
             </div>
             <div className="shrink-0">
-              <p className="text-foreground">~20m away</p>
+              <p className="text-foreground">{distanceText}</p>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SummaryHoursModal({
+  open,
+  onOpenChange,
+  users,
+  reportDate,
+  runAt,
+  companyName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  users: ReportCardUser[];
+  reportDate: Date | null;
+  runAt: Date | null;
+  companyName: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex flex-col max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold text-foreground">
+            Total Hours Per Employee
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2 text-sm text-foreground">
+          <p className="font-medium text-black">{companyName}</p>
+          <p className="text-black">
+            Date: {reportDate ? format(reportDate, 'PPP') : '—'}
+          </p>
+          <p className="text-black">
+            Run at: {runAt ? format(runAt, 'HH:mm') : '—'}
+          </p>
+        </div>
+        <div className="flex-1 min-h-0 overflow-auto border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-black font-medium">#</TableHead>
+                <TableHead className="text-black font-medium">Employee Code</TableHead>
+                <TableHead className="text-black font-medium">Employee Name</TableHead>
+                <TableHead className="text-black font-medium">Holiday</TableHead>
+                <TableHead className="text-black font-medium">Time over</TableHead>
+                <TableHead className="text-black font-medium">Sundays</TableHead>
+                <TableHead className="text-black font-medium">Total hours</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user, index) => (
+                <TableRow
+                  key={user.userId}
+                  className={cn(
+                    'border-b',
+                    index % 2 === 0 ? 'bg-gray-100/80' : 'bg-white'
+                  )}
+                >
+                  <TableCell className="text-black tabular-nums">{index + 1}</TableCell>
+                  <TableCell className="text-black">
+                    {user.hrID != null ? String(user.hrID) : '—'}
+                  </TableCell>
+                  <TableCell className="text-black">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-7 shrink-0">
+                        <AvatarImage src={user.photoURL ?? undefined} />
+                        <AvatarFallback className="text-xs">
+                          {user.name
+                            .split(/\s+/)
+                            .map((s) => s[0])
+                            .join('')
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{user.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-black">—</TableCell>
+                  <TableCell className="text-black">
+                    {user.overtimeHours != null && user.overtimeHours > 0
+                      ? `${user.overtimeHours}h`
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-black">—</TableCell>
+                  <TableCell className="text-black tabular-nums">
+                    {user.hoursThisMonth}h
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        {users.length === 0 && (
+          <p className="text-center text-black py-4">No employees to show.</p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -315,6 +455,15 @@ export function AttendanceReportTab({
   attendanceChartsProps,
   chartsLoading,
 }: AttendanceReportTabProps) {
+  const { organization } = useOrganization();
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryRunAt, setSummaryRunAt] = useState<Date | null>(null);
+
+  const handleOpenSummary = () => {
+    setSummaryRunAt(new Date());
+    setSummaryOpen(true);
+  };
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="shrink-0 mb-6">
@@ -406,8 +555,26 @@ export function AttendanceReportTab({
             ) : null}
           </div>
           <ExportReportDropdown singleDate={singleDate} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenSummary}
+            className="shrink-0"
+          >
+            <BarChart3Icon className="size-4 mr-1.5" />
+            Summary
+          </Button>
         </div>
       </div>
+
+      <SummaryHoursModal
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        users={filteredUsers}
+        reportDate={singleDate}
+        runAt={summaryRunAt}
+        companyName={organization?.name ?? 'Organisation'}
+      />
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isLoading ? (

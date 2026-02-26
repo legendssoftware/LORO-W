@@ -1,66 +1,78 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useApiClient } from '@/api/hooks/use-api-client';
-import {
-  getCheckIns,
-  getCheckInsReport,
-  type GetCheckInsParams,
-  type GetCheckInsReportParams,
-} from '@/api/endpoints/check-ins';
+import { useAuth } from '@clerk/nextjs';
 import type {
-  CheckInsListResponse,
-  DomainReportResponse,
-} from '@/api/types/reports';
+  UseCheckInsParams,
+  UseCheckInsResult,
+  VisitListItem,
+  CheckInStatusResponse,
+} from '@/api/types/visits';
 
-const CHECK_INS_KEY_PREFIX = ['check-ins', 'list'] as const;
-const CHECK_INS_REPORT_KEY_PREFIX = ['check-ins', 'report'] as const;
+const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-/**
- * Fetches check-ins (visits) with optional user and date range.
- * Server returns checkInTime DESC; do not re-sort for export parity.
- */
-export function useCheckIns(
-  params: GetCheckInsParams,
-  options?: { enabled?: boolean }
-) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: [...CHECK_INS_KEY_PREFIX, params],
-    queryFn: async (): Promise<CheckInsListResponse> => {
-      console.log('[useCheckIns] fetch data (params)', params);
-      const result = await getCheckIns(client, params);
-      console.log('[useCheckIns] response', {
-        checkInsCount: Array.isArray(result?.checkIns) ? result.checkIns.length : 0,
-        message: result?.message,
-        data: result,
-      });
-      return result;
-    },
-    enabled: options?.enabled !== false,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+async function fetchCheckIns(
+  token: string | null,
+  params?: UseCheckInsParams
+): Promise<{ message: string; checkIns: VisitListItem[] }> {
+  if (!token) throw new Error('Not authenticated');
+  const url = new URL(`${DEFAULT_API_URL}/check-ins`.replace(/\/$/, ''));
+  if (params?.startDate) url.searchParams.set('startDate', params.startDate);
+  if (params?.endDate) url.searchParams.set('endDate', params.endDate);
+  if (params?.userUid) url.searchParams.set('userUid', params.userUid);
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || res.statusText || 'Failed to fetch check-ins');
+  }
+  return res.json();
 }
 
-/**
- * Fetches check-ins report (total, byDay) for date range.
- */
-export function useCheckInsReport(
-  params: GetCheckInsReportParams,
+export function useCheckIns(
+  params?: UseCheckInsParams,
   options?: { enabled?: boolean }
-) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: [...CHECK_INS_REPORT_KEY_PREFIX, params],
-    queryFn: async (): Promise<DomainReportResponse> => {
-      console.log('[useCheckInsReport] fetch data (params)', params);
-      const result = await getCheckInsReport(client, params);
-      console.log('[useCheckInsReport] response', { total: result?.total, byDayLength: result?.byDay?.length, data: result });
-      return result;
+): UseCheckInsResult {
+  const { getToken } = useAuth();
+  const query = useQuery({
+    queryKey: ['check-ins', params?.startDate, params?.endDate, params?.userUid],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchCheckIns(token, params);
     },
-    enabled: options?.enabled !== false && !!params.from && !!params.to,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: options?.enabled !== false && !!DEFAULT_API_URL,
+  });
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error as Error | null,
+    refetch: query.refetch,
+  };
+}
+
+export function useCheckInsReport(
+  params?: UseCheckInsParams,
+  options?: { enabled?: boolean }
+): UseCheckInsResult {
+  return useCheckIns(params, options);
+}
+
+export function useCheckInStatus(options?: { enabled?: boolean }) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ['check-in-status'],
+    queryFn: async (): Promise<CheckInStatusResponse> => {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      const res = await fetch(`${DEFAULT_API_URL}/check-ins/status/me`.replace(/([^:]\/)\/+/g, '$1'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || res.statusText || 'Failed to get status');
+      return data;
+    },
+    enabled: options?.enabled !== false && !!DEFAULT_API_URL,
   });
 }

@@ -1,11 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { cva, type VariantProps } from "class-variance-authority"
-import { PanelLeftIcon } from "lucide-react"
+import { PanelLeft } from "lucide-react"
 import { Slot } from "radix-ui"
 
+import { useSessionSync } from "@/api/hooks"
 import { useIsMobile, useIsTabletOrSmaller } from "@/hooks/use-mobile"
+import { canAccess, STAFF_SIDEBAR_ROUTES } from "@/lib/access"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -56,7 +60,7 @@ function useSidebar() {
 }
 
 function SidebarProvider({
-  defaultOpen = true,
+  defaultOpen = false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -72,8 +76,6 @@ function SidebarProvider({
   const isTabletOrSmaller = useIsTabletOrSmaller()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen)
   const open = openProp ?? _open
   const setOpen = React.useCallback(
@@ -85,20 +87,17 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
     [setOpenProp, open]
   )
 
-  // Helper to toggle the sidebar. Tablet and down use overlay (openMobile).
   const toggleSidebar = React.useCallback(() => {
     return isTabletOrSmaller
       ? setOpenMobile((open) => !open)
       : setOpen((open) => !open)
   }, [isTabletOrSmaller, setOpen, setOpenMobile])
 
-  // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
@@ -114,8 +113,6 @@ function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleSidebar])
 
-  // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
 
   const contextValue = React.useMemo<SidebarContextProps>(
@@ -171,7 +168,7 @@ function SidebarProvider({
 function Sidebar({
   side = "left",
   variant = "sidebar",
-  collapsible = "offcanvas",
+  collapsible = "icon",
   className,
   children,
   ...props
@@ -233,7 +230,6 @@ function Sidebar({
       data-side={side}
       data-slot="sidebar"
     >
-      {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
         className={cn(
@@ -252,7 +248,6 @@ function Sidebar({
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -285,14 +280,14 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn("size-7", className)}
+      className={cn("size-8", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeft />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -446,7 +441,6 @@ function SidebarGroupAction({
       data-sidebar="group-action"
       className={cn(
         "text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-        // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 md:after:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -581,7 +575,6 @@ function SidebarMenuAction({
       data-sidebar="menu-action"
       className={cn(
         "text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer-hover/menu-button:text-sidebar-accent-foreground absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-        // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 md:after:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
         "peer-data-[size=default]/menu-button:top-1.5",
@@ -625,7 +618,6 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`
   }, [])
@@ -717,7 +709,58 @@ function SidebarMenuSubButton({
   )
 }
 
+/**
+ * App sidebar nav: Home, Reports (staff), Visits (all with access).
+ * Use inside SidebarProvider. Renders SidebarTrigger (sidebar toggle icon),
+ * nav links filtered by canAccess, and SidebarRail for collapse.
+ */
+function AppSidebar() {
+  const pathname = usePathname()
+  const { backendUserData: profile } = useSessionSync()
+  const accessLevel = profile?.accessLevel
+
+  const navItems = STAFF_SIDEBAR_ROUTES.filter((route) =>
+    canAccess(route.path, accessLevel)
+  )
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="flex h-14 shrink-0 items-center justify-center border-b border-sidebar-border px-3 lg:px-4">
+        <SidebarTrigger />
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((route) => {
+                const isActive =
+                  pathname === route.path ||
+                  (route.path !== "/dashboard" && pathname.startsWith(route.path))
+                return (
+                  <SidebarMenuItem key={route.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={route.label}
+                    >
+                      <Link href={route.path}>
+                        <span>{route.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarRail />
+    </Sidebar>
+  )
+}
+
 export {
+  AppSidebar,
   Sidebar,
   SidebarContent,
   SidebarFooter,

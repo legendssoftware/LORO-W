@@ -4,14 +4,13 @@ import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { differenceInCalendarDays, endOfDay, format, getDate, getDaysInMonth, isSameDay, startOfDay, subDays } from 'date-fns';
+import { differenceInCalendarDays, endOfDay, format, isSameDay, startOfDay, subDays } from 'date-fns';
 import {
     useTokenReady,
     useSessionSync,
     useMonthlyMetrics,
     useDailyOverview,
     useCheckIns,
-    useCheckInsReport,
     useUsers,
     useUser,
     useUserTarget,
@@ -35,6 +34,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import {
     Dialog,
     DialogContent,
@@ -85,10 +85,12 @@ const AttendanceReportTab = dynamic(
 import type { VisitExportItem } from '@/api/types/reports';
 import {
     exportVisits,
+    extractRegionFromVisit,
     formatContactAddress,
     formatMethodOfContact,
     visitToExportRow,
 } from '@/lib/utils/visits-export';
+import { VisitsTable } from '@/components/visits-table/visits-table';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -98,14 +100,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import toast from 'react-hot-toast';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import {
     ChartContainer,
     ChartLegend,
@@ -174,6 +168,11 @@ function fromDailyOverviewMergeMonthly(
             isActive: u.isActive ?? undefined,
             totalShifts: monthly?.totalShifts ?? undefined,
             overtimeHours: monthly?.overtimeHours ?? undefined,
+            firstAttendanceInPeriod: u.firstAttendanceInPeriod ?? null,
+            lastAttendanceInPeriod: u.lastAttendanceInPeriod ?? null,
+            lastAppAccessAt: u.lastAppAccessAt ?? null,
+            distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
+            hrID: u.hrID ?? null,
         };
     };
     const presentCards = presentUsers.map((u) => toCard(u, true));
@@ -225,26 +224,6 @@ function normalizeDurationDisplay(duration: string | null | undefined): string {
     if (duration == null || duration === '') return '-';
     const mins = parseDurationToMinutes(duration);
     return formatDurationDisplay(mins);
-}
-
-/** Extract region string from a visit (for charts and region filter). */
-function extractRegionFromVisit(c: VisitExportItem): string {
-    const addr = c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
-    if (!addr) return 'Not set';
-    const cityOrRegion = (addr.city ?? addr.state ?? '').trim();
-    const postalCode = addr.postalCode?.trim() ?? '';
-    const country = (addr.country ?? '').trim();
-    const fromStructured = [cityOrRegion, postalCode, country].filter(Boolean).join(', ');
-    if (fromStructured) return fromStructured;
-    const formatted = (addr.formattedAddress ?? '').trim();
-    if (!formatted) return 'Not set';
-    const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
-    if (parts.length < 2) return 'Not set';
-    const secondLast = parts[parts.length - 2];
-    const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
-    const cityPart = codePart ? parts[parts.length - 3] ?? '' : secondLast;
-    const countryPart = parts[parts.length - 1];
-    return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
 }
 
 /** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
@@ -597,638 +576,6 @@ function VisitsChartsSection({
     );
 }
 
-/** True if string looks like "lat,lng" coordinates. */
-function isCoordLike(s: string): boolean {
-  const t = s.trim();
-  return /^-?\d{1,3}\.?\d*\s*,\s*-?\d{1,3}\.?\d*$/.test(t);
-}
-
-/** Google Maps URL for coordinates or address search. */
-function buildMapsUrl(location: string): string {
-  const t = location.trim();
-  if (!t || t === '-') return '#';
-  if (isCoordLike(t)) return `https://www.google.com/maps?q=${encodeURIComponent(t)}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t)}`;
-}
-
-/** tel: URL for phone numbers (strip spaces/dashes). */
-function buildTelUrl(phone: string): string {
-  const normalized = phone.replace(/[\s\-()]/g, '');
-  return `tel:${normalized}`;
-}
-
-const VISITS_TABLE_LINK_CLASS = 'text-primary underline hover:opacity-80';
-
-/** Format address for display; falls back to raw string when no address. */
-function formatAddressForDisplay(
-    address?: { formattedAddress?: string; street?: string; suburb?: string; city?: string; state?: string; country?: string; postalCode?: string } | null,
-    fallback?: string
-): string {
-    if (!address) return fallback ?? '-';
-    if (address.formattedAddress) return address.formattedAddress;
-    const parts = [
-        (address as { streetNumber?: string }).streetNumber,
-        address.street,
-        address.suburb,
-        address.city,
-        address.state,
-        address.country,
-        address.postalCode,
-    ].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : fallback ?? '-';
-}
-
-/** tel: URL for phone numbers (strip spaces/dashes). */
-function buildTelUrlSafe(phone: string | null | undefined): string {
-    if (!phone || typeof phone !== 'string') return '#';
-    const normalized = phone.replace(/[\s\-()]/g, '');
-    return normalized ? `tel:${normalized}` : '#';
-}
-
-/** Visit Detail Dialog: full check-in data including images. Click a photo to expand in a lightbox. */
-function VisitDetailDialog({
-    visit,
-    open,
-    onOpenChange,
-}: {
-    visit: VisitExportItem | null;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}) {
-    const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
-    if (!visit) return null;
-    const ownerFullName = visit.owner ? [visit.owner.name, visit.owner.surname].filter(Boolean).join(' ').trim() : '-';
-    const inAddr = formatAddressForDisplay(visit.fullAddress, visit.checkInLocation || '-');
-    const outAddr = formatAddressForDisplay(visit.checkOutFullAddress, visit.checkOutLocation || '-');
-    return (
-        <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-2xl"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <DialogHeader>
-                    <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
-                    <DialogDescription>
-                        {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 text-sm">
-                    {/* Timing */}
-                    <div>
-                        <h4 className="font-semibold mb-2">Timing</h4>
-                        <div className="space-y-1 text-muted-foreground">
-                            <p>Check-in: {format(new Date(visit.checkInTime), 'MMM d, yyyy – h:mm a')}</p>
-                            {visit.checkOutTime && (
-                                <p>Check-out: {format(new Date(visit.checkOutTime), 'MMM d, yyyy – h:mm a')}</p>
-                            )}
-                            {visit.duration && <p>Duration: {normalizeDurationDisplay(visit.duration)}</p>}
-                        </div>
-                    </div>
-                    <Separator />
-                    {/* Location */}
-                    <div>
-                        <h4 className="font-semibold mb-2">Location</h4>
-                        <div className="space-y-1">
-                            <p>
-                                In:{' '}
-                                {inAddr !== '#' ? (
-                                    <a
-                                        href={buildMapsUrl(visit.checkInLocation || inAddr)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={VISITS_TABLE_LINK_CLASS}
-                                    >
-                                        {inAddr}
-                                    </a>
-                                ) : (
-                                    inAddr
-                                )}
-                            </p>
-                            {(visit.checkOutLocation || outAddr !== '-') && (
-                                <p>
-                                    Out:{' '}
-                                    {outAddr !== '-' && outAddr !== '#' ? (
-                                        <a
-                                            href={buildMapsUrl(visit.checkOutLocation || outAddr)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={VISITS_TABLE_LINK_CLASS}
-                                        >
-                                            {outAddr}
-                                        </a>
-                                    ) : (
-                                        outAddr
-                                    )}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    {/* Photos */}
-                    {(visit.checkInPhoto || visit.checkOutPhoto || visit.contactImage) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Photos</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {visit.checkInPhoto && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs mb-1">Check-in photo</p>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setExpandedImageUrl(visit.checkInPhoto ?? null);
-                                                }}
-                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                aria-label="View check-in photo full size"
-                                            >
-                                                <img
-                                                    src={visit.checkInPhoto}
-                                                    alt="Check-in"
-                                                    className="w-full max-h-48 object-cover cursor-pointer"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                                                    }}
-                                                />
-                                            </button>
-                                        </div>
-                                    )}
-                                    {visit.checkOutPhoto && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs mb-1">Check-out photo</p>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setExpandedImageUrl(visit.checkOutPhoto ?? null);
-                                                }}
-                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                aria-label="View check-out photo full size"
-                                            >
-                                                <img
-                                                    src={visit.checkOutPhoto}
-                                                    alt="Check-out"
-                                                    className="w-full max-h-48 object-cover cursor-pointer"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                                                    }}
-                                                />
-                                            </button>
-                                        </div>
-                                    )}
-                                    {visit.contactImage && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs mb-1">Contact photo</p>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setExpandedImageUrl(visit.contactImage ?? null);
-                                                }}
-                                                className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                aria-label="View contact photo full size"
-                                            >
-                                                <img
-                                                    src={visit.contactImage}
-                                                    alt="Contact"
-                                                    className="w-full max-h-48 object-cover cursor-pointer"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                                                    }}
-                                                />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                    {/* Contact */}
-                    {(visit.contactFullName || visit.contactCellPhone || visit.contactLandline || visit.contactEmail || formatContactAddress(visit.contactAddress) !== '-') && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Contact</h4>
-                                <div className="space-y-1">
-                                    {visit.contactFullName && <p>{visit.contactFullName}</p>}
-                                    {visit.personSeenPosition && <p className="text-muted-foreground">{visit.personSeenPosition}</p>}
-                                    {visit.contactCellPhone && (
-                                        <p>
-                                            <a href={buildTelUrlSafe(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
-                                                {visit.contactCellPhone}
-                                            </a>
-                                        </p>
-                                    )}
-                                    {visit.contactLandline && (
-                                        <p>
-                                            <a href={buildTelUrlSafe(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
-                                                {visit.contactLandline}
-                                            </a>
-                                        </p>
-                                    )}
-                                    {visit.contactEmail && (
-                                        <p>
-                                            <a href={`mailto:${visit.contactEmail}`} className={VISITS_TABLE_LINK_CLASS}>
-                                                {visit.contactEmail}
-                                            </a>
-                                        </p>
-                                    )}
-                                    {visit.contactAddress && formatContactAddress(visit.contactAddress) !== '-' && (
-                                        <p>
-                                            <a
-                                                href={buildMapsUrl(formatContactAddress(visit.contactAddress) || '')}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={VISITS_TABLE_LINK_CLASS}
-                                            >
-                                                {formatContactAddress(visit.contactAddress)}
-                                            </a>
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                    {/* Company */}
-                    {(visit.companyName || visit.businessType || visit.meetingLink) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Company & Business</h4>
-                                <div className="space-y-1">
-                                    {visit.companyName && <p>{visit.companyName}</p>}
-                                    {visit.businessType && (
-                                        <p className="text-muted-foreground">{String(visit.businessType).replace(/_/g, ' ')}</p>
-                                    )}
-                                    {visit.meetingLink && (
-                                        <p>
-                                            <a
-                                                href={visit.meetingLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={VISITS_TABLE_LINK_CLASS}
-                                            >
-                                                {visit.followUp || 'Open meeting link'}
-                                            </a>
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                    {/* Enhancement fields */}
-                    {(visit.methodOfContact || visit.buildingType || visit.contactMade != null) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Visit Details</h4>
-                                <div className="space-y-1">
-                                    {visit.methodOfContact && <p>Method: {formatMethodOfContact(visit.methodOfContact)}</p>}
-                                    {visit.buildingType && <p>Building type: {visit.buildingType.replace(/_/g, ' ')}</p>}
-                                    {visit.contactMade != null && <p>Contact made: {visit.contactMade ? 'Yes' : 'No'}</p>}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                    {/* Sales */}
-                    {(visit.salesValue != null || visit.quotationNumber || visit.quotationStatus) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Sales</h4>
-                                <div className="space-y-1">
-                                    {visit.salesValue != null && (
-                                        <p>
-                                            R {Number(visit.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (ex VAT)
-                                        </p>
-                                    )}
-                                    {visit.quotationNumber && <p>Quotation: {visit.quotationNumber}</p>}
-                                    {visit.quotationStatus && (
-                                        <p className="text-muted-foreground">{String(visit.quotationStatus).replace(/_/g, ' ')}</p>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                    {/* Lead */}
-                    {visit.lead && (visit.lead.name || visit.lead.uid) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Lead</h4>
-                                <p>{visit.lead.name || `#${visit.lead.uid}`}</p>
-                                {visit.lead.status && <p className="text-muted-foreground">{visit.lead.status}</p>}
-                            </div>
-                        </>
-                    )}
-                    {/* Notes / Resolution / Follow-up */}
-                    {(visit.notes || visit.resolution || visit.followUp) && (
-                        <>
-                            <Separator />
-                            <div>
-                                <h4 className="font-semibold mb-2">Notes & Follow-up</h4>
-                                <div className="space-y-2">
-                                    {visit.notes && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs">Notes</p>
-                                            <p className="whitespace-pre-wrap">{visit.notes}</p>
-                                        </div>
-                                    )}
-                                    {visit.resolution && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs">Resolution</p>
-                                            <p className="whitespace-pre-wrap">{visit.resolution}</p>
-                                        </div>
-                                    )}
-                                    {visit.followUp && !visit.meetingLink && (
-                                        <div>
-                                            <p className="text-muted-foreground text-xs">Follow-up</p>
-                                            <p className="whitespace-pre-wrap">{visit.followUp}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
-        <Dialog open={!!expandedImageUrl} onOpenChange={(o) => !o && setExpandedImageUrl(null)}>
-            <DialogContent
-                showCloseButton={false}
-                className="max-w-[95vw] max-h-[95vh] w-fit p-2 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="relative flex items-center justify-center">
-                    {expandedImageUrl && (
-                        <img
-                            src={expandedImageUrl}
-                            alt="Expanded view"
-                            className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded"
-                            onError={(e) => {
-                                e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                            }}
-                        />
-                    )}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-2 rounded-full border border-red-200 bg-red-50 hover:bg-red-100 shadow-none focus:ring-0"
-                        onClick={() => setExpandedImageUrl(null)}
-                        aria-label="Close image"
-                    >
-                        <XIcon className="size-4 text-red-600" />
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
-        </>
-    );
-}
-
-interface VisitsDisplayColumn {
-  key: string;
-  label: string;
-  render: (c: VisitExportItem) => ReactNode;
-}
-
-const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
-  {
-    key: 'salesPerson',
-    label: 'Sales Person',
-    render: (c) => {
-      const o = c.owner;
-      if (!o) return '-';
-      const fullName = [o.name, o.surname].filter(Boolean).join(' ').trim() || '-';
-      const imgSrc = o.photoURL ?? o.avatar ?? undefined;
-      return (
-        <span className="flex items-start gap-2 whitespace-normal">
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarImage src={imgSrc} alt={fullName} />
-            <AvatarFallback className="text-xs">
-              {fullName !== '-' ? fullName.slice(0, 2).toUpperCase() : '-'}
-            </AvatarFallback>
-          </Avatar>
-          <span className="space-y-0.5 block min-w-0">
-            <span className="block font-medium">{fullName}</span>
-            {o.email && (
-              <a
-                href={`mailto:${o.email}`}
-                className={cn('block text-xs truncate', VISITS_TABLE_LINK_CLASS)}
-                title={o.email}
-              >
-                {o.email}
-              </a>
-            )}
-            {o.phone && (
-              <a
-                href={buildTelUrl(o.phone)}
-                className={cn('block text-xs', VISITS_TABLE_LINK_CLASS)}
-              >
-                {o.phone}
-              </a>
-            )}
-            {!o.email && !o.phone && (
-              <span className="block text-xs text-muted-foreground">-</span>
-            )}
-          </span>
-        </span>
-      );
-    },
-  },
-  {
-    key: 'date',
-    label: 'Date and time',
-    render: (c) => {
-      const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
-      const inTime = format(new Date(c.checkInTime), 'HH:mm');
-      const outTime = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
-      const timeLine = `${inTime} – ${outTime}`;
-      const durationLine = normalizeDurationDisplay(c.duration);
-      return (
-        <span className="whitespace-normal block">
-          <span className="block">{dateLine}</span>
-          <span className="block">{timeLine}</span>
-          <span className="block text-muted-foreground text-xs">{durationLine}</span>
-        </span>
-      );
-    },
-  },
-  {
-    key: 'checkIn',
-    label: 'Check-In',
-    render: (c) => {
-      const inAddr = formatAddressForDisplay(c.fullAddress, c.checkInLocation || '-');
-      const outAddr = formatAddressForDisplay(c.checkOutFullAddress, c.checkOutLocation || '-');
-      const inMapTarget = c.checkInLocation || inAddr;
-      const outMapTarget = c.checkOutLocation || outAddr;
-      const inUrl = inMapTarget !== '-' ? buildMapsUrl(inMapTarget) : null;
-      const outUrl = outMapTarget !== '-' ? buildMapsUrl(outMapTarget) : null;
-      const locRowClass = 'flex min-w-0 gap-1 items-start';
-      const locValueClass = 'min-w-0 overflow-hidden text-ellipsis';
-      const locLinkClass = cn(VISITS_TABLE_LINK_CLASS, 'block truncate text-left');
-      return (
-        <span className="space-y-1 block max-w-[14rem]">
-          <span className={locRowClass}>
-            <span className="text-muted-foreground shrink-0">In: </span>
-            <span
-              className={locValueClass}
-              title={inAddr !== '-' ? inAddr : undefined}
-            >
-              {inUrl && inUrl !== '#' ? (
-                <a href={inUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={inAddr}>
-                  {inAddr}
-                </a>
-              ) : (
-                <span className="block truncate">{inAddr}</span>
-              )}
-            </span>
-          </span>
-          <span className={locRowClass}>
-            <span className="text-muted-foreground shrink-0">Out: </span>
-            <span
-              className={locValueClass}
-              title={outAddr !== '-' ? outAddr : undefined}
-            >
-              {outUrl && outUrl !== '#' ? (
-                <a href={outUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={outAddr}>
-                  {outAddr}
-                </a>
-              ) : (
-                <span className="block truncate">{outAddr}</span>
-              )}
-            </span>
-          </span>
-        </span>
-      );
-    },
-  },
-  {
-    key: 'method',
-    label: 'Method',
-    render: (c) => {
-      if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
-      const hasLocation =
-        (c.checkInLocation && c.checkInLocation !== '-') ||
-        (c.checkOutLocation && c.checkOutLocation !== '-');
-      return hasLocation ? 'In-person visit' : '-';
-    },
-  },
-  {
-    key: 'companyAndContact',
-    label: 'Company / Contact',
-    render: (c) => {
-      const blocks: ReactNode[] = [];
-
-      if (c.companyName?.trim()) {
-        const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
-        blocks.push(
-          <span key="company" className="block">
-            <span className="font-medium">{c.companyName.trim()}</span>
-            {type && <span className="block text-xs text-muted-foreground">{type}</span>}
-          </span>
-        );
-      }
-
-      const contactName = c.contactFullName?.trim();
-      const position = c.personSeenPosition?.trim();
-      if (contactName || position) {
-        blocks.push(
-          <span key="contact" className="block">
-            {contactName && (
-              <>
-                <span className="text-muted-foreground">Contact person: </span>
-                {contactName}
-              </>
-            )}
-            {position && <span className="block text-xs text-muted-foreground">{position}</span>}
-          </span>
-        );
-      }
-
-      if (c.contactCellPhone?.trim()) {
-        blocks.push(
-          <span key="cell" className="block">
-            <span className="text-muted-foreground">Cell: </span>
-            <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
-              {c.contactCellPhone}
-            </a>
-          </span>
-        );
-      }
-      if (c.contactLandline?.trim()) {
-        blocks.push(
-          <span key="landline" className="block">
-            <span className="text-muted-foreground">Landline: </span>
-            <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
-              {c.contactLandline}
-            </a>
-          </span>
-        );
-      }
-      if (c.contactEmail?.trim()) {
-        blocks.push(
-          <span key="email" className="block">
-            <span className="text-muted-foreground">Email: </span>
-            <a
-              href={`mailto:${c.contactEmail}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={VISITS_TABLE_LINK_CLASS}
-            >
-              {c.contactEmail}
-            </a>
-          </span>
-        );
-      }
-      const addr = formatContactAddress(c.contactAddress);
-      if (addr?.trim() && addr !== '-') {
-        blocks.push(
-          <span key="addr" className="block">
-            <span className="text-muted-foreground">Address: </span>
-            <a
-              href={buildMapsUrl(addr)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={VISITS_TABLE_LINK_CLASS}
-            >
-              {addr}
-            </a>
-          </span>
-        );
-      }
-
-      if (blocks.length === 0) return null;
-      return <span className="whitespace-normal space-y-1 block">{blocks}</span>;
-    },
-  },
-  {
-    key: 'notes',
-    label: 'Notes',
-    render: (c) => c.notes || '-',
-  },
-  {
-    key: 'quoteNumber',
-    label: 'Quote Number',
-    render: (c) => c.quotationNumber || '-',
-  },
-  {
-    key: 'value',
-    label: 'Value - ex-VAT',
-    render: (c) =>
-      c.salesValue != null
-        ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : '-',
-  },
-  {
-    key: 'followUp',
-    label: 'Follow Up',
-    render: (c) => (c.meetingLink ? (c.followUp || 'Open link') : (c.followUp || '-')),
-  },
-];
-
 /** Visits tab: four charts at top (same as Live), then date range + optional user filter, search, export, and table. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
 function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [mounted, setMounted] = useState(false);
@@ -1245,9 +592,6 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [exportLoading, setExportLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
-    const [visitDetailOpen, setVisitDetailOpen] = useState(false);
-
     const { backendUserData: profile } = useSessionSync();
     const isManager = isStaffDashboardVisible(profile?.accessLevel);
 
@@ -1297,6 +641,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                 c.contactFullName,
                 c.companyName,
                 c.notes,
+                c.resolution,
                 c.contactCellPhone,
                 c.contactLandline,
                 c.contactEmail,
@@ -1304,6 +649,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                 c.personSeenPosition,
                 c.quotationNumber,
                 c.followUp,
+                c.lead?.name,
+                c.client?.name,
+                c.branch?.name,
+                c.organisation?.name,
             ]
                 .filter(Boolean)
                 .join(' ')
@@ -1588,58 +937,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="flex justify-center py-12">
-                    <Loader2Icon className="size-8 animate-spin text-primary" />
-                </div>
-            ) : checkIns.length === 0 ? (
-                <p className="text-center text-muted-foreground py-12">
-                    No visits in this date range.
-                </p>
-            ) : filteredCheckIns.length === 0 ? (
-                <p className="text-center text-muted-foreground py-12">
-                    No visits match your search.
-                </p>
-            ) : (
-                <div className="rounded border overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {VISITS_DISPLAY_COLUMNS.map((col) => (
-                                    <TableHead key={col.key} className="whitespace-nowrap">
-                                        {col.label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredCheckIns.map((c) => (
-                                <TableRow
-                                    key={c.uid}
-                                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={() => {
-                                        setSelectedVisit(c);
-                                        setVisitDetailOpen(true);
-                                    }}
-                                >
-                                    {VISITS_DISPLAY_COLUMNS.map((col) => (
-                                        <TableCell
-                                            key={col.key}
-                                            className="text-sm whitespace-normal align-top min-w-0"
-                                        >
-                                            {col.render(c)}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
-            <VisitDetailDialog
-                visit={selectedVisit}
-                open={visitDetailOpen}
-                onOpenChange={setVisitDetailOpen}
+            <VisitsTable
+                checkIns={filteredCheckIns}
+                isLoading={isLoading}
+                emptyMessage={checkIns.length === 0 ? 'No visits in this date range.' : 'No visits match your search.'}
             />
         </div>
     );
@@ -1672,8 +973,8 @@ export function ReportsContent() {
     const monthlyByUserId = useMemo(() => {
         const map = new Map<number, MonthlyMetricsUserItem>();
         const list = monthlyQuery.data?.data?.userMetrics ?? [];
-        list.forEach((u) => map.set(u.userId, u));
-        return map;
+        list.forEach((u: MonthlyMetricsUserItem) => map.set(u.userId, u));
+        return map as Map<number, MonthlyMetricsUserItem>;
     }, [monthlyQuery.data]);
 
     const cardUsers = useMemo((): ReportCardUser[] => {
@@ -1761,14 +1062,13 @@ export function ReportsContent() {
                             >
                                 Attendance
                             </TabsTrigger>
-                        {isVisitsAdmin && (
-                        <TabsTrigger
-                            value="visits"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Visits
-                        </TabsTrigger>
-                        )}
+                            <TabsTrigger
+                                value="visits"
+                                className={cn(REPORTS_TAB_TRIGGER_CLASS, !isVisitsAdmin && 'hidden')}
+                                disabled={!isVisitsAdmin}
+                            >
+                                Visits
+                            </TabsTrigger>
                     </TabsList>
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto mt-6">
@@ -1950,15 +1250,43 @@ function ReportUserDetailModal({
                             </div>
                         </ModalSection>
 
-                        {isBehindBadge && (
+                        <div className="flex flex-wrap gap-1.5">
                             <Badge
-                                variant="destructive"
-                                className="text-xs"
-                                title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
-                                aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                variant={user.isPresent ? 'default' : 'destructive'}
+                                className={cn('text-xs text-white', user.isPresent && 'bg-green-600 hover:bg-green-600')}
+                                aria-label={user.isPresent ? 'Present' : 'Absent'}
                             >
-                                Behind on hours ({Math.round(hoursBehind)}h under expected)
+                                {user.isPresent ? 'Present' : 'Absent'}
                             </Badge>
+                            {isBehindBadge && (
+                                <Badge
+                                    variant="destructive"
+                                    className="text-xs text-white"
+                                    title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                    aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                >
+                                    Behind on hours ({Math.round(hoursBehind)}h under expected)
+                                </Badge>
+                            )}
+                        </div>
+
+                        {(user.firstAttendanceInPeriod || user.lastAttendanceInPeriod) && (
+                            <ModalSection title="Attendance in period (last 7 days)">
+                                <ModalRow
+                                    label="First attended"
+                                    value={user.firstAttendanceInPeriod ? format(new Date(user.firstAttendanceInPeriod), 'EEE, MMM d') : '—'}
+                                />
+                                <ModalRow
+                                    label="Last attended"
+                                    value={user.lastAttendanceInPeriod ? format(new Date(user.lastAttendanceInPeriod), 'EEE, MMM d') : '—'}
+                                />
+                            </ModalSection>
+                        )}
+
+                        {user.lastAppAccessAt && (
+                            <ModalSection title="App access">
+                                <ModalRow label="Last app access" value={user.lastAppAccessAt} />
+                            </ModalSection>
                         )}
 
                         <ModalSection title="Hours this month">
@@ -2022,6 +1350,31 @@ function ReportUserDetailModal({
                                 )}
                                 {user.lateMinutes != null && user.lateMinutes > 0 && (
                                     <ModalRow label="Late (minutes)" value={`${user.lateMinutes}m`} />
+                                )}
+                                {user.distanceFromWorkplaceMeters != null && (
+                                    <ModalRow
+                                        label="Distance from workplace"
+                                        value={
+                                            user.distanceFromWorkplaceMeters >= 1000
+                                                ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)} km`
+                                                : `~${user.distanceFromWorkplaceMeters} m`
+                                        }
+                                    />
+                                )}
+                                {user.shiftStartAddress && (
+                                    <ModalRow
+                                        label="Clock-in address"
+                                        value={
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline break-all"
+                                            >
+                                                {user.shiftStartAddress}
+                                            </a>
+                                        }
+                                    />
                                 )}
                             </ModalSection>
                         )}
