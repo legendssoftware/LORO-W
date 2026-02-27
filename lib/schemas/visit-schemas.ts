@@ -77,6 +77,7 @@ const visitFormBaseSchema = z.object({
     (v) => (v === '' || v === null ? undefined : v),
     z.number().optional()
   ),
+  salesCurrency: z.string().optional(),
   contactMade: z.boolean().optional(),
   methodOfContact: z.string().optional(),
   buildingType: z.string().optional(),

@@ -50,6 +50,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatLastSeen } from '@/app/reports/format-last-seen';
 
 export interface AttendanceReportTabProps {
   singleDate: Date | null;
@@ -286,11 +287,9 @@ function ReportUserCard({
               <LastSevenDaysDots userRef={user.ref} endDate={endDate} />
             </div>
           </div>
-          {(user.firstAttendanceInPeriod || user.lastAttendanceInPeriod) && (
+          {user.firstAttendanceInPeriod && (
             <p className="text-xs text-muted-foreground">
-              First attended: {user.firstAttendanceInPeriod ? format(new Date(user.firstAttendanceInPeriod), 'EEE d') : '—'}
-              {' · '}
-              Last attended: {user.lastAttendanceInPeriod ? format(new Date(user.lastAttendanceInPeriod), 'EEE d') : '—'}
+              First attended: {format(new Date(user.firstAttendanceInPeriod), 'EEE d')}
             </p>
           )}
         </div>
@@ -315,7 +314,7 @@ function ReportUserCard({
           </div>
           {user.lastAppAccessAt && (
             <p className="text-xs text-muted-foreground">
-              Last app access: {user.lastAppAccessAt}
+              {formatLastSeen(user.lastAppAccessAt)}
             </p>
           )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs">

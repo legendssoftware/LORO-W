@@ -82,6 +82,29 @@ export function normalizeDurationDisplay(duration: string | null | undefined): s
   return formatDurationDisplay(mins);
 }
 
+/** Currency code to symbol map for sales value display. */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  ZAR: 'R',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  BWP: 'P',
+  NAD: '$',
+};
+
+/** Format sales value with currency; falls back to ZAR when currency missing. */
+export function formatSalesValue(
+  value: number | null | undefined,
+  currency?: string | null
+): string {
+  if (value == null) return '-';
+  const sym = CURRENCY_SYMBOLS[currency ?? 'ZAR'] ?? currency ?? 'R';
+  return `${sym} ${Number(value).toLocaleString('en-ZA', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 /** Contact made: Yes/No from boolean or YES/NO/yes/no string. */
 export function formatContactMade(value: boolean | string | null | undefined): string {
   if (value === true || value === 'YES' || value === 'yes') return 'Yes';

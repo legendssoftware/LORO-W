@@ -67,6 +67,7 @@ import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
 import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
+import { formatLastSeen } from '@/app/reports/format-last-seen';
 
 const TabSkeleton = () => (
     <div className="flex min-h-[200px] items-center justify-center">
@@ -1271,22 +1272,18 @@ function ReportUserDetailModal({
                             )}
                         </div>
 
-                        {(user.firstAttendanceInPeriod || user.lastAttendanceInPeriod) && (
+                        {user.firstAttendanceInPeriod && (
                             <ModalSection title="Attendance in period (last 7 days)">
                                 <ModalRow
                                     label="First attended"
-                                    value={user.firstAttendanceInPeriod ? format(new Date(user.firstAttendanceInPeriod), 'EEE, MMM d') : '—'}
-                                />
-                                <ModalRow
-                                    label="Last attended"
-                                    value={user.lastAttendanceInPeriod ? format(new Date(user.lastAttendanceInPeriod), 'EEE, MMM d') : '—'}
+                                    value={format(new Date(user.firstAttendanceInPeriod), 'EEE, MMM d')}
                                 />
                             </ModalSection>
                         )}
 
                         {user.lastAppAccessAt && (
                             <ModalSection title="App access">
-                                <ModalRow label="Last app access" value={user.lastAppAccessAt} />
+                                <ModalRow label="Last seen" value={formatLastSeen(user.lastAppAccessAt)} />
                             </ModalSection>
                         )}
 

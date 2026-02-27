@@ -45,6 +45,7 @@ export interface CreateCheckOutPayload {
   personSeenPosition?: string;
   meetingLink?: string;
   salesValue?: number;
+  salesCurrency?: string;
   quotationNumber?: string;
   quotationUid?: number;
   quotationStatus?: string;
@@ -82,6 +83,7 @@ export interface UpdateVisitDetailsPayload {
   personSeenPosition?: string;
   meetingLink?: string;
   salesValue?: number;
+  salesCurrency?: string;
   quotationNumber?: string;
   quotationUid?: number;
   quotationStatus?: string;

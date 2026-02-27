@@ -58,7 +58,7 @@ import {
   exportVisits,
   visitToExportRow,
 } from '@/lib/utils/visits-export';
-import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
+import { TYPE_OF_BUSINESS_OPTIONS, CURRENCY_OPTIONS } from '@/lib/visit-form-utils';
 import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-schemas';
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
@@ -205,6 +205,7 @@ export default function VisitsPage() {
     quotationNumber: '',
     quotationStatus: undefined,
     salesValue: undefined,
+    salesCurrency: 'ZAR',
     contactMade: true,
     businessType: undefined,
     methodOfContact: undefined,
@@ -413,6 +414,7 @@ export default function VisitsPage() {
       quotationNumber: '',
       quotationStatus: undefined,
       salesValue: undefined,
+      salesCurrency: 'ZAR',
       contactMade: true,
       businessType: activeVisit?.businessType ?? undefined,
       methodOfContact: (activeVisit?.methodOfContact as MethodOfContact) ?? undefined,
@@ -526,6 +528,7 @@ export default function VisitsPage() {
       quotationNumber: (endForm.quotationNumber ?? '').trim() || undefined,
       quotationStatus: endForm.quotationStatus || undefined,
       salesValue: endForm.salesValue,
+      salesCurrency: endForm.salesValue != null ? endForm.salesCurrency : undefined,
       contactMade: endForm.contactMade ?? true,
       methodOfContact: endForm.methodOfContact,
       buildingType: endForm.buildingType,
@@ -908,14 +911,28 @@ export default function VisitsPage() {
             </div>
             <div className="grid gap-2">
               <Label>Sales value (optional)</Label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={endForm.salesValue ?? ''}
-                onChange={(e) =>
-                  setEndForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))
-                }
-              />
+              <div className="flex gap-2">
+                <Select
+                  value={endForm.salesCurrency ?? 'ZAR'}
+                  onValueChange={(v) => setEndForm((f) => ({ ...f, salesCurrency: v }))}
+                >
+                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CURRENCY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  className="flex-1"
+                  placeholder="0"
+                  value={endForm.salesValue ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))
+                  }
+                />
+              </div>
             </div>
 
             {/* Method of contact */}

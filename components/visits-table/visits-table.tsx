@@ -14,6 +14,7 @@ import {
   buildTelUrl,
   formatAddressForDisplay,
   formatContactMade,
+  formatSalesValue,
   normalizeDurationDisplay,
   visitsColumnWidthClass,
   VISITS_TABLE_LINK_CLASS,
@@ -25,6 +26,7 @@ import {
   SITE_TYPE_OPTIONS,
   QUOTATION_STATUS_OPTIONS,
   PERSON_POSITION_OPTIONS,
+  CURRENCY_OPTIONS,
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormWithZod } from '@/lib/schemas/visit-schemas';
 import { useUpdateVisitDetailsMutation, useClients } from '@/api/hooks';
@@ -87,10 +89,71 @@ function getWordCount(value: string | null | undefined): number {
 }
 
 const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?|$)/i;
+const DOCUMENT_EXTENSIONS = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|odt|ods)(\?|$)/i;
 
 function isImageUrl(url: string): boolean {
   if (!url.startsWith('http')) return false;
   return IMAGE_EXTENSIONS.test(url) || url.includes('image');
+}
+
+function isDocumentUrl(url: string): boolean {
+  return DOCUMENT_EXTENSIONS.test(url) || url.includes('application/pdf') || url.includes('document');
+}
+
+function getFileIconType(url: string): 'pdf' | 'word' | 'excel' | 'generic' {
+  const lower = url.toLowerCase();
+  if (/\.pdf(\?|$)/i.test(lower)) return 'pdf';
+  if (/\.(doc|docx)(\?|$)/i.test(lower)) return 'word';
+  if (/\.(xls|xlsx)(\?|$)/i.test(lower)) return 'excel';
+  return 'generic';
+}
+
+function getFilenameFromUrl(item: string): string {
+  if (item.startsWith('http')) {
+    try {
+      const path = new URL(item).pathname;
+      return path.split('/').pop() || item;
+    } catch {
+      return item;
+    }
+  }
+  return item;
+}
+
+function PdfIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#DC2626"
+      strokeWidth="2"
+      className={cn('shrink-0 size-10', className)}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+
+function WordIcon({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn('flex items-center justify-center rounded size-10 shrink-0 bg-[#2B579A] text-white font-bold text-sm', className)}
+      aria-hidden
+    >
+      W
+    </div>
+  );
+}
+
+function FileIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} width={24} height={24}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
 }
 
 interface VisitsDisplayColumn {
@@ -225,7 +288,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'method',
-    label: 'Method',
+    label: 'Method of visit',
     width: 'quarter',
     render: (c) => {
       if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
@@ -370,7 +433,7 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
     label: 'Value - ex-VAT',
     render: (c) =>
       c.salesValue != null
-        ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        ? formatSalesValue(c.salesValue, (c as { salesCurrency?: string }).salesCurrency)
         : '-',
   },
   {
@@ -408,6 +471,7 @@ function visitToEditForm(visit: VisitExportItem): Partial<UpdateVisitDetailsPayl
     personSeenPosition: visit.personSeenPosition ?? undefined,
     meetingLink: visit.meetingLink ?? undefined,
     salesValue: visit.salesValue ?? undefined,
+    salesCurrency: (visit as { salesCurrency?: string }).salesCurrency ?? undefined,
     quotationNumber: visit.quotationNumber ?? undefined,
     quotationStatus: visit.quotationStatus ?? undefined,
     methodOfContact: visit.methodOfContact ?? undefined,
@@ -488,6 +552,7 @@ function VisitDetailDialog({
       personSeenPosition: editForm.personSeenPosition,
       meetingLink: editForm.meetingLink || undefined,
       salesValue: editForm.salesValue,
+      salesCurrency: editForm.salesCurrency,
       quotationNumber: (editForm.quotationNumber ?? '').trim() || undefined,
       quotationStatus: editForm.quotationStatus,
       methodOfContact: editForm.methodOfContact,
@@ -516,42 +581,38 @@ function VisitDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className="relative max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
           onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader className="pr-10">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
-                <DialogDescription>
-                  {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
-                </DialogDescription>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {isEndedVisit && !isEditing && (
-                  <Button
-                    size="sm"
-                    className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(true);
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                    Edit
-                  </Button>
-                )}
-                <DialogClose asChild>
-                  <button
-                    type="button"
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label="Close"
-                  >
-                    <XIcon className="size-5" />
-                  </button>
-                </DialogClose>
-              </div>
-            </div>
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            {isEndedVisit && !isEditing && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+              >
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            )}
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Close"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </DialogClose>
+          </div>
+          <DialogHeader className="pr-24">
+            <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
+            <DialogDescription>
+              {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <div>
@@ -679,49 +740,99 @@ function VisitDetailDialog({
                 <div>
                   <h4 className="font-semibold mb-2">Media</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {visit.media.map((item, i) =>
-                      item.startsWith('http') && isImageUrl(item) ? (
-                        <a
-                          key={i}
-                          href={item}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <img
-                            src={item}
-                            alt={`Media ${i + 1}`}
-                            className="w-full h-24 object-cover cursor-pointer"
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                    {visit.media.map((item, i) => {
+                      const isImage = item.startsWith('http') && isImageUrl(item);
+                      const isDocument = item.startsWith('http') && isDocumentUrl(item);
+                      const isNonUrlDoc = !item.startsWith('http') && DOCUMENT_EXTENSIONS.test(item);
+                      const isNonUrlImage = !item.startsWith('http') && IMAGE_EXTENSIONS.test(item);
+                      const filename = getFilenameFromUrl(item);
+
+                      if (isImage) {
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedImageUrl(item);
                             }}
-                          />
-                        </a>
-                      ) : item.startsWith('http') ? (
-                        <a
-                          key={i}
-                          href={item}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={cn(
-                            'flex items-center justify-center h-24 rounded-lg border p-2 text-sm',
-                            VISITS_TABLE_LINK_CLASS
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View file
-                        </a>
-                      ) : (
+                            className="block rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-left"
+                            aria-label={`View image ${i + 1} full size`}
+                          >
+                            <img
+                              src={item}
+                              alt={`Media ${i + 1}`}
+                              className="w-full h-24 object-cover cursor-pointer"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                              }}
+                            />
+                          </button>
+                        );
+                      }
+
+                      if (isDocument || isNonUrlDoc || (item.startsWith('http') && !isImage)) {
+                        const iconType = item.startsWith('http') ? getFileIconType(item) : 'generic';
+                        const Icon =
+                          iconType === 'pdf' ? PdfIcon : iconType === 'word' ? WordIcon : FileIcon;
+                        const href = item.startsWith('http') ? item : undefined;
+                        const content = (
+                          <>
+                            <Icon className="shrink-0 size-10" />
+                            <span className="truncate text-xs">{filename}</span>
+                          </>
+                        );
+                        if (href) {
+                          return (
+                            <a
+                              key={i}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={cn(
+                                'flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm',
+                                VISITS_TABLE_LINK_CLASS
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {content}
+                            </a>
+                          );
+                        }
+                        return (
+                          <span
+                            key={i}
+                            className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
+                          >
+                            <FileIcon className="shrink-0 size-10 text-muted-foreground" />
+                            <span className="truncate text-xs">{filename}</span>
+                          </span>
+                        );
+                      }
+
+                      if (isNonUrlImage) {
+                        return (
+                          <span
+                            key={i}
+                            className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
+                          >
+                            <FileIcon className="shrink-0 size-10 text-muted-foreground" />
+                            <span className="truncate text-xs">{filename}</span>
+                          </span>
+                        );
+                      }
+
+                      return (
                         <span
                           key={i}
-                          className="flex items-center h-24 rounded-lg border p-2 text-sm text-muted-foreground truncate"
+                          className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
                         >
-                          {item}
+                          <FileIcon className="shrink-0 size-10 text-muted-foreground" />
+                          <span className="truncate text-xs">{item}</span>
                         </span>
-                      )
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               </>
@@ -927,11 +1038,25 @@ function VisitDetailDialog({
                   </div>
                   <div>
                     <Label>Sales value</Label>
-                    <Input
-                      type="number"
-                      value={editForm.salesValue ?? ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))}
-                    />
+                    <div className="flex gap-2">
+                      <Select
+                        value={editForm.salesCurrency ?? 'ZAR'}
+                        onValueChange={(v) => setEditForm((f) => ({ ...f, salesCurrency: v }))}
+                      >
+                        <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CURRENCY_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        className="flex-1"
+                        value={editForm.salesValue ?? ''}
+                        onChange={(e) => setEditForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))}
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label>Meeting link</Label>
@@ -1026,7 +1151,7 @@ function VisitDetailDialog({
                   <p><span className="font-medium text-foreground">Follow-up:</span> {visit.followUp?.trim() || '-'}</p>
                   <p><span className="font-medium text-foreground">Quote number:</span> {visit.quotationNumber?.trim() || '-'}</p>
                   <p><span className="font-medium text-foreground">Quotation status:</span> {visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}</p>
-                  <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {visit.salesValue != null ? `R ${Number(visit.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</p>
+                  <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {formatSalesValue(visit.salesValue, (visit as { salesCurrency?: string }).salesCurrency)}</p>
                   <p><span className="font-medium text-foreground">Lead:</span> {visit.lead?.name?.trim() || '-'}</p>
                   <p><span className="font-medium text-foreground">Client:</span> {visit.client?.name?.trim() || '-'}</p>
                   <p><span className="font-medium text-foreground">Branch:</span> {visit.branch?.name?.trim() || '-'}</p>
@@ -1091,7 +1216,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
 
   return (
     <>
-      <div className="rounded border overflow-x-auto">
+      <div className="rounded border overflow-x-auto bg-white">
         <Table className="min-w-max">
           <TableHeader>
             <TableRow>
@@ -1102,7 +1227,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&>tr:nth-child(even)]:bg-gray-50">
             {checkIns.map((c) => (
               <TableRow
                 key={c.uid}

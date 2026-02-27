@@ -5,6 +5,7 @@
 
 import { format } from 'date-fns';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
+import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
 import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
 
@@ -177,7 +178,7 @@ export function visitToExportRow(c: VisitExportItem): string[] {
 
   const valueExVat =
     c.salesValue != null
-      ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      ? formatSalesValue(c.salesValue, (c as { salesCurrency?: string }).salesCurrency)
       : '-';
 
   const followUpText = c.followUp?.trim() || '-';

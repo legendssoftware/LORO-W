@@ -72,6 +72,15 @@ export const QUOTATION_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'pending', label: 'Pending' },
 ];
 
+export const CURRENCY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'ZAR', label: 'ZAR (South African Rand)' },
+  { value: 'USD', label: 'USD (US Dollar)' },
+  { value: 'EUR', label: 'EUR (Euro)' },
+  { value: 'GBP', label: 'GBP (British Pound)' },
+  { value: 'BWP', label: 'BWP (Botswana Pula)' },
+  { value: 'NAD', label: 'NAD (Namibian Dollar)' },
+];
+
 export const PERSON_POSITION_OPTIONS: { value: string; label: string }[] = [
   { value: 'Owner', label: 'Owner' },
   { value: 'Buyer', label: 'Buyer' },

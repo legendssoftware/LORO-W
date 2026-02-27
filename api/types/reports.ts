@@ -71,6 +71,7 @@ export interface VisitExportItem {
   quotationNumber?: string | null;
   quotationStatus?: string | null;
   salesValue?: number | null;
+  salesCurrency?: string | null;
   followUp?: string | null;
   meetingLink?: string | null;
   checkInPhoto?: string | null;
