@@ -1,43 +1,37 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useAuth } from '@clerk/nextjs';
-import { useCheckInMutation, useCheckOutMutation } from './use-check-in-mutations';
+import { useQuery } from '@tanstack/react-query';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { getAttStatus } from '@/api/endpoints/attendance';
+import type { AttStatusResponse } from '@/api/types';
 
-const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
-/** Re-export mutations for backward compatibility */
+/** Re-export visit mutations for visits page (start/end visit, not shift) */
 export {
   useCheckInMutation,
   useCheckOutMutation,
   useUpdateVisitDetailsMutation,
 } from './use-check-in-mutations';
 
-/** Attendance status (e.g. checked in / checked out). Stub that uses check-in status when available. */
+/** Re-export attendance mutations for dashboard (start/end shift) */
+export {
+  useAttCheckInMutation,
+  useAttCheckOutMutation,
+  useBreakMutation,
+} from './use-attendance-mutations';
+
+/** Attendance status (shift checked in/out). Uses GET /att/status – not visits. */
 export function useAttStatus(options?: { enabled?: boolean }) {
-  const { getToken } = useAuth();
+  const client = useApiClient();
   return useQuery({
     queryKey: ['att-status'],
-    queryFn: async () => {
-      const token = await getToken();
-      if (!token) return { nextAction: 'Check In', checkedIn: false };
-      const res = await fetch(`${DEFAULT_API_URL}/check-ins/status/me`.replace(/([^:]\/)\/+/g, '$1'), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json().catch(() => ({}));
+    queryFn: async (): Promise<AttStatusResponse> => {
+      const data = await getAttStatus(client);
       return {
-        nextAction: data?.nextAction ?? 'Check In',
-        checkedIn: data?.checkedIn === true,
         ...data,
+        nextAction: data?.nextAction ?? (data?.checkedIn ? 'End Shift' : 'Start Shift'),
+        checkedIn: data?.checkedIn === true,
       };
     },
-    enabled: options?.enabled !== false && !!DEFAULT_API_URL,
-  });
-}
-
-/** Break mutation stub – no-op if not used by app */
-export function useBreakMutation() {
-  return useMutation({
-    mutationFn: async (_payload?: unknown) => ({ message: 'OK' }),
+    enabled: options?.enabled !== false,
   });
 }

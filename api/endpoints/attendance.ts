@@ -33,6 +33,20 @@ export async function getAttMetrics(
 }
 
 /**
+ * GET /att/metrics/:uid - attendance metrics for a specific user.
+ * Same response shape as GET /att/metrics (self). Admin/Manager/HR.
+ */
+export async function getAttMetricsByUser(
+    client: AxiosInstance,
+    uid: string | number
+): Promise<AttendanceMetricsResponse> {
+    const { data } = await client.get<AttendanceMetricsResponse>(
+        `/att/metrics/${uid}`
+    );
+    return data;
+}
+
+/**
  * GET /att/user/:ref/monthly - monthly attendance calendar (attended/missed/future per day).
  */
 export async function getMonthlyAttendance(
@@ -157,6 +171,36 @@ export async function getDailyOverview(
     const qs = search.toString();
     const { data } = await client.get<DailyOverviewResponse>(
         `/att/daily-overview${qs ? `?${qs}` : ""}`
+    );
+    return data;
+}
+
+/** Response from GET /att/payroll-hours/all. */
+export interface PayrollHoursAllResponse {
+    message: string;
+    period: { startDate: string; endDate: string };
+    userMetrics: Array<{ userId: number; userName: string; payrollHours: number }>;
+    summary: { totalHours: number; totalUsers: number };
+}
+
+/** Params for GET /att/payroll-hours/all. */
+export interface PayrollHoursAllParams {
+    branchId?: string;
+}
+
+/**
+ * GET /att/payroll-hours/all - payroll hours for all users in the organization.
+ * Returns hours for 26th previous month to 25th current month. Admin/Manager/HR.
+ */
+export async function getPayrollHoursAll(
+    client: AxiosInstance,
+    params: PayrollHoursAllParams = {}
+): Promise<PayrollHoursAllResponse> {
+    const search = new URLSearchParams();
+    if (params.branchId) search.set("branchId", params.branchId);
+    const qs = search.toString();
+    const { data } = await client.get<PayrollHoursAllResponse>(
+        `/att/payroll-hours/all${qs ? `?${qs}` : ""}`
     );
     return data;
 }

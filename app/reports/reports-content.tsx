@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { differenceInCalendarDays, endOfDay, format, isSameDay, startOfDay, subDays } from 'date-fns';
+import { differenceInCalendarDays, endOfDay, format, isSameDay, parse, startOfDay, subDays } from 'date-fns';
 import {
     useTokenReady,
     useSessionSync,
@@ -67,6 +67,7 @@ import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
 import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
+import { Smartphone, Laptop } from 'lucide-react';
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 
 const TabSkeleton = () => (
@@ -173,6 +174,7 @@ function fromDailyOverviewMergeMonthly(
             firstAttendanceInPeriod: u.firstAttendanceInPeriod ?? null,
             lastAttendanceInPeriod: u.lastAttendanceInPeriod ?? null,
             lastAppAccessAt: u.lastAppAccessAt ?? null,
+            lastAppAccessDeviceType: u.lastAppAccessDeviceType ?? null,
             distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
             hrID: u.hrID ?? null,
         };
@@ -395,7 +397,7 @@ function VisitsChartsSection({
                                         }}
                                     />
                                 </Pie>
-                                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={3} />} />
                             </RechartsPieChart>
                         </ChartContainer>
                     )}
@@ -999,6 +1001,18 @@ export function ReportsContent() {
             const expectedByNow = getExpectedHoursByDate(endDate);
             return cardUsers.filter((u) => (expectedByNow - u.hoursThisMonth) > HOURS_BEHIND_BADGE_THRESHOLD);
         }
+        if (statusFilter === 'idle') {
+            const sevenDaysAgo = subDays(singleDate ?? new Date(), 7);
+            return cardUsers.filter((u) => {
+                if (!u.lastAppAccessAt) return true;
+                try {
+                    const lastAt = parse(u.lastAppAccessAt, 'MMM d, yyyy h:mm a', new Date());
+                    return lastAt < sevenDaysAgo;
+                } catch {
+                    return true;
+                }
+            });
+        }
         return cardUsers;
     }, [cardUsers, statusFilter, singleDate]);
 
@@ -1276,14 +1290,27 @@ function ReportUserDetailModal({
                             <ModalSection title="Attendance in period (last 7 days)">
                                 <ModalRow
                                     label="First attended"
-                                    value={format(new Date(user.firstAttendanceInPeriod), 'EEE, MMM d')}
+                                    value={format(new Date(user.firstAttendanceInPeriod), 'MMM d, yyyy - HH:mm')}
                                 />
                             </ModalSection>
                         )}
 
                         {user.lastAppAccessAt && (
                             <ModalSection title="App access">
-                                <ModalRow label="Last seen" value={formatLastSeen(user.lastAppAccessAt)} />
+                                <ModalRow
+                                    label="Last seen"
+                                    value={
+                                        <span className="flex items-center gap-2">
+                                            {user.lastAppAccessDeviceType === 'phone' && (
+                                                <Smartphone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                            )}
+                                            {user.lastAppAccessDeviceType === 'laptop' && (
+                                                <Laptop className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                            )}
+                                            {formatLastSeen(user.lastAppAccessAt)}
+                                        </span>
+                                    }
+                                />
                             </ModalSection>
                         )}
 

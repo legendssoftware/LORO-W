@@ -1,5 +1,5 @@
 /** Filter for attendance status in reports. */
-export type StatusFilter = 'all' | 'present' | 'absent' | 'late' | 'early' | 'behind_on_hours';
+export type StatusFilter = 'all' | 'present' | 'absent' | 'late' | 'early' | 'behind_on_hours' | 'idle';
 
 /** Unified card item: user identity + hours + present/absent for the period. */
 export interface ReportCardUser {
@@ -33,11 +33,13 @@ export interface ReportCardUser {
   overtimeHours?: number;
   /** Access level for tags (role/accessLevel/branch) */
   accessLevel?: string | null;
-  /** First/last attendance in 7-day period */
+  /** First attendance datetime (ISO) and last date in 7-day period */
   firstAttendanceInPeriod?: string | null;
   lastAttendanceInPeriod?: string | null;
-  /** Last app access (Clerk) in org timezone */
+  /** Last app access (Clerk session lastActiveAt) in org timezone */
   lastAppAccessAt?: string | null;
+  /** Device type from Clerk session (phone or laptop) */
+  lastAppAccessDeviceType?: 'phone' | 'laptop' | null;
   /** Distance in meters from branch to clock-in (present only) */
   distanceFromWorkplaceMeters?: number | null;
   /** Employee HR ID (Employee Code) */

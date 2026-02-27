@@ -581,7 +581,7 @@ function VisitDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="relative max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -1227,11 +1227,11 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody className="[&>tr:nth-child(even)]:bg-gray-50">
+          <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
             {checkIns.map((c) => (
               <TableRow
                 key={c.uid}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"
                 onClick={() => {
                   setSelectedVisit(c);
                   setVisitDetailOpen(true);

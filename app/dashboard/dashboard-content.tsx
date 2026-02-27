@@ -8,8 +8,8 @@ import {
   useSessionSync,
   useAttStatus,
   useAttMetrics,
-  useCheckInMutation,
-  useCheckOutMutation,
+  useAttCheckInMutation,
+  useAttCheckOutMutation,
   useBreakMutation,
 } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -33,25 +33,30 @@ export function DashboardContent() {
   const metricsQuery = useAttMetrics({
     enabled: isTokenReady,
   });
-  const checkInMutation = useCheckInMutation();
-  const checkOutMutation = useCheckOutMutation();
+  const attCheckInMutation = useAttCheckInMutation();
+  const attCheckOutMutation = useAttCheckOutMutation();
   const breakMutation = useBreakMutation();
   const attStatus = attQuery.data;
   const checkedIn = attStatus?.checkedIn ?? false;
   const onBreak =
     attStatus?.nextAction === 'End Break' || attStatus?.nextAction === 'Resume Work';
   const attLoading =
-    checkInMutation.isPending || checkOutMutation.isPending || breakMutation.isPending;
+    attCheckInMutation.isPending || attCheckOutMutation.isPending || breakMutation.isPending;
 
   const isClient = profile?.accessLevel === 'client';
 
   const handleCheckIn = async () => {
     const position = await getPosition();
     const noLocationNote = 'Clocked in without location (browser location not granted).';
-    checkInMutation.mutate(
+    attCheckInMutation.mutate(
       {
-        checkInTime: new Date().toISOString(),
-        checkInLocation: position !== null ? `${position.lat},${position.lng}` : noLocationNote,
+        status: 'present',
+        checkIn: new Date().toISOString(),
+        checkInNotes: position !== null ? '' : noLocationNote,
+        ...(position !== null && {
+          checkInLatitude: position.lat,
+          checkInLongitude: position.lng,
+        }),
         ...(profile?.branch?.uid != null && { branch: { uid: profile.branch.uid } }),
       },
       {
@@ -65,10 +70,14 @@ export function DashboardContent() {
   const handleCheckOut = async () => {
     const position = await getPosition();
     const noLocationNote = 'Clocked out without location (browser location not granted).';
-    checkOutMutation.mutate(
+    attCheckOutMutation.mutate(
       {
-        checkOutTime: new Date().toISOString(),
-        checkOutLocation: position !== null ? `${position.lat},${position.lng}` : noLocationNote,
+        checkOut: new Date().toISOString(),
+        checkOutNotes: position !== null ? '' : noLocationNote,
+        ...(position !== null && {
+          checkOutLatitude: position.lat,
+          checkOutLongitude: position.lng,
+        }),
       },
       {
         onSuccess: () => {

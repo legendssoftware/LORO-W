@@ -255,7 +255,7 @@ export function VisitsChartsSection({
                     }}
                   />
                 </Pie>
-                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={3} />} />
               </RechartsPieChart>
             </ChartContainer>
           )}

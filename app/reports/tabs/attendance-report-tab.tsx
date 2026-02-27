@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useOrganization } from '@clerk/nextjs';
 import { format, subDays } from 'date-fns';
-import { useMonthlyAttendance } from '@/api/hooks';
+import { useMonthlyAttendance, useAttMetricsBatch } from '@/api/hooks';
 import { AttendanceChartsSection } from '@/app/reports/tabs/attendance-charts-section';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Smartphone, Laptop } from 'lucide-react';
 import { XIcon, SettingsIcon, BarChart3Icon } from '@/lib/icons';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -289,7 +290,7 @@ function ReportUserCard({
           </div>
           {user.firstAttendanceInPeriod && (
             <p className="text-xs text-muted-foreground">
-              First attended: {format(new Date(user.firstAttendanceInPeriod), 'EEE d')}
+              First attended: {format(new Date(user.firstAttendanceInPeriod), 'MMM d, yyyy - HH:mm')}
             </p>
           )}
         </div>
@@ -313,12 +314,18 @@ function ReportUserCard({
             </span>
           </div>
           {user.lastAppAccessAt && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              {user.lastAppAccessDeviceType === 'phone' && (
+                <Smartphone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              )}
+              {user.lastAppAccessDeviceType === 'laptop' && (
+                <Laptop className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              )}
               {formatLastSeen(user.lastAppAccessAt)}
             </p>
           )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs">
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-[60%] sm:max-w-[60%]">
               {user.shiftStartAddress ? (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
@@ -359,9 +366,15 @@ function SummaryHoursModal({
   runAt: Date | null;
   companyName: string;
 }) {
+  const userIds = useMemo(() => users.map((u) => u.userId), [users]);
+  const { payrollHoursByUserId, isLoading: payrollLoading } = useAttMetricsBatch(
+    userIds,
+    { enabled: open }
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="flex flex-col max-w-[90vw] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
             Total Hours Per Employee
@@ -380,56 +393,67 @@ function SummaryHoursModal({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="text-black font-medium">#</TableHead>
-                <TableHead className="text-black font-medium">Employee Code</TableHead>
                 <TableHead className="text-black font-medium">Employee Name</TableHead>
+                <TableHead className="text-black font-medium">Employee Code</TableHead>
                 <TableHead className="text-black font-medium">Holiday</TableHead>
                 <TableHead className="text-black font-medium">Time over</TableHead>
                 <TableHead className="text-black font-medium">Sundays</TableHead>
-                <TableHead className="text-black font-medium">Total hours</TableHead>
+                <TableHead className="text-black font-medium">Total hours this month</TableHead>
+                <TableHead className="text-black font-medium">Payroll Hours</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user, index) => (
-                <TableRow
-                  key={user.userId}
-                  className={cn(
-                    'border-b',
-                    index % 2 === 0 ? 'bg-gray-100/80' : 'bg-white'
-                  )}
-                >
-                  <TableCell className="text-black tabular-nums">{index + 1}</TableCell>
-                  <TableCell className="text-black">
-                    {user.hrID != null ? String(user.hrID) : '—'}
-                  </TableCell>
-                  <TableCell className="text-black">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-7 shrink-0">
-                        <AvatarImage src={user.photoURL ?? undefined} />
-                        <AvatarFallback className="text-xs">
-                          {user.name
-                            .split(/\s+/)
-                            .map((s) => s[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{user.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-black">—</TableCell>
-                  <TableCell className="text-black">
-                    {user.overtimeHours != null && user.overtimeHours > 0
-                      ? `${user.overtimeHours}h`
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="text-black">—</TableCell>
-                  <TableCell className="text-black tabular-nums">
-                    {user.hoursThisMonth}h
-                  </TableCell>
-                </TableRow>
-              ))}
+              {users.map((user, index) => {
+                const payrollHours = payrollHoursByUserId.get(user.userId);
+                return (
+                  <TableRow
+                    key={user.userId}
+                    className={cn(
+                      'border-b',
+                      index % 2 === 0 ? 'bg-gray-100/80' : 'bg-white'
+                    )}
+                  >
+                    <TableCell className="text-black">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-7 shrink-0">
+                          <AvatarImage src={user.photoURL ?? undefined} />
+                          <AvatarFallback className="text-xs">
+                            {user.name
+                              .split(/\s+/)
+                              .map((s) => s[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{user.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-black">
+                      {user.hrID != null ? String(user.hrID) : '—'}
+                    </TableCell>
+                    <TableCell className="text-black">—</TableCell>
+                    <TableCell className="text-black">
+                      {user.overtimeHours != null && user.overtimeHours > 0
+                        ? `${user.overtimeHours}h`
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-black">—</TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.hoursThisMonth}h
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {payrollLoading ? (
+                        <span className="text-muted-foreground">Loading...</span>
+                      ) : payrollHours != null ? (
+                        `${payrollHours}h`
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -500,36 +524,35 @@ export function AttendanceReportTab({
               />
             </PopoverContent>
           </Popover>
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-              <SelectValue placeholder="Status" />
-              {statusFilter !== 'all' ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setStatusFilter('all');
-                  }}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-                  aria-label="Clear status filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="present">Present</SelectItem>
-              <SelectItem value="absent">Absent</SelectItem>
-              <SelectItem value="late">Late</SelectItem>
-              <SelectItem value="early">Early</SelectItem>
-              <SelectItem value="behind_on_hours">Behind on hours</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1">
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="present">Present</SelectItem>
+                <SelectItem value="absent">Absent</SelectItem>
+                <SelectItem value="late">Late</SelectItem>
+                <SelectItem value="early">Early</SelectItem>
+                <SelectItem value="behind_on_hours">Behind on hours</SelectItem>
+                <SelectItem value="idle">Idle (&gt;7 days in-active)</SelectItem>
+              </SelectContent>
+            </Select>
+            {statusFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+                aria-label="Clear status filter"
+              >
+                <XIcon className="size-4 text-muted-foreground" />
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-nowrap items-center gap-2">
           <div className="relative w-56 min-w-0 shrink sm:w-64">

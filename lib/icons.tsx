@@ -492,6 +492,9 @@ export function BriefcaseIcon(p: { className?: string; size?: number }) {
   );
 }
 
+/** Handshake / leads / partnership (from Lucide) */
+export { Handshake as HandshakeIcon } from 'lucide-react';
+
 /** Wifi / connectivity (diagram center) */
 export function WifiIcon(p: { className?: string; size?: number }) {
   return (

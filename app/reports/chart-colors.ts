@@ -1,11 +1,16 @@
 /**
  * Shared chart color and formatters for reports (visits and attendance).
- * Single orange used for all bars and pie slices.
+ * Four distinct HSL colors for bars and pie chart segments.
  */
-export const REPORTS_CHART_COLOR = '#F27A2F';
+const CHART_COLORS = [
+  'hsl(142.1 70.6% 45.3%)',
+  'hsl(263.4 70% 50.4%)',
+  'hsl(346.8 77.2% 49.8%)',
+  'hsl(255.1 91.7% 76.3%)',
+];
 
-export function getChartColor(_index: number): string {
-  return REPORTS_CHART_COLOR;
+export function getChartColor(index: number): string {
+  return CHART_COLORS[index % CHART_COLORS.length];
 }
 
 /**
