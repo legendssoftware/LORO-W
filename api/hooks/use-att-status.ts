@@ -7,7 +7,11 @@ import { useCheckInMutation, useCheckOutMutation } from './use-check-in-mutation
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 /** Re-export mutations for backward compatibility */
-export { useCheckInMutation, useCheckOutMutation } from './use-check-in-mutations';
+export {
+  useCheckInMutation,
+  useCheckOutMutation,
+  useUpdateVisitDetailsMutation,
+} from './use-check-in-mutations';
 
 /** Attendance status (e.g. checked in / checked out). Stub that uses check-in status when available. */
 export function useAttStatus(options?: { enabled?: boolean }) {
@@ -34,6 +38,6 @@ export function useAttStatus(options?: { enabled?: boolean }) {
 /** Break mutation stub – no-op if not used by app */
 export function useBreakMutation() {
   return useMutation({
-    mutationFn: async () => ({ message: 'OK' }),
+    mutationFn: async (_payload?: unknown) => ({ message: 'OK' }),
   });
 }

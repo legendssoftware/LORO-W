@@ -56,6 +56,41 @@ export interface CreateCheckOutPayload {
   [key: string]: unknown;
 }
 
+export interface UpdateVisitDetailsPayload {
+  checkInId: number;
+  client?: { uid: number };
+  notes?: string;
+  resolution?: string;
+  followUp?: string;
+  contactFullName?: string;
+  contactImage?: string;
+  contactCellPhone?: string;
+  contactLandline?: string;
+  contactEmail?: string;
+  contactAddress?: {
+    streetNumber?: string;
+    street?: string;
+    suburb?: string;
+    city?: string;
+    province?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
+  companyName?: string;
+  businessType?: string;
+  personSeenPosition?: string;
+  meetingLink?: string;
+  salesValue?: number;
+  quotationNumber?: string;
+  quotationUid?: number;
+  quotationStatus?: string;
+  methodOfContact?: string;
+  buildingType?: string;
+  contactMade?: boolean;
+  media?: string[];
+}
+
 export interface CheckInStatusResponse {
   message: string;
   nextAction: 'checkOut' | 'Check In';

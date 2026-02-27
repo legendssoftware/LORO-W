@@ -30,7 +30,8 @@ export interface AttendanceMetrics {
         today: number;
         thisWeek: number;
         thisMonth: number;
-        allTime: number;
+        /** Hours in payroll period (26th previous month to 25th current month) */
+        payrollHours: number;
     };
     attendanceStreak?: number;
 }

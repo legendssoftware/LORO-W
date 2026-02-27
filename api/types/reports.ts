@@ -89,7 +89,7 @@ export interface VisitExportItem {
     photoURL?: string;
     avatar?: string;
   };
-  client?: { name?: string; email?: string; phone?: string; address?: CheckInContactAddress } | null;
+  client?: { uid?: number; name?: string; email?: string; phone?: string; address?: CheckInContactAddress } | null;
   branch?: { uid?: number; name?: string; address?: { street?: string; suburb?: string; city?: string } } | null;
   organisation?: { uid?: number; name?: string; logo?: string; email?: string; phone?: string } | null;
   lead?: { uid?: number; name?: string; status?: string } | null;

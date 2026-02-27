@@ -3,6 +3,7 @@ import type {
   CheckInsListResponse,
   DomainReportResponse,
 } from '@/api/types/reports';
+import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
 
 export interface GetCheckInsParams {
   userUid?: string;
@@ -64,5 +65,19 @@ export async function getCheckInsReport(
     byDayLength: Array.isArray(data?.byDay) ? data.byDay.length : 0,
     response: data,
   });
+  return data;
+}
+
+/**
+ * PATCH /check-ins/visit-details - update visit details after check-out.
+ */
+export async function updateVisitDetails(
+  client: AxiosInstance,
+  payload: UpdateVisitDetailsPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    '/check-ins/visit-details',
+    payload
+  );
   return data;
 }

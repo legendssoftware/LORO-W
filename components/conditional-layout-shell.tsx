@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { DashboardSidebar } from '@/components/sidebar/dashboard-sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AccessGuard } from '@/components/access-guard';
@@ -27,8 +27,8 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="flex h-svh">
-      <DashboardSidebar />
+    <div className="flex h-svh w-full">
+      <AppSidebar />
       <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar">
         <ConditionalAppHeader />
         <ErrorBoundary>

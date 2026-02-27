@@ -1,14 +1,13 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { useMemo, useState, useEffect } from 'react';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import {
   useTokenReady,
   useSessionSync,
   useAttStatus,
   useAttMetrics,
-  useLeaves,
   useCheckInMutation,
   useCheckOutMutation,
   useBreakMutation,
@@ -25,8 +24,6 @@ export function DashboardContent() {
   useEffect(() => setMounted(true), []);
 
   const { isSignedIn } = useAuth();
-  const { user: clerkUser } = useUser();
-  const clerkUserId = clerkUser?.id ?? null;
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile, isSyncing } = useSessionSync();
 
@@ -35,10 +32,6 @@ export function DashboardContent() {
   });
   const metricsQuery = useAttMetrics({
     enabled: isTokenReady,
-  });
-  const now = useMemo(() => new Date(), []);
-  const leavesQuery = useLeaves(clerkUserId, {
-    enabled: isTokenReady && !!clerkUserId,
   });
   const checkInMutation = useCheckInMutation();
   const checkOutMutation = useCheckOutMutation();
@@ -52,29 +45,13 @@ export function DashboardContent() {
 
   const isClient = profile?.accessLevel === 'client';
 
-  const leaveDaysAccrued = useMemo(() => {
-    const leaves = leavesQuery.data ?? [];
-    if (leaves.length === 0) return 0;
-    const currentYear = now.getFullYear();
-    return leaves
-      .filter(
-        (l) =>
-          l.status === 'APPROVED' &&
-          new Date(l.startDate).getFullYear() === currentYear
-      )
-      .reduce((sum, l) => sum + (l.duration ?? 0), 0);
-  }, [leavesQuery.data, now]);
-
   const handleCheckIn = async () => {
     const position = await getPosition();
     const noLocationNote = 'Clocked in without location (browser location not granted).';
     checkInMutation.mutate(
       {
-        status: 'present',
-        checkIn: new Date().toISOString(),
-        ...(position !== null
-          ? { checkInLatitude: position.lat, checkInLongitude: position.lng, checkInNotes: '' }
-          : { checkInNotes: noLocationNote }),
+        checkInTime: new Date().toISOString(),
+        checkInLocation: position !== null ? `${position.lat},${position.lng}` : noLocationNote,
         ...(profile?.branch?.uid != null && { branch: { uid: profile.branch.uid } }),
       },
       {
@@ -90,14 +67,8 @@ export function DashboardContent() {
     const noLocationNote = 'Clocked out without location (browser location not granted).';
     checkOutMutation.mutate(
       {
-        checkOut: new Date().toISOString(),
-        ...(position !== null
-          ? {
-              checkOutNotes: '',
-              checkOutLatitude: position.lat,
-              checkOutLongitude: position.lng,
-            }
-          : { checkOutNotes: noLocationNote }),
+        checkOutTime: new Date().toISOString(),
+        checkOutLocation: position !== null ? `${position.lat},${position.lng}` : noLocationNote,
       },
       {
         onSuccess: () => {
@@ -150,7 +121,7 @@ export function DashboardContent() {
   if (!mounted) {
     return (
       <div className="h-full overflow-auto">
-        <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
+        <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
           <LoadingSpinner wrapperClassName="py-12" />
         </main>
       </div>
@@ -161,7 +132,7 @@ export function DashboardContent() {
   if (isSignedIn && !isTokenReady) {
     return (
       <div className="h-full overflow-auto">
-        <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
+        <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
           <LoadingSpinner wrapperClassName="py-12" />
         </main>
       </div>
@@ -170,7 +141,7 @@ export function DashboardContent() {
 
   return (
     <div className="h-full overflow-auto">
-      <main className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6">
+      <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
         {!isSignedIn ? null : profile && isClient ? (
           <p className="text-center text-muted-foreground">
             Attendance tracking is for employees only.
@@ -191,7 +162,6 @@ export function DashboardContent() {
             <DashboardMetricsCard
               metrics={metricsQuery.data}
               isLoading={metricsQuery.isLoading}
-              leaveDaysAccrued={leaveDaysAccrued}
             />
             {isSyncing ? (
               <div className="rounded border border-gray-200 bg-card p-4">

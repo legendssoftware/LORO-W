@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DownloadIcon, Loader2Icon, ChevronDownIcon } from '@/lib/icons';
-import { exportVisits } from '@/lib/utils/visits-export';
+import { exportVisits, visitListItemToExportItem } from '@/lib/utils/visits-export';
 import type { VisitExportItem } from '@/api/types/reports';
 import toast from 'react-hot-toast';
 
@@ -86,10 +86,10 @@ export function LiveReportTab({ isTokenReady }: LiveReportTabProps) {
     { enabled: mounted && isTokenReady }
   );
   const reportQuery = useCheckInsReport(
-    { from: reportStartStr, to: reportEndStr },
+    { startDate: reportStartStr, endDate: reportEndStr },
     { enabled: mounted && isTokenReady }
   );
-  const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+  const checkIns: VisitExportItem[] = (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem);
 
   const handleVisitsExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
     if (checkIns.length === 0) {
@@ -140,7 +140,7 @@ export function LiveReportTab({ isTokenReady }: LiveReportTabProps) {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <p className="text-sm text-muted-foreground">
             {liveVisitsAllTime ? 'All time' : 'Last 30 days'} · Total visits:{' '}
-            <strong>{(reportQuery.data?.total ?? checkIns.length).toLocaleString()}</strong>
+            <strong>{checkIns.length.toLocaleString()}</strong>
             <Button
               type="button"
               variant="link"
@@ -183,7 +183,7 @@ export function LiveReportTab({ isTokenReady }: LiveReportTabProps) {
         </div>
         <VisitsChartsSection
           checkIns={checkIns}
-          reportTotal={reportQuery.data?.total}
+          reportTotal={checkIns.length}
           reportLoading={reportQuery.isLoading}
         />
       </section>

@@ -1,9 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { VisitExportItem } from '@/api/types/reports';
+import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
 import {
   formatContactAddress,
   formatMethodOfContact,
@@ -18,6 +19,16 @@ import {
   VISITS_TABLE_LINK_CLASS,
   type VisitsColumnWidth,
 } from './visits-table-utils';
+import {
+  METHOD_OPTIONS,
+  TYPE_OF_BUSINESS_OPTIONS,
+  SITE_TYPE_OPTIONS,
+  QUOTATION_STATUS_OPTIONS,
+  PERSON_POSITION_OPTIONS,
+} from '@/lib/visit-form-utils';
+import { validateEditVisitFormWithZod } from '@/lib/schemas/visit-schemas';
+import { useUpdateVisitDetailsMutation, useClients } from '@/api/hooks';
+import type { ClientListItem } from '@/api/endpoints/clients';
 
 /**
  * Visit detail modal field mapping (all columns and data presence) is documented in
@@ -33,18 +44,54 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Loader2Icon } from '@/lib/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Pencil } from 'lucide-react';
+import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 const VISIT_IMAGE_FALLBACK_URL =
   'https://images.pexels.com/photos/163194/old-retro-antique-vintage-163194.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
+
+const NOTES_MAX_WORDS = 2500;
+const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
+
+function getWordCount(value: string | null | undefined): number {
+  return (value ?? '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?|$)/i;
+
+function isImageUrl(url: string): boolean {
+  if (!url.startsWith('http')) return false;
+  return IMAGE_EXTENSIONS.test(url) || url.includes('image');
+}
 
 interface VisitsDisplayColumn {
   key: string;
@@ -343,16 +390,123 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
 ];
 
+function visitToEditForm(visit: VisitExportItem): Partial<UpdateVisitDetailsPayload> {
+  const clientUid = (visit.client as { uid?: number } | undefined)?.uid;
+  return {
+    checkInId: visit.uid,
+    client: clientUid != null ? { uid: clientUid } : undefined,
+    notes: visit.notes ?? undefined,
+    resolution: visit.resolution ?? undefined,
+    followUp: visit.followUp ?? undefined,
+    contactFullName: visit.contactFullName ?? undefined,
+    contactCellPhone: visit.contactCellPhone ?? undefined,
+    contactLandline: visit.contactLandline ?? undefined,
+    contactEmail: visit.contactEmail ?? undefined,
+    contactAddress: visit.contactAddress ?? undefined,
+    companyName: visit.companyName ?? undefined,
+    businessType: visit.businessType ?? undefined,
+    personSeenPosition: visit.personSeenPosition ?? undefined,
+    meetingLink: visit.meetingLink ?? undefined,
+    salesValue: visit.salesValue ?? undefined,
+    quotationNumber: visit.quotationNumber ?? undefined,
+    quotationStatus: visit.quotationStatus ?? undefined,
+    methodOfContact: visit.methodOfContact ?? undefined,
+    buildingType: visit.buildingType ?? undefined,
+    contactMade: visit.contactMade ?? undefined,
+    media: visit.media ?? undefined,
+  };
+}
+
 function VisitDetailDialog({
   visit,
   open,
   onOpenChange,
+  onVisitUpdated,
 }: {
   visit: VisitExportItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onVisitUpdated?: () => void;
 }) {
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<UpdateVisitDetailsPayload>>({});
+  const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const updateMutation = useUpdateVisitDetailsMutation();
+  const clientsQuery = useClients({ page: 1, limit: 100 });
+  const clientsList = clientsQuery.data ?? [];
+
+  const isEndedVisit = !!visit?.checkOutTime;
+
+  useEffect(() => {
+    if (!visit || !open) return;
+    setEditForm(visitToEditForm(visit));
+    setIsEditing(false);
+    setFieldErrors({});
+  }, [visit?.uid, open]);
+
+  useEffect(() => {
+    if (!visit || !open) return;
+    const c = visit.client as { uid?: number } | undefined;
+    if (c?.uid) {
+      const client = clientsList.find((cl) => cl.uid === c.uid);
+      setSelectedClient(client ?? null);
+    } else {
+      setSelectedClient(null);
+    }
+  }, [visit?.uid, open, clientsList]);
+
+  const handleCancelEdit = () => {
+    if (visit) setEditForm(visitToEditForm(visit));
+    setIsEditing(false);
+    setFieldErrors({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!visit) return;
+    const { fieldErrors: errs, firstMessage } = validateEditVisitFormWithZod(editForm as Record<string, unknown>);
+    if (firstMessage) {
+      setFieldErrors(errs);
+      toast.error(firstMessage);
+      return;
+    }
+    const payload: UpdateVisitDetailsPayload = {
+      checkInId: visit.uid,
+      notes: editForm.notes || undefined,
+      resolution: editForm.resolution || undefined,
+      followUp: editForm.followUp || undefined,
+      contactFullName: editForm.contactFullName || undefined,
+      contactCellPhone: editForm.contactCellPhone || undefined,
+      contactLandline: editForm.contactLandline || undefined,
+      contactEmail: editForm.contactEmail || undefined,
+      contactAddress: editForm.contactAddress,
+      companyName: (editForm.companyName ?? '').trim() || undefined,
+      businessType: editForm.businessType,
+      personSeenPosition: editForm.personSeenPosition,
+      meetingLink: editForm.meetingLink || undefined,
+      salesValue: editForm.salesValue,
+      quotationNumber: (editForm.quotationNumber ?? '').trim() || undefined,
+      quotationStatus: editForm.quotationStatus,
+      methodOfContact: editForm.methodOfContact,
+      buildingType: editForm.buildingType,
+      contactMade: editForm.contactMade,
+      media: editForm.media,
+      client: editForm.client,
+    };
+    try {
+      await updateMutation.mutateAsync(payload);
+      toast.success('Visit updated');
+      setIsEditing(false);
+      setFieldErrors({});
+      onVisitUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update visit');
+    }
+  };
+
   if (!visit) return null;
   const ownerFullName = visit.owner ? [visit.owner.name, visit.owner.surname].filter(Boolean).join(' ').trim() : '-';
   const inAddr = formatAddressForDisplay(visit.fullAddress, visit.checkInLocation || '-');
@@ -361,14 +515,43 @@ function VisitDetailDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+          showCloseButton={false}
+          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
           onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader>
-            <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
-            <DialogDescription>
-              {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
-            </DialogDescription>
+          <DialogHeader className="pr-10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
+                <DialogDescription>
+                  {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {isEndedVisit && !isEditing && (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Pencil className="size-4" />
+                    Edit
+                  </Button>
+                )}
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="Close"
+                  >
+                    <XIcon className="size-5" />
+                  </button>
+                </DialogClose>
+              </div>
+            </div>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <div>
@@ -495,63 +678,373 @@ function VisitDetailDialog({
                 <Separator />
                 <div>
                   <h4 className="font-semibold mb-2">Media</h4>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                    {visit.media.map((item, i) => (
-                      <li key={i}>
-                        {item.startsWith('http') ? (
-                          <a
-                            href={item}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={VISITS_TABLE_LINK_CLASS}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            View file
-                          </a>
-                        ) : (
-                          <span>{item}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {visit.media.map((item, i) =>
+                      item.startsWith('http') && isImageUrl(item) ? (
+                        <a
+                          key={i}
+                          href={item}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <img
+                            src={item}
+                            alt={`Media ${i + 1}`}
+                            className="w-full h-24 object-cover cursor-pointer"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
+                            }}
+                          />
+                        </a>
+                      ) : item.startsWith('http') ? (
+                        <a
+                          key={i}
+                          href={item}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            'flex items-center justify-center h-24 rounded-lg border p-2 text-sm',
+                            VISITS_TABLE_LINK_CLASS
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View file
+                        </a>
+                      ) : (
+                        <span
+                          key={i}
+                          className="flex items-center h-24 rounded-lg border p-2 text-sm text-muted-foreground truncate"
+                        >
+                          {item}
+                        </span>
+                      )
+                    )}
+                  </div>
                 </div>
               </>
             ) : null}
             <div>
               <h4 className="font-semibold mb-2">Details</h4>
-              <div className="grid gap-x-4 gap-y-1 text-muted-foreground text-sm sm:grid-cols-2">
-                <p><span className="font-medium text-foreground">Notes:</span> {visit.notes?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Resolution:</span> {visit.resolution?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Contact:</span> {visit.contactFullName?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Company:</span> {visit.companyName?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Method:</span> {visit.methodOfContact ? formatMethodOfContact(visit.methodOfContact) : '-'}</p>
-                <p><span className="font-medium text-foreground">Building type:</span> {visit.buildingType ? String(visit.buildingType).replace(/_/g, ' ') : '-'}</p>
-                <p><span className="font-medium text-foreground">Contact made:</span> {formatContactMade(visit.contactMade)}</p>
-                <p><span className="font-medium text-foreground">Business type:</span> {visit.businessType ? String(visit.businessType).replace(/_/g, ' ') : '-'}</p>
-                <p><span className="font-medium text-foreground">Person seen position:</span> {visit.personSeenPosition?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Cell:</span> {visit.contactCellPhone?.trim() ? (
-                  <a href={buildTelUrl(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactCellPhone}</a>
-                ) : '-'}</p>
-                <p><span className="font-medium text-foreground">Landline:</span> {visit.contactLandline?.trim() ? (
-                  <a href={buildTelUrl(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactLandline}</a>
-                ) : '-'}</p>
-                <p><span className="font-medium text-foreground">Contact email:</span> {visit.contactEmail?.trim() ? (
-                  <a href={`mailto:${visit.contactEmail}`} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactEmail}</a>
-                ) : '-'}</p>
-                <p className="sm:col-span-2"><span className="font-medium text-foreground">Contact address:</span> {formatContactAddress(visit.contactAddress)}</p>
-                <p><span className="font-medium text-foreground">Meeting link:</span> {visit.meetingLink?.trim() ? (
-                  <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>Open link</a>
-                ) : '-'}</p>
-                <p><span className="font-medium text-foreground">Follow-up:</span> {visit.followUp?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Quote number:</span> {visit.quotationNumber?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Quotation status:</span> {visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}</p>
-                <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {visit.salesValue != null ? `R ${Number(visit.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</p>
-                <p><span className="font-medium text-foreground">Lead:</span> {visit.lead?.name?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Client:</span> {visit.client?.name?.trim() || '-'}</p>
-                <p><span className="font-medium text-foreground">Branch:</span> {visit.branch?.name?.trim() || '-'}</p>
-              </div>
+              {isEditing ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label>Client (optional)</Label>
+                    <Select
+                      value={selectedClient ? String(selectedClient.uid) : '_none'}
+                      onValueChange={(value) => {
+                        if (value === '_none') {
+                          setSelectedClient(null);
+                          setEditForm((f) => ({ ...f, client: undefined }));
+                          return;
+                        }
+                        const client = clientsList.find((c) => c.uid === Number(value));
+                        if (client) {
+                          setSelectedClient(client);
+                          setEditForm((f) => ({
+                            ...f,
+                            client: { uid: client.uid },
+                            companyName: client.name ?? f.companyName,
+                            contactFullName: client.contactPerson ?? f.contactFullName,
+                            contactEmail: client.email ?? f.contactEmail,
+                            contactCellPhone: (client.phone as string) ?? f.contactCellPhone,
+                            contactLandline: (client.alternativePhone as string) ?? f.contactLandline,
+                          }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">No client</SelectItem>
+                        {clientsQuery.isLoading ? (
+                          <SelectItem value="_loading" disabled>Loading…</SelectItem>
+                        ) : (
+                          clientsList.map((c) => (
+                            <SelectItem key={c.uid} value={String(c.uid)}>
+                              {c.name}
+                              {c.contactPerson ? ` · ${c.contactPerson}` : ''}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={editForm.notes ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                      maxLength={NOTES_MAX_LENGTH}
+                      rows={4}
+                      className="resize-y"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getWordCount(editForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Resolution</Label>
+                    <Input
+                      value={editForm.resolution ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, resolution: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Contact name</Label>
+                    <Input
+                      value={editForm.contactFullName ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, contactFullName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Company</Label>
+                    <Input
+                      value={editForm.companyName ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Cell</Label>
+                    <Input
+                      value={editForm.contactCellPhone ?? ''}
+                      onChange={(e) => {
+                        setEditForm((f) => ({ ...f, contactCellPhone: e.target.value }));
+                        if (fieldErrors.contactCellPhone) setFieldErrors((prev) => ({ ...prev, contactCellPhone: '' }));
+                      }}
+                      aria-invalid={!!fieldErrors.contactCellPhone}
+                      className={fieldErrors.contactCellPhone ? 'border-destructive' : ''}
+                    />
+                    {fieldErrors.contactCellPhone && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.contactCellPhone}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Landline</Label>
+                    <Input
+                      value={editForm.contactLandline ?? ''}
+                      onChange={(e) => {
+                        setEditForm((f) => ({ ...f, contactLandline: e.target.value }));
+                        if (fieldErrors.contactLandline) setFieldErrors((prev) => ({ ...prev, contactLandline: '' }));
+                      }}
+                      aria-invalid={!!fieldErrors.contactLandline}
+                      className={fieldErrors.contactLandline ? 'border-destructive' : ''}
+                    />
+                    {fieldErrors.contactLandline && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.contactLandline}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Contact email</Label>
+                    <Input
+                      type="email"
+                      value={editForm.contactEmail ?? ''}
+                      onChange={(e) => {
+                        setEditForm((f) => ({ ...f, contactEmail: e.target.value }));
+                        if (fieldErrors.contactEmail) setFieldErrors((prev) => ({ ...prev, contactEmail: '' }));
+                      }}
+                      aria-invalid={!!fieldErrors.contactEmail}
+                      className={fieldErrors.contactEmail ? 'border-destructive' : ''}
+                    />
+                    {fieldErrors.contactEmail && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.contactEmail}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Person seen position</Label>
+                    <Select
+                      value={editForm.personSeenPosition ?? '_none'}
+                      onValueChange={(v) => setEditForm((f) => ({ ...f, personSeenPosition: v === '_none' ? undefined : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Select</SelectItem>
+                        {PERSON_POSITION_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Follow-up</Label>
+                    <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'w-full justify-start',
+                            !editForm.followUp && 'text-muted-foreground',
+                            fieldErrors.followUp && 'border-destructive'
+                          )}
+                          aria-invalid={!!fieldErrors.followUp}
+                        >
+                          <CalendarIcon className="mr-2 size-4" />
+                          {editForm.followUp && /^\d{4}-\d{2}-\d{2}/.test(editForm.followUp)
+                            ? format(new Date(editForm.followUp), 'MMM d, yyyy')
+                            : 'Pick date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent>
+                        <Calendar
+                          mode="single"
+                          selected={editForm.followUp && /^\d{4}-\d{2}-\d{2}/.test(editForm.followUp) ? new Date(editForm.followUp) : undefined}
+                          onSelect={(d) => {
+                            setEditForm((f) => ({ ...f, followUp: d ? format(d, 'yyyy-MM-dd') : undefined }));
+                            if (fieldErrors.followUp) setFieldErrors((prev) => ({ ...prev, followUp: '' }));
+                            setFollowUpPickerOpen(false);
+                          }}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {fieldErrors.followUp && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.followUp}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Quotation number</Label>
+                    <Input
+                      value={editForm.quotationNumber ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, quotationNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Quotation status</Label>
+                    <Select
+                      value={editForm.quotationStatus ?? '_none'}
+                      onValueChange={(v) => setEditForm((f) => ({ ...f, quotationStatus: v === '_none' ? undefined : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {QUOTATION_STATUS_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Sales value</Label>
+                    <Input
+                      type="number"
+                      value={editForm.salesValue ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Meeting link</Label>
+                    <Input
+                      value={editForm.meetingLink ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Method of contact</Label>
+                    <Select
+                      value={editForm.methodOfContact ?? '_none'}
+                      onValueChange={(v) => setEditForm((f) => ({ ...f, methodOfContact: v === '_none' ? undefined : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Select</SelectItem>
+                        {METHOD_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Building type</Label>
+                    <Select
+                      value={editForm.buildingType ?? '_none'}
+                      onValueChange={(v) => setEditForm((f) => ({ ...f, buildingType: v === '_none' ? undefined : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Select</SelectItem>
+                        {SITE_TYPE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Business type</Label>
+                    <Select
+                      value={editForm.businessType ?? '_none'}
+                      onValueChange={(v) => setEditForm((f) => ({ ...f, businessType: v === '_none' ? undefined : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Select</SelectItem>
+                        {TYPE_OF_BUSINESS_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="sm:col-span-2 flex items-center justify-between rounded-lg border p-4">
+                    <Label>Contact made</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="edit-contact-made"
+                        checked={editForm.contactMade ?? true}
+                        onCheckedChange={(c) => setEditForm((f) => ({ ...f, contactMade: !!c }))}
+                      />
+                      <label htmlFor="edit-contact-made" className="text-sm cursor-pointer">
+                        {editForm.contactMade ?? true ? 'Yes' : 'No'}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-x-4 gap-y-1 text-muted-foreground text-sm sm:grid-cols-2">
+                  <p><span className="font-medium text-foreground">Notes:</span> {visit.notes?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Resolution:</span> {visit.resolution?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Contact:</span> {visit.contactFullName?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Company:</span> {visit.companyName?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Method:</span> {visit.methodOfContact ? formatMethodOfContact(visit.methodOfContact) : '-'}</p>
+                  <p><span className="font-medium text-foreground">Building type:</span> {visit.buildingType ? String(visit.buildingType).replace(/_/g, ' ') : '-'}</p>
+                  <p><span className="font-medium text-foreground">Contact made:</span> {formatContactMade(visit.contactMade)}</p>
+                  <p><span className="font-medium text-foreground">Business type:</span> {visit.businessType ? String(visit.businessType).replace(/_/g, ' ') : '-'}</p>
+                  <p><span className="font-medium text-foreground">Person seen position:</span> {visit.personSeenPosition?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Cell:</span> {visit.contactCellPhone?.trim() ? (
+                    <a href={buildTelUrl(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactCellPhone}</a>
+                  ) : '-'}</p>
+                  <p><span className="font-medium text-foreground">Landline:</span> {visit.contactLandline?.trim() ? (
+                    <a href={buildTelUrl(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactLandline}</a>
+                  ) : '-'}</p>
+                  <p><span className="font-medium text-foreground">Contact email:</span> {visit.contactEmail?.trim() ? (
+                    <a href={`mailto:${visit.contactEmail}`} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactEmail}</a>
+                  ) : '-'}</p>
+                  <p className="sm:col-span-2"><span className="font-medium text-foreground">Contact address:</span> {formatContactAddress(visit.contactAddress)}</p>
+                  <p><span className="font-medium text-foreground">Meeting link:</span> {visit.meetingLink?.trim() ? (
+                    <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>Open link</a>
+                  ) : '-'}</p>
+                  <p><span className="font-medium text-foreground">Follow-up:</span> {visit.followUp?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Quote number:</span> {visit.quotationNumber?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Quotation status:</span> {visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}</p>
+                  <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {visit.salesValue != null ? `R ${Number(visit.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</p>
+                  <p><span className="font-medium text-foreground">Lead:</span> {visit.lead?.name?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Client:</span> {visit.client?.name?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Branch:</span> {visit.branch?.name?.trim() || '-'}</p>
+                </div>
+              )}
             </div>
           </div>
+          {isEditing && (
+            <DialogFooter className="gap-3">
+              <Button variant="outline" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+                {updateMutation.isPending && <Loader2Icon className="size-4 animate-spin mr-2" />}
+                Save
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
       {expandedImageUrl && (
@@ -573,9 +1066,10 @@ export interface VisitsTableProps {
   checkIns: VisitExportItem[];
   isLoading?: boolean;
   emptyMessage?: string;
+  onVisitUpdated?: () => void;
 }
 
-export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet. Start a visit to see it here.' }: VisitsTableProps) {
+export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet. Start a visit to see it here.', onVisitUpdated }: VisitsTableProps) {
   const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
   const [visitDetailOpen, setVisitDetailOpen] = useState(false);
 
@@ -635,6 +1129,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
         visit={selectedVisit}
         open={visitDetailOpen}
         onOpenChange={setVisitDetailOpen}
+        onVisitUpdated={onVisitUpdated}
       />
     </>
   );

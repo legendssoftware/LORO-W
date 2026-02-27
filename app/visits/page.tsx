@@ -14,11 +14,12 @@ import {
 } from '@/api/hooks';
 import type { ClientListItem } from '@/api/endpoints/clients';
 import type { MethodOfContact, CreateCheckInPayload, CreateCheckOutPayload } from '@/api/types/visits';
+import { visitListItemToExportItem } from '@/lib/utils/visits-export';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -57,42 +58,20 @@ import {
   exportVisits,
   visitToExportRow,
 } from '@/lib/utils/visits-export';
+import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
+import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-schemas';
+import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+const NOTES_MAX_WORDS = 2500;
+const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
 
 const METHOD_OPTIONS: { value: MethodOfContact; label: string }[] = [
   { value: 'Physical', label: 'Physical' },
   { value: 'Telephone', label: 'Telephone' },
   { value: 'Email', label: 'Email' },
   { value: 'Whatsapp', label: 'WhatsApp' },
-];
-
-/** Type of business options (full Industry enum); top three first, then rest. */
-const TYPE_OF_BUSINESS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'HARDWARE', label: 'Hardware' },
-  { value: 'CONTRACTOR', label: 'Contractor' },
-  { value: 'HOME_OWNER', label: 'Home owner' },
-  { value: 'TECHNOLOGY', label: 'Technology' },
-  { value: 'HEALTHCARE', label: 'Healthcare' },
-  { value: 'FINANCE', label: 'Finance' },
-  { value: 'RETAIL', label: 'Retail' },
-  { value: 'MANUFACTURING', label: 'Manufacturing' },
-  { value: 'EDUCATION', label: 'Education' },
-  { value: 'CONSTRUCTION', label: 'Construction' },
-  { value: 'REAL_ESTATE', label: 'Real estate' },
-  { value: 'AUTOMOTIVE', label: 'Automotive' },
-  { value: 'AGRICULTURE', label: 'Agriculture' },
-  { value: 'ENERGY', label: 'Energy' },
-  { value: 'TELECOMMUNICATIONS', label: 'Telecommunications' },
-  { value: 'ENTERTAINMENT', label: 'Entertainment' },
-  { value: 'HOSPITALITY', label: 'Hospitality' },
-  { value: 'TRANSPORTATION', label: 'Transportation' },
-  { value: 'GOVERNMENT', label: 'Government' },
-  { value: 'NON_PROFIT', label: 'Non-profit' },
-  { value: 'CONSULTING', label: 'Consulting' },
-  { value: 'MARKETING', label: 'Marketing' },
-  { value: 'LEGAL', label: 'Legal' },
-  { value: 'OTHER', label: 'Other' },
 ];
 
 /** Site type options (BuildingType); value matches server enum. */
@@ -138,57 +117,7 @@ const PERSON_POSITION_OPTIONS: { value: string; label: string }[] = [
   { value: 'Receptionist', label: 'Receptionist' },
 ];
 
-const NOTES_MAX_WORDS = 2500;
-const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
-
-/** Form validation limits (match server DTO). */
-const MAX_CONTACT_FULL_NAME = 200;
-const MAX_COMPANY_NAME = 255;
-const MAX_PERSON_SEEN_POSITION = 200;
-const MAX_PHONE = 25;
-const MAX_EMAIL = 255;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[+]?[\d\s\-().]*$/;
-
-function validateEndVisitForm(form: Partial<CreateCheckOutPayload>): string[] {
-  const errors: string[] = [];
-  const fullName = (form.contactFullName ?? '').trim();
-  const company = (form.companyName ?? '').trim();
-  const position = (form.personSeenPosition ?? '').trim();
-  const cell = (form.contactCellPhone ?? '').trim();
-  const landline = (form.contactLandline ?? '').trim();
-  const email = (form.contactEmail ?? '').trim();
-  if (fullName.length > MAX_CONTACT_FULL_NAME) {
-    errors.push(`Contact name must be ${MAX_CONTACT_FULL_NAME} characters or less.`);
-  }
-  if (company.length > MAX_COMPANY_NAME) {
-    errors.push(`Company name must be ${MAX_COMPANY_NAME} characters or less.`);
-  }
-  if (position.length > MAX_PERSON_SEEN_POSITION) {
-    errors.push(`Position must be ${MAX_PERSON_SEEN_POSITION} characters or less.`);
-  }
-  if (cell.length > MAX_PHONE) {
-    errors.push(`Cell phone must be ${MAX_PHONE} characters or less.`);
-  }
-  if (cell && !PHONE_REGEX.test(cell)) {
-    errors.push('Cell phone may only contain digits, spaces, +, -, ., or parentheses.');
-  }
-  if (landline.length > MAX_PHONE) {
-    errors.push(`Landline must be ${MAX_PHONE} characters or less.`);
-  }
-  if (landline && !PHONE_REGEX.test(landline)) {
-    errors.push('Landline may only contain digits, spaces, +, -, ., or parentheses.');
-  }
-  if (email.length > MAX_EMAIL) {
-    errors.push(`Email must be ${MAX_EMAIL} characters or less.`);
-  }
-  if (email && !EMAIL_REGEX.test(email)) {
-    errors.push('Please enter a valid email address.');
-  }
-  return errors;
-}
-
-function getVisitStatusLabel(method: MethodOfContact | null | undefined): string {
+function getVisitStatusLabel(method: string | null | undefined): string {
   if (!method) return 'On a visit – end when done.';
   const lower = method.toLowerCase();
   if (lower === 'telephone') return 'On a telephone visit – end when done.';
@@ -197,7 +126,7 @@ function getVisitStatusLabel(method: MethodOfContact | null | undefined): string
   return 'On a physical visit – end when done.';
 }
 
-function getVisitMethodIcon(method: MethodOfContact | null | undefined) {
+function getVisitMethodIcon(method: string | null | undefined) {
   if (!method) return MapPin;
   const m = method.toLowerCase();
   if (m === 'telephone') return Phone;
@@ -226,22 +155,42 @@ function formatElapsed(ms: number): string {
 }
 
 const today = new Date();
-const defaultEnd = today;
-const defaultStart = subDays(today, 30);
 
 export default function VisitsPage() {
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   useSessionSync();
 
-  const [methodModalOpen, setMethodModalOpen] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<MethodOfContact | null>(null);
-  const [endVisitOpen, setEndVisitOpen] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(defaultStart);
-  const [endDate, setEndDate] = useState<Date>(defaultEnd);
-  const [useAllTime, setUseAllTime] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    startDate,
+    endDate,
+    useAllTime,
+    selectedRegion,
+    selectedBusinessType,
+    searchQuery,
+    dateRangePopoverOpen,
+    setDateRangePopoverOpen,
+    setStartDate,
+    selectEndDateAndClose,
+    resetDateRangeToDefault,
+    methodModalOpen,
+    setMethodModalOpen,
+    endVisitOpen,
+    setEndVisitOpen,
+    followUpPickerOpen,
+    setFollowUpPickerOpen,
+    selectedMethod,
+    setSelectedMethod,
+    selectedClient,
+    setSelectedClient,
+    clientSearch,
+    setClientSearch,
+    setUseAllTime,
+    setSelectedRegion,
+    setSelectedBusinessType,
+    setSearchQuery,
+  } = useVisitsStore();
+
   const [exportLoading, setExportLoading] = useState(false);
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>({
     notes: '',
@@ -266,9 +215,7 @@ export default function VisitsPage() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaUrlInput, setMediaUrlInput] = useState('');
-  const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
-  const [clientSearch, setClientSearch] = useState('');
+  const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
   const mounted = authLoaded && isTokenReady;
@@ -278,7 +225,7 @@ export default function VisitsPage() {
     limit: 100,
     search: clientSearch.trim() || undefined,
   });
-  const clientsList: ClientListItem[] = clientsQuery.data?.data ?? [];
+  const clientsList: ClientListItem[] = clientsQuery.data ?? [];
 
   const statusQuery = useCheckInStatus({ enabled: mounted });
   const checkInsQuery = useCheckIns(
@@ -294,7 +241,7 @@ export default function VisitsPage() {
   const checkOutMutation = useCheckOutMutation();
 
   const checkedIn = statusQuery.data?.checkedIn === true;
-  const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+  const checkIns: VisitExportItem[] = (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem);
 
   const uniqueRegions = useMemo(() => {
     const set = new Set<string>();
@@ -304,10 +251,29 @@ export default function VisitsPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [checkIns]);
 
+  const businessTypeLabelMap = useMemo(
+    () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
+    []
+  );
+
+  const uniqueBusinessTypes = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of checkIns) {
+      set.add(c.businessType ?? 'Not set');
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [checkIns]);
+
   const filteredCheckIns = useMemo(() => {
     let list = checkIns;
     if (selectedRegion) {
       list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
+    }
+    if (selectedBusinessType) {
+      list = list.filter((c) => {
+        const bt = c.businessType ?? 'Not set';
+        return bt === selectedBusinessType;
+      });
     }
     const q = searchQuery.trim().toLowerCase();
     if (!q) return list;
@@ -341,7 +307,7 @@ export default function VisitsPage() {
       const rowText = visitToExportRow(c).join(' ').toLowerCase();
       return searchable.includes(q) || rowText.includes(q);
     });
-  }, [checkIns, searchQuery, selectedRegion]);
+  }, [checkIns, searchQuery, selectedRegion, selectedBusinessType]);
 
   const activeVisit = useMemo(
     () => checkIns.find((c) => !c.checkOutTime) ?? null,
@@ -457,6 +423,7 @@ export default function VisitsPage() {
     setMediaFiles([]);
     setMediaUrls([]);
     setMediaUrlInput('');
+    setEndFieldErrors({});
   };
 
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -520,9 +487,16 @@ export default function VisitsPage() {
   }
 
   const submitEndVisit = async () => {
-    const formErrors = validateEndVisitForm(endForm);
-    if (formErrors.length > 0) {
-      toast.error(formErrors[0]);
+    const { fieldErrors: errs, firstMessage } = validateEndVisitFormWithZodFieldErrors(endForm as Record<string, unknown>);
+    if (firstMessage) {
+      setEndFieldErrors(errs);
+      toast.error(firstMessage);
+      return;
+    }
+    const stillCheckedIn = await statusQuery.refetch().then((r) => r.data?.checkedIn === true);
+    if (!stillCheckedIn) {
+      toast.error('You have already ended this visit');
+      setEndVisitOpen(false);
       return;
     }
     let location = getDefaultLocation();
@@ -579,7 +553,7 @@ export default function VisitsPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl lg:max-w-7xl px-4 py-8 sm:px-6 flex flex-col gap-6">
+    <div className="container mx-auto  px-2 py-8 sm:px-6 flex flex-col gap-6 w-full">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Visits</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -783,16 +757,32 @@ export default function VisitsPage() {
               <Input
                 placeholder="Cell phone number"
                 value={endForm.contactCellPhone ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, contactCellPhone: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, contactCellPhone: e.target.value }));
+                  if (endFieldErrors.contactCellPhone) setEndFieldErrors((prev) => ({ ...prev, contactCellPhone: '' }));
+                }}
+                aria-invalid={!!endFieldErrors.contactCellPhone}
+                className={endFieldErrors.contactCellPhone ? 'border-destructive' : ''}
               />
+              {endFieldErrors.contactCellPhone && (
+                <p className="text-xs text-destructive">{endFieldErrors.contactCellPhone}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>Landline</Label>
               <Input
                 placeholder="Landline phone number"
                 value={endForm.contactLandline ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, contactLandline: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, contactLandline: e.target.value }));
+                  if (endFieldErrors.contactLandline) setEndFieldErrors((prev) => ({ ...prev, contactLandline: '' }));
+                }}
+                aria-invalid={!!endFieldErrors.contactLandline}
+                className={endFieldErrors.contactLandline ? 'border-destructive' : ''}
               />
+              {endFieldErrors.contactLandline && (
+                <p className="text-xs text-destructive">{endFieldErrors.contactLandline}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>Contact email</Label>
@@ -800,8 +790,16 @@ export default function VisitsPage() {
                 type="email"
                 placeholder="Email"
                 value={endForm.contactEmail ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, contactEmail: e.target.value }));
+                  if (endFieldErrors.contactEmail) setEndFieldErrors((prev) => ({ ...prev, contactEmail: '' }));
+                }}
+                aria-invalid={!!endFieldErrors.contactEmail}
+                className={endFieldErrors.contactEmail ? 'border-destructive' : ''}
               />
+              {endFieldErrors.contactEmail && (
+                <p className="text-xs text-destructive">{endFieldErrors.contactEmail}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>Company name</Label>
@@ -840,8 +838,10 @@ export default function VisitsPage() {
                     variant="outline"
                     className={cn(
                       'w-full justify-start text-left font-normal',
-                      !endForm.followUp && 'text-muted-foreground'
+                      !endForm.followUp && 'text-muted-foreground',
+                      endFieldErrors.followUp && 'border-destructive'
                     )}
+                    aria-invalid={!!endFieldErrors.followUp}
                   >
                     <CalendarIcon className="mr-2 size-4" />
                     {endForm.followUp
@@ -866,12 +866,17 @@ export default function VisitsPage() {
                     }
                     onSelect={(d) => {
                       setEndForm((f) => ({ ...f, followUp: d ? format(d, 'yyyy-MM-dd') : '' }));
+                      if (endFieldErrors.followUp) setEndFieldErrors((prev) => ({ ...prev, followUp: '' }));
                       setFollowUpPickerOpen(false);
                     }}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              {endFieldErrors.followUp && (
+                <p className="text-xs text-destructive">{endFieldErrors.followUp}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>Quotation number</Label>
@@ -968,10 +973,16 @@ export default function VisitsPage() {
                 <Label>Contact made</Label>
                 <p className="text-sm text-muted-foreground">Whether contact was made during the visit</p>
               </div>
-              <Switch
-                checked={endForm.contactMade ?? true}
-                onCheckedChange={(checked) => setEndForm((f) => ({ ...f, contactMade: !!checked }))}
-              />
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="end-contact-made"
+                  checked={endForm.contactMade ?? true}
+                  onCheckedChange={(checked) => setEndForm((f) => ({ ...f, contactMade: !!checked }))}
+                />
+                <label htmlFor="end-contact-made" className="text-sm cursor-pointer">
+                  {endForm.contactMade ?? true ? 'Yes' : 'No'}
+                </label>
+              </div>
             </div>
 
             {/* Media (images / files) */}
@@ -1124,7 +1135,7 @@ export default function VisitsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-0">
-              <Popover>
+              <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1172,10 +1183,7 @@ export default function VisitsPage() {
                           mode="single"
                           selected={endDate}
                           onSelect={(d) => {
-                            if (d) {
-                              setUseAllTime(false);
-                              setEndDate(d);
-                            }
+                            if (d) selectEndDateAndClose(d);
                           }}
                         />
                       </div>
@@ -1192,16 +1200,12 @@ export default function VisitsPage() {
                     tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setUseAllTime(false);
-                      setStartDate(subDays(new Date(), 30));
-                      setEndDate(new Date());
+                      resetDateRangeToDefault();
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        setUseAllTime(false);
-                        setStartDate(subDays(new Date(), 30));
-                        setEndDate(new Date());
+                        resetDateRangeToDefault();
                       }
                     }}
                     className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
@@ -1224,6 +1228,22 @@ export default function VisitsPage() {
                 {uniqueRegions.map((region) => (
                   <SelectItem key={region} value={region}>
                     {region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedBusinessType || 'all'}
+              onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                <SelectValue placeholder="All business types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All business types</SelectItem>
+                {uniqueBusinessTypes.map((bt) => (
+                  <SelectItem key={bt} value={bt}>
+                    {bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1284,6 +1304,7 @@ export default function VisitsPage() {
           checkIns={filteredCheckIns}
           isLoading={checkInsQuery.isLoading}
           emptyMessage={checkIns.length === 0 ? 'No visits yet. Start a visit to see it here.' : 'No visits match your search.'}
+          onVisitUpdated={() => checkInsQuery.refetch()}
         />
       </section>
     </div>

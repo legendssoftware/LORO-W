@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
 import { useSessionSync } from '@/api/hooks';
 import { useSignOut } from '@/hooks/use-sign-out';
-import { useSidebar } from '@/components/sidebar/sidebar-provider';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const WELCOME_KEY = 'loro_welcome_shown';
 
@@ -35,7 +35,8 @@ export function AppHeader() {
   const welcomeShown = useRef(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { backendUserData } = useSessionSync();
-  const sidebar = useSidebar();
+  const { toggleSidebar, open, openMobile, isMobile } = useSidebar();
+  const sidebarOpen = isMobile ? openMobile : open;
   const accessLevel = backendUserData?.accessLevel;
   const role = roleLabel(accessLevel);
 
@@ -62,15 +63,19 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">
       {isSignedIn ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Open menu"
-          onClick={sidebar.toggle}
-          className="lg:hidden shrink-0"
-        >
-          <LayoutDashboardIcon className="size-6" />
-        </Button>
+        sidebarOpen ? (
+          <div className="size-9 shrink-0" aria-hidden />
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Open sidebar"
+            onClick={toggleSidebar}
+            className="shrink-0"
+          >
+            <LayoutDashboardIcon className="size-6" />
+          </Button>
+        )
       ) : (
         <Link
           href="/"

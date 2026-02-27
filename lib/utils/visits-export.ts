@@ -5,7 +5,19 @@
 
 import { format } from 'date-fns';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
+import type { VisitListItem } from '@/api/types/visits';
 import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
+
+/**
+ * Maps VisitListItem to VisitExportItem, normalizing optional fields (e.g. checkInLocation) to required strings.
+ */
+export function visitListItemToExportItem(v: VisitListItem): VisitExportItem {
+  return {
+    ...v,
+    checkInLocation: v.checkInLocation ?? '-',
+    checkOutLocation: v.checkOutLocation ?? null,
+  } as VisitExportItem;
+}
 
 export const VISITS_EXPORT_HEADERS = [
   'Sales Person',

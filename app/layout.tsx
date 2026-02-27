@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { QueryProvider } from '@/api/providers/query-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { InactivityGuard } from '@/components/inactivity-guard';
-import { SidebarProvider } from '@/components/sidebar/sidebar-provider';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { ConditionalLayoutShell } from '@/components/conditional-layout-shell';
 import { defaultMetadata } from '@/lib/seo';
 import './globals.css';
@@ -41,7 +41,7 @@ export default function RootLayout({
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
           <QueryProvider>
           <TooltipProvider>
-            <SidebarProvider>
+            <SidebarProvider defaultOpen={false}>
               <InactivityGuard />
               <ConditionalLayoutShell>
                 <Suspense

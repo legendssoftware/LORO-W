@@ -88,6 +88,7 @@ import {
     extractRegionFromVisit,
     formatContactAddress,
     formatMethodOfContact,
+    visitListItemToExportItem,
     visitToExportRow,
 } from '@/lib/utils/visits-export';
 import { VisitsTable } from '@/components/visits-table/visits-table';
@@ -612,7 +613,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
 
     const usersQuery = useUsers({ enabled: mounted && isTokenReady && isManager });
 
-    const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+    const checkIns: VisitExportItem[] = (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem);
     const isLoading = checkInsQuery.isLoading;
 
     const uniqueRegions = useMemo(() => {
@@ -1518,7 +1519,16 @@ function ReportUserDetailModal({
                                     )
                                 }
                             />
-                            <ModalRow label="Distance" value="~20m away" />
+                            <ModalRow
+                                label="Distance"
+                                value={
+                                    user.distanceFromWorkplaceMeters != null
+                                        ? user.distanceFromWorkplaceMeters >= 1000
+                                            ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)} km away`
+                                            : `~${user.distanceFromWorkplaceMeters} m away`
+                                        : '—'
+                                }
+                            />
                         </ModalSection>
 
                         <Separator />

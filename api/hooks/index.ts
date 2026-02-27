@@ -11,6 +11,7 @@ export {
   useAttStatus,
   useCheckInMutation,
   useCheckOutMutation,
+  useUpdateVisitDetailsMutation,
   useBreakMutation,
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
@@ -18,7 +19,16 @@ export { useMapReport } from './use-map-report';
 export { useBranches } from './use-branches';
 export { useClients } from './use-clients';
 export { useUsers } from './use-users';
-export { useUser, useUserTarget, useUserPreferences, usePatchUserTarget } from './use-user';
+export {
+  useUser,
+  useUserTarget,
+  useUserPreferences,
+  usePatchUser,
+  usePatchUserTarget,
+  useDeleteUser,
+  useRestoreUser,
+  useDeleteUserPermanently,
+} from './use-user';
 export { useTokenReady } from './use-token-ready';
 export { useSessionSync } from './use-session-sync';
 export { useSyncClerk } from './use-sync-clerk';

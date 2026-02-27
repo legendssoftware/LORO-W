@@ -7,6 +7,7 @@ import type {
   CreateCheckOutPayload,
   CheckInResponse,
   CheckOutResponse,
+  UpdateVisitDetailsPayload,
 } from '@/api/types/visits';
 
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -60,6 +61,28 @@ export function useCheckOutMutation() {
       });
       const data: CheckOutResponse = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || res.statusText || 'Check-out failed');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['check-ins'] });
+      queryClient.invalidateQueries({ queryKey: ['check-in-status'] });
+    },
+  });
+}
+
+export function useUpdateVisitDetailsMutation() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: UpdateVisitDetailsPayload) => {
+      const token = await getToken();
+      const authFetch = await getAuthFetch(token);
+      const res = await authFetch('/check-ins/visit-details', {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      const data: { message?: string } = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || res.statusText || 'Failed to update visit details');
       return data;
     },
     onSuccess: () => {
