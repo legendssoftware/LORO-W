@@ -219,6 +219,7 @@ export default function VisitsPage() {
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
+  const originalClientRef = useRef<ClientListItem | null>(null);
   const mounted = authLoaded && isTokenReady;
 
   const clientsQuery = useClients({
@@ -401,6 +402,7 @@ export default function VisitsPage() {
     setSelectedClient(null);
     setClientSearch('');
     setEndVisitOpen(true);
+    originalClientRef.current = null;
     setEndForm({
       notes: '',
       resolution: '',
@@ -419,6 +421,7 @@ export default function VisitsPage() {
       businessType: activeVisit?.businessType ?? undefined,
       methodOfContact: (activeVisit?.methodOfContact as MethodOfContact) ?? undefined,
       buildingType: activeVisit?.buildingType ?? undefined,
+      contactAddress: undefined,
     });
     setEndPhotoFile(null);
     setEndPhotoPreview(null);
@@ -455,6 +458,7 @@ export default function VisitsPage() {
   };
 
   function applyClientToForm(client: ClientListItem) {
+    originalClientRef.current = client;
     const addr = client.address;
     setEndForm((prev) => ({
       ...prev,
@@ -481,6 +485,7 @@ export default function VisitsPage() {
   }
 
   function clearClientSelection() {
+    originalClientRef.current = null;
     setSelectedClient(null);
     setEndForm((prev) => ({
       ...prev,
@@ -512,6 +517,46 @@ export default function VisitsPage() {
         location = '-34.6037,150.7794';
       }
     }
+    let clientProfileUpdate: CreateCheckOutPayload['clientProfileUpdate'] | undefined;
+    if (endForm.client && originalClientRef.current) {
+      const orig = originalClientRef.current;
+      const changed: NonNullable<CreateCheckOutPayload['clientProfileUpdate']> = {};
+      const trimmedName = (endForm.companyName ?? '').trim();
+      const trimmedPhone = (endForm.contactCellPhone ?? '').trim();
+      const trimmedLandline = (endForm.contactLandline ?? '').trim();
+      const trimmedEmail = (endForm.contactEmail ?? '').trim();
+
+      if (trimmedName && trimmedName !== (orig.name ?? '')) changed.name = trimmedName;
+      if (trimmedPhone !== (orig.phone ?? '')) changed.phone = trimmedPhone;
+      if (trimmedLandline !== ((orig.alternativePhone as string) ?? '')) changed.alternativePhone = trimmedLandline;
+      if (trimmedEmail !== (orig.email ?? '')) changed.email = trimmedEmail;
+
+      const origAddr = orig.address ?? {};
+      const formAddr = endForm.contactAddress;
+      if (
+        formAddr &&
+        (
+          (formAddr.street ?? '') !== (origAddr.street ?? '') ||
+          (formAddr.suburb ?? '') !== (origAddr.suburb ?? '') ||
+          (formAddr.city ?? '') !== (origAddr.city ?? '') ||
+          (formAddr.state ?? '') !== (origAddr.state ?? '') ||
+          (formAddr.country ?? '') !== (origAddr.country ?? '') ||
+          (formAddr.postalCode ?? '') !== (origAddr.postalCode ?? '')
+        )
+      ) {
+        changed.address = {
+          street: formAddr.street ?? '',
+          suburb: formAddr.suburb ?? '',
+          city: formAddr.city ?? '',
+          state: formAddr.state ?? '',
+          country: formAddr.country ?? '',
+          postalCode: formAddr.postalCode ?? '',
+        };
+      }
+
+      if (Object.keys(changed).length > 0) clientProfileUpdate = changed;
+    }
+
     const payload: CreateCheckOutPayload = {
       checkOutTime: new Date().toISOString(),
       checkOutLocation: location,
@@ -539,6 +584,7 @@ export default function VisitsPage() {
         mediaUrls.length > 0 || mediaFiles.length > 0
           ? [...mediaUrls, ...mediaFiles.map((f) => f.name)]
           : undefined,
+      ...(clientProfileUpdate && { clientProfileUpdate }),
     };
     if (endPhotoFile) {
       // If you have an upload endpoint, upload here and set payload.checkOutPhoto = url.
@@ -546,6 +592,7 @@ export default function VisitsPage() {
     }
     try {
       await checkOutMutation.mutateAsync(payload);
+      originalClientRef.current = null;
       toast.success('Visit ended');
       setEndVisitOpen(false);
       statusQuery.refetch();
@@ -811,6 +858,72 @@ export default function VisitsPage() {
                 value={endForm.companyName ?? ''}
                 onChange={(e) => setEndForm((f) => ({ ...f, companyName: e.target.value }))}
               />
+            </div>
+            {/* Address fields */}
+            <div className="grid gap-2 sm:col-span-2">
+              <Label>Address</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Input
+                  placeholder="Street"
+                  value={endForm.contactAddress?.street ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, street: e.target.value },
+                    }))
+                  }
+                />
+                <Input
+                  placeholder="Suburb"
+                  value={endForm.contactAddress?.suburb ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, suburb: e.target.value },
+                    }))
+                  }
+                />
+                <Input
+                  placeholder="City"
+                  value={endForm.contactAddress?.city ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, city: e.target.value },
+                    }))
+                  }
+                />
+                <Input
+                  placeholder="Province / State"
+                  value={endForm.contactAddress?.state ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, state: e.target.value, province: e.target.value },
+                    }))
+                  }
+                />
+                <Input
+                  placeholder="Country"
+                  value={endForm.contactAddress?.country ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, country: e.target.value },
+                    }))
+                  }
+                />
+                <Input
+                  placeholder="Postal code"
+                  value={endForm.contactAddress?.postalCode ?? ''}
+                  onChange={(e) =>
+                    setEndForm((f) => ({
+                      ...f,
+                      contactAddress: { ...f.contactAddress, postalCode: e.target.value },
+                    }))
+                  }
+                />
+              </div>
             </div>
             <div className="grid gap-2">
               <Label>Position of the person seen</Label>

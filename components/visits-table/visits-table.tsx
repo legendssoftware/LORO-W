@@ -28,7 +28,7 @@ import {
   PERSON_POSITION_OPTIONS,
   CURRENCY_OPTIONS,
 } from '@/lib/visit-form-utils';
-import { validateEditVisitFormWithZod } from '@/lib/schemas/visit-schemas';
+import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
 import { useUpdateVisitDetailsMutation, useClients } from '@/api/hooks';
 import type { ClientListItem } from '@/api/endpoints/clients';
 
@@ -481,6 +481,93 @@ function visitToEditForm(visit: VisitExportItem): Partial<UpdateVisitDetailsPayl
   };
 }
 
+/** Normalize empty string to undefined for comparison. */
+function norm(v: unknown): unknown {
+  if (v === '' || v === null) return undefined;
+  return v;
+}
+
+/** Deep equality for address-like objects. */
+function addressesEqual(
+  a: Record<string, unknown> | undefined,
+  b: Record<string, unknown> | undefined
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    const va = norm((a as Record<string, unknown>)[k]);
+    const vb = norm((b as Record<string, unknown>)[k]);
+    if (va !== vb) return false;
+  }
+  return true;
+}
+
+/** Returns only fields that differ between original and current. Excludes checkInId. */
+function getChangedFields(
+  original: Partial<UpdateVisitDetailsPayload>,
+  current: Partial<UpdateVisitDetailsPayload>
+): Partial<UpdateVisitDetailsPayload> {
+  const changed: Partial<UpdateVisitDetailsPayload> = {};
+  const keys: (keyof UpdateVisitDetailsPayload)[] = [
+    'client',
+    'notes',
+    'resolution',
+    'followUp',
+    'contactFullName',
+    'contactCellPhone',
+    'contactLandline',
+    'contactEmail',
+    'contactAddress',
+    'companyName',
+    'businessType',
+    'personSeenPosition',
+    'meetingLink',
+    'salesValue',
+    'salesCurrency',
+    'quotationNumber',
+    'quotationStatus',
+    'methodOfContact',
+    'buildingType',
+    'contactMade',
+    'media',
+  ];
+  for (const k of keys) {
+    const orig = original[k];
+    const curr = current[k];
+    if (k === 'contactAddress') {
+      if (!addressesEqual(orig as Record<string, unknown> | undefined, curr as Record<string, unknown> | undefined)) {
+        (changed as Record<string, unknown>)[k] = curr;
+      }
+    } else if (k === 'client') {
+      const origUid = (orig as { uid?: number } | undefined)?.uid;
+      const currUid = (curr as { uid?: number } | undefined)?.uid;
+      if (origUid !== currUid) {
+        (changed as Record<string, unknown>)[k] = curr;
+      }
+    } else if (k === 'companyName' || k === 'quotationNumber') {
+      const o = (orig ?? '') as string;
+      const c = (curr ?? '') as string;
+      if (o.trim() !== c.trim()) {
+        (changed as Record<string, unknown>)[k] = (c.trim() || undefined) as never;
+      }
+    } else if (k === 'media') {
+      const oa = (orig as string[] | undefined) ?? [];
+      const ca = (curr as string[] | undefined) ?? [];
+      if (oa.length !== ca.length || oa.some((v, i) => v !== ca[i])) {
+        (changed as Record<string, unknown>)[k] = curr;
+      }
+    } else {
+      const no = norm(orig);
+      const nc = norm(curr);
+      if (no !== nc) {
+        (changed as Record<string, unknown>)[k] = curr;
+      }
+    }
+  }
+  return changed;
+}
+
 function VisitDetailDialog({
   visit,
   open,
@@ -531,7 +618,14 @@ function VisitDetailDialog({
 
   const handleSaveEdit = async () => {
     if (!visit) return;
-    const { fieldErrors: errs, firstMessage } = validateEditVisitFormWithZod(editForm as Record<string, unknown>);
+    const original = visitToEditForm(visit);
+    const changed = getChangedFields(original, editForm);
+    if (Object.keys(changed).length === 0) {
+      toast.success('No changes to save');
+      setIsEditing(false);
+      return;
+    }
+    const { fieldErrors: errs, firstMessage } = validateEditVisitFormChangedFields(changed as Record<string, unknown>);
     if (firstMessage) {
       setFieldErrors(errs);
       toast.error(firstMessage);
@@ -539,27 +633,7 @@ function VisitDetailDialog({
     }
     const payload: UpdateVisitDetailsPayload = {
       checkInId: visit.uid,
-      notes: editForm.notes || undefined,
-      resolution: editForm.resolution || undefined,
-      followUp: editForm.followUp || undefined,
-      contactFullName: editForm.contactFullName || undefined,
-      contactCellPhone: editForm.contactCellPhone || undefined,
-      contactLandline: editForm.contactLandline || undefined,
-      contactEmail: editForm.contactEmail || undefined,
-      contactAddress: editForm.contactAddress,
-      companyName: (editForm.companyName ?? '').trim() || undefined,
-      businessType: editForm.businessType,
-      personSeenPosition: editForm.personSeenPosition,
-      meetingLink: editForm.meetingLink || undefined,
-      salesValue: editForm.salesValue,
-      salesCurrency: editForm.salesCurrency,
-      quotationNumber: (editForm.quotationNumber ?? '').trim() || undefined,
-      quotationStatus: editForm.quotationStatus,
-      methodOfContact: editForm.methodOfContact,
-      buildingType: editForm.buildingType,
-      contactMade: editForm.contactMade,
-      media: editForm.media,
-      client: editForm.client,
+      ...changed,
     };
     try {
       await updateMutation.mutateAsync(payload);
@@ -854,6 +928,7 @@ function VisitDetailDialog({
                         const client = clientsList.find((c) => c.uid === Number(value));
                         if (client) {
                           setSelectedClient(client);
+                          const addr = client.address;
                           setEditForm((f) => ({
                             ...f,
                             client: { uid: client.uid },
@@ -862,6 +937,17 @@ function VisitDetailDialog({
                             contactEmail: client.email ?? f.contactEmail,
                             contactCellPhone: (client.phone as string) ?? f.contactCellPhone,
                             contactLandline: (client.alternativePhone as string) ?? f.contactLandline,
+                            ...(addr && {
+                              contactAddress: {
+                                street: (addr.street ?? '') as string,
+                                suburb: (addr.suburb ?? '') as string,
+                                city: (addr.city ?? '') as string,
+                                province: (addr.state ?? '') as string,
+                                state: (addr.state ?? '') as string,
+                                country: (addr.country ?? '') as string,
+                                postalCode: (addr.postalCode ?? '') as string,
+                              },
+                            }),
                           }));
                         }
                       }}
@@ -869,7 +955,7 @@ function VisitDetailDialog({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select client" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[min(320px,50vh)]">
                         <SelectItem value="_none">No client</SelectItem>
                         {clientsQuery.isLoading ? (
                           <SelectItem value="_loading" disabled>Loading…</SelectItem>
@@ -963,6 +1049,71 @@ function VisitDetailDialog({
                     {fieldErrors.contactEmail && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactEmail}</p>
                     )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Address</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                      <Input
+                        placeholder="Street"
+                        value={editForm.contactAddress?.street ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, street: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="Suburb"
+                        value={editForm.contactAddress?.suburb ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, suburb: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="City"
+                        value={editForm.contactAddress?.city ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, city: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="Province / State"
+                        value={editForm.contactAddress?.state ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, state: e.target.value, province: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="Country"
+                        value={editForm.contactAddress?.country ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, country: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        placeholder="Postal code"
+                        value={editForm.contactAddress?.postalCode ?? ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            contactAddress: { ...f.contactAddress, postalCode: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label>Person seen position</Label>

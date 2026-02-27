@@ -54,6 +54,20 @@ export interface CreateCheckOutPayload {
   businessType?: string;
   contactMade?: boolean;
   media?: string[];
+  clientProfileUpdate?: {
+    name?: string;
+    phone?: string;
+    alternativePhone?: string;
+    email?: string;
+    address?: {
+      street?: string;
+      suburb?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      postalCode?: string;
+    };
+  };
   [key: string]: unknown;
 }
 

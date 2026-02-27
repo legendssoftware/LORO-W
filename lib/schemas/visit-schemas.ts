@@ -154,6 +154,30 @@ export function validateEditVisitFormWithZod(form: Record<string, unknown>): {
   };
 }
 
+/**
+ * Validates only the changed fields for edit-visit. Use when sending a partial payload.
+ * Skips validation for fields not present in the payload.
+ */
+export function validateEditVisitFormChangedFields(changedFields: Record<string, unknown>): {
+  fieldErrors: Record<string, string>;
+  firstMessage: string | null;
+} {
+  const result = editVisitFormSchema.partial().passthrough().safeParse(changedFields);
+  if (result.success) return { fieldErrors: {}, firstMessage: null };
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of result.error.issues) {
+    const path = issue.path[0] as string | undefined;
+    if (path && !fieldErrors[path]) {
+      fieldErrors[path] = issue.message as string;
+    }
+  }
+  const first = result.error.issues[0];
+  return {
+    fieldErrors,
+    firstMessage: (first?.message as string) ?? 'Validation failed',
+  };
+}
+
 /** Date range schema: end must be >= start. */
 export const dateRangeSchema = z
   .object({
