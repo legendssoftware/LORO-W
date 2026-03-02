@@ -43,16 +43,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone } from 'lucide-react';
-import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 const VisitsMap = dynamic(
   () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
@@ -61,7 +53,6 @@ const VisitsMap = dynamic(
 import type { VisitExportItem } from '@/api/types/reports';
 import {
   getRegionGroupKey,
-  exportVisits,
   visitToExportRow,
 } from '@/lib/utils/visits-export';
 import { TYPE_OF_BUSINESS_OPTIONS, CURRENCY_OPTIONS } from '@/lib/visit-form-utils';
@@ -226,7 +217,6 @@ export function VisitsContent() {
     setViewMode,
   } = useVisitsStore();
 
-  const [exportLoading, setExportLoading] = useState(false);
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>({
     notes: '',
     resolution: '',
@@ -374,28 +364,6 @@ export function VisitsContent() {
     const d = new Date(raw);
     return Number.isNaN(d.getTime()) ? null : raw;
   }, [activeVisit]);
-
-  const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
-    if (filteredCheckIns.length === 0) {
-      toast.error('No visits to export');
-      return;
-    }
-    setExportLoading(true);
-    try {
-      const startStr = format(startDate, 'yyyy-MM-dd');
-      const endStr = format(endDate, 'yyyy-MM-dd');
-      const baseName = useAllTime
-        ? 'visits-all-time'
-        : `visits-${startStr}-${endStr}`;
-      exportVisits(filteredCheckIns, exportFormat, baseName);
-      toast.success('Export downloaded');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Export failed';
-      toast.error(msg);
-    } finally {
-      setExportLoading(false);
-    }
-  };
 
   const openMethodModal = () => setMethodModalOpen(true);
   const closeMethodModal = () => {
@@ -1332,6 +1300,7 @@ export function VisitsContent() {
               {checkOutMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
               End visit
             </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1472,24 +1441,6 @@ export function VisitsContent() {
             </Select>
           </div>
           <div className="flex flex-nowrap items-center gap-2">
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'outline'}
-              size="sm"
-              className="h-9 bg-white border-gray-200 text-foreground gap-1.5 shrink-0"
-              onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
-            >
-              {viewMode === 'map' ? (
-                <>
-                  <List className="size-4" />
-                  View table
-                </>
-              ) : (
-                <>
-                  <MapIcon className="size-4" />
-                  View on map
-                </>
-              )}
-            </Button>
             <div className="relative w-56 min-w-0 shrink sm:w-64">
               <Input
                 placeholder="Search visits…"
@@ -1511,33 +1462,24 @@ export function VisitsContent() {
                 </button>
               ) : null}
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
-                  disabled={exportLoading || checkInsQuery.isLoading || filteredCheckIns.length === 0}
-                >
-                  {exportLoading ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    <DownloadIcon className="size-4" />
-                  )}
-                  Export
-                  <ChevronDownIcon className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[10rem] z-[9999]">
-                <DropdownMenuLabel className="text-muted-foreground font-normal">
-                  Export filtered visits
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleExport('csv')}>CSV</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              size="sm"
+              className="h-9 bg-white border-gray-200 text-foreground gap-1.5 shrink-0"
+              onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
+            >
+              {viewMode === 'map' ? (
+                <>
+                  <List className="size-4" />
+                  View table
+                </>
+              ) : (
+                <>
+                  <MapIcon className="size-4" />
+                  View on map
+                </>
+              )}
+            </Button>
           </div>
         </div>
         {viewMode === 'table' ? (

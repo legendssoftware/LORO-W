@@ -44,6 +44,7 @@ interface VisitsStore extends VisitsFiltersState, VisitsUIState, VisitsFormState
   setUseAllTime: (value: boolean) => void;
   setSelectedRegion: (region: string) => void;
   setSelectedBusinessType: (type: string) => void;
+  setSelectedUserUid: (uid: string) => void;
   setSearchQuery: (query: string) => void;
   setDateRangePopoverOpen: (open: boolean) => void;
   setMethodModalOpen: (open: boolean) => void;

@@ -16,7 +16,6 @@ export interface LeadsFiltersState {
   useAllTime: boolean;
   selectedStatus: string;
   selectedSource: string;
-  selectedTemperature: string;
   selectedPriority: string;
   selectedUserId: string;
   searchQuery: string;
@@ -32,7 +31,6 @@ interface LeadsStore extends LeadsFiltersState, LeadsUIState {
   setUseAllTime: (value: boolean) => void;
   setSelectedStatus: (status: string) => void;
   setSelectedSource: (source: string) => void;
-  setSelectedTemperature: (temperature: string) => void;
   setSelectedPriority: (priority: string) => void;
   setSelectedUserId: (userId: string) => void;
   setSearchQuery: (query: string) => void;
@@ -47,7 +45,6 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   useAllTime: false,
   selectedStatus: '',
   selectedSource: '',
-  selectedTemperature: '',
   selectedPriority: '',
   selectedUserId: '',
   searchQuery: '',
@@ -58,7 +55,6 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   setUseAllTime: (value) => set({ useAllTime: value }),
   setSelectedStatus: (status) => set({ selectedStatus: status }),
   setSelectedSource: (source) => set({ selectedSource: source }),
-  setSelectedTemperature: (temperature) => set({ selectedTemperature: temperature }),
   setSelectedPriority: (priority) => set({ selectedPriority: priority }),
   setSelectedUserId: (userId) => set({ selectedUserId: userId }),
   setSearchQuery: (query) => set({ searchQuery: query }),

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { format, isSameDay, differenceInCalendarDays } from 'date-fns';
 import { useLeads, useUsers } from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
-import { exportLeads } from '@/lib/utils/leads-export';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,15 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import { CalendarIcon, XIcon } from '@/lib/icons';
 import { Upload as UploadIcon } from 'lucide-react';
 import { LeadsTable } from '@/components/leads-table/leads-table';
 import { ImportLeadsModal } from './components/import-leads-modal';
@@ -36,9 +27,7 @@ import { cn } from '@/lib/utils';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
-  LEAD_TEMPERATURE_OPTIONS_WITH_ALL,
 } from '@/lib/lead-form-utils';
-import toast from 'react-hot-toast';
 
 const today = new Date();
 
@@ -49,7 +38,6 @@ export function LeadsContent() {
     useAllTime,
     selectedStatus,
     selectedSource,
-    selectedTemperature,
     selectedUserId,
     searchQuery,
     dateRangePopoverOpen,
@@ -60,12 +48,10 @@ export function LeadsContent() {
     resetDateRangeToDefault,
     setSelectedStatus,
     setSelectedSource,
-    setSelectedTemperature,
     setSelectedUserId,
     setSearchQuery,
   } = useLeadsStore();
 
-  const [exportLoading, setExportLoading] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   const { data: users = [] } = useUsers({ limit: 100 });
@@ -81,7 +67,6 @@ export function LeadsContent() {
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
-    ...(selectedTemperature && selectedTemperature !== 'all' ? { temperature: selectedTemperature } : {}),
     ...(selectedUserId && selectedUserId !== 'all' && !Number.isNaN(Number(selectedUserId))
       ? { ownerId: Number(selectedUserId) }
       : {}),
@@ -90,28 +75,6 @@ export function LeadsContent() {
 
   const leadsQuery = useLeads(leadsParams);
   const leads = leadsQuery.data?.data ?? [];
-
-  const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
-    if (leads.length === 0) {
-      toast.error('No leads to export');
-      return;
-    }
-    setExportLoading(true);
-    try {
-      const startStr = format(startDate, 'yyyy-MM-dd');
-      const endStr = format(endDate, 'yyyy-MM-dd');
-      const baseName = useAllTime
-        ? 'leads-all-time'
-        : `leads-${startStr}-${endStr}`;
-      exportLeads(leads, exportFormat, baseName);
-      toast.success('Export downloaded');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Export failed';
-      toast.error(msg);
-    } finally {
-      setExportLoading(false);
-    }
-  };
 
   return (
     <section>
@@ -234,21 +197,6 @@ export function LeadsContent() {
             </SelectContent>
           </Select>
           <Select
-            value={selectedTemperature || 'all'}
-            onValueChange={(v) => setSelectedTemperature(v)}
-          >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
-              <SelectValue placeholder="All temperatures" />
-            </SelectTrigger>
-            <SelectContent>
-              {LEAD_TEMPERATURE_OPTIONS_WITH_ALL.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
             value={selectedUserId || 'all'}
             onValueChange={(v) => setSelectedUserId(v)}
           >
@@ -287,43 +235,6 @@ export function LeadsContent() {
               </button>
             ) : null}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-1.5 border-gray-200 bg-white text-foreground"
-                disabled={
-                  exportLoading ||
-                  leadsQuery.isLoading ||
-                  leads.length === 0
-                }
-              >
-                {exportLoading ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : (
-                  <DownloadIcon className="size-4" />
-                )}
-                Export
-                <ChevronDownIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[10rem]">
-              <DropdownMenuLabel className="font-normal text-muted-foreground">
-                Export filtered leads
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExport('csv')}>
-                CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('excel')}>
-                Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Button
             variant="outline"
             size="sm"
