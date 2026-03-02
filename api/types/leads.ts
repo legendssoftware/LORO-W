@@ -74,9 +74,68 @@ export interface GetLeadsParams {
   maxScore?: number;
   priority?: string;
   source?: string;
+  ownerId?: number;
 }
 
 export interface GetLeadsReportParams {
   from: string; // YYYY-MM-DD
   to: string;   // YYYY-MM-DD
+}
+
+/** Response from POST /leads/import-csv */
+export interface LeadImportResponse {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors: Array<{ row: number; error: string }>;
+  assignments?: Array<{ leadId: number; userId: number; userName: string }>;
+}
+
+/** Payload for POST /leads (create lead). branch is required; others optional. Aligned with APK and CreateLeadDto. */
+export interface CreateLeadPayload {
+  branch: { uid: number };
+  name?: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  status?: string;
+  source?: string;
+  temperature?: string;
+  priority?: string;
+  /** Lead profile image URL (after upload). */
+  image?: string;
+  /** Attachment URLs (after upload). */
+  attachments?: string[];
+  jobTitle?: string;
+  industry?: string;
+  businessSize?: string;
+  decisionMakerRole?: string;
+  intent?: string;
+  userQualityRating?: number;
+  lifecycleStage?: string;
+  budgetRange?: string;
+  estimatedValue?: number;
+  purchaseTimeline?: string;
+  preferredCommunication?: string;
+  timezone?: string;
+  bestContactTime?: string;
+  painPoints?: string;
+  referralSource?: string;
+  competitorInfo?: string;
+  campaignName?: string;
+  landingPage?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+  lastContactDate?: string;
+  nextFollowUpDate?: string;
+}
+
+/** Response from POST /leads (create). Server returns { message, data }. */
+export interface CreateLeadResponse {
+  message: string;
+  data: LeadListItem | null;
 }
