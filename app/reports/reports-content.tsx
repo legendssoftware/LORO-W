@@ -746,7 +746,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                                           : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto min-w-[480px] p-0" align="start">
+                            <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
                                 <div className="p-2 flex flex-col gap-3">
                                     <div className="flex items-center gap-2">
                                         <Button
@@ -829,7 +829,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                                 <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
                                     <SelectValue placeholder={usersQuery.isLoading ? 'Loading…' : 'All users'} />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[10001]">
                                     <SelectItem value="all">All users</SelectItem>
                                     {!usersQuery.isLoading && (usersQuery.data ?? []).length === 0 ? (
                                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
@@ -873,7 +873,7 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                         <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                             <SelectValue placeholder="All regions" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[10001]">
                             <SelectItem value="all">All regions</SelectItem>
                             {uniqueRegions.map((region) => (
                                 <SelectItem key={region} value={region}>
