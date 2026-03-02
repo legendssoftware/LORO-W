@@ -1,14 +1,21 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   getLeads,
   getLeadsForUser,
   getLeadsReport,
   getLead,
+  createLead,
+  importLeadsFromCSV,
 } from '@/api/endpoints/leads';
-import type { GetLeadsParams, GetLeadsReportParams } from '@/api/types/leads';
+import type {
+  GetLeadsParams,
+  GetLeadsReportParams,
+  CreateLeadPayload,
+} from '@/api/types/leads';
+import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 
 const QUERY_KEY_PREFIX = ['leads'] as const;
 
@@ -91,6 +98,41 @@ export function useLead(ref: number | null | undefined, options?: { enabled?: bo
     retry: (failureCount, error: { response?: { status?: number } }) => {
       if (error?.response?.status === 403) return false;
       return failureCount < 2;
+    },
+  });
+}
+
+/**
+ * Create a new lead. Invalidates leads list on success.
+ */
+export function useCreateLeadMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateLeadPayload) => createLead(client, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Import leads from CSV file. Invalidates and refetches leads list on success.
+ */
+export function useImportLeadsMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      formData,
+      params,
+    }: {
+      formData: FormData;
+      params: ImportLeadsFromCSVParams;
+    }) => importLeadsFromCSV(client, formData, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
     },
   });
 }

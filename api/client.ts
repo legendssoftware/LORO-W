@@ -45,6 +45,14 @@ export function createApiClient(getToken?: GetTokenFn): AxiosInstance {
     },
   });
 
+  // Let multipart/form-data requests set Content-Type with boundary (e.g. file uploads).
+  instance.interceptors.request.use((config) => {
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    return config;
+  }, (err) => Promise.reject(err));
+
   if (getToken) {
     instance.interceptors.request.use(
       async (config) => {

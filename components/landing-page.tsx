@@ -336,7 +336,7 @@ export function LandingPage() {
                     size="lg"
                   >
                     <Link
-                      href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y"
+                      href="https://play.google.com/apps/internaltest/4700940707025220227"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -638,7 +638,7 @@ export function LandingPage() {
                   One app for the field and the office. Get started in minutes.
                 </p>
                 <Button asChild className="font-body rounded-lg border-0 bg-transparent text-white hover:bg-purple-600 hover:text-white gap-2" size="lg">
-                  <Link href="https://drive.google.com/uc?export=download&id=1ec6BfP1co9T6L0b6iiyiaWH4yzLc0a1y" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                  <Link href="https://play.google.com/apps/internaltest/4700940707025220227" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                     Download App
                     <ArrowRightIcon size={18} />
                   </Link>

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import type { VisitExportItem } from '@/api/types/reports';
 import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
@@ -73,10 +73,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil } from 'lucide-react';
+import { Pencil, UserPlus } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import {
+  CreateLeadModal,
+  type CreateLeadModalInitialValues,
+} from '@/app/leads/components/create-lead-modal';
 
 const VISIT_IMAGE_FALLBACK_URL =
   'https://images.pexels.com/photos/163194/old-retro-antique-vintage-163194.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
@@ -496,6 +500,30 @@ function visitToEditForm(visit: VisitExportItem): Partial<UpdateVisitDetailsPayl
   };
 }
 
+/** Maps a visit to initial form values for the Create Lead modal (convert visit to lead). Uses visit date as lastContactDate without validation. */
+function visitToLeadInitialValues(visit: VisitExportItem): CreateLeadModalInitialValues {
+  const notesParts = [
+    visit.notes?.trim(),
+    visit.resolution?.trim(),
+    formatContactAddress(visit.contactAddress) !== '-' ? formatContactAddress(visit.contactAddress) : null,
+  ].filter(Boolean);
+  const notes = notesParts.length > 0 ? notesParts.join('\n\n') : undefined;
+  const phone = (visit.contactCellPhone?.trim() || visit.contactLandline?.trim()) || undefined;
+  const visitDate = visit.checkOutTime ?? visit.checkInTime;
+  return {
+    name: visit.contactFullName?.trim() || undefined,
+    companyName: visit.companyName?.trim() || undefined,
+    email: visit.contactEmail?.trim() || undefined,
+    phone: phone || undefined,
+    notes: notes || undefined,
+    source: 'OTHER',
+    branchUid: visit.branch?.uid ?? undefined,
+    jobTitle: visit.personSeenPosition?.trim() || undefined,
+    estimatedValue: visit.salesValue ?? undefined,
+    lastContactDate: visitDate || undefined,
+  };
+}
+
 /** Normalize empty string to undefined for comparison. */
 function norm(v: unknown): unknown {
   if (v === '' || v === null) return undefined;
@@ -600,6 +628,7 @@ function VisitDetailDialog({
   const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [createLeadModalOpen, setCreateLeadModalOpen] = useState(false);
 
   const updateMutation = useUpdateVisitDetailsMutation();
   const clientsQuery = useClients({ page: 1, limit: 100 });
@@ -624,6 +653,11 @@ function VisitDetailDialog({
       setSelectedClient(null);
     }
   }, [visit?.uid, open, clientsList]);
+
+  const leadInitialValues = useMemo(
+    () => (visit ? visitToLeadInitialValues(visit) : undefined),
+    [visit?.uid]
+  );
 
   const handleCancelEdit = () => {
     if (visit) setEditForm(visitToEditForm(visit));
@@ -675,17 +709,33 @@ function VisitDetailDialog({
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
             {isEndedVisit && !isEditing && (
-              <Button
-                size="sm"
-                className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditing(true);
-                }}
-              >
-                <Pencil className="size-4" />
-                Edit
-              </Button>
+              <>
+                {!visit.lead?.uid && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCreateLeadModalOpen(true);
+                    }}
+                  >
+                    <UserPlus className="size-4" />
+                    Convert to Lead
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </Button>
+              </>
             )}
             <DialogClose asChild>
               <button
@@ -1349,6 +1399,25 @@ function VisitDetailDialog({
           </DialogContent>
         </Dialog>
       )}
+      <CreateLeadModal
+        open={createLeadModalOpen}
+        onOpenChange={setCreateLeadModalOpen}
+        initialValues={leadInitialValues}
+        onSuccess={(createdLead) => {
+          if (createdLead?.uid && visit?.uid) {
+            updateMutation
+              .mutateAsync({ checkInId: visit.uid, leadUid: createdLead.uid })
+              .then(() => {
+                onVisitUpdated?.();
+              })
+              .catch((e) => {
+                toast.error(e instanceof Error ? e.message : 'Failed to link lead to visit');
+              });
+          } else {
+            onVisitUpdated?.();
+          }
+        }}
+      />
     </>
   );
 }

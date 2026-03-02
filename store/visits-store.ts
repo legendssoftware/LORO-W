@@ -18,6 +18,7 @@ export interface VisitsFiltersState {
   useAllTime: boolean;
   selectedRegion: string;
   selectedBusinessType: string;
+  selectedUserUid: string;
   searchQuery: string;
 }
 
@@ -62,6 +63,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   useAllTime: false,
   selectedRegion: '',
   selectedBusinessType: '',
+  selectedUserUid: '',
   searchQuery: '',
   dateRangePopoverOpen: false,
   methodModalOpen: false,
@@ -77,6 +79,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   setUseAllTime: (value) => set({ useAllTime: value }),
   setSelectedRegion: (region) => set({ selectedRegion: region }),
   setSelectedBusinessType: (type) => set({ selectedBusinessType: type }),
+  setSelectedUserUid: (uid) => set({ selectedUserUid: uid }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setDateRangePopoverOpen: (open) => set({ dateRangePopoverOpen: open }),
   setMethodModalOpen: (open) => set({ methodModalOpen: open }),

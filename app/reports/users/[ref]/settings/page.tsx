@@ -1904,7 +1904,7 @@ export default function UserSettingsPage() {
             </Card>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={patchUser.isPending}>
+              <Button type="submit" variant="success" disabled={patchUser.isPending}>
                 {patchUser.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
@@ -1913,7 +1913,7 @@ export default function UserSettingsPage() {
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 onClick={() => router.push('/reports')}
               >
                 Cancel
@@ -1969,6 +1969,7 @@ export default function UserSettingsPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
+                variant="success"
                 onClick={(e) => {
                   e.preventDefault();
                   restoreUserMutation.mutate(undefined, {

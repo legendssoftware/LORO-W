@@ -10,6 +10,7 @@ import {
   useCheckInMutation,
   useCheckOutMutation,
   useClients,
+  useUsers,
   useTokenReady,
   useSessionSync,
 } from '@/api/hooks';
@@ -197,6 +198,7 @@ export function VisitsContent() {
     useAllTime,
     selectedRegion,
     selectedBusinessType,
+    selectedUserUid,
     searchQuery,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
@@ -218,6 +220,7 @@ export function VisitsContent() {
     setUseAllTime,
     setSelectedRegion,
     setSelectedBusinessType,
+    setSelectedUserUid,
     setSearchQuery,
     viewMode,
     setViewMode,
@@ -267,14 +270,20 @@ export function VisitsContent() {
     return inList ? clientsFromApi : [selectedClient, ...clientsFromApi];
   }, [clientsFromApi, selectedClient]);
 
+  const usersQuery = useUsers({ limit: 200, enabled: mounted });
+  const usersList = usersQuery.data ?? [];
+
   const statusQuery = useCheckInStatus({ enabled: mounted });
   const checkInsQuery = useCheckIns(
-    useAllTime
-      ? {}
-      : {
-          startDate: startOfDay(startDate).toISOString(),
-          endDate: endOfDay(endDate).toISOString(),
-        },
+    {
+      ...(useAllTime
+        ? {}
+        : {
+            startDate: startOfDay(startDate).toISOString(),
+            endDate: endOfDay(endDate).toISOString(),
+          }),
+      ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
+    },
     { enabled: mounted }
   );
   const checkInMutation = useCheckInMutation();
@@ -704,9 +713,14 @@ export function VisitsContent() {
               {METHOD_OPTIONS.map((opt) => (
                 <Button
                   key={opt.value}
-                  variant={selectedMethod === opt.value ? 'default' : 'outline'}
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedMethod(opt.value)}
+                  className={
+                    selectedMethod === opt.value
+                      ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white'
+                      : undefined
+                  }
                 >
                   {opt.label}
                 </Button>
@@ -717,7 +731,7 @@ export function VisitsContent() {
                 Cancel
               </Button>
               <Button
-                className="bg-green-600 text-white hover:bg-green-700"
+                variant="success"
                 onClick={startVisit}
                 disabled={checkInMutation.isPending || !selectedMethod}
               >
@@ -1311,18 +1325,17 @@ export function VisitsContent() {
               Cancel
             </Button>
             <Button
-              className="border-0 bg-red-600 text-white hover:bg-red-700"
+              variant="success"
               onClick={submitEndVisit}
               disabled={checkOutMutation.isPending}
             >
               {checkOutMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
               End visit
             </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Visit history: same filters as report Visits tab (date range, region, search, export); no user filter */}
+      {/* Visit history: date range, region, business type, user, search, export */}
       <section>
         <h2 className="text-lg font-medium text-foreground mb-4">Visit history</h2>
         <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
@@ -1437,6 +1450,22 @@ export function VisitsContent() {
                 {uniqueBusinessTypes.map((bt) => (
                   <SelectItem key={bt} value={bt}>
                     {bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedUserUid || 'all'}
+              onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent className="z-[10001]">
+                <SelectItem value="all">All users</SelectItem>
+                {usersList.map((u) => (
+                  <SelectItem key={u.uid} value={String(u.uid)}>
+                    {[u.name, u.surname].filter(Boolean).join(' ').trim() || u.email}
                   </SelectItem>
                 ))}
               </SelectContent>
