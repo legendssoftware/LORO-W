@@ -1,54 +1,37 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { getAttStatus, checkIn, checkOut } from '@/api/endpoints/attendance';
-import type { CheckInBody, CheckOutBody } from '@/api/types';
+import { getAttStatus } from '@/api/endpoints/attendance';
+import type { AttStatusResponse } from '@/api/types';
 
-const QUERY_KEY = ['att', 'status'] as const;
+/** Re-export visit mutations for visits page (start/end visit, not shift) */
+export {
+  useCheckInMutation,
+  useCheckOutMutation,
+  useUpdateVisitDetailsMutation,
+} from './use-check-in-mutations';
 
-/**
- * Fetches current attendance status. Optionally enable only after sync has run.
- */
+/** Re-export attendance mutations for dashboard (start/end shift) */
+export {
+  useAttCheckInMutation,
+  useAttCheckOutMutation,
+  useBreakMutation,
+} from './use-attendance-mutations';
+
+/** Attendance status (shift checked in/out). Uses GET /att/status – not visits. */
 export function useAttStatus(options?: { enabled?: boolean }) {
   const client = useApiClient();
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: () => getAttStatus(client),
+    queryKey: ['att-status'],
+    queryFn: async (): Promise<AttStatusResponse> => {
+      const data = await getAttStatus(client);
+      return {
+        ...data,
+        nextAction: data?.nextAction ?? (data?.checkedIn ? 'End Shift' : 'Start Shift'),
+        checkedIn: data?.checkedIn === true,
+      };
+    },
     enabled: options?.enabled !== false,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Check-in mutation. Invalidates att status on success.
- */
-export function useCheckInMutation() {
-  const client = useApiClient();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: CheckInBody) => checkIn(client, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
-    },
-  });
-}
-
-/**
- * Check-out mutation. Invalidates att status and metrics on success.
- */
-export function useCheckOutMutation() {
-  const client = useApiClient();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: CheckOutBody) => checkOut(client, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['att', 'metrics'] });
-    },
   });
 }

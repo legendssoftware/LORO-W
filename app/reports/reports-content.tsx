@@ -1,23 +1,28 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useMemo, useState, useEffect } from 'react';
-import { format, getDate, getDaysInMonth, subDays } from 'date-fns';
+import { useAuth } from '@clerk/nextjs';
+import { differenceInCalendarDays, endOfDay, format, isSameDay, parse, startOfDay, subDays } from 'date-fns';
 import {
+    useTokenReady,
     useSessionSync,
     useMonthlyMetrics,
     useDailyOverview,
-    useMonthlyAttendance,
     useCheckIns,
-    useCheckInsReport,
     useUsers,
+    useUser,
+    useUserTarget,
+    useUserPreferences,
 } from '@/api/hooks';
 import type {
     DailyOverviewUser,
     MonthlyMetricsUserItem,
 } from '@/api/types';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Card,
     CardContent,
@@ -29,12 +34,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -54,28 +62,47 @@ import { cn } from '@/lib/utils';
 import { isStaffDashboardVisible } from '@/lib/access';
 import Link from 'next/link';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
+import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
+import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
+import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
+import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
+import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
+import { Smartphone, Laptop } from 'lucide-react';
+import { formatLastSeen } from '@/app/reports/format-last-seen';
+
+const TabSkeleton = () => (
+    <div className="flex min-h-[200px] items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+);
+
+const LiveReportTab = dynamic(
+    () => import('@/app/reports/tabs/live-report-tab').then((m) => ({ default: m.LiveReportTab })),
+    { loading: TabSkeleton, ssr: false }
+);
+const AttendanceReportTab = dynamic(
+    () => import('@/app/reports/tabs/attendance-report-tab').then((m) => ({ default: m.AttendanceReportTab })),
+    { loading: TabSkeleton, ssr: false }
+);
 import type { VisitExportItem } from '@/api/types/reports';
 import {
     exportVisits,
+    extractRegionFromVisit,
     formatContactAddress,
     formatMethodOfContact,
+    visitListItemToExportItem,
     visitToExportRow,
 } from '@/lib/utils/visits-export';
+import { VisitsTable } from '@/components/visits-table/visits-table';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import toast from 'react-hot-toast';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import {
     ChartContainer,
     ChartLegend,
@@ -97,40 +124,13 @@ import {
     CartesianGrid,
 } from 'recharts';
 
-const EXPECTED_MONTHLY_HOURS = 180;
-
-/**
- * Prorated expected hours by a given date: (day of month / days in month) × EXPECTED_MONTHLY_HOURS.
- * Used to show "expected by this time of month" on cards and in the detail modal.
- */
-function getExpectedHoursByDate(asOfDate: Date): number {
-    const day = getDate(asOfDate);
-    const daysInMonth = getDaysInMonth(asOfDate);
-    return Math.round((day / daysInMonth) * EXPECTED_MONTHLY_HOURS);
-}
+/** Fallback image when visit photo upload fails or URL is broken. */
+const VISIT_IMAGE_FALLBACK_URL =
+    'https://images.pexels.com/photos/163194/old-retro-antique-vintage-163194.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
 
 /** Shared TabsTrigger styles: purple active state, white text, equal width for all report tabs. */
 const REPORTS_TAB_TRIGGER_CLASS =
     'focus-visible:ring-0 focus-visible:outline-none focus:ring-0 focus:outline-none bg-transparent text-zinc-600 data-[state=active]:!bg-purple-600 data-[state=active]:!text-white rounded-md px-3 py-1.5 border-0 data-[state=active]:shadow-none w-[7.7rem] min-w-[7.7rem] flex-shrink-0 justify-center text-sm';
-
-type StatusFilter = 'all' | 'present' | 'absent' | 'late' | 'early';
-
-/** Unified card item: user identity + hours + present/absent for the period. */
-interface ReportCardUser {
-    userId: number;
-    ref: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    role?: string;
-    branch?: string;
-    photoURL?: string | null;
-    hoursThisMonth: number;
-    progressPercent: number;
-    isPresent: boolean;
-    earlyMinutes?: number;
-    lateMinutes?: number;
-}
 
 function fromDailyOverviewMergeMonthly(
     presentUsers: DailyOverviewUser[],
@@ -150,7 +150,7 @@ function fromDailyOverviewMergeMonthly(
             name: u.fullName || `${u.name || ''} ${u.surname || ''}`.trim(),
             email: u.email ?? '',
             phone: u.phoneNumber ?? undefined,
-            role: u.accessLevel ?? u.role,
+            role: u.role ?? u.accessLevel,
             branch: u.branchName,
             photoURL: u.profileImage ?? undefined,
             hoursThisMonth: hours,
@@ -158,6 +158,25 @@ function fromDailyOverviewMergeMonthly(
             isPresent: present,
             earlyMinutes: present ? (u.earlyMinutes ?? 0) : undefined,
             lateMinutes: present ? (u.lateMinutes ?? 0) : undefined,
+            shiftStartAddress: present ? (u.shiftStartAddress ?? null) : null,
+            accessLevel: u.accessLevel ?? null,
+            checkInTime: present ? (u.checkInTime ?? null) : null,
+            checkOutTime: present ? (u.checkOutTime ?? null) : null,
+            workingHours: present ? (u.workingHours ?? null) : null,
+            shiftDuration: present ? (u.shiftDuration ?? null) : null,
+            isOnBreak: present ? (u.isOnBreak ?? false) : undefined,
+            attendanceStatus: present ? (u.status ?? null) : null,
+            lastSeenDate: !present ? (u.lastSeenDate ?? null) : null,
+            employeeSince: u.employeeSince ?? null,
+            isActive: u.isActive ?? undefined,
+            totalShifts: monthly?.totalShifts ?? undefined,
+            overtimeHours: monthly?.overtimeHours ?? undefined,
+            firstAttendanceInPeriod: u.firstAttendanceInPeriod ?? null,
+            lastAttendanceInPeriod: u.lastAttendanceInPeriod ?? null,
+            lastAppAccessAt: u.lastAppAccessAt ?? null,
+            lastAppAccessDeviceType: u.lastAppAccessDeviceType ?? null,
+            distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
+            hrID: u.hrID ?? null,
         };
     };
     const presentCards = presentUsers.map((u) => toCard(u, true));
@@ -165,687 +184,6 @@ function fromDailyOverviewMergeMonthly(
     return [...presentCards, ...absentCards];
 }
 
-/** Last 7 days ending on endDate: dots for attended/missed/future. */
-function LastSevenDaysDots({
-    userRef,
-    endDate,
-}: {
-    userRef: string;
-    endDate: Date;
-}) {
-    const year = endDate.getFullYear();
-    const month = endDate.getMonth() + 1;
-    const { data, isLoading } = useMonthlyAttendance(userRef, year, month, {
-        enabled: !!userRef,
-    });
-    const sevenDays = useMemo(() => {
-        if (!data?.days?.length) return [];
-        const end = format(endDate, 'yyyy-MM-dd');
-        const start = format(subDays(endDate, 6), 'yyyy-MM-dd');
-        return data.days
-            .filter((d) => d.date >= start && d.date <= end)
-            .sort((a, b) => a.date.localeCompare(b.date));
-    }, [data?.days, endDate]);
-    if (isLoading || sevenDays.length === 0) {
-        return (
-            <div className="w-full grid grid-cols-7 gap-0 items-center">
-                {Array.from({ length: 7 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className="size-2 rounded-full bg-muted animate-pulse justify-self-center"
-                    />
-                ))}
-            </div>
-        );
-    }
-    return (
-        <div className="w-full grid grid-cols-7 gap-0">
-            {sevenDays.map((d) => (
-                <div
-                    key={d.date}
-                    className="flex flex-col items-center gap-0.5 justify-self-center"
-                    title={`${d.date}: ${d.status}`}
-                >
-                    <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(d.date), 'EEE d')}
-                    </span>
-                    <div
-                        className={cn(
-                            'size-2.5 rounded-full shrink-0',
-                            d.status === 'attended' && 'bg-green-500',
-                            d.status === 'missed' && 'bg-muted border border-gray-300',
-                            d.status === 'future' && 'bg-muted/50'
-                        )}
-                    />
-                </div>
-            ))}
-        </div>
-    );
-}
-
-/** Progress tier colors: <50% red, 50–<75% orange, ≥75% green. */
-function getProgressColorClasses(value: number): { text: string; bg: string } {
-    if (value >= 75) return { text: 'text-green-600', bg: 'bg-green-500' };
-    if (value >= 50) return { text: 'text-orange-600', bg: 'bg-orange-500' };
-    return { text: 'text-red-600', bg: 'bg-red-500' };
-}
-
-/** Continuous progress bar: fill width = value%, min visible when value > 0. Tiered fill color. */
-function ReportProgressBar({ value }: { value: number }) {
-    const isEmpty = value === 0;
-    const fillPercent = Math.min(100, Math.max(0, value));
-    const fillWidth = isEmpty ? 0 : Math.max(fillPercent, 2);
-    const colors = getProgressColorClasses(value);
-    return (
-        <div
-            className={cn(
-                'h-2 w-full rounded-full overflow-hidden',
-                'bg-muted',
-                isEmpty && 'border border-border/40'
-            )}
-        >
-            <div
-                className={cn(
-                    'h-full rounded-full transition-all',
-                    colors.bg
-                )}
-                style={{ width: `${fillWidth}%`, minWidth: isEmpty ? 0 : 4 }}
-            />
-        </div>
-    );
-}
-
-/** Chart config for present/absent pie and bar. */
-const PRESENT_ABSENT_CHART_CONFIG: ChartConfig = {
-    present: { label: 'Present', color: 'var(--chart-1)' },
-    absent: { label: 'Absent', color: 'var(--chart-2)' },
-    label: { color: 'var(--background)' },
-};
-
-/** Present vs absent – donut with center label (attendance rate). */
-function PresentAbsentPieChart({
-    presentCount,
-    absentCount,
-    attendanceRate,
-}: {
-    presentCount: number;
-    absentCount: number;
-    attendanceRate: number;
-}) {
-    const data = [
-        { name: 'present', value: presentCount, fill: 'var(--color-present)' },
-        { name: 'absent', value: absentCount, fill: 'var(--color-absent)' },
-    ].filter((d) => d.value > 0);
-
-    return (
-        <Card className="flex flex-col">
-            <CardHeader className="items-center pb-0">
-                <CardTitle>Attendance – Present vs Absent</CardTitle>
-                <CardDescription>Today&apos;s present vs absent</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 pb-0">
-                {data.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">
-                        No attendance data for today.
-                    </p>
-                ) : (
-                    <ChartContainer
-                        config={PRESENT_ABSENT_CHART_CONFIG}
-                        className="mx-auto aspect-square max-h-[250px]"
-                    >
-                        <RechartsPieChart>
-                            <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent hideLabel />}
-                            />
-                            <Pie
-                                data={data}
-                                dataKey="value"
-                                nameKey="name"
-                                innerRadius={60}
-                                strokeWidth={5}
-                            >
-                                {data.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                                <Label
-                                    content={({ viewBox }) => {
-                                        if (
-                                            viewBox &&
-                                            'cx' in viewBox &&
-                                            'cy' in viewBox
-                                        ) {
-                                            return (
-                                                <text
-                                                    x={viewBox.cx}
-                                                    y={viewBox.cy}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                >
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={viewBox.cy}
-                                                        className="fill-foreground text-3xl font-bold"
-                                                    >
-                                                        {attendanceRate}%
-                                                    </tspan>
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={(viewBox.cy ?? 0) + 24}
-                                                        className="fill-muted-foreground"
-                                                    >
-                                                        Attendance rate
-                                                    </tspan>
-                                                </text>
-                                            );
-                                        }
-                                    }}
-                                />
-                            </Pie>
-                            <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                        </RechartsPieChart>
-                    </ChartContainer>
-                )}
-            </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-                <div className="text-muted-foreground leading-none">
-                    Today&apos;s attendance
-                </div>
-            </CardFooter>
-        </Card>
-    );
-}
-
-/** Chart config for late vs on-time. */
-const LATE_ON_TIME_CHART_CONFIG: ChartConfig = {
-    late: { label: 'Late', color: 'var(--chart-1)' },
-    onTime: { label: 'On-time', color: 'var(--chart-2)' },
-    label: { color: 'var(--background)' },
-};
-
-/** Users – Late vs On-time vertical bar chart. */
-function LateVsOnTimeBarChart({
-    lateCount,
-    onTimeCount,
-}: {
-    lateCount: number;
-    onTimeCount: number;
-}) {
-    const data = [
-        { name: 'Late', count: lateCount, fill: 'var(--color-late)' },
-        { name: 'On-time', count: onTimeCount, fill: 'var(--color-onTime)' },
-    ];
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Users – Late vs On-time</CardTitle>
-                <CardDescription>Today</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ChartContainer
-                    config={LATE_ON_TIME_CHART_CONFIG}
-                    className="aspect-auto h-[250px] w-full"
-                >
-                    <RechartsBarChart
-                        accessibilityLayer
-                        data={data}
-                        layout="vertical"
-                        margin={{ right: 16 }}
-                    >
-                        <CartesianGrid horizontal={false} />
-                        <YAxis
-                            dataKey="name"
-                            type="category"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            tickFormatter={(v) => v}
-                            hide
-                        />
-                        <XAxis dataKey="count" type="number" hide />
-                        <ChartTooltip
-                            cursor={false}
-                            content={
-                                <ChartTooltipContent indicator="line" />
-                            }
-                        />
-                        <Bar
-                            dataKey="count"
-                            layout="vertical"
-                            radius={4}
-                        >
-                            {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                            <LabelList
-                                dataKey="name"
-                                position="insideLeft"
-                                offset={8}
-                                className="fill-(--color-label)"
-                                fontSize={12}
-                            />
-                            <LabelList
-                                dataKey="count"
-                                position="right"
-                                offset={8}
-                                className="fill-foreground"
-                                fontSize={12}
-                            />
-                        </Bar>
-                        <ChartLegend
-                            content={
-                                <ChartLegendContent
-                                    nameKey="name"
-                                    payload={[
-                                        {
-                                            value: 'Late',
-                                            dataKey: 'late',
-                                            color: 'var(--color-late)',
-                                        },
-                                        {
-                                            value: 'On-time',
-                                            dataKey: 'onTime',
-                                            color: 'var(--color-onTime)',
-                                        },
-                                    ]}
-                                />
-                            }
-                        />
-                    </RechartsBarChart>
-                </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="text-muted-foreground leading-none">
-                    Today&apos;s attendance
-                </div>
-            </CardFooter>
-        </Card>
-    );
-}
-
-/** Chart config for hours target top 5. */
-const HOURS_TOP5_CHART_CONFIG: ChartConfig = {
-    hours: { label: 'Hours', color: 'var(--chart-1)' },
-    label: { color: 'var(--background)' },
-};
-
-/** Hours target (180h) – top 5 users by hours (vertical bar). */
-function HoursTargetTop5Chart({
-    userMetrics,
-}: {
-    userMetrics: MonthlyMetricsUserItem[];
-}) {
-    const data = useMemo(() => {
-        const sorted = [...userMetrics].sort((a, b) => b.totalHours - a.totalHours);
-        return sorted.slice(0, 5).map((u) => ({
-            name: u.userName.length > 20 ? `${u.userName.slice(0, 17)}…` : u.userName,
-            hours: Math.round(u.totalHours * 10) / 10,
-            fill: 'var(--color-hours)',
-        }));
-    }, [userMetrics]);
-
-    if (data.length === 0) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Hours target ({EXPECTED_MONTHLY_HOURS}h)</CardTitle>
-                    <CardDescription>Top 5 by hours this month</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground py-8 text-center">
-                        No monthly metrics yet.
-                    </p>
-                </CardContent>
-                <CardFooter className="flex-col gap-2 text-sm">
-                    <div className="text-muted-foreground leading-none">
-                        Hours target this month
-                    </div>
-                </CardFooter>
-            </Card>
-        );
-    }
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Hours target ({EXPECTED_MONTHLY_HOURS}h)</CardTitle>
-                <CardDescription>Top 5 by hours this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ChartContainer
-                    config={HOURS_TOP5_CHART_CONFIG}
-                    className="aspect-auto h-[250px] w-full"
-                >
-                    <RechartsBarChart
-                        accessibilityLayer
-                        data={data}
-                        layout="vertical"
-                        margin={{ right: 16 }}
-                    >
-                        <CartesianGrid horizontal={false} />
-                        <YAxis
-                            dataKey="name"
-                            type="category"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            width={100}
-                            tick={{ fontSize: 11 }}
-                        />
-                        <XAxis dataKey="hours" type="number" hide />
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent nameKey="name" />}
-                        />
-                        <Bar dataKey="hours" layout="vertical" radius={4} fill="var(--color-hours)">
-                            <LabelList
-                                dataKey="hours"
-                                position="right"
-                                offset={8}
-                                className="fill-foreground"
-                                fontSize={12}
-                                formatter={(v: number) => `${v}h`}
-                            />
-                        </Bar>
-                    </RechartsBarChart>
-                </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-                <div className="text-muted-foreground leading-none">
-                    Hours target this month
-                </div>
-            </CardFooter>
-        </Card>
-    );
-}
-
-/** Chart config for overtime vs regular. */
-const OVERTIME_CHART_CONFIG: ChartConfig = {
-    regular: { label: 'Regular hours', color: 'var(--chart-1)' },
-    overtime: { label: 'Overtime hours', color: 'var(--chart-2)' },
-};
-
-/** Donut – overtime vs regular hours (monthly summary). */
-function OvertimeVsRegularPieChart({
-    totalHours,
-    totalOvertimeHours,
-}: {
-    totalHours: number;
-    totalOvertimeHours: number;
-}) {
-    const regularHours = Math.max(0, totalHours - totalOvertimeHours);
-    const data = [
-        { name: 'regular', value: regularHours, fill: 'var(--color-regular)' },
-        { name: 'overtime', value: totalOvertimeHours, fill: 'var(--color-overtime)' },
-    ].filter((d) => d.value > 0);
-    const total = totalHours;
-
-    if (data.length === 0) {
-        return (
-            <Card className="flex flex-col">
-                <CardHeader className="items-center pb-0">
-                    <CardTitle>Hours – Regular vs Overtime</CardTitle>
-                    <CardDescription>This month</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 pb-0">
-                    <p className="text-sm text-muted-foreground py-8 text-center">
-                        No hours data this month.
-                    </p>
-                </CardContent>
-                <CardFooter className="flex-col gap-2 text-sm">
-                    <div className="text-muted-foreground leading-none">
-                        This month&apos;s hours
-                    </div>
-                </CardFooter>
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="flex flex-col">
-            <CardHeader className="items-center pb-0">
-                <CardTitle>Hours – Regular vs Overtime</CardTitle>
-                <CardDescription>This month</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 pb-0">
-                <ChartContainer
-                    config={OVERTIME_CHART_CONFIG}
-                    className="mx-auto aspect-square max-h-[250px]"
-                >
-                    <RechartsPieChart>
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent hideLabel />}
-                        />
-                        <Pie
-                            data={data}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={60}
-                            strokeWidth={5}
-                        >
-                            {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                            <Label
-                                content={({ viewBox }) => {
-                                    if (
-                                        viewBox &&
-                                        'cx' in viewBox &&
-                                        'cy' in viewBox
-                                    ) {
-                                        return (
-                                            <text
-                                                x={viewBox.cx}
-                                                y={viewBox.cy}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                            >
-                                                <tspan
-                                                    x={viewBox.cx}
-                                                    y={viewBox.cy}
-                                                    className="fill-foreground text-3xl font-bold"
-                                                >
-                                                    {total.toLocaleString()}h
-                                                </tspan>
-                                                <tspan
-                                                    x={viewBox.cx}
-                                                    y={(viewBox.cy ?? 0) + 24}
-                                                    className="fill-muted-foreground"
-                                                >
-                                                    Total hours
-                                                </tspan>
-                                            </text>
-                                        );
-                                    }
-                                }}
-                            />
-                        </Pie>
-                        <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                    </RechartsPieChart>
-                </ChartContainer>
-            </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-                <div className="text-muted-foreground leading-none">
-                    This month&apos;s hours
-                </div>
-            </CardFooter>
-        </Card>
-    );
-}
-
-/** Live tab: today’s attendance + current month hours, charts from metrics response. */
-function LiveReportTab() {
-    const [mounted, setMounted] = useState(false);
-    const [exportLoading, setExportLoading] = useState(false);
-    useEffect(() => setMounted(true), []);
-    const { backendUserData: profile } = useSessionSync();
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1;
-
-    const dailyQuery = useDailyOverview(
-        { date: todayStr },
-        { enabled: mounted && !!profile }
-    );
-    const monthlyQuery = useMonthlyMetrics(
-        { year, month },
-        { enabled: mounted && !!profile }
-    );
-
-    const presentCount = dailyQuery.data?.data?.presentEmployees ?? 0;
-    const absentCount = dailyQuery.data?.data?.absentEmployees ?? 0;
-    const attendanceRate = dailyQuery.data?.data?.attendanceRate ?? 0;
-
-    const { reachedHoursCount, notReachedHoursCount } = useMemo(() => {
-        const list = monthlyQuery.data?.data?.userMetrics ?? [];
-        const reached = list.filter((u) => u.totalHours >= EXPECTED_MONTHLY_HOURS).length;
-        return {
-            reachedHoursCount: reached,
-            notReachedHoursCount: list.length - reached,
-        };
-    }, [monthlyQuery.data]);
-
-    const { totalHours, totalOvertimeHours } = useMemo(() => {
-        const summary = monthlyQuery.data?.data?.summary;
-        return {
-            totalHours: summary?.totalHours ?? 0,
-            totalOvertimeHours: summary?.totalOvertimeHours ?? 0,
-        };
-    }, [monthlyQuery.data]);
-
-    const { lateCount, onTimeCount } = useMemo(() => {
-        const present = dailyQuery.data?.data?.presentUsers ?? [];
-        const late = present.filter((u) => (u.lateMinutes ?? 0) > 0).length;
-        return {
-            lateCount: late,
-            onTimeCount: present.length - late,
-        };
-    }, [dailyQuery.data?.data?.presentUsers]);
-
-    const isLoading = dailyQuery.isLoading || monthlyQuery.isLoading;
-
-    const visitsStartStr = format(subDays(today, 30), 'yyyy-MM-dd');
-    const visitsEndStr = format(today, 'yyyy-MM-dd');
-    const checkInsQuery = useCheckIns(
-        { startDate: visitsStartStr, endDate: visitsEndStr },
-        { enabled: mounted && !!profile }
-    );
-    const reportQuery = useCheckInsReport(
-        { from: visitsStartStr, to: visitsEndStr },
-        { enabled: mounted && !!profile }
-    );
-    const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
-
-    const handleVisitsExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
-        if (checkIns.length === 0) {
-            toast.error('No visits to export');
-            return;
-        }
-        setExportLoading(true);
-        const baseName = `visits-${visitsStartStr}-${visitsEndStr}`;
-        try {
-            exportVisits(checkIns, exportFormat, baseName);
-            toast.success('Export downloaded');
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Export failed');
-        } finally {
-            setExportLoading(false);
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <Card key={i}>
-                            <CardHeader>
-                                <Skeleton className="h-5 w-40" />
-                                <Skeleton className="h-4 w-28 mt-1" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[250px] w-full rounded-md" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                    Today ({format(today, 'PPP')}) · Attendance rate: <strong>{attendanceRate}%</strong>
-                </p>
-                <ExportReportDropdown singleDate={today} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                <PresentAbsentPieChart
-                    presentCount={presentCount}
-                    absentCount={absentCount}
-                    attendanceRate={attendanceRate}
-                />
-                <LateVsOnTimeBarChart
-                    lateCount={lateCount}
-                    onTimeCount={onTimeCount}
-                />
-                <HoursTargetTop5Chart userMetrics={monthlyQuery.data?.data?.userMetrics ?? []} />
-                <OvertimeVsRegularPieChart
-                    totalHours={totalHours}
-                    totalOvertimeHours={totalOvertimeHours}
-                />
-            </div>
-
-            <Separator className="my-6" />
-
-            <section className="pt-2">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <p className="text-sm text-muted-foreground">
-                        Last 30 days · Total visits: <strong>{(reportQuery.data?.total ?? checkIns.length).toLocaleString()}</strong>
-                    </p>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
-                                disabled={exportLoading || checkIns.length === 0}
-                            >
-                                {exportLoading ? (
-                                    <Loader2Icon className="size-4 animate-spin" />
-                                ) : (
-                                    <DownloadIcon className="size-4" />
-                                )}
-                                Export
-                                <ChevronDownIcon className="size-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[10rem]">
-                            <DropdownMenuItem onClick={() => handleVisitsExport('csv')}>
-                                CSV
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleVisitsExport('excel')}>
-                                Excel
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleVisitsExport('pdf')}>
-                                PDF
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <VisitsChartsSection
-                    checkIns={checkIns}
-                    reportTotal={reportQuery.data?.total}
-                    reportLoading={reportQuery.isLoading}
-                />
-            </section>
-        </div>
-    );
-}
 
 /** Chart config for visits by method. */
 const VISITS_METHOD_CHART_CONFIG: ChartConfig = {
@@ -878,6 +216,20 @@ function formatMinutesToDuration(totalMinutes: number): string {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+/** Format minutes for display: always "Xh Ym" (e.g. "0h 9m"). */
+function formatDurationDisplay(totalMinutes: number): string {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${h}h ${m}m`;
+}
+
+/** Normalize duration string to display "Xh Ym"; returns '-' if missing. */
+function normalizeDurationDisplay(duration: string | null | undefined): string {
+    if (duration == null || duration === '') return '-';
+    const mins = parseDurationToMinutes(duration);
+    return formatDurationDisplay(mins);
+}
+
 /** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
 function VisitsChartsSection({
     checkIns,
@@ -889,6 +241,7 @@ function VisitsChartsSection({
     reportLoading: boolean;
 }) {
     const totalVisits = reportTotal ?? checkIns.length;
+    const VISITS_CHART_TOP_N = 5;
 
     const byMethodData = useMemo(() => {
         const map = new Map<string, number>();
@@ -896,11 +249,10 @@ function VisitsChartsSection({
             const key = c.methodOfContact || 'Not set';
             map.set(key, (map.get(key) ?? 0) + 1);
         }
-        const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
         return Array.from(map.entries()).map(([name, value], i) => ({
             name,
             value,
-            fill: colors[i % colors.length],
+            fill: getChartColor(i),
         }));
     }, [checkIns]);
 
@@ -916,50 +268,56 @@ function VisitsChartsSection({
         }
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
-            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+            .slice(0, VISITS_CHART_TOP_N)
+            .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
     }, [checkIns]);
 
     const byRegionData = useMemo(() => {
         const map = new Map<string, number>();
         for (const c of checkIns) {
-            const addr = c.contactAddress;
-            const region =
-                (addr && (addr.city ?? addr.state ?? addr.country))?.trim() || 'Not set';
+            const region = extractRegionFromVisit(c);
             map.set(region, (map.get(region) ?? 0) + 1);
         }
         return Array.from(map.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
-            .map(([name, count]) => ({ name, count, fill: 'var(--color-count)' }));
+            .slice(0, VISITS_CHART_TOP_N)
+            .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
     }, [checkIns]);
 
     const durationByUserData = useMemo(() => {
-        const map = new Map<string, number>();
+        const totalMap = new Map<string, number>();
+        const countMap = new Map<string, number>();
         for (const c of checkIns) {
+            const mins = parseDurationToMinutes(c.duration);
+            if (mins <= 0) continue;
             const name =
                 c.owner?.name != null
                     ? [c.owner.name, (c.owner as { surname?: string }).surname].filter(Boolean).join(' ').trim()
                     : 'Unknown';
             const displayName = name.length > 18 ? `${name.slice(0, 15)}…` : name;
-            const mins = parseDurationToMinutes(c.duration);
-            map.set(displayName, (map.get(displayName) ?? 0) + mins);
+            totalMap.set(displayName, (totalMap.get(displayName) ?? 0) + mins);
+            countMap.set(displayName, (countMap.get(displayName) ?? 0) + 1);
         }
-        return Array.from(map.entries())
-            .filter(([, totalMinutes]) => totalMinutes > 0)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
-            .map(([name, totalMinutes]) => ({
+        return Array.from(totalMap.entries())
+            .map(([name, totalMinutes]) => {
+                const visitCount = countMap.get(name) ?? 1;
+                const averageMinutes = Math.round(totalMinutes / visitCount);
+                return { name, averageMinutes, visitCount };
+            })
+            .filter(({ averageMinutes }) => averageMinutes > 0)
+            .sort((a, b) => b.averageMinutes - a.averageMinutes)
+            .slice(0, VISITS_CHART_TOP_N)
+            .map(({ name, averageMinutes }, i) => ({
                 name,
-                totalMinutes,
-                displayDuration: formatMinutesToDuration(totalMinutes),
-                fill: 'var(--color-count)',
+                averageMinutes,
+                displayDuration: formatMinutesToDuration(averageMinutes),
+                fill: getChartColor(i),
             }));
     }, [checkIns]);
 
     if (reportLoading && checkIns.length === 0) {
         return (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
                     <Card key={i}>
                         <CardHeader>
@@ -967,7 +325,7 @@ function VisitsChartsSection({
                             <Skeleton className="h-4 w-24 mt-1" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-[250px] w-full rounded-md" />
+                            <Skeleton className="h-[200px] sm:h-[250px] w-full rounded-md" />
                         </CardContent>
                     </Card>
                 ))}
@@ -976,7 +334,7 @@ function VisitsChartsSection({
     }
 
     return (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             {/* 1. Methods of visits – donut with total in center */}
             <Card>
                 <CardHeader>
@@ -989,7 +347,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_METHOD_CHART_CONFIG}
-                            className="mx-auto aspect-square max-h-[250px]"
+                            className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px]"
                         >
                             <RechartsPieChart>
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -999,6 +357,8 @@ function VisitsChartsSection({
                                     nameKey="name"
                                     innerRadius={60}
                                     strokeWidth={5}
+                                    cornerRadius={6}
+                                    paddingAngle={2}
                                 >
                                     {byMethodData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -1022,7 +382,7 @@ function VisitsChartsSection({
                                                             y={viewBox.cy}
                                                             className="fill-foreground text-3xl font-bold"
                                                         >
-                                                            {totalVisits.toLocaleString()}
+                                                            {formatCompactValue(totalVisits)}
                                                         </tspan>
                                                         <tspan
                                                             x={viewBox.cx}
@@ -1037,7 +397,7 @@ function VisitsChartsSection({
                                         }}
                                     />
                                 </Pie>
-                                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={3} />} />
                             </RechartsPieChart>
                         </ChartContainer>
                     )}
@@ -1051,7 +411,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visits by user</CardTitle>
-                    <CardDescription>Top 10 users</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} users</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {byUserData.length === 0 ? (
@@ -1059,7 +419,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1079,7 +439,10 @@ function VisitsChartsSection({
                                 />
                                 <XAxis dataKey="count" type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="count" layout="vertical" radius={4}>
+                                    {byUserData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="count"
                                         position="right"
@@ -1101,7 +464,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visits by region</CardTitle>
-                    <CardDescription>Top 10 regions</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} regions</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {byRegionData.length === 0 ? (
@@ -1109,7 +472,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1129,7 +492,10 @@ function VisitsChartsSection({
                                 />
                                 <XAxis dataKey="count" type="number" hide />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                                <Bar dataKey="count" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="count" layout="vertical" radius={4}>
+                                    {byRegionData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="count"
                                         position="right"
@@ -1151,7 +517,7 @@ function VisitsChartsSection({
             <Card>
                 <CardHeader>
                     <CardTitle>Visit duration by user</CardTitle>
-                    <CardDescription>Top 10 by total duration</CardDescription>
+                    <CardDescription>Top {VISITS_CHART_TOP_N} by average duration</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {durationByUserData.length === 0 ? (
@@ -1159,7 +525,7 @@ function VisitsChartsSection({
                     ) : (
                         <ChartContainer
                             config={VISITS_COUNT_CHART_CONFIG}
-                            className="aspect-auto h-[250px] w-full"
+                            className="aspect-auto h-[200px] sm:h-[250px] w-full"
                         >
                             <RechartsBarChart
                                 accessibilityLayer
@@ -1177,7 +543,7 @@ function VisitsChartsSection({
                                     width={100}
                                     tick={{ fontSize: 11 }}
                                 />
-                                <XAxis dataKey="totalMinutes" type="number" hide />
+                                <XAxis dataKey="averageMinutes" type="number" hide />
                                 <ChartTooltip
                                     cursor={false}
                                     content={
@@ -1190,7 +556,10 @@ function VisitsChartsSection({
                                         />
                                     }
                                 />
-                                <Bar dataKey="totalMinutes" layout="vertical" radius={4} fill="var(--color-count)">
+                                <Bar dataKey="averageMinutes" layout="vertical" radius={4}>
+                                    {durationByUserData.map((entry, i) => (
+                                        <Cell key={i} fill={entry.fill} />
+                                    ))}
                                     <LabelList
                                         dataKey="displayDuration"
                                         position="right"
@@ -1204,211 +573,15 @@ function VisitsChartsSection({
                     )}
                 </CardContent>
                 <CardFooter className="flex-col items-start gap-2 text-sm">
-                    <div className="text-muted-foreground leading-none">Total visit duration per user</div>
+                    <div className="text-muted-foreground leading-none">Average visit duration per user</div>
                 </CardFooter>
             </Card>
         </div>
     );
 }
 
-/** True if string looks like "lat,lng" coordinates. */
-function isCoordLike(s: string): boolean {
-  const t = s.trim();
-  return /^-?\d{1,3}\.?\d*\s*,\s*-?\d{1,3}\.?\d*$/.test(t);
-}
-
-/** Google Maps URL for coordinates or address search. */
-function buildMapsUrl(location: string): string {
-  const t = location.trim();
-  if (!t || t === '-') return '#';
-  if (isCoordLike(t)) return `https://www.google.com/maps?q=${encodeURIComponent(t)}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t)}`;
-}
-
-/** tel: URL for phone numbers (strip spaces/dashes). */
-function buildTelUrl(phone: string): string {
-  const normalized = phone.replace(/[\s\-()]/g, '');
-  return `tel:${normalized}`;
-}
-
-const VISITS_TABLE_LINK_CLASS = 'text-primary underline hover:opacity-80';
-
-interface VisitsDisplayColumn {
-  key: string;
-  label: string;
-  render: (c: VisitExportItem) => ReactNode;
-}
-
-const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
-  {
-    key: 'date',
-    label: 'Date and time',
-    render: (c) => {
-      const datePart = format(new Date(c.checkInTime), 'MMM d, yyyy, HH:mm');
-      const outPart = c.checkOutTime ? format(new Date(c.checkOutTime), 'HH:mm') : '-';
-      const durationPart = c.duration || '-';
-      return (
-        <span className="whitespace-normal">
-          {datePart} – {outPart}
-          <span className="block text-muted-foreground text-xs">{durationPart}</span>
-        </span>
-      );
-    },
-  },
-  {
-    key: 'checkIn',
-    label: 'Check-In',
-    render: (c) => {
-      const inLoc = c.checkInLocation || '-';
-      const outLoc = c.checkOutLocation || '-';
-      const inUrl = inLoc !== '-' ? buildMapsUrl(inLoc) : null;
-      const outUrl = outLoc !== '-' ? buildMapsUrl(outLoc) : null;
-      return (
-        <span className="whitespace-normal space-y-1 block">
-          <span className="block">
-            <span className="text-muted-foreground">In: </span>
-            {inUrl && inUrl !== '#' ? (
-              <a href={inUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
-                {inLoc}
-              </a>
-            ) : (
-              inLoc
-            )}
-          </span>
-          <span className="block">
-            <span className="text-muted-foreground">Out: </span>
-            {outUrl && outUrl !== '#' ? (
-              <a href={outUrl} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS}>
-                {outLoc}
-              </a>
-            ) : (
-              outLoc
-            )}
-          </span>
-        </span>
-      );
-    },
-  },
-  {
-    key: 'method',
-    label: 'Method',
-    render: (c) => formatMethodOfContact(c.methodOfContact),
-  },
-  {
-    key: 'company',
-    label: 'Company Name',
-    render: (c) => {
-      const name = c.companyName || '-';
-      const type = c.businessType ? String(c.businessType).replace(/_/g, ' ') : null;
-      return (
-        <span className="block">
-          {name}
-          {type && <span className="block text-xs text-muted-foreground">{type}</span>}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'contactPerson',
-    label: 'Contact Person',
-    render: (c) => {
-      const name = c.contactFullName || '-';
-      const position = c.personSeenPosition;
-      return (
-        <span className="block">
-          {name}
-          {position && <span className="block text-xs text-muted-foreground">{position}</span>}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'contactDetails',
-    label: 'Contact Details',
-    render: (c) => {
-      const parts: ReactNode[] = [];
-      if (c.contactCellPhone) {
-        parts.push(
-          <span key="cell" className="block">
-            <span className="text-muted-foreground">Cell: </span>
-            <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS}>
-              {c.contactCellPhone}
-            </a>
-          </span>
-        );
-      }
-      if (c.contactLandline) {
-        parts.push(
-          <span key="landline" className="block">
-            <span className="text-muted-foreground">Landline: </span>
-            <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS}>
-              {c.contactLandline}
-            </a>
-          </span>
-        );
-      }
-      if (c.contactEmail) {
-        parts.push(
-          <span key="email" className="block">
-            <span className="text-muted-foreground">Email: </span>
-            <a
-              href={`mailto:${c.contactEmail}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={VISITS_TABLE_LINK_CLASS}
-            >
-              {c.contactEmail}
-            </a>
-          </span>
-        );
-      }
-      const addr = formatContactAddress(c.contactAddress);
-      if (addr && addr !== '-') {
-        parts.push(
-          <span key="addr" className="block">
-            <span className="text-muted-foreground">Address: </span>
-            <a
-              href={buildMapsUrl(addr)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={VISITS_TABLE_LINK_CLASS}
-            >
-              {addr}
-            </a>
-          </span>
-        );
-      }
-      if (parts.length === 0) return '-';
-      return <span className="whitespace-normal space-y-0.5 block">{parts}</span>;
-    },
-  },
-  {
-    key: 'notes',
-    label: 'Notes',
-    render: (c) => c.notes || '-',
-  },
-  {
-    key: 'quoteNumber',
-    label: 'Quote Number',
-    render: (c) => c.quotationNumber || '-',
-  },
-  {
-    key: 'value',
-    label: 'Value - ex-VAT',
-    render: (c) =>
-      c.salesValue != null
-        ? `R ${Number(c.salesValue).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : '-',
-  },
-  {
-    key: 'followUp',
-    label: 'Follow Up',
-    render: (c) => (c.meetingLink ? (c.followUp || 'Open link') : (c.followUp || '-')),
-  },
-];
-
-/** Visits tab: date range + optional user filter, export (CSV/Excel/PDF), table, then four charts. */
-function VisitsReportTab() {
+/** Visits tab: four charts at top (same as Live), then date range + optional user filter, search, export, and table. Admin-only; when no user is selected, the API returns all org check-ins for mapping. */
+function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
@@ -1418,38 +591,61 @@ function VisitsReportTab() {
 
     const [startDate, setStartDate] = useState<Date>(defaultStart);
     const [endDate, setEndDate] = useState<Date>(defaultEnd);
+    const [useAllTime, setUseAllTime] = useState(false);
     const [selectedUserUid, setSelectedUserUid] = useState<string>('');
+    const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [exportLoading, setExportLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-
     const { backendUserData: profile } = useSessionSync();
     const isManager = isStaffDashboardVisible(profile?.accessLevel);
 
     const startStr = format(startDate, 'yyyy-MM-dd');
     const endStr = format(endDate, 'yyyy-MM-dd');
 
+    // Request same as mobile: full-day boundaries (startOfDay/endOfDay ISO) so the end date includes all visits that day.
     const checkInsQuery = useCheckIns(
-        {
-            startDate: startStr,
-            endDate: endStr,
-            ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
-        },
-        { enabled: mounted && !!profile }
+        useAllTime
+            ? { ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}) }
+            : {
+                  startDate: startOfDay(startDate).toISOString(),
+                  endDate: endOfDay(endDate).toISOString(),
+                  ...(isManager && selectedUserUid ? { userUid: selectedUserUid } : {}),
+              },
+        { enabled: mounted && isTokenReady }
     );
 
-    const usersQuery = useUsers({ enabled: isManager && mounted });
+    const usersQuery = useUsers({ enabled: mounted && isTokenReady && isManager });
 
-    const checkIns: VisitExportItem[] = checkInsQuery.data?.checkIns ?? [];
+    const checkIns: VisitExportItem[] = (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem);
     const isLoading = checkInsQuery.isLoading;
 
+    const uniqueRegions = useMemo(() => {
+        const set = new Set<string>();
+        for (const c of checkIns) {
+            set.add(extractRegionFromVisit(c));
+        }
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [checkIns]);
+
     const filteredCheckIns = useMemo(() => {
+        let list = checkIns;
+        if (selectedRegion) {
+            list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
+        }
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return checkIns;
-        return checkIns.filter((c) => {
+        if (!q) return list;
+        return list.filter((c) => {
+            const ownerName = c.owner
+                ? [c.owner.name, c.owner.surname].filter(Boolean).join(' ')
+                : '';
             const searchable = [
+                ownerName,
+                c.owner?.email,
+                c.owner?.phone,
                 c.contactFullName,
                 c.companyName,
                 c.notes,
+                c.resolution,
                 c.contactCellPhone,
                 c.contactLandline,
                 c.contactEmail,
@@ -1457,6 +653,10 @@ function VisitsReportTab() {
                 c.personSeenPosition,
                 c.quotationNumber,
                 c.followUp,
+                c.lead?.name,
+                c.client?.name,
+                c.branch?.name,
+                c.organisation?.name,
             ]
                 .filter(Boolean)
                 .join(' ')
@@ -1464,7 +664,29 @@ function VisitsReportTab() {
             const rowText = visitToExportRow(c).join(' ').toLowerCase();
             return searchable.includes(q) || rowText.includes(q);
         });
-    }, [checkIns, searchQuery]);
+    }, [checkIns, searchQuery, selectedRegion]);
+
+    const exportScopeLabel = useMemo(() => {
+        if (!selectedUserUid) return 'All users';
+        const users = usersQuery.data ?? [];
+        const u = users.find((x) => String(x.uid) === selectedUserUid);
+        if (u) {
+            const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
+            return name || `User ${selectedUserUid}`;
+        }
+        const first = checkIns[0]?.owner;
+        if (first) {
+            const name = [first.name, (first as { surname?: string }).surname].filter(Boolean).join(' ').trim();
+            return name || `User ${selectedUserUid}`;
+        }
+        return `User ${selectedUserUid}`;
+    }, [selectedUserUid, usersQuery.data, checkIns]);
+
+    const exportUserSlug = useMemo(() => {
+        if (!selectedUserUid) return '';
+        const label = exportScopeLabel.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+        return label ? `-${label}` : `-${selectedUserUid}`;
+    }, [selectedUserUid, exportScopeLabel]);
 
     const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
         if (filteredCheckIns.length === 0) {
@@ -1473,7 +695,9 @@ function VisitsReportTab() {
         }
         setExportLoading(true);
         try {
-            const baseName = `visits-${startStr}-${endStr}`;
+            const baseName = useAllTime
+                ? `visits-all-time${exportUserSlug}`
+                : `visits-${startStr}-${endStr}${exportUserSlug}`;
             exportVisits(filteredCheckIns, exportFormat, baseName);
             toast.success('Export downloaded');
         } catch (e) {
@@ -1486,62 +710,201 @@ function VisitsReportTab() {
 
     return (
         <div className="space-y-4">
+            {/* Visits charts at top – same 4 cards as Live tab, driven by selected date range */}
+            <div className="shrink-0 mb-6">
+                {!isLoading && (
+                    <p className="text-sm text-muted-foreground mb-3">
+                        {useAllTime
+                            ? 'All time'
+                            : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}{' '}
+                        · Total visits: <strong>{checkIns.length.toLocaleString()}</strong>
+                    </p>
+                )}
+                <VisitsChartsSection
+                    checkIns={checkIns}
+                    reportTotal={checkIns.length}
+                    reportLoading={isLoading}
+                />
+            </div>
+
+            {/* Toolbar: date range, user filter, search, export */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
-                            >
-                                <CalendarIcon className="size-4" />
-                                {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <div className="p-2 space-y-2">
-                                <p className="text-sm font-medium">Start date</p>
-                                <Calendar
-                                    mode="single"
-                                    selected={startDate}
-                                    onSelect={(d) => d && setStartDate(d)}
-                                />
-                                <p className="text-sm font-medium pt-2">End date</p>
-                                <Calendar
-                                    mode="single"
-                                    selected={endDate}
-                                    onSelect={(d) => d && setEndDate(d)}
-                                />
-                            </div>
-                        </PopoverContent>
-                    </Popover>
+                    <div className="flex items-center gap-0">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
+                                >
+                                    <CalendarIcon className="size-4" />
+                                    {useAllTime
+                                        ? 'All time'
+                                        : startDate.getTime() === endDate.getTime()
+                                          ? format(startDate, 'MMM d, yyyy')
+                                          : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
+                                <div className="p-2 flex flex-col gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant={useAllTime ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setUseAllTime(true)}
+                                        >
+                                            All time
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground">or pick a date range below</span>
+                                    </div>
+                                    <div className="flex flex-row gap-6">
+                                        <div>
+                                            <p className="text-sm font-medium">Start date</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={startDate}
+                                                onSelect={(d) => {
+                                                    if (d) {
+                                                        setUseAllTime(false);
+                                                        setStartDate(d);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">End date</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={endDate}
+                                                onSelect={(d) => {
+                                                    if (d) {
+                                                        setUseAllTime(false);
+                                                        setEndDate(d);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        {(() => {
+                            const isDefaultRange =
+                                !useAllTime && isSameDay(endDate, today) && differenceInCalendarDays(endDate, startDate) === 30;
+                            return useAllTime || !isDefaultRange ? (
+                                <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setUseAllTime(false);
+                                        setStartDate(subDays(new Date(), 30));
+                                        setEndDate(new Date());
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setUseAllTime(false);
+                                            setStartDate(subDays(new Date(), 30));
+                                            setEndDate(new Date());
+                                        }
+                                    }}
+                                    className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
+                                    aria-label="Reset to last 30 days"
+                                >
+                                    <XIcon className="size-4 text-red-600" />
+                                </span>
+                            ) : null;
+                        })()}
+                    </div>
                     {isManager && (
-                        <Select
-                            value={selectedUserUid || 'all'}
-                            onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-                        >
-                            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
-                                <SelectValue placeholder="All users" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All users</SelectItem>
-                                {(usersQuery.data ?? []).map((u) => (
-                                    <SelectItem key={u.uid} value={String(u.uid)}>
-                                        {[u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-0">
+                            <Select
+                                value={selectedUserUid || 'all'}
+                                onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+                                disabled={usersQuery.isLoading}
+                            >
+                                <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                                    <SelectValue placeholder={usersQuery.isLoading ? 'Loading…' : 'All users'} />
+                                </SelectTrigger>
+                                <SelectContent className="z-[10001]">
+                                    <SelectItem value="all">All users</SelectItem>
+                                    {!usersQuery.isLoading && (usersQuery.data ?? []).length === 0 ? (
+                                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                            No users in organisation
+                                        </div>
+                                    ) : (
+                                        (usersQuery.data ?? []).map((u) => (
+                                            <SelectItem key={u.uid} value={String(u.uid)}>
+                                                {[u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {selectedUserUid ? (
+                                <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedUserUid('');
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setSelectedUserUid('');
+                                        }
+                                    }}
+                                    className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
+                                    aria-label="Clear user filter"
+                                >
+                                    <XIcon className="size-4 text-red-600" />
+                                </span>
+                            ) : null}
+                        </div>
                     )}
+                    <Select
+                        value={selectedRegion || 'all'}
+                        onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
+                    >
+                        <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                            <SelectValue placeholder="All regions" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[10001]">
+                            <SelectItem value="all">All regions</SelectItem>
+                            {uniqueRegions.map((region) => (
+                                <SelectItem key={region} value={region}>
+                                    {region}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2">
-                    <Input
-                        placeholder="Search visits…"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64 h-9"
-                    />
+                    <div className="relative w-56 min-w-0 shrink sm:w-64">
+                        <Input
+                            placeholder="Search visits…"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={cn(
+                                'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
+                                searchQuery && 'pr-8'
+                            )}
+                        />
+                        {searchQuery ? (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600"
+                                aria-label="Clear search"
+                            >
+                                <XIcon className="size-4 text-red-600" />
+                            </button>
+                        ) : null}
+                    </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -1560,6 +923,10 @@ function VisitsReportTab() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-[10rem]">
+                            <DropdownMenuLabel className="text-muted-foreground font-normal">
+                                Exporting: {exportScopeLabel}
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleExport('csv')}>
                                 CSV
                             </DropdownMenuItem>
@@ -1574,56 +941,20 @@ function VisitsReportTab() {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="flex justify-center py-12">
-                    <Loader2Icon className="size-8 animate-spin text-primary" />
-                </div>
-            ) : checkIns.length === 0 ? (
-                <p className="text-center text-muted-foreground py-12">
-                    No visits in this date range.
-                </p>
-            ) : filteredCheckIns.length === 0 ? (
-                <p className="text-center text-muted-foreground py-12">
-                    No visits match your search.
-                </p>
-            ) : (
-                <div className="rounded border overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {VISITS_DISPLAY_COLUMNS.map((col) => (
-                                    <TableHead key={col.key} className="whitespace-nowrap">
-                                        {col.label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredCheckIns.map((c) => (
-                                <TableRow key={c.uid}>
-                                    {VISITS_DISPLAY_COLUMNS.map((col) => (
-                                        <TableCell
-                                            key={col.key}
-                                            className="text-sm whitespace-normal align-top min-w-0"
-                                        >
-                                            {col.render(c)}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+            <VisitsTable
+                checkIns={filteredCheckIns}
+                isLoading={isLoading}
+                emptyMessage={checkIns.length === 0 ? 'No visits in this date range.' : 'No visits match your search.'}
+            />
         </div>
     );
 }
 
 export function ReportsContent() {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-
+    const { isSignedIn } = useAuth();
+    const { isTokenReady } = useTokenReady();
     const { backendUserData: profile } = useSessionSync();
+    const [activeTab, setActiveTab] = useState('live');
     const [singleDate, setSingleDate] = useState<Date | null>(() => new Date());
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -1634,20 +965,20 @@ export function ReportsContent() {
     const yearForSingle = singleDate ? singleDate.getFullYear() : new Date().getFullYear();
 
     const monthlyQuery = useMonthlyMetrics(
-        { year: yearForSingle, month: monthForSingle },
-        { enabled: mounted && !!profile }
+        { year: yearForSingle, month: monthForSingle, includeCheckIns: false },
+        { enabled: isTokenReady && activeTab === 'attendance' }
     );
 
     const dailyQuery = useDailyOverview(
         { date: singleDateStr ?? undefined },
-        { enabled: mounted && !!singleDateStr && !!profile }
+        { enabled: isTokenReady && !!singleDateStr && activeTab === 'attendance' }
     );
 
     const monthlyByUserId = useMemo(() => {
         const map = new Map<number, MonthlyMetricsUserItem>();
         const list = monthlyQuery.data?.data?.userMetrics ?? [];
-        list.forEach((u) => map.set(u.userId, u));
-        return map;
+        list.forEach((u: MonthlyMetricsUserItem) => map.set(u.userId, u));
+        return map as Map<number, MonthlyMetricsUserItem>;
     }, [monthlyQuery.data]);
 
     const cardUsers = useMemo((): ReportCardUser[] => {
@@ -1665,8 +996,25 @@ export function ReportsContent() {
         if (statusFilter === 'absent') return cardUsers.filter((u) => !u.isPresent);
         if (statusFilter === 'late') return cardUsers.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
         if (statusFilter === 'early') return cardUsers.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
+        if (statusFilter === 'behind_on_hours') {
+            const endDate = singleDate ?? new Date();
+            const expectedByNow = getExpectedHoursByDate(endDate);
+            return cardUsers.filter((u) => (expectedByNow - u.hoursThisMonth) > HOURS_BEHIND_BADGE_THRESHOLD);
+        }
+        if (statusFilter === 'idle') {
+            const sevenDaysAgo = subDays(singleDate ?? new Date(), 7);
+            return cardUsers.filter((u) => {
+                if (!u.lastAppAccessAt) return true;
+                try {
+                    const lastAt = parse(u.lastAppAccessAt, 'MMM d, yyyy h:mm a', new Date());
+                    return lastAt < sevenDaysAgo;
+                } catch {
+                    return true;
+                }
+            });
+        }
         return cardUsers;
-    }, [cardUsers, statusFilter]);
+    }, [cardUsers, statusFilter, singleDate]);
 
     const filteredUsers = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -1680,32 +1028,34 @@ export function ReportsContent() {
     }, [statusFilteredUsers, search]);
 
     const isStaff = isStaffDashboardVisible(profile?.accessLevel);
+    const isVisitsAdmin = profile?.accessLevel?.toLowerCase() === 'admin';
     const isLoading =
         (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
-    if (!mounted) {
-        return (
-            <div className="flex flex-col h-full min-h-0">
-                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-                    <div className="flex justify-center py-12">
-                        <Loader2Icon className="size-8 animate-spin text-primary" />
-                    </div>
-                </main>
-            </div>
-        );
-    }
+    const attendanceChartsProps = useMemo(() => {
+        const presentCount = dailyQuery.data?.data?.presentEmployees ?? 0;
+        const absentCount = dailyQuery.data?.data?.absentEmployees ?? 0;
+        const attendanceRate = dailyQuery.data?.data?.attendanceRate ?? 0;
+        const presentUsers = dailyQuery.data?.data?.presentUsers ?? [];
+        const lateCount = presentUsers.filter((u) => (u.lateMinutes ?? 0) > 0).length;
+        const onTimeCount = presentUsers.length - lateCount;
+        const userMetrics = monthlyQuery.data?.data?.userMetrics ?? [];
+        const summary = monthlyQuery.data?.data?.summary;
+        const totalHours = summary?.totalHours ?? 0;
+        const totalOvertimeHours = summary?.totalOvertimeHours ?? 0;
+        return {
+            presentCount,
+            absentCount,
+            attendanceRate,
+            lateCount,
+            onTimeCount,
+            userMetrics,
+            totalHours,
+            totalOvertimeHours,
+        };
+    }, [dailyQuery.data, monthlyQuery.data]);
 
-    if (!isStaff) {
-        return (
-            <div className="flex flex-col h-full min-h-0">
-                <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6">
-                    <p className="text-center text-muted-foreground">
-                        Reports are available to staff only.
-                    </p>
-                </main>
-            </div>
-        );
-    }
+    const chartsLoading = (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
     return (
         <div className="flex flex-col h-full min-h-0">
@@ -1713,7 +1063,7 @@ export function ReportsContent() {
                 <h1 className="text-2xl font-semibold text-foreground mb-6 shrink-0">
                     Reports
                 </h1>
-                <Tabs defaultValue="live" className="w-full min-w-0 flex flex-col flex-1 min-h-0">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0 flex flex-col flex-1 min-h-0">
                     <div className="w-full min-w-0 overflow-x-auto pb-2 overscroll-x-contain shrink-0">
                         <TabsList className="bg-transparent border-0 p-0 flex flex-nowrap gap-3 w-fit">
                             <TabsTrigger
@@ -1728,88 +1078,43 @@ export function ReportsContent() {
                             >
                                 Attendance
                             </TabsTrigger>
-                        <TabsTrigger
-                            value="visits"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Visits
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="quotations"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Quotations
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="leads"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Leads
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="claims"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Claims
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="leave"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Leave
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="iot"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            IOT
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="tasks"
-                            className={REPORTS_TAB_TRIGGER_CLASS}
-                        >
-                            Tasks
-                        </TabsTrigger>
+                            <TabsTrigger
+                                value="visits"
+                                className={cn(REPORTS_TAB_TRIGGER_CLASS, !isVisitsAdmin && 'hidden')}
+                                disabled={!isVisitsAdmin}
+                            >
+                                Visits
+                            </TabsTrigger>
                     </TabsList>
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto mt-6">
-                        <TabsContent value="live" className="mt-0">
-                            <LiveReportTab />
-                        </TabsContent>
-                        <TabsContent value="attendance" className="mt-0">
-                            <AttendanceReportTab
-                                singleDate={singleDate}
-                                setSingleDate={setSingleDate}
-                                search={search}
-                                setSearch={setSearch}
-                                statusFilter={statusFilter}
-                                setStatusFilter={setStatusFilter}
-                                filteredUsers={filteredUsers}
-                                isLoading={isLoading}
-                                onCardClick={setDetailUser}
-                            />
-                        </TabsContent>
-                        <TabsContent value="visits" className="mt-0">
-                            <VisitsReportTab />
-                        </TabsContent>
-                        <TabsContent value="quotations" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="leads" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="claims" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="leave" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="iot" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
-                        <TabsContent value="tasks" className="mt-0">
-                            <p className="text-center text-muted-foreground py-12">Coming soon</p>
-                        </TabsContent>
+                        {!isSignedIn || !isTokenReady ? (
+                            <LoadingSpinner wrapperClassName="py-12" />
+                        ) : profile && !isStaff ? (
+                            <p className="text-center text-muted-foreground py-12">
+                                Reports are available to staff only.
+                            </p>
+                        ) : (
+                            <>
+                                {activeTab === 'live' && <LiveReportTab isTokenReady={isTokenReady} />}
+                                {activeTab === 'attendance' && (
+                                    <AttendanceReportTab
+                                        singleDate={singleDate}
+                                        setSingleDate={setSingleDate}
+                                        search={search}
+                                        setSearch={setSearch}
+                                        statusFilter={statusFilter}
+                                        setStatusFilter={setStatusFilter}
+                                        filteredUsers={filteredUsers}
+                                        isLoading={isLoading}
+                                        onCardClick={setDetailUser}
+                                        attendanceChartsProps={attendanceChartsProps}
+                                        chartsLoading={chartsLoading}
+                                    />
+                                )}
+                                {activeTab === 'visits' && isVisitsAdmin && <VisitsReportTab isTokenReady={isTokenReady} />}
+                            </>
+                        )}
                     </div>
                 </Tabs>
             </main>
@@ -1823,301 +1128,31 @@ export function ReportsContent() {
     );
 }
 
-interface AttendanceReportTabProps {
-    singleDate: Date | null;
-    setSingleDate: (d: Date | null) => void;
-    search: string;
-    setSearch: (s: string) => void;
-    statusFilter: StatusFilter;
-    setStatusFilter: (s: StatusFilter) => void;
-    filteredUsers: ReportCardUser[];
-    isLoading: boolean;
-    onCardClick: (u: ReportCardUser) => void;
-}
-
-function AttendanceReportTab({
-    singleDate,
-    setSingleDate,
-    search,
-    setSearch,
-    statusFilter,
-    setStatusFilter,
-    filteredUsers,
-    isLoading,
-    onCardClick,
-}: AttendanceReportTabProps) {
+function ModalRow({
+    label,
+    value,
+    valueClassName,
+}: {
+    label: string;
+    value: ReactNode;
+    valueClassName?: string;
+}) {
     return (
-        <div className="flex flex-col flex-1 min-h-0">
-            {/* Fixed: date, filter, search, export – no scroll */}
-            <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
-                <div className="flex flex-wrap items-center gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center"
-                            >
-                                {singleDate
-                                    ? format(singleDate, 'PPP')
-                                    : 'Pick date'}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={singleDate ?? undefined}
-                                onSelect={(d) => setSingleDate(d ?? null)}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
-                    <Select
-                        value={statusFilter}
-                        onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                    >
-                        <SelectTrigger
-                            className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground"
-                        >
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="present">Present</SelectItem>
-                            <SelectItem value="absent">Absent</SelectItem>
-                            <SelectItem value="late">Late</SelectItem>
-                            <SelectItem value="early">Early</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex flex-nowrap items-center gap-2">
-                    <Input
-                        placeholder="Search by name or email"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-56 min-w-0 shrink bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64"
-                    />
-                    <ExportReportDropdown singleDate={singleDate} />
-                </div>
-            </div>
-
-            {/* Scrollable: only the user cards list */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-            {isLoading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <Card
-                                key={i}
-                                className="rounded-lg border border-gray-200 bg-white min-h-[220px]"
-                            >
-                                <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
-                                    <div className="flex flex-col gap-3 flex-1">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                                                <Skeleton className="size-10 shrink-0 rounded-full" />
-                                                <div className="min-w-0 flex-1 space-y-1">
-                                                    <Skeleton className="h-4 w-24 rounded-md" />
-                                                    <Skeleton className="h-3 w-20 rounded-md" />
-                                                </div>
-                                            </div>
-                                            <Skeleton className="size-8 shrink-0 rounded-md" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Skeleton className="h-4 w-full max-w-[180px] rounded-md" />
-                                            <Skeleton className="h-4 w-28 rounded-md" />
-                                        </div>
-                                        <div className="w-full">
-                                            <Skeleton className="h-3 w-16 rounded-md mb-1" />
-                                            <div className="w-full grid grid-cols-7 gap-0">
-                                                {Array.from({ length: 7 }).map((_, j) => (
-                                                    <Skeleton
-                                                        key={j}
-                                                        className="size-2.5 rounded-full justify-self-center"
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 space-y-1 shrink-0">
-                                        <Skeleton className="h-4 w-32 rounded-md" />
-                                        <div className="flex items-center gap-2">
-                                            <Skeleton className="h-2 flex-1 w-full rounded-full" />
-                                            <Skeleton className="h-3 w-8 rounded-md" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                </div>
-            ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredUsers.map((user) => (
-                        <ReportUserCard
-                            key={user.userId}
-                            user={user}
-                            endDate={singleDate ?? new Date()}
-                            onClick={() => onCardClick(user)}
-                            onSettingsClick={(e) => {
-                                e.stopPropagation();
-                            }}
-                        />
-                    ))}
-                </div>
-            )}
-            {!isLoading && filteredUsers.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                    No users to show. Select a date and ensure you have access.
-                </p>
-            )}
-            </div>
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
+            <span className="text-muted-foreground shrink-0">{label}</span>
+            <span className={cn('font-medium break-words text-right', valueClassName)}>{value}</span>
         </div>
     );
 }
 
-/** Skeleton that mirrors ReportUserCard layout 1:1 for loading state. */
-function ReportUserCardSkeleton() {
+function ModalSection({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <Card className="rounded-lg border border-gray-200 bg-white min-h-[220px]">
-            <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
-                <div className="flex flex-col gap-3 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <Skeleton className="size-10 shrink-0 rounded-full" />
-                            <div className="min-w-0 flex-1 space-y-1">
-                                <Skeleton className="h-4 w-24 rounded-md" />
-                                <Skeleton className="h-3 w-20 rounded-md" />
-                            </div>
-                        </div>
-                        <Skeleton className="size-8 shrink-0 rounded-md" />
-                    </div>
-                    <div className="space-y-1">
-                        <Skeleton className="h-4 w-full max-w-[180px] rounded-md" />
-                        <Skeleton className="h-4 w-28 rounded-md" />
-                    </div>
-                    <div className="w-full">
-                        <Skeleton className="h-3 w-16 rounded-md mb-1" />
-                        <div className="w-full grid grid-cols-7 gap-0">
-                            {Array.from({ length: 7 }).map((_, j) => (
-                                <Skeleton
-                                    key={j}
-                                    className="size-2.5 rounded-full justify-self-center"
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-3 space-y-1 shrink-0">
-                    <Skeleton className="h-4 w-32 rounded-md" />
-                    <div className="flex items-center gap-2">
-                        <Skeleton className="h-2 flex-1 w-full rounded-full" />
-                        <Skeleton className="h-3 w-8 rounded-md" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-function ReportUserCard({
-    user,
-    endDate,
-    onClick,
-    onSettingsClick,
-}: {
-    user: ReportCardUser;
-    endDate: Date;
-    onClick: () => void;
-    onSettingsClick: (e: React.MouseEvent) => void;
-}) {
-    const expectedByNow = getExpectedHoursByDate(endDate);
-    return (
-        <Card
-            className={cn(
-                'cursor-pointer transition-colors hover:opacity-90 bg-white border rounded-lg',
-                user.isPresent ? 'border-green-500' : 'border-red-500'
-            )}
-            onClick={onClick}
-        >
-            <CardContent className="p-4 flex flex-col flex-1 min-h-[220px] justify-between">
-                <div className="flex flex-col gap-3 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <Avatar className="size-10 shrink-0">
-                                <AvatarImage src={user.photoURL ?? undefined} />
-                                <AvatarFallback>
-                                    {user.name
-                                        .split(/\s+/)
-                                        .map((s) => s[0])
-                                        .join('')
-                                        .slice(0, 2)
-                                        .toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                                <p className="font-medium text-foreground truncate">
-                                    {user.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {[user.role, user.branch].filter(Boolean).join(' · ') || '—'}
-                                </p>
-                            </div>
-                        </div>
-                        <Link
-                            href={`/reports/users/${user.ref}/settings`}
-                            onClick={onSettingsClick}
-                            className="shrink-0 rounded-md p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
-                            aria-label="User settings"
-                        >
-                            <SettingsIcon className="size-4" />
-                        </Link>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                        <a
-                            href={`mailto:${user.email}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="block truncate text-primary hover:underline"
-                        >
-                            {user.email}
-                        </a>
-                        {user.phone && (
-                            <a
-                                href={`tel:${user.phone}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="block truncate text-primary hover:underline"
-                            >
-                                {user.phone}
-                            </a>
-                        )}
-                    </div>
-                    <div className="w-full">
-                        <p className="text-xs text-muted-foreground mb-1">Last 7 days</p>
-                        <div className="w-full">
-                            <LastSevenDaysDots userRef={user.ref} endDate={endDate} />
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-3 space-y-1 shrink-0">
-                    <p className="text-sm text-muted-foreground flex items-center justify-between gap-2">
-                        <span>
-                            <strong className="text-foreground">{user.hoursThisMonth}h</strong>
-                            /{EXPECTED_MONTHLY_HOURS}h this month
-                        </span>
-                        <span className="shrink-0">~{expectedByNow}h expected</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <ReportProgressBar value={user.progressPercent} />
-                        <span
-                            className={cn(
-                                'text-xs tabular-nums font-medium',
-                                getProgressColorClasses(user.progressPercent).text
-                            )}
-                        >
-                            {user.progressPercent}%
-                        </span>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+        <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1.5">
+                {title}
+            </h3>
+            {children}
+        </div>
     );
 }
 
@@ -2132,13 +1167,31 @@ function ReportUserDetailModal({
 }) {
     const open = !!user;
     const expectedByNow = getExpectedHoursByDate(endDate);
+    const hoursBehind = user ? expectedByNow - user.hoursThisMonth : 0;
+    const isBehindBadge = user ? hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD : false;
+
+    const { data: userData } = useUser(user?.ref ?? null, { enabled: !!user?.ref });
+    const { data: targetData } = useUserTarget(user?.ref ?? null, { enabled: !!user?.ref });
+    const { data: prefsData } = useUserPreferences(user?.ref ?? null, { enabled: !!user?.ref });
+
+    const userTarget = targetData?.userTarget as Record<string, unknown> | null | undefined;
+    const preferences = prefsData?.preferences ?? {};
+    const employmentProfile = (userData?.userEmployeementProfile ?? (userData as Record<string, unknown>)?.['employmentProfile']) as Record<string, unknown> | null | undefined;
+
+    const formatTargetValue = (v: unknown): string => {
+        if (v == null) return '—';
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'string') return v;
+        return String(v);
+    };
+
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
             <DialogContent
                 showCloseButton={false}
-                className="sm:max-w-md"
+                className="flex flex-col w-full max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
             >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 shrink-0">
                     <DialogHeader>
                         <DialogTitle>
                             {user ? user.name : 'User details'}
@@ -2155,92 +1208,364 @@ function ReportUserDetailModal({
                     </Button>
                 </div>
                 {user && (
-                    <div className="space-y-4 pt-2">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="size-12">
-                                <AvatarImage src={user.photoURL ?? undefined} />
-                                <AvatarFallback>
-                                    {user.name
-                                        .split(/\s+/)
-                                        .map((s) => s[0])
-                                        .join('')
-                                        .slice(0, 2)
-                                        .toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                                <p className="font-medium">{user.name}</p>
-                                <a
-                                    href={`mailto:${user.email}`}
-                                    className="text-sm text-primary hover:underline block truncate"
-                                >
-                                    {user.email}
-                                </a>
-                                {user.phone && (
-                                    <a
-                                        href={`tel:${user.phone}`}
-                                        className="text-sm text-primary hover:underline block truncate"
-                                    >
-                                        {user.phone}
-                                    </a>
-                                )}
-                                {(user.role || user.branch) && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                        {[user.role, user.branch]
-                                            .filter(Boolean)
-                                            .join(' · ')}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                            <div>
-                                <span className="text-muted-foreground">
-                                    Hours this month:
-                                </span>
-                                <div className="flex items-center justify-between gap-2 mt-0.5">
-                                    <span className="font-medium">
-                                        {user.hoursThisMonth}h/{EXPECTED_MONTHLY_HOURS}h this month
-                                    </span>
-                                    <span className="text-muted-foreground shrink-0">
-                                        ~{expectedByNow}h expected
-                                    </span>
+                    <div className="overflow-y-auto flex-1 min-h-0 pt-2 -mx-1 px-1 space-y-4">
+                        <ModalSection title="Identity">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="size-12 shrink-0">
+                                    <AvatarImage src={user.photoURL ?? undefined} />
+                                    <AvatarFallback>
+                                        {user.name
+                                            .split(/\s+/)
+                                            .map((s) => s[0])
+                                            .join('')
+                                            .slice(0, 2)
+                                            .toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                    <ModalRow label="Full name" value={user.name} />
                                 </div>
                             </div>
+                        </ModalSection>
+
+                        <ModalSection title="Contact">
+                            <ModalRow
+                                label="Email"
+                                value={
+                                    <a href={`mailto:${user.email}`} className="text-primary hover:underline truncate block">
+                                        {user.email}
+                                    </a>
+                                }
+                            />
+                            <ModalRow
+                                label="Phone"
+                                value={
+                                    user.phone ? (
+                                        <a href={`tel:${user.phone}`} className="text-primary hover:underline">
+                                            {user.phone}
+                                        </a>
+                                    ) : (
+                                        '—'
+                                    )
+                                }
+                            />
+                        </ModalSection>
+
+                        <ModalSection title="Role & tags">
+                            <ModalRow label="Role" value={user.role ?? '—'} />
+                            <ModalRow label="Access level" value={user.accessLevel ?? '—'} />
+                            <ModalRow label="Branch" value={user.branch ?? '—'} />
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {[user.role, user.accessLevel, user.branch]
+                                    .filter(Boolean)
+                                    .map((tag, index) => (
+                                        <Badge key={`role-tag-${index}-${String(tag)}`} variant="secondary" className="text-xs font-normal">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                            </div>
+                        </ModalSection>
+
+                        <div className="flex flex-wrap gap-1.5">
+                            <Badge
+                                variant={user.isPresent ? 'default' : 'destructive'}
+                                className={cn('text-xs text-white', user.isPresent && 'bg-green-600 hover:bg-green-600')}
+                                aria-label={user.isPresent ? 'Present' : 'Absent'}
+                            >
+                                {user.isPresent ? 'Present' : 'Absent'}
+                            </Badge>
+                            {isBehindBadge && (
+                                <Badge
+                                    variant="destructive"
+                                    className="text-xs text-white"
+                                    title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                    aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
+                                >
+                                    Behind on hours ({Math.round(hoursBehind)}h under expected)
+                                </Badge>
+                            )}
+                        </div>
+
+                        {user.firstAttendanceInPeriod && (
+                            <ModalSection title="Attendance in period (last 7 days)">
+                                <ModalRow
+                                    label="First attended"
+                                    value={format(new Date(user.firstAttendanceInPeriod), 'MMM d, yyyy - HH:mm')}
+                                />
+                            </ModalSection>
+                        )}
+
+                        {user.lastAppAccessAt && (
+                            <ModalSection title="App access">
+                                <ModalRow
+                                    label="Last seen"
+                                    value={
+                                        <span className="flex items-center gap-2">
+                                            {user.lastAppAccessDeviceType === 'phone' && (
+                                                <Smartphone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                            )}
+                                            {user.lastAppAccessDeviceType === 'laptop' && (
+                                                <Laptop className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                            )}
+                                            {formatLastSeen(user.lastAppAccessAt)}
+                                        </span>
+                                    }
+                                />
+                            </ModalSection>
+                        )}
+
+                        <ModalSection title="Hours this month">
+                            <ModalRow
+                                label="Hours this month"
+                                value={`${user.hoursThisMonth}h / ${EXPECTED_MONTHLY_HOURS}h`}
+                            />
+                            <ModalRow label="Expected by now" value={`~${expectedByNow}h`} />
                             <div className="flex items-center gap-2">
-                                <ReportProgressBar value={user.progressPercent} />
+                                <div className="flex-1 min-w-0">
+                                    <ReportProgressBar value={user.progressPercent} />
+                                </div>
                                 <span
                                     className={cn(
-                                        'text-xs tabular-nums font-medium',
+                                        'text-xs tabular-nums font-medium shrink-0',
                                         getProgressColorClasses(user.progressPercent).text
                                     )}
                                 >
                                     {user.progressPercent}%
                                 </span>
                             </div>
-                            <div>
-                                <span className="text-muted-foreground">
-                                    Status:
-                                </span>{' '}
-                                <span
-                                    className={cn(
-                                        'font-medium',
-                                        user.isPresent
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : 'text-red-600 dark:text-red-400'
-                                    )}
-                                >
-                                    {user.isPresent ? 'Present' : 'Absent'}
-                                </span>
-                            </div>
-                        </div>
-                        <Link
-                            href={`/reports/users/${user.ref}/settings`}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                        >
-                            <SettingsIcon className="size-4" />
-                            User settings
-                        </Link>
+                        </ModalSection>
+
+                        <ModalSection title="Status">
+                            <ModalRow
+                                label="Today"
+                                value={
+                                    <span
+                                        className={cn(
+                                            'font-medium',
+                                            user.isPresent
+                                                ? 'text-green-600 dark:text-green-400'
+                                                : 'text-red-600 dark:text-red-400'
+                                        )}
+                                    >
+                                        {user.isPresent ? 'Present' : 'Absent'}
+                                    </span>
+                                }
+                            />
+                        </ModalSection>
+
+                        {user.isPresent && (
+                            <ModalSection title="Today's attendance">
+                                {user.checkInTime != null && user.checkInTime !== '' && (
+                                    <ModalRow label="Check-in time" value={user.checkInTime} />
+                                )}
+                                {user.checkOutTime != null && user.checkOutTime !== '' && (
+                                    <ModalRow label="Check-out time" value={user.checkOutTime} />
+                                )}
+                                {user.workingHours != null && user.workingHours !== '' && (
+                                    <ModalRow label="Working hours today" value={`${user.workingHours}h`} />
+                                )}
+                                {user.shiftDuration != null && user.shiftDuration !== '' && (
+                                    <ModalRow label="Shift duration" value={user.shiftDuration} />
+                                )}
+                                {user.isOnBreak !== undefined && (
+                                    <ModalRow label="On break" value={user.isOnBreak ? 'Yes' : 'No'} />
+                                )}
+                                {user.earlyMinutes != null && user.earlyMinutes > 0 && (
+                                    <ModalRow label="Early (minutes)" value={`${user.earlyMinutes}m`} />
+                                )}
+                                {user.lateMinutes != null && user.lateMinutes > 0 && (
+                                    <ModalRow label="Late (minutes)" value={`${user.lateMinutes}m`} />
+                                )}
+                                {user.distanceFromWorkplaceMeters != null && (
+                                    <ModalRow
+                                        label="Distance from workplace"
+                                        value={
+                                            user.distanceFromWorkplaceMeters >= 1000
+                                                ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)} km`
+                                                : `~${user.distanceFromWorkplaceMeters} m`
+                                        }
+                                    />
+                                )}
+                                {user.shiftStartAddress && (
+                                    <ModalRow
+                                        label="Clock-in address"
+                                        value={
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline break-all"
+                                            >
+                                                {user.shiftStartAddress}
+                                            </a>
+                                        }
+                                    />
+                                )}
+                            </ModalSection>
+                        )}
+
+                        {!user.isPresent && user.lastSeenDate != null && user.lastSeenDate !== '' && (
+                            <ModalSection title="Last seen">
+                                <ModalRow label="Last seen date" value={user.lastSeenDate} />
+                            </ModalSection>
+                        )}
+
+                        <ModalSection title="Employment">
+                            {user.employeeSince != null && user.employeeSince !== '' && (
+                                <ModalRow label="Employee since" value={user.employeeSince} />
+                            )}
+                            {user.isActive !== undefined && (
+                                <ModalRow label="Active" value={user.isActive ? 'Yes' : 'No'} />
+                            )}
+                        </ModalSection>
+
+                        <ModalSection title="This month">
+                            {user.totalShifts != null && (
+                                <ModalRow label="Total shifts" value={String(user.totalShifts)} />
+                            )}
+                            {user.overtimeHours != null && user.overtimeHours > 0 && (
+                                <ModalRow label="Overtime hours" value={`${user.overtimeHours}h`} />
+                            )}
+                        </ModalSection>
+
+                        {userTarget && Object.keys(userTarget).length > 0 && (
+                            <ModalSection title="User targets">
+                                {userTarget.targetSalesAmount != null && (
+                                    <ModalRow label="Target sales amount" value={formatTargetValue(userTarget.targetSalesAmount)} />
+                                )}
+                                {userTarget.currentSalesAmount != null && (
+                                    <ModalRow label="Current sales amount" value={formatTargetValue(userTarget.currentSalesAmount)} />
+                                )}
+                                {userTarget.targetQuotationsAmount != null && (
+                                    <ModalRow label="Target quotations" value={formatTargetValue(userTarget.targetQuotationsAmount)} />
+                                )}
+                                {userTarget.currentQuotationsAmount != null && (
+                                    <ModalRow label="Current quotations" value={formatTargetValue(userTarget.currentQuotationsAmount)} />
+                                )}
+                                {userTarget.targetHoursWorked != null && (
+                                    <ModalRow label="Target hours worked" value={formatTargetValue(userTarget.targetHoursWorked)} />
+                                )}
+                                {userTarget.currentHoursWorked != null && (
+                                    <ModalRow label="Current hours worked" value={formatTargetValue(userTarget.currentHoursWorked)} />
+                                )}
+                                {userTarget.targetCheckIns != null && (
+                                    <ModalRow label="Target check-ins" value={formatTargetValue(userTarget.targetCheckIns)} />
+                                )}
+                                {userTarget.currentCheckIns != null && (
+                                    <ModalRow label="Current check-ins" value={formatTargetValue(userTarget.currentCheckIns)} />
+                                )}
+                                {userTarget.targetCalls != null && (
+                                    <ModalRow label="Target calls" value={formatTargetValue(userTarget.targetCalls)} />
+                                )}
+                                {userTarget.currentCalls != null && (
+                                    <ModalRow label="Current calls" value={formatTargetValue(userTarget.currentCalls)} />
+                                )}
+                                {userTarget.targetPeriod != null && (
+                                    <ModalRow label="Target period" value={formatTargetValue(userTarget.targetPeriod)} />
+                                )}
+                            </ModalSection>
+                        )}
+
+                        {(preferences && Object.keys(preferences).length > 0) && (
+                            <ModalSection title="User preferences">
+                                {preferences.theme != null && (
+                                    <ModalRow label="Theme" value={String(preferences.theme)} />
+                                )}
+                                {preferences.language != null && (
+                                    <ModalRow label="Language" value={String(preferences.language)} />
+                                )}
+                                {preferences.notifications != null && (
+                                    <ModalRow label="Notifications" value={preferences.notifications ? 'On' : 'Off'} />
+                                )}
+                                {preferences.shiftAutoEnd != null && (
+                                    <ModalRow label="Shift auto-end" value={preferences.shiftAutoEnd ? 'Yes' : 'No'} />
+                                )}
+                                {preferences.notificationFrequency != null && (
+                                    <ModalRow label="Notification frequency" value={String(preferences.notificationFrequency)} />
+                                )}
+                                {preferences.dateFormat != null && (
+                                    <ModalRow label="Date format" value={String(preferences.dateFormat)} />
+                                )}
+                                {preferences.timeFormat != null && (
+                                    <ModalRow label="Time format" value={String(preferences.timeFormat)} />
+                                )}
+                                {preferences.emailNotifications != null && (
+                                    <ModalRow label="Email notifications" value={preferences.emailNotifications ? 'On' : 'Off'} />
+                                )}
+                                {preferences.timezone != null && (
+                                    <ModalRow label="Timezone" value={String(preferences.timezone)} />
+                                )}
+                            </ModalSection>
+                        )}
+
+                        {employmentProfile && Object.keys(employmentProfile).length > 0 && (
+                            <ModalSection title="Employment history">
+                                {employmentProfile.position != null && employmentProfile.position !== '' && (
+                                    <ModalRow label="Position" value={String(employmentProfile.position)} />
+                                )}
+                                {employmentProfile.department != null && employmentProfile.department !== '' && (
+                                    <ModalRow label="Department" value={String(employmentProfile.department)} />
+                                )}
+                                {employmentProfile.branchref != null && employmentProfile.branchref !== '' && (
+                                    <ModalRow label="Branch ref" value={String(employmentProfile.branchref)} />
+                                )}
+                                {employmentProfile.startDate != null && employmentProfile.startDate !== '' && (
+                                    <ModalRow label="Start date" value={String(employmentProfile.startDate)} />
+                                )}
+                                {employmentProfile.endDate != null && employmentProfile.endDate !== '' && (
+                                    <ModalRow label="End date" value={String(employmentProfile.endDate)} />
+                                )}
+                                {employmentProfile.isCurrentlyEmployed != null && (
+                                    <ModalRow label="Currently employed" value={employmentProfile.isCurrentlyEmployed ? 'Yes' : 'No'} />
+                                )}
+                                {employmentProfile.contactNumber != null && employmentProfile.contactNumber !== '' && (
+                                    <ModalRow label="Contact number" value={String(employmentProfile.contactNumber)} />
+                                )}
+                            </ModalSection>
+                        )}
+
+                        <ModalSection title="Location">
+                            <ModalRow
+                                label="Shift address"
+                                value={
+                                    user.shiftStartAddress ? (
+                                        <a
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline break-all"
+                                            title={user.shiftStartAddress}
+                                        >
+                                            {user.shiftStartAddress}
+                                        </a>
+                                    ) : (
+                                        '—'
+                                    )
+                                }
+                            />
+                            <ModalRow
+                                label="Distance"
+                                value={
+                                    user.distanceFromWorkplaceMeters != null
+                                        ? user.distanceFromWorkplaceMeters >= 1000
+                                            ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)} km away`
+                                            : `~${user.distanceFromWorkplaceMeters} m away`
+                                        : '—'
+                                }
+                            />
+                        </ModalSection>
+
+                        <Separator />
+
+                        <ModalSection title="Actions">
+                            <Link
+                                href={`/reports/users/${user.ref}/settings`}
+                                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                            >
+                                <SettingsIcon className="size-4 shrink-0" />
+                                User settings
+                            </Link>
+                        </ModalSection>
                     </div>
                 )}
             </DialogContent>

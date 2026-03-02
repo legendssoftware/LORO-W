@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   SignInButton,
   SignUpButton,
@@ -9,15 +9,15 @@ import {
   useClerk,
   useUser,
 } from '@clerk/nextjs';
-import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
-import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks';
-import { useSessionStore } from '@/store/session-store';
-import { useSidebar } from '@/components/sidebar/sidebar-provider';
+import { useSessionSync } from '@/api/hooks';
+import { useSignOut } from '@/hooks/use-sign-out';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const WELCOME_KEY = 'loro_welcome_shown';
 
@@ -30,18 +30,19 @@ function roleLabel(accessLevel: string | undefined): string {
 
 export function AppHeader() {
   const { isLoaded, isSignedIn, user } = useUser();
-  const { signOut, openUserProfile } = useClerk();
-  const queryClient = useQueryClient();
+  const { openUserProfile } = useClerk();
+  const { performSignOut } = useSignOut();
   const welcomeShown = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { backendUserData } = useSessionSync();
-  const sidebar = useSidebar();
+  const { toggleSidebar, open, openMobile, isMobile } = useSidebar();
+  const sidebarOpen = isMobile ? openMobile : open;
   const accessLevel = backendUserData?.accessLevel;
   const role = roleLabel(accessLevel);
 
   const handleSignOut = () => {
-    queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
-    useSessionStore.getState().endSession();
-    signOut({ redirectUrl: '/' });
+    setIsSigningOut(true);
+    performSignOut();
   };
 
   useEffect(() => {
@@ -62,15 +63,19 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">
       {isSignedIn ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Open menu"
-          onClick={sidebar.toggle}
-          className="md:hidden shrink-0"
-        >
-          <LayoutDashboardIcon className="size-6" />
-        </Button>
+        sidebarOpen ? (
+          <div className="size-9 shrink-0" aria-hidden />
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Open sidebar"
+            onClick={toggleSidebar}
+            className="shrink-0"
+          >
+            <LayoutDashboardIcon className="size-6" />
+          </Button>
+        )
       ) : (
         <Link
           href="/"
@@ -135,6 +140,18 @@ export function AppHeader() {
           </div>
         </SignedIn>
       </div>
+
+      <Dialog open={isSigningOut} onOpenChange={() => {}}>
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="z-[9999] bg-black"
+          className="z-[9999] flex min-w-[280px] max-w-[calc(100%-2rem)] items-center justify-center bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0 text-center left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <DialogTitle className="text-white text-lg font-medium">
+            Signing you out 👋
+          </DialogTitle>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

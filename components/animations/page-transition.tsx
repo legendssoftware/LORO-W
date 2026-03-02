@@ -45,7 +45,7 @@ export function PageTransition({
       animate="animate"
       exit="exit"
       variants={variants}
-      className="h-full w-full overflow-hidden"
+      className="w-full"
     >
       {children}
     </motion.div>

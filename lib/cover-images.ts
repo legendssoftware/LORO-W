@@ -1,19 +1,22 @@
 /**
  * Cover image paths under public/images/covers/.
- * Uses 1.png through 7.png for landing hero and feature sections.
+ * Uses 1.webp through 7.webp for landing hero and feature sections.
  */
 
 const COVER_BASE = '/images/covers';
 
 export const COVER_IMAGE_PATHS = [
-  `${COVER_BASE}/1.png`,
-  `${COVER_BASE}/2.png`,
-  `${COVER_BASE}/3.png`,
-  `${COVER_BASE}/4.png`,
-  `${COVER_BASE}/5.png`,
-  `${COVER_BASE}/6.png`,
-  `${COVER_BASE}/7.png`,
+  `${COVER_BASE}/1.webp`,
+  `${COVER_BASE}/2.webp`,
+  `${COVER_BASE}/3.webp`,
+  `${COVER_BASE}/4.webp`,
+  `${COVER_BASE}/5.webp`,
+  `${COVER_BASE}/6.webp`,
+  `${COVER_BASE}/7.webp`,
 ] as const;
+
+/** Deterministic LCP image for the hero center slot (2.webp). Use for preload and center hero only. */
+export const HERO_CENTER_IMAGE = COVER_IMAGE_PATHS[1];
 
 export type CoverImagePath = (typeof COVER_IMAGE_PATHS)[number];
 

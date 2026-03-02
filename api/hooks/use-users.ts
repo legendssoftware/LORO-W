@@ -29,7 +29,7 @@ export function useUsers(options?: {
         limit: options?.limit ?? 100,
         search: options?.search,
       });
-      return res.data ?? [];
+      return Array.isArray(res?.data) ? res.data : [];
     },
     enabled: options?.enabled !== false,
     staleTime: 2 * 60 * 1000,

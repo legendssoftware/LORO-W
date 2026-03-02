@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { format, subDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import { getDailyOverview, getMonthlyMetrics } from '@/api/endpoints/attendance';
-import { getCheckIns } from '@/api/endpoints/check-ins';
 import { useApiClient } from '@/api/hooks';
 import type { DailyOverviewUser, MonthlyMetricsUserItem } from '@/api/types';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
@@ -24,10 +22,9 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { BarChart3Icon, CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, MapPinIcon } from '@/lib/icons';
+import { BarChart3Icon, CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { exportToCsv, exportToExcel, exportToPdf } from '@/lib/utils/report-export';
-import { exportVisits } from '@/lib/utils/visits-export';
 
 const ATTENDANCE_HEADERS = [
     'Name',
@@ -72,6 +69,34 @@ function metricsUserToRow(u: MonthlyMetricsUserItem): string[] {
     ];
 }
 
+/** Parse "HH:mm" or "HH:mm:ss" to minutes since midnight. Returns NaN if invalid. */
+function timeStringToMinutes(s: string | null | undefined): number {
+    if (!s?.trim()) return NaN;
+    const parts = s.trim().split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (Number.isNaN(h)) return NaN;
+    return h * 60 + (Number.isNaN(m) ? 0 : m);
+}
+
+/** Compute hours between check-in and check-out time strings. Returns 0 if invalid or missing. */
+function computeHoursFromTimes(
+    checkInTime: string | null | undefined,
+    checkOutTime: string | null | undefined
+): number {
+    const start = timeStringToMinutes(checkInTime);
+    const end = timeStringToMinutes(checkOutTime);
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 0;
+    return (end - start) / 60;
+}
+
+function dailyOverviewUserToMetricsRow(u: DailyOverviewUser, present: boolean): string[] {
+    const name = u.fullName || [u.name, u.surname].filter(Boolean).join(' ').trim();
+    if (!present) return [String(u.uid), name, '0', '0', '0'];
+    const hours = computeHoursFromTimes(u.checkInTime, u.checkOutTime);
+    return [String(u.uid), name, '1', String(hours.toFixed(2)), '0'];
+}
+
 export interface ExportReportDropdownProps {
     singleDate: Date | null;
 }
@@ -109,16 +134,18 @@ export function ExportReportDropdown({ singleDate }: ExportReportDropdownProps) 
         }
     }
 
-    async function runMetricsExport(exportFormat: 'csv' | 'excel' | 'pdf', _perUser: boolean) {
-        const date = singleDate ?? today;
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
+    async function runMetricsExportToday(date: Date, exportFormat: 'csv' | 'excel' | 'pdf') {
         setLoading(true);
         try {
-            const res = await getMonthlyMetrics(client, { year, month });
-            const list = res.data?.userMetrics ?? [];
-            const rows = list.map(metricsUserToRow);
-            const baseName = `metrics-${year}-${String(month).padStart(2, '0')}`;
+            const res = await getDailyOverview(client, {
+                date: format(date, 'yyyy-MM-dd'),
+            });
+            const data = res.data;
+            if (!data) throw new Error('No data');
+            const presentRows = data.presentUsers.map((u) => dailyOverviewUserToMetricsRow(u, true));
+            const absentRows = data.absentUsers.map((u) => dailyOverviewUserToMetricsRow(u, false));
+            const rows = [...presentRows, ...absentRows];
+            const baseName = `metrics-${format(date, 'yyyy-MM-dd')}`;
             if (exportFormat === 'csv') exportToCsv(METRICS_HEADERS, rows, baseName);
             else if (exportFormat === 'excel') exportToExcel(METRICS_HEADERS, rows, baseName);
             else exportToPdf(METRICS_HEADERS, rows, baseName);
@@ -131,20 +158,19 @@ export function ExportReportDropdown({ singleDate }: ExportReportDropdownProps) 
         }
     }
 
-    async function runVisitsExport(start: Date, end: Date, exportFormat: 'csv' | 'excel' | 'pdf') {
+    async function runMetricsExportMonth(exportFormat: 'csv' | 'excel' | 'pdf') {
+        const date = singleDate ?? today;
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
         setLoading(true);
         try {
-            const res = await getCheckIns(client, {
-                startDate: format(start, 'yyyy-MM-dd'),
-                endDate: format(end, 'yyyy-MM-dd'),
-            });
-            const checkIns = res.checkIns ?? [];
-            if (checkIns.length === 0) {
-                toast.error('No visits to export');
-                return;
-            }
-            const baseName = `visits-${format(start, 'yyyy-MM-dd')}-${format(end, 'yyyy-MM-dd')}`;
-            exportVisits(checkIns, exportFormat, baseName);
+            const res = await getMonthlyMetrics(client, { year, month, includeCheckIns: false });
+            const list = res.data?.userMetrics ?? [];
+            const rows = list.map(metricsUserToRow);
+            const baseName = `metrics-${year}-${String(month).padStart(2, '0')}`;
+            if (exportFormat === 'csv') exportToCsv(METRICS_HEADERS, rows, baseName);
+            else if (exportFormat === 'excel') exportToExcel(METRICS_HEADERS, rows, baseName);
+            else exportToPdf(METRICS_HEADERS, rows, baseName);
             toast.success('Export downloaded');
         } catch (e) {
             const msg = e instanceof Error ? e.message : 'Export failed';
@@ -305,59 +331,47 @@ export function ExportReportDropdown({ singleDate }: ExportReportDropdownProps) 
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Per user</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>Today</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => runMetricsExport('csv', true)}>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        runMetricsExportToday(singleDate ?? today, 'csv')
+                                    }
+                                >
                                     CSV
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => runMetricsExport('excel', true)}>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        runMetricsExportToday(singleDate ?? today, 'excel')
+                                    }
+                                >
                                     Excel
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => runMetricsExport('pdf', true)}>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        runMetricsExportToday(singleDate ?? today, 'pdf')
+                                    }
+                                >
                                     PDF
                                 </DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>All users</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>This month</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => runMetricsExport('csv', false)}>
+                                <DropdownMenuItem onClick={() => runMetricsExportMonth('csv')}>
                                     CSV
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => runMetricsExport('excel', false)}>
+                                <DropdownMenuItem onClick={() => runMetricsExportMonth('excel')}>
                                     Excel
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => runMetricsExport('pdf', false)}>
+                                <DropdownMenuItem onClick={() => runMetricsExportMonth('pdf')}>
                                     PDF
                                 </DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                     </DropdownMenuSubContent>
                 </DropdownMenuSub>
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <MapPinIcon className="size-4" />
-                        Visits
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => runVisitsExport(subDays(today, 30), today, 'csv')}>
-                            Last 30 days – CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => runVisitsExport(subDays(today, 30), today, 'excel')}>
-                            Last 30 days – Excel
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => runVisitsExport(subDays(today, 30), today, 'pdf')}>
-                            Last 30 days – PDF
-                        </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    disabled
-                    className="opacity-50 text-muted-foreground pointer-events-none cursor-not-allowed"
-                >
-                    Share a link
-                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );

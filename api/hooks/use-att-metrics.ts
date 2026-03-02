@@ -22,7 +22,7 @@ export function useAttMetrics(options?: { enabled?: boolean }) {
     enabled: options?.enabled !== false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }

@@ -22,6 +22,11 @@ export interface UserResponse {
   managedStaff?: number[];
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
+  businesscardURL?: string | null;
+  departmentId?: number | null;
+  assignedClientIds?: number[];
+  userTarget?: Record<string, unknown> | null;
+  isDeleted?: boolean;
   [key: string]: unknown;
 }
 
@@ -53,6 +58,7 @@ export interface PatchUserBody {
   phone?: string | null;
   photoURL?: string | null;
   avatar?: string | null;
+  businesscardURL?: string | null;
   role?: string;
   status?: string;
   accessLevel?: string;
@@ -89,6 +95,65 @@ export interface PatchUserBody {
   };
 }
 
+/** Partial update body for PATCH /user/:ref/target. Matches server UpdateUserTargetDto. */
+export interface PatchUserTargetBody {
+  targetSalesAmount?: number;
+  targetQuotationsAmount?: number;
+  currentSalesAmount?: number;
+  currentQuotationsAmount?: number;
+  currentOrdersAmount?: number;
+  targetCurrency?: string;
+  targetHoursWorked?: number;
+  currentHoursWorked?: number;
+  targetNewClients?: number;
+  currentNewClients?: number;
+  targetNewLeads?: number;
+  currentNewLeads?: number;
+  targetCheckIns?: number;
+  currentCheckIns?: number;
+  targetCalls?: number;
+  currentCalls?: number;
+  targetPeriod?: string;
+  periodStartDate?: string;
+  periodEndDate?: string;
+  isRecurring?: boolean;
+  recurringInterval?: 'daily' | 'weekly' | 'monthly';
+  carryForwardUnfulfilled?: boolean;
+  baseSalary?: number;
+  carInstalment?: number;
+  carInsurance?: number;
+  fuel?: number;
+  cellPhoneAllowance?: number;
+  carMaintenance?: number;
+  cgicCosts?: number;
+  totalCost?: number;
+  erpSalesRepCode?: string;
+}
+
+export interface GetUserTargetResponse {
+  userTarget: Record<string, unknown> | null;
+  message: string;
+}
+
+/** GET /user/:ref/preferences - user preferences (theme, language, notifications, etc.). */
+export interface GetUserPreferencesResponse {
+  preferences: {
+    theme?: string;
+    language?: string;
+    notifications?: boolean;
+    shiftAutoEnd?: boolean;
+    notificationFrequency?: string;
+    dateFormat?: string;
+    timeFormat?: string;
+    emailNotifications?: boolean;
+    smsNotifications?: boolean;
+    biometricAuth?: boolean;
+    advancedFeatures?: boolean;
+    timezone?: string;
+  };
+  message: string;
+}
+
 /**
  * GET /user - list org-scoped users (paginated).
  */
@@ -107,12 +172,19 @@ export async function getUsers(
 
 /**
  * GET /user/:ref - get user by uid or Clerk user ID.
+ * @param includeDeleted - if true, includes soft-deleted users (for settings restore/permanent-delete flow)
+ * @param includeAssignedClients - if false, omits assignedClients from response (default true)
  */
 export async function getUserByRef(
   client: AxiosInstance,
-  ref: string
+  ref: string,
+  options?: { includeDeleted?: boolean; includeAssignedClients?: boolean }
 ): Promise<GetUserByRefResponse> {
-  const { data } = await client.get<GetUserByRefResponse>(`/user/${ref}`);
+  const params = new URLSearchParams();
+  if (options?.includeDeleted) params.set('includeDeleted', 'true');
+  if (options?.includeAssignedClients === false) params.set('includeAssignedClients', 'false');
+  const qs = params.toString();
+  const { data } = await client.get<GetUserByRefResponse>(`/user/${ref}${qs ? `?${qs}` : ''}`);
   return data;
 }
 
@@ -128,5 +200,77 @@ export async function patchUser(
     `/user/${ref}`,
     body
   );
+  return data;
+}
+
+/** Response shape for delete/restore endpoints. */
+export interface UserMessageResponse {
+  message: string;
+}
+
+/**
+ * DELETE /user/:ref - soft delete (remove from system). User can be restored later.
+ */
+export async function deleteUser(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.delete<UserMessageResponse>(`/user/${ref}`);
+  return data;
+}
+
+/**
+ * PATCH /user/restore/:ref - restore a soft-deleted user.
+ */
+export async function restoreUser(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.patch<UserMessageResponse>(`/user/restore/${ref}`);
+  return data;
+}
+
+/**
+ * DELETE /user/:ref/permanent - permanently delete user (must be soft-deleted first). Irreversible.
+ */
+export async function deleteUserPermanently(
+  client: AxiosInstance,
+  ref: string
+): Promise<UserMessageResponse> {
+  const { data } = await client.delete<UserMessageResponse>(`/user/${ref}/permanent`);
+  return data;
+}
+
+/**
+ * GET /user/:ref/target - get user targets (full payload).
+ */
+export async function getUserTarget(
+  client: AxiosInstance,
+  ref: string
+): Promise<GetUserTargetResponse> {
+  const { data } = await client.get<GetUserTargetResponse>(`/user/${ref}/target`);
+  return data;
+}
+
+/**
+ * PATCH /user/:ref/target - update user targets. Ref can be numeric uid string (e.g. "45").
+ */
+export async function patchUserTarget(
+  client: AxiosInstance,
+  ref: string,
+  body: PatchUserTargetBody
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(`/user/${ref}/target`, body);
+  return data;
+}
+
+/**
+ * GET /user/:ref/preferences - get user preferences (theme, language, notifications, etc.).
+ */
+export async function getUserPreferences(
+  client: AxiosInstance,
+  ref: string
+): Promise<GetUserPreferencesResponse> {
+  const { data } = await client.get<GetUserPreferencesResponse>(`/user/${ref}/preferences`);
   return data;
 }

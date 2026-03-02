@@ -12,8 +12,8 @@ Minimal web app for LORO with Clerk auth and ATT (Attendance) button.
 
 3. Run:
    ```bash
-   npm install
-   npm run dev
+   yarn install
+   yarn dev
    ```
 
 ## Routes

@@ -11,6 +11,23 @@ import type { MonthlyMetricsResponse } from '@/api/types';
 const QUERY_KEY_PREFIX = ['att', 'metrics', 'monthly'] as const;
 
 /**
+ * Stable query key from body so the same (year, month, options) share one cache entry.
+ */
+function getMonthlyMetricsQueryKey(body: MonthlyMetricsBody) {
+    return [
+        ...QUERY_KEY_PREFIX,
+        body.year,
+        body.month,
+        body.branchId,
+        body.orgId,
+        body.includeCheckIns,
+        body.excludeOvertimeDates?.length
+            ? body.excludeOvertimeDates.slice().sort().join(',')
+            : null,
+    ] as const;
+}
+
+/**
  * Fetches monthly attendance metrics for all users (Admin/Manager/HR).
  */
 export function useMonthlyMetrics(
@@ -19,7 +36,7 @@ export function useMonthlyMetrics(
 ) {
     const client = useApiClient();
     return useQuery({
-        queryKey: [...QUERY_KEY_PREFIX, body],
+        queryKey: getMonthlyMetricsQueryKey(body),
         queryFn: async (): Promise<MonthlyMetricsResponse> => {
             return getMonthlyMetrics(client, body);
         },

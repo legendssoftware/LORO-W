@@ -1,19 +1,29 @@
-import * as React from "react"
+"use client"
+
+import { useSyncExternalStore } from "react"
 
 const MOBILE_BREAKPOINT = 768
+const TABLET_BREAKPOINT = 1024
+
+function subscribe(callback: () => void) {
+  window.addEventListener("resize", callback)
+  return () => window.removeEventListener("resize", callback)
+}
+
+function getSnapshot() {
+  return typeof window !== "undefined" ? window.innerWidth : 0
+}
+
+function getServerSnapshot() {
+  return 0
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  const width = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  return width > 0 && width < MOBILE_BREAKPOINT
+}
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
-
-  return !!isMobile
+export function useIsTabletOrSmaller() {
+  const width = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  return width > 0 && width < TABLET_BREAKPOINT
 }

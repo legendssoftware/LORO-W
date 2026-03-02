@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   /* Design tokens aligned with web app */
   --primary: oklch(0.205 0 0);
@@ -46,6 +48,7 @@
   --color-muted-foreground: hsl(var(--muted-foreground));
   --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-lora), ui-serif, Georgia, serif;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -84,25 +87,29 @@ body {
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Thin scrollbars (vertical and horizontal) – native overflow */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Thin purple scrollbars (vertical and horizontal) – native overflow */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--muted);
+  scrollbar-color: #ffffff #ffffff;
 }
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 1px;
+  height: 1px;
 }
 *::-webkit-scrollbar-track {
-  background: var(--muted);
-  border-radius: 3px;
+  background: #ffffff;
+  border-radius: 1px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: #ffffff;
+  border-radius: 1px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: #ffffff;
 }
 
 /* Center Clerk sign-in/sign-up modal on viewport (x and y) */
@@ -138,4 +145,15 @@ body > [id^="clerk"] {
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }

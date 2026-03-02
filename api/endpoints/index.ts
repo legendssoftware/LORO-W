@@ -12,3 +12,4 @@ export * from './payslips';
 export * from './sales-tips';
 export * from './products';
 export * from './resellers';
+export * from './map';

@@ -258,16 +258,23 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
+  maxItems,
 }: React.ComponentProps<"div"> &
   Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
     hideIcon?: boolean
     nameKey?: string
+    /** Limit legend to first N items. */
+    maxItems?: number
   }) {
   const { config } = useChart()
 
   if (!payload?.length) {
     return null
   }
+
+  const filteredPayload = payload
+    .filter((item) => item.type !== "none")
+    .slice(0, maxItems)
 
   return (
     <div
@@ -277,15 +284,20 @@ function ChartLegendContent({
         className
       )}
     >
-      {payload
-        .filter((item) => item.type !== "none")
-        .map((item) => {
+      {filteredPayload
+        .map((item, index) => {
           const key = `${nameKey || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
+          const payloadName =
+            item.payload && typeof item.payload === "object" && "name" in item.payload
+              ? (item.payload as { name?: string }).name
+              : (item as { name?: string }).name
+          const label = itemConfig?.label ?? payloadName
+
           return (
             <div
-              key={item.value}
+              key={payloadName ?? item.value ?? index}
               className={cn(
                 "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3"
               )}
@@ -300,7 +312,7 @@ function ChartLegendContent({
                   }}
                 />
               )}
-              {itemConfig?.label}
+              {label}
             </div>
           )
         })}

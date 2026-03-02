@@ -160,7 +160,12 @@ export function AttendanceStreakCalendar({ userRef }: AttendanceStreakCalendarPr
                           day.status === 'future' && 'opacity-50'
                         )}
                       >
-                        <span className="text-[10px] font-semibold leading-none text-white drop-shadow-sm">
+                        <span
+                          className={cn(
+                            'text-[13px] font-semibold leading-none drop-shadow-sm',
+                            day.status === 'future' ? 'text-black' : 'text-white'
+                          )}
+                        >
                           {day.dayNumber}
                         </span>
                         {getDayIcon(day)}
