@@ -374,7 +374,7 @@ function SummaryHoursModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-w-[90vw] max-h-[90vh] overflow-hidden">
+      <DialogContent className="flex flex-col max-w-[95vw] sm:max-w-[90vw] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
             Total Hours Per Employee
@@ -395,6 +395,13 @@ function SummaryHoursModal({
               <TableRow className="bg-muted/50">
                 <TableHead className="text-black font-medium">Employee Name</TableHead>
                 <TableHead className="text-black font-medium">Employee Code</TableHead>
+                <TableHead className="text-black font-medium">Today</TableHead>
+                <TableHead className="text-black font-medium">Check-in</TableHead>
+                <TableHead className="text-black font-medium">Check-out</TableHead>
+                <TableHead className="text-black font-medium">Working hours (today)</TableHead>
+                <TableHead className="text-black font-medium">Late (min)</TableHead>
+                <TableHead className="text-black font-medium">Early (min)</TableHead>
+                <TableHead className="text-black font-medium">Total shifts (month)</TableHead>
                 <TableHead className="text-black font-medium">Holiday</TableHead>
                 <TableHead className="text-black font-medium">Time over</TableHead>
                 <TableHead className="text-black font-medium">Sundays</TableHead>
@@ -431,6 +438,34 @@ function SummaryHoursModal({
                     </TableCell>
                     <TableCell className="text-black">
                       {user.hrID != null ? String(user.hrID) : '—'}
+                    </TableCell>
+                    <TableCell className="text-black">
+                      <span
+                        className={cn(
+                          'text-xs font-medium',
+                          user.isPresent ? 'text-green-600' : 'text-red-600'
+                        )}
+                      >
+                        {user.isPresent ? 'Present' : 'Absent'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.checkInTime ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.checkOutTime ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.workingHours != null && user.workingHours !== '' ? `${user.workingHours}h` : '—'}
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.lateMinutes != null && user.lateMinutes > 0 ? `${user.lateMinutes}` : '—'}
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.earlyMinutes != null && user.earlyMinutes > 0 ? `${user.earlyMinutes}` : '—'}
+                    </TableCell>
+                    <TableCell className="text-black tabular-nums">
+                      {user.totalShifts != null ? String(user.totalShifts) : '—'}
                     </TableCell>
                     <TableCell className="text-black">—</TableCell>
                     <TableCell className="text-black">

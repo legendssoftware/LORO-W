@@ -16,6 +16,7 @@ export function useSignOut() {
   function performSignOut() {
     queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
     useSessionStore.getState().endSession();
+    // Redirect to landing page (/) so user never lands on app routes like /visits
     signOut({ redirectUrl: '/' });
   }
 

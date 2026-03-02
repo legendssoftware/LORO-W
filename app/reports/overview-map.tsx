@@ -1,21 +1,21 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
+import { useMemo, useState, useCallback, createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   MapContainer,
   TileLayer,
-  CircleMarker,
+  Marker,
   Popup,
   useMap,
 } from 'react-leaflet';
+import { divIcon } from 'leaflet';
 import {
   Building2,
   MapPin,
   Clock,
-  Play,
+  Square,
   Handshake,
-  Footprints,
   FileCheck,
   ClipboardList,
   DollarSign,
@@ -38,6 +38,14 @@ import { cn } from '@/lib/utils';
 
 import 'leaflet/dist/leaflet.css';
 
+/* Override Leaflet divIcon so our filled circle + icon show correctly */
+const customMarkerStyles = `
+  .custom-marker-icon.leaflet-div-icon {
+    border: none !important;
+    background: transparent !important;
+  }
+`;
+
 const DEFAULT_ZOOM = 10;
 const DEFAULT_CENTER: [number, number] = [-26.2041, 28.0473]; // Johannesburg fallback
 
@@ -46,12 +54,12 @@ const MARKER_TYPE_CONFIG: Record<
   { color: string; label: string; icon: LucideIcon }
 > = {
   'check-in': { color: '#2563eb', label: 'Attendance (current)', icon: Clock },
-  'shift-start': { color: '#16a34a', label: 'Shift start', icon: Play },
-  'shift-end': { color: '#dc2626', label: 'Shift end', icon: Play },
+  'shift-start': { color: '#16a34a', label: 'Shift start', icon: Clock },
+  'shift-end': { color: '#dc2626', label: 'Shift end', icon: Square },
   lead: { color: '#16a34a', label: 'Lead', icon: Handshake },
   client: { color: '#7c3aed', label: 'Client', icon: Building2 },
   competitor: { color: '#dc2626', label: 'Competitor', icon: Building2 },
-  'check-in-visit': { color: '#4f46e5', label: 'Visit', icon: Footprints },
+  'check-in-visit': { color: '#4f46e5', label: 'Visit', icon: MapPin },
   quotation: { color: '#d97706', label: 'Quotation', icon: FileCheck },
   journal: { color: '#64748b', label: 'Journal', icon: ClipboardList },
   task: { color: '#0891b2', label: 'Task', icon: ClipboardList },
@@ -59,6 +67,46 @@ const MARKER_TYPE_CONFIG: Record<
   'break-start': { color: '#65a30d', label: 'Break start', icon: Coffee },
   'break-end': { color: '#ca8a04', label: 'Break end', icon: Coffee },
 };
+
+const MARKER_ICON_SIZE = 24;
+const iconCache = new Map<string, ReturnType<typeof divIcon>>();
+
+function createMarkerIcon(markerType: string): ReturnType<typeof divIcon> {
+  const cached = iconCache.get(markerType);
+  if (cached) return cached;
+  const config = getMarkerConfig(markerType);
+  const Icon = config.icon;
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      {
+        className: 'marker-circle',
+        style: {
+          backgroundColor: config.color,
+          width: MARKER_ICON_SIZE,
+          height: MARKER_ICON_SIZE,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      },
+      createElement(Icon, {
+        size: 14,
+        color: 'white',
+        strokeWidth: 2.5,
+      })
+    )
+  );
+  const icon = divIcon({
+    html,
+    className: 'custom-marker-icon',
+    iconSize: [MARKER_ICON_SIZE, MARKER_ICON_SIZE],
+    iconAnchor: [MARKER_ICON_SIZE / 2, MARKER_ICON_SIZE / 2],
+  });
+  iconCache.set(markerType, icon);
+  return icon;
+}
 
 function getMarkerConfig(markerType: string) {
   return (
@@ -215,24 +263,16 @@ function MapContent({
         ) {
           return null;
         }
-        const config = getMarkerConfig(marker.markerType);
         return (
-          <CircleMarker
+          <Marker
             key={String(marker.id)}
-            center={pos as [number, number]}
-            pathOptions={{
-              fillColor: config.color,
-              color: config.color,
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.8,
-            }}
-            radius={8}
+            position={pos as [number, number]}
+            icon={createMarkerIcon(marker.markerType)}
           >
             <Popup>
               <MarkerDetailContent marker={marker} />
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })}
       <LocationButton />
@@ -313,6 +353,7 @@ function OverviewMapInner() {
 
   return (
     <Card className="overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: customMarkerStyles }} />
       <CardHeader className="relative z-[9999] pb-2">
         <CardTitle>Overview</CardTitle>
         <div className="flex flex-wrap items-center gap-2 pt-2">

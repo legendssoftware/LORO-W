@@ -8,6 +8,15 @@ export function isCoordLike(s: string): boolean {
   return /^-?\d{1,3}\.?\d*\s*,\s*-?\d{1,3}\.?\d*$/.test(t);
 }
 
+/** Parse "lat,lng" string to [lat, lng]; returns null if invalid or missing. */
+export function parseCoordString(s: string | null | undefined): [number, number] | null {
+  const t = (s ?? '').trim();
+  if (!t || !isCoordLike(t)) return null;
+  const parts = t.split(',').map((p) => parseFloat(p.trim()));
+  if (parts.length < 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return null;
+  return [parts[0], parts[1]];
+}
+
 /** Google Maps URL for coordinates or address search. */
 export function buildMapsUrl(location: string): string {
   const t = location.trim();

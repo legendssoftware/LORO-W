@@ -11,6 +11,12 @@ import type {
 
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
+/** Query key prefix for check-ins list. Use for invalidateQueries/refetchQueries after start, edit, or end visit. */
+export const CHECK_INS_LIST_QUERY_KEY = ['check-ins'] as const;
+
+/** Query key for current user check-in status (used for invalidate/refetch after start or end visit). */
+export const CHECK_IN_STATUS_QUERY_KEY = ['check-in-status'] as const;
+
 async function fetchCheckIns(
   token: string | null,
   params?: UseCheckInsParams
@@ -36,7 +42,7 @@ export function useCheckIns(
 ): UseCheckInsResult {
   const { getToken } = useAuth();
   const query = useQuery({
-    queryKey: ['check-ins', params?.startDate, params?.endDate, params?.userUid],
+    queryKey: [...CHECK_INS_LIST_QUERY_KEY, params?.startDate, params?.endDate, params?.userUid],
     queryFn: async () => {
       const token = await getToken();
       return fetchCheckIns(token, params);
@@ -62,7 +68,7 @@ export function useCheckInsReport(
 export function useCheckInStatus(options?: { enabled?: boolean }) {
   const { getToken } = useAuth();
   return useQuery({
-    queryKey: ['check-in-status'],
+    queryKey: CHECK_IN_STATUS_QUERY_KEY,
     queryFn: async (): Promise<CheckInStatusResponse> => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');

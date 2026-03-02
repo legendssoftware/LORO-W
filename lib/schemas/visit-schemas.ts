@@ -85,6 +85,7 @@ const visitFormBaseSchema = z.object({
   client: z.object({ uid: z.number() }).optional(),
   contactAddress: z.record(z.string(), z.string()).optional(),
   media: z.array(z.string()).optional(),
+  meetingLink: z.string().max(2048).optional(),
 });
 
 /** Schema for end-visit form fields (client-side validation). */

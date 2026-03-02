@@ -133,7 +133,9 @@ export interface VisitListItem {
   checkInTime: string;
   checkOutTime?: string | null;
   duration?: string | null;
+  /** Check-in location; when captured via geolocation this is "lat,lng" (e.g. "-26.2041,28.0473"). */
   checkInLocation?: string;
+  /** Check-out location; when captured via geolocation this is "lat,lng". */
   checkOutLocation?: string | null;
   checkInPhoto?: string | null;
   checkOutPhoto?: string | null;

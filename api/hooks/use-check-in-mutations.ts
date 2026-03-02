@@ -2,6 +2,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
+import {
+  CHECK_INS_LIST_QUERY_KEY,
+  CHECK_IN_STATUS_QUERY_KEY,
+} from './use-check-ins';
 import type {
   CreateCheckInPayload,
   CreateCheckOutPayload,
@@ -11,6 +15,14 @@ import type {
 } from '@/api/types/visits';
 
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+/** Invalidate and refetch visits list and check-in status after start, edit, or end visit. */
+function invalidateAndRefetchVisitQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: CHECK_INS_LIST_QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: CHECK_IN_STATUS_QUERY_KEY });
+  void queryClient.refetchQueries({ queryKey: CHECK_INS_LIST_QUERY_KEY });
+  void queryClient.refetchQueries({ queryKey: CHECK_IN_STATUS_QUERY_KEY });
+}
 
 async function getAuthFetch(token: string | null) {
   if (!token) throw new Error('Not authenticated');
@@ -41,8 +53,7 @@ export function useCheckInMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['check-ins'] });
-      queryClient.invalidateQueries({ queryKey: ['check-in-status'] });
+      invalidateAndRefetchVisitQueries(queryClient);
     },
   });
 }
@@ -64,8 +75,7 @@ export function useCheckOutMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['check-ins'] });
-      queryClient.invalidateQueries({ queryKey: ['check-in-status'] });
+      invalidateAndRefetchVisitQueries(queryClient);
     },
   });
 }
@@ -86,8 +96,7 @@ export function useUpdateVisitDetailsMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['check-ins'] });
-      queryClient.invalidateQueries({ queryKey: ['check-in-status'] });
+      invalidateAndRefetchVisitQueries(queryClient);
     },
   });
 }

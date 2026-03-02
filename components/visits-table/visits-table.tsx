@@ -335,8 +335,23 @@ const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
     label: 'Contact image',
     render: (c) => {
       if (c.contactImage?.trim()) return renderPhotoCell(c.contactImage);
-      const first = c.media?.[0];
-      if (first?.startsWith('http')) return renderPhotoCell(first);
+      const firstImageUrl = c.media?.find((u) => u?.startsWith('http') && isImageUrl(u));
+      if (firstImageUrl) return renderPhotoCell(firstImageUrl);
+      const firstUrl = c.media?.find((u) => u?.startsWith('http'));
+      if (c.media?.length && firstUrl) {
+        const label = c.media.length === 1 ? 'View file' : `${c.media.length} files`;
+        return (
+          <a
+            href={firstUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn('text-xs', VISITS_TABLE_LINK_CLASS)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {label}
+          </a>
+        );
+      }
       if (c.media?.length) return <span className="text-muted-foreground text-xs">{c.media.length} file{c.media.length !== 1 ? 's' : ''}</span>;
       return '-';
     },
@@ -1210,13 +1225,6 @@ function VisitDetailDialog({
                     </div>
                   </div>
                   <div>
-                    <Label>Meeting link</Label>
-                    <Input
-                      value={editForm.meetingLink ?? ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
-                    />
-                  </div>
-                  <div>
                     <Label>Method of contact</Label>
                     <Select
                       value={editForm.methodOfContact ?? '_none'}
@@ -1230,6 +1238,13 @@ function VisitDetailDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>Meeting link</Label>
+                    <Input
+                      value={editForm.meetingLink ?? ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <Label>Building type</Label>
@@ -1312,10 +1327,10 @@ function VisitDetailDialog({
           </div>
           {isEditing && (
             <DialogFooter className="gap-3">
-              <Button variant="outline" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
+              <Button variant="cancel" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+              <Button variant="success" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
                 {updateMutation.isPending && <Loader2Icon className="size-4 animate-spin mr-2" />}
                 Save
               </Button>

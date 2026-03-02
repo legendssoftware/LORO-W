@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider afterSignOutUrl="/">
       <html lang="en" className="light" suppressHydrationWarning>
         <head>
           <link rel="preload" as="image" href="/images/covers/2.webp" />

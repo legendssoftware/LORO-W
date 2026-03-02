@@ -1,5 +1,5 @@
-import { SignUp } from '@clerk/nextjs';
 import { AuthPageShell } from '@/components/auth-page-shell';
+import { SignUpForm } from '@/components/sign-up-form';
 
 export const metadata = {
   title:
@@ -11,20 +11,7 @@ export default function SignUpPage() {
   return (
     <AuthPageShell>
       <div className="flex w-full max-w-md flex-col items-center justify-center gap-4">
-        <SignUp
-          appearance={{
-            variables: {
-              colorPrimary: '#8B5CF6',
-            },
-            elements: {
-              rootBox: 'mx-auto',
-              card: 'shadow-xl',
-            },
-          }}
-          signInUrl="/sign-in"
-          forceRedirectUrl="/dashboard"
-          fallbackRedirectUrl="/dashboard"
-        />
+        <SignUpForm />
       </div>
     </AuthPageShell>
   );

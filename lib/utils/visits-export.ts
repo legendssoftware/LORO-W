@@ -128,6 +128,36 @@ export function extractRegionFromVisit(c: VisitExportItem): string {
   return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
 }
 
+/**
+ * Region group key for filter dropdown: "City, State, Country" (no postal code).
+ * Same city/area codes collapse into one option; multi-country is clear (e.g. "Benoni, Gauteng, South Africa", "Gaborone, Botswana").
+ */
+export function getRegionGroupKey(c: VisitExportItem): string {
+  const addr: CheckInContactAddress | null | undefined =
+    c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
+  if (!addr) return 'Not set';
+
+  const cityLabel = (addr.city ?? addr.state ?? '').trim();
+  const stateLabel = (addr.state ?? '').trim();
+  const countryLabel = (addr.country ?? '').trim();
+  if (cityLabel || stateLabel || countryLabel) {
+    const parts = [cityLabel, stateLabel, countryLabel].filter(Boolean);
+    if (parts.length > 1 && parts[0] === parts[1]) parts.splice(1, 1);
+    return parts.join(', ') || 'Not set';
+  }
+
+  const formatted = (addr.formattedAddress ?? '').trim();
+  if (!formatted) return 'Not set';
+  const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return 'Not set';
+  const secondLast = parts[parts.length - 2];
+  const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
+  const cityPart = (codePart ? parts[parts.length - 3] ?? '' : secondLast).trim();
+  const countryPart = (parts[parts.length - 1] ?? '').trim();
+  const out = [cityPart, countryPart].filter(Boolean).join(', ');
+  return out || 'Not set';
+}
+
 export function formatMethodOfContact(methodOfContact?: string | null): string {
   if (!methodOfContact) return '-';
   return METHOD_OF_CONTACT_LABELS[methodOfContact] ?? methodOfContact.replace(/_/g, ' ');

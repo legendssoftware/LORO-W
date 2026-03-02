@@ -21,11 +21,14 @@ export interface VisitsFiltersState {
   searchQuery: string;
 }
 
+export type VisitsViewMode = 'table' | 'map';
+
 export interface VisitsUIState {
   dateRangePopoverOpen: boolean;
   methodModalOpen: boolean;
   endVisitOpen: boolean;
   followUpPickerOpen: boolean;
+  viewMode: VisitsViewMode;
 }
 
 export interface VisitsFormState {
@@ -45,6 +48,7 @@ interface VisitsStore extends VisitsFiltersState, VisitsUIState, VisitsFormState
   setMethodModalOpen: (open: boolean) => void;
   setEndVisitOpen: (open: boolean) => void;
   setFollowUpPickerOpen: (open: boolean) => void;
+  setViewMode: (mode: VisitsViewMode) => void;
   setSelectedMethod: (method: MethodOfContact | null) => void;
   setSelectedClient: (client: ClientListItem | null) => void;
   setClientSearch: (search: string) => void;
@@ -63,6 +67,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   methodModalOpen: false,
   endVisitOpen: false,
   followUpPickerOpen: false,
+  viewMode: 'table' as VisitsViewMode,
   selectedMethod: null,
   selectedClient: null,
   clientSearch: '',
@@ -77,6 +82,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   setMethodModalOpen: (open) => set({ methodModalOpen: open }),
   setEndVisitOpen: (open) => set({ endVisitOpen: open }),
   setFollowUpPickerOpen: (open) => set({ followUpPickerOpen: open }),
+  setViewMode: (mode) => set({ viewMode: mode }),
   setSelectedMethod: (method) => set({ selectedMethod: method }),
   setSelectedClient: (client) => set({ selectedClient: client }),
   setClientSearch: (search) => set({ clientSearch: search }),
