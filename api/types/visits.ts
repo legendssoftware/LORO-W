@@ -105,6 +105,8 @@ export interface UpdateVisitDetailsPayload {
   buildingType?: string;
   contactMade?: boolean;
   media?: string[];
+  /** Lead UID to link this visit to (e.g. after converting visit to lead). */
+  leadUid?: number;
 }
 
 export interface CheckInStatusResponse {

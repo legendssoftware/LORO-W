@@ -41,5 +41,12 @@ export { useMonthlyAttendance } from './use-monthly-attendance';
 export { usePayrollHoursAll } from './use-payroll-hours-all';
 export { useDailyOverview } from './use-daily-overview';
 export { useCheckIns, useCheckInsReport, useCheckInStatus } from './use-check-ins';
-export { useLeads, useLeadsForUser, useLeadsReport, useLead } from './use-leads';
+export {
+  useLeads,
+  useLeadsForUser,
+  useLeadsReport,
+  useLead,
+  useCreateLeadMutation,
+  useImportLeadsMutation,
+} from './use-leads';
 export { useLeaves } from './use-leaves';
