@@ -12,14 +12,8 @@ import {
 export function LeadsContent() {
   return (
     <div className="h-full overflow-auto">
-      <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
+      <main className="container py-8">
         <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-            <p className="text-muted-foreground">
-              Manage and track your sales leads
-            </p>
-          </div>
           <Card className="mx-auto flex w-full max-w-2xl flex-col py-16">
             <CardHeader className="space-y-4 px-8 sm:px-12">
               <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-muted">
