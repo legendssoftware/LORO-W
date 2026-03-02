@@ -259,7 +259,13 @@ export function VisitsContent() {
     limit: 100,
     search: clientSearch.trim() || undefined,
   });
-  const clientsList: ClientListItem[] = clientsQuery.data ?? [];
+  const clientsFromApi: ClientListItem[] = clientsQuery.data ?? [];
+  /** Include selected client in list when search would otherwise hide them (so Select value stays valid). */
+  const clientsList: ClientListItem[] = useMemo(() => {
+    if (!selectedClient) return clientsFromApi;
+    const inList = clientsFromApi.some((c) => c.uid === selectedClient.uid);
+    return inList ? clientsFromApi : [selectedClient, ...clientsFromApi];
+  }, [clientsFromApi, selectedClient]);
 
   const statusQuery = useCheckInStatus({ enabled: mounted });
   const checkInsQuery = useCheckIns(
@@ -747,7 +753,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select type of business" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select type of business</SelectItem>
                   {TYPE_OF_BUSINESS_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
@@ -780,7 +786,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select client if you visited an existing client" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   <SelectItem value="_none">No client</SelectItem>
                   {clientsQuery.isLoading ? (
                     <SelectItem value="_loading" disabled>
@@ -993,7 +999,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select position</SelectItem>
                   {PERSON_POSITION_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
@@ -1029,7 +1035,7 @@ export function VisitsContent() {
                       : 'Pick date'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[10001]" align="start">
                   <Calendar
                     mode="single"
                     selected={
@@ -1070,7 +1076,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   {QUOTATION_STATUS_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
@@ -1087,7 +1093,7 @@ export function VisitsContent() {
                   onValueChange={(v) => setEndForm((f) => ({ ...f, salesCurrency: v }))}
                 >
                   <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[10001]">
                     {CURRENCY_OPTIONS.map((o) => (
                       <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
                     ))}
@@ -1120,7 +1126,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select method</SelectItem>
                   {METHOD_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
@@ -1143,7 +1149,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select site type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select site type</SelectItem>
                   {SITE_TYPE_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
@@ -1337,7 +1343,7 @@ export function VisitsContent() {
                         : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto min-w-[480px] p-0 z-[9999]" align="start">
+                <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
                   <div className="p-2 flex flex-col gap-3">
                     <div className="flex items-center gap-2">
                       <Button
@@ -1410,7 +1416,7 @@ export function VisitsContent() {
               <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                 <SelectValue placeholder="All regions" />
               </SelectTrigger>
-              <SelectContent className="z-[9999]">
+              <SelectContent className="z-[10001]">
                 <SelectItem value="all">All regions</SelectItem>
                 {uniqueRegions.map((region) => (
                   <SelectItem key={region} value={region}>
@@ -1426,7 +1432,7 @@ export function VisitsContent() {
               <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                 <SelectValue placeholder="All business types" />
               </SelectTrigger>
-              <SelectContent className="z-[9999]">
+              <SelectContent className="z-[10001]">
                 <SelectItem value="all">All business types</SelectItem>
                 {uniqueBusinessTypes.map((bt) => (
                   <SelectItem key={bt} value={bt}>

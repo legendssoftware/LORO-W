@@ -970,7 +970,7 @@ function VisitDetailDialog({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select client" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[min(320px,50vh)]">
+                      <SelectContent className="max-h-[min(320px,50vh)] z-[10001]">
                         <SelectItem value="_none">No client</SelectItem>
                         {clientsQuery.isLoading ? (
                           <SelectItem value="_loading" disabled>Loading…</SelectItem>
@@ -1137,7 +1137,7 @@ function VisitDetailDialog({
                       onValueChange={(v) => setEditForm((f) => ({ ...f, personSeenPosition: v === '_none' ? undefined : v }))}
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
                         {PERSON_POSITION_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -1164,7 +1164,7 @@ function VisitDetailDialog({
                             : 'Pick date'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent>
+                      <PopoverContent className="z-[10001]">
                         <Calendar
                           mode="single"
                           selected={editForm.followUp && /^\d{4}-\d{2}-\d{2}/.test(editForm.followUp) ? new Date(editForm.followUp) : undefined}
@@ -1195,7 +1195,7 @@ function VisitDetailDialog({
                       onValueChange={(v) => setEditForm((f) => ({ ...f, quotationStatus: v === '_none' ? undefined : v }))}
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10001]">
                         {QUOTATION_STATUS_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                         ))}
@@ -1210,7 +1210,7 @@ function VisitDetailDialog({
                         onValueChange={(v) => setEditForm((f) => ({ ...f, salesCurrency: v }))}
                       >
                         <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[10001]">
                           {CURRENCY_OPTIONS.map((o) => (
                             <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
                           ))}
@@ -1231,7 +1231,7 @@ function VisitDetailDialog({
                       onValueChange={(v) => setEditForm((f) => ({ ...f, methodOfContact: v === '_none' ? undefined : v }))}
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
                         {METHOD_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -1253,7 +1253,7 @@ function VisitDetailDialog({
                       onValueChange={(v) => setEditForm((f) => ({ ...f, buildingType: v === '_none' ? undefined : v }))}
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
                         {SITE_TYPE_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -1268,7 +1268,7 @@ function VisitDetailDialog({
                       onValueChange={(v) => setEditForm((f) => ({ ...f, businessType: v === '_none' ? undefined : v }))}
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
                         {TYPE_OF_BUSINESS_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
