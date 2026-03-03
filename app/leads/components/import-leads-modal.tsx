@@ -19,7 +19,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUsers } from '@/api/hooks';
 import { useImportLeadsMutation } from '@/api/hooks';
-import { Upload as UploadIcon, Download, ChevronDown } from 'lucide-react';
+import type { LeadImportResponse } from '@/api/types/leads';
+import { Upload as UploadIcon, Download, ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Loader2Icon, XIcon } from '@/lib/icons';
 import type { UserListItem } from '@/api/endpoints/user';
 import toast from 'react-hot-toast';
@@ -180,6 +181,7 @@ export function ImportLeadsModal({
   const [fileValidationError, setFileValidationError] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [userPopoverOpen, setUserPopoverOpen] = useState(false);
+  const [importResult, setImportResult] = useState<LeadImportResponse | null>(null);
 
   const usersQuery = useUsers({ limit: 200, enabled: open });
   const users: UserListItem[] = usersQuery.data ?? [];
@@ -223,21 +225,8 @@ export function ImportLeadsModal({
           assignedUserIds: selectedUserIds.map(Number),
         },
       });
-      if (data.errors?.length && (data.failed ?? 0) > 0) {
-        const imported = data.imported ?? 0;
-        const failed = data.failed ?? 0;
-        const firstErrors = data.errors.slice(0, 3).map((e) => `Row ${e.row}: ${e.error}`);
-        toast.success(
-          `Imported ${imported} leads. ${failed} failed.${firstErrors.length ? ` ${firstErrors.join('; ')}` : ''}`
-        );
-      } else {
-        toast.success('Leads imported successfully');
-      }
-      onOpenChange(false);
-      setSelectedFile(null);
-      setFileValidationError(null);
-      setSelectedUserIds([]);
-      onSuccess?.();
+      setImportResult(data);
+      toast.success(data.success ? 'Import completed' : 'Import finished with errors');
     } catch (err: unknown) {
       const axiosData = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data
@@ -250,8 +239,18 @@ export function ImportLeadsModal({
     }
   };
 
+  const handleDone = () => {
+    setImportResult(null);
+    setSelectedFile(null);
+    setFileValidationError(null);
+    setSelectedUserIds([]);
+    onOpenChange(false);
+    onSuccess?.();
+  };
+
   const handleOpenChange = (next: boolean) => {
     if (!next) {
+      setImportResult(null);
       setSelectedFile(null);
       setFileValidationError(null);
       setSelectedUserIds([]);
@@ -260,23 +259,33 @@ export function ImportLeadsModal({
     onOpenChange(next);
   };
 
+  const showSummary = importResult != null;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[33.6rem]" showCloseButton>
         <DialogHeader>
-          <DialogTitle>Import leads</DialogTitle>
+          <DialogTitle>{showSummary ? 'Import summary' : 'Import leads'}</DialogTitle>
           <DialogDescription>
-            Upload a CSV file and assign the imported leads to a user.
+            {showSummary
+              ? 'Review the results of your leads import.'
+              : 'Upload a CSV file and assign the imported leads to a user.'}
           </DialogDescription>
-          <button
-            type="button"
-            onClick={downloadSampleCsv}
-            className="mt-1 flex items-center gap-1.5 text-sm text-purple-600 underline underline-offset-4 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <Download className="size-3.5" />
-            Download sample CSV
-          </button>
+          {!showSummary && (
+            <button
+              type="button"
+              onClick={downloadSampleCsv}
+              className="mt-1 flex items-center gap-1.5 text-sm text-purple-600 underline underline-offset-4 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <Download className="size-3.5" />
+              Download sample CSV
+            </button>
+          )}
         </DialogHeader>
+        {showSummary && importResult ? (
+          <ImportSummaryView result={importResult} onDone={handleDone} />
+        ) : (
+        <>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>File</Label>
@@ -428,7 +437,86 @@ export function ImportLeadsModal({
             )}
           </Button>
         </DialogFooter>
+        </>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImportSummaryView({
+  result,
+  onDone,
+}: {
+  result: LeadImportResponse;
+  onDone: () => void;
+}) {
+  const imported = result.imported ?? 0;
+  const failed = result.failed ?? 0;
+  const total = imported + failed;
+  const allocations = result.assignments?.length ?? 0;
+  const errors = result.errors ?? [];
+  const message = result.message;
+
+  return (
+    <div className="grid gap-4 py-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Imported</p>
+          <p className="text-lg font-semibold text-green-600">{imported}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Failed</p>
+          <p className="text-lg font-semibold text-destructive">{failed}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Total rows</p>
+          <p className="text-lg font-semibold">{total}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Allocations</p>
+          <p className="text-lg font-semibold">{allocations}</p>
+        </div>
+      </div>
+      {message && (
+        <div
+          className={cn(
+            'flex items-start gap-2 rounded-lg border px-3 py-2',
+            result.success ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30' : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
+          )}
+        >
+          {result.success ? (
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-600" />
+          ) : (
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+          )}
+          <p className="text-sm text-foreground">{message}</p>
+        </div>
+      )}
+      {errors.length > 0 && (
+        <div className="grid gap-2">
+          <Label>Errors ({errors.length})</Label>
+          <div className="max-h-40 overflow-y-auto rounded-md border border-border bg-muted/30 px-3 py-2">
+            <ul className="space-y-1 text-sm">
+              {errors.slice(0, 10).map((e, i) => (
+                <li key={i} className="text-destructive">
+                  Row {e.row}: {e.error}
+                </li>
+              ))}
+              {errors.length > 10 && (
+                <li className="text-muted-foreground">
+                  … and {errors.length - 10} more
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+      <DialogFooter>
+        <Button variant="success" onClick={onDone}>
+          Done
+        </Button>
+      </DialogFooter>
+    </div>
   );
 }
