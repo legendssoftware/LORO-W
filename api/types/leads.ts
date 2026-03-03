@@ -89,6 +89,7 @@ export interface LeadImportResponse {
   failed: number;
   errors: Array<{ row: number; error: string }>;
   assignments?: Array<{ leadId: number; userId: number; userName: string }>;
+  message?: string;
 }
 
 /** Payload for POST /leads (create lead). branch is required; others optional. Aligned with APK and CreateLeadDto. */
