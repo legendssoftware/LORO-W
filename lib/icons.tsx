@@ -495,6 +495,36 @@ export function BriefcaseIcon(p: { className?: string; size?: number }) {
 /** Handshake / leads / partnership (from Lucide) */
 export { Handshake as HandshakeIcon } from 'lucide-react';
 
+/** Mail / email (from Lucide) */
+export { Mail as MailIcon } from 'lucide-react';
+
+/** Alert circle / urgent (from Lucide) */
+export { AlertCircle as AlertCircleIcon } from 'lucide-react';
+
+/** Arrow up (from Lucide) */
+export { ArrowUp as ArrowUpIcon } from 'lucide-react';
+
+/** Arrow down (from Lucide) */
+export { ArrowDown as ArrowDownIcon } from 'lucide-react';
+
+/** Minus (from Lucide) */
+export { Minus as MinusIcon } from 'lucide-react';
+
+/** Globe / website (from Lucide) */
+export { Globe as GlobeIcon } from 'lucide-react';
+
+/** Video / video call (from Lucide) */
+export { Video as VideoIcon } from 'lucide-react';
+
+/** Flame / hot (from Lucide) */
+export { Flame as FlameIcon } from 'lucide-react';
+
+/** Snowflake / frozen (from Lucide) */
+export { Snowflake as SnowflakeIcon } from 'lucide-react';
+
+/** Timer / clock for business hours (from Lucide) */
+export { Clock as ClockIcon } from 'lucide-react';
+
 /** Wifi / connectivity (diagram center) */
 export function WifiIcon(p: { className?: string; size?: number }) {
   return (

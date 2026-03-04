@@ -12,10 +12,12 @@ import {
 } from "@/lib/access";
 import {
   BarChart3Icon,
+  CheckSquareIcon,
   HandshakeIcon,
   KnowledgeIcon,
   LayoutDashboardIcon,
   MapPinIcon,
+  UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,8 @@ const ROUTE_ICONS: Record<
   "/reports": BarChart3Icon,
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,
+  "/planning": CheckSquareIcon,
+  "/staff": UsersIcon,
 };
 
 export function AppSidebar() {

@@ -49,4 +49,10 @@ export {
   useCreateLeadMutation,
   useImportLeadsMutation,
 } from './use-leads';
+export {
+  useTasks,
+  useTask,
+  useCreateTaskMutation,
+  useUpdateTaskMutation,
+} from './use-tasks';
 export { useLeaves } from './use-leaves';

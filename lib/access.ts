@@ -4,7 +4,7 @@
  */
 
 /** Paths any signed-in user with "standard" role can access (view-only scope) */
-export const STANDARD_USER_PATHS = ["/dashboard", "/visits", "/leads"] as const;
+export const STANDARD_USER_PATHS = ["/dashboard", "/visits", "/leads", "/planning"] as const;
 
 export type StandardUserPath = (typeof STANDARD_USER_PATHS)[number];
 
@@ -105,8 +105,10 @@ export interface AllowedRoute {
  */
 export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
+    { path: "/staff", label: "Staff" },
     { path: "/visits", label: "Visits" },
     { path: "/leads", label: "Leads" },
+    { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
 ];
 
@@ -135,6 +137,7 @@ export function getAllowedRoutes(
         { path: "/dashboard", label: "Home" },
         { path: "/visits", label: "Visits" },
         { path: "/leads", label: "Leads" },
+        { path: "/planning", label: "Planning" },
     ];
 
     if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {
