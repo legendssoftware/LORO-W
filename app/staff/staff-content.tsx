@@ -27,6 +27,7 @@ import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { getExpectedHoursByDate, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
+import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ export function StaffContent() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [detailUser, setDetailUser] = useState<ReportCardUser | null>(null);
+  const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   const singleDateStr = format(today, 'yyyy-MM-dd');
@@ -102,15 +104,17 @@ export function StaffContent() {
     const metrics = payrollQuery.data?.userMetrics ?? [];
     return metrics.map((m) => {
       const card = cardUsersByUserId.get(m.userId);
+      const monthly = monthlyByUserId.get(m.userId);
       return {
         userId: m.userId,
         name: card?.name ?? m.userName,
         photoURL: card?.photoURL ?? undefined,
         empCode: card?.hrID ?? null,
         payrollHours: m.payrollHours,
+        totalHours: monthly?.totalHours ?? null,
       };
     });
-  }, [payrollQuery.data?.userMetrics, cardUsersByUserId]);
+  }, [payrollQuery.data?.userMetrics, cardUsersByUserId, monthlyByUserId]);
 
   const statusFilteredUsers = useMemo(() => {
     if (statusFilter === 'all') return cardUsers;
@@ -262,6 +266,10 @@ export function StaffContent() {
                   onSettingsClick={(e) => {
                     e.stopPropagation();
                   }}
+                  onClockClick={(e) => {
+                    e.stopPropagation();
+                    setAttendanceModalUser(user);
+                  }}
                 />
               ))}
             </div>
@@ -278,6 +286,11 @@ export function StaffContent() {
         user={detailUser}
         endDate={today}
         onClose={() => setDetailUser(null)}
+      />
+
+      <UserAttendanceRecordsModal
+        user={attendanceModalUser}
+        onClose={() => setAttendanceModalUser(null)}
       />
 
       <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
@@ -306,13 +319,21 @@ export function StaffContent() {
                     <TableHead>Holiday Hours</TableHead>
                     <TableHead>Time Over</TableHead>
                     <TableHead>Sundays</TableHead>
-                    <TableHead>Total Hours</TableHead>
-                    <TableHead>Payroll Hours</TableHead>
+                    <TableHead>
+                      <span>Total Hours ({format(new Date(yearForSingle, monthForSingle - 1), 'MMM yyyy')})</span>
+                      <span className="text-muted-foreground text-xs font-normal block">this mnth</span>
+                    </TableHead>
+                    <TableHead>
+                      Payroll Hours
+                      {payrollQuery.data.period?.startDate && payrollQuery.data.period?.endDate
+                        ? ` (${format(new Date(payrollQuery.data.period.startDate), 'd MMM')} - ${format(new Date(payrollQuery.data.period.endDate), 'd MMM')})`
+                        : ''}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payrollTableRows.map((row) => (
-                    <TableRow key={row.userId}>
+                  {payrollTableRows.map((row, index) => (
+                    <TableRow key={row.userId} className={index % 2 === 1 ? 'bg-muted/50' : undefined}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="size-8 shrink-0">
@@ -334,6 +355,11 @@ export function StaffContent() {
                       <TableCell className="text-muted-foreground">—</TableCell>
                       <TableCell className="text-muted-foreground">—</TableCell>
                       <TableCell className="text-muted-foreground">—</TableCell>
+                      <TableCell
+                        className={row.totalHours != null ? 'tabular-nums font-medium' : 'text-muted-foreground'}
+                      >
+                        {row.totalHours != null ? `${row.totalHours}h` : '—'}
+                      </TableCell>
                       <TableCell className="tabular-nums font-medium">{row.payrollHours}h</TableCell>
                     </TableRow>
                   ))}

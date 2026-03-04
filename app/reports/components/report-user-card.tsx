@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SettingsIcon } from '@/lib/icons';
-import { Smartphone, Laptop } from 'lucide-react';
+import { Smartphone, Laptop, Clock } from 'lucide-react';
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -128,11 +128,13 @@ export function ReportUserCard({
   endDate,
   onClick,
   onSettingsClick,
+  onClockClick,
 }: {
   user: ReportCardUser;
   endDate: Date;
   onClick: () => void;
   onSettingsClick: (e: React.MouseEvent) => void;
+  onClockClick?: (e: React.MouseEvent) => void;
 }) {
   const isMobile = useIsMobile();
   const expectedByNow = getExpectedHoursByDate(endDate);
@@ -205,14 +207,29 @@ export function ReportUserCard({
                 </p>
               </div>
             </div>
-            <Link
-              href={`/reports/users/${user.ref}/settings`}
-              onClick={onSettingsClick}
-              className="shrink-0 rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
-              aria-label="User settings"
-            >
-              <SettingsIcon className={isMobile ? 'size-3.5' : 'size-4'} />
-            </Link>
+            <div className="flex shrink-0 items-center gap-1">
+              {onClockClick && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClockClick(e);
+                  }}
+                  className="rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
+                  aria-label="View attendance records"
+                >
+                  <Clock className={isMobile ? 'size-3.5' : 'size-4'} />
+                </button>
+              )}
+              <Link
+                href={`/reports/users/${user.ref}/settings`}
+                onClick={onSettingsClick}
+                className="rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
+                aria-label="User settings"
+              >
+                <SettingsIcon className={isMobile ? 'size-3.5' : 'size-4'} />
+              </Link>
+            </div>
           </div>
           <div className={cn('space-y-0.5 sm:space-y-1', isMobile ? 'text-xs' : 'text-sm')}>
             <a
