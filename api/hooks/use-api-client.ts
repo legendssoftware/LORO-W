@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { useAuth, useOrganization } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
+import { useOrgId } from '@/lib/org-id-context';
 import { createApiClient } from '@/api/client';
 
 /**
@@ -11,11 +12,11 @@ import { createApiClient } from '@/api/client';
  */
 export function useApiClient() {
   const { getToken } = useAuth();
-  const { organization } = useOrganization();
+  const orgId = useOrgId();
 
   const getTokenWithOrg = useCallback(async () => {
-    return getToken({ organizationId: organization?.id ?? undefined });
-  }, [getToken, organization?.id]);
+    return getToken({ organizationId: orgId ?? undefined });
+  }, [getToken, orgId]);
 
   return useMemo(() => createApiClient(getTokenWithOrg), [getTokenWithOrg]);
 }

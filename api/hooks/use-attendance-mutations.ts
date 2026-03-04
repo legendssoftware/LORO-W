@@ -7,6 +7,7 @@ import type { CheckInBody, CheckOutBody, BreakBody } from '@/api/types';
 
 const ATT_STATUS_QUERY_KEY = ['att-status'] as const;
 const ATT_METRICS_QUERY_KEY = ['att', 'metrics'] as const;
+const ATT_MONTHLY_QUERY_KEY = ['att', 'monthly'] as const;
 
 /**
  * Mutation for starting a shift (attendance check-in).
@@ -23,6 +24,7 @@ export function useAttCheckInMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }
@@ -42,6 +44,7 @@ export function useAttCheckOutMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }
@@ -61,6 +64,7 @@ export function useBreakMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }

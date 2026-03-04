@@ -3,6 +3,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
+import { useOrgName } from '@/lib/org-id-context';
 import { format, startOfDay, endOfDay, subDays, isSameDay, differenceInCalendarDays } from 'date-fns';
 import {
   useCheckIns,
@@ -43,8 +44,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone } from 'lucide-react';
-import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2 } from 'lucide-react';
+import { CalendarIcon, Loader2Icon, XIcon, UsersIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 const VisitsMap = dynamic(
   () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
@@ -55,11 +56,24 @@ import {
   getRegionGroupKey,
   visitToExportRow,
 } from '@/lib/utils/visits-export';
-import { TYPE_OF_BUSINESS_OPTIONS, CURRENCY_OPTIONS } from '@/lib/visit-form-utils';
+import {
+  TYPE_OF_BUSINESS_OPTIONS,
+  CURRENCY_OPTIONS,
+  METHOD_OPTIONS,
+  SITE_TYPE_OPTIONS,
+  QUOTATION_STATUS_OPTIONS,
+  PERSON_POSITION_OPTIONS,
+} from '@/lib/visit-form-utils';
 import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-schemas';
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { VisitsSummaryModal } from '@/app/reports/visits-summary-modal';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
@@ -72,56 +86,6 @@ function hasAddress(addr?: ClientAddress): boolean {
     (v) => typeof v === 'string' && v.trim() !== ''
   );
 }
-
-const METHOD_OPTIONS: { value: MethodOfContact; label: string }[] = [
-  { value: 'Physical', label: 'Physical' },
-  { value: 'Telephone', label: 'Telephone' },
-  { value: 'Email', label: 'Email' },
-  { value: 'Whatsapp', label: 'WhatsApp' },
-];
-
-/** Site type options (BuildingType); value matches server enum. */
-const SITE_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'office', label: 'Office' },
-  { value: 'home', label: 'Home' },
-  { value: 'shop', label: 'Shop' },
-  { value: 'garage', label: 'Garage' },
-  { value: 'factory', label: 'Factory' },
-  { value: 'construction', label: 'Construction' },
-  { value: 'residential-apartment', label: 'Residential apartment' },
-  { value: 'other-business', label: 'Other business' },
-  { value: 'other', label: 'Other' },
-];
-
-/** Quotation status options (match server OrderStatus). */
-const QUOTATION_STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: '_none', label: 'None' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'pending_internal', label: 'Pending internal' },
-  { value: 'pending_client', label: 'Pending client' },
-  { value: 'negotiation', label: 'Negotiation' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'sourcing', label: 'Sourcing' },
-  { value: 'packing', label: 'Packing' },
-  { value: 'in_fulfillment', label: 'In fulfillment' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'outfordelivery', label: 'Out for delivery' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'returned', label: 'Returned' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'postponed', label: 'Postponed' },
-  { value: 'inprogress', label: 'In progress' },
-  { value: 'pending', label: 'Pending' },
-];
-
-/** Position of the person seen (dropdown options). */
-const PERSON_POSITION_OPTIONS: { value: string; label: string }[] = [
-  { value: 'Owner', label: 'Owner' },
-  { value: 'Buyer', label: 'Buyer' },
-  { value: 'Receptionist', label: 'Receptionist' },
-];
 
 function getVisitStatusLabel(method: string | null | undefined): string {
   if (!method) return 'On a visit – end when done.';
@@ -242,6 +206,9 @@ export function VisitsContent() {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaUrlInput, setMediaUrlInput] = useState('');
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
+  const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
+  const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
+  const orgName = useOrgName();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
   const originalClientRef = useRef<ClientListItem | null>(null);
@@ -436,6 +403,11 @@ export function VisitsContent() {
     setMediaUrls([]);
     setMediaUrlInput('');
     setEndFieldErrors({});
+  };
+
+  const handleOpenVisitsSummary = () => {
+    setVisitsSummaryRunAt(new Date());
+    setVisitsSummaryOpen(true);
   };
 
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -678,21 +650,25 @@ export function VisitsContent() {
           <div className="grid gap-3 py-2">
             <p className="text-sm font-medium">Method of visit</p>
             <div className="grid grid-cols-2 gap-2">
-              {METHOD_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedMethod(opt.value)}
-                  className={
-                    selectedMethod === opt.value
-                      ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white'
-                      : undefined
-                  }
-                >
-                  {opt.label}
-                </Button>
-              ))}
+              {METHOD_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <Button
+                    key={opt.value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedMethod(opt.value)}
+                    className={
+                      selectedMethod === opt.value
+                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2'
+                        : 'gap-2'
+                    }
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    {opt.label}
+                  </Button>
+                );
+              })}
             </div>
             <DialogFooter className="gap-3">
               <Button variant="cancel" onClick={closeMethodModal}>
@@ -737,17 +713,26 @@ export function VisitsContent() {
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select type of business</SelectItem>
-                  {TYPE_OF_BUSINESS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {TYPE_OF_BUSINESS_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
             {/* 2. Client (optional) */}
             <div className="grid gap-2 sm:col-span-2">
-              <Label>Client (optional)</Label>
+              <Label className="flex items-center gap-2">
+                <UsersIcon className="size-4 shrink-0" />
+                Client (optional)
+              </Label>
               <Input
                 placeholder="Search clients..."
                 value={clientSearch}
@@ -768,7 +753,7 @@ export function VisitsContent() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select client if you visited an existing client" />
                 </SelectTrigger>
-                <SelectContent className="z-[10001]">
+                <SelectContent className="z-[10001]" position="popper">
                   <SelectItem value="_none">No client</SelectItem>
                   {clientsQuery.isLoading ? (
                     <SelectItem value="_loading" disabled>
@@ -788,8 +773,8 @@ export function VisitsContent() {
                       const hasAddr = hasAddress(c.address);
                       return (
                         <SelectItem key={c.uid} value={String(c.uid)}>
-                          <div className="flex w-full items-center justify-between gap-2 min-w-0">
-                            <span className="truncate min-w-0 flex-1 max-w-[75%]">{displayLabel}</span>
+                          <div className="flex flex-1 min-w-0 w-full items-center justify-between gap-2">
+                            <span className="truncate min-w-0 flex-1">{displayLabel}</span>
                             <span className="flex flex-shrink-0 gap-0.5 items-center">
                               <Mail
                                 className={cn('size-4', hasEmail ? 'text-green-600' : 'text-red-500')}
@@ -983,11 +968,17 @@ export function VisitsContent() {
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select position</SelectItem>
-                  {PERSON_POSITION_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {PERSON_POSITION_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1059,11 +1050,17 @@ export function VisitsContent() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
-                  {QUOTATION_STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {QUOTATION_STATUS_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1076,9 +1073,17 @@ export function VisitsContent() {
                 >
                   <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
                   <SelectContent className="z-[10001]">
-                    {CURRENCY_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
-                    ))}
+                    {CURRENCY_OPTIONS.map((o) => {
+                      const Icon = o.icon;
+                      return (
+                        <SelectItem key={o.value} value={o.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="size-4 shrink-0" />
+                            {o.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <Input
@@ -1110,11 +1115,17 @@ export function VisitsContent() {
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select method</SelectItem>
-                  {METHOD_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {METHOD_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1133,11 +1144,17 @@ export function VisitsContent() {
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
                   <SelectItem value="_none">Select site type</SelectItem>
-                  {SITE_TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  {SITE_TYPE_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1395,7 +1412,8 @@ export function VisitsContent() {
               value={selectedRegion || 'all'}
               onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
             >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+                <MapPinIcon className="size-4 shrink-0" />
                 <SelectValue placeholder="All regions" />
               </SelectTrigger>
               <SelectContent className="z-[10001]">
@@ -1411,7 +1429,8 @@ export function VisitsContent() {
               value={selectedBusinessType || 'all'}
               onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
             >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+                <BriefcaseIcon className="size-4 shrink-0" />
                 <SelectValue placeholder="All business types" />
               </SelectTrigger>
               <SelectContent className="z-[10001]">
@@ -1427,7 +1446,8 @@ export function VisitsContent() {
               value={selectedUserUid || 'all'}
               onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
             >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+                <UsersIcon className="size-4 shrink-0" />
                 <SelectValue placeholder="All users" />
               </SelectTrigger>
               <SelectContent className="z-[10001]">
@@ -1480,6 +1500,21 @@ export function VisitsContent() {
                 </>
               )}
             </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 p-0 bg-white border-gray-200 text-foreground shrink-0"
+                  onClick={handleOpenVisitsSummary}
+                  disabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
+                  aria-label="View visits summary"
+                >
+                  <Table2 className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View visits summary</TooltipContent>
+            </Tooltip>
           </div>
         </div>
         {viewMode === 'table' ? (
@@ -1494,6 +1529,17 @@ export function VisitsContent() {
             <VisitsMap visits={filteredCheckIns} className="flex-1 min-h-0" />
           </div>
         )}
+
+        <VisitsSummaryModal
+          open={visitsSummaryOpen}
+          onOpenChange={setVisitsSummaryOpen}
+          checkIns={filteredCheckIns}
+          startDate={startDate}
+          endDate={endDate}
+          runAt={visitsSummaryRunAt}
+          companyName={orgName ?? 'Organisation'}
+          useAllTime={useAllTime}
+        />
       </section>
     </div>
   );

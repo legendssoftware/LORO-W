@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
 import { Urbanist, Lora } from 'next/font/google';
+import { auth } from '@clerk/nextjs/server';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
+import { OrgIdProvider } from '@/lib/org-id-context';
 import { QueryProvider } from '@/api/providers/query-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { InactivityGuard } from '@/components/inactivity-guard';
@@ -27,18 +29,21 @@ const lora = Lora({
 
 export const metadata = defaultMetadata;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { orgId } = await auth();
+
   return (
-    <ClerkProvider afterSignOutUrl="/">
+    <ClerkProvider afterSignOutUrl="/" dynamic>
       <html lang="en" className="light" suppressHydrationWarning>
         <head>
           <link rel="preload" as="image" href="/images/covers/2.webp" />
         </head>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
+          <OrgIdProvider initialOrgId={orgId ?? null}>
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider defaultOpen={false}>
@@ -67,6 +72,7 @@ export default function RootLayout({
           />
           </TooltipProvider>
           </QueryProvider>
+          </OrgIdProvider>
         </body>
       </html>
     </ClerkProvider>

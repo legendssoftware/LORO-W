@@ -23,7 +23,14 @@ export interface LeadListItem {
   attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
-  owner?: { uid?: number; name?: string; surname?: string; email?: string };
+  owner?: {
+    uid?: number;
+    name?: string;
+    surname?: string;
+    email?: string;
+    photoURL?: string | null;
+    avatar?: string | null;
+  };
   assignees?: Array<{ uid?: number; clerkUserId?: string; name?: string; email?: string }>;
   [key: string]: unknown;
 }
@@ -116,6 +123,8 @@ export interface CreateLeadPayload {
   userQualityRating?: number;
   lifecycleStage?: string;
   budgetRange?: string;
+  /** Currency code (e.g. ZAR, USD). */
+  currency?: string;
   estimatedValue?: number;
   purchaseTimeline?: string;
   preferredCommunication?: string;

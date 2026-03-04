@@ -103,7 +103,7 @@ export function useLead(ref: number | null | undefined, options?: { enabled?: bo
 }
 
 /**
- * Create a new lead. Invalidates leads list on success.
+ * Create a new lead. Invalidates and refetches leads list on success.
  */
 export function useCreateLeadMutation() {
   const client = useApiClient();
@@ -112,6 +112,7 @@ export function useCreateLeadMutation() {
     mutationFn: async (payload: CreateLeadPayload) => createLead(client, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
     },
   });
 }
