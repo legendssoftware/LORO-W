@@ -17,6 +17,7 @@ import {
   KnowledgeIcon,
   LayoutDashboardIcon,
   MapPinIcon,
+  UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const ROUTE_ICONS: Record<
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,
   "/planning": CheckSquareIcon,
+  "/staff": UsersIcon,
 };
 
 export function AppSidebar() {

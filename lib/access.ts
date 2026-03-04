@@ -105,6 +105,7 @@ export interface AllowedRoute {
  */
 export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
+    { path: "/staff", label: "Staff" },
     { path: "/visits", label: "Visits" },
     { path: "/leads", label: "Leads" },
     { path: "/planning", label: "Planning" },
