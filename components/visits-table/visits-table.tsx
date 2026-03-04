@@ -30,7 +30,7 @@ import {
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
 import { useUpdateVisitDetailsMutation, useClients } from '@/api/hooks';
-import type { ClientListItem } from '@/api/endpoints/clients';
+import type { ClientListItem, ClientAddress } from '@/api/endpoints/clients';
 
 /**
  * Visit detail modal field mapping (all columns and data presence) is documented in
@@ -73,7 +73,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil, UserPlus } from 'lucide-react';
+import { Pencil, UserPlus, Mail, Phone, Smartphone, MapPin } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -87,6 +87,14 @@ const VISIT_IMAGE_FALLBACK_URL =
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
+
+function hasAddress(addr?: ClientAddress): boolean {
+  if (!addr) return false;
+  const { street, suburb, city, state, country, postalCode } = addr;
+  return [street, suburb, city, state, country, postalCode].some(
+    (v) => typeof v === 'string' && v.trim() !== ''
+  );
+}
 
 function getWordCount(value: string | null | undefined): number {
   return (value ?? '').trim().split(/\s+/).filter(Boolean).length;
@@ -195,7 +203,7 @@ function renderPhotoCell(url: string | null | undefined): ReactNode {
   );
 }
 
-const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
+export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   {
     key: 'salesPerson',
     label: 'Sales Person',
@@ -1020,17 +1028,48 @@ function VisitDetailDialog({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select client" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[min(320px,50vh)] z-[10001]">
+                      <SelectContent className="max-h-[min(320px,50vh)] z-[10001]" position="popper">
                         <SelectItem value="_none">No client</SelectItem>
                         {clientsQuery.isLoading ? (
                           <SelectItem value="_loading" disabled>Loading…</SelectItem>
                         ) : (
-                          clientsList.map((c) => (
-                            <SelectItem key={c.uid} value={String(c.uid)}>
-                              {c.name}
-                              {c.contactPerson ? ` · ${c.contactPerson}` : ''}
-                            </SelectItem>
-                          ))
+                          clientsList.map((c) => {
+                            const nameTrim = (c.name ?? '').trim();
+                            const contactTrim = (c.contactPerson ?? '').trim();
+                            const displayLabel =
+                              contactTrim && contactTrim !== nameTrim
+                                ? `${nameTrim} · ${contactTrim}`
+                                : nameTrim || '—';
+                            const hasEmail = !!(typeof c.email === 'string' && c.email.trim() !== '');
+                            const hasLandline = !!(typeof c.alternativePhone === 'string' && c.alternativePhone.trim() !== '');
+                            const hasCell = !!(typeof c.phone === 'string' && c.phone.trim() !== '');
+                            const hasAddr = hasAddress(c.address);
+                            return (
+                              <SelectItem key={c.uid} value={String(c.uid)}>
+                                <div className="flex flex-1 min-w-0 w-full items-center justify-between gap-2">
+                                  <span className="truncate min-w-0 flex-1">{displayLabel}</span>
+                                  <span className="flex flex-shrink-0 gap-0.5 items-center">
+                                    <Mail
+                                      className={cn('size-4', hasEmail ? 'text-green-600' : 'text-red-500')}
+                                      aria-hidden
+                                    />
+                                    <Phone
+                                      className={cn('size-4', hasLandline ? 'text-green-600' : 'text-red-500')}
+                                      aria-hidden
+                                    />
+                                    <Smartphone
+                                      className={cn('size-4', hasCell ? 'text-green-600' : 'text-red-500')}
+                                      aria-hidden
+                                    />
+                                    <MapPin
+                                      className={cn('size-4', hasAddr ? 'text-green-600' : 'text-red-500')}
+                                      aria-hidden
+                                    />
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })
                         )}
                       </SelectContent>
                     </Select>
@@ -1189,9 +1228,17 @@ function VisitDetailDialog({
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
-                        {PERSON_POSITION_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
+                        {PERSON_POSITION_OPTIONS.map((o) => {
+                          const Icon = o.icon;
+                          return (
+                            <SelectItem key={o.value} value={o.value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {o.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1246,9 +1293,17 @@ function VisitDetailDialog({
                     >
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="z-[10001]">
-                        {QUOTATION_STATUS_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
+                        {QUOTATION_STATUS_OPTIONS.map((o) => {
+                          const Icon = o.icon;
+                          return (
+                            <SelectItem key={o.value} value={o.value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {o.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1261,9 +1316,17 @@ function VisitDetailDialog({
                       >
                         <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
                         <SelectContent className="z-[10001]">
-                          {CURRENCY_OPTIONS.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
-                          ))}
+                          {CURRENCY_OPTIONS.map((o) => {
+                            const Icon = o.icon;
+                            return (
+                              <SelectItem key={o.value} value={o.value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="size-4 shrink-0" />
+                                  {o.label}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       <Input
@@ -1283,9 +1346,17 @@ function VisitDetailDialog({
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
-                        {METHOD_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
+                        {METHOD_OPTIONS.map((o) => {
+                          const Icon = o.icon;
+                          return (
+                            <SelectItem key={o.value} value={o.value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {o.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1305,9 +1376,17 @@ function VisitDetailDialog({
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
-                        {SITE_TYPE_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
+                        {SITE_TYPE_OPTIONS.map((o) => {
+                          const Icon = o.icon;
+                          return (
+                            <SelectItem key={o.value} value={o.value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {o.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1320,9 +1399,17 @@ function VisitDetailDialog({
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="z-[10001]">
                         <SelectItem value="_none">Select</SelectItem>
-                        {TYPE_OF_BUSINESS_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
+                        {TYPE_OF_BUSINESS_OPTIONS.map((o) => {
+                          const Icon = o.icon;
+                          return (
+                            <SelectItem key={o.value} value={o.value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {o.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1433,6 +1520,16 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
   const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
   const [visitDetailOpen, setVisitDetailOpen] = useState(false);
 
+  const sortedCheckIns = useMemo(
+    () =>
+      [...checkIns].sort((a, b) => {
+        const aTime = new Date(a.createdAt ?? a.checkInTime).getTime();
+        const bTime = new Date(b.createdAt ?? b.checkInTime).getTime();
+        return bTime - aTime;
+      }),
+    [checkIns]
+  );
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -1463,7 +1560,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
             </TableRow>
           </TableHeader>
           <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
-            {checkIns.map((c) => (
+            {sortedCheckIns.map((c) => (
               <TableRow
                 key={c.uid}
                 className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"

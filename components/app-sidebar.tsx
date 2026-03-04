@@ -12,6 +12,7 @@ import {
 } from "@/lib/access";
 import {
   BarChart3Icon,
+  CheckSquareIcon,
   HandshakeIcon,
   KnowledgeIcon,
   LayoutDashboardIcon,
@@ -44,6 +45,7 @@ const ROUTE_ICONS: Record<
   "/reports": BarChart3Icon,
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,
+  "/planning": CheckSquareIcon,
 };
 
 export function AppSidebar() {

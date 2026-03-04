@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth, useOrganization } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
+import { useOrgId } from '@/lib/org-id-context';
 
 /**
  * Resolves the Clerk token once when the user is signed in so we can gate API
@@ -11,7 +12,7 @@ import { useAuth, useOrganization } from '@clerk/nextjs';
  */
 export function useTokenReady() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { organization } = useOrganization();
+  const orgId = useOrgId();
   const [isTokenReady, setIsTokenReady] = useState(false);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function useTokenReady() {
 
     let cancelled = false;
 
-    getToken({ organizationId: organization?.id ?? undefined })
+    getToken({ organizationId: orgId ?? undefined })
       .then((token) => {
         if (!cancelled) {
           setIsTokenReady(!!token);
@@ -37,7 +38,7 @@ export function useTokenReady() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, organization?.id, getToken]);
+  }, [isLoaded, isSignedIn, orgId, getToken]);
 
   const isTokenLoading = isSignedIn && !isTokenReady;
   return { isTokenReady, isTokenLoading };

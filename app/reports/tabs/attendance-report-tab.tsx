@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useOrganization } from '@clerk/nextjs';
+import { useOrgName } from '@/lib/org-id-context';
 import { format, subDays } from 'date-fns';
 import { useMonthlyAttendance, useAttMetricsBatch } from '@/api/hooks';
 import { AttendanceChartsSection } from '@/app/reports/tabs/attendance-charts-section';
@@ -513,7 +513,7 @@ export function AttendanceReportTab({
   attendanceChartsProps,
   chartsLoading,
 }: AttendanceReportTabProps) {
-  const { organization } = useOrganization();
+  const orgName = useOrgName();
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryRunAt, setSummaryRunAt] = useState<Date | null>(null);
 
@@ -630,7 +630,7 @@ export function AttendanceReportTab({
         users={filteredUsers}
         reportDate={singleDate}
         runAt={summaryRunAt}
-        companyName={organization?.name ?? 'Organisation'}
+        companyName={orgName ?? 'Organisation'}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto">

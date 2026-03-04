@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { useOrgName } from '@/lib/org-id-context';
 import { differenceInCalendarDays, endOfDay, format, isSameDay, parse, startOfDay, subDays } from 'date-fns';
 import {
     useTokenReady,
@@ -21,7 +22,7 @@ import type {
     MonthlyMetricsUserItem,
 } from '@/api/types';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { CalendarIcon, ChevronDownIcon, DownloadIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
+import { CalendarIcon, Loader2Icon, SettingsIcon, XIcon } from '@/lib/icons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Card,
@@ -59,6 +60,11 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { isStaffDashboardVisible } from '@/lib/access';
 import Link from 'next/link';
 import { ExportReportDropdown } from '@/app/reports/export-report-dropdown';
@@ -67,7 +73,7 @@ import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
 import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { AttendanceChartsSectionProps } from '@/app/reports/tabs/attendance-charts-section';
-import { Smartphone, Laptop } from 'lucide-react';
+import { Smartphone, Laptop, Map as MapIcon, Table2 } from 'lucide-react';
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 
 const TabSkeleton = () => (
@@ -86,7 +92,6 @@ const AttendanceReportTab = dynamic(
 );
 import type { VisitExportItem } from '@/api/types/reports';
 import {
-    exportVisits,
     extractRegionFromVisit,
     formatContactAddress,
     formatMethodOfContact,
@@ -94,15 +99,7 @@ import {
     visitToExportRow,
 } from '@/lib/utils/visits-export';
 import { VisitsTable } from '@/components/visits-table/visits-table';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import toast from 'react-hot-toast';
+import { VisitsSummaryModal } from '@/app/reports/visits-summary-modal';
 import {
     ChartContainer,
     ChartLegend,
@@ -594,9 +591,11 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     const [useAllTime, setUseAllTime] = useState(false);
     const [selectedUserUid, setSelectedUserUid] = useState<string>('');
     const [selectedRegion, setSelectedRegion] = useState<string>('');
-    const [exportLoading, setExportLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
+    const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
     const { backendUserData: profile } = useSessionSync();
+    const orgName = useOrgName();
     const isManager = isStaffDashboardVisible(profile?.accessLevel);
 
     const startStr = format(startDate, 'yyyy-MM-dd');
@@ -666,46 +665,9 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
         });
     }, [checkIns, searchQuery, selectedRegion]);
 
-    const exportScopeLabel = useMemo(() => {
-        if (!selectedUserUid) return 'All users';
-        const users = usersQuery.data ?? [];
-        const u = users.find((x) => String(x.uid) === selectedUserUid);
-        if (u) {
-            const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
-            return name || `User ${selectedUserUid}`;
-        }
-        const first = checkIns[0]?.owner;
-        if (first) {
-            const name = [first.name, (first as { surname?: string }).surname].filter(Boolean).join(' ').trim();
-            return name || `User ${selectedUserUid}`;
-        }
-        return `User ${selectedUserUid}`;
-    }, [selectedUserUid, usersQuery.data, checkIns]);
-
-    const exportUserSlug = useMemo(() => {
-        if (!selectedUserUid) return '';
-        const label = exportScopeLabel.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
-        return label ? `-${label}` : `-${selectedUserUid}`;
-    }, [selectedUserUid, exportScopeLabel]);
-
-    const handleExport = (exportFormat: 'csv' | 'excel' | 'pdf') => {
-        if (filteredCheckIns.length === 0) {
-            toast.error('No visits to export');
-            return;
-        }
-        setExportLoading(true);
-        try {
-            const baseName = useAllTime
-                ? `visits-all-time${exportUserSlug}`
-                : `visits-${startStr}-${endStr}${exportUserSlug}`;
-            exportVisits(filteredCheckIns, exportFormat, baseName);
-            toast.success('Export downloaded');
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Export failed';
-            toast.error(msg);
-        } finally {
-            setExportLoading(false);
-        }
+    const handleOpenVisitsSummary = () => {
+        setVisitsSummaryRunAt(new Date());
+        setVisitsSummaryOpen(true);
     };
 
     return (
@@ -905,41 +867,45 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
                             </button>
                         ) : null}
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
+                        asChild
+                    >
+                        <Link href="/reports/map" className="inline-flex items-center gap-1.5">
+                            <MapIcon className="size-4" />
+                            View on map
+                        </Link>
+                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
-                                disabled={exportLoading || isLoading || filteredCheckIns.length === 0}
+                                className="h-9 w-9 p-0 bg-white border-gray-200 text-foreground"
+                                onClick={handleOpenVisitsSummary}
+                                disabled={isLoading || filteredCheckIns.length === 0}
+                                aria-label="View visits summary"
                             >
-                                {exportLoading ? (
-                                    <Loader2Icon className="size-4 animate-spin" />
-                                ) : (
-                                    <DownloadIcon className="size-4" />
-                                )}
-                                Export
-                                <ChevronDownIcon className="size-4" />
+                                <Table2 className="size-4" />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[10rem]">
-                            <DropdownMenuLabel className="text-muted-foreground font-normal">
-                                Exporting: {exportScopeLabel}
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleExport('csv')}>
-                                CSV
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('excel')}>
-                                Excel
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                                PDF
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        </TooltipTrigger>
+                        <TooltipContent>View visits summary</TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
+
+            <VisitsSummaryModal
+                open={visitsSummaryOpen}
+                onOpenChange={setVisitsSummaryOpen}
+                checkIns={filteredCheckIns}
+                startDate={startDate}
+                endDate={endDate}
+                runAt={visitsSummaryRunAt}
+                companyName={orgName ?? 'Organisation'}
+                useAllTime={useAllTime}
+            />
 
             <VisitsTable
                 checkIns={filteredCheckIns}

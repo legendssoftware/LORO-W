@@ -37,9 +37,10 @@ import {
   COMMUNICATION_PREFERENCE_OPTIONS,
   TIMEZONE_OPTIONS,
   BEST_CONTACT_TIME_OPTIONS,
+  CURRENCY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { Image as ImageIcon, Paperclip as PaperclipIcon } from 'lucide-react';
-import { Loader2Icon, ChevronDownIcon, ChevronUpIcon, XIcon } from '@/lib/icons';
+import { Loader2Icon, ChevronDownIcon, ChevronUpIcon, XIcon, HandshakeIcon, MapPinIcon } from '@/lib/icons';
 import toast from 'react-hot-toast';
 import type { CreateLeadPayload } from '@/api/types/leads';
 
@@ -76,6 +77,7 @@ const defaultForm = {
   userQualityRating: 3 as number,
   lifecycleStage: 'LEAD' as string,
   budgetRange: 'UNKNOWN' as string,
+  currency: 'ZAR' as string,
   estimatedValue: undefined as number | undefined,
   purchaseTimeline: 'UNKNOWN' as string,
   preferredCommunication: 'EMAIL' as string,
@@ -220,6 +222,7 @@ export function CreateLeadModal({
         userQualityRating: form.userQualityRating,
         lifecycleStage: form.lifecycleStage || undefined,
         budgetRange: form.budgetRange !== 'UNKNOWN' ? form.budgetRange : undefined,
+        ...(form.currency && { currency: form.currency }),
         estimatedValue: form.estimatedValue,
         purchaseTimeline: form.purchaseTimeline !== 'UNKNOWN' ? form.purchaseTimeline : undefined,
         preferredCommunication: form.preferredCommunication || undefined,
@@ -306,12 +309,12 @@ export function CreateLeadModal({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          {/* Image uploader */}
-          <div className="grid gap-2">
+          {/* Image uploader - full width */}
+          <div className="grid w-full gap-2">
             <Label>Lead image</Label>
-            <div className="flex flex-col gap-2">
+            <div className="flex w-full flex-col gap-2">
               {imagePreview ? (
-                <div className="relative aspect-[4/3] w-full max-w-xs overflow-hidden rounded-lg border bg-muted">
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border bg-muted">
                   <img
                     src={imagePreview}
                     alt="Lead preview"
@@ -331,7 +334,7 @@ export function CreateLeadModal({
                   </Button>
                 </div>
               ) : (
-                <div className="flex aspect-[4/3] max-w-xs items-center justify-center rounded-lg border border-dashed bg-muted/50 text-muted-foreground text-sm">
+                <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed bg-muted/50 text-muted-foreground text-sm">
                   No image selected
                 </div>
               )}
@@ -431,7 +434,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {INDUSTRY_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -445,7 +453,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {BUSINESS_SIZE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -459,7 +472,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DECISION_MAKER_ROLE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -482,7 +500,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {LEAD_INTENT_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -497,7 +520,12 @@ export function CreateLeadModal({
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {LEAD_TEMPERATURE_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            <span className="flex items-center gap-2">
+                              <o.icon className="size-4 shrink-0" />
+                              {o.label}
+                            </span>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -511,7 +539,12 @@ export function CreateLeadModal({
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {LEAD_PRIORITY_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>
+                            <span className="flex items-center gap-2">
+                              <o.icon className="size-4 shrink-0" />
+                              {o.label}
+                            </span>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -526,7 +559,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {LEAD_SOURCE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -540,7 +578,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {LIFECYCLE_STAGE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -577,7 +620,12 @@ export function CreateLeadModal({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {LEAD_STATUS_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>
+                    <span className="flex items-center gap-2">
+                      <o.icon className="size-4 shrink-0" />
+                      {o.label}
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -588,46 +636,79 @@ export function CreateLeadModal({
             <SectionTrigger id="financial" title="Financial information" />
             {!collapsed.financial && (
               <div className="grid gap-4 rounded-lg border p-3">
-                <div className="grid gap-2">
-                  <Label>Estimated value</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="e.g. 50000"
-                    value={form.estimatedValue ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value ? Number(e.target.value) : undefined;
-                      setForm((f) => ({ ...f, estimatedValue: v }));
-                    }}
-                  />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label>Budget range</Label>
+                    <Select
+                      value={form.budgetRange}
+                      onValueChange={(v) => setForm((f) => ({ ...f, budgetRange: v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {BUDGET_RANGE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            <span className="flex items-center gap-2">
+                              <o.icon className="size-4 shrink-0" />
+                              {o.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Currency</Label>
+                    <Select
+                      value={form.currency}
+                      onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CURRENCY_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            <span className="flex items-center gap-2">
+                              <o.icon className="size-4 shrink-0" />
+                              {o.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Budget range</Label>
-                  <Select
-                    value={form.budgetRange}
-                    onValueChange={(v) => setForm((f) => ({ ...f, budgetRange: v }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {BUDGET_RANGE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Purchase timeline</Label>
-                  <Select
-                    value={form.purchaseTimeline}
-                    onValueChange={(v) => setForm((f) => ({ ...f, purchaseTimeline: v }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {TIMELINE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label>Estimated value</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="e.g. 50000"
+                      value={form.estimatedValue ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value ? Number(e.target.value) : undefined;
+                        setForm((f) => ({ ...f, estimatedValue: v }));
+                      }}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Purchase timeline</Label>
+                    <Select
+                      value={form.purchaseTimeline}
+                      onValueChange={(v) => setForm((f) => ({ ...f, purchaseTimeline: v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMELINE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            <span className="flex items-center gap-2">
+                              <o.icon className="size-4 shrink-0" />
+                              {o.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             )}
@@ -649,7 +730,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {COMMUNICATION_PREFERENCE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -663,7 +749,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {TIMEZONE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -677,7 +768,12 @@ export function CreateLeadModal({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {BEST_CONTACT_TIME_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-2">
+                            <o.icon className="size-4 shrink-0" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -869,7 +965,10 @@ export function CreateLeadModal({
                 <SelectContent>
                   {branches.map((b) => (
                     <SelectItem key={b.uid} value={String(b.uid)}>
-                      {b.name ?? `Branch ${b.uid}`}
+                      <span className="flex items-center gap-2">
+                        <MapPinIcon className="size-4 shrink-0" />
+                        {b.name ?? `Branch ${b.uid}`}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -893,14 +992,17 @@ export function CreateLeadModal({
           >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+          <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="gap-2">
             {createMutation.isPending ? (
               <>
-                <Loader2Icon className="size-4 animate-spin" />
+                <Loader2Icon className="size-4 shrink-0 animate-spin" />
                 Creating…
               </>
             ) : (
-              'Create lead'
+              <>
+                <HandshakeIcon className="size-4 shrink-0" />
+                Create lead
+              </>
             )}
           </Button>
         </DialogFooter>
