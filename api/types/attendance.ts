@@ -109,6 +109,12 @@ export interface AttendanceReportResponse {
     };
 }
 
+/** Last 7 days attendance status for staff grid. */
+export interface Last7DaysItem {
+    date: string;
+    status: 'attended' | 'missed' | 'future';
+}
+
 /** POST /att/metrics/monthly - monthly metrics for all users. */
 export interface MonthlyMetricsUserItem {
     userId: number;
@@ -117,6 +123,8 @@ export interface MonthlyMetricsUserItem {
     totalHours: number;
     overtimeHours: number;
     checkIns?: unknown[];
+    /** Last 7 days attendance status (attended/missed/future) for staff grid. */
+    last7Days?: Last7DaysItem[];
 }
 
 export interface MonthlyMetricsResponse {
