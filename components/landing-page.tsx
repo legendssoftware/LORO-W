@@ -696,6 +696,7 @@ export function LandingPage() {
                   <div className="flex flex-col items-center md:items-start text-center md:text-left">
                     <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Company</h3>
                     <ul className="space-y-3">
+                      <li><Link href="/privacy-policy" className="font-body text-sm text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link></li>
                       {['About Loro', 'Newsroom', 'Careers', 'Press', 'Contact Us'].map((item) => (
                         <li key={item}><Link href="#" className="font-body text-sm text-zinc-400 hover:text-white transition-colors">{item}</Link></li>
                       ))}

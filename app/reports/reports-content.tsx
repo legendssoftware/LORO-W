@@ -7,6 +7,8 @@ import {
   useTokenReady,
   useSessionSync,
   useCheckIns,
+  useAttendanceReport,
+  useMonthlyMetrics,
 } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
@@ -135,6 +137,115 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
   );
 }
 
+/** Attendance tab: org report + monthly metrics with date range filter. Admin-only. */
+function AttendanceReportTabContainer({ isTokenReady }: { isTokenReady: boolean }) {
+  const [mounted, setMounted] = useState(false);
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(getDefaultDateRange);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [pickerRange, setPickerRange] = useState<DateRange | undefined>({
+    from: dateRange.start,
+    to: dateRange.end,
+  });
+
+  useEffect(() => setMounted(true), []);
+
+  const dateFrom = format(startOfDay(dateRange.start), 'yyyy-MM-dd');
+  const dateTo = format(endOfDay(dateRange.end), 'yyyy-MM-dd');
+  const endMonth = dateRange.end;
+  const year = endMonth.getFullYear();
+  const month = endMonth.getMonth() + 1;
+
+  const reportQuery = useAttendanceReport(
+    { dateFrom, dateTo },
+    { enabled: mounted && isTokenReady }
+  );
+  const monthlyQuery = useMonthlyMetrics(
+    { year, month, includeCheckIns: false },
+    { enabled: mounted && isTokenReady }
+  );
+
+  const report = reportQuery.data?.report;
+  const monthlyData = monthlyQuery.data?.data;
+  const isLoading = reportQuery.isLoading || monthlyQuery.isLoading;
+
+  const handleApplyDateRange = () => {
+    if (pickerRange?.from) {
+      const start = pickerRange.from;
+      const end = pickerRange.to ?? pickerRange.from;
+      setDateRange({
+        start: start < end ? start : end,
+        end: start < end ? end : start,
+      });
+      setPopoverOpen(false);
+    }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setPopoverOpen(open);
+    if (!open) return;
+    setPickerRange({ from: dateRange.start, to: dateRange.end });
+  };
+
+  const attendanceRate = report?.organizationMetrics?.insights?.attendanceRate ?? 0;
+  const reportPeriod = report?.reportPeriod;
+  const organizationMetrics = report?.organizationMetrics;
+  const monthlySummary = monthlyData?.summary;
+  const monthlyUserMetrics = monthlyData?.userMetrics ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="shrink-0 mb-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isLoading && (
+              <p className="text-sm text-muted-foreground">
+                {format(dateRange.start, 'MMM d, yyyy')} – {format(dateRange.end, 'MMM d, yyyy')}
+                {' · '}
+                Attendance rate:{' '}
+                <strong>{typeof attendanceRate === 'number' ? `${attendanceRate.toFixed(1)}%` : '—'}</strong>
+              </p>
+            )}
+          </div>
+          <Popover open={popoverOpen} onOpenChange={handleOpenChange}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="shrink-0">
+                <CalendarIcon className="size-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 space-y-3">
+                <Calendar
+                  mode="range"
+                  selected={pickerRange}
+                  onSelect={setPickerRange}
+                  defaultMonth={dateRange.start}
+                  numberOfMonths={2}
+                />
+                <div className="flex justify-end border-t pt-3">
+                  <Button size="sm" onClick={handleApplyDateRange}>
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <AttendanceReportTab
+          attendanceChartsProps={{
+            attendanceRate: typeof attendanceRate === 'number' ? attendanceRate : 0,
+            reportPeriod,
+            organizationMetrics,
+            monthlySummary,
+            monthlyUserMetrics,
+          }}
+          chartsLoading={isLoading}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ReportsContent() {
   const { isSignedIn } = useAuth();
   const { isTokenReady } = useTokenReady();
@@ -165,10 +276,7 @@ export function ReportsContent() {
                 <VisitsReportTab isTokenReady={isTokenReady} />
               </TabsContent>
               <TabsContent value="attendance" className="flex-1 min-h-0 mt-0">
-                <AttendanceReportTab
-                  attendanceChartsProps={{ attendanceRate: 0 }}
-                  chartsLoading={false}
-                />
+                <AttendanceReportTabContainer isTokenReady={isTokenReady} />
               </TabsContent>
             </Tabs>
           ) : (

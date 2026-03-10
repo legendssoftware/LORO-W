@@ -95,6 +95,25 @@ export interface AttendanceReportUserMetric {
     };
 }
 
+/** GET /att/report - organization-level totals and insights. */
+export interface AttendanceReportOrganizationMetrics {
+    totals?: {
+        totalEmployees?: number;
+        totalHours: number;
+        totalShifts: number;
+        overtimeHours?: number;
+    };
+    insights?: {
+        attendanceRate: number;
+        punctualityRate?: number;
+        averageHoursPerDay?: number;
+        peakCheckInTime?: string;
+        peakCheckOutTime?: string;
+    };
+    byBranch?: unknown[];
+    byRole?: unknown[];
+}
+
 export interface AttendanceReportResponse {
     message: string;
     report: {
@@ -105,7 +124,7 @@ export interface AttendanceReportResponse {
             generatedAt?: string;
         };
         userMetrics: AttendanceReportUserMetric[];
-        organizationMetrics?: Record<string, unknown>;
+        organizationMetrics?: AttendanceReportOrganizationMetrics;
     };
 }
 
