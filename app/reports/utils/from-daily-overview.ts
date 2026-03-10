@@ -50,6 +50,7 @@ export function fromDailyOverviewMergeMonthly(
       lastAppAccessDeviceType: u.lastAppAccessDeviceType ?? null,
       distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
       hrID: u.hrID ?? null,
+      last7Days: monthly?.last7Days,
     };
   };
   const presentCards = presentUsers.map((u) => toCard(u, true));

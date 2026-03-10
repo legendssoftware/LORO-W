@@ -20,24 +20,29 @@ import { cn } from '@/lib/utils';
 function LastSevenDaysDots({
   userRef,
   endDate,
+  last7Days: last7DaysProp,
 }: {
   userRef: string;
   endDate: Date;
+  /** When provided (e.g. from monthly metrics), skips useMonthlyAttendance fetch. */
+  last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
 }) {
   const year = endDate.getFullYear();
   const month = endDate.getMonth() + 1;
   const { data, isLoading } = useMonthlyAttendance(userRef, year, month, {
-    enabled: !!userRef,
+    enabled: !!userRef && last7DaysProp == null,
   });
   const sevenDays = useMemo(() => {
+    if (last7DaysProp?.length) return last7DaysProp;
     if (!data?.days?.length) return [];
     const end = format(endDate, 'yyyy-MM-dd');
     const start = format(subDays(endDate, 6), 'yyyy-MM-dd');
     return (data.days as { date: string; status: string }[])
       .filter((d) => d.date >= start && d.date <= end)
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [data?.days, endDate]);
-  if (isLoading || sevenDays.length === 0) {
+  }, [last7DaysProp, data?.days, endDate]);
+  const isLoadingDots = last7DaysProp == null && isLoading;
+  if (isLoadingDots || sevenDays.length === 0) {
     return (
       <div className="w-full grid grid-cols-7 gap-0 items-center">
         {Array.from({ length: 7 }).map((_, i) => (
@@ -252,7 +257,11 @@ export function ReportUserCard({
           <div className="w-full">
             <p className="text-xs text-muted-foreground mb-1">Last 7 days</p>
             <div className="w-full">
-              <LastSevenDaysDots userRef={user.ref} endDate={endDate} />
+              <LastSevenDaysDots
+                userRef={user.ref}
+                endDate={endDate}
+                last7Days={user.last7Days}
+              />
             </div>
           </div>
           {user.firstAttendanceInPeriod && (
