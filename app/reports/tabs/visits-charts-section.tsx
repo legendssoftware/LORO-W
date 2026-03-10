@@ -466,7 +466,16 @@ export function VisitsChartsSection({
                   type="natural"
                   fill="url(#fillVisits)"
                   stroke="var(--color-visits)"
-                />
+                  dot={{ r: 4 }}
+                >
+                  <LabelList
+                    dataKey="visits"
+                    position="top"
+                    offset={8}
+                    className="fill-foreground"
+                    fontSize={12}
+                  />
+                </Area>
               </AreaChart>
             </ChartContainer>
           )}

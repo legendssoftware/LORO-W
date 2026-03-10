@@ -171,6 +171,25 @@ type UserBaseline = {
   assignedClientIds?: number[];
 };
 
+/** Build userTarget object from target form values (only defined, non-empty). */
+function buildUserTargetBody(values: TargetFormValues): PatchUserTargetBody | undefined {
+  const keys: (keyof PatchUserTargetBody)[] = [
+    'targetSalesAmount', 'targetQuotationsAmount', 'currentSalesAmount', 'currentQuotationsAmount', 'currentOrdersAmount',
+    'targetCurrency', 'targetHoursWorked', 'currentHoursWorked', 'targetNewClients', 'currentNewClients',
+    'targetNewLeads', 'currentNewLeads', 'targetCheckIns', 'currentCheckIns', 'targetCalls', 'currentCalls',
+    'targetPeriod', 'periodStartDate', 'periodEndDate', 'isRecurring', 'recurringInterval', 'carryForwardUnfulfilled',
+    'baseSalary', 'carInstalment', 'carInsurance', 'fuel', 'cellPhoneAllowance', 'carMaintenance', 'cgicCosts', 'totalCost', 'erpSalesRepCode',
+  ];
+  const body: PatchUserTargetBody = {};
+  for (const k of keys) {
+    const v = values[k as keyof TargetFormValues];
+    if (v !== undefined && v !== null && v !== '') {
+      (body as Record<string, unknown>)[k] = v;
+    }
+  }
+  return Object.keys(body).length > 0 ? body : undefined;
+}
+
 /** Build PATCH body with only fields that changed. Never sends empty string for enum fields. */
 function buildPatchBody(user: UserBaseline | null | undefined, values: FormValues): PatchUserBody {
   if (!user) return {};
@@ -455,6 +474,10 @@ export default function UserSettingsPage() {
 
   const onSubmit = (values: FormValues) => {
     const body = buildPatchBody(user ?? undefined, values);
+    const targetPayload = buildUserTargetBody(targetForm.getValues());
+    if (targetPayload) {
+      body.userTarget = targetPayload;
+    }
     const hasChanges = Object.keys(body).length > 0;
     if (!hasChanges) {
       toast.success('No changes to save');
@@ -462,7 +485,7 @@ export default function UserSettingsPage() {
     }
     patchUser.mutate(body, {
       onSuccess: () => {
-        toast.success('User updated');
+        toast.success(body.userTarget ? 'User and targets updated' : 'User updated');
         router.push('/reports');
       },
       onError: (err: Error) => {
@@ -1170,7 +1193,7 @@ export default function UserSettingsPage() {
               <CardHeader>
                 <CardTitle>User targets</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Performance targets and cost breakdown. Save separately from the main profile.
+                  Performance targets and cost breakdown. The main &quot;Save&quot; button above also saves these targets (creates them if the user has none). You can also save only targets here.
                 </p>
               </CardHeader>
               <CardContent>
