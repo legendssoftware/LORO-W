@@ -25,6 +25,9 @@ export function useAttCheckInMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }
@@ -45,6 +48,9 @@ export function useAttCheckOutMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }
@@ -65,6 +71,9 @@ export function useBreakMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
     },
   });
 }

@@ -44,4 +44,6 @@ export interface ReportCardUser {
   distanceFromWorkplaceMeters?: number | null;
   /** Employee HR ID (Employee Code) */
   hrID?: number | null;
+  /** Last 7 days attendance status (attended/missed/future) from monthly metrics. */
+  last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
 }

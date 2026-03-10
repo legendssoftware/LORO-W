@@ -93,6 +93,8 @@ export interface PatchUserBody {
     email?: string;
     contactNumber?: string;
   };
+  /** Optional: create or update user targets in the same request. If user has no targets they are created; if they exist they are updated. */
+  userTarget?: PatchUserTargetBody;
 }
 
 /** Partial update body for PATCH /user/:ref/target. Matches server UpdateUserTargetDto. */

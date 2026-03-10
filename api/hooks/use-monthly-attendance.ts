@@ -22,9 +22,9 @@ export function useMonthlyAttendance(
     queryKey: [...QUERY_KEY, ref, y, m],
     queryFn: () => getMonthlyAttendance(client, ref!, { year: y, month: m }),
     enabled: (options?.enabled !== false) && ref != null && String(ref).length > 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }

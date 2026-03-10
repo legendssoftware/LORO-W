@@ -95,6 +95,25 @@ export interface AttendanceReportUserMetric {
     };
 }
 
+/** GET /att/report - organization-level totals and insights. */
+export interface AttendanceReportOrganizationMetrics {
+    totals?: {
+        totalEmployees?: number;
+        totalHours: number;
+        totalShifts: number;
+        overtimeHours?: number;
+    };
+    insights?: {
+        attendanceRate: number;
+        punctualityRate?: number;
+        averageHoursPerDay?: number;
+        peakCheckInTime?: string;
+        peakCheckOutTime?: string;
+    };
+    byBranch?: unknown[];
+    byRole?: unknown[];
+}
+
 export interface AttendanceReportResponse {
     message: string;
     report: {
@@ -105,8 +124,14 @@ export interface AttendanceReportResponse {
             generatedAt?: string;
         };
         userMetrics: AttendanceReportUserMetric[];
-        organizationMetrics?: Record<string, unknown>;
+        organizationMetrics?: AttendanceReportOrganizationMetrics;
     };
+}
+
+/** Last 7 days attendance status for staff grid. */
+export interface Last7DaysItem {
+    date: string;
+    status: 'attended' | 'missed' | 'future';
 }
 
 /** POST /att/metrics/monthly - monthly metrics for all users. */
@@ -117,6 +142,8 @@ export interface MonthlyMetricsUserItem {
     totalHours: number;
     overtimeHours: number;
     checkIns?: unknown[];
+    /** Last 7 days attendance status (attended/missed/future) for staff grid. */
+    last7Days?: Last7DaysItem[];
 }
 
 export interface MonthlyMetricsResponse {

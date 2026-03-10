@@ -319,15 +319,19 @@ export function StaffContent() {
                     <TableHead>Holiday Hours</TableHead>
                     <TableHead>Time Over</TableHead>
                     <TableHead>Sundays</TableHead>
-                    <TableHead>
-                      <span>Total Hours ({format(new Date(yearForSingle, monthForSingle - 1), 'MMM yyyy')})</span>
-                      <span className="text-muted-foreground text-xs font-normal block">this mnth</span>
+                    <TableHead className="h-auto whitespace-normal py-2 align-bottom text-right">
+                      <span className="block leading-tight">Total Hours</span>
+                      <span className="text-muted-foreground text-xs font-normal block leading-tight">
+                        (this month {format(new Date(yearForSingle, monthForSingle - 1), 'MMM yyyy')})
+                      </span>
                     </TableHead>
-                    <TableHead>
-                      Payroll Hours
-                      {payrollQuery.data.period?.startDate && payrollQuery.data.period?.endDate
-                        ? ` (${format(new Date(payrollQuery.data.period.startDate), 'd MMM')} - ${format(new Date(payrollQuery.data.period.endDate), 'd MMM')})`
-                        : ''}
+                    <TableHead className="h-auto whitespace-normal py-2 align-bottom text-right">
+                      <span className="block leading-tight">Payroll Hours</span>
+                      <span className="text-muted-foreground text-xs font-normal block leading-tight">
+                        {payrollQuery.data.period?.startDate && payrollQuery.data.period?.endDate
+                          ? `(${format(new Date(payrollQuery.data.period.startDate), 'd MMM')} - ${format(new Date(payrollQuery.data.period.endDate), 'd MMM')})`
+                          : '(current payroll period)'}
+                      </span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -354,13 +358,15 @@ export function StaffContent() {
                       <TableCell className="text-muted-foreground">—</TableCell>
                       <TableCell className="text-muted-foreground">—</TableCell>
                       <TableCell className="text-muted-foreground">—</TableCell>
-                      <TableCell className="text-muted-foreground">—</TableCell>
                       <TableCell
-                        className={row.totalHours != null ? 'tabular-nums font-medium' : 'text-muted-foreground'}
+                        className={cn(
+                          'text-right',
+                          row.totalHours != null ? 'tabular-nums font-medium' : 'text-muted-foreground'
+                        )}
                       >
                         {row.totalHours != null ? `${row.totalHours}h` : '—'}
                       </TableCell>
-                      <TableCell className="tabular-nums font-medium">{row.payrollHours}h</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{row.payrollHours}h</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
