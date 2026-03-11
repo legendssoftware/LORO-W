@@ -9,6 +9,7 @@ import {
   useCheckIns,
   useAttendanceReport,
   useMonthlyMetrics,
+  useDailyOverview,
 } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
@@ -163,10 +164,25 @@ function AttendanceReportTabContainer({ isTokenReady }: { isTokenReady: boolean 
     { year, month, includeCheckIns: false },
     { enabled: mounted && isTokenReady }
   );
+  const dailyQuery = useDailyOverview(
+    { date: dateTo },
+    { enabled: mounted && isTokenReady }
+  );
 
   const report = reportQuery.data?.report;
   const monthlyData = monthlyQuery.data?.data;
-  const isLoading = reportQuery.isLoading || monthlyQuery.isLoading;
+  const dailyData = dailyQuery.data?.data;
+  const isLoading = reportQuery.isLoading || monthlyQuery.isLoading || dailyQuery.isLoading;
+
+  const dailyOverview = dailyData
+    ? {
+        date: dailyData.date,
+        presentEmployees: dailyData.presentEmployees,
+        absentEmployees: dailyData.absentEmployees,
+        attendanceRate: dailyData.attendanceRate,
+        totalEmployees: dailyData.totalEmployees,
+      }
+    : null;
 
   const handleApplyDateRange = () => {
     if (pickerRange?.from) {
@@ -238,6 +254,9 @@ function AttendanceReportTabContainer({ isTokenReady }: { isTokenReady: boolean 
             organizationMetrics,
             monthlySummary,
             monthlyUserMetrics,
+            dailyOverview,
+            monthForMetrics: month,
+            yearForMetrics: year,
           }}
           chartsLoading={isLoading}
         />

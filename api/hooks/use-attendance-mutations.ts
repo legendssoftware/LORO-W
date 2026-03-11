@@ -8,6 +8,7 @@ import type { CheckInBody, CheckOutBody, BreakBody } from '@/api/types';
 const ATT_STATUS_QUERY_KEY = ['att-status'] as const;
 const ATT_METRICS_QUERY_KEY = ['att', 'metrics'] as const;
 const ATT_MONTHLY_QUERY_KEY = ['att', 'monthly'] as const;
+const ATT_PAYROLL_QUERY_KEY = ['att', 'payroll-hours'] as const;
 
 /**
  * Mutation for starting a shift (attendance check-in).
@@ -25,9 +26,11 @@ export function useAttCheckInMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
     },
   });
 }
@@ -48,9 +51,11 @@ export function useAttCheckOutMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
     },
   });
 }
@@ -71,9 +76,11 @@ export function useBreakMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
     },
   });
 }
