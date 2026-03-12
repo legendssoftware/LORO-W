@@ -1,8 +1,9 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useState, useEffect, useMemo } from 'react';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { Clock } from 'lucide-react';
 import {
   useTokenReady,
   useSessionSync,
@@ -18,14 +19,31 @@ import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
+import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
+import type { ReportCardUser } from '@/app/reports/types';
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const { isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile, isSyncing } = useSessionSync();
+  const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
+
+  const currentUserForModal = useMemo((): ReportCardUser | null => {
+    if (!profile?.uid) return null;
+    return {
+      userId: profile.uid,
+      ref: String(profile.uid),
+      name: clerkUser?.fullName ?? 'Me',
+      email: clerkUser?.primaryEmailAddress?.emailAddress ?? '',
+      hoursThisMonth: 0,
+      progressPercent: 0,
+      isPresent: false,
+    };
+  }, [profile?.uid, clerkUser?.fullName, clerkUser?.primaryEmailAddress?.emailAddress]);
 
   const attQuery = useAttStatus({
     enabled: isTokenReady,
@@ -200,8 +218,27 @@ export function DashboardContent() {
                 </div>
               </div>
             ) : (
-              <AttendanceStreakCalendar userRef={profile?.uid} />
+              <AttendanceStreakCalendar
+                userRef={profile?.uid}
+                headerTrailing={
+                  currentUserForModal ? (
+                    <button
+                      type="button"
+                      onClick={() => setAttendanceModalUser(currentUserForModal)}
+                      className="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 text-sm text-foreground hover:bg-gray-50"
+                      aria-label="View payroll attendance records"
+                    >
+                      <Clock className="size-4 shrink-0" />
+                      <span>Payroll Logs</span>
+                    </button>
+                  ) : undefined
+                }
+              />
             )}
+            <UserAttendanceRecordsModal
+              user={attendanceModalUser}
+              onClose={() => setAttendanceModalUser(null)}
+            />
           </div>
         )}
       </main>

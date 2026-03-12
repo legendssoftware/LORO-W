@@ -24,9 +24,11 @@ function colIndex(dayOfWeek: number): number {
 export interface AttendanceStreakCalendarProps {
   /** User ref (profile.uid) - required to show calendar */
   userRef?: number | null;
+  /** Optional content rendered in the header row to the right of the month selector (e.g. Payroll Logs button). */
+  headerTrailing?: React.ReactNode;
 }
 
-export function AttendanceStreakCalendar({ userRef }: AttendanceStreakCalendarProps) {
+export function AttendanceStreakCalendar({ userRef, headerTrailing }: AttendanceStreakCalendarProps) {
   const now = useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -103,28 +105,31 @@ export function AttendanceStreakCalendar({ userRef }: AttendanceStreakCalendarPr
         <>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-foreground">Attendance</h2>
-            <Select
-              value={valueKey}
-              onValueChange={(v) => {
-                const [y, m] = v.split('-').map(Number);
-                setSelectedYear(y);
-                setSelectedMonth(m);
-              }}
-            >
-              <SelectTrigger className="h-9 w-[140px] rounded border border-gray-200 bg-background">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((opt) => {
-                  const k = `${opt.year}-${opt.month}`;
-                  return (
-                    <SelectItem key={k} value={k}>
-                      {opt.label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                value={valueKey}
+                onValueChange={(v) => {
+                  const [y, m] = v.split('-').map(Number);
+                  setSelectedYear(y);
+                  setSelectedMonth(m);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[140px] rounded border border-gray-200 bg-background">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((opt) => {
+                    const k = `${opt.year}-${opt.month}`;
+                    return (
+                      <SelectItem key={k} value={k}>
+                        {opt.label}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {headerTrailing}
+            </div>
           </div>
           {!data?.days?.length ? (
             <div className="flex min-h-[200px] items-center justify-center py-8">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { format, subMonths, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays } from 'date-fns';
+import { format, subMonths, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
 import { useMonthlyAttendance } from '@/api/hooks';
 import type { ReportCardUser } from '@/app/reports/types';
 import {
@@ -31,10 +31,25 @@ interface AttendanceRecordShape {
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
 
+type ShiftType = 'same_day' | 'next_day_clockout' | null;
+
+function getShiftType(checkIn?: string | null, checkOut?: string | null): ShiftType {
+  if (!checkIn || !checkOut || checkOut === '') return null;
+  try {
+    const inDate = new Date(checkIn);
+    const outDate = new Date(checkOut);
+    if (isSameDay(inDate, outDate)) return 'same_day';
+    return isSameDay(outDate, addDays(inDate, 1)) ? 'next_day_clockout' : 'same_day';
+  } catch {
+    return null;
+  }
+}
+
 interface DayRecord {
   date: string;
   status: RowStatus;
   attendanceRecord?: AttendanceRecordShape;
+  shiftType: ShiftType;
 }
 
 export function UserAttendanceRecordsModal({
@@ -115,10 +130,12 @@ export function UserAttendanceRecordsModal({
       const isSunday = getDay(d) === 0;
 
       if (isSunday) {
+        const weekendRec = att?.status === 'attended' ? att.attendanceRecord : undefined;
         return [{
           date: dateStr,
           status: 'weekend' as RowStatus,
-          attendanceRecord: att?.status === 'attended' ? att.attendanceRecord : undefined,
+          attendanceRecord: weekendRec,
+          shiftType: getShiftType(weekendRec?.checkIn, weekendRec?.checkOut),
         }];
       }
 
@@ -127,6 +144,7 @@ export function UserAttendanceRecordsModal({
           date: dateStr,
           status: 'missed' as RowStatus,
           attendanceRecord: undefined,
+          shiftType: null,
         }];
       }
 
@@ -142,6 +160,7 @@ export function UserAttendanceRecordsModal({
         date: dateStr,
         status: rowStatus,
         attendanceRecord: rec,
+        shiftType: getShiftType(rec?.checkIn, rec?.checkOut),
       }];
     });
 
@@ -164,9 +183,10 @@ export function UserAttendanceRecordsModal({
     }
   };
 
-  const getRowClassName = (index: number, status: RowStatus): string => {
+  const getRowClassName = (index: number, status: RowStatus, shiftType: ShiftType): string => {
+    const isNextDayClockout = shiftType === 'next_day_clockout';
     const isHighlighted =
-      status === 'missed' || status === 'incomplete' || status === 'late';
+      status === 'missed' || status === 'incomplete' || status === 'late' || isNextDayClockout;
     const isWeekend = status === 'weekend';
     const base = isHighlighted || isWeekend
       ? ''
@@ -174,15 +194,17 @@ export function UserAttendanceRecordsModal({
         ? 'bg-muted/30'
         : '';
     const highlight =
-      status === 'missed'
+      isNextDayClockout
         ? 'bg-destructive/10'
-        : status === 'incomplete'
-          ? 'bg-amber-500/10'
-          : status === 'late'
-            ? 'bg-amber-500/5'
-            : status === 'weekend'
-              ? 'bg-muted/50'
-              : '';
+        : status === 'missed'
+          ? 'bg-destructive/10'
+          : status === 'incomplete'
+            ? 'bg-amber-500/10'
+            : status === 'late'
+              ? 'bg-amber-500/5'
+              : status === 'weekend'
+                ? 'bg-muted/50'
+                : '';
     return cn(base, highlight);
   };
 
@@ -214,7 +236,8 @@ export function UserAttendanceRecordsModal({
         ? eachDayOfInterval({ start: tomorrow, end: endFull })
         : [];
     const remaining = futureDays.filter((d) => getDay(d) !== 0).length;
-    return { missed, attended, remaining };
+    const forgottenOuts = records.filter((r) => r.shiftType === 'next_day_clockout').length;
+    return { missed, attended, remaining, forgottenOuts };
   }, [records, today]);
 
   return (
@@ -261,13 +284,14 @@ export function UserAttendanceRecordsModal({
                   <TableHead>Check-in</TableHead>
                   <TableHead>Check-out</TableHead>
                   <TableHead>Duration</TableHead>
+                  <TableHead>Shift</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {records.map((r, index) => (
                   <TableRow
                     key={r.date}
-                    className={getRowClassName(index, r.status)}
+                    className={getRowClassName(index, r.status, r.shiftType)}
                   >
                     <TableCell className="font-medium">
                       {format(new Date(r.date), 'EEE, MMM d, yyyy')}
@@ -295,6 +319,17 @@ export function UserAttendanceRecordsModal({
                     <TableCell className="tabular-nums">
                       {r.attendanceRecord?.duration ?? '—'}
                     </TableCell>
+                    <TableCell>
+                      {r.shiftType === 'same_day'
+                        ? 'Same day'
+                        : r.shiftType === 'next_day_clockout'
+                          ? (
+                              <span className="font-medium text-destructive">
+                                Next day clockout
+                              </span>
+                            )
+                          : '—'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -303,8 +338,23 @@ export function UserAttendanceRecordsModal({
         </div>
 
         {!isLoading && records.length > 0 && (
-          <div className="shrink-0 border-t border-border py-2 px-3 text-sm text-muted-foreground">
-            Missed: {summary.missed} · Attended: {summary.attended} · Remaining: {summary.remaining}
+          <div className="shrink-0 border-t border-border py-3 px-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-base">
+            <span>
+              <span className="font-medium text-destructive">Missed:</span>{' '}
+              <span className="tabular-nums font-semibold text-destructive">{summary.missed}</span>
+            </span>
+            <span>
+              <span className="font-medium text-green-600 dark:text-green-500">Attended:</span>{' '}
+              <span className="tabular-nums font-semibold text-green-600 dark:text-green-500">{summary.attended}</span>
+            </span>
+            <span>
+              <span className="font-medium text-muted-foreground">Remaining:</span>{' '}
+              <span className="tabular-nums font-semibold text-muted-foreground">{summary.remaining}</span>
+            </span>
+            <span>
+              <span className="font-medium text-destructive">Forgotten outs:</span>{' '}
+              <span className="tabular-nums font-semibold text-destructive">{summary.forgottenOuts}</span>
+            </span>
           </div>
         )}
       </DialogContent>

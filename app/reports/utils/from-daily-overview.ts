@@ -1,21 +1,33 @@
 import type { DailyOverviewUser, MonthlyMetricsUserItem } from '@/api/types';
 import type { ReportCardUser } from '@/app/reports/types';
-import { EXPECTED_MONTHLY_HOURS } from '@/app/reports/tabs/constants';
+import {
+  EXPECTED_MONTHLY_HOURS,
+  getExpectedMonthlyHoursWeekdaysOnly,
+} from '@/app/reports/tabs/constants';
+
+/** Month context for five-day work week expected hours (year, month 1–12). When provided, progress uses weekday-based expected. */
+export type MonthContext = { year: number; month: number };
 
 /**
  * Merges daily overview (present/absent users) with monthly metrics to produce ReportCardUser[].
+ * When monthContext is provided, expected hours and progress % use a five-day work week (Mon–Fri only).
  */
 export function fromDailyOverviewMergeMonthly(
   presentUsers: DailyOverviewUser[],
   absentUsers: DailyOverviewUser[],
-  monthlyByUserId: Map<number, MonthlyMetricsUserItem>
+  monthlyByUserId: Map<number, MonthlyMetricsUserItem>,
+  monthContext?: MonthContext
 ): ReportCardUser[] {
+  const expectedMonthly = monthContext
+    ? getExpectedMonthlyHoursWeekdaysOnly(monthContext.year, monthContext.month)
+    : EXPECTED_MONTHLY_HOURS;
+
   const toCard = (u: DailyOverviewUser, present: boolean): ReportCardUser => {
     const monthly = monthlyByUserId.get(u.uid);
     const hours = monthly?.totalHours ?? 0;
     const progress = Math.min(
       100,
-      Math.round((hours / EXPECTED_MONTHLY_HOURS) * 100)
+      Math.round((hours / expectedMonthly) * 100)
     );
     return {
       userId: u.uid,
