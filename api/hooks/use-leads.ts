@@ -17,7 +17,10 @@ import type {
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 
-const QUERY_KEY_PREFIX = ['leads'] as const;
+/** Query key prefix for leads. Use for invalidateQueries/refetchQueries after create, import, or other lead mutations. */
+export const LEADS_QUERY_KEY_PREFIX = ['leads'] as const;
+
+const QUERY_KEY_PREFIX = LEADS_QUERY_KEY_PREFIX;
 
 /**
  * Fetches paginated leads list.

@@ -70,6 +70,7 @@ export function useCreateTaskMutation() {
     mutationFn: (payload: CreateTaskPayload) => createTask(client, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -91,6 +92,7 @@ export function useUpdateTaskMutation() {
       queryClient.invalidateQueries({
         queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', variables.ref],
       });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }

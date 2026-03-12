@@ -1,6 +1,6 @@
 /**
  * Zustand store for visits page state.
- * Centralizes date range, filters, and UI state for clean, predictable updates.
+ * Centralizes date range, filters, and UI state (mirrors leads-store pattern).
  */
 
 import { create } from 'zustand';
@@ -22,38 +22,33 @@ export interface VisitsFiltersState {
   searchQuery: string;
 }
 
-export type VisitsViewMode = 'table' | 'map';
-
 export interface VisitsUIState {
   dateRangePopoverOpen: boolean;
   methodModalOpen: boolean;
   endVisitOpen: boolean;
   followUpPickerOpen: boolean;
-  viewMode: VisitsViewMode;
-}
-
-export interface VisitsFormState {
+  viewMode: 'map' | 'table';
   selectedMethod: MethodOfContact | null;
   selectedClient: ClientListItem | null;
   clientSearch: string;
 }
 
-interface VisitsStore extends VisitsFiltersState, VisitsUIState, VisitsFormState {
+interface VisitsStore extends VisitsFiltersState, VisitsUIState {
   setStartDate: (date: Date) => void;
   setEndDate: (date: Date) => void;
   setUseAllTime: (value: boolean) => void;
   setSelectedRegion: (region: string) => void;
-  setSelectedBusinessType: (type: string) => void;
-  setSelectedUserUid: (uid: string) => void;
+  setSelectedBusinessType: (businessType: string) => void;
+  setSelectedUserUid: (userUid: string) => void;
   setSearchQuery: (query: string) => void;
   setDateRangePopoverOpen: (open: boolean) => void;
   setMethodModalOpen: (open: boolean) => void;
   setEndVisitOpen: (open: boolean) => void;
   setFollowUpPickerOpen: (open: boolean) => void;
-  setViewMode: (mode: VisitsViewMode) => void;
   setSelectedMethod: (method: MethodOfContact | null) => void;
   setSelectedClient: (client: ClientListItem | null) => void;
-  setClientSearch: (search: string) => void;
+  setClientSearch: (query: string) => void;
+  setViewMode: (mode: 'map' | 'table') => void;
   selectEndDateAndClose: (date: Date) => void;
   resetDateRangeToDefault: () => void;
 }
@@ -70,7 +65,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   methodModalOpen: false,
   endVisitOpen: false,
   followUpPickerOpen: false,
-  viewMode: 'table' as VisitsViewMode,
+  viewMode: 'table',
   selectedMethod: null,
   selectedClient: null,
   clientSearch: '',
@@ -79,17 +74,17 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   setEndDate: (date) => set({ endDate: date }),
   setUseAllTime: (value) => set({ useAllTime: value }),
   setSelectedRegion: (region) => set({ selectedRegion: region }),
-  setSelectedBusinessType: (type) => set({ selectedBusinessType: type }),
-  setSelectedUserUid: (uid) => set({ selectedUserUid: uid }),
+  setSelectedBusinessType: (businessType) => set({ selectedBusinessType: businessType }),
+  setSelectedUserUid: (userUid) => set({ selectedUserUid: userUid }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setDateRangePopoverOpen: (open) => set({ dateRangePopoverOpen: open }),
   setMethodModalOpen: (open) => set({ methodModalOpen: open }),
   setEndVisitOpen: (open) => set({ endVisitOpen: open }),
   setFollowUpPickerOpen: (open) => set({ followUpPickerOpen: open }),
-  setViewMode: (mode) => set({ viewMode: mode }),
   setSelectedMethod: (method) => set({ selectedMethod: method }),
   setSelectedClient: (client) => set({ selectedClient: client }),
-  setClientSearch: (search) => set({ clientSearch: search }),
+  setClientSearch: (query) => set({ clientSearch: query }),
+  setViewMode: (mode) => set({ viewMode: mode }),
 
   selectEndDateAndClose: (date) =>
     set({ endDate: date, useAllTime: false, dateRangePopoverOpen: false }),

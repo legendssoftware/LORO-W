@@ -24,7 +24,7 @@ import { XIcon } from '@/lib/icons';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
-import { getExpectedHoursByDate, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
+import { getExpectedHoursByDateWeekdaysOnly, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
@@ -90,9 +90,10 @@ export function StaffContent() {
     return fromDailyOverviewMergeMonthly(
       dailyQuery.data.data.presentUsers,
       dailyQuery.data.data.absentUsers,
-      monthlyByUserId
+      monthlyByUserId,
+      { year: yearForSingle, month: monthForSingle }
     );
-  }, [singleDateStr, dailyQuery.data, monthlyByUserId]);
+  }, [singleDateStr, dailyQuery.data, monthlyByUserId, yearForSingle, monthForSingle]);
 
   const cardUsersByUserId = useMemo(() => {
     const map = new Map<number, ReportCardUser>();
@@ -123,7 +124,7 @@ export function StaffContent() {
     if (statusFilter === 'late') return cardUsers.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
     if (statusFilter === 'early') return cardUsers.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
     if (statusFilter === 'behind_on_hours') {
-      const expectedByNow = getExpectedHoursByDate(today);
+      const expectedByNow = getExpectedHoursByDateWeekdaysOnly(today);
       return cardUsers.filter((u) => (expectedByNow - u.hoursThisMonth) > HOURS_BEHIND_BADGE_THRESHOLD);
     }
     if (statusFilter === 'idle') {

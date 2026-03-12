@@ -5,7 +5,11 @@ import Link from 'next/link';
 import { format, subDays } from 'date-fns';
 import { useMonthlyAttendance } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
-import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
+import {
+  getExpectedHoursByDateWeekdaysOnly,
+  getExpectedMonthlyHoursWeekdaysOnly,
+  HOURS_BEHIND_BADGE_THRESHOLD,
+} from '@/app/reports/tabs/constants';
 import type { ReportCardUser } from '@/app/reports/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -142,7 +146,11 @@ export function ReportUserCard({
   onClockClick?: (e: React.MouseEvent) => void;
 }) {
   const isMobile = useIsMobile();
-  const expectedByNow = getExpectedHoursByDate(endDate);
+  const expectedByNow = getExpectedHoursByDateWeekdaysOnly(endDate);
+  const expectedMonthly = getExpectedMonthlyHoursWeekdaysOnly(
+    endDate.getFullYear(),
+    endDate.getMonth() + 1
+  );
   const hoursBehind = expectedByNow - user.hoursThisMonth;
   const isBehindBadge = hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD;
   const distanceText =
@@ -274,7 +282,7 @@ export function ReportUserCard({
           <p className={cn('text-muted-foreground flex items-center justify-between gap-2', isMobile ? 'text-xs' : 'text-sm')}>
             <span>
               <strong className="text-foreground">{user.hoursThisMonth}h</strong>
-              /{EXPECTED_MONTHLY_HOURS}h this month
+              /{expectedMonthly}h this month
             </span>
             <span className="shrink-0">~{expectedByNow}h expected</span>
           </p>

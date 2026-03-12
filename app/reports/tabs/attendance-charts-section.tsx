@@ -27,6 +27,7 @@ import {
   Label,
 } from 'recharts';
 import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
+import { EXPECTED_HOURS_PER_DAY, workingDaysInMonth } from '@/app/reports/tabs/constants';
 import type { AttendanceReportOrganizationMetrics } from '@/api/types/attendance';
 import type { MonthlyMetricsUserItem } from '@/api/types/attendance';
 
@@ -41,22 +42,6 @@ const ON_TRACK_CHART_CONFIG: ChartConfig = {
   onTrack: { label: 'On track', color: 'var(--chart-1)' },
   behind: { label: 'Behind', color: 'var(--chart-2)' },
 };
-
-/** Count weekdays (Mon–Fri) in a calendar month. month is 1–12. */
-function workingDaysInMonth(year: number, month: number): number {
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 0);
-  let count = 0;
-  const d = new Date(start);
-  while (d <= end) {
-    const day = d.getDay();
-    if (day >= 1 && day <= 5) count++;
-    d.setDate(d.getDate() + 1);
-  }
-  return count;
-}
-
-const EXPECTED_HOURS_PER_DAY = 8;
 
 export interface DailyOverviewSummary {
   date: string;

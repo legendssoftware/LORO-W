@@ -15,9 +15,11 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
 import type { VisitExportItem } from '@/api/types/reports';
 import { visitListItemToExportItem } from '@/lib/utils/visits-export';
+import { useVisitsStore } from '@/store/visits-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VisitsChartsSection } from '@/app/reports/tabs/visits-charts-section';
 import { AttendanceReportTab } from '@/app/reports/tabs/attendance-report-tab';
+import { VisitsTable } from '@/components/visits-table/visits-table';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -27,23 +29,34 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
+import { useQueryClient } from '@tanstack/react-query';
+import { CHECK_INS_LIST_QUERY_KEY } from '@/api/hooks/use-check-ins';
 
 function getDefaultDateRange() {
   const today = new Date();
   return { start: subDays(today, 365), end: today };
 }
 
-/** Visits tab: visit charts with date range filter. Admin-only. */
+/** Visits tab: visit charts and table with date range filter. Admin-only. Uses visits-store for filter state. */
 function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
   const [mounted, setMounted] = useState(false);
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(getDefaultDateRange);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const {
+    startDate: storeStart,
+    endDate: storeEnd,
+    dateRangePopoverOpen: popoverOpen,
+    setStartDate: setStoreStart,
+    setEndDate: setStoreEnd,
+    setDateRangePopoverOpen: setPopoverOpen,
+  } = useVisitsStore();
   const [pickerRange, setPickerRange] = useState<DateRange | undefined>({
-    from: dateRange.start,
-    to: dateRange.end,
+    from: storeStart,
+    to: storeEnd,
   });
 
   useEffect(() => setMounted(true), []);
+
+  const dateRange = { start: storeStart, end: storeEnd };
 
   const checkInsQuery = useCheckIns(
     {
@@ -73,10 +86,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     if (pickerRange?.from) {
       const start = pickerRange.from;
       const end = pickerRange.to ?? pickerRange.from;
-      setDateRange({
-        start: start < end ? start : end,
-        end: start < end ? end : start,
-      });
+      const orderedStart = start < end ? start : end;
+      const orderedEnd = start < end ? end : start;
+      setStoreStart(orderedStart);
+      setStoreEnd(orderedEnd);
       setPopoverOpen(false);
     }
   };
@@ -85,6 +98,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     setPopoverOpen(open);
     if (!open) return;
     setPickerRange({ from: dateRange.start, to: dateRange.end });
+  };
+
+  const handleVisitUpdated = () => {
+    void queryClient.refetchQueries({ queryKey: CHECK_INS_LIST_QUERY_KEY });
   };
 
   return (
@@ -132,6 +149,15 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
           checkIns={checkIns}
           reportTotal={checkIns.length}
           reportLoading={isLoading}
+        />
+      </div>
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-3">Visits table</h3>
+        <VisitsTable
+          checkIns={checkIns}
+          isLoading={isLoading}
+          emptyMessage="No visits in this date range."
+          onVisitUpdated={handleVisitUpdated}
         />
       </div>
     </div>
