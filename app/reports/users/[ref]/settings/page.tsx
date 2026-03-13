@@ -150,6 +150,37 @@ function formatEnumLabel(value: string): string {
     .join(' ');
 }
 
+/** ISO 4217 currency options for target currency dropdown. */
+const CURRENCY_OPTIONS = [
+  { value: 'ZAR', label: 'ZAR - South African Rand' },
+  { value: 'USD', label: 'USD - US Dollar' },
+  { value: 'EUR', label: 'EUR - Euro' },
+  { value: 'GBP', label: 'GBP - British Pound' },
+  { value: 'AUD', label: 'AUD - Australian Dollar' },
+  { value: 'CAD', label: 'CAD - Canadian Dollar' },
+  { value: 'CHF', label: 'CHF - Swiss Franc' },
+  { value: 'JPY', label: 'JPY - Japanese Yen' },
+  { value: 'BWP', label: 'BWP - Botswana Pula' },
+  { value: 'NAD', label: 'NAD - Namibian Dollar' },
+  { value: 'SZL', label: 'SZL - Swazi Lilangeni' },
+  { value: 'LSL', label: 'LSL - Lesotho Loti' },
+  { value: 'NGN', label: 'NGN - Nigerian Naira' },
+  { value: 'KES', label: 'KES - Kenyan Shilling' },
+  { value: 'GHS', label: 'GHS - Ghanaian Cedi' },
+  { value: 'MUR', label: 'MUR - Mauritian Rupee' },
+  { value: 'INR', label: 'INR - Indian Rupee' },
+  { value: 'CNY', label: 'CNY - Chinese Yuan' },
+];
+
+/** Target period options for dropdown. */
+const TARGET_PERIOD_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annually', label: 'Annually' },
+];
+
 /** User shape used for diffing (subset of API response). */
 type UserBaseline = {
   name?: string | null;
@@ -279,7 +310,12 @@ function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormV
     if (v === null || v === undefined) return null;
     if (typeof v === 'string') return v.slice(0, 10);
     if (v instanceof Date) return v.toISOString().slice(0, 10);
-    return null;
+    try {
+      const d = new Date(v as string | number | Date);
+      return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+    } catch {
+      return null;
+    }
   };
   const bool = (v: unknown): boolean | null =>
     v === null || v === undefined ? null : typeof v === 'boolean' ? v : null;
@@ -1198,7 +1234,7 @@ export default function UserSettingsPage() {
               </CardHeader>
               <CardContent>
                 <Form {...targetForm}>
-                  <form onSubmit={targetForm.handleSubmit(onTargetSubmit)} className="space-y-4">
+                  <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <FormField
                         control={targetForm.control}
@@ -1301,9 +1337,35 @@ export default function UserSettingsPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Currency</FormLabel>
-                            <FormControl>
-                              <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. ZAR" />
-                            </FormControl>
+                            <Select
+                              onValueChange={(v) =>
+                                field.onChange(v === '__none__' ? null : v)
+                              }
+                              value={
+                                field.value != null && field.value !== ''
+                                  ? field.value
+                                  : '__none__'
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="__none__">
+                                  Select currency
+                                </SelectItem>
+                                {CURRENCY_OPTIONS.map((opt) => (
+                                  <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                  >
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1446,9 +1508,35 @@ export default function UserSettingsPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Target period</FormLabel>
-                            <FormControl>
-                              <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. monthly" />
-                            </FormControl>
+                            <Select
+                              onValueChange={(v) =>
+                                field.onChange(v === '__none__' ? null : v)
+                              }
+                              value={
+                                field.value != null && field.value !== ''
+                                  ? field.value
+                                  : '__none__'
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select period" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="__none__">
+                                  Select period
+                                </SelectItem>
+                                {TARGET_PERIOD_OPTIONS.map((opt) => (
+                                  <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                  >
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1650,10 +1738,15 @@ export default function UserSettingsPage() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" disabled={patchUserTargetMutation.isPending}>
+                    <Button
+                      type="button"
+                      onClick={() => targetForm.handleSubmit(onTargetSubmit)()}
+                      disabled={patchUserTargetMutation.isPending}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
                       {patchUserTargetMutation.isPending ? <Loader2Icon className="size-4 animate-spin" /> : 'Save targets'}
                     </Button>
-                  </form>
+                  </div>
                 </Form>
               </CardContent>
             </Card>
@@ -1927,7 +2020,11 @@ export default function UserSettingsPage() {
             </Card>
 
             <div className="flex gap-2">
-              <Button type="submit" variant="success" disabled={patchUser.isPending}>
+              <Button
+                type="submit"
+                disabled={patchUser.isPending}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
                 {patchUser.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (

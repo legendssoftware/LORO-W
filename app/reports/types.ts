@@ -46,4 +46,12 @@ export interface ReportCardUser {
   hrID?: number | null;
   /** Last 7 days attendance status (attended/missed/future) from monthly metrics. */
   last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
+  /** Payroll-period hours (when merged from Staff payroll API). */
+  payrollHours?: number;
+  /** Payroll-period target hours (weekdays in period × EXPECTED_HOURS_PER_DAY). */
+  payrollTargetHours?: number;
+  /** Prorated expected hours by today within the payroll period. */
+  payrollExpectedByNow?: number;
+  /** Progress % for payroll period: (payrollHours / payrollTargetHours) × 100. */
+  payrollProgressPercent?: number;
 }
