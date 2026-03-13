@@ -60,3 +60,37 @@ export function getExpectedHoursByDate(asOfDate: Date): number {
   const daysInMonth = getDaysInMonth(asOfDate);
   return Math.round((day / daysInMonth) * EXPECTED_MONTHLY_HOURS);
 }
+
+/** Count weekdays (Mon–Fri) between start and end (inclusive). */
+export function workingDaysInPeriod(start: Date, end: Date): number {
+  const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  let count = 0;
+  const d = new Date(s);
+  while (d <= e) {
+    const day = d.getDay();
+    if (day >= 1 && day <= 5) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+/**
+ * Prorated expected hours by asOfDate within a payroll period.
+ * Uses (weekdays from period start through asOfDate / total weekdays in period) × (period target hours).
+ * asOfDate is clamped to [periodStart, periodEnd].
+ */
+export function getExpectedPayrollHoursByDate(
+  periodStart: Date,
+  periodEnd: Date,
+  asOfDate: Date
+): number {
+  const start = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+  const end = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+  const clamped = asOfDate < start ? start : asOfDate > end ? end : new Date(asOfDate.getFullYear(), asOfDate.getMonth(), asOfDate.getDate());
+  const total = workingDaysInPeriod(start, end);
+  if (total === 0) return 0;
+  const soFar = workingDaysInPeriod(start, clamped);
+  const targetHours = total * EXPECTED_HOURS_PER_DAY;
+  return Math.round((soFar / total) * targetHours);
+}

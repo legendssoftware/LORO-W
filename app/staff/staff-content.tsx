@@ -24,7 +24,13 @@ import { XIcon } from '@/lib/icons';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
-import { getExpectedHoursByDateWeekdaysOnly, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
+import {
+  getExpectedHoursByDateWeekdaysOnly,
+  getExpectedPayrollHoursByDate,
+  HOURS_BEHIND_BADGE_THRESHOLD,
+  EXPECTED_HOURS_PER_DAY,
+  workingDaysInPeriod,
+} from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
@@ -95,11 +101,39 @@ export function StaffContent() {
     );
   }, [singleDateStr, dailyQuery.data, monthlyByUserId, yearForSingle, monthForSingle]);
 
+  const cardUsersWithPayroll = useMemo((): ReportCardUser[] => {
+    const payroll = payrollQuery.data;
+    if (!payroll?.period?.startDate || !payroll?.period?.endDate) return cardUsers;
+    const periodStart = new Date(payroll.period.startDate);
+    const periodEnd = new Date(payroll.period.endDate);
+    const payrollTargetHours = workingDaysInPeriod(periodStart, periodEnd) * EXPECTED_HOURS_PER_DAY;
+    const payrollExpectedByNow = getExpectedPayrollHoursByDate(periodStart, periodEnd, today);
+    const payrollByUserId = new Map<number, number>();
+    (payroll.userMetrics ?? []).forEach((m: { userId: number; payrollHours: number }) =>
+      payrollByUserId.set(m.userId, m.payrollHours)
+    );
+    return cardUsers.map((u) => {
+      const payrollHours = payrollByUserId.get(u.userId);
+      if (payrollHours == null) return u;
+      const payrollProgressPercent = Math.min(
+        100,
+        Math.round((payrollHours / payrollTargetHours) * 100)
+      );
+      return {
+        ...u,
+        payrollHours,
+        payrollTargetHours,
+        payrollExpectedByNow,
+        payrollProgressPercent,
+      };
+    });
+  }, [cardUsers, payrollQuery.data, today.getTime()]);
+
   const cardUsersByUserId = useMemo(() => {
     const map = new Map<number, ReportCardUser>();
-    cardUsers.forEach((u) => map.set(u.userId, u));
+    cardUsersWithPayroll.forEach((u) => map.set(u.userId, u));
     return map;
-  }, [cardUsers]);
+  }, [cardUsersWithPayroll]);
 
   const payrollTableRows = useMemo(() => {
     const metrics = payrollQuery.data?.userMetrics ?? [];
@@ -118,18 +152,23 @@ export function StaffContent() {
   }, [payrollQuery.data?.userMetrics, cardUsersByUserId, monthlyByUserId]);
 
   const statusFilteredUsers = useMemo(() => {
-    if (statusFilter === 'all') return cardUsers;
-    if (statusFilter === 'present') return cardUsers.filter((u) => u.isPresent);
-    if (statusFilter === 'absent') return cardUsers.filter((u) => !u.isPresent);
-    if (statusFilter === 'late') return cardUsers.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
-    if (statusFilter === 'early') return cardUsers.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
+    if (statusFilter === 'all') return cardUsersWithPayroll;
+    if (statusFilter === 'present') return cardUsersWithPayroll.filter((u) => u.isPresent);
+    if (statusFilter === 'absent') return cardUsersWithPayroll.filter((u) => !u.isPresent);
+    if (statusFilter === 'late') return cardUsersWithPayroll.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
+    if (statusFilter === 'early') return cardUsersWithPayroll.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
     if (statusFilter === 'behind_on_hours') {
-      const expectedByNow = getExpectedHoursByDateWeekdaysOnly(today);
-      return cardUsers.filter((u) => (expectedByNow - u.hoursThisMonth) > HOURS_BEHIND_BADGE_THRESHOLD);
+      return cardUsersWithPayroll.filter((u) => {
+        if (u.payrollExpectedByNow != null && u.payrollHours != null) {
+          return (u.payrollExpectedByNow - u.payrollHours) > HOURS_BEHIND_BADGE_THRESHOLD;
+        }
+        const expectedByNow = getExpectedHoursByDateWeekdaysOnly(today);
+        return (expectedByNow - u.hoursThisMonth) > HOURS_BEHIND_BADGE_THRESHOLD;
+      });
     }
     if (statusFilter === 'idle') {
       const sevenDaysAgo = subDays(today, 7);
-      return cardUsers.filter((u) => {
+      return cardUsersWithPayroll.filter((u) => {
         if (!u.lastAppAccessAt) return true;
         try {
           const lastAt = parse(u.lastAppAccessAt, 'MMM d, yyyy h:mm a', new Date());
@@ -139,8 +178,8 @@ export function StaffContent() {
         }
       });
     }
-    return cardUsers;
-  }, [cardUsers, statusFilter, today.getTime()]);
+    return cardUsersWithPayroll;
+  }, [cardUsersWithPayroll, statusFilter, today.getTime()]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
