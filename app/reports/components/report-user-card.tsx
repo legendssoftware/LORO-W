@@ -146,12 +146,18 @@ export function ReportUserCard({
   onClockClick?: (e: React.MouseEvent) => void;
 }) {
   const isMobile = useIsMobile();
+  const usePayroll =
+    user.payrollHours != null &&
+    user.payrollTargetHours != null &&
+    user.payrollTargetHours > 0;
   const expectedByNow = getExpectedHoursByDateWeekdaysOnly(endDate);
   const expectedMonthly = getExpectedMonthlyHoursWeekdaysOnly(
     endDate.getFullYear(),
     endDate.getMonth() + 1
   );
-  const hoursBehind = expectedByNow - user.hoursThisMonth;
+  const hoursBehind = usePayroll
+    ? (user.payrollExpectedByNow ?? 0) - (user.payrollHours ?? 0)
+    : expectedByNow - user.hoursThisMonth;
   const isBehindBadge = hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD;
   const distanceText =
     user.distanceFromWorkplaceMeters != null
@@ -280,21 +286,33 @@ export function ReportUserCard({
         </div>
         <div className={cn('shrink-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
           <p className={cn('text-muted-foreground flex items-center justify-between gap-2', isMobile ? 'text-xs' : 'text-sm')}>
-            <span>
-              <strong className="text-foreground">{user.hoursThisMonth}h</strong>
-              /{expectedMonthly}h this month
-            </span>
-            <span className="shrink-0">~{expectedByNow}h expected</span>
+            {usePayroll ? (
+              <>
+                <span>
+                  <strong className="text-foreground">{user.payrollHours}h</strong>
+                  /{user.payrollTargetHours}h payroll
+                </span>
+                <span className="shrink-0">~{user.payrollExpectedByNow ?? 0}h expected</span>
+              </>
+            ) : (
+              <>
+                <span>
+                  <strong className="text-foreground">{user.hoursThisMonth}h</strong>
+                  /{expectedMonthly}h this month
+                </span>
+                <span className="shrink-0">~{expectedByNow}h expected</span>
+              </>
+            )}
           </p>
           <div className="flex items-center gap-2">
-            <ReportProgressBar value={user.progressPercent} />
+            <ReportProgressBar value={usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent} />
             <span
               className={cn(
                 'text-xs tabular-nums font-medium',
-                getProgressColorClasses(user.progressPercent).text
+                getProgressColorClasses(usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent).text
               )}
             >
-              {user.progressPercent}%
+              {usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent}%
             </span>
           </div>
           {user.lastAppAccessAt && (
