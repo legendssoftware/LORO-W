@@ -222,14 +222,14 @@ export function StaffContent() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 shrink-0 mb-4">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
               <Select
                 value={statusFilter}
                 onValueChange={(v) => setStatusFilter(v as StatusFilter)}
               >
-                <SelectTrigger className="h-9 min-w-[140px] w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[140px] sm:w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,8 +254,8 @@ export function StaffContent() {
               ) : null}
             </div>
           </div>
-          <div className="flex flex-nowrap items-center gap-2">
-            <div className="relative w-56 min-w-0 shrink sm:w-64">
+          <div className="flex flex-wrap items-center gap-2 min-w-0 w-full sm:w-auto">
+            <div className="relative w-full min-w-0 flex-1 sm:flex-initial sm:w-56 sm:max-w-[16rem]">
               <Input
                 placeholder="Search by name or email"
                 value={search}
