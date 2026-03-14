@@ -247,11 +247,11 @@ export function UserAttendanceRecordsModal({
         className="flex flex-col w-full max-w-[calc(100%-2rem)] sm:max-w-[70vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
       >
         <div className="flex items-start justify-between gap-2 shrink-0">
-          <DialogHeader>
-            <DialogTitle>
+          <DialogHeader className="!text-left min-w-0 flex-1 flex flex-col items-start">
+            <DialogTitle className="text-base sm:text-lg leading-tight pr-8 text-left w-full">
               {user ? `${user.name} – Attendance Records` : 'Attendance Records'}
             </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
               Current payroll period (26th prev month – 25th current month)
             </p>
           </DialogHeader>

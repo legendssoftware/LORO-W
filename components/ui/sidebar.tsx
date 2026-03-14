@@ -167,7 +167,7 @@ function Sidebar({
           data-slot="sidebar"
           side={side}
           showCloseButton={false}
-          className="bg-sidebar text-sidebar-foreground w-[var(--sidebar-width-mobile)] max-w-[var(--sidebar-width-mobile)] p-0 [&>button]:hidden"
+          className="bg-sidebar text-sidebar-foreground w-full max-w-full p-0 [&>button]:hidden"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
