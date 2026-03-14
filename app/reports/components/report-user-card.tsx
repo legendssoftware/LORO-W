@@ -284,11 +284,11 @@ export function ReportUserCard({
             </p>
           )}
         </div>
-        <div className={cn('shrink-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
-          <p className={cn('text-muted-foreground flex items-center justify-between gap-2', isMobile ? 'text-xs' : 'text-sm')}>
+        <div className={cn('shrink-0 min-w-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
+          <p className={cn('text-muted-foreground flex items-center justify-between gap-2 min-w-0', isMobile ? 'text-xs' : 'text-sm')}>
             {usePayroll ? (
               <>
-                <span>
+                <span className="min-w-0 truncate">
                   <strong className="text-foreground">{user.payrollHours}h</strong>
                   /{user.payrollTargetHours}h payroll
                 </span>
@@ -296,7 +296,7 @@ export function ReportUserCard({
               </>
             ) : (
               <>
-                <span>
+                <span className="min-w-0 truncate">
                   <strong className="text-foreground">{user.hoursThisMonth}h</strong>
                   /{expectedMonthly}h this month
                 </span>
@@ -304,11 +304,13 @@ export function ReportUserCard({
               </>
             )}
           </p>
-          <div className="flex items-center gap-2">
-            <ReportProgressBar value={usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent} />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex-1 min-w-0">
+              <ReportProgressBar value={usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent} />
+            </div>
             <span
               className={cn(
-                'text-xs tabular-nums font-medium',
+                'text-xs tabular-nums font-medium shrink-0',
                 getProgressColorClasses(usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent).text
               )}
             >
@@ -326,8 +328,8 @@ export function ReportUserCard({
               {formatLastSeen(user.lastAppAccessAt)}
             </p>
           )}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs">
-            <div className="min-w-0 max-w-[60%] sm:max-w-[60%]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-border/50 text-xs min-w-0">
+            <div className="min-w-0 w-full max-w-full sm:max-w-[60%]">
               {user.shiftStartAddress ? (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`}
