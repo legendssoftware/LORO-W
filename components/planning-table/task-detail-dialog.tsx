@@ -13,6 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,10 +41,19 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Play, Square, CheckCircle2, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2Icon, XIcon, CalendarIcon, StoreIcon } from '@/lib/icons';
-import { useUpdateTaskMutation, useUsers, useClients } from '@/api/hooks';
+import {
+  useTask,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation,
+  useToggleJobStatusMutation,
+  useCompleteSubtaskMutation,
+  useDeleteSubtaskMutation,
+  useUsers,
+  useClients,
+} from '@/api/hooks';
 import {
   TASK_STATUS_OPTIONS,
   TASK_PRIORITY_OPTIONS,
@@ -111,8 +130,19 @@ export function TaskDetailDialog({
     useState(false);
   const [assigneesPopoverOpen, setAssigneesPopoverOpen] = useState(false);
   const [clientsPopoverOpen, setClientsPopoverOpen] = useState(false);
+  const [deleteTaskConfirmOpen, setDeleteTaskConfirmOpen] = useState(false);
+  const [deleteSubtaskRef, setDeleteSubtaskRef] = useState<number | null>(null);
+
+  const taskRef = task?.uid ?? null;
+  const taskQuery = useTask(taskRef, { enabled: open && !!taskRef });
+  const taskFromApi = taskQuery.data?.task ?? null;
+  const displayTask: Task | null = taskFromApi ?? task ?? null;
 
   const updateMutation = useUpdateTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+  const toggleJobMutation = useToggleJobStatusMutation();
+  const completeSubtaskMutation = useCompleteSubtaskMutation();
+  const deleteSubtaskMutation = useDeleteSubtaskMutation();
   const { data: users = [] } = useUsers({ page: 1, limit: 100, enabled: open });
   const { data: clientsList = [] } = useClients({
     page: 1,
@@ -121,18 +151,18 @@ export function TaskDetailDialog({
   });
 
   useEffect(() => {
-    if (!task || !open) return;
-    setEditForm(taskToEditForm(task, users));
+    if (!displayTask || !open) return;
+    setEditForm(taskToEditForm(displayTask, users));
     setIsEditing(false);
-  }, [task?.uid, open, users]);
+  }, [displayTask?.uid, open, users]);
 
   const handleCancelEdit = () => {
-    if (task) setEditForm(taskToEditForm(task, users));
+    if (displayTask) setEditForm(taskToEditForm(displayTask, users));
     setIsEditing(false);
   };
 
   const handleSaveEdit = async () => {
-    if (!task) return;
+    if (!displayTask) return;
     const payload: UpdateTaskPayload = { ...editForm };
     if (payload.repetitionType === 'NONE') {
       delete payload.repetitionDeadline;
@@ -141,12 +171,63 @@ export function TaskDetailDialog({
       delete payload.attachments;
     }
     try {
-      await updateMutation.mutateAsync({ ref: task.uid, payload });
+      await updateMutation.mutateAsync({ ref: displayTask.uid, payload });
       toast.success('Task updated');
       setIsEditing(false);
+      await taskQuery.refetch();
       onTaskUpdated?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update task');
+    }
+  };
+
+  const handleToggleJobStatus = async () => {
+    if (!displayTask) return;
+    try {
+      await toggleJobMutation.mutateAsync(displayTask.uid);
+      toast.success('Job status updated');
+      await taskQuery.refetch();
+      onTaskUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update job status');
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!displayTask) return;
+    try {
+      await deleteTaskMutation.mutateAsync(displayTask.uid);
+      toast.success('Task deleted');
+      setDeleteTaskConfirmOpen(false);
+      onOpenChange(false);
+      onTaskUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete task');
+    }
+  };
+
+  const handleCompleteSubtask = async (subtaskUid: number) => {
+    try {
+      await completeSubtaskMutation.mutateAsync(subtaskUid);
+      toast.success('Subtask completed');
+      await taskQuery.refetch();
+      onTaskUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to complete subtask');
+    }
+  };
+
+  const handleDeleteSubtask = async () => {
+    if (deleteSubtaskRef == null) return;
+    try {
+      await deleteSubtaskMutation.mutateAsync(deleteSubtaskRef);
+      toast.success('Subtask removed');
+      setDeleteSubtaskRef(null);
+      await taskQuery.refetch();
+      onTaskUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to remove subtask');
+      setDeleteSubtaskRef(null);
     }
   };
 
@@ -197,10 +278,12 @@ export function TaskDetailDialog({
     });
   };
 
-  if (!task) return null;
+  const isLoadingDetail = open && !!taskRef && taskQuery.isLoading && !displayTask;
+  const isErrorDetail = open && !!taskRef && (taskQuery.isError || (taskQuery.data && !taskQuery.data.task));
+  if (!task && !taskRef) return null;
 
-  const creatorName = task.creator
-    ? [task.creator.name, task.creator.surname].filter(Boolean).join(' ').trim()
+  const creatorName = displayTask?.creator
+    ? [displayTask.creator.name, displayTask.creator.surname].filter(Boolean).join(' ').trim()
     : '-';
 
   const selectedAssigneeUids = (editForm.assignees ?? []).map((a) => a.uid);
@@ -223,25 +306,75 @@ export function TaskDetailDialog({
         : `${selectedClientUids.length} clients`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isLoadingDetail ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2Icon className="size-10 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading task details…</p>
+            </div>
+          ) : isErrorDetail ? (
+            <div className="py-8 text-center">
+              <p className="text-destructive font-medium">Failed to load task</p>
+              <p className="text-sm text-muted-foreground mt-1">Please try again or close and reopen.</p>
+              <Button variant="outline" className="mt-4" onClick={() => taskQuery.refetch()}>
+                Retry
+              </Button>
+            </div>
+          ) : displayTask ? (
+            <>
         <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
           {!isEditing && (
-            <Button
-              size="sm"
-              className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditing(true);
-              }}
-            >
-              <Pencil className="size-4" />
-              Edit
-            </Button>
+            <>
+              {(displayTask.jobStatus === 'QUEUED' || displayTask.jobStatus === 'RUNNING') && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleToggleJobStatus();
+                  }}
+                  disabled={toggleJobMutation.isPending}
+                >
+                  {toggleJobMutation.isPending ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : displayTask.jobStatus === 'QUEUED' ? (
+                    <Play className="size-4" />
+                  ) : (
+                    <Square className="size-4" />
+                  )}
+                  {displayTask.jobStatus === 'QUEUED' ? 'Start job' : 'Complete job'}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="destructive"
+                className="gap-1.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteTaskConfirmOpen(true);
+                }}
+              >
+                <Trash2 className="size-4" />
+                Delete task
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+              >
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            </>
           )}
           <DialogClose asChild>
             <button
@@ -254,11 +387,11 @@ export function TaskDetailDialog({
           </DialogClose>
         </div>
         <DialogHeader className="pr-24">
-          <DialogTitle>Task #{task.uid}</DialogTitle>
+          <DialogTitle>Task #{displayTask.uid}</DialogTitle>
           <DialogDescription>
             {creatorName} ·{' '}
-            {task.createdAt
-              ? format(new Date(task.createdAt), 'MMM d, yyyy')
+            {displayTask.createdAt
+              ? format(new Date(displayTask.createdAt), 'MMM d, yyyy')
               : '-'}
           </DialogDescription>
         </DialogHeader>
@@ -693,88 +826,162 @@ export function TaskDetailDialog({
               <div className="grid gap-x-4 gap-y-1 text-muted-foreground text-sm sm:grid-cols-2">
                 <p>
                   <span className="font-medium text-foreground">Title:</span>{' '}
-                  {task.title}
+                  {displayTask.title}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Status:</span>{' '}
-                  {task.status?.replace(/_/g, ' ')}
+                  {displayTask.status?.replace(/_/g, ' ')}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Priority:</span>{' '}
-                  {task.priority}
+                  {displayTask.priority}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Type:</span>{' '}
-                  {task.taskType?.replace(/_/g, ' ')}
+                  {displayTask.taskType?.replace(/_/g, ' ')}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Deadline:</span>{' '}
-                  {formatDeadline(task.deadline)}
+                  {formatDeadline(displayTask.deadline)}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Progress:</span>{' '}
-                  {task.progress ?? 0}%
+                  {displayTask.progress ?? 0}%
                 </p>
                 <p>
                   <span className="font-medium text-foreground">
                     Completion date:
                   </span>{' '}
-                  {formatCompletionDate(task.completionDate)}
+                  {formatCompletionDate(displayTask.completionDate)}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">
                     Repetition:
                   </span>{' '}
-                  {task.repetitionType?.replace(/_/g, ' ') ?? '-'}
+                  {displayTask.repetitionType?.replace(/_/g, ' ') ?? '-'}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">
                     Target category:
                   </span>{' '}
-                  {task.targetCategory || '-'}
+                  {displayTask.targetCategory || '-'}
                 </p>
+                {(displayTask.jobStatus ?? displayTask.jobStartTime ?? displayTask.jobEndTime != null) && (
+                  <>
+                    <p>
+                      <span className="font-medium text-foreground">Job status:</span>{' '}
+                      {displayTask.jobStatus ?? '-'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Job start:</span>{' '}
+                      {displayTask.jobStartTime
+                        ? format(new Date(displayTask.jobStartTime), 'PPp')
+                        : '-'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Job end:</span>{' '}
+                      {displayTask.jobEndTime
+                        ? format(new Date(displayTask.jobEndTime), 'PPp')
+                        : '-'}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Job duration:</span>{' '}
+                      {displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-'}
+                    </p>
+                  </>
+                )}
+                {displayTask.isOverdue && (
+                  <p className="sm:col-span-2 text-amber-600 font-medium">
+                    Overdue
+                  </p>
+                )}
                 <p className="sm:col-span-2">
                   <span className="font-medium text-foreground">
                     Description:
                   </span>{' '}
-                  {task.description || '-'}
+                  {displayTask.description || '-'}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">
                     Assignees:
                   </span>{' '}
-                  {formatAssignees(task)}
+                  {formatAssignees(displayTask)}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Clients:</span>{' '}
-                  {formatClients(task)}
+                  {formatClients(displayTask)}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Creator:</span>{' '}
                   {creatorName}
                 </p>
-                {task.comment && (
+                {displayTask.comment && (
                   <p className="sm:col-span-2">
                     <span className="font-medium text-foreground">
                       Comment:
                     </span>{' '}
-                    {task.comment}
+                    {displayTask.comment}
                   </p>
                 )}
-                {(task.subtasks?.length ?? 0) > 0 && (
-                  <p className="sm:col-span-2">
-                    <span className="font-medium text-foreground">
-                      Subtasks:
-                    </span>{' '}
-                    {task.subtasks!.map((s) => s.title).join(', ')}
-                  </p>
+                {(displayTask.subtasks?.length ?? 0) > 0 && (
+                  <div className="sm:col-span-2 space-y-2">
+                    <span className="font-medium text-foreground block">Subtasks:</span>
+                    <ul className="list-none space-y-1.5">
+                      {(displayTask.subtasks ?? [])
+                        .filter((s) => !s.isDeleted)
+                        .map((s) => (
+                          <li
+                            key={s.uid ?? s.title}
+                            className="flex items-center justify-between gap-2 rounded border bg-muted/30 px-2 py-1.5"
+                          >
+                            <span className={cn(
+                              'text-sm',
+                              (s.status === 'completed' || s.status === 'COMPLETED') && 'line-through text-muted-foreground'
+                            )}>
+                              {s.title}
+                              {(s.status === 'completed' || s.status === 'COMPLETED') && (
+                                <span className="ml-1.5 text-xs">(done)</span>
+                              )}
+                            </span>
+                            <span className="flex items-center gap-1 shrink-0">
+                              {(s.status !== 'completed' && s.status !== 'COMPLETED') && s.uid && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => void handleCompleteSubtask(s.uid!)}
+                                  disabled={completeSubtaskMutation.isPending}
+                                >
+                                  <CheckCircle2 className="size-3.5" />
+                                  Complete
+                                </Button>
+                              )}
+                              {s.uid && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => setDeleteSubtaskRef(s.uid!)}
+                                  disabled={deleteSubtaskMutation.isPending}
+                                  aria-label="Remove subtask"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
                 )}
-                {(task.attachments?.length ?? 0) > 0 && (
+                {(displayTask.attachments?.length ?? 0) > 0 && (
                   <p className="sm:col-span-2">
                     <span className="font-medium text-foreground">
                       Attachments:
                     </span>{' '}
-                    {task.attachments!.join(', ')}
+                    {displayTask.attachments!.join(', ')}
                   </p>
                 )}
               </div>
@@ -802,7 +1009,69 @@ export function TaskDetailDialog({
             </Button>
           </DialogFooter>
         )}
-      </DialogContent>
-    </Dialog>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteTaskConfirmOpen} onOpenChange={setDeleteTaskConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will soft-delete the task. You can restore it later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteTask();
+              }}
+              disabled={deleteTaskMutation.isPending}
+            >
+              {deleteTaskMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteSubtaskRef != null}
+        onOpenChange={(open) => !open && setDeleteSubtaskRef(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove subtask?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the subtask from the task.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteSubtask();
+              }}
+              disabled={deleteSubtaskMutation.isPending}
+            >
+              {deleteSubtaskMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                'Remove'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

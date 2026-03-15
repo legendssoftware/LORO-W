@@ -64,6 +64,15 @@ export interface TaskSubtask {
   title: string;
   description: string;
   status?: string;
+  isDeleted?: boolean;
+}
+
+/** Payload for PATCH /tasks/sub-task/:ref */
+export interface UpdateSubtaskPayload {
+  title?: string;
+  description?: string;
+  status?: string;
+  isDeleted?: boolean;
 }
 
 export interface Task {
@@ -95,6 +104,11 @@ export interface Task {
   repetitionDeadline?: string | null;
   targetCategory?: string;
   comment?: string;
+  /** Job lifecycle: QUEUED → RUNNING → COMPLETED */
+  jobStatus?: 'QUEUED' | 'RUNNING' | 'COMPLETED';
+  jobStartTime?: string | null;
+  jobEndTime?: string | null;
+  jobDuration?: number | null;
 }
 
 export interface PaginatedTasksResponse {

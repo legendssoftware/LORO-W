@@ -47,6 +47,10 @@ export {
   useLeadsReport,
   useLead,
   useCreateLeadMutation,
+  useUpdateLeadMutation,
+  useDeleteLeadMutation,
+  useRestoreLeadMutation,
+  useReactivateLeadMutation,
   useImportLeadsMutation,
 } from './use-leads';
 export {
@@ -54,5 +58,10 @@ export {
   useTask,
   useCreateTaskMutation,
   useUpdateTaskMutation,
+  useDeleteTaskMutation,
+  useToggleJobStatusMutation,
+  useCompleteSubtaskMutation,
+  useUpdateSubtaskMutation,
+  useDeleteSubtaskMutation,
 } from './use-tasks';
 export { useLeaves } from './use-leaves';

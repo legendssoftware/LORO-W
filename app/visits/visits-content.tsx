@@ -44,8 +44,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2 } from 'lucide-react';
+import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2, MoreHorizontal } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon, UsersIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 const VisitsMap = dynamic(
   () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
@@ -265,6 +266,11 @@ export function VisitsContent() {
     () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
     []
   );
+  const businessTypeIconMap = useMemo(() => {
+    const m = new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.icon]));
+    m.set('Not set', MoreHorizontal);
+    return m;
+  }, []);
 
   const uniqueBusinessTypes = useMemo(() => {
     const set = new Set<string>();
@@ -1420,7 +1426,10 @@ export function VisitsContent() {
                 <SelectItem value="all">All regions</SelectItem>
                 {uniqueRegions.map((region) => (
                   <SelectItem key={region} value={region}>
-                    {region}
+                    <span className="flex items-center gap-2">
+                      <MapPinIcon className="size-4 shrink-0" />
+                      {region}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1435,11 +1444,18 @@ export function VisitsContent() {
               </SelectTrigger>
               <SelectContent className="z-[10001]">
                 <SelectItem value="all">All business types</SelectItem>
-                {uniqueBusinessTypes.map((bt) => (
-                  <SelectItem key={bt} value={bt}>
-                    {bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt}
-                  </SelectItem>
-                ))}
+                {uniqueBusinessTypes.map((bt) => {
+                  const label = bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt;
+                  const IconComponent = businessTypeIconMap.get(bt) ?? MoreHorizontal;
+                  return (
+                    <SelectItem key={bt} value={bt}>
+                      <span className="flex items-center gap-2">
+                        <IconComponent className="size-4 shrink-0" />
+                        {label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Select
@@ -1452,11 +1468,23 @@ export function VisitsContent() {
               </SelectTrigger>
               <SelectContent className="z-[10001]">
                 <SelectItem value="all">All users</SelectItem>
-                {usersList.map((u) => (
-                  <SelectItem key={u.uid} value={String(u.uid)}>
-                    {[u.name, u.surname].filter(Boolean).join(' ').trim() || u.email}
-                  </SelectItem>
-                ))}
+                {usersList.map((u) => {
+                  const fullName = [u.name, u.surname].filter(Boolean).join(' ').trim() || u.email || `User ${u.uid}`;
+                  const imgSrc = (u as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (u as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
+                  return (
+                    <SelectItem key={u.uid} value={String(u.uid)}>
+                      <span className="flex items-center gap-2">
+                        <Avatar className="size-6 shrink-0">
+                          <AvatarImage src={imgSrc} alt={fullName} />
+                          <AvatarFallback className="text-xs">
+                            {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {fullName}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

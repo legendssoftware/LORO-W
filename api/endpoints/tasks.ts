@@ -5,6 +5,7 @@ import type {
   GetTasksParams,
   CreateTaskPayload,
   UpdateTaskPayload,
+  UpdateSubtaskPayload,
 } from '@/api/types/tasks';
 
 /**
@@ -60,5 +61,70 @@ export async function updateTask(
   payload: UpdateTaskPayload
 ): Promise<{ message: string }> {
   const { data } = await client.patch<{ message: string }>(`/tasks/${ref}`, payload);
+  return data;
+}
+
+/**
+ * DELETE /tasks/:ref - soft-delete a task.
+ */
+export async function deleteTask(
+  client: AxiosInstance,
+  ref: number
+): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(`/tasks/${ref}`);
+  return data;
+}
+
+/**
+ * PATCH /tasks/toggle-job-status/:id - toggle job status (QUEUED → RUNNING → COMPLETED).
+ */
+export async function toggleJobStatus(
+  client: AxiosInstance,
+  id: number
+): Promise<{ message: string; task?: { uid: number; title: string; status: string; jobStatus: string; jobStartTime?: string; jobEndTime?: string; jobDuration?: number } }> {
+  const { data } = await client.patch<{ message: string; task?: unknown }>(
+    `/tasks/toggle-job-status/${id}`
+  );
+  return data as { message: string; task?: { uid: number; title: string; status: string; jobStatus: string; jobStartTime?: string; jobEndTime?: string; jobDuration?: number } };
+}
+
+/**
+ * PATCH /tasks/sub-task/complete/:ref - mark a subtask as completed.
+ */
+export async function completeSubtask(
+  client: AxiosInstance,
+  ref: number
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    `/tasks/sub-task/complete/${ref}`
+  );
+  return data;
+}
+
+/**
+ * PATCH /tasks/sub-task/:ref - update a subtask.
+ */
+export async function updateSubtask(
+  client: AxiosInstance,
+  ref: number,
+  payload: UpdateSubtaskPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    `/tasks/sub-task/${ref}`,
+    payload
+  );
+  return data;
+}
+
+/**
+ * DELETE /tasks/sub-task/:ref - soft-delete a subtask.
+ */
+export async function deleteSubtask(
+  client: AxiosInstance,
+  ref: number
+): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(
+    `/tasks/sub-task/${ref}`
+  );
   return data;
 }
