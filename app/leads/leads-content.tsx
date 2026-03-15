@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { format, isSameDay, differenceInCalendarDays } from 'date-fns';
 import { useLeads, useUsers } from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
+import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,9 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CalendarIcon, XIcon } from '@/lib/icons';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload as UploadIcon } from 'lucide-react';
 import { LeadsTable } from '@/components/leads-table/leads-table';
 import { ImportLeadsModal } from './components/import-leads-modal';
+import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { cn } from '@/lib/utils';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
@@ -53,6 +56,8 @@ export function LeadsContent() {
   } = useLeadsStore();
 
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
   const { data: users = [] } = useUsers({ limit: 100 });
 
@@ -176,7 +181,10 @@ export function LeadsContent() {
             <SelectContent>
               {LEAD_STATUS_OPTIONS_WITH_ALL.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <span className="flex items-center gap-2">
+                    <opt.icon className="size-4 shrink-0" />
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -191,7 +199,10 @@ export function LeadsContent() {
             <SelectContent>
               {LEAD_SOURCE_OPTIONS_WITH_ALL.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <span className="flex items-center gap-2">
+                    <opt.icon className="size-4 shrink-0" />
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -205,11 +216,23 @@ export function LeadsContent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All users</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.uid} value={String(user.uid)}>
-                  {[user.name, user.surname].filter(Boolean).join(' ') || user.email || `User ${user.uid}`}
-                </SelectItem>
-              ))}
+              {users.map((user) => {
+                const fullName = [user.name, user.surname].filter(Boolean).join(' ') || user.email || `User ${user.uid}`;
+                const imgSrc = (user as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (user as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
+                return (
+                  <SelectItem key={user.uid} value={String(user.uid)}>
+                    <span className="flex items-center gap-2">
+                      <Avatar className="size-6 shrink-0">
+                        <AvatarImage src={imgSrc} alt={fullName} />
+                        <AvatarFallback className="text-xs">
+                          {fullName !== `User ${user.uid}` ? fullName.slice(0, 2).toUpperCase() : String(user.uid).slice(-2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {fullName}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -250,6 +273,19 @@ export function LeadsContent() {
         leads={leads}
         isLoading={leadsQuery.isLoading}
         emptyMessage="No leads match your filters."
+        onLeadClick={(lead) => {
+          setSelectedLead(lead);
+          setLeadDialogOpen(true);
+        }}
+      />
+      <LeadDetailDialog
+        open={leadDialogOpen}
+        onOpenChange={(open) => {
+          setLeadDialogOpen(open);
+          if (!open) setSelectedLead(null);
+        }}
+        lead={selectedLead}
+        onActionSuccess={() => leadsQuery.refetch()}
       />
       <ImportLeadsModal
         open={importModalOpen}

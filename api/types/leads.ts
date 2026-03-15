@@ -149,3 +149,15 @@ export interface CreateLeadResponse {
   message: string;
   data: LeadListItem | null;
 }
+
+/** Payload for PATCH /leads/:ref (update lead). Partial create payload plus optional status-change fields. */
+export type UpdateLeadPayload = Partial<Omit<CreateLeadPayload, 'branch'>> & {
+  statusChangeReason?: string;
+  statusChangeDescription?: string;
+  nextStep?: string;
+};
+
+/** Response from PATCH /leads/:ref, PATCH restore/reactivate, DELETE /leads/:ref */
+export interface LeadActionResponse {
+  message: string;
+}

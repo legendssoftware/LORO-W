@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { XIcon } from '@/lib/icons';
+import { STAFF_STATUS_FILTER_OPTIONS } from '@/lib/staff-filter-utils';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
@@ -233,13 +234,14 @@ export function StaffContent() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="present">Present</SelectItem>
-                  <SelectItem value="absent">Absent</SelectItem>
-                  <SelectItem value="late">Late</SelectItem>
-                  <SelectItem value="early">Early</SelectItem>
-                  <SelectItem value="behind_on_hours">Behind on hours</SelectItem>
-                  <SelectItem value="idle">Idle (&gt;7 days in-active)</SelectItem>
+                  {STAFF_STATUS_FILTER_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <opt.icon className="size-4 shrink-0" />
+                        {opt.label}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {statusFilter !== 'all' ? (

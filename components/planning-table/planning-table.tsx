@@ -274,7 +274,10 @@ export function PlanningTable({
       <TaskDetailDialog
         task={selectedTask}
         open={detailOpen}
-        onOpenChange={setDetailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) setSelectedTask(null);
+        }}
         onTaskUpdated={onTaskUpdated}
       />
     </>

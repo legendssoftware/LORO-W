@@ -8,12 +8,17 @@ import {
   getLeadsReport,
   getLead,
   createLead,
+  updateLead,
+  deleteLead,
+  restoreLead,
+  reactivateLead,
   importLeadsFromCSV,
 } from '@/api/endpoints/leads';
 import type {
   GetLeadsParams,
   GetLeadsReportParams,
   CreateLeadPayload,
+  UpdateLeadPayload,
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 
@@ -115,6 +120,74 @@ export function useCreateLeadMutation() {
     mutationFn: async (payload: CreateLeadPayload) => createLead(client, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Update a lead. Invalidates leads list and detail on success.
+ */
+export function useUpdateLeadMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      ref,
+      payload,
+    }: { ref: number; payload: UpdateLeadPayload }) =>
+      updateLead(client, ref, payload),
+    onSuccess: (_, { ref }) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Soft-delete a lead. Invalidates leads list and detail on success.
+ */
+export function useDeleteLeadMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ref: number) => deleteLead(client, ref),
+    onSuccess: (_, ref) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Restore a soft-deleted lead. Invalidates leads list and detail on success.
+ */
+export function useRestoreLeadMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ref: number) => restoreLead(client, ref),
+    onSuccess: (_, ref) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Reactivate a declined or cancelled lead. Invalidates leads list and detail on success.
+ */
+export function useReactivateLeadMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ref: number) => reactivateLead(client, ref),
+    onSuccess: (_, ref) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
       queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
     },
   });

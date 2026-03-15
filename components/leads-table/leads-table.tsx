@@ -122,12 +122,15 @@ export interface LeadsTableProps {
   leads: LeadListItem[];
   isLoading?: boolean;
   emptyMessage?: string;
+  /** Called when a lead row is clicked. */
+  onLeadClick?: (lead: LeadListItem) => void;
 }
 
 export function LeadsTable({
   leads,
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
+  onLeadClick,
 }: LeadsTableProps) {
   if (isLoading) {
     return (
@@ -172,7 +175,23 @@ export function LeadsTable({
         </TableHeader>
         <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
           {sortedLeads.map((lead) => (
-            <TableRow key={lead.uid} className="border-b-0">
+            <TableRow
+              key={lead.uid}
+              className={cn(
+                'border-b-0',
+                onLeadClick &&
+                  'cursor-pointer transition-colors hover:bg-gray-100 focus-within:bg-gray-100'
+              )}
+              role={onLeadClick ? 'button' : undefined}
+              tabIndex={onLeadClick ? 0 : undefined}
+              onClick={() => onLeadClick?.(lead)}
+              onKeyDown={(e) => {
+                if (onLeadClick && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onLeadClick(lead);
+                }
+              }}
+            >
               <TableCell className="whitespace-nowrap text-sm">
                 {lead.name?.trim() || '-'}
               </TableCell>
