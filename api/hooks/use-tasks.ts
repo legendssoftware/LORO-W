@@ -7,11 +7,17 @@ import {
   getTask,
   createTask,
   updateTask,
+  deleteTask,
+  toggleJobStatus,
+  completeSubtask,
+  updateSubtask,
+  deleteSubtask,
 } from '@/api/endpoints/tasks';
 import type {
   GetTasksParams,
   CreateTaskPayload,
   UpdateTaskPayload,
+  UpdateSubtaskPayload,
 } from '@/api/types/tasks';
 
 /** Query key prefix for tasks list. Use for invalidateQueries after create/update. */
@@ -92,6 +98,94 @@ export function useUpdateTaskMutation() {
       queryClient.invalidateQueries({
         queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', variables.ref],
       });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Mutation to delete a task.
+ */
+export function useDeleteTaskMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ref: number) => deleteTask(client, ref),
+    onSuccess: (_, ref) => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      queryClient.removeQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', ref] });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Mutation to toggle job status (QUEUED → RUNNING → COMPLETED).
+ */
+export function useToggleJobStatusMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => toggleJobStatus(client, id),
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      if (data?.task?.uid) {
+        queryClient.invalidateQueries({
+          queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', id],
+        });
+      }
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Mutation to mark a subtask as completed.
+ */
+export function useCompleteSubtaskMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ref: number) => completeSubtask(client, ref),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Mutation to update a subtask.
+ */
+export function useUpdateSubtaskMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      ref,
+      payload,
+    }: { ref: number; payload: UpdateSubtaskPayload }) =>
+      updateSubtask(client, ref, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
+      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Mutation to delete a subtask.
+ */
+export function useDeleteSubtaskMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ref: number) => deleteSubtask(client, ref),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
       void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });

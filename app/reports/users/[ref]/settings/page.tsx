@@ -20,7 +20,8 @@ import {
   useSessionSync,
 } from '@/api/hooks';
 import type { PatchUserBody, PatchUserTargetBody } from '@/api/endpoints/user';
-import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon } from '@/lib/icons';
+import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
+import { CheckCircle, XCircle, PauseCircle, User, Shield, Crown, UserCheck, Briefcase } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +60,63 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AccessLevel, UserRole } from '@/api/types';
 import { cn } from '@/lib/utils';
+
+/** Icons for user status options in the form. */
+const USER_STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  active: CheckCircle,
+  inactive: XCircle,
+  suspended: PauseCircle,
+};
+
+/** Icons for role options; fallback to User. */
+const ROLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  admin: Shield,
+  manager: UserCheck,
+  team_leader: UserCheck,
+  staff: User,
+  client: User,
+  guest: User,
+};
+
+/** Icons for access level options; fallback to User. */
+const ACCESS_LEVEL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  owner: Crown,
+  admin: Shield,
+  manager: UserCheck,
+  supervisor: UserCheck,
+  member: User,
+  user: User,
+  developer: Briefcase,
+  support: UserCheck,
+  analyst: Briefcase,
+  accountant: Briefcase,
+  auditor: Briefcase,
+  consultant: Briefcase,
+  coordinator: UserCheck,
+  specialist: User,
+  technician: User,
+  trainer: User,
+  researcher: User,
+  officer: User,
+  executive: Crown,
+  cashier: User,
+  receptionist: User,
+  secretary: User,
+  security: Shield,
+  cleaner: User,
+  maintenance: User,
+  'event planner': User,
+  marketing: Briefcase,
+  hr: User,
+  client: User,
+  finance: Briefcase,
+  accounting: Briefcase,
+  legal: Briefcase,
+  operations: Briefcase,
+  it: Briefcase,
+  development: Briefcase,
+  design: Briefcase,
+};
 
 const profileSchema = z.object({
   height: z.string().optional().nullable(),
@@ -522,7 +580,7 @@ export default function UserSettingsPage() {
     patchUser.mutate(body, {
       onSuccess: () => {
         toast.success(body.userTarget ? 'User and targets updated' : 'User updated');
-        router.push('/reports');
+        router.push('/staff');
       },
       onError: (err: Error) => {
         toast.error(err.message || 'Failed to update user');
@@ -534,8 +592,8 @@ export default function UserSettingsPage() {
     return (
       <div className="h-full overflow-auto flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground">Invalid user reference.</p>
-        <Link href="/reports" className="text-primary hover:underline mt-2 inline-block">
-          Back to Reports
+        <Link href="/staff" className="text-primary hover:underline mt-2 inline-block">
+          Back to Staff
         </Link>
       </div>
     );
@@ -547,8 +605,8 @@ export default function UserSettingsPage() {
         {userError ? (
           <div>
             <p className="text-destructive">{userError.message}</p>
-            <Link href="/reports" className="text-primary hover:underline mt-2 inline-block">
-              Back to Reports
+            <Link href="/staff" className="text-primary hover:underline mt-2 inline-block">
+              Back to Staff
             </Link>
           </div>
         ) : (
@@ -569,11 +627,11 @@ export default function UserSettingsPage() {
     <div className="h-full overflow-auto flex flex-col items-center">
       <div className="max-w-4xl w-full mx-auto px-4 py-8">
         <Link
-          href="/reports"
+          href="/staff"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ChevronLeftIcon className="size-4" />
-          Back to Reports
+          Back to Staff
         </Link>
 
         <Form {...form}>
@@ -742,11 +800,17 @@ export default function UserSettingsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {roles.map((role) => (
-                              <SelectItem key={role} value={role}>
-                                {formatEnumLabel(role)}
-                              </SelectItem>
-                            ))}
+                            {roles.map((role) => {
+                              const RoleIcon = ROLE_ICONS[role] ?? User;
+                              return (
+                                <SelectItem key={role} value={role}>
+                                  <span className="flex items-center gap-2">
+                                    <RoleIcon className="size-4 shrink-0" />
+                                    {formatEnumLabel(role)}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -769,11 +833,17 @@ export default function UserSettingsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {accessLevels.map((level) => (
-                              <SelectItem key={level} value={level}>
-                                {formatEnumLabel(level)}
-                              </SelectItem>
-                            ))}
+                            {accessLevels.map((level) => {
+                              const LevelIcon = ACCESS_LEVEL_ICONS[level] ?? User;
+                              return (
+                                <SelectItem key={level} value={level}>
+                                  <span className="flex items-center gap-2">
+                                    <LevelIcon className="size-4 shrink-0" />
+                                    {formatEnumLabel(level)}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -796,9 +866,18 @@ export default function UserSettingsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="suspended">Suspended</SelectItem>
+                            {(['active', 'inactive', 'suspended'] as const).map((statusValue) => {
+                              const StatusIcon = USER_STATUS_ICONS[statusValue] ?? User;
+                              const label = statusValue === 'active' ? 'Active' : statusValue === 'inactive' ? 'Inactive' : 'Suspended';
+                              return (
+                                <SelectItem key={statusValue} value={statusValue}>
+                                  <span className="flex items-center gap-2">
+                                    <StatusIcon className="size-4 shrink-0" />
+                                    {label}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -865,7 +944,10 @@ export default function UserSettingsPage() {
                               key={b.uid}
                               value={String(b.uid)}
                             >
-                              {b.name ?? `Branch ${b.uid}`}
+                              <span className="flex items-center gap-2">
+                                <MapPinIcon className="size-4 shrink-0" />
+                                {b.name ?? `Branch ${b.uid}`}
+                              </span>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -2034,7 +2116,7 @@ export default function UserSettingsPage() {
               <Button
                 type="button"
                 variant="cancel"
-                onClick={() => router.push('/reports')}
+                onClick={() => router.push('/staff')}
               >
                 Cancel
               </Button>
@@ -2062,7 +2144,7 @@ export default function UserSettingsPage() {
                     onSuccess: () => {
                       toast.success('User removed from system');
                       setSoftDeleteOpen(false);
-                      router.push('/reports');
+                      router.push('/staff');
                     },
                     onError: (err: Error) => {
                       toast.error(err.message || 'Failed to remove user');
@@ -2148,7 +2230,7 @@ export default function UserSettingsPage() {
                       toast.success('User permanently deleted');
                       setPermanentOpen(false);
                       setPermanentConfirmText('');
-                      router.push('/reports');
+                      router.push('/staff');
                     },
                     onError: (err: Error) => {
                       toast.error(err.message || 'Failed to permanently delete user');

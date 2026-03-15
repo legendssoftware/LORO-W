@@ -8,6 +8,8 @@ import type {
   LeadImportResponse,
   CreateLeadPayload,
   CreateLeadResponse,
+  UpdateLeadPayload,
+  LeadActionResponse,
 } from '@/api/types/leads';
 import type { DomainReportResponse } from '@/api/types/reports';
 
@@ -90,6 +92,51 @@ export interface ImportLeadsFromCSVParams {
   assignedUserIds: number[];
   followUpInterval?: string;
   followUpDuration?: number;
+}
+
+/**
+ * PATCH /leads/:ref - update a lead.
+ */
+export async function updateLead(
+  client: AxiosInstance,
+  ref: number,
+  payload: UpdateLeadPayload
+): Promise<LeadActionResponse> {
+  const { data } = await client.patch<LeadActionResponse>(`/leads/${ref}`, payload);
+  return data;
+}
+
+/**
+ * DELETE /leads/:ref - soft-delete a lead.
+ */
+export async function deleteLead(
+  client: AxiosInstance,
+  ref: number
+): Promise<LeadActionResponse> {
+  const { data } = await client.delete<LeadActionResponse>(`/leads/${ref}`);
+  return data;
+}
+
+/**
+ * PATCH /leads/:ref/restore - restore a soft-deleted lead.
+ */
+export async function restoreLead(
+  client: AxiosInstance,
+  ref: number
+): Promise<LeadActionResponse> {
+  const { data } = await client.patch<LeadActionResponse>(`/leads/${ref}/restore`);
+  return data;
+}
+
+/**
+ * PATCH /leads/:ref/reactivate - reactivate a declined or cancelled lead.
+ */
+export async function reactivateLead(
+  client: AxiosInstance,
+  ref: number
+): Promise<LeadActionResponse> {
+  const { data } = await client.patch<LeadActionResponse>(`/leads/${ref}/reactivate`);
+  return data;
 }
 
 /**
