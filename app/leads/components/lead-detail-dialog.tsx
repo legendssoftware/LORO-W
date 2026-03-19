@@ -114,6 +114,7 @@ export function LeadDetailDialog({
 
   const canReactivate =
     lead?.status === 'DECLINED' || lead?.status === 'CANCELLED';
+  const isConverted = lead?.status === 'CONVERTED';
   const leadUid = lead?.uid;
 
   const openEdit = () => {
@@ -184,6 +185,26 @@ export function LeadDetailDialog({
     });
   };
 
+  const handleConvertToClient = () => {
+    if (leadUid == null || isConverted) return;
+    updateMutation.mutate(
+      {
+        ref: leadUid,
+        payload: { status: 'CONVERTED' },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Lead converted to client');
+          onOpenChange(false);
+          onActionSuccess?.();
+        },
+        onError: (err: { message?: string }) => {
+          toast.error(err?.message ?? 'Failed to convert lead');
+        },
+      }
+    );
+  };
+
   const openStatusChange = (status: string) => {
     setStatusChangeTarget(status);
     setStatusChangeReason('');
@@ -247,6 +268,19 @@ export function LeadDetailDialog({
             >
               <Pencil className="size-4" />
               Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="success"
+              className="rounded-full"
+              onClick={handleConvertToClient}
+              disabled={!leadUid || isConverted || updateMutation.isPending}
+            >
+              {updateMutation.isPending && !isConverted ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                'Convert to client'
+              )}
             </Button>
             {canReactivate && (
               <Button

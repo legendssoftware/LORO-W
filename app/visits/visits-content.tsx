@@ -209,6 +209,7 @@ export function VisitsContent() {
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
   const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
   const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
+  const [clientComboboxOpen, setClientComboboxOpen] = useState(false);
   const orgName = useOrgName();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
@@ -329,6 +330,10 @@ export function VisitsContent() {
     [checkIns]
   );
   const showPhotoInEndModal = activeVisit?.methodOfContact === 'Physical';
+  const endVisitDialogContainer =
+    typeof document !== 'undefined'
+      ? document.getElementById('end-visit-dialog-content')
+      : null;
 
   const visitStartTime = useMemo(() => {
     if (!activeVisit?.checkInTime) return null;
@@ -695,6 +700,7 @@ export function VisitsContent() {
       {/* End visit modal: form + optional photo */}
       <Dialog open={endVisitOpen} onOpenChange={setEndVisitOpen}>
         <DialogContent
+          id="end-visit-dialog-content"
           className="sm:max-w-2xl max-h-[90vh] overflow-y-auto z-[10000]"
           overlayClassName="z-[10000]"
           showCloseButton
@@ -732,47 +738,88 @@ export function VisitsContent() {
                 </SelectContent>
               </Select>
             </div>
-            {/* 2. Client (optional) */}
+            {/* 2. Client (optional) – combobox with search and load more */}
             <div className="grid gap-2 sm:col-span-2">
               <Label className="flex items-center gap-2">
                 <UsersIcon className="size-4 shrink-0" />
                 Select the client
               </Label>
-              <Select
-                value={selectedClient?.uid.toString() ?? '_none'}
-                onValueChange={(value) => {
-                  if (value === '_none' || value === '_loading') {
-                    if (value === '_none') clearClientSelection();
-                    return;
-                  }
-                  const client = clientsList.find((c) => c.uid.toString() === value);
-                  if (client) applyClientToForm(client);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select client if you visited an existing client" />
-                </SelectTrigger>
-                <SelectContent className="z-[10001] max-h-[280px]">
-                  <SelectItem value="_none">Select the client</SelectItem>
-                  {clientsInfinite.isLoading ? (
-                    <SelectItem value="_loading" disabled>
-                      Loading…
-                    </SelectItem>
-                  ) : (
-                    clientsList.map((c) => {
-                      const nameTrim = (c.name ?? '').trim();
-                      const contactTrim = (c.contactPerson ?? '').trim();
-                      const displayLabel =
-                        contactTrim && contactTrim !== nameTrim
-                          ? `${nameTrim} · ${contactTrim}`
-                          : nameTrim || '—';
-                      const hasEmail = !!(typeof c.email === 'string' && c.email.trim() !== '');
-                      const hasLandline = !!(typeof c.alternativePhone === 'string' && c.alternativePhone.trim() !== '');
-                      const hasCell = !!(typeof c.phone === 'string' && c.phone.trim() !== '');
-                      const hasAddr = hasAddress(c.address);
-                      return (
-                        <SelectItem key={c.uid.toString()} value={c.uid.toString()}>
-                          <div className="flex items-center justify-between gap-2 w-full">
+              <Popover open={clientComboboxOpen} onOpenChange={setClientComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between font-normal h-10 px-3"
+                  >
+                    <span className="truncate min-w-0">
+                      {selectedClient
+                        ? (() => {
+                            const nameTrim = (selectedClient.name ?? '').trim();
+                            const contactTrim = (selectedClient.contactPerson ?? '').trim();
+                            return contactTrim && contactTrim !== nameTrim
+                              ? `${nameTrim} · ${contactTrim}`
+                              : nameTrim || '—';
+                          })()
+                        : 'Select client if you visited an existing client'}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="z-[10001] w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0"
+                  align="start"
+                  container={endVisitDialogContainer}
+                >
+                  <div className="p-2 border-b border-border">
+                    <Input
+                      placeholder="Search clients"
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      className="h-9"
+                      autoFocus
+                      aria-label="Search clients"
+                    />
+                  </div>
+                  <div className="max-h-[280px] overflow-y-auto">
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
+                      onClick={() => {
+                        clearClientSelection();
+                        setClientComboboxOpen(false);
+                      }}
+                    >
+                      No client
+                    </button>
+                    {clientsInfinite.isLoading ? (
+                      <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                        Loading…
+                      </div>
+                    ) : (
+                      clientsList.map((c) => {
+                        const nameTrim = (c.name ?? '').trim();
+                        const contactTrim = (c.contactPerson ?? '').trim();
+                        const displayLabel =
+                          contactTrim && contactTrim !== nameTrim
+                            ? `${nameTrim} · ${contactTrim}`
+                            : nameTrim || '—';
+                        const hasEmail = !!(typeof c.email === 'string' && c.email.trim() !== '');
+                        const hasLandline = !!(typeof c.alternativePhone === 'string' && c.alternativePhone.trim() !== '');
+                        const hasCell = !!(typeof c.phone === 'string' && c.phone.trim() !== '');
+                        const hasAddr = hasAddress(c.address);
+                        return (
+                          <button
+                            key={c.uid.toString()}
+                            type="button"
+                            className={cn(
+                              'w-full px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none flex items-center justify-between gap-2',
+                              selectedClient?.uid === c.uid && 'bg-muted'
+                            )}
+                            onClick={() => {
+                              applyClientToForm(c);
+                              setClientComboboxOpen(false);
+                            }}
+                          >
                             <span className="truncate min-w-0 flex-1">{displayLabel}</span>
                             <span className="flex flex-shrink-0 gap-0.5 items-center">
                               <Mail
@@ -792,13 +839,35 @@ export function VisitsContent() {
                                 aria-hidden
                               />
                             </span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                  {(clientsInfinite.hasNextPage ?? false) && (
+                    <div className="flex items-center justify-center border-t border-border py-1.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-full text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clientsInfinite.fetchNextPage();
+                        }}
+                        disabled={clientsInfinite.isFetchingNextPage ?? false}
+                      >
+                        {clientsInfinite.isFetchingNextPage ? (
+                          <Loader2Icon className="size-4 animate-spin" />
+                        ) : (
+                          'Load more'
+                        )}
+                      </Button>
+                    </div>
                   )}
-                </SelectContent>
-              </Select>
+                </PopoverContent>
+              </Popover>
             </div>
             {/* 3. Notes (textarea, max 2500 words) */}
             <div className="grid gap-2 sm:col-span-2">
