@@ -8,10 +8,12 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -46,8 +48,8 @@ import {
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { Loader2Icon, XIcon } from '@/lib/icons';
+import { Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { cn } from '@/lib/utils';
 
 function getOptionLabel(
   options: { value: string; label: string }[],
@@ -214,7 +216,9 @@ export function LeadDetailDialog({
 
   if (!lead) return null;
 
-  const sectionTitleClass = 'mb-2 text-base font-bold text-foreground';
+  const ownerFullName = lead.owner
+    ? [lead.owner.name, lead.owner.surname].filter(Boolean).join(' ').trim() || '-'
+    : '-';
   const fieldGridClass = 'grid grid-cols-2 gap-x-6 gap-y-3';
   const fieldCell = (label: string, value: ReactNode) => (
     <div>
@@ -228,76 +232,111 @@ export function LeadDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-h-[90vh] w-full max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-[70vw]"
+          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader className="pr-10">
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit();
+              }}
+              disabled={!leadUid}
+            >
+              <Pencil className="size-4" />
+              Edit
+            </Button>
+            {canReactivate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                onClick={handleReactivate}
+                disabled={!leadUid || reactivateMutation.isPending}
+              >
+                {reactivateMutation.isPending ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  'Reactivate'
+                )}
+              </Button>
+            )}
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Close"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </DialogClose>
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>
               {lead.name?.trim() || lead.companyName?.trim() || `Lead #${lead.uid}`}
             </DialogTitle>
+            <DialogDescription>
+              {ownerFullName} · {formatDateTime(lead.updatedAt)}
+            </DialogDescription>
           </DialogHeader>
-          <DialogClose asChild>
-            <button
-              type="button"
-              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md border-2 border-red-600 bg-red-600 text-white transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-              aria-label="Close"
-            >
-              <XIcon className="size-4" />
-            </button>
-          </DialogClose>
 
-          <div className="grid gap-4 text-sm">
-            <section>
-              <h4 className={sectionTitleClass}>Contact</h4>
+          <div className="space-y-4 text-sm">
+            <div>
+              <h4 className="font-semibold mb-2">Contact</h4>
               <dl className={fieldGridClass}>
                 {fieldCell('Name', lead.name?.trim() || '-')}
                 {fieldCell('Email', lead.email?.trim() || '-')}
                 {fieldCell('Phone', lead.phone?.trim() || '-')}
                 {fieldCell('Company', lead.companyName?.trim() || '-')}
               </dl>
-            </section>
-
-            <section>
-              <h4 className={sectionTitleClass}>Status</h4>
+            </div>
+            <Separator />
+            <div>
+              <h4 className="font-semibold mb-2">Status</h4>
               <dl className={fieldGridClass}>
                 {fieldCell('Status', getOptionLabel(LEAD_STATUS_OPTIONS, lead.status))}
                 {fieldCell('Source', getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source))}
                 {fieldCell('Temperature', getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature))}
                 {fieldCell('Priority', getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority))}
               </dl>
-            </section>
-
-            <section>
-              <h4 className={sectionTitleClass}>Scoring & value</h4>
+            </div>
+            <Separator />
+            <div>
+              <h4 className="font-semibold mb-2">Scoring & value</h4>
               <dl className={fieldGridClass}>
                 {fieldCell('Lead score', lead.leadScore != null ? `${lead.leadScore}` : '-')}
                 {fieldCell('Estimated value', formatCurrency(lead.estimatedValue))}
               </dl>
-            </section>
-
-            <section>
-              <h4 className={sectionTitleClass}>Dates</h4>
+            </div>
+            <Separator />
+            <div>
+              <h4 className="font-semibold mb-2">Dates</h4>
               <dl className={fieldGridClass}>
                 {fieldCell('Created', formatDateTime(lead.createdAt))}
                 {fieldCell('Updated', formatDateTime(lead.updatedAt))}
                 {fieldCell('Last contact', formatDate(lead.lastContactDate))}
                 {fieldCell('Next follow-up', formatDate(lead.nextFollowUpDate))}
               </dl>
-            </section>
-
+            </div>
             {(lead.totalInteractions != null || lead.averageResponseTime != null) && (
-              <section>
-                <h4 className={sectionTitleClass}>Activity</h4>
-                <dl className={fieldGridClass}>
-                  {lead.totalInteractions != null &&
-                    fieldCell('Total interactions', lead.totalInteractions)}
-                  {lead.averageResponseTime != null &&
-                    fieldCell('Avg response time (hours)', lead.averageResponseTime)}
-                </dl>
-              </section>
+              <>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Activity</h4>
+                  <dl className={fieldGridClass}>
+                    {lead.totalInteractions != null &&
+                      fieldCell('Total interactions', lead.totalInteractions)}
+                    {lead.averageResponseTime != null &&
+                      fieldCell('Avg response time (hours)', lead.averageResponseTime)}
+                  </dl>
+                </div>
+              </>
             )}
-
-            <section>
-              <h4 className={sectionTitleClass}>People</h4>
+            <Separator />
+            <div>
+              <h4 className="font-semibold mb-2">People</h4>
               <dl className={fieldGridClass}>
                 <div>
                   <span className="text-muted-foreground">Owner</span>
@@ -346,61 +385,43 @@ export function LeadDetailDialog({
                   fieldCell('Assignees', '-')
                 )}
               </dl>
-            </section>
-
+            </div>
             {lead.notes?.trim() && (
-              <section>
-                <h4 className={sectionTitleClass}>Notes</h4>
-                <p className="whitespace-pre-wrap text-muted-foreground">
-                  {lead.notes.trim()}
-                </p>
-              </section>
+              <>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Notes</h4>
+                  <p className="whitespace-pre-wrap text-muted-foreground">
+                    {lead.notes.trim()}
+                  </p>
+                </div>
+              </>
             )}
-
             {lead.attachments && lead.attachments.length > 0 && (
-              <section>
-                <h4 className={sectionTitleClass}>Attachments</h4>
-                <ul className="space-y-1">
-                  {lead.attachments.map((url, i) => (
-                    <li key={i}>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary underline hover:no-underline"
-                      >
-                        {url.length > 50 ? `${url.slice(0, 50)}…` : url}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Attachments</h4>
+                  <ul className="space-y-1">
+                    {lead.attachments.map((url, i) => (
+                      <li key={i}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:no-underline"
+                        >
+                          {url.length > 50 ? `${url.slice(0, 50)}…` : url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
             )}
           </div>
 
-          <DialogFooter className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={openEdit}
-              disabled={!leadUid}
-            >
-              Edit
-            </Button>
-            {canReactivate && (
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={handleReactivate}
-                disabled={!leadUid || reactivateMutation.isPending}
-              >
-                {reactivateMutation.isPending ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : (
-                  'Reactivate'
-                )}
-              </Button>
-            )}
+          <DialogFooter className="gap-3">
             <Button
               variant="destructive"
               className="rounded-full"
@@ -412,7 +433,7 @@ export function LeadDetailDialog({
           </DialogFooter>
 
           <div className="border-t pt-3">
-            <p className={cn('mb-2 text-base font-bold text-foreground')}>
+            <p className="font-semibold mb-2">
               Change status
             </p>
             <div className="flex flex-wrap gap-2">
@@ -435,8 +456,23 @@ export function LeadDetailDialog({
 
       {/* Edit lead dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Close"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </DialogClose>
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>Edit lead</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
@@ -525,11 +561,17 @@ export function LeadDetailDialog({
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
+          <DialogFooter className="gap-3">
+            <Button
+              variant="cancel"
+              className="rounded-full"
+              onClick={() => setEditOpen(false)}
+            >
               Cancel
             </Button>
             <Button
+              variant="success"
+              className="rounded-full"
               onClick={handleEditSubmit}
               disabled={updateMutation.isPending}
             >
@@ -574,8 +616,23 @@ export function LeadDetailDialog({
 
       {/* Change status sub-dialog */}
       <Dialog open={statusChangeOpen} onOpenChange={setStatusChangeOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Close"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </DialogClose>
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>
               Set status to{' '}
               {statusChangeTarget
@@ -600,20 +657,21 @@ export function LeadDetailDialog({
                 value={statusChangeDescription}
                 onChange={(e) => setStatusChangeDescription(e.target.value)}
                 placeholder="Additional notes"
-                rows={3}
-                className="resize-none"
+                rows={6}
+                className="min-h-[120px] resize-y rounded-md"
               />
             </div>
           </div>
           <DialogFooter className="gap-3">
             <Button
-              variant="outline"
+              variant="cancel"
               className="rounded-full"
               onClick={() => setStatusChangeOpen(false)}
             >
               Cancel
             </Button>
             <Button
+              variant="success"
               className="rounded-full"
               onClick={handleStatusChangeSubmit}
               disabled={updateMutation.isPending}

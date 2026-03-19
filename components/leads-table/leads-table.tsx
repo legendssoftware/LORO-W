@@ -1,8 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
+import { ChevronRight } from 'lucide-react';
 import type { LeadListItem } from '@/api/types/leads';
 import {
   Table,
@@ -12,6 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2Icon, CircleIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
@@ -118,6 +124,48 @@ function ownerDisplay(lead: LeadListItem): ReactNode {
   );
 }
 
+export interface GroupedByOwner {
+  ownerKey: string;
+  owner: LeadListItem['owner'];
+  leads: LeadListItem[];
+}
+
+/** Stable key for grouping leads by owner. Prefer owner.uid; fallback to composite name|surname|email. */
+function getOwnerKey(owner: LeadListItem['owner']): string {
+  if (!owner) return '__unknown__';
+  if (owner.uid != null) return String(owner.uid);
+  const email = (owner.email ?? '').trim();
+  const name = (owner.name ?? '').trim();
+  const surname = (owner.surname ?? '').trim();
+  return [email, name, surname].join('|') || '__unknown__';
+}
+
+/** Group leads by owner; sort groups by lead count (most first), leads within group by createdAt (newest first). */
+function groupLeadsByOwner(leads: LeadListItem[]): GroupedByOwner[] {
+  const map = new Map<string, LeadListItem[]>();
+  for (const lead of leads) {
+    const key = getOwnerKey(lead.owner);
+    const list = map.get(key) ?? [];
+    list.push(lead);
+    map.set(key, list);
+  }
+  const grouped: GroupedByOwner[] = [];
+  map.forEach((leadList, ownerKey) => {
+    const sorted = [...leadList].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+    grouped.push({
+      ownerKey,
+      owner: leadList[0]?.owner,
+      leads: sorted,
+    });
+  });
+  grouped.sort((a, b) => b.leads.length - a.leads.length);
+  return grouped;
+}
+
 export interface LeadsTableProps {
   leads: LeadListItem[];
   isLoading?: boolean;
@@ -132,6 +180,9 @@ export function LeadsTable({
   emptyMessage = 'No leads match your filters.',
   onLeadClick,
 }: LeadsTableProps) {
+  const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
+  const groupedByOwner = useMemo(() => groupLeadsByOwner(leads), [leads]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -148,81 +199,144 @@ export function LeadsTable({
     );
   }
 
-  const sortedLeads = useMemo(
-    () =>
-      [...leads].sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-      }),
-    [leads]
-  );
-
   return (
     <div className="overflow-x-auto rounded border bg-white">
-      <Table className="min-w-max">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="whitespace-nowrap">Name</TableHead>
-            <TableHead className="whitespace-nowrap">Company</TableHead>
-            <TableHead className="whitespace-nowrap">Status</TableHead>
-            <TableHead className="whitespace-nowrap">Source</TableHead>
-            <TableHead className="whitespace-nowrap">Temperature</TableHead>
-            <TableHead className="whitespace-nowrap">Priority</TableHead>
-            <TableHead className="whitespace-nowrap">Owner</TableHead>
-            <TableHead className="whitespace-nowrap">Created</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
-          {sortedLeads.map((lead) => (
-            <TableRow
-              key={lead.uid}
-              className={cn(
-                'border-b-0',
-                onLeadClick &&
-                  'cursor-pointer transition-colors hover:bg-gray-100 focus-within:bg-gray-100'
-              )}
-              role={onLeadClick ? 'button' : undefined}
-              tabIndex={onLeadClick ? 0 : undefined}
-              onClick={() => onLeadClick?.(lead)}
-              onKeyDown={(e) => {
-                if (onLeadClick && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  onLeadClick(lead);
-                }
-              }}
+      <div className="divide-y divide-border">
+        {groupedByOwner.map((group, index) => {
+          const isExpanded = expandedOwnerKey === group.ownerKey;
+          const contentId = `leads-${group.ownerKey}`;
+          return (
+            <div
+              key={group.ownerKey}
+              className={cn('rounded-sm', isExpanded && 'ring-1 ring-green-200')}
             >
-              <TableCell className="whitespace-nowrap text-sm">
-                {lead.name?.trim() || '-'}
-              </TableCell>
-              <TableCell className="min-w-0 text-sm">
-                {lead.companyName?.trim() || '-'}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {optionCell(lead.status, LEAD_STATUS_OPTIONS, LEAD_STATUS_ICON_COLORS)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {optionCell(lead.source, LEAD_SOURCE_OPTIONS, LEAD_SOURCE_ICON_COLORS)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {optionCell(lead.temperature, LEAD_TEMPERATURE_OPTIONS, LEAD_TEMPERATURE_ICON_COLORS)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {priorityCell(lead.priority)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {ownerDisplay(lead)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-sm">
-                {lead.createdAt &&
-                !Number.isNaN(new Date(lead.createdAt).getTime())
-                  ? format(new Date(lead.createdAt), 'MMM d, yyyy')
-                  : '-'}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              <Collapsible
+                open={isExpanded}
+                onOpenChange={(open) =>
+                  setExpandedOwnerKey(open ? group.ownerKey : null)
+                }
+              >
+                <CollapsibleTrigger
+                  asChild
+                  className="w-full"
+                  aria-expanded={isExpanded}
+                  aria-controls={contentId}
+                >
+                  <div
+                    className={cn(
+                      'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
+                      index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
+                      isExpanded && 'bg-muted/30'
+                    )}
+                  >
+                    <span className="flex items-start gap-2 whitespace-normal min-w-0 flex-1">
+                      {group.ownerKey === '__unknown__' ? (
+                        <span className="text-muted-foreground font-medium">
+                          Unknown
+                        </span>
+                      ) : (
+                        ownerDisplay(group.leads[0])
+                      )}
+                    </span>
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      {group.leads.length} lead
+                      {group.leads.length !== 1 ? 's' : ''}
+                    </span>
+                    <ChevronRight
+                      className={cn(
+                        'size-5 shrink-0 text-muted-foreground transition-transform',
+                        isExpanded && 'rotate-90'
+                      )}
+                      aria-hidden
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent id={contentId} className="overflow-hidden">
+                  <div className="bg-muted/20 border-t border-border overflow-x-auto">
+                    <Table className="min-w-max">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">Name</TableHead>
+                          <TableHead className="whitespace-nowrap">Company</TableHead>
+                          <TableHead className="whitespace-nowrap">Status</TableHead>
+                          <TableHead className="whitespace-nowrap">Source</TableHead>
+                          <TableHead className="whitespace-nowrap">Temperature</TableHead>
+                          <TableHead className="whitespace-nowrap">Priority</TableHead>
+                          <TableHead className="whitespace-nowrap">Created</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                        {group.leads.map((lead) => (
+                          <TableRow
+                            key={lead.uid}
+                            className={cn(
+                              'border-b-0',
+                              onLeadClick &&
+                                'cursor-pointer transition-colors hover:bg-muted/50'
+                            )}
+                            role={onLeadClick ? 'button' : undefined}
+                            tabIndex={onLeadClick ? 0 : undefined}
+                            onClick={() => onLeadClick?.(lead)}
+                            onKeyDown={(e) => {
+                              if (
+                                onLeadClick &&
+                                (e.key === 'Enter' || e.key === ' ')
+                              ) {
+                                e.preventDefault();
+                                onLeadClick(lead);
+                              }
+                            }}
+                          >
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {lead.name?.trim() || '-'}
+                            </TableCell>
+                            <TableCell className="min-w-0 text-sm">
+                              {lead.companyName?.trim() || '-'}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {optionCell(
+                                lead.status,
+                                LEAD_STATUS_OPTIONS,
+                                LEAD_STATUS_ICON_COLORS
+                              )}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {optionCell(
+                                lead.source,
+                                LEAD_SOURCE_OPTIONS,
+                                LEAD_SOURCE_ICON_COLORS
+                              )}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {optionCell(
+                                lead.temperature,
+                                LEAD_TEMPERATURE_OPTIONS,
+                                LEAD_TEMPERATURE_ICON_COLORS
+                              )}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {priorityCell(lead.priority)}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {lead.createdAt &&
+                              !Number.isNaN(new Date(lead.createdAt).getTime())
+                                ? format(
+                                    new Date(lead.createdAt),
+                                    'MMM d, yyyy'
+                                  )
+                                : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -159,6 +159,7 @@ export interface UseCheckInsParams {
   startDate?: string;
   endDate?: string;
   userUid?: string;
+  branchId?: number;
 }
 
 export interface UseCheckInsResult {

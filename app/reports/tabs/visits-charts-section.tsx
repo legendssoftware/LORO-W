@@ -509,7 +509,7 @@ export function VisitsChartsSection({
       </Card>
 
       {/* 3. Visits per month */}
-      <Card>
+      <Card className="col-span-full">
         <CardHeader>
           <CardTitle>Visits per month</CardTitle>
           <CardDescription>Total visits by month</CardDescription>

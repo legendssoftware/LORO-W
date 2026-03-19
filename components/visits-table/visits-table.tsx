@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import type { VisitExportItem } from '@/api/types/reports';
 import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
@@ -29,8 +29,8 @@ import {
   CURRENCY_OPTIONS,
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
-import { useUpdateVisitDetailsMutation, useClients } from '@/api/hooks';
-import type { ClientListItem, ClientAddress } from '@/api/endpoints/clients';
+import { useUpdateVisitDetailsMutation, useClientsInfinite } from '@/api/hooks';
+import type { ClientListItem } from '@/api/endpoints/clients';
 
 /**
  * Visit detail modal field mapping (all columns and data presence) is documented in
@@ -73,8 +73,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil, UserPlus, Mail, Phone, Smartphone, MapPin, ChevronRight } from 'lucide-react';
-import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import { Pencil, UserPlus, ChevronRight, Users } from 'lucide-react';
+import { CalendarIcon, ChevronDownIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import {
   Collapsible,
   CollapsibleContent,
@@ -93,12 +93,14 @@ const VISIT_IMAGE_FALLBACK_URL =
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
 
-function hasAddress(addr?: ClientAddress): boolean {
-  if (!addr) return false;
-  const { street, suburb, city, state, country, postalCode } = addr;
-  return [street, suburb, city, state, country, postalCode].some(
-    (v) => typeof v === 'string' && v.trim() !== ''
-  );
+/** Client row icons rendered 20% smaller than default (size-4). */
+const CLIENT_ROW_ICON_CLASS = 'size-4 shrink-0 scale-[0.8]';
+
+/** Format client name for display (lowercase / sentence case instead of all caps). */
+function toSentenceCase(s: string): string {
+  const t = (s ?? '').trim();
+  if (!t) return t;
+  return t.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getWordCount(value: string | null | undefined): number {
@@ -686,10 +688,16 @@ function VisitDetailDialog({
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [createLeadModalOpen, setCreateLeadModalOpen] = useState(false);
-
   const updateMutation = useUpdateVisitDetailsMutation();
-  const clientsQuery = useClients({ page: 1, limit: 100 });
-  const clientsList = clientsQuery.data ?? [];
+  const clientsInfinite = useClientsInfinite({
+    enabled: open && isEditing,
+  });
+  const clientsData = clientsInfinite.data ?? [];
+  const clientsList = useMemo(() => {
+    if (!selectedClient) return clientsData;
+    const inList = clientsData.some((c) => c.uid === selectedClient.uid);
+    return inList ? clientsData : [selectedClient, ...clientsData];
+  }, [clientsData, selectedClient]);
 
   const isEndedVisit = !!visit?.checkOutTime;
 
@@ -1038,7 +1046,6 @@ function VisitDetailDialog({
               {isEditing ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <Label>Client (optional)</Label>
                     <Select
                       value={selectedClient ? String(selectedClient.uid) : '_none'}
                       onValueChange={(value) => {
@@ -1047,78 +1054,85 @@ function VisitDetailDialog({
                           setEditForm((f) => ({ ...f, client: undefined }));
                           return;
                         }
-                        const client = clientsList.find((c) => c.uid === Number(value));
-                        if (client) {
-                          setSelectedClient(client);
-                          const addr = client.address;
-                          setEditForm((f) => ({
-                            ...f,
-                            client: { uid: client.uid },
-                            companyName: client.name ?? f.companyName,
-                            contactFullName: client.contactPerson ?? f.contactFullName,
-                            contactEmail: client.email ?? f.contactEmail,
-                            contactCellPhone: (client.phone as string) ?? f.contactCellPhone,
-                            contactLandline: (client.alternativePhone as string) ?? f.contactLandline,
-                            ...(addr && {
-                              contactAddress: {
-                                street: (addr.street ?? '') as string,
-                                suburb: (addr.suburb ?? '') as string,
-                                city: (addr.city ?? '') as string,
-                                province: (addr.state ?? '') as string,
-                                state: (addr.state ?? '') as string,
-                                country: (addr.country ?? '') as string,
-                                postalCode: (addr.postalCode ?? '') as string,
-                              },
-                            }),
-                          }));
-                        }
+                        const uid = Number(value);
+                        const c = clientsList.find((cl) => cl.uid === uid);
+                        if (!c) return;
+                        setSelectedClient(c);
+                        const addr = c.address;
+                        setEditForm((f) => ({
+                          ...f,
+                          client: { uid: c.uid },
+                          companyName: c.name ?? f.companyName,
+                          contactFullName: c.contactPerson ?? f.contactFullName,
+                          contactEmail: c.email ?? f.contactEmail,
+                          contactCellPhone: (c.phone as string) ?? f.contactCellPhone,
+                          contactLandline: (c.alternativePhone as string) ?? f.contactLandline,
+                          ...(addr && {
+                            contactAddress: {
+                              street: (addr.street ?? '') as string,
+                              suburb: (addr.suburb ?? '') as string,
+                              city: (addr.city ?? '') as string,
+                              province: (addr.state ?? '') as string,
+                              state: (addr.state ?? '') as string,
+                              country: (addr.country ?? '') as string,
+                              postalCode: (addr.postalCode ?? '') as string,
+                            },
+                          }),
+                        }));
                       }}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select client" />
+                      <SelectTrigger className="w-full justify-between font-normal border-input h-9 rounded-xl border px-3 py-2 text-sm shadow-xs gap-2">
+                        <span className="flex items-center gap-2 min-w-0 flex-1">
+                          <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                          <SelectValue placeholder="No client" />
+                        </span>
                       </SelectTrigger>
-                      <SelectContent className="max-h-[min(320px,50vh)] z-[10001]" position="popper">
+                      <SelectContent className="z-[10001] max-h-[min(320px,50vh)]" position="popper">
                         <SelectItem value="_none">No client</SelectItem>
-                        {clientsQuery.isLoading ? (
-                          <SelectItem value="_loading" disabled>Loading…</SelectItem>
-                        ) : (
-                          clientsList.map((c) => {
-                            const nameTrim = (c.name ?? '').trim();
-                            const contactTrim = (c.contactPerson ?? '').trim();
-                            const displayLabel =
-                              contactTrim && contactTrim !== nameTrim
-                                ? `${nameTrim} · ${contactTrim}`
-                                : nameTrim || '—';
-                            const hasEmail = !!(typeof c.email === 'string' && c.email.trim() !== '');
-                            const hasLandline = !!(typeof c.alternativePhone === 'string' && c.alternativePhone.trim() !== '');
-                            const hasCell = !!(typeof c.phone === 'string' && c.phone.trim() !== '');
-                            const hasAddr = hasAddress(c.address);
-                            return (
-                              <SelectItem key={c.uid} value={String(c.uid)}>
-                                <div className="flex flex-1 min-w-0 w-full items-center justify-between gap-2">
-                                  <span className="truncate min-w-0 flex-1">{displayLabel}</span>
-                                  <span className="flex flex-shrink-0 gap-0.5 items-center">
-                                    <Mail
-                                      className={cn('size-4', hasEmail ? 'text-green-600' : 'text-red-500')}
-                                      aria-hidden
-                                    />
-                                    <Phone
-                                      className={cn('size-4', hasLandline ? 'text-green-600' : 'text-red-500')}
-                                      aria-hidden
-                                    />
-                                    <Smartphone
-                                      className={cn('size-4', hasCell ? 'text-green-600' : 'text-red-500')}
-                                      aria-hidden
-                                    />
-                                    <MapPin
-                                      className={cn('size-4', hasAddr ? 'text-green-600' : 'text-red-500')}
-                                      aria-hidden
-                                    />
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })
+                        {clientsInfinite.isLoading && (
+                          <SelectItem value="_loading" disabled className="pointer-events-none">
+                            Loading…
+                          </SelectItem>
+                        )}
+                        {clientsList.length === 0 && !clientsInfinite.isLoading && (
+                          <SelectItem value="_empty" disabled className="pointer-events-none">
+                            No clients found
+                          </SelectItem>
+                        )}
+                        {clientsList.map((c) => {
+                          const nameTrim = (c.name ?? '').trim();
+                          const contactTrim = (c.contactPerson ?? '').trim();
+                          const displayLabel =
+                            contactTrim && contactTrim !== nameTrim
+                              ? `${toSentenceCase(nameTrim)} · ${toSentenceCase(contactTrim)}`
+                              : toSentenceCase(nameTrim) || '—';
+                          return (
+                            <SelectItem key={c.uid} value={String(c.uid)}>
+                              {displayLabel}
+                            </SelectItem>
+                          );
+                        })}
+                        {(clientsInfinite.hasNextPage ?? false) && (
+                          <div className="flex items-center justify-center border-t border-border py-1.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-full text-muted-foreground hover:text-foreground"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                clientsInfinite.fetchNextPage();
+                              }}
+                              disabled={clientsInfinite.isFetchingNextPage ?? false}
+                            >
+                              {clientsInfinite.isFetchingNextPage ? (
+                                <Loader2Icon className="size-4 animate-spin" />
+                              ) : (
+                                'Load more'
+                              )}
+                            </Button>
+                          </div>
                         )}
                       </SelectContent>
                     </Select>
