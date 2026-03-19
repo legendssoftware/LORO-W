@@ -10,6 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -178,6 +186,18 @@ export function VisitsChartsSection({
     for (const c of checkIns) {
       const region = extractRegionFromVisit(c);
       map.set(region, (map.get(region) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, VISITS_CHART_TOP_N)
+      .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
+  }, [checkIns]);
+
+  const byBranchData = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of checkIns) {
+      const branchName = c.branch?.name?.trim() ?? 'Not set';
+      map.set(branchName, (map.get(branchName) ?? 0) + 1);
     }
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
@@ -414,6 +434,77 @@ export function VisitsChartsSection({
         </CardContent>
         <CardFooter className="flex-col items-start gap-2 text-sm">
           <div className="text-muted-foreground leading-none">Visits per region</div>
+        </CardFooter>
+      </Card>
+
+      {/* 2b. Visits by branch */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Visits by branch</CardTitle>
+          <CardDescription>Top {VISITS_CHART_TOP_N} branches</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {byBranchData.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
+          ) : (
+            <>
+              <ChartContainer
+                config={VISITS_COUNT_CHART_CONFIG}
+                className="aspect-auto h-[200px] sm:h-[250px] w-full"
+              >
+                <RechartsBarChart
+                  accessibilityLayer
+                  data={byBranchData}
+                  layout="vertical"
+                  margin={{ right: 16 }}
+                >
+                  <CartesianGrid horizontal={false} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    width={100}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <XAxis dataKey="count" type="number" hide />
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
+                  <Bar dataKey="count" layout="vertical" radius={4}>
+                    {byBranchData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                    <LabelList
+                      dataKey="count"
+                      position="right"
+                      offset={8}
+                      className="fill-foreground"
+                      fontSize={12}
+                    />
+                  </Bar>
+                </RechartsBarChart>
+              </ChartContainer>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Branch</TableHead>
+                    <TableHead className="text-right">Visits</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {byBranchData.map((row, i) => (
+                    <TableRow key={row.name}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{row.count.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          )}
+        </CardContent>
+        <CardFooter className="flex-col items-start gap-2 text-sm">
+          <div className="text-muted-foreground leading-none">Visits per branch</div>
         </CardFooter>
       </Card>
 

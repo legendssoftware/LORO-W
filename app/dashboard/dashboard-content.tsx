@@ -192,9 +192,11 @@ export function DashboardContent() {
             />
             {isSyncing ? (
               <div className="rounded border border-gray-200 bg-card p-4">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex flex-col gap-3">
                   <Skeleton className="h-6 w-28 rounded-md" />
-                  <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+                  </div>
                 </div>
                 <div className="mx-auto max-w-full lg:max-w-[50%]">
                   <div className="grid grid-cols-7 gap-1 text-center">
