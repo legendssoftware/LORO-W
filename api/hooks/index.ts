@@ -65,3 +65,4 @@ export {
   useDeleteSubtaskMutation,
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
+export { useClaims } from './use-claims';

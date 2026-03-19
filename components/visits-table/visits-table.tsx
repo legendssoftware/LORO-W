@@ -73,8 +73,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil, UserPlus, Mail, Phone, Smartphone, MapPin } from 'lucide-react';
+import { Pencil, UserPlus, Mail, Phone, Smartphone, MapPin, ChevronRight } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
@@ -479,6 +484,50 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
     render: (c) => c.branch?.name?.trim() || '-',
   },
 ];
+
+/** Columns for the nested visit table (all except Sales Person). */
+const VISITS_TABLE_COLUMNS = VISITS_DISPLAY_COLUMNS.filter((col) => col.key !== 'salesPerson');
+
+export interface GroupedByOwner {
+  ownerKey: string;
+  owner: VisitExportItem['owner'];
+  visits: VisitExportItem[];
+}
+
+/** Stable key for grouping visits by sales person (owner has no uid). */
+function getOwnerKey(owner: VisitExportItem['owner']): string {
+  if (!owner) return '__unknown__';
+  const email = (owner.email ?? '').trim();
+  const name = (owner.name ?? '').trim();
+  const surname = (owner.surname ?? '').trim();
+  return [email, name, surname].join('|') || '__unknown__';
+}
+
+/** Group check-ins by owner; sort groups by visit count (most first), visits within group by date (newest first). */
+function groupCheckInsByOwner(checkIns: VisitExportItem[]): GroupedByOwner[] {
+  const map = new Map<string, VisitExportItem[]>();
+  for (const c of checkIns) {
+    const key = getOwnerKey(c.owner);
+    const list = map.get(key) ?? [];
+    list.push(c);
+    map.set(key, list);
+  }
+  const grouped: GroupedByOwner[] = [];
+  map.forEach((visits, ownerKey) => {
+    const sorted = [...visits].sort((a, b) => {
+      const aTime = new Date(a.createdAt ?? a.checkInTime).getTime();
+      const bTime = new Date(b.createdAt ?? b.checkInTime).getTime();
+      return bTime - aTime;
+    });
+    grouped.push({
+      ownerKey,
+      owner: visits[0]?.owner,
+      visits: sorted,
+    });
+  });
+  grouped.sort((a, b) => b.visits.length - a.visits.length);
+  return grouped;
+}
 
 function visitToEditForm(visit: VisitExportItem): Partial<UpdateVisitDetailsPayload> {
   const clientUid = (visit.client as { uid?: number } | undefined)?.uid;
@@ -1519,16 +1568,9 @@ export interface VisitsTableProps {
 export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet. Start a visit to see it here.', onVisitUpdated }: VisitsTableProps) {
   const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
   const [visitDetailOpen, setVisitDetailOpen] = useState(false);
+  const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
 
-  const sortedCheckIns = useMemo(
-    () =>
-      [...checkIns].sort((a, b) => {
-        const aTime = new Date(a.createdAt ?? a.checkInTime).getTime();
-        const bTime = new Date(b.createdAt ?? b.checkInTime).getTime();
-        return bTime - aTime;
-      }),
-    [checkIns]
-  );
+  const groupedByOwner = useMemo(() => groupCheckInsByOwner(checkIns), [checkIns]);
 
   if (isLoading) {
     return (
@@ -1546,41 +1588,100 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
     );
   }
 
+  const salesPersonColumn = VISITS_DISPLAY_COLUMNS.find((col) => col.key === 'salesPerson')!;
+
   return (
     <>
       <div className="rounded border overflow-x-auto bg-white">
-        <Table className="min-w-max">
-          <TableHeader>
-            <TableRow>
-              {VISITS_DISPLAY_COLUMNS.map((col) => (
-                <TableHead key={col.key} className={cn('whitespace-nowrap', visitsColumnWidthClass(col.width))}>
-                  {col.label}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
-            {sortedCheckIns.map((c) => (
-              <TableRow
-                key={c.uid}
-                className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"
-                onClick={() => {
-                  setSelectedVisit(c);
-                  setVisitDetailOpen(true);
-                }}
+        <div className="divide-y divide-border">
+          {groupedByOwner.map((group, index) => {
+            const isExpanded = expandedOwnerKey === group.ownerKey;
+            const contentId = `visits-${group.ownerKey}`;
+            return (
+              <div
+                key={group.ownerKey}
+                className={cn('rounded-sm', isExpanded && 'ring-1 ring-green-200')}
               >
-                {VISITS_DISPLAY_COLUMNS.map((col) => (
-                  <TableCell
-                    key={col.key}
-                    className={cn('text-sm whitespace-normal align-top min-w-0', visitsColumnWidthClass(col.width))}
+                <Collapsible
+                  open={isExpanded}
+                  onOpenChange={(open) => setExpandedOwnerKey(open ? group.ownerKey : null)}
+                >
+                  <CollapsibleTrigger
+                    asChild
+                    className="w-full"
+                    aria-expanded={isExpanded}
+                    aria-controls={contentId}
                   >
-                    {col.render(c)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    <div
+                      className={cn(
+                        'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
+                        index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
+                        isExpanded && 'bg-muted/30'
+                      )}
+                    >
+                    <span className="flex items-start gap-2 whitespace-normal min-w-0 flex-1">
+                      {group.ownerKey === '__unknown__' ? (
+                        <span className="text-muted-foreground font-medium">Unknown</span>
+                      ) : (
+                        salesPersonColumn.render(group.visits[0])
+                      )}
+                    </span>
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      {group.visits.length} visit{group.visits.length !== 1 ? 's' : ''}
+                    </span>
+                    <ChevronRight
+                      className={cn('size-5 shrink-0 text-muted-foreground transition-transform', isExpanded && 'rotate-90')}
+                      aria-hidden
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent id={contentId} className="overflow-hidden">
+                  <div className="bg-muted/20 border-t border-border overflow-x-auto">
+                    <Table className="min-w-max">
+                      <TableHeader>
+                        <TableRow>
+                          {VISITS_TABLE_COLUMNS.map((col) => (
+                            <TableHead
+                              key={col.key}
+                              className={cn('whitespace-nowrap', visitsColumnWidthClass(col.width))}
+                            >
+                              {col.label}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                        {group.visits.map((c) => (
+                          <TableRow
+                            key={c.uid}
+                            className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"
+                            onClick={() => {
+                              setSelectedVisit(c);
+                              setVisitDetailOpen(true);
+                            }}
+                          >
+                            {VISITS_TABLE_COLUMNS.map((col) => (
+                              <TableCell
+                                key={col.key}
+                                className={cn(
+                                  'text-sm whitespace-normal align-top min-w-0',
+                                  visitsColumnWidthClass(col.width)
+                                )}
+                              >
+                                {col.render(c)}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CollapsibleContent>
+                </Collapsible>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <VisitDetailDialog
         visit={selectedVisit}

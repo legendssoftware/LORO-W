@@ -148,6 +148,10 @@ export interface VisitListItem {
   companyName?: string | null;
   client?: { uid: number; name?: string } | null;
   owner?: { name?: string } | null;
+  /** Sales value for the visit (for day metrics aggregation). */
+  salesValue?: number | null;
+  /** Site type: office, shop, etc. (for time breakdown: client vs office). */
+  buildingType?: string | null;
   [key: string]: unknown;
 }
 

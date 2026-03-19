@@ -1,9 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { format, subMonths, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
-import { useMonthlyAttendance } from '@/api/hooks';
+import { Car, Building2, Users } from 'lucide-react';
+import { useMonthlyAttendance, useCheckIns, useLeadsReport, useClaims, useSessionSync } from '@/api/hooks';
 import type { ReportCardUser } from '@/app/reports/types';
+import type { VisitListItem } from '@/api/types/visits';
+import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +55,17 @@ interface DayRecord {
   shiftType: ShiftType;
 }
 
+/** Per-day aggregates from check-ins (visits), leads report, and claims. */
+interface DayMetrics {
+  visitCount: number;
+  totalVisitMinutes: number;
+  officeMinutes: number;
+  clientMinutes: number;
+  totalSales: number;
+  leadsCount: number;
+  claimsCount: number;
+}
+
 export function UserAttendanceRecordsModal({
   user,
   onClose,
@@ -61,6 +75,9 @@ export function UserAttendanceRecordsModal({
 }) {
   const open = !!user;
   const today = new Date();
+  const { backendUserData: profile } = useSessionSync();
+  const currentUserRef = profile?.uid != null ? String(profile.uid) : null;
+  const isViewingAnotherUser = open && user != null && currentUserRef != null && user.ref !== currentUserRef;
 
   const { periodStartStr, periodEndStr, periodStart, periodEnd } = useMemo(() => {
     const start = startOfDay(new Date(today.getFullYear(), today.getMonth() - 1, 26));
@@ -94,7 +111,27 @@ export function UserAttendanceRecordsModal({
     { enabled: open && !!user?.ref }
   );
 
-  const isLoading = currentMonthQuery.isLoading || prevMonthQuery.isLoading;
+  const checkInsQuery = useCheckIns(
+    {
+      startDate: periodStartStr,
+      endDate: periodEndStr,
+      ...(isViewingAnotherUser && user?.ref ? { userUid: user.ref } : {}),
+    },
+    { enabled: open }
+  );
+  const leadsReportQuery = useLeadsReport(
+    { from: periodStartStr, to: periodEndStr },
+    { enabled: open }
+  );
+  const claimsQuery = useClaims(
+    { createdFrom: periodStartStr, createdTo: periodEndStr, limit: 5000 },
+    { enabled: open }
+  );
+
+  const isLoading =
+    currentMonthQuery.isLoading ||
+    prevMonthQuery.isLoading ||
+    (open && (checkInsQuery.isLoading || leadsReportQuery.isLoading || claimsQuery.isLoading));
 
   const records = useMemo((): DayRecord[] => {
     const attendanceByDate = new Map<
@@ -174,6 +211,57 @@ export function UserAttendanceRecordsModal({
     periodEnd,
   ]);
 
+  const dayMetrics = useMemo((): Record<string, DayMetrics> => {
+    const map: Record<string, DayMetrics> = {};
+    const empty: DayMetrics = {
+      visitCount: 0,
+      totalVisitMinutes: 0,
+      officeMinutes: 0,
+      clientMinutes: 0,
+      totalSales: 0,
+      leadsCount: 0,
+      claimsCount: 0,
+    };
+
+    const checkIns = (checkInsQuery.data?.checkIns ?? []) as VisitListItem[];
+    // Visit date = check-in date only (matches attendance record date); do not use check-out date.
+    for (const c of checkIns) {
+      const dateKey = c.checkInTime ? new Date(c.checkInTime).toISOString().slice(0, 10) : '';
+      if (!dateKey) continue;
+      if (!map[dateKey]) map[dateKey] = { ...empty };
+      const m = map[dateKey];
+      m.visitCount += 1;
+      const mins = parseDurationToMinutes(c.duration);
+      m.totalVisitMinutes += mins;
+      const isOffice = (c.buildingType ?? '').toLowerCase() === 'office';
+      if (isOffice) m.officeMinutes += mins;
+      else m.clientMinutes += mins;
+      const sales = Number(c.salesValue);
+      if (!Number.isNaN(sales) && sales > 0) m.totalSales += sales;
+    }
+
+    const byDay = leadsReportQuery.data?.byDay ?? [];
+    for (const { date, count } of byDay) {
+      if (!map[date]) map[date] = { ...empty };
+      map[date].leadsCount = count;
+    }
+
+    const claimsList = claimsQuery.data?.data ?? [];
+    for (const claim of claimsList) {
+      const created = claim.createdAt;
+      if (!created) continue;
+      const dateKey = new Date(created).toISOString().slice(0, 10);
+      if (!map[dateKey]) map[dateKey] = { ...empty };
+      map[dateKey].claimsCount += 1;
+    }
+
+    return map;
+  }, [
+    checkInsQuery.data?.checkIns,
+    leadsReportQuery.data?.byDay,
+    claimsQuery.data?.data,
+  ]);
+
   const formatTime = (iso?: string | null): string => {
     if (!iso) return '—';
     try {
@@ -223,6 +311,20 @@ export function UserAttendanceRecordsModal({
     }
   };
 
+  const formatZAR = (value: number): string => {
+    if (value <= 0) return '—';
+    try {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      return String(value);
+    }
+  };
+
   const summary = useMemo(() => {
     const endFull = endOfDay(new Date(today.getFullYear(), today.getMonth(), 25));
     const missed = records.filter((r) => r.status === 'missed').length;
@@ -244,7 +346,7 @@ export function UserAttendanceRecordsModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex flex-col w-full max-w-[calc(100%-2rem)] sm:max-w-[70vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
+        className="flex flex-col w-full w-[80vw] max-w-[80vw] sm:max-w-[80vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
       >
         <div className="flex items-start justify-between gap-2 shrink-0">
           <DialogHeader className="!text-left min-w-0 flex-1 flex flex-col items-start">
@@ -283,8 +385,15 @@ export function UserAttendanceRecordsModal({
                   <TableHead>Status</TableHead>
                   <TableHead>Check-in</TableHead>
                   <TableHead>Check-out</TableHead>
-                  <TableHead>Duration</TableHead>
+                  <TableHead>Shift Duration</TableHead>
                   <TableHead>Shift</TableHead>
+                  <TableHead>Total visits</TableHead>
+                  <TableHead>Breakdown</TableHead>
+                  <TableHead>Sales</TableHead>
+                  <TableHead>Leads</TableHead>
+                  <TableHead>Claims</TableHead>
+                  <TableHead>Distance</TableHead>
+                  <TableHead>Avg visit time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -329,6 +438,73 @@ export function UserAttendanceRecordsModal({
                               </span>
                             )
                           : '—'}
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {dayMetrics[r.date]?.visitCount ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {(() => {
+                        const m = dayMetrics[r.date];
+                        const shiftMinutes = parseDurationToMinutes(r.attendanceRecord?.duration);
+                        const totalVisit = m?.totalVisitMinutes ?? 0;
+                        const driving = Math.max(0, shiftMinutes - totalVisit);
+                        if (!m && driving === 0) return '—';
+                        const client = m?.clientMinutes ?? 0;
+                        const office = m?.officeMinutes ?? 0;
+                        const parts: ReactNode[] = [];
+                        if (client > 0) {
+                          parts.push(
+                            <span key="client" className="inline-flex items-center gap-1">
+                              <Users className="size-4 shrink-0" aria-hidden />
+                              {formatMinutesToDuration(client)}
+                            </span>
+                          );
+                        }
+                        if (office > 0) {
+                          parts.push(
+                            <span key="office" className="inline-flex items-center gap-1">
+                              <Building2 className="size-4 shrink-0" aria-hidden />
+                              {formatMinutesToDuration(office)}
+                            </span>
+                          );
+                        }
+                        if (driving > 0) {
+                          parts.push(
+                            <span key="driving" className="inline-flex items-center gap-1">
+                              <Car className="size-4 shrink-0" aria-hidden />
+                              {formatMinutesToDuration(driving)}
+                            </span>
+                          );
+                        }
+                        if (parts.length === 0) return '—';
+                        return (
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            {parts.flatMap((el, i) =>
+                              i === 0 ? [el] : [<span key={`sep-${i}`} className="text-muted-foreground"> | </span>, el]
+                            )}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {formatZAR(dayMetrics[r.date]?.totalSales ?? 0)}
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {dayMetrics[r.date]?.leadsCount ?? '—'}
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {dayMetrics[r.date]?.claimsCount ?? '—'}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      —
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {(() => {
+                        const m = dayMetrics[r.date];
+                        if (!m || m.visitCount === 0) return '—';
+                        const avgMins = Math.round(m.totalVisitMinutes / m.visitCount);
+                        return formatMinutesToDuration(avgMins);
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -142,6 +142,11 @@ export interface CreateLeadPayload {
   utmContent?: string;
   lastContactDate?: string;
   nextFollowUpDate?: string;
+  form?: string;
+  channel?: string;
+  labels?: string[];
+  secondaryPhoneNumber?: string;
+  whatsAppNumber?: string;
 }
 
 /** Response from POST /leads (create). Server returns { message, data }. */

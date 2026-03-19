@@ -89,9 +89,11 @@ export async function createLead(
 }
 
 export interface ImportLeadsFromCSVParams {
-  assignedUserIds: number[];
+  assignedUserIds?: number[];
   followUpInterval?: string;
   followUpDuration?: number;
+  /** Default lead source (e.g. WEBSITE, REFERRAL) when CSV does not provide Source. */
+  source?: string;
 }
 
 /**
@@ -148,9 +150,12 @@ export async function importLeadsFromCSV(
   params: ImportLeadsFromCSVParams
 ): Promise<LeadImportResponse> {
   const search = new URLSearchParams();
-  search.set('assignedUserIds', params.assignedUserIds.join(','));
+  if (params.assignedUserIds?.length) {
+    search.set('assignedUserIds', params.assignedUserIds.join(','));
+  }
   if (params.followUpInterval) search.set('followUpInterval', params.followUpInterval);
   if (params.followUpDuration != null) search.set('followUpDuration', String(params.followUpDuration));
+  if (params.source?.trim()) search.set('source', params.source.trim());
   const { data } = await client.post<LeadImportResponse>(
     `/leads/import-csv?${search.toString()}`,
     formData
