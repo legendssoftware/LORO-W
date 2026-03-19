@@ -166,3 +166,16 @@ export type UpdateLeadPayload = Partial<Omit<CreateLeadPayload, 'branch'>> & {
 export interface LeadActionResponse {
   message: string;
 }
+
+/** Params for GET /leads/:ref/engage-draft */
+export interface EngageDraftParams {
+  channel: 'email' | 'sms' | 'whatsapp';
+  tone?: 'professional' | 'friendly' | 'formal';
+  casualness?: 'casual' | 'neutral' | 'formal';
+}
+
+/** Response from GET /leads/:ref/engage-draft */
+export interface EngageDraftResponse {
+  draft: string;
+  subject?: string;
+}

@@ -9,6 +9,7 @@ import { isStaffDashboardVisible } from '@/lib/access';
 import type { VisitExportItem } from '@/api/types/reports';
 import { visitListItemToExportItem } from '@/lib/utils/visits-export';
 import { VisitsChartsSection, extractRegionFromVisit } from '@/app/reports/tabs/visits-charts-section';
+import { MapViewTab } from '@/app/reports/tabs/map-view-tab';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -25,8 +26,10 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UsersIcon, MapPinIcon } from '@/lib/icons';
-import { CalendarIcon, Building2 } from 'lucide-react';
+import { CalendarIcon, Building2, Map } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
+
+type ReportsTab = 'visits' | 'map';
 
 const today = new Date();
 const defaultReportStart = startOfDay(today);
@@ -261,6 +264,7 @@ export function ReportsContent() {
   const { backendUserData: profile } = useSessionSync();
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const isVisitsAdmin = profile?.accessLevel?.toLowerCase() === 'admin';
+  const [activeTab, setActiveTab] = useState<ReportsTab>('visits');
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -276,7 +280,38 @@ export function ReportsContent() {
               Reports are available to staff only.
             </p>
           ) : isVisitsAdmin ? (
-            <VisitsReportTab isTokenReady={isTokenReady} />
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab('visits')}
+                  className={
+                    activeTab === 'visits'
+                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
+                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
+                  }
+                >
+                  <CalendarIcon className="size-4 mr-2" />
+                  Visits
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab('map')}
+                  className={
+                    activeTab === 'map'
+                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
+                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
+                  }
+                >
+                  <Map className="size-4 mr-2" />
+                  Map View
+                </Button>
+              </div>
+              {activeTab === 'visits' && <VisitsReportTab isTokenReady={isTokenReady} />}
+              {activeTab === 'map' && <MapViewTab />}
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-12">
               Reports are available to admin only.

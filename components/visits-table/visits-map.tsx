@@ -94,7 +94,8 @@ function getVisitPoints(visits: VisitExportItem[]): VisitMapPoint[] {
   return points;
 }
 
-function LocationButton() {
+/** Reusable "Use my location" button; must be rendered inside a react-leaflet MapContainer. */
+export function LocationButton() {
   const map = useMap();
   const handleLocate = useCallback(() => {
     if (!navigator.geolocation) return;
