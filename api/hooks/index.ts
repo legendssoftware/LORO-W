@@ -51,6 +51,8 @@ export {
   useDeleteLeadMutation,
   useRestoreLeadMutation,
   useReactivateLeadMutation,
+  useEngageDraftMutation,
+  useSendLeadEngageMutation,
   useImportLeadsMutation,
 } from './use-leads';
 export {
@@ -66,3 +68,7 @@ export {
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
 export { useClaims } from './use-claims';
+export {
+  useInteractionsByLead,
+  useCreateInteractionMutation,
+} from './use-interactions';
