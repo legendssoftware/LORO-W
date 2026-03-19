@@ -4,13 +4,13 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
-import { format, startOfDay, endOfDay, subDays, isSameDay, differenceInCalendarDays } from 'date-fns';
+import { format, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import {
   useCheckIns,
   useCheckInStatus,
   useCheckInMutation,
   useCheckOutMutation,
-  useClients,
+  useClientsInfinite,
   useUsers,
   useTokenReady,
   useSessionSync,
@@ -44,7 +44,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2, MoreHorizontal } from 'lucide-react';
+import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon, UsersIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VisitsTable } from '@/components/visits-table/visits-table';
@@ -215,13 +215,12 @@ export function VisitsContent() {
   const originalClientRef = useRef<ClientListItem | null>(null);
   const mounted = authLoaded && isTokenReady;
 
-  const clientsQuery = useClients({
+  const clientsInfinite = useClientsInfinite({
     enabled: endVisitOpen,
-    limit: 100,
     search: clientSearch.trim() || undefined,
   });
-  const clientsFromApi: ClientListItem[] = clientsQuery.data ?? [];
-  /** Include selected client in list when search would otherwise hide them (so Select value stays valid). */
+  const clientsFromApi: ClientListItem[] = clientsInfinite.data ?? [];
+  /** Include selected client in list when search would otherwise hide them (so selection stays valid). */
   const clientsList: ClientListItem[] = useMemo(() => {
     if (!selectedClient) return clientsFromApi;
     const inList = clientsFromApi.some((c) => c.uid === selectedClient.uid);
@@ -737,31 +736,25 @@ export function VisitsContent() {
             <div className="grid gap-2 sm:col-span-2">
               <Label className="flex items-center gap-2">
                 <UsersIcon className="size-4 shrink-0" />
-                Client (optional)
+                Select the client
               </Label>
-              <Input
-                placeholder="Search clients..."
-                value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
-                className="mb-1"
-              />
               <Select
-                value={selectedClient ? String(selectedClient.uid) : '_none'}
+                value={selectedClient?.uid.toString() ?? '_none'}
                 onValueChange={(value) => {
-                  if (value === '_none') {
-                    clearClientSelection();
+                  if (value === '_none' || value === '_loading') {
+                    if (value === '_none') clearClientSelection();
                     return;
                   }
-                  const client = clientsList.find((c) => c.uid === Number(value));
+                  const client = clientsList.find((c) => c.uid.toString() === value);
                   if (client) applyClientToForm(client);
                 }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select client if you visited an existing client" />
                 </SelectTrigger>
-                <SelectContent className="z-[10001]" position="popper">
-                  <SelectItem value="_none">No client</SelectItem>
-                  {clientsQuery.isLoading ? (
+                <SelectContent className="z-[10001] max-h-[280px]">
+                  <SelectItem value="_none">Select the client</SelectItem>
+                  {clientsInfinite.isLoading ? (
                     <SelectItem value="_loading" disabled>
                       Loading…
                     </SelectItem>
@@ -778,8 +771,8 @@ export function VisitsContent() {
                       const hasCell = !!(typeof c.phone === 'string' && c.phone.trim() !== '');
                       const hasAddr = hasAddress(c.address);
                       return (
-                        <SelectItem key={c.uid} value={String(c.uid)}>
-                          <div className="flex flex-1 min-w-0 w-full items-center justify-between gap-2">
+                        <SelectItem key={c.uid.toString()} value={c.uid.toString()}>
+                          <div className="flex items-center justify-between gap-2 w-full">
                             <span className="truncate min-w-0 flex-1">{displayLabel}</span>
                             <span className="flex flex-shrink-0 gap-0.5 items-center">
                               <Mail
@@ -1391,7 +1384,7 @@ export function VisitsContent() {
               </Popover>
               {(() => {
                 const isDefaultRange =
-                  !useAllTime && isSameDay(endDate, today) && differenceInCalendarDays(endDate, startDate) === 30;
+                  !useAllTime && isSameDay(startDate, today) && isSameDay(endDate, today);
                 return useAllTime || !isDefaultRange ? (
                   <span
                     role="button"
@@ -1407,7 +1400,7 @@ export function VisitsContent() {
                       }
                     }}
                     className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
-                    aria-label="Reset to last 30 days"
+                    aria-label="Reset to today"
                   >
                     <XIcon className="size-4 text-red-600" />
                   </span>

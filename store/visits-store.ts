@@ -4,13 +4,12 @@
  */
 
 import { create } from 'zustand';
-import { subDays } from 'date-fns';
 import type { MethodOfContact } from '@/api/types/visits';
 import type { ClientListItem } from '@/api/endpoints/clients';
 
 const today = new Date();
 const defaultEnd = today;
-const defaultStart = subDays(today, 30);
+const defaultStart = today;
 
 export interface VisitsFiltersState {
   startDate: Date;

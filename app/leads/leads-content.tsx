@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format, isSameDay, differenceInCalendarDays } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useLeads, useUsers } from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
@@ -146,9 +146,7 @@ export function LeadsContent() {
             </Popover>
             {(() => {
               const isDefaultRange =
-                !useAllTime &&
-                isSameDay(endDate, today) &&
-                differenceInCalendarDays(endDate, startDate) === 30;
+                !useAllTime && isSameDay(startDate, today) && isSameDay(endDate, today);
               return useAllTime || !isDefaultRange ? (
                 <span
                   role="button"
@@ -164,7 +162,7 @@ export function LeadsContent() {
                     }
                   }}
                   className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Reset to last 30 days"
+                  aria-label="Reset to today"
                 >
                   <XIcon className="size-4 text-red-600" />
                 </span>

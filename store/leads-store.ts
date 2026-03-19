@@ -4,11 +4,10 @@
  */
 
 import { create } from 'zustand';
-import { subDays } from 'date-fns';
 
 const today = new Date();
 const defaultEnd = today;
-const defaultStart = subDays(today, 30);
+const defaultStart = today;
 
 export interface LeadsFiltersState {
   startDate: Date;

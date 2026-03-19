@@ -1,22 +1,27 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-/**
- * Rendered for unknown routes and when notFound() is called.
- */
 export default function NotFound() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-xl font-semibold">Page not found</h1>
-      <p className="text-muted-foreground text-sm">
-        The page you’re looking for doesn’t exist or has been moved.
+    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4">
+      <h1 className="text-3xl font-bold text-white">Page not found</h1>
+      <p className="mt-2 text-white/80">
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
-      <Button asChild variant="outline">
-        <Link href="/">Go to home</Link>
-      </Button>
-      <Button asChild variant="secondary">
-        <Link href="/dashboard">Dashboard</Link>
-      </Button>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Button
+          asChild
+          className="bg-purple-600 text-white hover:bg-purple-700 focus-visible:ring-purple-500"
+        >
+          <Link href="/">Go to home</Link>
+        </Button>
+        <Button
+          asChild
+          className="bg-purple-600 text-white hover:bg-purple-700 focus-visible:ring-purple-500"
+        >
+          <Link href="/dashboard">Dashboard</Link>
+        </Button>
+      </div>
     </div>
   );
 }

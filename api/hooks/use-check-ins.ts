@@ -26,6 +26,7 @@ async function fetchCheckIns(
   if (params?.startDate) url.searchParams.set('startDate', params.startDate);
   if (params?.endDate) url.searchParams.set('endDate', params.endDate);
   if (params?.userUid) url.searchParams.set('userUid', params.userUid);
+  if (params?.branchId != null) url.searchParams.set('branchId', String(params.branchId));
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -42,7 +43,7 @@ export function useCheckIns(
 ): UseCheckInsResult {
   const { getToken } = useAuth();
   const query = useQuery({
-    queryKey: [...CHECK_INS_LIST_QUERY_KEY, params?.startDate, params?.endDate, params?.userUid],
+    queryKey: [...CHECK_INS_LIST_QUERY_KEY, params?.startDate, params?.endDate, params?.userUid, params?.branchId],
     queryFn: async () => {
       const token = await getToken();
       return fetchCheckIns(token, params);
