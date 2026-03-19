@@ -1,30 +1,34 @@
 import type { AxiosInstance } from 'axios';
-import type { InteractionsListResponse } from '@/api/types/reports';
+import type {
+  InteractionsByLeadResponse,
+  CreateInteractionPayload,
+  CreateInteractionResponse,
+} from '@/api/types/interactions';
 
-export interface GetInteractionsParams {
-  page?: number;
-  limit?: number;
-  createdFrom?: string;
-  createdTo?: string;
-  type?: string;
+/**
+ * GET /interactions/lead/:ref - interactions for a lead (team chat).
+ */
+export async function getInteractionsByLead(
+  client: AxiosInstance,
+  leadRef: number
+): Promise<InteractionsByLeadResponse> {
+  const { data } = await client.get<InteractionsByLeadResponse>(
+    `/interactions/lead/${leadRef}`
+  );
+  return data;
 }
 
 /**
- * GET /interactions - list interactions with optional date range.
+ * POST /interactions - create an interaction (e.g. lead message).
+ * Backend sets createdBy from authenticated user when omitted.
  */
-export async function getInteractions(
+export async function createInteraction(
   client: AxiosInstance,
-  params: GetInteractionsParams = {}
-): Promise<InteractionsListResponse> {
-  const search = new URLSearchParams();
-  if (params.page != null) search.set('page', String(params.page));
-  if (params.limit != null) search.set('limit', String(params.limit));
-  if (params.createdFrom) search.set('startDate', params.createdFrom);
-  if (params.createdTo) search.set('endDate', params.createdTo);
-  if (params.type) search.set('type', params.type);
-  const qs = search.toString();
-  const { data } = await client.get<InteractionsListResponse>(
-    `/interactions${qs ? `?${qs}` : ''}`
+  payload: CreateInteractionPayload
+): Promise<CreateInteractionResponse> {
+  const { data } = await client.post<CreateInteractionResponse>(
+    '/interactions',
+    payload
   );
   return data;
 }

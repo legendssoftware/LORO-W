@@ -12,6 +12,8 @@ import {
   deleteLead,
   restoreLead,
   reactivateLead,
+  getEngageDraft,
+  sendLeadEngage,
   importLeadsFromCSV,
 } from '@/api/endpoints/leads';
 import type {
@@ -19,6 +21,7 @@ import type {
   GetLeadsReportParams,
   CreateLeadPayload,
   UpdateLeadPayload,
+  EngageDraftParams,
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 
@@ -187,6 +190,43 @@ export function useReactivateLeadMutation() {
     mutationFn: async (ref: number) => reactivateLead(client, ref),
     onSuccess: (_, ref) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
+      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+    },
+  });
+}
+
+/**
+ * Fetch AI-generated engage draft for a lead. Use as mutation so caller can trigger with channel/tone/casualness.
+ */
+export function useEngageDraftMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: async ({
+      leadRef,
+      ...params
+    }: { leadRef: number } & EngageDraftParams) =>
+      getEngageDraft(client, leadRef, params),
+  });
+}
+
+/**
+ * Send engage message to lead via email, sms, or whatsapp. Invalidates lead detail on success.
+ */
+export function useSendLeadEngageMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      ref,
+      channel,
+      message,
+    }: {
+      ref: number;
+      channel: 'email' | 'sms' | 'whatsapp';
+      message: string;
+    }) => sendLeadEngage(client, ref, { channel, message }),
+    onSuccess: (_, { ref }) => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
       queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
     },

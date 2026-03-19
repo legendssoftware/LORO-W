@@ -39,6 +39,10 @@ import {
   useUpdateLeadMutation,
   useDeleteLeadMutation,
   useReactivateLeadMutation,
+  useEngageDraftMutation,
+  useSendLeadEngageMutation,
+  useInteractionsByLead,
+  useCreateInteractionMutation,
 } from '@/api/hooks';
 import type { UpdateLeadPayload } from '@/api/types/leads';
 import {
@@ -48,7 +52,7 @@ import {
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { Loader2Icon, XIcon } from '@/lib/icons';
-import { Pencil } from 'lucide-react';
+import { Pencil, MessageCircle, Send, Mail, MessageSquare, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function getOptionLabel(
@@ -107,10 +111,24 @@ export function LeadDetailDialog({
     notes?: string;
     nextFollowUpDate?: string;
   }>({});
+  const [chatOpen, setChatOpen] = useState(false);
+  const [engageOpen, setEngageOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [engageChannel, setEngageChannel] = useState<'email' | 'sms' | 'whatsapp' | null>(null);
+  const [engageDraft, setEngageDraft] = useState('');
+  const [engageTone, setEngageTone] = useState<'professional' | 'friendly' | 'formal'>('professional');
+  const [engageCasualness, setEngageCasualness] = useState<'casual' | 'neutral' | 'formal'>('neutral');
 
   const updateMutation = useUpdateLeadMutation();
+  const engageDraftMutation = useEngageDraftMutation();
   const deleteMutation = useDeleteLeadMutation();
   const reactivateMutation = useReactivateLeadMutation();
+  const interactionsQuery = useInteractionsByLead(
+    lead?.uid ?? null,
+    { enabled: (lead?.uid != null) && chatOpen }
+  );
+  const createInteractionMutation = useCreateInteractionMutation();
+  const sendEngageMutation = useSendLeadEngageMutation();
 
   const canReactivate =
     lead?.status === 'DECLINED' || lead?.status === 'CANCELLED';
@@ -205,6 +223,122 @@ export function LeadDetailDialog({
     );
   };
 
+  const openChat = () => {
+    setEngageOpen(false);
+    setChatOpen((prev) => !prev);
+  };
+
+  const openEngage = () => {
+    setChatOpen(false);
+    setEngageOpen((prev) => {
+      if (!prev) {
+        setEngageChannel(null);
+        setEngageDraft('');
+      }
+      return !prev;
+    });
+  };
+
+  const handleSendChatMessage = () => {
+    const msg = chatMessage.trim();
+    if (leadUid == null || !msg) return;
+    createInteractionMutation.mutate(
+      { message: msg, leadUid, type: 'message' },
+      {
+        onSuccess: () => {
+          setChatMessage('');
+          toast.success('Message sent');
+          onActionSuccess?.();
+        },
+        onError: (err: { message?: string }) => {
+          toast.error(err?.message ?? 'Failed to send message');
+        },
+      }
+    );
+  };
+
+  /** Fallback draft when engage-draft API fails */
+  const buildEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
+    const name = lead?.name?.trim() || lead?.companyName?.trim() || 'there';
+    const company = lead?.companyName?.trim() || '';
+    const nextFollowUp = lead?.nextFollowUpDate
+      ? format(new Date(lead.nextFollowUpDate), 'MMM d, yyyy')
+      : '';
+    const notes = lead?.notes?.trim() ? ` (Re: ${lead.notes.slice(0, 80)}${lead.notes.length > 80 ? '…' : ''})` : '';
+    if (channel === 'email') {
+      return `Hi ${name},\n\nI wanted to follow up${company ? ` regarding ${company}` : ''}.${notes}\n${nextFollowUp ? `Our next follow-up is scheduled for ${nextFollowUp}.` : ''}\n\nBest regards`;
+    }
+    if (channel === 'sms' || channel === 'whatsapp') {
+      return `Hi ${name}, following up${company ? ` re ${company}` : ''}.${notes} ${nextFollowUp ? `Next follow-up: ${nextFollowUp}.` : ''}`;
+    }
+    return `Hi ${name}, following up.`;
+  };
+
+  const fetchEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
+    if (leadUid == null) return;
+    engageDraftMutation.mutate(
+      {
+        leadRef: leadUid,
+        channel,
+        tone: engageTone,
+        casualness: engageCasualness,
+      },
+      {
+        onSuccess: (data) => setEngageDraft(data.draft ?? ''),
+        onError: () => {
+          setEngageDraft(buildEngageDraft(channel));
+          toast.error('AI draft unavailable; using template.');
+        },
+      }
+    );
+  };
+
+  const handleSelectEngageChannel = (channel: 'email' | 'sms' | 'whatsapp') => {
+    setEngageChannel(channel);
+    setEngageDraft('');
+    fetchEngageDraft(channel);
+  };
+
+  const handleEngageToneChange = (tone: 'professional' | 'friendly' | 'formal') => {
+    setEngageTone(tone);
+    if (engageChannel) fetchEngageDraft(engageChannel);
+  };
+
+  const handleEngageCasualnessChange = (casualness: 'casual' | 'neutral' | 'formal') => {
+    setEngageCasualness(casualness);
+    if (engageChannel) fetchEngageDraft(engageChannel);
+  };
+
+  const handleRegenerateDraft = () => {
+    if (engageChannel) fetchEngageDraft(engageChannel);
+  };
+
+  const handleCopyEngageDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(engageDraft);
+      toast.success('Copied to clipboard');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  const handleSendEngage = () => {
+    if (leadUid == null || engageChannel == null || !engageDraft.trim()) return;
+    const channelLabel = engageChannel === 'email' ? 'Email' : engageChannel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+    sendEngageMutation.mutate(
+      { ref: leadUid, channel: engageChannel, message: engageDraft.trim() },
+      {
+        onSuccess: () => {
+          toast.success(`Sent via ${channelLabel}`);
+          onActionSuccess?.();
+        },
+        onError: (err: { message?: string }) => {
+          toast.error(err?.message ?? `Failed to send via ${channelLabel}`);
+        },
+      }
+    );
+  };
+
   const openStatusChange = (status: string) => {
     setStatusChangeTarget(status);
     setStatusChangeReason('');
@@ -271,7 +405,33 @@ export function LeadDetailDialog({
             </Button>
             <Button
               size="sm"
-              variant="success"
+              variant={chatOpen ? 'destructive' : 'outline'}
+              className={chatOpen ? 'rounded-full gap-1.5 bg-red-600 text-white hover:bg-red-700' : 'rounded-full gap-1.5'}
+              onClick={(e) => {
+                e.stopPropagation();
+                openChat();
+              }}
+              disabled={!leadUid}
+            >
+              <MessageCircle className="size-4" />
+              {chatOpen ? 'Close chat' : 'Chat'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full gap-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEngage();
+              }}
+              disabled={!leadUid}
+            >
+              <Send className="size-4" />
+              Engage lead
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               className="rounded-full"
               onClick={handleConvertToClient}
               disabled={!leadUid || isConverted || updateMutation.isPending}
@@ -315,6 +475,187 @@ export function LeadDetailDialog({
               {ownerFullName} · {formatDateTime(lead.updatedAt)}
             </DialogDescription>
           </DialogHeader>
+
+          {chatOpen && (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <h4 className="font-semibold text-sm">Team chat</h4>
+              <p className="text-xs text-muted-foreground">Visible to lead owner and assignees.</p>
+              <div className="max-h-48 overflow-y-auto space-y-2 min-h-[80px]">
+                {interactionsQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (interactionsQuery.data?.data?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-muted-foreground">No messages yet. Start the conversation.</p>
+                ) : (
+                  (interactionsQuery.data?.data ?? []).map((i) => (
+                    <div key={i.uid} className="text-sm">
+                      <span className="font-medium text-muted-foreground">
+                        {i.createdBy
+                          ? [i.createdBy.name, i.createdBy.surname].filter(Boolean).join(' ').trim() || i.createdBy.email || 'Someone'
+                          : 'Someone'}
+                        {' · '}
+                        {formatDateTime(i.createdAt)}
+                      </span>
+                      <p className="mt-0.5 whitespace-pre-wrap">{i.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Type a message…"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendChatMessage();
+                    }
+                  }}
+                  rows={2}
+                  className="min-h-0 resize-none"
+                />
+                <Button
+                  size="sm"
+                  className={chatMessage.trim() && !createInteractionMutation.isPending ? 'bg-purple-600 text-white hover:bg-purple-700' : ''}
+                  onClick={handleSendChatMessage}
+                  disabled={!chatMessage.trim() || createInteractionMutation.isPending}
+                >
+                  {createInteractionMutation.isPending ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {engageOpen && (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <h4 className="font-semibold text-sm">Engage lead</h4>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`gap-1.5 ${engageChannel === 'email' ? 'bg-blue-600 text-white hover:bg-blue-700 border-blue-600' : ''}`}
+                  onClick={() => handleSelectEngageChannel('email')}
+                  disabled={!lead?.email}
+                >
+                  <Mail className="size-4" />
+                  Email
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`gap-1.5 ${engageChannel === 'sms' ? 'bg-purple-600 text-white hover:bg-purple-700 border-purple-600' : ''}`}
+                  onClick={() => handleSelectEngageChannel('sms')}
+                  disabled={!lead?.phone}
+                >
+                  <MessageSquare className="size-4" />
+                  SMS
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`gap-1.5 ${engageChannel === 'whatsapp' ? 'bg-green-600 text-white hover:bg-green-700 border-green-600' : ''}`}
+                  onClick={() => handleSelectEngageChannel('whatsapp')}
+                  disabled={!lead?.phone}
+                >
+                  <Phone className="size-4" />
+                  WhatsApp
+                </Button>
+              </div>
+              {engageChannel && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Tone</Label>
+                      <Select
+                        value={engageTone}
+                        onValueChange={(v) => handleEngageToneChange(v as 'professional' | 'friendly' | 'formal')}
+                      >
+                        <SelectTrigger className="h-8 text-sm mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="friendly">Friendly</SelectItem>
+                          <SelectItem value="formal">Formal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Casualness</Label>
+                      <Select
+                        value={engageCasualness}
+                        onValueChange={(v) => handleEngageCasualnessChange(v as 'casual' | 'neutral' | 'formal')}
+                      >
+                        <SelectTrigger className="h-8 text-sm mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="casual">Casual</SelectItem>
+                          <SelectItem value="neutral">Neutral</SelectItem>
+                          <SelectItem value="formal">Formal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Label className="text-xs">Draft</Label>
+                  {engageDraftMutation.isPending ? (
+                    <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-4 text-sm text-muted-foreground">
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Generating draft…
+                    </div>
+                  ) : (
+                    <Textarea
+                      value={engageDraft}
+                      onChange={(e) => setEngageDraft(e.target.value)}
+                      rows={10}
+                      className="resize-y text-sm"
+                    />
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={handleCopyEngageDraft} disabled={!engageDraft.trim()}>
+                      Copy to clipboard
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRegenerateDraft}
+                      disabled={engageDraftMutation.isPending}
+                    >
+                      {engageDraftMutation.isPending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                      ) : (
+                        'Regenerate'
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className={
+                        engageChannel === 'email'
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : engageChannel === 'whatsapp'
+                            ? 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }
+                      onClick={handleSendEngage}
+                      disabled={!engageDraft.trim() || sendEngageMutation.isPending}
+                    >
+                      {sendEngageMutation.isPending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                      ) : (
+                        `Send via ${engageChannel === 'email' ? 'Email' : engageChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}`
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="space-y-4 text-sm">
             <div>

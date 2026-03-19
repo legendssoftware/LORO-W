@@ -10,6 +10,8 @@ import type {
   CreateLeadResponse,
   UpdateLeadPayload,
   LeadActionResponse,
+  EngageDraftParams,
+  EngageDraftResponse,
 } from '@/api/types/leads';
 import type { DomainReportResponse } from '@/api/types/reports';
 
@@ -138,6 +140,35 @@ export async function reactivateLead(
   ref: number
 ): Promise<LeadActionResponse> {
   const { data } = await client.patch<LeadActionResponse>(`/leads/${ref}/reactivate`);
+  return data;
+}
+
+/**
+ * GET /leads/engage-draft/:ref - AI-generated follow-up draft for the lead (Gemini RAG).
+ */
+export async function getEngageDraft(
+  client: AxiosInstance,
+  leadRef: number,
+  params: EngageDraftParams
+): Promise<EngageDraftResponse> {
+  const search = new URLSearchParams({ channel: params.channel });
+  if (params.tone) search.set('tone', params.tone);
+  if (params.casualness) search.set('casualness', params.casualness);
+  const { data } = await client.get<EngageDraftResponse>(
+    `/leads/engage-draft/${leadRef}?${search.toString()}`
+  );
+  return data;
+}
+
+/**
+ * POST /leads/:ref/send-engage - send message to lead via email, sms, or whatsapp (server-handled).
+ */
+export async function sendLeadEngage(
+  client: AxiosInstance,
+  ref: number,
+  payload: { channel: 'email' | 'sms' | 'whatsapp'; message: string }
+): Promise<LeadActionResponse> {
+  const { data } = await client.post<LeadActionResponse>(`/leads/${ref}/send-engage`, payload);
   return data;
 }
 
