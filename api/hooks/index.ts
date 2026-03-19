@@ -21,7 +21,7 @@ export {
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport } from './use-map-report';
 export { useBranches } from './use-branches';
-export { useClients } from './use-clients';
+export { useClients, useClientsInfinite } from './use-clients';
 export { useUsers } from './use-users';
 export {
   useUser,

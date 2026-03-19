@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { Task } from '@/api/types/tasks';
@@ -41,6 +42,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { Pencil, Plus, Play, Square, CheckCircle2, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2Icon, XIcon, CalendarIcon, StoreIcon } from '@/lib/icons';
@@ -285,6 +287,14 @@ export function TaskDetailDialog({
   const creatorName = displayTask?.creator
     ? [displayTask.creator.name, displayTask.creator.surname].filter(Boolean).join(' ').trim()
     : '-';
+
+  const fieldGridClass = 'grid grid-cols-2 gap-x-6 gap-y-3';
+  const fieldCell = (label: string, value: ReactNode) => (
+    <div>
+      <span className="text-muted-foreground">{label}</span>
+      <div className="font-medium">{value}</div>
+    </div>
+  );
 
   const selectedAssigneeUids = (editForm.assignees ?? []).map((a) => a.uid);
   const selectedClientUids = (editForm.clients ?? []).map((c) => c.uid);
@@ -823,168 +833,133 @@ export function TaskDetailDialog({
                 </div>
               </div>
             ) : (
-              <div className="grid gap-x-4 gap-y-1 text-muted-foreground text-sm sm:grid-cols-2">
-                <p>
-                  <span className="font-medium text-foreground">Title:</span>{' '}
-                  {displayTask.title}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Status:</span>{' '}
-                  {displayTask.status?.replace(/_/g, ' ')}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Priority:</span>{' '}
-                  {displayTask.priority}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Type:</span>{' '}
-                  {displayTask.taskType?.replace(/_/g, ' ')}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Deadline:</span>{' '}
-                  {formatDeadline(displayTask.deadline)}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Progress:</span>{' '}
-                  {displayTask.progress ?? 0}%
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">
-                    Completion date:
-                  </span>{' '}
-                  {formatCompletionDate(displayTask.completionDate)}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">
-                    Repetition:
-                  </span>{' '}
-                  {displayTask.repetitionType?.replace(/_/g, ' ') ?? '-'}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">
-                    Target category:
-                  </span>{' '}
-                  {displayTask.targetCategory || '-'}
-                </p>
-                {(displayTask.jobStatus ?? displayTask.jobStartTime ?? displayTask.jobEndTime != null) && (
+              <>
+                <div>
+                  <h4 className="font-semibold mb-2">Details</h4>
+                  <dl className={fieldGridClass}>
+                    {fieldCell('Title', displayTask.title)}
+                    {fieldCell('Status', displayTask.status?.replace(/_/g, ' ') ?? '-')}
+                    {fieldCell('Priority', displayTask.priority ?? '-')}
+                    {fieldCell('Type', displayTask.taskType?.replace(/_/g, ' ') ?? '-')}
+                    {fieldCell('Deadline', formatDeadline(displayTask.deadline))}
+                    {fieldCell('Progress', `${displayTask.progress ?? 0}%`)}
+                    {fieldCell('Completion date', formatCompletionDate(displayTask.completionDate))}
+                    {fieldCell('Repetition', displayTask.repetitionType?.replace(/_/g, ' ') ?? '-')}
+                    {fieldCell('Target category', displayTask.targetCategory || '-')}
+                    {(displayTask.jobStatus ?? displayTask.jobStartTime ?? displayTask.jobEndTime != null) && (
+                      <>
+                        {fieldCell('Job status', displayTask.jobStatus ?? '-')}
+                        {fieldCell('Job start', displayTask.jobStartTime ? format(new Date(displayTask.jobStartTime), 'PPp') : '-')}
+                        {fieldCell('Job end', displayTask.jobEndTime ? format(new Date(displayTask.jobEndTime), 'PPp') : '-')}
+                        {fieldCell('Job duration', displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-')}
+                      </>
+                    )}
+                  </dl>
+                  {displayTask.isOverdue && (
+                    <p className="mt-2 text-amber-600 font-medium">Overdue</p>
+                  )}
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Description</h4>
+                  <p className="text-muted-foreground">{displayTask.description || '-'}</p>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Assignees</h4>
+                  <dl className={fieldGridClass}>
+                    {fieldCell('Assignees', formatAssignees(displayTask))}
+                  </dl>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Clients</h4>
+                  <dl className={fieldGridClass}>
+                    {fieldCell('Clients', formatClients(displayTask))}
+                  </dl>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-2">Creator</h4>
+                  <dl className={fieldGridClass}>
+                    {fieldCell('Creator', creatorName)}
+                  </dl>
+                </div>
+                {displayTask.comment && (
                   <>
-                    <p>
-                      <span className="font-medium text-foreground">Job status:</span>{' '}
-                      {displayTask.jobStatus ?? '-'}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Job start:</span>{' '}
-                      {displayTask.jobStartTime
-                        ? format(new Date(displayTask.jobStartTime), 'PPp')
-                        : '-'}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Job end:</span>{' '}
-                      {displayTask.jobEndTime
-                        ? format(new Date(displayTask.jobEndTime), 'PPp')
-                        : '-'}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Job duration:</span>{' '}
-                      {displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-'}
-                    </p>
+                    <Separator />
+                    <div>
+                      <h4 className="font-semibold mb-2">Comment</h4>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{displayTask.comment}</p>
+                    </div>
                   </>
                 )}
-                {displayTask.isOverdue && (
-                  <p className="sm:col-span-2 text-amber-600 font-medium">
-                    Overdue
-                  </p>
-                )}
-                <p className="sm:col-span-2">
-                  <span className="font-medium text-foreground">
-                    Description:
-                  </span>{' '}
-                  {displayTask.description || '-'}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">
-                    Assignees:
-                  </span>{' '}
-                  {formatAssignees(displayTask)}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Clients:</span>{' '}
-                  {formatClients(displayTask)}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Creator:</span>{' '}
-                  {creatorName}
-                </p>
-                {displayTask.comment && (
-                  <p className="sm:col-span-2">
-                    <span className="font-medium text-foreground">
-                      Comment:
-                    </span>{' '}
-                    {displayTask.comment}
-                  </p>
-                )}
                 {(displayTask.subtasks?.length ?? 0) > 0 && (
-                  <div className="sm:col-span-2 space-y-2">
-                    <span className="font-medium text-foreground block">Subtasks:</span>
-                    <ul className="list-none space-y-1.5">
-                      {(displayTask.subtasks ?? [])
-                        .filter((s) => !s.isDeleted)
-                        .map((s) => (
-                          <li
-                            key={s.uid ?? s.title}
-                            className="flex items-center justify-between gap-2 rounded border bg-muted/30 px-2 py-1.5"
-                          >
-                            <span className={cn(
-                              'text-sm',
-                              (s.status === 'completed' || s.status === 'COMPLETED') && 'line-through text-muted-foreground'
-                            )}>
-                              {s.title}
-                              {(s.status === 'completed' || s.status === 'COMPLETED') && (
-                                <span className="ml-1.5 text-xs">(done)</span>
-                              )}
-                            </span>
-                            <span className="flex items-center gap-1 shrink-0">
-                              {(s.status !== 'completed' && s.status !== 'COMPLETED') && s.uid && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() => void handleCompleteSubtask(s.uid!)}
-                                  disabled={completeSubtaskMutation.isPending}
-                                >
-                                  <CheckCircle2 className="size-3.5" />
-                                  Complete
-                                </Button>
-                              )}
-                              {s.uid && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => setDeleteSubtaskRef(s.uid!)}
-                                  disabled={deleteSubtaskMutation.isPending}
-                                  aria-label="Remove subtask"
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </Button>
-                              )}
-                            </span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-semibold mb-2">Subtasks</h4>
+                      <ul className="list-none space-y-1.5">
+                        {(displayTask.subtasks ?? [])
+                          .filter((s) => !s.isDeleted)
+                          .map((s) => (
+                            <li
+                              key={s.uid ?? s.title}
+                              className="flex items-center justify-between gap-2 rounded border bg-muted/30 px-2 py-1.5"
+                            >
+                              <span className={cn(
+                                'text-sm',
+                                (s.status === 'completed' || s.status === 'COMPLETED') && 'line-through text-muted-foreground'
+                              )}>
+                                {s.title}
+                                {(s.status === 'completed' || s.status === 'COMPLETED') && (
+                                  <span className="ml-1.5 text-xs">(done)</span>
+                                )}
+                              </span>
+                              <span className="flex items-center gap-1 shrink-0">
+                                {(s.status !== 'completed' && s.status !== 'COMPLETED') && s.uid && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    onClick={() => void handleCompleteSubtask(s.uid!)}
+                                    disabled={completeSubtaskMutation.isPending}
+                                  >
+                                    <CheckCircle2 className="size-3.5" />
+                                    Complete
+                                  </Button>
+                                )}
+                                {s.uid && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => setDeleteSubtaskRef(s.uid!)}
+                                    disabled={deleteSubtaskMutation.isPending}
+                                    aria-label="Remove subtask"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  </>
                 )}
                 {(displayTask.attachments?.length ?? 0) > 0 && (
-                  <p className="sm:col-span-2">
-                    <span className="font-medium text-foreground">
-                      Attachments:
-                    </span>{' '}
-                    {displayTask.attachments!.join(', ')}
-                  </p>
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-semibold mb-2">Attachments</h4>
+                      <p className="text-muted-foreground">{displayTask.attachments!.join(', ')}</p>
+                    </div>
+                  </>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>

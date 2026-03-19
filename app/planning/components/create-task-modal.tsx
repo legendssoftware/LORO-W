@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -207,8 +209,23 @@ export function CreateTaskModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="absolute top-4 right-4 z-10">
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Close"
+            >
+              <XIcon className="size-5" />
+            </button>
+          </DialogClose>
+        </div>
+        <DialogHeader className="pr-24">
           <DialogTitle>Create task</DialogTitle>
           <DialogDescription>
             Add a new task with title, description, assignees, clients, subtasks,
@@ -216,7 +233,9 @@ export function CreateTaskModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <h4 className="font-semibold mb-2">Basic info</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="create-task-title">Title *</Label>
               <Input
@@ -241,6 +260,12 @@ export function CreateTaskModal({
                 required
               />
             </div>
+            </div>
+          </div>
+          <Separator />
+          <div>
+            <h4 className="font-semibold mb-2">Schedule</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Task type</Label>
               <Select
@@ -401,10 +426,16 @@ export function CreateTaskModal({
                         setRepetitionDeadlinePickerOpen(false);
                       }}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                </PopoverContent>
+              </Popover>
+            </div>
             )}
+            </div>
+          </div>
+          <Separator />
+          <div>
+            <h4 className="font-semibold mb-2">People & clients</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Assignees</Label>
               <Popover
@@ -488,6 +519,12 @@ export function CreateTaskModal({
                 </PopoverContent>
               </Popover>
             </div>
+            </div>
+          </div>
+          <Separator />
+          <div>
+            <h4 className="font-semibold mb-2">Other</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="create-task-target">Target category</Label>
               <Input
@@ -521,11 +558,12 @@ export function CreateTaskModal({
                 className="resize-y"
               />
             </div>
+            </div>
           </div>
-
+          <Separator />
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Subtasks</Label>
+            <h4 className="font-semibold mb-2">Subtasks</h4>
+            <div className="flex items-center justify-end mb-2">
               <Button
                 type="button"
                 variant="outline"
