@@ -35,6 +35,6 @@ export function useAttStatus(options?: { enabled?: boolean }) {
     enabled: options?.enabled !== false,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    staleTime: 30 * 1000,
+    staleTime: 90 * 1000,
   });
 }

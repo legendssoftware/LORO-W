@@ -76,9 +76,11 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
     <div className="rounded border border-gray-200 bg-card p-4">
       {isLoading ? (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3">
             <Skeleton className="h-6 w-28 rounded-md" />
-            <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+            </div>
           </div>
           <div className="mx-auto max-w-full lg:max-w-[50%]">
             <div className="grid grid-cols-7 gap-1 text-center">
@@ -103,7 +105,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
         </>
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3">
             <h2 className="text-base font-semibold text-foreground">Attendance</h2>
             <div className="flex items-center gap-2">
               <Select
