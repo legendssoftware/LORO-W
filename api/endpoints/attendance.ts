@@ -13,11 +13,21 @@ import type {
 
 /**
  * GET /att/status - current attendance status for the authenticated user.
+ * Optional lat/lng returns checkInContext (availableClockInOptions, radiusMeters, etc.).
  */
 export async function getAttStatus(
-    client: AxiosInstance
+    client: AxiosInstance,
+    params?: { lat?: number; lng?: number },
 ): Promise<AttStatusResponse> {
-    const { data } = await client.get<AttStatusResponse>("/att/status");
+    const search = new URLSearchParams();
+    if (params?.lat != null && params?.lng != null) {
+        search.set("lat", String(params.lat));
+        search.set("lng", String(params.lng));
+    }
+    const qs = search.toString();
+    const { data } = await client.get<AttStatusResponse>(
+        `/att/status${qs ? `?${qs}` : ""}`,
+    );
     return data;
 }
 
@@ -42,6 +52,39 @@ export async function getAttMetricsByUser(
 ): Promise<AttendanceMetricsResponse> {
     const { data } = await client.get<AttendanceMetricsResponse>(
         `/att/metrics/${uid}`
+    );
+    return data;
+}
+
+/** Params for GET /att/range. Prefer this over multiple GET /att/date/:date calls. */
+export interface AttendanceRangeParams {
+    startDate: string; // YYYY-MM-DD
+    endDate: string;   // YYYY-MM-DD
+    orgId?: string;
+}
+
+/** Response from GET /att/range - check-ins for a date range in one request. */
+export interface AttendanceRangeResponse {
+    message: string;
+    checkIns: unknown[];
+    multiDayShifts: unknown[];
+    ongoingShifts: unknown[];
+}
+
+/**
+ * GET /att/range - attendance records for a date range (one request).
+ * Use this instead of calling GET /att/date/:date in a loop to avoid N+1.
+ */
+export async function getAttendanceByDateRange(
+    client: AxiosInstance,
+    params: AttendanceRangeParams
+): Promise<AttendanceRangeResponse> {
+    const search = new URLSearchParams();
+    search.set("startDate", params.startDate);
+    search.set("endDate", params.endDate);
+    if (params.orgId) search.set("orgId", params.orgId);
+    const { data } = await client.get<AttendanceRangeResponse>(
+        `/att/range?${search.toString()}`
     );
     return data;
 }

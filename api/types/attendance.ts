@@ -3,12 +3,28 @@
  * Aligned with server GET /att/status response.
  */
 
+export type ClockInOptionKey =
+    | 'at_office'
+    | 'work_from_home'
+    | 'starting_from_home'
+    | 'offsite';
+
+/** Present on GET /att/status when lat and lng query params are sent. */
+export interface AttCheckInContext {
+    withinBranchRadius: boolean;
+    availableClockInOptions: ClockInOptionKey[];
+    radiusMeters: number;
+    distanceFromBranchMeters: number | null;
+}
+
 export interface AttStatusResponse {
+    message?: string;
     checkedIn: boolean;
     nextAction?: string | null;
     startTime?: string | null;
     endTime?: string | null;
     breakStartTime?: string | null;
+    checkInContext?: AttCheckInContext;
     attendance?: {
         checkIn?: string;
         checkOut?: string | null;
