@@ -121,7 +121,7 @@ export function ReportUserCardSkeleton() {
           </div>
         </div>
         <div className="mt-3 space-y-1 shrink-0">
-          <Skeleton className="h-4 w-32 rounded-md" />
+          <Skeleton className="h-4 w-full max-w-[min(100%,20rem)] rounded-md" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-2 flex-1 w-full rounded-full" />
             <Skeleton className="h-3 w-8 rounded-md" />
@@ -159,6 +159,9 @@ export function ReportUserCard({
     ? (user.payrollExpectedByNow ?? 0) - (user.payrollHours ?? 0)
     : expectedByNow - user.hoursThisMonth;
   const isBehindBadge = hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD;
+  const payrollExpectedByNow = user.payrollExpectedByNow ?? 0;
+  const actualPayrollRounded = Math.round(user.payrollHours ?? 0);
+  const actualMonthRounded = Math.round(user.hoursThisMonth);
   const distanceText =
     user.distanceFromWorkplaceMeters != null
       ? user.distanceFromWorkplaceMeters >= 1000
@@ -217,13 +220,36 @@ export function ReportUserCard({
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
-                  {user.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {[user.role, user.branch].filter(Boolean).join(' · ') || '—'}
-                </p>
+              <div className="min-w-0 flex-1 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="min-w-0">
+                  <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
+                    {user.name}
+                  </p>
+                  <a
+                    href={`mailto:${user.email}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="block truncate text-xs text-primary hover:underline"
+                  >
+                    {user.email}
+                  </a>
+                </div>
+                <div className="min-w-0 text-xs text-muted-foreground sm:text-right">
+                  <p className="truncate">
+                    {user.phone && (
+                      <>
+                        <a
+                          href={`tel:${user.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-primary hover:underline"
+                        >
+                          {user.phone}
+                        </a>
+                        {' · '}
+                      </>
+                    )}
+                    Branch: {user.branch || '—'} · Role: {user.role || '—'}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -250,24 +276,6 @@ export function ReportUserCard({
               </Link>
             </div>
           </div>
-          <div className={cn('space-y-0.5 sm:space-y-1', isMobile ? 'text-xs' : 'text-sm')}>
-            <a
-              href={`mailto:${user.email}`}
-              onClick={(e) => e.stopPropagation()}
-              className="block truncate text-primary hover:underline"
-            >
-              {user.email}
-            </a>
-            {user.phone && (
-              <a
-                href={`tel:${user.phone}`}
-                onClick={(e) => e.stopPropagation()}
-                className="block truncate text-primary hover:underline"
-              >
-                {user.phone}
-              </a>
-            )}
-          </div>
           <div className="w-full">
             <p className="text-xs text-muted-foreground mb-1">Last 7 days</p>
             <div className="w-full">
@@ -278,29 +286,40 @@ export function ReportUserCard({
               />
             </div>
           </div>
-          {user.firstAttendanceInPeriod && (
-            <p className="text-xs text-muted-foreground">
-              First attended: {format(new Date(user.firstAttendanceInPeriod), 'MMM d, yyyy - HH:mm')}
-            </p>
-          )}
         </div>
         <div className={cn('shrink-0 min-w-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
           <p className={cn('text-muted-foreground flex items-center justify-between gap-2 min-w-0', isMobile ? 'text-xs' : 'text-sm')}>
             {usePayroll ? (
               <>
                 <span className="min-w-0 truncate">
-                  <strong className="text-foreground">{user.payrollHours}h</strong>
-                  /{user.payrollTargetHours}h payroll
+                  {payrollExpectedByNow > 0 ? (
+                    <>
+                      <strong className="text-foreground">{actualPayrollRounded}</strong>/
+                      {payrollExpectedByNow} expected hours
+                    </>
+                  ) : (
+                    <span className="text-foreground">—/— expected hours</span>
+                  )}
                 </span>
-                <span className="shrink-0">~{user.payrollExpectedByNow ?? 0}h expected</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {user.payrollTargetHours}h period total
+                </span>
               </>
             ) : (
               <>
                 <span className="min-w-0 truncate">
-                  <strong className="text-foreground">{user.hoursThisMonth}h</strong>
-                  /{expectedMonthly}h this month
+                  {expectedByNow > 0 ? (
+                    <>
+                      <strong className="text-foreground">{actualMonthRounded}</strong>/
+                      {expectedByNow} expected hours
+                    </>
+                  ) : (
+                    <span className="text-foreground">—/— expected hours</span>
+                  )}
                 </span>
-                <span className="shrink-0">~{expectedByNow}h expected</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {expectedMonthly}h this month
+                </span>
               </>
             )}
           </p>

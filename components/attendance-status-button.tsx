@@ -20,7 +20,7 @@ export interface AttendanceStatusButtonProps {
   /** Legacy single Start Shift (used if onClockInWithNote is omitted). */
   onCheckIn?: () => void;
   /**
-   * Clock-in with a note label (At office, Work from Home, etc.). When set, uses server-driven options when possible.
+   * Clock-in with a note label (At office, Working From Home, etc.). When set, uses server-driven options when possible.
    */
   onClockInWithNote?: (note: string) => void | Promise<void>;
   /** From GET /att/status?lat=&lng= — which start options to show */
@@ -49,32 +49,44 @@ function formatElapsed(ms: number): string {
   ].join(':');
 }
 
-/** Shared button size: ~20% larger on md/lg. */
+/** Shared button size; type and spacing scaled ~0.8× prior Tailwind steps (~20% smaller). */
 const actionButtonClass =
-  'min-h-12 min-w-0 rounded-xl border-0 px-6 py-4 text-base font-semibold outline-none ring-0 sm:min-h-14 sm:px-6 sm:py-4 sm:text-lg md:min-h-[4.5rem] md:px-8 md:py-4 md:text-xl lg:min-h-20 lg:px-10 lg:py-5 lg:text-2xl focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
+  'min-h-[2.4rem] min-w-0 rounded-xl border-0 px-[1.2rem] py-[0.8rem] text-[0.8rem] font-semibold outline-none ring-0 sm:min-h-[2.8rem] sm:px-[1.2rem] sm:py-[0.8rem] sm:text-[0.9rem] md:min-h-[3.6rem] md:px-[1.6rem] md:py-[0.8rem] md:text-[1rem] lg:min-h-16 lg:px-8 lg:py-4 lg:text-[1.2rem] focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
 
-/** Solo at-office Start Shift — roughly 2x the primary action scale. */
+/** Remote clock-in row: extra min-height / type on md+ over actionButtonClass. */
+const remoteClockInOptionExtraClass =
+  'md:min-h-[4.32rem] md:px-8 md:py-4 md:text-[1.2rem] lg:min-h-[4.8rem] lg:px-[2.4rem] lg:py-[1.2rem] lg:text-[1.5rem]';
+
+const remoteClockInOptionButtonClass = `${actionButtonClass} ${remoteClockInOptionExtraClass}`;
+
+/** Solo at-office Start Shift — large primary action, scaled ~0.8× prior steps. */
 const soloStartShiftButtonClass =
-  'min-h-24 min-w-0 rounded-2xl border-0 px-10 py-8 text-xl font-semibold outline-none ring-0 sm:min-h-28 sm:px-12 sm:py-9 sm:text-2xl md:min-h-[9rem] md:px-16 md:py-10 md:text-3xl lg:min-h-[10rem] lg:px-20 lg:py-12 lg:text-4xl focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
+  'min-h-[4.8rem] min-w-0 rounded-2xl border-0 px-8 py-[1.6rem] text-[1rem] font-semibold outline-none ring-0 sm:min-h-[5.6rem] sm:px-[2.4rem] sm:py-[1.8rem] sm:text-[1.2rem] md:min-h-[7.2rem] md:px-[3.2rem] md:py-8 md:text-[1.5rem] lg:min-h-[8rem] lg:px-16 lg:py-[2.4rem] lg:text-[1.8rem] focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
 
-const defaultBranchRadiusMetersFallback = 50;
+/** Legacy clients only — server sends outsideBranchRadiusMessage from GET /att/status */
+const OUTSIDE_RADIUS_MESSAGE_FALLBACK =
+  'You are outside the office check-in radius.';
 
 function isAtOfficeOnlyMode(ctx: AttCheckInContext | null | undefined): boolean {
   if (!ctx?.availableClockInOptions?.length) return true;
   return ctx.availableClockInOptions.length === 1 && ctx.availableClockInOptions[0] === 'at_office';
 }
 
-function startOptionIcon(key: ClockInOptionKey) {
-  const iconClass = 'size-5 shrink-0 text-white sm:size-6';
+const iconStroke = 1.25 as const;
+
+function startOptionIcon(key: ClockInOptionKey, remoteLarge = false) {
+  const iconClass = remoteLarge
+    ? 'size-6 shrink-0 text-white sm:size-6 md:size-7 lg:size-8'
+    : 'size-5 shrink-0 text-white sm:size-6';
   switch (key) {
     case 'starting_from_home':
-      return <Home className={iconClass} aria-hidden />;
+      return <Home className={iconClass} strokeWidth={iconStroke} aria-hidden />;
     case 'work_from_home':
-      return <Laptop className={iconClass} aria-hidden />;
+      return <Laptop className={iconClass} strokeWidth={iconStroke} aria-hidden />;
     case 'offsite':
-      return <MapPin className={iconClass} aria-hidden />;
+      return <MapPin className={iconClass} strokeWidth={iconStroke} aria-hidden />;
     default:
-      return <Play className={iconClass} aria-hidden />;
+      return <Play className={iconClass} strokeWidth={iconStroke} aria-hidden />;
   }
 }
 
@@ -135,28 +147,30 @@ export function AttendanceStatusButton({
   const remoteKeys =
     clockInContext?.availableClockInOptions?.filter((k) => k !== 'at_office') ?? [];
 
-  const renderRemoteOptionButton = (key: ClockInOptionKey, fullWidth = true) => {
+  const renderRemoteOptionButton = (key: ClockInOptionKey, opts?: { stacked?: boolean }) => {
+    const stacked = opts?.stacked ?? false;
     const label = OPTION_KEY_TO_LABEL[key];
+    const layout = stacked ? 'w-full' : 'w-full md:flex-1 md:min-w-0';
     return (
       <Button
         key={key}
         type="button"
         variant="secondary"
         size="lg"
-        className={`${actionButtonClass} ${fullWidth ? 'w-full' : ''} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
+        className={`${remoteClockInOptionButtonClass} ${layout} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
         onClick={() => {
           void onClockInWithNote?.(label);
           setRemoteModalOpen(false);
         }}
       >
-        {startOptionIcon(key)}
+        {startOptionIcon(key, true)}
         {label}
       </Button>
     );
   };
 
   const remoteGrid = (
-    <div className="flex w-full flex-col gap-2">
+    <div className="flex w-full flex-col gap-2 md:flex-row md:items-stretch md:gap-3">
       {remoteKeys.map((key) => renderRemoteOptionButton(key))}
     </div>
   );
@@ -171,10 +185,10 @@ export function AttendanceStatusButton({
         </div>
       )}
 
-      <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex w-full max-w-md flex-col gap-4 md:max-w-5xl">
         {!checkedIn && (
           <div className="flex w-full flex-col gap-3">
-            <span className="text-center text-base font-medium uppercase text-foreground sm:text-lg md:text-xl">
+            <span className="text-center text-[0.8rem] font-medium uppercase text-foreground sm:text-[0.9rem] md:text-[1rem]">
               {onClockInWithNote ? 'Start your shift' : 'Ready to start'}
             </span>
             {loading || clockInContextLoading ? (
@@ -193,14 +207,19 @@ export function AttendanceStatusButton({
                     className={`${soloStartShiftButtonClass} flex w-full max-w-xl items-center justify-center gap-3 bg-green-600 text-white hover:bg-green-700`}
                     onClick={() => void onClockInWithNote('At office')}
                   >
-                    <Play className="size-10 shrink-0 text-white sm:size-12 md:size-14 lg:size-16" aria-hidden />
+                    <Play
+                      className="size-10 shrink-0 text-white sm:size-12 md:size-14 lg:size-16"
+                      strokeWidth={iconStroke}
+                      aria-hidden
+                    />
                     Start Shift
                   </Button>
                 </div>
               ) : (
                 <>
-                  <p className="text-center text-sm text-muted-foreground">
-                    You are more than {clockInContext?.radiusMeters ?? defaultBranchRadiusMetersFallback}m away from the office
+                  <p className="text-center text-[0.7rem] text-muted-foreground">
+                    {clockInContext?.outsideBranchRadiusMessage?.trim() ||
+                      OUTSIDE_RADIUS_MESSAGE_FALLBACK}
                   </p>
                   {/* md+: inline options */}
                   <div className="hidden md:block">{remoteGrid}</div>
@@ -213,20 +232,21 @@ export function AttendanceStatusButton({
                       className={`w-full ${actionButtonClass} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
                       onClick={() => setRemoteModalOpen(true)}
                     >
-                      <Play className="size-5 text-white sm:size-6" aria-hidden />
+                      <Play className="size-5 text-white sm:size-6" strokeWidth={iconStroke} aria-hidden />
                       Choose how you&apos;re starting
                     </Button>
                     <Dialog open={remoteModalOpen} onOpenChange={setRemoteModalOpen}>
                       <DialogContent className="max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Start your shift</DialogTitle>
-                          <DialogDescription>
-                            You are more than {clockInContext?.radiusMeters ?? defaultBranchRadiusMetersFallback}m away from the
-                            office. Pick the option that applies.
+                          <DialogTitle className="text-[0.9rem]">Start your shift</DialogTitle>
+                          <DialogDescription className="text-[0.7rem]">
+                            {(clockInContext?.outsideBranchRadiusMessage?.trim() ||
+                              OUTSIDE_RADIUS_MESSAGE_FALLBACK) + ' '}
+                            Pick the option that applies.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-2 pt-2">
-                          {remoteKeys.map((key) => renderRemoteOptionButton(key))}
+                          {remoteKeys.map((key) => renderRemoteOptionButton(key, { stacked: true }))}
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -241,7 +261,7 @@ export function AttendanceStatusButton({
                   className={`${actionButtonClass} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
                   onClick={onCheckIn}
                 >
-                  <Play className="size-5 text-white sm:size-6" aria-hidden />
+                  <Play className="size-5 text-white sm:size-6" strokeWidth={iconStroke} aria-hidden />
                   Start Shift
                 </Button>
               </div>
@@ -252,7 +272,7 @@ export function AttendanceStatusButton({
         {checkedIn && onBreak && (
           <div className="flex w-full flex-col items-center gap-3">
             {loading ? (
-              <div className="flex min-h-[4.5rem] w-full items-center justify-center rounded-xl md:min-h-20">
+              <div className="flex min-h-[3.6rem] w-full items-center justify-center rounded-xl md:min-h-16">
                 <Loader2Icon
                   className="size-12 animate-spin text-muted-foreground sm:size-14 md:size-16"
                   aria-hidden
@@ -282,7 +302,7 @@ export function AttendanceStatusButton({
         {checkedIn && !onBreak && (
           <div className="flex w-full flex-col gap-3">
             {loading ? (
-              <div className="flex min-h-[4.5rem] w-full items-center justify-center rounded-xl md:min-h-20">
+              <div className="flex min-h-[3.6rem] w-full items-center justify-center rounded-xl md:min-h-16">
                 <Loader2Icon
                   className="size-12 animate-spin text-muted-foreground sm:size-14 md:size-16"
                   aria-hidden

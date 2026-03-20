@@ -145,6 +145,10 @@ export function StaffContent() {
         userId: m.userId,
         name: card?.name ?? m.userName,
         photoURL: card?.photoURL ?? undefined,
+        email: card?.email ?? null,
+        phone: card?.phone ?? null,
+        branch: card?.branch ?? null,
+        role: card?.role ?? null,
         empCode: card?.hrID ?? null,
         payrollHours: m.payrollHours,
         totalHours: monthly?.totalHours ?? null,
@@ -393,7 +397,21 @@ export function StaffContent() {
                                 .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium">{row.name}</span>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{row.name}</p>
+                            {row.email && (
+                              <a href={`mailto:${row.email}`} className="block text-xs text-primary hover:underline truncate">
+                                {row.email}
+                              </a>
+                            )}
+                            {row.phone && (
+                              <a href={`tel:${row.phone}`} className="block text-xs text-primary hover:underline truncate">
+                                {row.phone}
+                              </a>
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">Branch: {row.branch || '—'}</p>
+                            <p className="text-xs text-muted-foreground truncate">Role: {row.role || '—'}</p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{row.empCode != null ? String(row.empCode) : '—'}</TableCell>

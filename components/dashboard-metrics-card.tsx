@@ -78,11 +78,17 @@ export function DashboardMetricsCard({
           </div>
           <div className="min-w-0 text-center">
             <p className="text-xl font-semibold text-foreground sm:text-2xl">{thisMonth}h</p>
-            <p className="text-xs text-muted-foreground"> This Month: {monthLabel}</p>
+            <div className="mt-1 flex flex-col items-center gap-0.5">
+              <span className="text-xs font-medium text-muted-foreground">This Month</span>
+              <span className="text-xs text-muted-foreground">{monthLabel}</span>
+            </div>
           </div>
           <div className="min-w-0 text-center">
             <p className="text-xl font-semibold text-foreground sm:text-2xl">{payrollHours}h</p>
-            <p className="text-xs text-muted-foreground"> Payroll Hours: {payrollLabel}</p>
+            <div className="mt-1 flex flex-col items-center gap-0.5">
+              <span className="text-xs font-medium text-muted-foreground">Payroll Hours</span>
+              <span className="text-xs leading-snug text-muted-foreground">{payrollLabel}</span>
+            </div>
           </div>
         </div>
       </CardContent>

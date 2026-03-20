@@ -100,6 +100,7 @@ export function DashboardContent() {
               availableClockInOptions: ctx.availableClockInOptions,
               radiusMeters: ctx.radiusMeters ?? 50,
               distanceFromBranchMeters: ctx.distanceFromBranchMeters ?? null,
+              outsideBranchRadiusMessage: ctx.outsideBranchRadiusMessage ?? null,
             });
           } else {
             setClockInContext(null);
@@ -253,8 +254,9 @@ export function DashboardContent() {
               <div className="rounded border border-gray-200 bg-card p-4">
                 <div className="mb-4 flex flex-col gap-3">
                   <Skeleton className="h-6 w-28 rounded-md" />
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+                  <div className="flex w-full gap-2">
+                    <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-[140px] md:flex-none" />
+                    <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-24 md:flex-none" />
                   </div>
                 </div>
                 <div className="mx-auto max-w-full lg:max-w-[50%]">
@@ -286,11 +288,11 @@ export function DashboardContent() {
                     <button
                       type="button"
                       onClick={() => setAttendanceModalUser(currentUserForModal)}
-                      className="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2 text-sm text-foreground hover:bg-gray-50"
-                      aria-label="View payroll attendance records"
+                      className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-gray-200 bg-white px-2 text-sm text-foreground hover:bg-gray-50 md:w-auto md:px-3"
+                      aria-label="View attendance logs"
                     >
                       <Clock className="size-4 shrink-0" />
-                      <span>Payroll Logs</span>
+                      <span>Logs</span>
                     </button>
                   ) : undefined
                 }

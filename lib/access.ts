@@ -60,9 +60,32 @@ function normalize(accessLevel: string | undefined): string {
     return accessLevel.toLowerCase().trim();
 }
 
+const ORG_SETTINGS_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+]);
+
+/**
+ * Whether the user may open organisation / branch admin settings (web UI).
+ */
+export function canAccessOrgSettings(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return ORG_SETTINGS_ACCESS_LEVELS.has(level);
+}
+
+function isSettingsPath(pathNormalized: string): boolean {
+    return (
+        pathNormalized === "/settings" ||
+        pathNormalized.startsWith("/settings/")
+    );
+}
+
 /**
  * Returns whether the given path is allowed for the given access level.
  * - Public/auth paths are always allowed.
+ * - `/settings` is allowed only for admin, owner, and manager.
  * - Restricted roles only get STANDARD_USER_PATHS.
  * - Non-restricted roles (e.g. owner, admin, manager) can access any path.
  */
@@ -79,6 +102,10 @@ export function canAccess(
         )
     ) {
         return true;
+    }
+
+    if (isSettingsPath(pathNormalized)) {
+        return canAccessOrgSettings(accessLevel);
     }
 
     if (!level) {
@@ -111,6 +138,9 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
 ];
+
+/** Sidebar item for org settings (admin / owner / manager only). */
+export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
 
 /**
  * Returns whether the staff dashboard (e.g. expanded nav) is visible.

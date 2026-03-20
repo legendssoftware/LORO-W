@@ -15,6 +15,8 @@ export interface AttCheckInContext {
     availableClockInOptions: ClockInOptionKey[];
     radiusMeters: number;
     distanceFromBranchMeters: number | null;
+    /** Server-built copy when user is outside branch radius; prefer over composing text client-side */
+    outsideBranchRadiusMessage?: string | null;
 }
 
 export interface AttStatusResponse {
