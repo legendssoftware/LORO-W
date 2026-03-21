@@ -259,12 +259,15 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
   maxItems,
+  itemClassName,
 }: React.ComponentProps<"div"> &
   Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
     hideIcon?: boolean
     nameKey?: string
     /** Limit legend to first N items. */
     maxItems?: number
+    /** Optional class for each legend item row/text. */
+    itemClassName?: string
   }) {
   const { config } = useChart()
 
@@ -299,7 +302,8 @@ function ChartLegendContent({
             <div
               key={payloadName ?? item.value ?? index}
               className={cn(
-                "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3"
+                "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3",
+                itemClassName
               )}
             >
               {itemConfig?.icon && !hideIcon ? (

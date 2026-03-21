@@ -6,8 +6,10 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useSessionSync } from "@/api/hooks";
 import {
+  canAccessOrgSettings,
   getAllowedRoutes,
   isStaffDashboardVisible,
+  STAFF_SETTINGS_ROUTE,
   STAFF_SIDEBAR_ROUTES,
 } from "@/lib/access";
 import {
@@ -17,6 +19,7 @@ import {
   KnowledgeIcon,
   LayoutDashboardIcon,
   MapPinIcon,
+  SettingsIcon,
   UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
@@ -48,6 +51,7 @@ const ROUTE_ICONS: Record<
   "/leads": HandshakeIcon,
   "/planning": CheckSquareIcon,
   "/staff": UsersIcon,
+  "/settings": SettingsIcon,
 };
 
 export function AppSidebar() {
@@ -76,7 +80,12 @@ export function AppSidebar() {
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const routes = isStaff
-    ? STAFF_SIDEBAR_ROUTES
+    ? [
+        ...STAFF_SIDEBAR_ROUTES,
+        ...(canAccessOrgSettings(profile?.accessLevel)
+          ? [STAFF_SETTINGS_ROUTE]
+          : []),
+      ]
     : getAllowedRoutes(profile?.accessLevel);
   const routeIcons = ROUTE_ICONS;
 

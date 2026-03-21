@@ -87,8 +87,13 @@ export interface VisitExportItem {
     surname?: string;
     email?: string;
     phone?: string;
+    role?: string;
     photoURL?: string;
     avatar?: string;
+    branch?: {
+      uid?: number;
+      name?: string;
+    };
   };
   client?: { uid?: number; name?: string; email?: string; phone?: string; address?: CheckInContactAddress } | null;
   branch?: { uid?: number; name?: string; address?: { street?: string; suburb?: string; city?: string } } | null;

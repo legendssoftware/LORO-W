@@ -37,7 +37,7 @@ export default async function RootLayout({
   const { orgId } = await auth();
 
   return (
-    <ClerkProvider afterSignOutUrl="/" dynamic>
+    <ClerkProvider afterSignOutUrl="/sign-in" dynamic>
       <html lang="en" className="light" suppressHydrationWarning>
         <head>
           <link rel="preload" as="image" href="/images/covers/2.webp" />

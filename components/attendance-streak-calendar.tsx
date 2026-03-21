@@ -24,7 +24,7 @@ function colIndex(dayOfWeek: number): number {
 export interface AttendanceStreakCalendarProps {
   /** User ref (profile.uid) - required to show calendar */
   userRef?: number | null;
-  /** Optional content rendered in the header row to the right of the month selector (e.g. Payroll Logs button). */
+  /** Optional content rendered in the header row to the right of the month selector (e.g. Logs button). */
   headerTrailing?: React.ReactNode;
 }
 
@@ -66,10 +66,13 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
     return 'bg-gray-200';
   };
 
+  const dayIconClass =
+    'size-3.5 shrink-0 text-white hidden md:block';
+
   const getDayIcon = (day: MonthlyAttendanceDay) => {
     if (day.status === 'attended')
-      return <CheckIcon className="size-3.5 text-white shrink-0" aria-hidden />;
-    return <XIcon className="size-3.5 text-white shrink-0" aria-hidden />;
+      return <CheckIcon className={dayIconClass} aria-hidden />;
+    return <XIcon className={dayIconClass} aria-hidden />;
   };
 
   return (
@@ -78,8 +81,11 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
         <>
           <div className="mb-4 flex flex-col gap-3">
             <Skeleton className="h-6 w-28 rounded-md" />
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-9 w-[140px] rounded border border-gray-200" />
+            <div className="flex w-full gap-2">
+              <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-[140px] md:flex-none" />
+              {headerTrailing != null ? (
+                <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-24 md:flex-none" />
+              ) : null}
             </div>
           </div>
           <div className="mx-auto max-w-full lg:max-w-[50%]">
@@ -107,30 +113,41 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
         <>
           <div className="mb-4 flex flex-col gap-3">
             <h2 className="text-base font-semibold text-foreground">Attendance</h2>
-            <div className="flex items-center gap-2">
-              <Select
-                value={valueKey}
-                onValueChange={(v) => {
-                  const [y, m] = v.split('-').map(Number);
-                  setSelectedYear(y);
-                  setSelectedMonth(m);
-                }}
+            <div className="flex w-full items-stretch gap-2">
+              <div
+                className={cn(
+                  'min-w-0 md:w-[140px] md:flex-none md:shrink-0',
+                  headerTrailing != null ? 'flex-1 basis-0' : 'flex-1'
+                )}
               >
-                <SelectTrigger className="h-9 w-[140px] rounded border border-gray-200 bg-background">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((opt) => {
-                    const k = `${opt.year}-${opt.month}`;
-                    return (
-                      <SelectItem key={k} value={k}>
-                        {opt.label}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {headerTrailing}
+                <Select
+                  value={valueKey}
+                  onValueChange={(v) => {
+                    const [y, m] = v.split('-').map(Number);
+                    setSelectedYear(y);
+                    setSelectedMonth(m);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-full rounded border border-gray-200 bg-background">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((opt) => {
+                      const k = `${opt.year}-${opt.month}`;
+                      return (
+                        <SelectItem key={k} value={k}>
+                          {opt.label}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              {headerTrailing != null ? (
+                <div className="min-w-0 flex-1 basis-0 md:w-auto md:flex-none md:shrink-0 [&_button]:w-full md:[&_button]:w-auto">
+                  {headerTrailing}
+                </div>
+              ) : null}
             </div>
           </div>
           {!data?.days?.length ? (

@@ -38,6 +38,7 @@ export { useSessionSync } from './use-session-sync';
 export { useSyncClerk } from './use-sync-clerk';
 export { useMonthlyMetrics } from './use-monthly-metrics';
 export { useMonthlyAttendance } from './use-monthly-attendance';
+export { useAttendanceByDateRange } from './use-attendance-range';
 export { usePayrollHoursAll } from './use-payroll-hours-all';
 export { useDailyOverview } from './use-daily-overview';
 export { useCheckIns, useCheckInsReport, useCheckInStatus } from './use-check-ins';
