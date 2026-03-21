@@ -7,7 +7,8 @@ export type ClockInOptionKey =
     | 'at_office'
     | 'work_from_home'
     | 'starting_from_home'
-    | 'offsite';
+    | 'offsite'
+    | 'driving';
 
 /** Present on GET /att/status when lat and lng query params are sent. */
 export interface AttCheckInContext {
@@ -224,6 +225,8 @@ export interface DailyOverviewUser {
     distanceFromWorkplaceMeters?: number | null;
     /** Employee HR ID for reports (Employee Code). */
     hrID?: number | null;
+    /** Clock-in note / mode label for today’s shift (present users only). */
+    checkInNotes?: string | null;
 }
 
 export interface DailyOverviewResponse {
@@ -234,6 +237,8 @@ export interface DailyOverviewResponse {
         presentEmployees: number;
         absentEmployees: number;
         attendanceRate: number;
+        /** From server env BRANCH_LOCATION_RADIUS_METERS; use with distanceFromWorkplaceMeters for at-office UI. */
+        branchLocationRadiusMeters?: number;
         presentUsers: DailyOverviewUser[];
         absentUsers: DailyOverviewUser[];
     };

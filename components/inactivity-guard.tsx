@@ -85,7 +85,7 @@ export function InactivityGuard() {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
-      performSignOutRef.current();
+      void performSignOutRef.current();
       setShowDialog(false);
     }, AUTO_SIGNOUT_MS);
     countdownIntervalRef.current = setInterval(() => {
@@ -133,14 +133,14 @@ export function InactivityGuard() {
       clearInterval(countdownIntervalRef.current);
       countdownIntervalRef.current = null;
     }
-    performSignOut();
+    void performSignOut();
     setShowDialog(false);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       if (!stayingLoggedInRef.current) {
-        performSignOut();
+        void performSignOut();
       }
       stayingLoggedInRef.current = false;
       setShowDialog(false);

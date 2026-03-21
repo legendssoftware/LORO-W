@@ -17,9 +17,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
 import { useSessionSync } from '@/api/hooks';
 import { useSignOut } from '@/hooks/use-sign-out';
+import { LORO_WELCOME_SHOWN_SESSION_KEY } from '@/lib/client-session-keys';
 import { useSidebar } from '@/components/ui/sidebar';
-
-const WELCOME_KEY = 'loro_welcome_shown';
 
 /** Human-readable label for access level (e.g. owner → Owner). */
 function roleLabel(accessLevel: string | undefined): string {
@@ -42,16 +41,19 @@ export function AppHeader() {
 
   const handleSignOut = () => {
     setIsSigningOut(true);
-    performSignOut();
+    void performSignOut();
   };
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user || welcomeShown.current) return;
-    if (typeof window !== 'undefined' && sessionStorage.getItem(WELCOME_KEY))
+    if (
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem(LORO_WELCOME_SHOWN_SESSION_KEY)
+    )
       return;
 
     welcomeShown.current = true;
-    sessionStorage.setItem(WELCOME_KEY, '1');
+    sessionStorage.setItem(LORO_WELCOME_SHOWN_SESSION_KEY, '1');
     const name =
       user.fullName ?? user.firstName ?? user.primaryEmailAddress?.emailAddress ?? 'there';
     toast(`Welcome back, ${name}! 👋`, {

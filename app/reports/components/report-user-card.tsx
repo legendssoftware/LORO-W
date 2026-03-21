@@ -11,15 +11,33 @@ import {
   HOURS_BEHIND_BADGE_THRESHOLD,
 } from '@/app/reports/tabs/constants';
 import type { ReportCardUser } from '@/app/reports/types';
+import type { ClockInOptionKey } from '@/api/types/attendance';
 import { Card, CardContent } from '@/components/ui/card';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SettingsIcon } from '@/lib/icons';
-import { Smartphone, Laptop, Clock } from 'lucide-react';
+import {
+  OPTION_KEY_TO_LABEL,
+  optionKeyFromCheckInNotes,
+  resolveDisplayedClockInModeKey,
+} from '@/lib/clock-in-options';
+import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van } from 'lucide-react';
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+
+const CLOCK_IN_MODE_BADGE: Record<
+  ClockInOptionKey,
+  { Icon: typeof Building2; className: string }
+> = {
+  at_office: { Icon: Building2, className: 'bg-green-100 text-green-700 border border-green-200/80' },
+  work_from_home: { Icon: Home, className: 'bg-violet-100 text-violet-700 border border-violet-200/80' },
+  starting_from_home: { Icon: House, className: 'bg-orange-100 text-orange-800 border border-orange-200/80' },
+  offsite: { Icon: MapPinX, className: 'bg-red-100 text-red-700 border border-red-200/80' },
+  driving: { Icon: Van, className: 'bg-purple-100 text-purple-700 border border-purple-200/80' },
+};
 
 function LastSevenDaysDots({
   userRef,
@@ -135,12 +153,15 @@ export function ReportUserCardSkeleton() {
 export function ReportUserCard({
   user,
   endDate,
+  branchLocationRadiusMeters = 50,
   onClick,
   onSettingsClick,
   onClockClick,
 }: {
   user: ReportCardUser;
   endDate: Date;
+  /** Server BRANCH_LOCATION_RADIUS_METERS (daily overview); defaults to 50 if omitted. */
+  branchLocationRadiusMeters?: number;
   onClick: () => void;
   onSettingsClick: (e: React.MouseEvent) => void;
   onClockClick?: (e: React.MouseEvent) => void;
@@ -168,6 +189,48 @@ export function ReportUserCard({
         ? `~${(user.distanceFromWorkplaceMeters / 1000).toFixed(1)}km away`
         : `~${user.distanceFromWorkplaceMeters}m away`
       : '—';
+  const notesKey = useMemo(
+    () => (user.isPresent ? optionKeyFromCheckInNotes(user.checkInNotes) : null),
+    [user.isPresent, user.checkInNotes]
+  );
+  const displayModeKey = useMemo(
+    () =>
+      user.isPresent
+        ? resolveDisplayedClockInModeKey(
+            notesKey,
+            user.distanceFromWorkplaceMeters,
+            branchLocationRadiusMeters
+          )
+        : null,
+    [
+      user.isPresent,
+      notesKey,
+      user.distanceFromWorkplaceMeters,
+      branchLocationRadiusMeters,
+    ]
+  );
+  const modeBadge = displayModeKey ? CLOCK_IN_MODE_BADGE[displayModeKey] : null;
+  const ModeIcon = modeBadge?.Icon;
+  const modeChipTitle =
+    displayModeKey == null
+      ? null
+      : displayModeKey === 'offsite' && notesKey !== 'offsite'
+        ? `${OPTION_KEY_TO_LABEL.offsite} (${distanceText})`
+        : OPTION_KEY_TO_LABEL[displayModeKey];
+  const defaultModeTitle =
+    notesKey === 'at_office' && user.distanceFromWorkplaceMeters == null
+      ? 'Distance to branch unknown'
+      : 'Location mode unknown';
+  const showModeHover = user.isPresent;
+  const hasResolvedModeChip =
+    Boolean(modeBadge && displayModeKey && ModeIcon && modeChipTitle);
+  const modeHoverPrimary = modeChipTitle ?? defaultModeTitle;
+  const modeHoverAriaLabel = hasResolvedModeChip
+    ? `Today’s attendance mode: ${modeChipTitle}`
+    : defaultModeTitle;
+  const mapsQuery = user.shiftStartAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`
+    : null;
   return (
     <Card
       className={cn(
@@ -176,7 +239,7 @@ export function ReportUserCard({
       )}
       onClick={onClick}
     >
-      <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+      <div className="absolute top-2 right-2 z-10 flex flex-wrap items-center gap-1 justify-end max-w-[60%]">
         <Badge
           variant={user.isPresent ? 'default' : 'destructive'}
           className={cn(
@@ -197,6 +260,64 @@ export function ReportUserCard({
             Behind on hours
           </Badge>
         )}
+        {showModeHover ? (
+          <HoverCard openDelay={200}>
+            <HoverCardTrigger asChild>
+              <span
+                className={cn(
+                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full cursor-default',
+                  hasResolvedModeChip && modeBadge
+                    ? modeBadge.className
+                    : 'border border-border bg-muted text-black'
+                )}
+                title={isMobile ? modeHoverPrimary : undefined}
+                aria-label={modeHoverAriaLabel}
+              >
+                {hasResolvedModeChip && ModeIcon ? (
+                  <ModeIcon className="size-3.5" aria-hidden />
+                ) : (
+                  <Building2 className="size-3.5" aria-hidden />
+                )}
+              </span>
+            </HoverCardTrigger>
+            <HoverCardContent
+              side="bottom"
+              align="end"
+              className="w-72 space-y-2 p-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-sm font-medium leading-snug">{modeHoverPrimary}</p>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                {user.branch ? (
+                  <p>
+                    <span className="text-foreground/80">Branch: </span>
+                    {user.branch}
+                  </p>
+                ) : null}
+                {distanceText !== '—' ? (
+                  <p>
+                    <span className="text-foreground/80">Distance: </span>
+                    {distanceText}
+                  </p>
+                ) : null}
+                {user.shiftStartAddress ? (
+                  <p className="break-words text-foreground/90">{user.shiftStartAddress}</p>
+                ) : null}
+              </div>
+              {mapsQuery ? (
+                <a
+                  href={mapsQuery}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-xs font-medium text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Open in Maps
+                </a>
+              ) : null}
+            </HoverCardContent>
+          </HoverCard>
+        ) : null}
       </div>
       <CardContent
         className={cn(
@@ -220,36 +341,30 @@ export function ReportUserCard({
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <div className="min-w-0">
-                  <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
-                    {user.name}
-                  </p>
+              <div className="min-w-0 flex-1 flex flex-col gap-1">
+                <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
+                  {user.name}
+                </p>
+                <a
+                  href={`mailto:${user.email}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block truncate text-xs text-primary hover:underline"
+                >
+                  {user.email}
+                </a>
+                <p className="text-xs text-muted-foreground truncate">
+                  Branch: {user.branch || '—'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">Role: {user.role || '—'}</p>
+                {user.phone ? (
                   <a
-                    href={`mailto:${user.email}`}
+                    href={`tel:${user.phone}`}
                     onClick={(e) => e.stopPropagation()}
                     className="block truncate text-xs text-primary hover:underline"
                   >
-                    {user.email}
+                    {user.phone}
                   </a>
-                </div>
-                <div className="min-w-0 text-xs text-muted-foreground sm:text-right">
-                  <p className="truncate">
-                    {user.phone && (
-                      <>
-                        <a
-                          href={`tel:${user.phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-primary hover:underline"
-                        >
-                          {user.phone}
-                        </a>
-                        {' · '}
-                      </>
-                    )}
-                    Branch: {user.branch || '—'} · Role: {user.role || '—'}
-                  </p>
-                </div>
+                ) : null}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">

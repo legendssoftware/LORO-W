@@ -62,6 +62,7 @@ export function fromDailyOverviewMergeMonthly(
       lastAppAccessDeviceType: u.lastAppAccessDeviceType ?? null,
       distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
       hrID: u.hrID ?? null,
+      checkInNotes: present ? (u.checkInNotes ?? null) : null,
       last7Days: monthly?.last7Days,
     };
   };

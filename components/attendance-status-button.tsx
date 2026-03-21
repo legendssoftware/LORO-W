@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Home, Laptop, MapPin, Play } from 'lucide-react';
+import { Car, Home, Laptop, MapPin, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Loader2Icon } from '@/lib/icons';
 import type { AttCheckInContext, ClockInOptionKey } from '@/api/types/attendance';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
+import { cn } from '@/lib/utils';
 
 export interface AttendanceStatusButtonProps {
   checkedIn: boolean;
@@ -53,11 +54,13 @@ function formatElapsed(ms: number): string {
 const actionButtonClass =
   'min-h-[2.4rem] min-w-0 rounded-xl border-0 px-[1.2rem] py-[0.8rem] text-[0.8rem] font-semibold outline-none ring-0 sm:min-h-[2.8rem] sm:px-[1.2rem] sm:py-[0.8rem] sm:text-[0.9rem] md:min-h-[3.6rem] md:px-[1.6rem] md:py-[0.8rem] md:text-[1rem] lg:min-h-16 lg:px-8 lg:py-4 lg:text-[1.2rem] focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
 
-/** Remote clock-in row: extra min-height / type on md+ over actionButtonClass. */
-const remoteClockInOptionExtraClass =
-  'md:min-h-[4.32rem] md:px-8 md:py-4 md:text-[1.2rem] lg:min-h-[4.8rem] lg:px-[2.4rem] lg:py-[1.2rem] lg:text-[1.5rem]';
+/** Desktop/tablet inline remote options — compact md/lg (not oversized). */
+const remoteClockInOptionClass =
+  'min-h-[2.35rem] min-w-0 rounded-xl border-0 px-3 py-2 text-sm font-semibold outline-none ring-0 sm:min-h-10 sm:px-3.5 md:min-h-[2.5rem] md:px-4 md:py-2 md:text-sm lg:min-h-11 lg:px-4 lg:py-2.5 lg:text-base';
 
-const remoteClockInOptionButtonClass = `${actionButtonClass} ${remoteClockInOptionExtraClass}`;
+/** Mobile dialog only: full-width pill buttons, uppercase labels. */
+const remoteClockInModalStackedClass =
+  'min-h-12 w-full rounded-full border-0 px-4 py-3.5 text-sm font-semibold uppercase tracking-wide outline-none ring-0';
 
 /** Solo at-office Start Shift — large primary action, scaled ~0.8× prior steps. */
 const soloStartShiftButtonClass =
@@ -66,6 +69,12 @@ const soloStartShiftButtonClass =
 /** Legacy clients only — server sends outsideBranchRadiusMessage from GET /att/status */
 const OUTSIDE_RADIUS_MESSAGE_FALLBACK =
   'You are outside the office check-in radius.';
+
+function clockInModalDescription(ctx: AttCheckInContext | null | undefined): string {
+  const raw = ctx?.outsideBranchRadiusMessage?.trim() || OUTSIDE_RADIUS_MESSAGE_FALLBACK;
+  const withPeriod = /[.!?]\s*$/.test(raw) ? raw : `${raw}.`;
+  return `${withPeriod} Pick the option that applies.`;
+}
 
 function isAtOfficeOnlyMode(ctx: AttCheckInContext | null | undefined): boolean {
   if (!ctx?.availableClockInOptions?.length) return true;
@@ -76,8 +85,8 @@ const iconStroke = 1.25 as const;
 
 function startOptionIcon(key: ClockInOptionKey, remoteLarge = false) {
   const iconClass = remoteLarge
-    ? 'size-6 shrink-0 text-white sm:size-6 md:size-7 lg:size-8'
-    : 'size-5 shrink-0 text-white sm:size-6';
+    ? 'size-5 shrink-0 text-white sm:size-5 md:size-5 lg:size-5'
+    : 'size-5 shrink-0 text-white sm:size-5';
   switch (key) {
     case 'starting_from_home':
       return <Home className={iconClass} strokeWidth={iconStroke} aria-hidden />;
@@ -85,6 +94,8 @@ function startOptionIcon(key: ClockInOptionKey, remoteLarge = false) {
       return <Laptop className={iconClass} strokeWidth={iconStroke} aria-hidden />;
     case 'offsite':
       return <MapPin className={iconClass} strokeWidth={iconStroke} aria-hidden />;
+    case 'driving':
+      return <Car className={iconClass} strokeWidth={iconStroke} aria-hidden />;
     default:
       return <Play className={iconClass} strokeWidth={iconStroke} aria-hidden />;
   }
@@ -150,20 +161,24 @@ export function AttendanceStatusButton({
   const renderRemoteOptionButton = (key: ClockInOptionKey, opts?: { stacked?: boolean }) => {
     const stacked = opts?.stacked ?? false;
     const label = OPTION_KEY_TO_LABEL[key];
-    const layout = stacked ? 'w-full' : 'w-full md:flex-1 md:min-w-0';
     return (
       <Button
         key={key}
         type="button"
         variant="secondary"
         size="lg"
-        className={`${remoteClockInOptionButtonClass} ${layout} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
+        className={cn(
+          'flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0',
+          stacked
+            ? remoteClockInModalStackedClass
+            : cn(remoteClockInOptionClass, 'w-full md:flex-1 md:min-w-0'),
+        )}
         onClick={() => {
           void onClockInWithNote?.(label);
           setRemoteModalOpen(false);
         }}
       >
-        {startOptionIcon(key, true)}
+        {startOptionIcon(key, !stacked)}
         {label}
       </Button>
     );
@@ -229,20 +244,24 @@ export function AttendanceStatusButton({
                       type="button"
                       variant="secondary"
                       size="lg"
-                      className={`w-full ${actionButtonClass} flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700`}
+                      className={cn(
+                        'w-full',
+                        actionButtonClass,
+                        'flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 lg:min-h-12 lg:py-3 lg:text-base',
+                      )}
                       onClick={() => setRemoteModalOpen(true)}
                     >
                       <Play className="size-5 text-white sm:size-6" strokeWidth={iconStroke} aria-hidden />
                       Choose how you&apos;re starting
                     </Button>
                     <Dialog open={remoteModalOpen} onOpenChange={setRemoteModalOpen}>
-                      <DialogContent className="max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
                         <DialogHeader>
-                          <DialogTitle className="text-[0.9rem]">Start your shift</DialogTitle>
-                          <DialogDescription className="text-[0.7rem]">
-                            {(clockInContext?.outsideBranchRadiusMessage?.trim() ||
-                              OUTSIDE_RADIUS_MESSAGE_FALLBACK) + ' '}
-                            Pick the option that applies.
+                          <DialogTitle className="text-center text-base font-semibold">
+                            Start your shift
+                          </DialogTitle>
+                          <DialogDescription className="text-center text-xs text-muted-foreground">
+                            {clockInModalDescription(clockInContext)}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-2 pt-2">

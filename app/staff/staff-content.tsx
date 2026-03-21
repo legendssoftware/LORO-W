@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { XIcon } from '@/lib/icons';
 import { STAFF_STATUS_FILTER_OPTIONS } from '@/lib/staff-filter-utils';
+import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
@@ -156,6 +157,9 @@ export function StaffContent() {
     });
   }, [payrollQuery.data?.userMetrics, cardUsersByUserId, monthlyByUserId]);
 
+  const branchLocationRadiusMeters =
+    dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50;
+
   const statusFilteredUsers = useMemo(() => {
     if (statusFilter === 'all') return cardUsersWithPayroll;
     if (statusFilter === 'present') return cardUsersWithPayroll.filter((u) => u.isPresent);
@@ -183,8 +187,30 @@ export function StaffContent() {
         }
       });
     }
+    if (
+      statusFilter === 'at_office' ||
+      statusFilter === 'work_from_home' ||
+      statusFilter === 'starting_from_home' ||
+      statusFilter === 'offsite' ||
+      statusFilter === 'driving'
+    ) {
+      return cardUsersWithPayroll.filter(
+        (u) =>
+          clockInModeKeyForFilter(
+            u.isPresent,
+            u.checkInNotes,
+            u.distanceFromWorkplaceMeters,
+            branchLocationRadiusMeters
+          ) === statusFilter
+      );
+    }
     return cardUsersWithPayroll;
-  }, [cardUsersWithPayroll, statusFilter, today.getTime()]);
+  }, [
+    cardUsersWithPayroll,
+    statusFilter,
+    today.getTime(),
+    branchLocationRadiusMeters,
+  ]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -308,6 +334,9 @@ export function StaffContent() {
                   key={user.userId}
                   user={user}
                   endDate={today}
+                  branchLocationRadiusMeters={
+                    dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50
+                  }
                   onClick={() => setDetailUser(user)}
                   onSettingsClick={(e) => {
                     e.stopPropagation();
