@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { XIcon } from '@/lib/icons';
 import { STAFF_STATUS_FILTER_OPTIONS } from '@/lib/staff-filter-utils';
+import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
@@ -145,12 +146,19 @@ export function StaffContent() {
         userId: m.userId,
         name: card?.name ?? m.userName,
         photoURL: card?.photoURL ?? undefined,
+        email: card?.email ?? null,
+        phone: card?.phone ?? null,
+        branch: card?.branch ?? null,
+        role: card?.role ?? null,
         empCode: card?.hrID ?? null,
         payrollHours: m.payrollHours,
         totalHours: monthly?.totalHours ?? null,
       };
     });
   }, [payrollQuery.data?.userMetrics, cardUsersByUserId, monthlyByUserId]);
+
+  const branchLocationRadiusMeters =
+    dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50;
 
   const statusFilteredUsers = useMemo(() => {
     if (statusFilter === 'all') return cardUsersWithPayroll;
@@ -179,8 +187,30 @@ export function StaffContent() {
         }
       });
     }
+    if (
+      statusFilter === 'at_office' ||
+      statusFilter === 'work_from_home' ||
+      statusFilter === 'starting_from_home' ||
+      statusFilter === 'offsite' ||
+      statusFilter === 'driving'
+    ) {
+      return cardUsersWithPayroll.filter(
+        (u) =>
+          clockInModeKeyForFilter(
+            u.isPresent,
+            u.checkInNotes,
+            u.distanceFromWorkplaceMeters,
+            branchLocationRadiusMeters
+          ) === statusFilter
+      );
+    }
     return cardUsersWithPayroll;
-  }, [cardUsersWithPayroll, statusFilter, today.getTime()]);
+  }, [
+    cardUsersWithPayroll,
+    statusFilter,
+    today.getTime(),
+    branchLocationRadiusMeters,
+  ]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -304,6 +334,9 @@ export function StaffContent() {
                   key={user.userId}
                   user={user}
                   endDate={today}
+                  branchLocationRadiusMeters={
+                    dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50
+                  }
                   onClick={() => setDetailUser(user)}
                   onSettingsClick={(e) => {
                     e.stopPropagation();
@@ -393,7 +426,21 @@ export function StaffContent() {
                                 .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium">{row.name}</span>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{row.name}</p>
+                            {row.email && (
+                              <a href={`mailto:${row.email}`} className="block text-xs text-primary hover:underline truncate">
+                                {row.email}
+                              </a>
+                            )}
+                            {row.phone && (
+                              <a href={`tel:${row.phone}`} className="block text-xs text-primary hover:underline truncate">
+                                {row.phone}
+                              </a>
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">Branch: {row.branch || '—'}</p>
+                            <p className="text-xs text-muted-foreground truncate">Role: {row.role || '—'}</p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{row.empCode != null ? String(row.empCode) : '—'}</TableCell>

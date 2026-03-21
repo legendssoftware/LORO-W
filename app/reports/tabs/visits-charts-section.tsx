@@ -374,7 +374,9 @@ export function VisitsChartsSection({
                     }}
                   />
                 </Pie>
-                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={3} />} />
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="name" maxItems={3} itemClassName="text-[10px]" />}
+                />
               </RechartsPieChart>
             </ChartContainer>
           )}
@@ -783,7 +785,9 @@ export function VisitsChartsSection({
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={3} />} />
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="name" maxItems={3} itemClassName="text-[10px]" />}
+                />
               </RechartsPieChart>
             </ChartContainer>
           )}
@@ -879,7 +883,9 @@ export function VisitsChartsSection({
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <ChartLegend content={<ChartLegendContent nameKey="name" maxItems={2} />} />
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="name" maxItems={2} itemClassName="text-[10px]" />}
+                />
               </RechartsPieChart>
             </ChartContainer>
           )}

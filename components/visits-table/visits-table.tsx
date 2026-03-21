@@ -103,6 +103,15 @@ function toSentenceCase(s: string): string {
   return t.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function formatRoleLabel(role: string | null | undefined): string {
+  const value = (role ?? '').trim();
+  if (!value) return '';
+  return value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function getWordCount(value: string | null | undefined): number {
   return (value ?? '').trim().split(/\s+/).filter(Boolean).length;
 }
@@ -219,6 +228,8 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       if (!o) return '-';
       const fullName = [o.name, o.surname].filter(Boolean).join(' ').trim() || '-';
       const imgSrc = o.photoURL ?? o.avatar ?? undefined;
+      const branchName = o.branch?.name?.trim() || c.branch?.name?.trim() || '';
+      const roleLabel = formatRoleLabel(o.role);
       return (
         <span className="flex items-start gap-2 whitespace-normal">
           <Avatar className="h-8 w-8 shrink-0">
@@ -239,16 +250,23 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
                 {o.email}
               </a>
             )}
-            {o.phone && (
-              <a
-                href={buildTelUrl(o.phone)}
-                className={cn('block text-xs', VISITS_TABLE_LINK_CLASS)}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {o.phone}
-              </a>
-            )}
-            {!o.email && !o.phone && (
+            <span className="block text-xs text-muted-foreground truncate">
+              {o.phone ? (
+                <>
+                  <a
+                    href={buildTelUrl(o.phone)}
+                    className={cn(VISITS_TABLE_LINK_CLASS)}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {o.phone}
+                  </a>
+                  {' · '}
+                </>
+              ) : null}
+              Branch: {branchName || '—'}
+              {roleLabel ? ` · Role: ${roleLabel}` : ''}
+            </span>
+            {!o.email && !o.phone && !branchName && !roleLabel && (
               <span className="block text-xs text-muted-foreground">-</span>
             )}
           </span>
