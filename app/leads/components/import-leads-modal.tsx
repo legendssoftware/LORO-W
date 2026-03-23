@@ -20,6 +20,10 @@ import {
 } from '@/components/ui/select';
 import { useImportLeadsMutation } from '@/api/hooks';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
+import {
+  LEAD_IMPORT_SAMPLE_CSV,
+  LEAD_IMPORT_SAMPLE_FILENAME,
+} from '@/api/types/leads';
 import { Loader2Icon } from '@/lib/icons';
 import toast from 'react-hot-toast';
 
@@ -135,6 +139,21 @@ export function ImportLeadsModal({
     onOpenChange(next);
   };
 
+  const handleDownloadSample = () => {
+    const blob = new Blob([LEAD_IMPORT_SAMPLE_CSV], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = LEAD_IMPORT_SAMPLE_FILENAME;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -146,6 +165,14 @@ export function ImportLeadsModal({
             number, WhatsApp number. Required: companyName and at least one of
             name, email, or phone.
           </DialogDescription>
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto justify-start px-0 py-1 text-sm font-normal"
+            onClick={handleDownloadSample}
+          >
+            Download sample CSV
+          </Button>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
