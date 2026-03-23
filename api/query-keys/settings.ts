@@ -19,5 +19,10 @@ export function settingsOrgBranchesKey(orgRef: string) {
   return ['settings', 'org', orgRef, 'branches'] as const;
 }
 
+/** Single branch for Settings branch editor (GET /branch/:ref). */
+export function settingsBranchDetailKey(orgRef: string, branchRef: string) {
+  return ['settings', 'branch-detail', orgRef, branchRef] as const;
+}
+
 /** Global branch list key used by `useBranches` — invalidate alongside settings branch mutations. */
 export const BRANCHES_LIST_QUERY_KEY = ['branches'] as const;

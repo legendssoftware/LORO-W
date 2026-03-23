@@ -10,20 +10,23 @@ import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
 import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
 
-/** Minimal branch ref from API (visit, owner, or user list). */
-export type VisitBranchRef = { uid?: number; name?: string };
+/** Minimal branch ref from API (visit, owner, or user list). `name` is display label (alias preferred when resolving). */
+export type VisitBranchRef = { uid?: number; name?: string; alias?: string | null };
 
 /**
- * Merges visit.branch and owner.branch: name from either (visit first), uid from visit.branch when set else owner.branch.
+ * Merges visit.branch and owner.branch: display name prefers alias, then legal name (visit fields first), uid from visit.branch when set else owner.branch.
  * Avoids `visit.branch ?? owner.branch` when visit is a stub without name but owner has the display name.
  */
 export function resolveVisitBranch(v: VisitListItem | VisitExportItem): VisitBranchRef | null {
   const visitB = (v as { branch?: VisitBranchRef | null }).branch;
   const ownerB = (v as { owner?: { branch?: VisitBranchRef | null } }).owner?.branch;
 
+  const visitAlias = visitB?.alias?.trim();
+  const ownerAlias = ownerB?.alias?.trim();
   const visitName = visitB?.name?.trim();
   const ownerName = ownerB?.name?.trim();
-  const name = visitName || ownerName || '';
+  const name = (visitAlias || ownerAlias || visitName || ownerName || '').trim();
+  const aliasFromApi = visitAlias || ownerAlias || undefined;
 
   const uid = visitB?.uid != null ? visitB.uid : ownerB?.uid;
 
@@ -31,10 +34,11 @@ export function resolveVisitBranch(v: VisitListItem | VisitExportItem): VisitBra
   const out: VisitBranchRef = {};
   if (uid != null) out.uid = uid;
   if (name) out.name = name;
+  if (aliasFromApi) out.alias = aliasFromApi;
   return Object.keys(out).length ? out : null;
 }
 
-/** Trimmed branch name for tables, charts, and export (empty if unknown). */
+/** Trimmed branch display label for tables, charts, and export (empty if unknown). */
 export function getVisitBranchDisplayName(c: VisitListItem | VisitExportItem): string {
   return resolveVisitBranch(c)?.name?.trim() ?? '';
 }
@@ -48,13 +52,14 @@ export function getVisitBranchUid(c: VisitListItem | VisitExportItem): number | 
 export type UserBranchLookup = {
   uid: number;
   email?: string;
-  branch?: { uid?: number; name?: string } | null;
+  branch?: { uid?: number; name?: string; alias?: string | null } | null;
 };
 
 function applyVisitBranchResolved(
   v: VisitExportItem,
   resolved: VisitBranchRef
 ): VisitExportItem {
+  const ob = (v.owner as { branch?: VisitBranchRef | null } | undefined)?.branch;
   const withUserBranch = {
     ...v,
     branch: resolved,
@@ -62,8 +67,9 @@ function applyVisitBranchResolved(
       ? {
           ...v.owner,
           branch: {
-            uid: resolved.uid ?? (v.owner as { branch?: VisitBranchRef | null }).branch?.uid,
-            name: resolved.name ?? (v.owner as { branch?: VisitBranchRef | null }).branch?.name,
+            uid: resolved.uid ?? ob?.uid,
+            name: resolved.name ?? ob?.name,
+            alias: resolved.alias ?? ob?.alias,
           },
         }
       : v.owner,
@@ -72,6 +78,7 @@ function applyVisitBranchResolved(
   const folded = resolveVisitBranch(withUserBranch as VisitListItem);
   if (!folded) return withUserBranch;
 
+  const ob2 = (withUserBranch.owner as { branch?: VisitBranchRef | null } | undefined)?.branch;
   return {
     ...withUserBranch,
     branch: folded,
@@ -79,8 +86,9 @@ function applyVisitBranchResolved(
       ? {
           ...withUserBranch.owner,
           branch: {
-            uid: folded.uid ?? (withUserBranch.owner as { branch?: VisitBranchRef }).branch?.uid,
-            name: folded.name ?? (withUserBranch.owner as { branch?: VisitBranchRef }).branch?.name,
+            uid: folded.uid ?? ob2?.uid,
+            name: folded.name ?? ob2?.name,
+            alias: folded.alias ?? ob2?.alias,
           },
         }
       : withUserBranch.owner,
@@ -96,7 +104,8 @@ export function resolveBranchChartLabel(
 ): string {
   const uid = getVisitBranchUid(c);
   if (uid != null) {
-    const n = branches.find((b) => b.uid === uid)?.name?.trim();
+    const b = branches.find((br) => br.uid === uid);
+    const n = (b?.alias?.trim() || b?.name?.trim());
     if (n) return n;
     const fromVisit = getVisitBranchDisplayName(c);
     if (fromVisit) return fromVisit;
@@ -125,7 +134,7 @@ export function enrichVisitsWithUserBranches(
 
   const branchNameByUid = new Map<number, string>();
   for (const b of branches ?? []) {
-    const n = b.name?.trim();
+    const n = (b.alias?.trim() || b.name?.trim());
     if (n) branchNameByUid.set(b.uid, n);
   }
 
@@ -142,20 +151,30 @@ export function enrichVisitsWithUserBranches(
     if (snapshotUid != null) {
       const nameFromOrg = branchNameByUid.get(snapshotUid);
       const nameFromUser =
-        ub?.uid === snapshotUid ? ub?.name?.trim() : undefined;
+        ub?.uid === snapshotUid
+          ? (ub.alias?.trim() || ub.name?.trim())
+          : undefined;
       const name =
         (nameFromOrg && nameFromOrg.length > 0 ? nameFromOrg : undefined) ?? nameFromUser;
       if (name) {
-        return applyVisitBranchResolved(v, { uid: snapshotUid, name });
+        const aliasFromUser =
+          ub?.uid === snapshotUid ? ub.alias?.trim() : undefined;
+        return applyVisitBranchResolved(v, {
+          uid: snapshotUid,
+          name,
+          ...(aliasFromUser ? { alias: aliasFromUser } : {}),
+        });
       }
       return v;
     }
 
-    if (!ub || (!ub.name?.trim() && ub.uid == null)) return v;
+    const userDisplay = ub ? (ub.alias?.trim() || ub.name?.trim()) : '';
+    if (!ub || (!userDisplay && ub.uid == null)) return v;
 
     const branchFromUser: VisitBranchRef = {
       ...(ub.uid != null ? { uid: ub.uid } : {}),
-      ...((ub.name ?? '').trim() ? { name: (ub.name ?? '').trim() } : {}),
+      ...(userDisplay ? { name: userDisplay } : {}),
+      ...(ub.alias?.trim() ? { alias: ub.alias.trim() } : {}),
     };
     if (!branchFromUser.name && branchFromUser.uid == null) return v;
 
@@ -175,7 +194,7 @@ export function mapCheckInsFromApi(
 
 /**
  * Maps VisitListItem to VisitExportItem, normalizing optional fields (e.g. checkInLocation) to required strings.
- * Coalesces visit.branch and owner.branch (name-first) and mirrors onto owner.branch for consistent UI.
+ * Coalesces visit.branch and owner.branch (alias-first) and mirrors onto owner.branch for consistent UI.
  */
 export function visitListItemToExportItem(v: VisitListItem): VisitExportItem {
   const resolved = resolveVisitBranch(v);
@@ -187,6 +206,7 @@ export function visitListItemToExportItem(v: VisitListItem): VisitExportItem {
           branch: {
             uid: resolved.uid ?? owner.branch?.uid,
             name: resolved.name ?? owner.branch?.name,
+            alias: resolved.alias ?? owner.branch?.alias,
           },
         }
       : owner;
