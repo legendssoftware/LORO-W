@@ -99,6 +99,18 @@ export interface LeadImportResponse {
   message?: string;
 }
 
+/** Filename for the downloadable CSV template (lead import). */
+export const LEAD_IMPORT_SAMPLE_FILENAME = 'loro-leads-import-sample.csv';
+
+/**
+ * Sample CSV aligned with server csv-parser (companyName + name|email|phone;
+ * Source/Stage use LeadSource / LeadLifecycleStage enum strings when set).
+ */
+export const LEAD_IMPORT_SAMPLE_CSV =
+  'Created,Name,Email,Source,Form,Channel,Stage,Owner,Labels,Phone,Secondary phone number,WhatsApp number,companyName\n' +
+  '2024-01-15T10:00:00.000Z,Jane Smith,jane@example.com,REFERRAL,Contact form,email,LEAD,,"VIP, Hot",+27123456789,+27119876543,+27830000001,"Acme Demo (Pty) Ltd"\n' +
+  ',,,,,,,,+27821234567,,,Minimal Co.\n';
+
 /** Payload for POST /leads (create lead). branch is required; others optional. Aligned with APK and CreateLeadDto. */
 export interface CreateLeadPayload {
   branch: { uid: number };
