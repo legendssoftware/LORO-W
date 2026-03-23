@@ -154,10 +154,10 @@ export interface VisitListItem {
     surname?: string;
     email?: string;
     phone?: string;
-    branch?: { uid?: number; name?: string } | null;
+    branch?: { uid?: number; name?: string; alias?: string | null } | null;
   } | null;
   /** Branch snapshot on the check-in; may be partial; merged with owner.branch in visitListItemToExportItem. */
-  branch?: { uid?: number; name?: string } | null;
+  branch?: { uid?: number; name?: string; alias?: string | null } | null;
   /** Sales value for the visit (for day metrics aggregation). */
   salesValue?: number | null;
   /** Site type: office, shop, etc. (for time breakdown: client vs office). */

@@ -1,5 +1,5 @@
 import type { AxiosInstance } from 'axios';
-import type { GetBranchesResponse } from '@/api/types/branch';
+import type { GetBranchesResponse, GetBranchResponse } from '@/api/types/branch';
 
 /**
  * GET /branch - org-scoped list of branches (for user modal branch dropdown).
@@ -8,6 +8,19 @@ export async function getBranches(
   client: AxiosInstance
 ): Promise<GetBranchesResponse> {
   const { data } = await client.get<GetBranchesResponse>('/branch');
+  return data;
+}
+
+/**
+ * GET /branch/:ref — single branch (for editor prepopulation; avoids stale list cache).
+ */
+export async function getBranchByRef(
+  client: AxiosInstance,
+  branchRef: string
+): Promise<GetBranchResponse> {
+  const { data } = await client.get<GetBranchResponse>(
+    `/branch/${encodeURIComponent(branchRef)}`
+  );
   return data;
 }
 

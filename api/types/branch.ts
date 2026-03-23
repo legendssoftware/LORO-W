@@ -35,3 +35,9 @@ export interface GetBranchesResponse {
 export interface BranchDetail extends BranchListItem {
   ref: string;
 }
+
+/** Response shape for GET /branch/:ref (findOne). */
+export interface GetBranchResponse {
+  branch: BranchDetail | null;
+  message: string;
+}

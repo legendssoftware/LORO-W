@@ -17,7 +17,7 @@ import {
   getOrganisationHoursDefault,
   patchOrganisationHoursDefault,
 } from '@/api/endpoints/organisation';
-import { getBranches, patchBranch } from '@/api/endpoints/branch';
+import { getBranches, getBranchByRef, patchBranch } from '@/api/endpoints/branch';
 import type {
   OrganisationHoursRecord,
   OrganisationHoursWeeklySchedule,
@@ -26,6 +26,7 @@ import type { BranchListItem } from '@/api/types/branch';
 import type { WeekdayKey } from './settings-types';
 import {
   BRANCHES_LIST_QUERY_KEY,
+  settingsBranchDetailKey,
   settingsOrgAppearanceKey,
   settingsOrgBranchesKey,
   settingsOrgHoursKey,
@@ -59,6 +60,13 @@ import {
 } from '@/components/ui/command';
 import { LogoField } from '@/components/settings/logo-field';
 import {
+  BRANCH_STATUS_SELECT_OPTIONS,
+  GEOFENCE_NOTIFICATION_SELECT_OPTIONS,
+  ORG_STATUS_SELECT_OPTIONS,
+  THEME_SELECT_OPTIONS,
+  optionByValue,
+} from '@/components/settings/select-options';
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -72,6 +80,7 @@ import {
   ChevronsUpDown,
   Clock,
   Globe,
+  HelpCircle,
   Palette,
   Plus,
   Trash2,
@@ -178,20 +187,6 @@ function normalizeSpecialHours(
   }));
 }
 
-/** GeneralStatus string values (matches server enum). */
-const ORG_STATUS_OPTIONS = [
-  'active',
-  'inactive',
-  'deleted',
-  'banned',
-  'deactivated',
-  'expired',
-  'pending',
-  'rejected',
-  'approved',
-  'converted',
-] as const;
-
 function holidayUntilToLocalInput(val: string | Date | null | undefined): string {
   if (val == null) return '';
   const d = typeof val === 'string' ? new Date(val) : val;
@@ -224,6 +219,15 @@ function Row({
 
 type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches';
 
+function addressPostalCode(addr: BranchListItem['address']): string {
+  if (!addr) return '';
+  const a = addr as NonNullable<BranchListItem['address']> & {
+    postal_code?: string;
+  };
+  const raw = a.postalCode ?? a.postal_code;
+  return typeof raw === 'string' ? raw : '';
+}
+
 function branchListItemToForm(b: BranchListItem) {
   return {
     name: b.name ?? '',
@@ -239,7 +243,7 @@ function branchListItemToForm(b: BranchListItem) {
     city: b.address?.city ?? '',
     state: b.address?.state ?? '',
     addrCountry: b.address?.country ?? '',
-    postalCode: b.address?.postalCode ?? '',
+    postalCode: addressPostalCode(b.address),
   };
 }
 
@@ -309,8 +313,9 @@ export function SettingsContent() {
   useEffect(() => {
     const o = profileQuery.data?.organisation;
     if (!o) return;
+    const sessionOrgName = backendUserData?.organisation?.name?.trim();
     setProfileForm({
-      name: o.name ?? '',
+      name: o.name?.trim() || sessionOrgName || '',
       alias: (o.alias as string) ?? '',
       email: o.email ?? '',
       phone: o.phone ?? '',
@@ -324,7 +329,7 @@ export function SettingsContent() {
       country: o.address?.country ?? '',
       postalCode: o.address?.postalCode ?? '',
     });
-  }, [profileQuery.data?.organisation]);
+  }, [profileQuery.data?.organisation, backendUserData?.organisation?.name]);
 
   const patchProfileMut = useMutation({
     mutationFn: async () => {
@@ -582,16 +587,36 @@ export function SettingsContent() {
     postalCode: '',
   });
 
+  const branchDetailQuery = useQuery({
+    queryKey: settingsBranchDetailKey(orgRef, branchRef),
+    queryFn: () => getBranchByRef(client, branchRef),
+    enabled: enabled && activeTab === 'branches' && Boolean(branchRef),
+  });
+
   useEffect(() => {
     const first = branches.find((b) => b.ref)?.ref ?? '';
     if (first && !branchRef) setBranchRef(first);
   }, [branches, branchRef]);
 
   useEffect(() => {
-    const b = branches.find((x) => x.ref === branchRef) as BranchListItem | undefined;
-    if (!b?.ref) return;
-    setBranchForm(branchListItemToForm(b));
-  }, [branchRef, branches]);
+    if (activeTab !== 'branches' || !branchRef) return;
+
+    const detail = branchDetailQuery.data?.branch;
+    if (detail?.ref === branchRef) {
+      setBranchForm(branchListItemToForm(detail));
+      return;
+    }
+
+    const fromList = branches.find((x) => x.ref === branchRef) as
+      | BranchListItem
+      | undefined;
+    if (fromList?.ref) setBranchForm(branchListItemToForm(fromList));
+  }, [
+    activeTab,
+    branchRef,
+    branches,
+    branchDetailQuery.data?.branch,
+  ]);
 
   const saveBranchMut = useMutation({
     mutationFn: async () =>
@@ -617,6 +642,9 @@ export function SettingsContent() {
       toast.success('Branch saved');
       queryClient.invalidateQueries({ queryKey: settingsOrgBranchesKey(orgRef) });
       queryClient.invalidateQueries({ queryKey: BRANCHES_LIST_QUERY_KEY });
+      queryClient.invalidateQueries({
+        queryKey: settingsBranchDetailKey(orgRef, branchRef),
+      });
     },
     onError: (e: Error) => toast.error(e.message || 'Failed to save'),
   });
@@ -624,8 +652,9 @@ export function SettingsContent() {
   const resetProfile = useCallback(() => {
     const o = profileQuery.data?.organisation;
     if (!o) return;
+    const sessionOrgName = backendUserData?.organisation?.name?.trim();
     setProfileForm({
-      name: o.name ?? '',
+      name: o.name?.trim() || sessionOrgName || '',
       alias: (o.alias as string) ?? '',
       email: o.email ?? '',
       phone: o.phone ?? '',
@@ -639,7 +668,7 @@ export function SettingsContent() {
       country: o.address?.country ?? '',
       postalCode: o.address?.postalCode ?? '',
     });
-  }, [profileQuery.data?.organisation]);
+  }, [profileQuery.data?.organisation, backendUserData?.organisation?.name]);
 
   const resetAppearance = useCallback(() => {
     const a = appearanceQuery.data;
@@ -702,11 +731,13 @@ export function SettingsContent() {
   }, [hoursQuery.data]);
 
   const resetBranchForm = useCallback(async () => {
-    const res = await branchesQuery.refetch();
-    const list = res.data?.branches ?? branchesQuery.data?.branches ?? [];
-    const b = list.find((x) => x.ref === branchRef);
-    if (b?.ref) setBranchForm(branchListItemToForm(b));
-  }, [branchRef, branchesQuery]);
+    await branchesQuery.refetch();
+    if (branchRef) {
+      await queryClient.refetchQueries({
+        queryKey: settingsBranchDetailKey(orgRef, branchRef),
+      });
+    }
+  }, [branchRef, branchesQuery, orgRef, queryClient]);
 
   const loading =
     !enabled ||
@@ -844,12 +875,33 @@ export function SettingsContent() {
                     }
                   >
                     <SelectTrigger id="org-status" className="max-w-xs bg-white border-gray-200">
-                      <SelectValue placeholder="Status" />
+                      <div className="flex min-w-0 items-center gap-2">
+                        {(() => {
+                          const meta = optionByValue(
+                            ORG_STATUS_SELECT_OPTIONS,
+                            profileForm.status
+                          );
+                          const Icon = meta?.Icon ?? HelpCircle;
+                          return <Icon className="size-4 shrink-0" />;
+                        })()}
+                        <SelectValue placeholder="Status" />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
-                      {ORG_STATUS_OPTIONS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
+                      {!optionByValue(ORG_STATUS_SELECT_OPTIONS, profileForm.status) ? (
+                        <SelectItem value={profileForm.status}>
+                          <div className="flex items-center gap-2">
+                            <HelpCircle className="size-4 shrink-0" />
+                            {profileForm.status}
+                          </div>
+                        </SelectItem>
+                      ) : null}
+                      {ORG_STATUS_SELECT_OPTIONS.map(({ value, label, Icon }) => (
+                        <SelectItem key={value} value={value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="size-4 shrink-0" />
+                            {label}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1189,12 +1241,27 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <div className="flex min-w-0 items-center gap-2">
+                            {(() => {
+                              const meta = optionByValue(
+                                THEME_SELECT_OPTIONS,
+                                regionalForm.theme
+                              );
+                              const Icon = meta?.Icon ?? HelpCircle;
+                              return <Icon className="size-4 shrink-0" />;
+                            })()}
+                            <SelectValue />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="light">Light</SelectItem>
-                          <SelectItem value="dark">Dark</SelectItem>
-                          <SelectItem value="system">System</SelectItem>
+                          {THEME_SELECT_OPTIONS.map(({ value, label, Icon }) => (
+                            <SelectItem key={value} value={value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {label}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1321,16 +1388,52 @@ export function SettingsContent() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="gtype">Default notification type</Label>
-                      <Input
-                        id="gtype"
+                      <Select
                         value={regionalForm.geofenceDefaultNotificationType}
-                        onChange={(e) =>
+                        onValueChange={(v) =>
                           setRegionalForm((s) => ({
                             ...s,
-                            geofenceDefaultNotificationType: e.target.value,
+                            geofenceDefaultNotificationType: v,
                           }))
                         }
-                      />
+                      >
+                        <SelectTrigger id="gtype" className="w-full">
+                          <div className="flex min-w-0 items-center gap-2">
+                            {(() => {
+                              const meta = optionByValue(
+                                GEOFENCE_NOTIFICATION_SELECT_OPTIONS,
+                                regionalForm.geofenceDefaultNotificationType
+                              );
+                              const Icon = meta?.Icon ?? HelpCircle;
+                              return <Icon className="size-4 shrink-0" />;
+                            })()}
+                            <SelectValue />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {!optionByValue(
+                            GEOFENCE_NOTIFICATION_SELECT_OPTIONS,
+                            regionalForm.geofenceDefaultNotificationType
+                          ) ? (
+                            <SelectItem value={regionalForm.geofenceDefaultNotificationType}>
+                              <div className="flex items-center gap-2">
+                                <HelpCircle className="size-4 shrink-0" />
+                                {regionalForm.geofenceDefaultNotificationType}
+                              </div>
+                            </SelectItem>
+                          ) : null}
+                          {GEOFENCE_NOTIFICATION_SELECT_OPTIONS.map(
+                            ({ value, label, Icon }) => (
+                              <SelectItem key={value} value={value}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="size-4 shrink-0" />
+                                  {label}
+                                </div>
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <label className="flex items-center gap-2 text-sm sm:col-span-2">
                       <input
@@ -1465,7 +1568,7 @@ export function SettingsContent() {
                   </div>
                 </Row>
                 <Separator />
-                <Collapsible defaultOpen className="space-y-3">
+                <Collapsible defaultOpen className="mt-6 space-y-3">
                   <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-gray-200 bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
                     <span>Detailed weekly schedule</span>
                     <ChevronDown className="size-4 shrink-0 transition-transform" />
@@ -1812,12 +1915,38 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <div className="flex min-w-0 items-center gap-2">
+                            {(() => {
+                              const meta = optionByValue(
+                                BRANCH_STATUS_SELECT_OPTIONS,
+                                branchForm.status
+                              );
+                              const Icon = meta?.Icon ?? HelpCircle;
+                              return <Icon className="size-4 shrink-0" />;
+                            })()}
+                            <SelectValue />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
+                          {!optionByValue(
+                            BRANCH_STATUS_SELECT_OPTIONS,
+                            branchForm.status
+                          ) ? (
+                            <SelectItem value={branchForm.status}>
+                              <div className="flex items-center gap-2">
+                                <HelpCircle className="size-4 shrink-0" />
+                                {branchForm.status}
+                              </div>
+                            </SelectItem>
+                          ) : null}
+                          {BRANCH_STATUS_SELECT_OPTIONS.map(({ value, label, Icon }) => (
+                            <SelectItem key={value} value={value}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="size-4 shrink-0" />
+                                {label}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

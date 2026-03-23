@@ -36,21 +36,7 @@ import {
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PayrollSummaryDialog } from '@/app/reports/components/payroll-summary-dialog';
 import { BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -130,32 +116,6 @@ export function StaffContent() {
       };
     });
   }, [cardUsers, payrollQuery.data, today.getTime()]);
-
-  const cardUsersByUserId = useMemo(() => {
-    const map = new Map<number, ReportCardUser>();
-    cardUsersWithPayroll.forEach((u) => map.set(u.userId, u));
-    return map;
-  }, [cardUsersWithPayroll]);
-
-  const payrollTableRows = useMemo(() => {
-    const metrics = payrollQuery.data?.userMetrics ?? [];
-    return metrics.map((m) => {
-      const card = cardUsersByUserId.get(m.userId);
-      const monthly = monthlyByUserId.get(m.userId);
-      return {
-        userId: m.userId,
-        name: card?.name ?? m.userName,
-        photoURL: card?.photoURL ?? undefined,
-        email: card?.email ?? null,
-        phone: card?.phone ?? null,
-        branch: card?.branch ?? null,
-        role: card?.role ?? null,
-        empCode: card?.hrID ?? null,
-        payrollHours: m.payrollHours,
-        totalHours: monthly?.totalHours ?? null,
-      };
-    });
-  }, [payrollQuery.data?.userMetrics, cardUsersByUserId, monthlyByUserId]);
 
   const branchLocationRadiusMeters =
     dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50;
@@ -368,102 +328,17 @@ export function StaffContent() {
         onClose={() => setAttendanceModalUser(null)}
       />
 
-      <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:w-[70vw] sm:max-w-[70vw] max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Attendance & Payroll Summary</DialogTitle>
-            {payrollQuery.data && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Period:{' '}
-                {format(new Date(payrollQuery.data.period.startDate), 'MMM d, yyyy')} –{' '}
-                {format(new Date(payrollQuery.data.period.endDate), 'MMM d, yyyy')}
-              </p>
-            )}
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-auto -mx-1 px-1">
-            {payrollQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground py-4">Loading payroll data…</p>
-            ) : !payrollQuery.data ? (
-              <p className="text-sm text-muted-foreground py-4">Unable to load payroll data.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Emp Code</TableHead>
-                    <TableHead>Holiday Hours</TableHead>
-                    <TableHead>Time Over</TableHead>
-                    <TableHead>Sundays</TableHead>
-                    <TableHead className="h-auto whitespace-normal py-2 align-bottom text-right">
-                      <span className="block leading-tight">Total Hours</span>
-                      <span className="text-muted-foreground text-xs font-normal block leading-tight">
-                        (this month {format(new Date(yearForSingle, monthForSingle - 1), 'MMM yyyy')})
-                      </span>
-                    </TableHead>
-                    <TableHead className="h-auto whitespace-normal py-2 align-bottom text-right">
-                      <span className="block leading-tight">Payroll Hours</span>
-                      <span className="text-muted-foreground text-xs font-normal block leading-tight">
-                        {payrollQuery.data.period?.startDate && payrollQuery.data.period?.endDate
-                          ? `(${format(new Date(payrollQuery.data.period.startDate), 'd MMM')} - ${format(new Date(payrollQuery.data.period.endDate), 'd MMM')})`
-                          : '(current payroll period)'}
-                      </span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payrollTableRows.map((row, index) => (
-                    <TableRow key={row.userId} className={index % 2 === 1 ? 'bg-muted/50' : undefined}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="size-8 shrink-0">
-                            <AvatarImage src={row.photoURL} />
-                            <AvatarFallback>
-                              {row.name
-                                .split(/\s+/)
-                                .map((s) => s[0])
-                                .join('')
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{row.name}</p>
-                            {row.email && (
-                              <a href={`mailto:${row.email}`} className="block text-xs text-primary hover:underline truncate">
-                                {row.email}
-                              </a>
-                            )}
-                            {row.phone && (
-                              <a href={`tel:${row.phone}`} className="block text-xs text-primary hover:underline truncate">
-                                {row.phone}
-                              </a>
-                            )}
-                            <p className="text-xs text-muted-foreground truncate">Branch: {row.branch || '—'}</p>
-                            <p className="text-xs text-muted-foreground truncate">Role: {row.role || '—'}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{row.empCode != null ? String(row.empCode) : '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">—</TableCell>
-                      <TableCell className="text-muted-foreground">—</TableCell>
-                      <TableCell className="text-muted-foreground">—</TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right',
-                          row.totalHours != null ? 'tabular-nums font-medium' : 'text-muted-foreground'
-                        )}
-                      >
-                        {row.totalHours != null ? `${row.totalHours}h` : '—'}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{row.payrollHours}h</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PayrollSummaryDialog
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        payrollData={payrollQuery.data}
+        payrollIsLoading={payrollQuery.isLoading}
+        monthlyByUserId={monthlyByUserId}
+        presentUsers={dailyQuery.data?.data?.presentUsers ?? []}
+        absentUsers={dailyQuery.data?.data?.absentUsers ?? []}
+        yearForMetrics={yearForSingle}
+        monthForMetrics={monthForSingle}
+      />
     </div>
   );
 }
