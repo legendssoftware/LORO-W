@@ -18,7 +18,10 @@ import {
   patchOrganisationHoursDefault,
 } from '@/api/endpoints/organisation';
 import { getBranches, patchBranch } from '@/api/endpoints/branch';
-import type { OrganisationHoursWeeklySchedule } from '@/api/types/organisation';
+import type {
+  OrganisationHoursRecord,
+  OrganisationHoursWeeklySchedule,
+} from '@/api/types/organisation';
 import type { BranchListItem } from '@/api/types/branch';
 import type { WeekdayKey } from './settings-types';
 import {
@@ -55,16 +58,24 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { LogoField } from '@/components/settings/logo-field';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
   Building2,
   Check,
+  ChevronDown,
   ChevronsUpDown,
   Clock,
-  Palette,
-  User,
   Globe,
+  Palette,
+  Plus,
+  Trash2,
+  User,
 } from 'lucide-react';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
@@ -87,16 +98,99 @@ const defaultWeekly: OrganisationHoursWeeklySchedule = {
   sunday: false,
 };
 
-function hoursToHHmm(val: string | Date | undefined | null): string {
+type HoursScheduleState = NonNullable<OrganisationHoursRecord['schedule']>;
+
+function defaultHoursSchedule(): HoursScheduleState {
+  return {
+    monday: { start: '07:00', end: '16:30', closed: false },
+    tuesday: { start: '07:00', end: '16:30', closed: false },
+    wednesday: { start: '07:00', end: '16:30', closed: false },
+    thursday: { start: '07:00', end: '16:30', closed: false },
+    friday: { start: '07:00', end: '16:30', closed: false },
+    saturday: { start: '07:00', end: '12:00', closed: false },
+    sunday: { start: '07:00', end: '12:00', closed: true },
+  };
+}
+
+function mergeHoursSchedule(
+  s: OrganisationHoursRecord['schedule'] | null | undefined
+): HoursScheduleState {
+  const d = defaultHoursSchedule();
+  if (!s) return d;
+  return {
+    monday: { ...d.monday, ...s.monday },
+    tuesday: { ...d.tuesday, ...s.tuesday },
+    wednesday: { ...d.wednesday, ...s.wednesday },
+    thursday: { ...d.thursday, ...s.thursday },
+    friday: { ...d.friday, ...s.friday },
+    saturday: { ...d.saturday, ...s.saturday },
+    sunday: { ...d.sunday, ...s.sunday },
+  };
+}
+
+function formatTimeInZone(d: Date, timeZone: string): string {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(d);
+    const h = parts.find((p) => p.type === 'hour')?.value ?? '00';
+    const m = parts.find((p) => p.type === 'minute')?.value ?? '00';
+    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+  } catch {
+    return d.toISOString().slice(11, 16);
+  }
+}
+
+function hoursToHHmm(
+  val: string | Date | undefined | null,
+  timeZone: string
+): string {
   if (val == null) return '';
   if (typeof val === 'string') {
     if (/^\d{2}:\d{2}$/.test(val)) return val;
     const d = new Date(val);
-    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(11, 16);
+    if (!Number.isNaN(d.getTime())) return formatTimeInZone(d, timeZone);
     return '';
   }
-  return val.toISOString().slice(11, 16);
+  return formatTimeInZone(val, timeZone);
 }
+
+type SpecialHourRow = {
+  date: string;
+  openTime: string;
+  closeTime: string;
+  reason: string;
+};
+
+function normalizeSpecialHours(
+  list: OrganisationHoursRecord['specialHours'] | undefined
+): SpecialHourRow[] {
+  if (!list?.length) return [];
+  return list.map((x) => ({
+    date: x.date,
+    openTime: x.openTime,
+    closeTime: x.closeTime,
+    reason: x.reason ?? '',
+  }));
+}
+
+/** GeneralStatus string values (matches server enum). */
+const ORG_STATUS_OPTIONS = [
+  'active',
+  'inactive',
+  'deleted',
+  'banned',
+  'deactivated',
+  'expired',
+  'pending',
+  'rejected',
+  'approved',
+  'converted',
+] as const;
 
 function holidayUntilToLocalInput(val: string | Date | null | undefined): string {
   if (val == null) return '';
@@ -203,6 +297,7 @@ export function SettingsContent() {
     phone: '',
     website: '',
     logo: '',
+    status: 'active' as string,
     street: '',
     suburb: '',
     city: '',
@@ -221,6 +316,7 @@ export function SettingsContent() {
       phone: o.phone ?? '',
       website: o.website ?? '',
       logo: o.logo ?? '',
+      status: (o.status as string) ?? 'active',
       street: o.address?.street ?? '',
       suburb: o.address?.suburb ?? '',
       city: o.address?.city ?? '',
@@ -240,6 +336,7 @@ export function SettingsContent() {
         phone: profileForm.phone,
         website: profileForm.website,
         logo: profileForm.logo,
+        status: profileForm.status || undefined,
         address: {
           street: profileForm.street,
           suburb: profileForm.suburb,
@@ -418,18 +515,23 @@ export function SettingsContent() {
     holidayMode: false,
     holidayUntil: '',
     weekly: { ...defaultWeekly } as OrganisationHoursWeeklySchedule,
+    schedule: defaultHoursSchedule(),
+    specialHours: [] as SpecialHourRow[],
   });
 
   useEffect(() => {
     const h = hoursQuery.data;
     if (!h) return;
+    const tz = h.timezone ?? 'Africa/Johannesburg';
     setHoursForm({
-      openTime: hoursToHHmm(h.openTime) || '07:00',
-      closeTime: hoursToHHmm(h.closeTime) || '16:30',
-      timezone: h.timezone ?? 'Africa/Johannesburg',
+      openTime: hoursToHHmm(h.openTime, tz) || '07:00',
+      closeTime: hoursToHHmm(h.closeTime, tz) || '16:30',
+      timezone: tz,
       holidayMode: h.holidayMode ?? false,
       holidayUntil: holidayUntilToLocalInput(h.holidayUntil),
       weekly: { ...defaultWeekly, ...h.weeklySchedule },
+      schedule: mergeHoursSchedule(h.schedule),
+      specialHours: normalizeSpecialHours(h.specialHours),
     });
   }, [hoursQuery.data]);
 
@@ -444,6 +546,15 @@ export function SettingsContent() {
           ? new Date(hoursForm.holidayUntil).toISOString()
           : null,
         weeklySchedule: hoursForm.weekly,
+        schedule: hoursForm.schedule,
+        specialHours: hoursForm.specialHours
+          .filter((row) => row.date.trim() !== '')
+          .map((row) => ({
+            date: row.date,
+            openTime: row.openTime,
+            closeTime: row.closeTime,
+            ...(row.reason.trim() ? { reason: row.reason.trim() } : {}),
+          })),
       }),
     onSuccess: () => {
       toast.success('Hours saved');
@@ -520,6 +631,7 @@ export function SettingsContent() {
       phone: o.phone ?? '',
       website: o.website ?? '',
       logo: o.logo ?? '',
+      status: (o.status as string) ?? 'active',
       street: o.address?.street ?? '',
       suburb: o.address?.suburb ?? '',
       city: o.address?.city ?? '',
@@ -576,13 +688,16 @@ export function SettingsContent() {
   const resetHours = useCallback(() => {
     const h = hoursQuery.data;
     if (!h) return;
+    const tz = h.timezone ?? 'Africa/Johannesburg';
     setHoursForm({
-      openTime: hoursToHHmm(h.openTime) || '07:00',
-      closeTime: hoursToHHmm(h.closeTime) || '16:30',
-      timezone: h.timezone ?? 'Africa/Johannesburg',
+      openTime: hoursToHHmm(h.openTime, tz) || '07:00',
+      closeTime: hoursToHHmm(h.closeTime, tz) || '16:30',
+      timezone: tz,
       holidayMode: h.holidayMode ?? false,
       holidayUntil: holidayUntilToLocalInput(h.holidayUntil),
       weekly: { ...defaultWeekly, ...h.weeklySchedule },
+      schedule: mergeHoursSchedule(h.schedule),
+      specialHours: normalizeSpecialHours(h.specialHours),
     });
   }, [hoursQuery.data]);
 
@@ -596,6 +711,7 @@ export function SettingsContent() {
   const loading =
     !enabled ||
     profileQuery.isLoading ||
+    appearanceQuery.isLoading ||
     settingsQuery.isLoading ||
     hoursQuery.isLoading ||
     branchesQuery.isLoading;
@@ -718,6 +834,26 @@ export function SettingsContent() {
                       setProfileForm((s) => ({ ...s, alias: e.target.value }))
                     }
                   />
+                </Row>
+                <Separator />
+                <Row title="Status" description="Organisation lifecycle state.">
+                  <Select
+                    value={profileForm.status}
+                    onValueChange={(v) =>
+                      setProfileForm((s) => ({ ...s, status: v }))
+                    }
+                  >
+                    <SelectTrigger id="org-status" className="max-w-xs bg-white border-gray-200">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORG_STATUS_OPTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Row>
                 <Separator />
                 <Row title="Contact" description="Email, phone, website, and organisation logo.">
@@ -1326,6 +1462,190 @@ export function SettingsContent() {
                         }
                       />
                     </div>
+                  </div>
+                </Row>
+                <Separator />
+                <Collapsible defaultOpen className="space-y-3">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-gray-200 bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
+                    <span>Detailed weekly schedule</span>
+                    <ChevronDown className="size-4 shrink-0 transition-transform" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Per-day open and close times (HH:mm). Used when you need different hours per weekday.
+                    </p>
+                    <div className="space-y-3">
+                      {WEEKDAYS.map(({ key, label }) => (
+                        <div
+                          key={key}
+                          className="grid gap-3 rounded-md border border-gray-100 p-3 sm:grid-cols-[auto_1fr_1fr_auto] sm:items-end"
+                        >
+                          <div className="text-sm font-medium text-foreground">{label}</div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Open</Label>
+                            <Input
+                              value={hoursForm.schedule[key].start}
+                              onChange={(e) =>
+                                setHoursForm((s) => ({
+                                  ...s,
+                                  schedule: {
+                                    ...s.schedule,
+                                    [key]: { ...s.schedule[key], start: e.target.value },
+                                  },
+                                }))
+                              }
+                              placeholder="07:00"
+                              className="font-mono text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Close</Label>
+                            <Input
+                              value={hoursForm.schedule[key].end}
+                              onChange={(e) =>
+                                setHoursForm((s) => ({
+                                  ...s,
+                                  schedule: {
+                                    ...s.schedule,
+                                    [key]: { ...s.schedule[key], end: e.target.value },
+                                  },
+                                }))
+                              }
+                              placeholder="16:30"
+                              className="font-mono text-sm"
+                            />
+                          </div>
+                          <label className="flex items-center gap-2 text-sm sm:justify-end">
+                            <input
+                              type="checkbox"
+                              checked={hoursForm.schedule[key].closed}
+                              onChange={(e) =>
+                                setHoursForm((s) => ({
+                                  ...s,
+                                  schedule: {
+                                    ...s.schedule,
+                                    [key]: { ...s.schedule[key], closed: e.target.checked },
+                                  },
+                                }))
+                              }
+                            />
+                            Closed
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                <Separator />
+                <Row
+                  title="Special hours"
+                  description="Exceptions for public holidays or one-off closures (date in YYYY-MM-DD)."
+                >
+                  <div className="space-y-3">
+                    {hoursForm.specialHours.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid gap-3 rounded-md border border-gray-100 p-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+                      >
+                        <div className="space-y-1">
+                          <Label className="text-xs">Date</Label>
+                          <Input
+                            type="date"
+                            value={row.date}
+                            onChange={(e) =>
+                              setHoursForm((s) => {
+                                const next = [...s.specialHours];
+                                next[idx] = { ...next[idx], date: e.target.value };
+                                return { ...s, specialHours: next };
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Open</Label>
+                          <Input
+                            value={row.openTime}
+                            onChange={(e) =>
+                              setHoursForm((s) => {
+                                const next = [...s.specialHours];
+                                next[idx] = { ...next[idx], openTime: e.target.value };
+                                return { ...s, specialHours: next };
+                              })
+                            }
+                            placeholder="09:00"
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Close</Label>
+                          <Input
+                            value={row.closeTime}
+                            onChange={(e) =>
+                              setHoursForm((s) => {
+                                const next = [...s.specialHours];
+                                next[idx] = { ...next[idx], closeTime: e.target.value };
+                                return { ...s, specialHours: next };
+                              })
+                            }
+                            placeholder="17:00"
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1 md:col-span-1">
+                          <Label className="text-xs">Reason (optional)</Label>
+                          <Input
+                            value={row.reason}
+                            onChange={(e) =>
+                              setHoursForm((s) => {
+                                const next = [...s.specialHours];
+                                next[idx] = { ...next[idx], reason: e.target.value };
+                                return { ...s, specialHours: next };
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="flex items-end justify-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            aria-label="Remove row"
+                            onClick={() =>
+                              setHoursForm((s) => ({
+                                ...s,
+                                specialHours: s.specialHours.filter((_, i) => i !== idx),
+                              }))
+                            }
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 bg-white"
+                      onClick={() =>
+                        setHoursForm((s) => ({
+                          ...s,
+                          specialHours: [
+                            ...s.specialHours,
+                            {
+                              date: '',
+                              openTime: '09:00',
+                              closeTime: '17:00',
+                              reason: '',
+                            },
+                          ],
+                        }))
+                      }
+                    >
+                      <Plus className="size-4" />
+                      Add special hours row
+                    </Button>
                   </div>
                 </Row>
               </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { endOfDay, format, isWithinInterval, parseISO, startOfDay } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -10,14 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -42,7 +34,12 @@ import {
   LabelList,
   CartesianGrid,
 } from 'recharts';
+import type { BranchListItem } from '@/api/types/branch';
 import type { VisitExportItem } from '@/api/types/reports';
+import {
+  getVisitBranchUid,
+  resolveBranchChartLabel,
+} from '@/lib/utils/visits-export';
 import { getChartColor, formatCompactValue } from '@/app/reports/chart-colors';
 
 const VISITS_METHOD_CHART_CONFIG: ChartConfig = {
@@ -57,7 +54,7 @@ const VISITS_COUNT_CHART_CONFIG: ChartConfig = {
   count: { label: 'Visits', color: 'var(--chart-1)' },
 };
 
-const VISITS_PER_MONTH_CHART_CONFIG: ChartConfig = {
+const VISITS_PER_HOUR_CHART_CONFIG: ChartConfig = {
   visits: { label: 'Visits', color: 'var(--chart-1)' },
 };
 
@@ -128,15 +125,25 @@ export function extractRegionFromVisit(c: VisitExportItem): string {
 const VISITS_CHART_TOP_N = 5;
 const VISITS_BY_USER_TOP_N = 5;
 
+/** Visits-by-hour chart: show 6:00–18:00 only (6am–6pm). */
+const BUSINESS_DAY_START_HOUR = 6;
+const BUSINESS_DAY_END_HOUR = 18;
+const VISITS_PER_HOUR_TICKS = [6, 9, 12, 15, 18] as const;
+
 /** Four charts: Methods of visits, Visits by user, Visits by region, Visit duration by user. */
 export function VisitsChartsSection({
   checkIns,
+  checkInsTodayForHourly,
   reportTotal,
   reportLoading,
+  branches = [],
 }: {
   checkIns: VisitExportItem[];
+  checkInsTodayForHourly: VisitExportItem[];
   reportTotal?: number;
   reportLoading: boolean;
+  /** Org branch list (GET /branch) for canonical labels on the visits-by-branch chart. */
+  branches?: BranchListItem[];
 }) {
   const totalVisits = reportTotal ?? checkIns.length;
 
@@ -194,31 +201,41 @@ export function VisitsChartsSection({
   }, [checkIns]);
 
   const byBranchData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<number | string, { label: string; count: number }>();
     for (const c of checkIns) {
-      const branchName = c.branch?.name?.trim() ?? 'Not set';
-      map.set(branchName, (map.get(branchName) ?? 0) + 1);
+      const uid = getVisitBranchUid(c);
+      const label = resolveBranchChartLabel(c, branches);
+      const key = uid != null ? uid : label;
+      const prev = map.get(key);
+      if (prev) prev.count += 1;
+      else map.set(key, { label, count: 1 });
     }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
+    return Array.from(map.values())
+      .sort((a, b) => b.count - a.count)
       .slice(0, VISITS_CHART_TOP_N)
-      .map(([name, count], i) => ({ name, count, fill: getChartColor(i) }));
-  }, [checkIns]);
+      .map((row, i) => ({
+        name: row.label,
+        count: row.count,
+        fill: getChartColor(i),
+      }));
+  }, [checkIns, branches]);
 
-  const visitsPerMonthData = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const c of checkIns) {
-      const monthKey = format(new Date(c.checkInTime), 'yyyy-MM');
-      map.set(monthKey, (map.get(monthKey) ?? 0) + 1);
+  const visitsPerHourTodayData = useMemo(() => {
+    const dayStart = startOfDay(new Date());
+    const dayEnd = endOfDay(new Date());
+    const counts = new Array(24).fill(0) as number[];
+    for (const c of checkInsTodayForHourly) {
+      const t = parseISO(c.checkInTime);
+      if (!isWithinInterval(t, { start: dayStart, end: dayEnd })) continue;
+      counts[t.getHours()] += 1;
     }
-    const year = new Date().getFullYear();
-    const months: { date: string; visits: number }[] = [];
-    for (let m = 1; m <= 12; m++) {
-      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-      months.push({ date: monthKey, visits: map.get(monthKey) ?? 0 });
-    }
-    return months;
-  }, [checkIns]);
+    return counts
+      .map((visits, hour) => ({ hour, visits }))
+      .filter(
+        (row) =>
+          row.hour >= BUSINESS_DAY_START_HOUR && row.hour <= BUSINESS_DAY_END_HOUR
+      );
+  }, [checkInsTodayForHourly]);
 
   const byCustomerData = useMemo(() => {
     const map = new Map<string, number>();
@@ -445,64 +462,46 @@ export function VisitsChartsSection({
           <CardTitle>Visits by branch</CardTitle>
           <CardDescription>Top {VISITS_CHART_TOP_N} branches</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {byBranchData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
           ) : (
-            <>
-              <ChartContainer
-                config={VISITS_COUNT_CHART_CONFIG}
-                className="aspect-auto h-[200px] sm:h-[250px] w-full"
+            <ChartContainer
+              config={VISITS_COUNT_CHART_CONFIG}
+              className="aspect-auto h-[200px] sm:h-[250px] w-full"
+            >
+              <RechartsBarChart
+                accessibilityLayer
+                data={byBranchData}
+                layout="vertical"
+                margin={{ right: 16 }}
               >
-                <RechartsBarChart
-                  accessibilityLayer
-                  data={byBranchData}
-                  layout="vertical"
-                  margin={{ right: 16 }}
-                >
-                  <CartesianGrid horizontal={false} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    width={100}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <XAxis dataKey="count" type="number" hide />
-                  <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
-                  <Bar dataKey="count" layout="vertical" radius={4}>
-                    {byBranchData.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                    <LabelList
-                      dataKey="count"
-                      position="right"
-                      offset={8}
-                      className="fill-foreground"
-                      fontSize={12}
-                    />
-                  </Bar>
-                </RechartsBarChart>
-              </ChartContainer>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Branch</TableHead>
-                    <TableHead className="text-right">Visits</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {byBranchData.map((row, i) => (
-                    <TableRow key={row.name}>
-                      <TableCell className="font-medium">{row.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.count.toLocaleString()}</TableCell>
-                    </TableRow>
+                <CartesianGrid horizontal={false} />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  width={100}
+                  tick={{ fontSize: 11 }}
+                />
+                <XAxis dataKey="count" type="number" hide />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent nameKey="name" />} />
+                <Bar dataKey="count" layout="vertical" radius={4}>
+                  {byBranchData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
                   ))}
-                </TableBody>
-              </Table>
-            </>
+                  <LabelList
+                    dataKey="count"
+                    position="right"
+                    offset={8}
+                    className="fill-foreground"
+                    fontSize={12}
+                  />
+                </Bar>
+              </RechartsBarChart>
+            </ChartContainer>
           )}
         </CardContent>
         <CardFooter className="flex-col items-start gap-2 text-sm">
@@ -510,71 +509,83 @@ export function VisitsChartsSection({
         </CardFooter>
       </Card>
 
-      {/* 3. Visits per month */}
+      {/* 3. Visits by hour (today) */}
       <Card className="col-span-full">
         <CardHeader>
-          <CardTitle>Visits per month</CardTitle>
-          <CardDescription>Total visits by month</CardDescription>
+          <CardTitle>Visits by hour</CardTitle>
+          <CardDescription>Total visits today by hour of day</CardDescription>
         </CardHeader>
         <CardContent>
-          {visitsPerMonthData.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No data</p>
-          ) : (
-            <ChartContainer
-              config={VISITS_PER_MONTH_CHART_CONFIG}
-              className="aspect-auto h-[200px] sm:h-[250px] w-full"
-            >
-              <AreaChart data={visitsPerMonthData}>
-                <defs>
-                  <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-visits)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="var(--color-visits)" stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => {
-                    const [y, m] = value.split('-');
-                    return format(new Date(parseInt(y, 10), parseInt(m, 10) - 1), 'MMM');
-                  }}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={
-                    <ChartTooltipContent
-                      labelFormatter={(value) => {
-                        const [y, m] = String(value).split('-');
-                        return format(new Date(parseInt(y, 10), parseInt(m, 10) - 1), 'MMMM yyyy');
-                      }}
-                      indicator="dot"
-                    />
-                  }
-                />
-                <Area
-                  dataKey="visits"
-                  type="natural"
-                  fill="url(#fillVisits)"
-                  stroke="var(--color-visits)"
-                  dot={{ r: 4 }}
-                >
-                  <LabelList
-                    dataKey="visits"
-                    position="top"
-                    offset={8}
-                    className="fill-foreground"
-                    fontSize={12}
+          <ChartContainer
+            config={VISITS_PER_HOUR_CHART_CONFIG}
+            className="aspect-auto h-[200px] sm:h-[250px] w-full"
+          >
+            <AreaChart data={visitsPerHourTodayData}>
+              <defs>
+                <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-visits)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--color-visits)" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="hour"
+                type="number"
+                domain={[BUSINESS_DAY_START_HOUR, BUSINESS_DAY_END_HOUR]}
+                ticks={[...VISITS_PER_HOUR_TICKS]}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => {
+                  const h = Number(value);
+                  if (!Number.isFinite(h)) return '';
+                  return `${String(h).padStart(2, '0')}:00`;
+                }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(label, payload) => {
+                      const fromPayload = payload?.[0]?.payload as
+                        | { hour?: number }
+                        | undefined;
+                      const raw =
+                        label !== undefined && label !== null && label !== ''
+                          ? Number(label)
+                          : fromPayload?.hour;
+                      const h = Number(raw);
+                      if (!Number.isFinite(h) || h < 0 || h > 23) {
+                        return String(label ?? '');
+                      }
+                      const d = new Date();
+                      d.setHours(h, 0, 0, 0);
+                      return format(d, 'HH:mm');
+                    }}
+                    indicator="dot"
                   />
-                </Area>
-              </AreaChart>
-            </ChartContainer>
-          )}
+                }
+              />
+              <Area
+                dataKey="visits"
+                type="natural"
+                fill="url(#fillVisits)"
+                stroke="var(--color-visits)"
+                dot={{ r: 4 }}
+              >
+                <LabelList
+                  dataKey="visits"
+                  position="top"
+                  offset={8}
+                  className="fill-foreground"
+                  fontSize={12}
+                />
+              </Area>
+            </AreaChart>
+          </ChartContainer>
         </CardContent>
         <CardFooter className="flex-col items-start gap-2 text-sm">
-          <div className="text-muted-foreground leading-none">Monthly visit trend</div>
+          <div className="text-muted-foreground leading-none">Today&apos;s visit trend by hour</div>
         </CardFooter>
       </Card>
 

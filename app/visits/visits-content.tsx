@@ -12,12 +12,13 @@ import {
   useCheckOutMutation,
   useClientsInfinite,
   useUsers,
+  useBranches,
   useTokenReady,
   useSessionSync,
 } from '@/api/hooks';
 import type { ClientListItem, ClientAddress } from '@/api/endpoints/clients';
 import type { MethodOfContact, CreateCheckInPayload, CreateCheckOutPayload } from '@/api/types/visits';
-import { visitListItemToExportItem } from '@/lib/utils/visits-export';
+import { mapCheckInsFromApi } from '@/lib/utils/visits-export';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -230,6 +231,7 @@ export function VisitsContent() {
 
   const usersQuery = useUsers({ limit: 200, enabled: mounted });
   const usersList = usersQuery.data ?? [];
+  const branchesQuery = useBranches({ enabled: mounted });
 
   const statusQuery = useCheckInStatus({ enabled: mounted });
   const checkInsQuery = useCheckIns(
@@ -250,8 +252,13 @@ export function VisitsContent() {
   const checkedIn = statusQuery.data?.checkedIn === true;
   /** Stable reference: only changes when query data changes, not on every render (avoids map recentering on timer tick). */
   const checkIns = useMemo(
-    () => (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem),
-    [checkInsQuery.data]
+    () =>
+      mapCheckInsFromApi(
+        checkInsQuery.data?.checkIns ?? [],
+        usersList,
+        branchesQuery.data ?? []
+      ),
+    [checkInsQuery.data, usersList, branchesQuery.data]
   );
 
   const uniqueRegions = useMemo(() => {
