@@ -93,10 +93,16 @@ export interface VisitExportItem {
     branch?: {
       uid?: number;
       name?: string;
+      alias?: string | null;
     };
   };
   client?: { uid?: number; name?: string; email?: string; phone?: string; address?: CheckInContactAddress } | null;
-  branch?: { uid?: number; name?: string; address?: { street?: string; suburb?: string; city?: string } } | null;
+  branch?: {
+    uid?: number;
+    name?: string;
+    alias?: string | null;
+    address?: { street?: string; suburb?: string; city?: string };
+  } | null;
   organisation?: { uid?: number; name?: string; logo?: string; email?: string; phone?: string } | null;
   lead?: { uid?: number; name?: string; status?: string } | null;
   createdAt?: string | null;

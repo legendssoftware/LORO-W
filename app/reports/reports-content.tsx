@@ -26,10 +26,11 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UsersIcon, MapPinIcon } from '@/lib/icons';
-import { CalendarIcon, Building2, Map } from 'lucide-react';
+import { CalendarIcon, Building2, Map, Users } from 'lucide-react';
+import { AttendanceReportTab } from '@/app/reports/tabs/attendance-report-tab';
 import type { DateRange } from 'react-day-picker';
 
-type ReportsTab = 'visits' | 'map';
+type ReportsTab = 'visits' | 'map' | 'attendance';
 
 const today = new Date();
 const defaultReportStart = startOfDay(today);
@@ -347,9 +348,23 @@ export function ReportsContent() {
                   <Map className="size-4 mr-2" />
                   Map View
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab('attendance')}
+                  className={
+                    activeTab === 'attendance'
+                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
+                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
+                  }
+                >
+                  <Users className="size-4 mr-2" />
+                  Attendance
+                </Button>
               </div>
               {activeTab === 'visits' && <VisitsReportTab isTokenReady={isTokenReady} />}
               {activeTab === 'map' && <MapViewTab />}
+              {activeTab === 'attendance' && <AttendanceReportTab isTokenReady={isTokenReady} />}
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-12">

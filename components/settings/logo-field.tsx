@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AxiosInstance } from 'axios';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,19 +18,6 @@ type LogoFieldProps = {
   className?: string;
 };
 
-function isLikelyImageUrl(url: string): boolean {
-  const t = url.trim();
-  if (!t) return false;
-  if (t.startsWith('data:image/')) return true;
-  if (t.startsWith('blob:')) return true;
-  try {
-    const u = new URL(t);
-    return /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(u.pathname);
-  } catch {
-    return true;
-  }
-}
-
 /**
  * Logo URL with optional file upload (POST /docs/upload). Falls back to manual URL if upload is forbidden.
  */
@@ -39,11 +26,36 @@ export function LogoField({ client, value, onChange, urlInputId, className }: Lo
   const fileInputId = urlInputId ? `${urlInputId}-file` : `${autoId}-file`;
   const resolvedUrlId = urlInputId ?? `${autoId}-url`;
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingBlobRef = useRef<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
+
+  const displaySrc = (pendingPreview ?? '').trim() || value.trim();
+
+  useEffect(() => {
+    setImgError(false);
+  }, [value, pendingPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingBlobRef.current) {
+        URL.revokeObjectURL(pendingBlobRef.current);
+        pendingBlobRef.current = null;
+      }
+    };
+  }, []);
 
   const handleFile = useCallback(
     async (file: File | null) => {
       if (!file) return;
+      if (pendingBlobRef.current) {
+        URL.revokeObjectURL(pendingBlobRef.current);
+        pendingBlobRef.current = null;
+      }
+      const blobUrl = URL.createObjectURL(file);
+      pendingBlobRef.current = blobUrl;
+      setPendingPreview(blobUrl);
       setUploading(true);
       try {
         const res = await uploadDocFile(client, file, 'image');
@@ -63,18 +75,30 @@ export function LogoField({ client, value, onChange, urlInputId, className }: Lo
         }
       } finally {
         setUploading(false);
+        if (pendingBlobRef.current) {
+          URL.revokeObjectURL(pendingBlobRef.current);
+          pendingBlobRef.current = null;
+        }
+        setPendingPreview(null);
         if (inputRef.current) inputRef.current.value = '';
       }
     },
     [client, onChange]
   );
 
+  const showImage = Boolean(displaySrc && !imgError);
+
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-muted/40">
-          {value.trim() && isLikelyImageUrl(value) ? (
-            <img src={value} alt="" className="max-h-full max-w-full object-contain" />
+          {showImage ? (
+            <img
+              src={displaySrc}
+              alt=""
+              className="max-h-full max-w-full object-contain"
+              onError={() => setImgError(true)}
+            />
           ) : (
             <span className="px-2 text-center text-xs text-muted-foreground">No preview</span>
           )}
