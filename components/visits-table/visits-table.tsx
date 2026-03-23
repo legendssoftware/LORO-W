@@ -20,6 +20,7 @@ import {
   VISITS_TABLE_LINK_CLASS,
   type VisitsColumnWidth,
 } from './visits-table-utils';
+import { getVisitBranchDisplayName, getVisitBranchUid } from '@/lib/utils/visits-export';
 import {
   METHOD_OPTIONS,
   TYPE_OF_BUSINESS_OPTIONS,
@@ -228,7 +229,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       if (!o) return '-';
       const fullName = [o.name, o.surname].filter(Boolean).join(' ').trim() || '-';
       const imgSrc = o.photoURL ?? o.avatar ?? undefined;
-      const branchName = o.branch?.name?.trim() || c.branch?.name?.trim() || '';
+      const branchName = getVisitBranchDisplayName(c);
       const roleLabel = formatRoleLabel(o.role);
       return (
         <span className="flex items-start gap-2 whitespace-normal">
@@ -501,7 +502,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   {
     key: 'branch',
     label: 'Branch',
-    render: (c) => c.branch?.name?.trim() || '-',
+    render: (c) => getVisitBranchDisplayName(c) || '-',
   },
 ];
 
@@ -594,7 +595,7 @@ function visitToLeadInitialValues(visit: VisitExportItem): CreateLeadModalInitia
     phone: phone || undefined,
     notes: notes || undefined,
     source: 'OTHER',
-    branchUid: visit.branch?.uid ?? undefined,
+    branchUid: getVisitBranchUid(visit) ?? undefined,
     jobTitle: visit.personSeenPosition?.trim() || undefined,
     estimatedValue: visit.salesValue ?? undefined,
     lastContactDate: visitDate || undefined,
@@ -1538,7 +1539,7 @@ function VisitDetailDialog({
                   <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {formatSalesValue(visit.salesValue, (visit as { salesCurrency?: string }).salesCurrency)}</p>
                   <p><span className="font-medium text-foreground">Lead:</span> {visit.lead?.name?.trim() || '-'}</p>
                   <p><span className="font-medium text-foreground">Client:</span> {visit.client?.name?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Branch:</span> {visit.branch?.name?.trim() || '-'}</p>
+                  <p><span className="font-medium text-foreground">Branch:</span> {getVisitBranchDisplayName(visit) || '-'}</p>
                 </div>
               )}
             </div>

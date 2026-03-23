@@ -24,6 +24,8 @@ export interface OrganisationProfile {
   address: OrganisationAddress;
   ref: string;
   clerkOrgId?: string | null;
+  /** GeneralStatus enum value (e.g. active, inactive) */
+  status?: string;
 }
 
 export interface GetOrganisationResponse {
@@ -172,4 +174,6 @@ export interface PatchOrganisationProfileBody {
   website?: string;
   logo?: string;
   address?: OrganisationAddress;
+  /** GeneralStatus value */
+  status?: string;
 }

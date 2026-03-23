@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { endOfDay, format, startOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { endOfDay, format, startOfDay } from 'date-fns';
 import { useTokenReady, useSessionSync, useCheckIns, useUsers, useBranches } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
 import type { VisitExportItem } from '@/api/types/reports';
-import { visitListItemToExportItem } from '@/lib/utils/visits-export';
+import { mapCheckInsFromApi, getVisitBranchUid } from '@/lib/utils/visits-export';
 import { VisitsChartsSection, extractRegionFromVisit } from '@/app/reports/tabs/visits-charts-section';
 import { MapViewTab } from '@/app/reports/tabs/map-view-tab';
 import { Button } from '@/components/ui/button';
@@ -63,12 +63,40 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     { enabled: mounted && isTokenReady }
   );
 
-  const usersQuery = useUsers({ enabled: mounted && isTokenReady });
+  const now = new Date();
+  const checkInsTodayQuery = useCheckIns(
+    {
+      startDate: startOfDay(now).toISOString(),
+      endDate: endOfDay(now).toISOString(),
+      ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
+      ...(selectedBranchUid ? { branchId: Number(selectedBranchUid) } : {}),
+    },
+    { enabled: mounted && isTokenReady }
+  );
+
+  const usersQuery = useUsers({ limit: 200, enabled: mounted && isTokenReady });
   const branchesQuery = useBranches({ enabled: mounted && isTokenReady });
 
+  const usersList = usersQuery.data ?? [];
+
   const rawCheckIns: VisitExportItem[] = useMemo(
-    () => (checkInsQuery.data?.checkIns ?? []).map(visitListItemToExportItem),
-    [checkInsQuery.data?.checkIns]
+    () =>
+      mapCheckInsFromApi(
+        checkInsQuery.data?.checkIns ?? [],
+        usersList,
+        branchesQuery.data ?? []
+      ),
+    [checkInsQuery.data?.checkIns, usersList, branchesQuery.data]
+  );
+
+  const rawCheckInsToday: VisitExportItem[] = useMemo(
+    () =>
+      mapCheckInsFromApi(
+        checkInsTodayQuery.data?.checkIns ?? [],
+        usersList,
+        branchesQuery.data ?? []
+      ),
+    [checkInsTodayQuery.data?.checkIns, usersList, branchesQuery.data]
   );
 
   const regionOptions = useMemo(() => {
@@ -90,21 +118,30 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
     }
     if (selectedBranchUid) {
       const branchUid = Number(selectedBranchUid);
-      list = list.filter((c) => c.branch?.uid === branchUid);
+      list = list.filter((c) => getVisitBranchUid(c) === branchUid);
     }
     return list;
   }, [rawCheckIns, selectedUserUid, selectedRegion, selectedBranchUid]);
 
-  const todayStart = startOfDay(today);
-  const todayEnd = endOfDay(today);
-  const visitsTodayCount = useMemo(() => {
-    return filteredCheckIns.filter((c) => {
-      const t = parseISO(c.checkInTime);
-      return isWithinInterval(t, { start: todayStart, end: todayEnd });
-    }).length;
-  }, [filteredCheckIns]);
+  const checkInsTodayForHourly = useMemo(() => {
+    let list = rawCheckInsToday;
+    if (selectedUserUid) {
+      const uid = Number(selectedUserUid);
+      list = list.filter((c) => (c.owner as { uid?: number } | undefined)?.uid === uid);
+    }
+    if (selectedRegion) {
+      list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
+    }
+    if (selectedBranchUid) {
+      const branchUid = Number(selectedBranchUid);
+      list = list.filter((c) => getVisitBranchUid(c) === branchUid);
+    }
+    return list;
+  }, [rawCheckInsToday, selectedUserUid, selectedRegion, selectedBranchUid]);
 
-  const isLoading = checkInsQuery.isLoading;
+  const visitsTodayCount = checkInsTodayForHourly.length;
+
+  const isLoading = checkInsQuery.isLoading || checkInsTodayQuery.isLoading;
 
   const handleApplyDateRange = () => {
     if (pickerRange?.from) {
@@ -250,8 +287,10 @@ function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
         </div>
         <VisitsChartsSection
           checkIns={filteredCheckIns}
+          checkInsTodayForHourly={checkInsTodayForHourly}
           reportTotal={filteredCheckIns.length}
           reportLoading={isLoading}
+          branches={branches}
         />
       </div>
     </div>
