@@ -4,19 +4,199 @@
  */
 
 import { format } from 'date-fns';
+import type { BranchListItem } from '@/api/types/branch';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
 import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
 import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
 
+/** Minimal branch ref from API (visit, owner, or user list). */
+export type VisitBranchRef = { uid?: number; name?: string };
+
+/**
+ * Merges visit.branch and owner.branch: name from either (visit first), uid from visit.branch when set else owner.branch.
+ * Avoids `visit.branch ?? owner.branch` when visit is a stub without name but owner has the display name.
+ */
+export function resolveVisitBranch(v: VisitListItem | VisitExportItem): VisitBranchRef | null {
+  const visitB = (v as { branch?: VisitBranchRef | null }).branch;
+  const ownerB = (v as { owner?: { branch?: VisitBranchRef | null } }).owner?.branch;
+
+  const visitName = visitB?.name?.trim();
+  const ownerName = ownerB?.name?.trim();
+  const name = visitName || ownerName || '';
+
+  const uid = visitB?.uid != null ? visitB.uid : ownerB?.uid;
+
+  if (!name && uid == null) return null;
+  const out: VisitBranchRef = {};
+  if (uid != null) out.uid = uid;
+  if (name) out.name = name;
+  return Object.keys(out).length ? out : null;
+}
+
+/** Trimmed branch name for tables, charts, and export (empty if unknown). */
+export function getVisitBranchDisplayName(c: VisitListItem | VisitExportItem): string {
+  return resolveVisitBranch(c)?.name?.trim() ?? '';
+}
+
+/** Resolved branch uid for filters (visit snapshot uid preferred over owner). */
+export function getVisitBranchUid(c: VisitListItem | VisitExportItem): number | undefined {
+  const r = resolveVisitBranch(c);
+  return r?.uid;
+}
+
+export type UserBranchLookup = {
+  uid: number;
+  email?: string;
+  branch?: { uid?: number; name?: string } | null;
+};
+
+function applyVisitBranchResolved(
+  v: VisitExportItem,
+  resolved: VisitBranchRef
+): VisitExportItem {
+  const withUserBranch = {
+    ...v,
+    branch: resolved,
+    owner: v.owner
+      ? {
+          ...v.owner,
+          branch: {
+            uid: resolved.uid ?? (v.owner as { branch?: VisitBranchRef | null }).branch?.uid,
+            name: resolved.name ?? (v.owner as { branch?: VisitBranchRef | null }).branch?.name,
+          },
+        }
+      : v.owner,
+  } as VisitExportItem;
+
+  const folded = resolveVisitBranch(withUserBranch as VisitListItem);
+  if (!folded) return withUserBranch;
+
+  return {
+    ...withUserBranch,
+    branch: folded,
+    owner: withUserBranch.owner
+      ? {
+          ...withUserBranch.owner,
+          branch: {
+            uid: folded.uid ?? (withUserBranch.owner as { branch?: VisitBranchRef }).branch?.uid,
+            name: folded.name ?? (withUserBranch.owner as { branch?: VisitBranchRef }).branch?.name,
+          },
+        }
+      : withUserBranch.owner,
+  } as VisitExportItem;
+}
+
+/**
+ * Canonical branch label for charts (org list first, then visit snapshot name).
+ */
+export function resolveBranchChartLabel(
+  c: VisitListItem | VisitExportItem,
+  branches: BranchListItem[]
+): string {
+  const uid = getVisitBranchUid(c);
+  if (uid != null) {
+    const n = branches.find((b) => b.uid === uid)?.name?.trim();
+    if (n) return n;
+    const fromVisit = getVisitBranchDisplayName(c);
+    if (fromVisit) return fromVisit;
+    return `Branch ${uid}`;
+  }
+  return getVisitBranchDisplayName(c) || 'Not set';
+}
+
+/**
+ * When check-in payloads omit branch name, fill from org branches list and/or user list.
+ * Never replaces a persisted branch UID with the owner’s current branch when UIDs differ.
+ */
+export function enrichVisitsWithUserBranches(
+  visits: VisitExportItem[],
+  users: UserBranchLookup[],
+  branches?: BranchListItem[]
+): VisitExportItem[] {
+  if (!users.length && !branches?.length) return visits;
+
+  const byUid = new Map(users.map((u) => [u.uid, u]));
+  const byEmail = new Map(
+    users
+      .filter((u) => (u.email ?? '').trim())
+      .map((u) => [String(u.email).trim().toLowerCase(), u])
+  );
+
+  const branchNameByUid = new Map<number, string>();
+  for (const b of branches ?? []) {
+    const n = b.name?.trim();
+    if (n) branchNameByUid.set(b.uid, n);
+  }
+
+  return visits.map((v) => {
+    if (getVisitBranchDisplayName(v)) return v;
+
+    const snapshotUid = getVisitBranchUid(v);
+    const owner = v.owner as { uid?: number; email?: string } | undefined;
+    const u =
+      (owner?.uid != null ? byUid.get(owner.uid) : undefined) ??
+      (owner?.email ? byEmail.get(owner.email.trim().toLowerCase()) : undefined);
+    const ub = u?.branch;
+
+    if (snapshotUid != null) {
+      const nameFromOrg = branchNameByUid.get(snapshotUid);
+      const nameFromUser =
+        ub?.uid === snapshotUid ? ub?.name?.trim() : undefined;
+      const name =
+        (nameFromOrg && nameFromOrg.length > 0 ? nameFromOrg : undefined) ?? nameFromUser;
+      if (name) {
+        return applyVisitBranchResolved(v, { uid: snapshotUid, name });
+      }
+      return v;
+    }
+
+    if (!ub || (!ub.name?.trim() && ub.uid == null)) return v;
+
+    const branchFromUser: VisitBranchRef = {
+      ...(ub.uid != null ? { uid: ub.uid } : {}),
+      ...((ub.name ?? '').trim() ? { name: (ub.name ?? '').trim() } : {}),
+    };
+    if (!branchFromUser.name && branchFromUser.uid == null) return v;
+
+    return applyVisitBranchResolved(v, branchFromUser);
+  });
+}
+
+export function mapCheckInsFromApi(
+  checkIns: VisitListItem[],
+  users?: UserBranchLookup[],
+  branches?: BranchListItem[]
+): VisitExportItem[] {
+  const mapped = checkIns.map(visitListItemToExportItem);
+  if (!users?.length && !branches?.length) return mapped;
+  return enrichVisitsWithUserBranches(mapped, users ?? [], branches);
+}
+
 /**
  * Maps VisitListItem to VisitExportItem, normalizing optional fields (e.g. checkInLocation) to required strings.
+ * Coalesces visit.branch and owner.branch (name-first) and mirrors onto owner.branch for consistent UI.
  */
 export function visitListItemToExportItem(v: VisitListItem): VisitExportItem {
+  const resolved = resolveVisitBranch(v);
+  const owner = v.owner as VisitExportItem['owner'] | undefined;
+  const ownerPatched =
+    owner && resolved
+      ? {
+          ...owner,
+          branch: {
+            uid: resolved.uid ?? owner.branch?.uid,
+            name: resolved.name ?? owner.branch?.name,
+          },
+        }
+      : owner;
+
   return {
     ...v,
     checkInLocation: v.checkInLocation ?? '-',
     checkOutLocation: v.checkOutLocation ?? null,
+    branch: resolved,
+    owner: ownerPatched,
   } as VisitExportItem;
 }
 
@@ -238,7 +418,7 @@ export function visitToExportRow(c: VisitExportItem): string[] {
     valueExVat,
     c.lead?.name?.trim() || '-',
     c.client?.name?.trim() || '-',
-    c.branch?.name?.trim() || '-',
+    getVisitBranchDisplayName(c) || '-',
   ];
 }
 
