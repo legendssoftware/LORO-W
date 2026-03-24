@@ -62,7 +62,7 @@ export interface ReportCardUser {
   last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
   /** Payroll-period hours (when merged from Staff payroll API). */
   payrollHours?: number;
-  /** Payroll-period target hours (weekdays in period × EXPECTED_HOURS_PER_DAY). */
+  /** Payroll-period target hours (fixed cap: EXPECTED_MONTHLY_HOURS, 180h). */
   payrollTargetHours?: number;
   /** Prorated expected hours by today within the payroll period. */
   payrollExpectedByNow?: number;

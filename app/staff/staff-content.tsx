@@ -30,8 +30,7 @@ import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedPayrollHoursByDate,
   HOURS_BEHIND_BADGE_THRESHOLD,
-  EXPECTED_HOURS_PER_DAY,
-  workingDaysInPeriod,
+  EXPECTED_MONTHLY_HOURS,
 } from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
@@ -94,7 +93,7 @@ export function StaffContent() {
     if (!payroll?.period?.startDate || !payroll?.period?.endDate) return cardUsers;
     const periodStart = new Date(payroll.period.startDate);
     const periodEnd = new Date(payroll.period.endDate);
-    const payrollTargetHours = workingDaysInPeriod(periodStart, periodEnd) * EXPECTED_HOURS_PER_DAY;
+    const payrollTargetHours = EXPECTED_MONTHLY_HOURS;
     const payrollExpectedByNow = getExpectedPayrollHoursByDate(periodStart, periodEnd, today);
     const payrollByUserId = new Map<number, number>();
     (payroll.userMetrics ?? []).forEach((m: { userId: number; payrollHours: number }) =>
