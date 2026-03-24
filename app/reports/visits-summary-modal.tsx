@@ -10,6 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { DetailDialogCloseButton } from '@/components/detail-dialog/detail-dialog-primitives';
 import {
     Table,
     TableBody,
@@ -49,8 +50,15 @@ export function VisitsSummaryModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex flex-col max-w-[95vw] sm:max-w-[90vw] max-h-[90vh] overflow-hidden">
-                <DialogHeader>
+            <DialogContent
+                showCloseButton={false}
+                className="relative flex flex-col max-w-[95vw] sm:max-w-[90vw] max-h-[90vh] overflow-hidden p-6 pt-12 pr-14"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="absolute top-4 right-4 z-10">
+                    <DetailDialogCloseButton />
+                </div>
+                <DialogHeader className="pr-24">
                     <DialogTitle className="text-xl font-semibold text-foreground">
                         Visits Summary
                     </DialogTitle>

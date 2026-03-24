@@ -13,7 +13,7 @@ import type {
   EngageDraftParams,
   EngageDraftResponse,
 } from '@/api/types/leads';
-import type { DomainReportResponse } from '@/api/types/reports';
+import type { LeadsReportResponse } from '@/api/types/reports';
 
 /**
  * GET /leads - paginated list of leads.
@@ -36,6 +36,7 @@ export async function getLeads(
   if (params.priority) search.set('priority', params.priority);
   if (params.source) search.set('source', params.source);
   if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
+  if (params.branchId != null) search.set('branchId', String(params.branchId));
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(`/leads${qs ? `?${qs}` : ''}`);
   return data;
@@ -52,17 +53,22 @@ export async function getLeadsForUser(
 }
 
 /**
- * GET /leads/report - aggregated report (total, byStatus, byDay) for date range.
+ * GET /leads/report - aggregated report (counts, pipeline, breakdowns) for date range.
  */
 export async function getLeadsReport(
   client: AxiosInstance,
   params: GetLeadsReportParams
-): Promise<DomainReportResponse> {
+): Promise<LeadsReportResponse> {
   const search = new URLSearchParams({
     from: params.from,
     to: params.to,
   });
-  const { data } = await client.get<DomainReportResponse>(
+  if (params.branchId != null) search.set('branchId', String(params.branchId));
+  if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
+  if (params.status) search.set('status', params.status);
+  if (params.source) search.set('source', params.source);
+  if (params.search) search.set('search', params.search);
+  const { data } = await client.get<LeadsReportResponse>(
     `/leads/report?${search.toString()}`
   );
   return data;

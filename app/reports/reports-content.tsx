@@ -1,12 +1,16 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
+import { Map } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
+import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
+import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
+import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import type { SyncProfile } from '@/api/types';
 
 const REPORT_TABS = [
@@ -16,10 +20,11 @@ const REPORT_TABS = [
   { value: 'leads', label: 'Leads' },
   { value: 'planning', label: 'Planning' },
   { value: 'sales', label: 'Sales' },
+  { value: 'visualiser', label: 'Visualiser', Icon: Map },
 ] as const;
 
 const tabTriggerClassName =
-  'shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
+  'inline-flex items-center gap-2 shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
 
 function ReportsPlaceholderPanel() {
   return (
@@ -64,25 +69,36 @@ function ReportsTabsEqualWidth({
         ref={listRef}
         className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6"
       >
-        {REPORT_TABS.map(({ value, label }) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className={tabTriggerClassName}
-            style={
-              tabWidthPx != null
-                ? { minWidth: tabWidthPx, width: tabWidthPx }
-                : undefined
-            }
-          >
-            {label}
-          </TabsTrigger>
-        ))}
+        {REPORT_TABS.map((tab) => {
+          const { value, label } = tab;
+          const Icon = 'Icon' in tab ? tab.Icon : undefined;
+          return (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className={tabTriggerClassName}
+              style={
+                tabWidthPx != null
+                  ? { minWidth: tabWidthPx, width: tabWidthPx }
+                  : undefined
+              }
+            >
+              {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
+              {label}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
       {REPORT_TABS.map(({ value }) => (
         <TabsContent key={value} value={value}>
           {value === 'attendance' ? (
             <ReportsAttendanceTab profile={profile} />
+          ) : value === 'visits' ? (
+            <ReportsVisitsTab profile={profile} />
+          ) : value === 'leads' ? (
+            <ReportsLeadsTab profile={profile} />
+          ) : value === 'visualiser' ? (
+            <ReportsVisualiserTab profile={profile} />
           ) : (
             <ReportsPlaceholderPanel />
           )}

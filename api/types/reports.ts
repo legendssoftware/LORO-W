@@ -13,14 +13,16 @@ export interface DomainReportResponse {
 
 /** GET /leads/report — extended analytics (see server LeadsReportResponseDto). */
 export interface LeadsReportResponse extends DomainReportResponse {
-  leadsTodayCount: number;
-  bySource: { name: string; value: number }[];
+  totalEstimatedValue: number;
+  valueByStatus: { name: string; value: number }[];
   byRegion: { name: string; value: number }[];
   byUser: { name: string; value: number }[];
-  visitsByHour: { hour: string; count: number }[];
-  convertedCount: number;
-  conversionEligibleTotal: number;
-  conversionRate: number;
+  byBranch: { name: string; value: number }[];
+  bySource: { name: string; value: number }[];
+  /** When `from` === `to` (single day): new leads per hour 0–23 in org timezone. */
+  byHour?: { hour: number; count: number }[];
+  /** With activity vs no activity (interactions and/or edits after creation). */
+  byEngagement?: { name: string; value: number }[];
 }
 
 export interface ClaimsListResponse {

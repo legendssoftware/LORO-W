@@ -33,6 +33,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DetailDialogCloseButton,
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DETAIL_DIALOG_SMALL_CONTENT_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -596,8 +601,15 @@ export function VisitsContent() {
 
       {/* Method-of-visit modal: open directly when user clicks Start visit */}
       <Dialog open={methodModalOpen} onOpenChange={(open) => !open && closeMethodModal()}>
-        <DialogContent className="sm:max-w-md" showCloseButton>
-          <DialogHeader>
+        <DialogContent
+          showCloseButton={false}
+          className={DETAIL_DIALOG_SMALL_CONTENT_CLASS}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <DetailDialogCloseButton />
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>Start visit</DialogTitle>
             <DialogDescription>Choose how you are conducting this visit.</DialogDescription>
           </DialogHeader>
@@ -614,8 +626,8 @@ export function VisitsContent() {
                     onClick={() => setSelectedMethod(opt.value)}
                     className={
                       selectedMethod === opt.value
-                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2'
-                        : 'gap-2'
+                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2 rounded-full'
+                        : 'gap-2 rounded-full'
                     }
                   >
                     <Icon className="size-4 shrink-0" />
@@ -625,11 +637,12 @@ export function VisitsContent() {
               })}
             </div>
             <DialogFooter className="gap-3">
-              <Button variant="cancel" onClick={closeMethodModal}>
+              <Button variant="cancel" className="rounded-full" onClick={closeMethodModal}>
                 Cancel
               </Button>
               <Button
                 variant="success"
+                className="rounded-full"
                 onClick={startVisit}
                 disabled={checkInMutation.isPending || !selectedMethod}
               >
@@ -645,11 +658,15 @@ export function VisitsContent() {
       <Dialog open={endVisitOpen} onOpenChange={setEndVisitOpen}>
         <DialogContent
           id="end-visit-dialog-content"
-          className="sm:max-w-2xl max-h-[90vh] overflow-y-auto z-[10000]"
+          showCloseButton={false}
+          className={cn(DETAIL_DIALOG_CONTENT_CLASS, 'z-[10000]')}
           overlayClassName="z-[10000]"
-          showCloseButton
+          onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader>
+          <div className="absolute top-4 right-4 z-10">
+            <DetailDialogCloseButton />
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>End visit</DialogTitle>
             <DialogDescription>Add visit details and optionally a photo.</DialogDescription>
           </DialogHeader>
@@ -1317,12 +1334,13 @@ export function VisitsContent() {
               </div>
             ) : null}
           </div>
-          <DialogFooter>
-            <Button variant="cancel" onClick={() => setEndVisitOpen(false)}>
+          <DialogFooter className="gap-3">
+            <Button variant="cancel" className="rounded-full" onClick={() => setEndVisitOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="success"
+              className="rounded-full"
               onClick={submitEndVisit}
               disabled={checkOutMutation.isPending}
             >

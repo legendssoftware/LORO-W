@@ -7,13 +7,19 @@ import type { Task } from '@/api/types/tasks';
 import type { UpdateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DetailDialogCloseButton,
+  DetailFieldRow,
+  DetailSectionHeading,
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DETAIL_FIELD_GRID_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +49,35 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Pencil, Plus, Play, Square, CheckCircle2, Trash2 } from 'lucide-react';
+import {
+  Pencil,
+  Plus,
+  Play,
+  Square,
+  CheckCircle2,
+  Trash2,
+  ClipboardList,
+  AlignLeft,
+  Users,
+  Building2,
+  User,
+  FileText,
+  BadgeCheck,
+  ListOrdered,
+  Layers,
+  CalendarClock,
+  Percent,
+  CalendarCheck2,
+  Repeat,
+  FolderOpen,
+  Cpu,
+  Timer,
+  LogIn,
+  LogOut,
+  MessageSquare,
+  ListTodo,
+  Paperclip,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2Icon, XIcon, CalendarIcon, StoreIcon } from '@/lib/icons';
 import {
@@ -288,14 +322,6 @@ export function TaskDetailDialog({
     ? [displayTask.creator.name, displayTask.creator.surname].filter(Boolean).join(' ').trim()
     : '-';
 
-  const fieldGridClass = 'grid grid-cols-2 gap-x-6 gap-y-3';
-  const fieldCell = (label: string, value: ReactNode) => (
-    <div>
-      <span className="text-muted-foreground">{label}</span>
-      <div className="font-medium">{value}</div>
-    </div>
-  );
-
   const selectedAssigneeUids = (editForm.assignees ?? []).map((a) => a.uid);
   const selectedClientUids = (editForm.clients ?? []).map((c) => c.uid);
   const assigneesLabel =
@@ -320,7 +346,7 @@ export function TaskDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className={DETAIL_DIALOG_CONTENT_CLASS}
           onClick={(e) => e.stopPropagation()}
         >
           {isLoadingDetail ? (
@@ -344,7 +370,7 @@ export function TaskDetailDialog({
               {(displayTask.jobStatus === 'QUEUED' || displayTask.jobStatus === 'RUNNING') && (
                 <Button
                   size="sm"
-                  className="gap-1.5 bg-blue-600 text-white hover:bg-blue-700"
+                  className="gap-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700"
                   onClick={(e) => {
                     e.stopPropagation();
                     void handleToggleJobStatus();
@@ -363,8 +389,8 @@ export function TaskDetailDialog({
               )}
               <Button
                 size="sm"
-                variant="destructive"
-                className="gap-1.5"
+                variant="outline"
+                className="gap-1.5 rounded-full border-destructive text-destructive hover:bg-destructive/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   setDeleteTaskConfirmOpen(true);
@@ -375,7 +401,7 @@ export function TaskDetailDialog({
               </Button>
               <Button
                 size="sm"
-                className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                className="gap-1.5 rounded-full bg-purple-600 text-white hover:bg-purple-700"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsEditing(true);
@@ -386,15 +412,7 @@ export function TaskDetailDialog({
               </Button>
             </>
           )}
-          <DialogClose asChild>
-            <button
-              type="button"
-              className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="Close"
-            >
-              <XIcon className="size-5" />
-            </button>
-          </DialogClose>
+          <DetailDialogCloseButton />
         </div>
         <DialogHeader className="pr-24">
           <DialogTitle>Task #{displayTask.uid}</DialogTitle>
@@ -407,7 +425,7 @@ export function TaskDetailDialog({
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <div>
-            <h4 className="font-semibold mb-2">Details</h4>
+            <DetailSectionHeading title="Details" icon={ClipboardList} />
             {isEditing ? (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -835,23 +853,72 @@ export function TaskDetailDialog({
             ) : (
               <>
                 <div>
-                  <h4 className="font-semibold mb-2">Details</h4>
-                  <dl className={fieldGridClass}>
-                    {fieldCell('Title', displayTask.title)}
-                    {fieldCell('Status', displayTask.status?.replace(/_/g, ' ') ?? '-')}
-                    {fieldCell('Priority', displayTask.priority ?? '-')}
-                    {fieldCell('Type', displayTask.taskType?.replace(/_/g, ' ') ?? '-')}
-                    {fieldCell('Deadline', formatDeadline(displayTask.deadline))}
-                    {fieldCell('Progress', `${displayTask.progress ?? 0}%`)}
-                    {fieldCell('Completion date', formatCompletionDate(displayTask.completionDate))}
-                    {fieldCell('Repetition', displayTask.repetitionType?.replace(/_/g, ' ') ?? '-')}
-                    {fieldCell('Target category', displayTask.targetCategory || '-')}
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow label="Title" icon={FileText} value={displayTask.title} />
+                    <DetailFieldRow
+                      label="Status"
+                      icon={BadgeCheck}
+                      value={displayTask.status?.replace(/_/g, ' ') ?? '-'}
+                    />
+                    <DetailFieldRow label="Priority" icon={ListOrdered} value={displayTask.priority ?? '-'} />
+                    <DetailFieldRow
+                      label="Type"
+                      icon={Layers}
+                      value={displayTask.taskType?.replace(/_/g, ' ') ?? '-'}
+                    />
+                    <DetailFieldRow
+                      label="Deadline"
+                      icon={CalendarClock}
+                      value={formatDeadline(displayTask.deadline)}
+                    />
+                    <DetailFieldRow
+                      label="Progress"
+                      icon={Percent}
+                      value={`${displayTask.progress ?? 0}%`}
+                    />
+                    <DetailFieldRow
+                      label="Completion date"
+                      icon={CalendarCheck2}
+                      value={formatCompletionDate(displayTask.completionDate)}
+                    />
+                    <DetailFieldRow
+                      label="Repetition"
+                      icon={Repeat}
+                      value={displayTask.repetitionType?.replace(/_/g, ' ') ?? '-'}
+                    />
+                    <DetailFieldRow
+                      label="Target category"
+                      icon={FolderOpen}
+                      value={displayTask.targetCategory || '-'}
+                    />
                     {(displayTask.jobStatus ?? displayTask.jobStartTime ?? displayTask.jobEndTime != null) && (
                       <>
-                        {fieldCell('Job status', displayTask.jobStatus ?? '-')}
-                        {fieldCell('Job start', displayTask.jobStartTime ? format(new Date(displayTask.jobStartTime), 'PPp') : '-')}
-                        {fieldCell('Job end', displayTask.jobEndTime ? format(new Date(displayTask.jobEndTime), 'PPp') : '-')}
-                        {fieldCell('Job duration', displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-')}
+                        <DetailFieldRow label="Job status" icon={Cpu} value={displayTask.jobStatus ?? '-'} />
+                        <DetailFieldRow
+                          label="Job start"
+                          icon={LogIn}
+                          value={
+                            displayTask.jobStartTime
+                              ? format(new Date(displayTask.jobStartTime), 'PPp')
+                              : '-'
+                          }
+                        />
+                        <DetailFieldRow
+                          label="Job end"
+                          icon={LogOut}
+                          value={
+                            displayTask.jobEndTime
+                              ? format(new Date(displayTask.jobEndTime), 'PPp')
+                              : '-'
+                          }
+                        />
+                        <DetailFieldRow
+                          label="Job duration"
+                          icon={Timer}
+                          value={
+                            displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-'
+                          }
+                        />
                       </>
                     )}
                   </dl>
@@ -861,35 +928,35 @@ export function TaskDetailDialog({
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Description</h4>
+                  <DetailSectionHeading title="Description" icon={AlignLeft} />
                   <p className="text-muted-foreground">{displayTask.description || '-'}</p>
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Assignees</h4>
-                  <dl className={fieldGridClass}>
-                    {fieldCell('Assignees', formatAssignees(displayTask))}
+                  <DetailSectionHeading title="Assignees" icon={Users} />
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow label="Assignees" icon={Users} value={formatAssignees(displayTask)} />
                   </dl>
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Clients</h4>
-                  <dl className={fieldGridClass}>
-                    {fieldCell('Clients', formatClients(displayTask))}
+                  <DetailSectionHeading title="Clients" icon={Building2} />
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow label="Clients" icon={Building2} value={formatClients(displayTask)} />
                   </dl>
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Creator</h4>
-                  <dl className={fieldGridClass}>
-                    {fieldCell('Creator', creatorName)}
+                  <DetailSectionHeading title="Creator" icon={User} />
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow label="Creator" icon={User} value={creatorName} />
                   </dl>
                 </div>
                 {displayTask.comment && (
                   <>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold mb-2">Comment</h4>
+                      <DetailSectionHeading title="Comment" icon={MessageSquare} />
                       <p className="text-muted-foreground whitespace-pre-wrap">{displayTask.comment}</p>
                     </div>
                   </>
@@ -898,7 +965,7 @@ export function TaskDetailDialog({
                   <>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold mb-2">Subtasks</h4>
+                      <DetailSectionHeading title="Subtasks" icon={ListTodo} />
                       <ul className="list-none space-y-1.5">
                         {(displayTask.subtasks ?? [])
                           .filter((s) => !s.isDeleted)
@@ -954,7 +1021,7 @@ export function TaskDetailDialog({
                   <>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold mb-2">Attachments</h4>
+                      <DetailSectionHeading title="Attachments" icon={Paperclip} />
                       <p className="text-muted-foreground">{displayTask.attachments!.join(', ')}</p>
                     </div>
                   </>
@@ -967,6 +1034,7 @@ export function TaskDetailDialog({
           <DialogFooter className="gap-3">
             <Button
               variant="cancel"
+              className="rounded-full"
               onClick={handleCancelEdit}
               disabled={updateMutation.isPending}
             >
@@ -974,6 +1042,7 @@ export function TaskDetailDialog({
             </Button>
             <Button
               variant="success"
+              className="rounded-full"
               onClick={handleSaveEdit}
               disabled={updateMutation.isPending}
             >

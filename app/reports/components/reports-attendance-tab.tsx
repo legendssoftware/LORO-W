@@ -15,8 +15,6 @@ import {
   LabelList,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
@@ -58,7 +56,6 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
@@ -77,15 +74,10 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { CalendarIcon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { AttendanceHoursSummaryDialog } from '@/app/reports/components/attendance-hours-summary-dialog';
+import { ReportDonutChart } from '@/components/charts/report-donut-chart';
+import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
-/** Fixed HSL palette for attendance charts (per product spec). */
-export const ATT_CHART_HSL = {
-  c1: 'hsl(0 72.2% 50.6%)',
-  c2: 'hsl(20.5 90.2% 48.2%)',
-  c3: 'hsl(142.1 76.2% 36.3%)',
-  c4: 'hsl(200.4 98% 39.4%)',
-  c5: 'hsl(346.8 77.2% 49.8%)',
-} as const;
+export { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
 /** Matches server `ClockInOptionKey` plus legacy free-text; used only for grouping. */
 type ClockInBucketId = ClockInOptionKey | 'other';
@@ -252,7 +244,6 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedUserUid, setSelectedUserUid] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   const dateFrom = format(startDate, 'yyyy-MM-dd');
@@ -311,9 +302,9 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
       branchUid: selectedBranchId,
       role: selectedRole,
       userUid: selectedUserUid,
-      search: searchQuery,
+      search: '',
     }),
-    [selectedBranchId, selectedRole, selectedUserUid, searchQuery]
+    [selectedBranchId, selectedRole, selectedUserUid]
   );
 
   const checkIns = useMemo(
@@ -325,13 +316,9 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
     const rows = reportDetailQuery.data?.report.userMetrics ?? [];
     return filterUserMetricsForSummary(rows, {
       userUid: selectedUserUid,
-      search: searchQuery,
+      search: '',
     });
-  }, [
-    reportDetailQuery.data?.report.userMetrics,
-    selectedUserUid,
-    searchQuery,
-  ]);
+  }, [reportDetailQuery.data?.report.userMetrics, selectedUserUid]);
 
   const pieConfig = {
     late: { label: 'Late', color: ATT_CHART_HSL.c1 },
@@ -383,10 +370,25 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
       else onTime += 1;
     }
     return [
-      { name: 'onTime' as const, value: onTime, fill: 'var(--color-onTime)' },
-      { name: 'late' as const, value: late, fill: 'var(--color-late)' },
+      {
+        id: 'onTime',
+        label: 'On time',
+        value: onTime,
+        fill: 'var(--color-onTime)',
+      },
+      {
+        id: 'late',
+        label: 'Late',
+        value: late,
+        fill: 'var(--color-late)',
+      },
     ];
   }, [checkIns]);
+
+  const pieCheckInTotal = useMemo(
+    () => pieData.reduce((s, x) => s + x.value, 0),
+    [pieData]
+  );
 
   const lineData = useMemo(() => {
     const byDay = new Map<string, { total: number; onTime: number }>();
@@ -575,27 +577,6 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
         </div>
 
         <div className="flex flex-nowrap items-center gap-2 min-w-0">
-          <div className="relative w-56 min-w-0 shrink sm:w-64">
-            <Input
-              placeholder="Search by name or email"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn(
-                'w-full bg-white border-gray-200 text-foreground h-9',
-                searchQuery && 'pr-8'
-              )}
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 text-red-600"
-                aria-label="Clear search"
-              >
-                <XIcon className="size-4" />
-              </button>
-            ) : null}
-          </div>
           <Button
             type="button"
             variant="outline"
@@ -767,33 +748,13 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
                       No check-ins in this period.
                     </p>
                   ) : (
-                    <ChartContainer
+                    <ReportDonutChart
                       config={pieConfig}
-                      className="mx-auto aspect-square max-h-[280px] w-full"
-                    >
-                      <PieChart>
-                        <ChartTooltip
-                          content={<ChartTooltipContent hideLabel />}
-                        />
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={60}
-                          strokeWidth={2}
-                          paddingAngle={2}
-                          cornerRadius={6}
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <ChartLegend
-                          content={<ChartLegendContent nameKey="name" />}
-                          verticalAlign="bottom"
-                        />
-                      </PieChart>
-                    </ChartContainer>
+                      data={pieData}
+                      centerPrimary={pieCheckInTotal.toLocaleString()}
+                      centerSecondary="Check-ins in range"
+                      className="max-h-[224px]"
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -865,13 +826,19 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
                           stroke="var(--color-onTimePct)"
                           strokeWidth={2}
                           dot={(props) => {
-                            const { cx, cy, payload } = props;
+                            const { cx, cy, payload, index } = props;
                             const pct = payload?.onTimePct ?? 0;
                             const fill =
                               pct === 100 ? ATT_CHART_HSL.c3 : ATT_CHART_HSL.c1;
-                            if (cx == null || cy == null) return <g />;
+                            const dotKey =
+                              payload?.date != null
+                                ? String(payload.date)
+                                : `on-time-${index ?? 0}`;
+                            if (cx == null || cy == null)
+                              return <g key={dotKey} />;
                             return (
                               <circle
+                                key={dotKey}
                                 cx={cx}
                                 cy={cy}
                                 r={4}
@@ -933,13 +900,13 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
                   <>
                     <ChartContainer
                       config={barConfig}
-                      className="h-[300px] w-full"
+                      className="h-[260px] w-full"
                     >
                       <BarChart
                         data={barData}
-                        margin={{ left: 12, right: 12, top: 28, bottom: 12 }}
-                        barCategoryGap="20%"
-                        barGap={4}
+                        margin={{ left: 8, right: 8, top: 20, bottom: 8 }}
+                        barCategoryGap="12%"
+                        barGap={2}
                       >
                         <CartesianGrid
                           strokeDasharray="3 3"
@@ -974,7 +941,7 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
                         </Bar>
                       </BarChart>
                     </ChartContainer>
-                    <div className="flex flex-wrap justify-center gap-4 pt-2">
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 pt-1.5 text-[11px] leading-tight">
                       {barData.map((d) => (
                         <span
                           key={d.location}

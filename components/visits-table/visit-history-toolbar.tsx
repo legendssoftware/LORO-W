@@ -52,8 +52,35 @@ export interface VisitHistoryToolbarProps {
   onOpenVisitsSummary: () => void;
   /** When false, hides the visits summary (grid) button — e.g. if parent has no modal. */
   showVisitsSummaryButton?: boolean;
+  /** When false, hides the table/map toggle (e.g. Reports Visualiser is map-only). Default true. */
+  showMapTableToggle?: boolean;
   /** Default: visible "Visit history" heading. Pass null to omit. */
   sectionHeading?: ReactNode | null;
+}
+
+function VisitMapTableToggleButton() {
+  const viewMode = useVisitsStore((s) => s.viewMode);
+  const setViewMode = useVisitsStore((s) => s.setViewMode);
+  return (
+    <Button
+      variant={viewMode === 'map' ? 'default' : 'outline'}
+      size="sm"
+      className="h-9 bg-white border-gray-200 text-foreground gap-1.5 shrink-0"
+      onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
+    >
+      {viewMode === 'map' ? (
+        <>
+          <List className="size-4" />
+          View table
+        </>
+      ) : (
+        <>
+          <MapIcon className="size-4" />
+          View on map
+        </>
+      )}
+    </Button>
+  );
 }
 
 /**
@@ -68,6 +95,7 @@ export function VisitHistoryToolbar({
   visitsSummaryDisabled,
   onOpenVisitsSummary,
   showVisitsSummaryButton = true,
+  showMapTableToggle = true,
   sectionHeading,
 }: VisitHistoryToolbarProps) {
   const {
@@ -88,8 +116,6 @@ export function VisitHistoryToolbar({
     setSelectedBusinessType,
     setSelectedUserUid,
     setSearchQuery,
-    viewMode,
-    setViewMode,
   } = useVisitsStore();
 
   const heading =
@@ -283,24 +309,7 @@ export function VisitHistoryToolbar({
               </button>
             ) : null}
           </div>
-          <Button
-            variant={viewMode === 'map' ? 'default' : 'outline'}
-            size="sm"
-            className="h-9 bg-white border-gray-200 text-foreground gap-1.5 shrink-0"
-            onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
-          >
-            {viewMode === 'map' ? (
-              <>
-                <List className="size-4" />
-                View table
-              </>
-            ) : (
-              <>
-                <MapIcon className="size-4" />
-                View on map
-              </>
-            )}
-          </Button>
+          {showMapTableToggle ? <VisitMapTableToggleButton /> : null}
           {showVisitsSummaryButton ? (
             <Tooltip>
               <TooltipTrigger asChild>
