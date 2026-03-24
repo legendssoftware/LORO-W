@@ -103,13 +103,13 @@ export interface LeadImportResponse {
 export const LEAD_IMPORT_SAMPLE_FILENAME = 'loro-leads-import-sample.csv';
 
 /**
- * Sample CSV aligned with server csv-parser (companyName + name|email|phone;
- * Source/Stage use LeadSource / LeadLifecycleStage enum strings when set).
+ * Sample CSV aligned with server csv-parser: at least one of name, email, or phone per row;
+ * companyName optional. Source/Stage values work best as LeadSource / LeadLifecycleStage enums.
  */
 export const LEAD_IMPORT_SAMPLE_CSV =
   'Created,Name,Email,Source,Form,Channel,Stage,Owner,Labels,Phone,Secondary phone number,WhatsApp number,companyName\n' +
   '2024-01-15T10:00:00.000Z,Jane Smith,jane@example.com,REFERRAL,Contact form,email,LEAD,,"VIP, Hot",+27123456789,+27119876543,+27830000001,"Acme Demo (Pty) Ltd"\n' +
-  ',,,,,,,,+27821234567,,,Minimal Co.\n';
+  ',Bob Minimal,bob@example.com,,,,,,,27821234567,,,\n';
 
 /** Payload for POST /leads (create lead). branch is required; others optional. Aligned with APK and CreateLeadDto. */
 export interface CreateLeadPayload {
