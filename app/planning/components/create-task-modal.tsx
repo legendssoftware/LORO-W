@@ -3,13 +3,17 @@
 import { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DetailDialogCloseButton,
+  DetailSectionHeading,
+  DETAIL_DIALOG_CONTENT_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -35,7 +39,14 @@ import {
   TASK_TYPE_OPTIONS,
   REPETITION_TYPE_OPTIONS,
 } from '@/lib/task-form-utils';
-import { Plus } from 'lucide-react';
+import {
+  Plus,
+  ClipboardList,
+  CalendarClock,
+  Users,
+  FolderOpen,
+  ListTodo,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CalendarIcon, Loader2Icon, XIcon, StoreIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
@@ -211,19 +222,11 @@ export function CreateTaskModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+        className={DETAIL_DIALOG_CONTENT_CLASS}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute top-4 right-4 z-10">
-          <DialogClose asChild>
-            <button
-              type="button"
-              className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="Close"
-            >
-              <XIcon className="size-5" />
-            </button>
-          </DialogClose>
+          <DetailDialogCloseButton />
         </div>
         <DialogHeader className="pr-24">
           <DialogTitle>Create task</DialogTitle>
@@ -234,7 +237,7 @@ export function CreateTaskModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <h4 className="font-semibold mb-2">Basic info</h4>
+            <DetailSectionHeading title="Basic info" icon={ClipboardList} />
             <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="create-task-title">Title *</Label>
@@ -264,7 +267,7 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <h4 className="font-semibold mb-2">Schedule</h4>
+            <DetailSectionHeading title="Schedule" icon={CalendarClock} />
             <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Task type</Label>
@@ -434,7 +437,7 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <h4 className="font-semibold mb-2">People & clients</h4>
+            <DetailSectionHeading title="People & clients" icon={Users} />
             <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Assignees</Label>
@@ -523,7 +526,7 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <h4 className="font-semibold mb-2">Other</h4>
+            <DetailSectionHeading title="Other" icon={FolderOpen} />
             <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="create-task-target">Target category</Label>
@@ -562,7 +565,7 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <h4 className="font-semibold mb-2">Subtasks</h4>
+            <DetailSectionHeading title="Subtasks" icon={ListTodo} />
             <div className="flex items-center justify-end mb-2">
               <Button
                 type="button"
@@ -612,10 +615,11 @@ export function CreateTaskModal({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-3">
             <Button
               type="button"
               variant="cancel"
+              className="rounded-full"
               onClick={() => onOpenChange(false)}
               disabled={createMutation.isPending}
             >
@@ -625,7 +629,7 @@ export function CreateTaskModal({
               type="submit"
               variant="success"
               disabled={createMutation.isPending}
-              className="gap-2"
+              className="gap-2 rounded-full"
             >
               {createMutation.isPending ? (
                 <Loader2Icon className="size-4 animate-spin shrink-0" />

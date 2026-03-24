@@ -23,8 +23,13 @@ export interface InteractionCreatedBy {
   uid?: number;
   name?: string;
   surname?: string;
+  username?: string | null;
   email?: string;
   clerkUserId?: string;
+  /** Profile image URL (User.photoURL). */
+  photoURL?: string | null;
+  /** Alternate avatar URL (User.avatar). */
+  avatar?: string | null;
 }
 
 export interface InteractionListItem {
@@ -66,4 +71,12 @@ export interface CreateInteractionPayload {
 export interface CreateInteractionResponse {
   message: string;
   data: InteractionListItem | null;
+}
+
+export interface UploadInteractionAttachmentResponse {
+  message: string;
+  data: {
+    publicUrl: string;
+    fileName: string;
+  };
 }

@@ -114,8 +114,19 @@ export interface AttendanceReportUserMetric {
     };
 }
 
+/** GET /att/report — `averageTimes` from server `calculateAverageTimes` (org period). */
+export interface AttendanceReportAverageTimes {
+    startTime: string;
+    endTime: string;
+    /** Average shift length in hours (numeric). */
+    shiftDuration: number;
+    /** Average break length in hours (numeric). */
+    breakDuration: number;
+}
+
 /** GET /att/report - organization-level totals and insights. */
 export interface AttendanceReportOrganizationMetrics {
+    averageTimes?: AttendanceReportAverageTimes;
     totals?: {
         totalEmployees?: number;
         totalHours: number;

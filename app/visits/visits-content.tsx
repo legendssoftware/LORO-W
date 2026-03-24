@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
-import { format, startOfDay, endOfDay, isSameDay } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import {
   useCheckIns,
   useCheckInStatus,
@@ -33,6 +33,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DetailDialogCloseButton,
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DETAIL_DIALOG_SMALL_CONTENT_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,19 +50,21 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Map as MapIcon, List, Smartphone, Table2, MoreHorizontal, ChevronDown } from 'lucide-react';
-import { CalendarIcon, Loader2Icon, XIcon, UsersIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
+import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Smartphone, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { CalendarIcon, Loader2Icon, XIcon, UsersIcon } from '@/lib/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VisitsTable } from '@/components/visits-table/visits-table';
+import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 const VisitsMap = dynamic(
   () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
   { ssr: false }
 );
 import type { VisitExportItem } from '@/api/types/reports';
 import {
-  getRegionGroupKey,
-  visitToExportRow,
-} from '@/lib/utils/visits-export';
+  filterVisitCheckIns,
+  getSortedUniqueBusinessTypes,
+  getSortedUniqueRegions,
+} from '@/lib/utils/visit-history-filters';
 import {
   TYPE_OF_BUSINESS_OPTIONS,
   CURRENCY_OPTIONS,
@@ -71,11 +78,6 @@ import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { VisitsSummaryModal } from '@/app/reports/visits-summary-modal';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
@@ -126,8 +128,6 @@ function formatElapsed(ms: number): string {
   ].join(':');
 }
 
-const today = new Date();
-
 /** Isolated timer so only this component re-renders every second, not the whole page. */
 function VisitElapsedTimer({ visitStartTime }: { visitStartTime: string }) {
   const [elapsedTimer, setElapsedTimer] = useState('00:00:00');
@@ -157,11 +157,6 @@ export function VisitsContent() {
     selectedBusinessType,
     selectedUserUid,
     searchQuery,
-    dateRangePopoverOpen,
-    setDateRangePopoverOpen,
-    setStartDate,
-    selectEndDateAndClose,
-    resetDateRangeToDefault,
     methodModalOpen,
     setMethodModalOpen,
     endVisitOpen,
@@ -174,13 +169,7 @@ export function VisitsContent() {
     setSelectedClient,
     clientSearch,
     setClientSearch,
-    setUseAllTime,
-    setSelectedRegion,
-    setSelectedBusinessType,
-    setSelectedUserUid,
-    setSearchQuery,
     viewMode,
-    setViewMode,
   } = useVisitsStore();
 
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>({
@@ -261,13 +250,7 @@ export function VisitsContent() {
     [checkInsQuery.data, usersList, branchesQuery.data]
   );
 
-  const uniqueRegions = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of checkIns) {
-      set.add(getRegionGroupKey(c));
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [checkIns]);
+  const uniqueRegions = useMemo(() => getSortedUniqueRegions(checkIns), [checkIns]);
 
   const businessTypeLabelMap = useMemo(
     () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
@@ -279,58 +262,17 @@ export function VisitsContent() {
     return m;
   }, []);
 
-  const uniqueBusinessTypes = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of checkIns) {
-      set.add(c.businessType ?? 'Not set');
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [checkIns]);
+  const uniqueBusinessTypes = useMemo(() => getSortedUniqueBusinessTypes(checkIns), [checkIns]);
 
-  const filteredCheckIns = useMemo(() => {
-    let list = checkIns;
-    if (selectedRegion) {
-      list = list.filter((c) => getRegionGroupKey(c) === selectedRegion);
-    }
-    if (selectedBusinessType) {
-      list = list.filter((c) => {
-        const bt = c.businessType ?? 'Not set';
-        return bt === selectedBusinessType;
-      });
-    }
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) => {
-      const ownerName = c.owner
-        ? [c.owner.name, (c.owner as { surname?: string }).surname].filter(Boolean).join(' ')
-        : '';
-      const searchable = [
-        ownerName,
-        c.owner?.email,
-        c.owner?.phone,
-        c.contactFullName,
-        c.companyName,
-        c.notes,
-        c.resolution,
-        c.contactCellPhone,
-        c.contactLandline,
-        c.contactEmail,
-        c.businessType,
-        c.personSeenPosition,
-        c.quotationNumber,
-        c.followUp,
-        c.lead?.name,
-        c.client?.name,
-        c.branch?.name,
-        c.organisation?.name,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      const rowText = visitToExportRow(c).join(' ').toLowerCase();
-      return searchable.includes(q) || rowText.includes(q);
-    });
-  }, [checkIns, searchQuery, selectedRegion, selectedBusinessType]);
+  const filteredCheckIns = useMemo(
+    () =>
+      filterVisitCheckIns(checkIns, {
+        selectedRegion,
+        selectedBusinessType,
+        searchQuery,
+      }),
+    [checkIns, searchQuery, selectedRegion, selectedBusinessType]
+  );
 
   const activeVisit = useMemo(
     () => checkIns.find((c) => !c.checkOutTime) ?? null,
@@ -659,8 +601,15 @@ export function VisitsContent() {
 
       {/* Method-of-visit modal: open directly when user clicks Start visit */}
       <Dialog open={methodModalOpen} onOpenChange={(open) => !open && closeMethodModal()}>
-        <DialogContent className="sm:max-w-md" showCloseButton>
-          <DialogHeader>
+        <DialogContent
+          showCloseButton={false}
+          className={DETAIL_DIALOG_SMALL_CONTENT_CLASS}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <DetailDialogCloseButton />
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>Start visit</DialogTitle>
             <DialogDescription>Choose how you are conducting this visit.</DialogDescription>
           </DialogHeader>
@@ -677,8 +626,8 @@ export function VisitsContent() {
                     onClick={() => setSelectedMethod(opt.value)}
                     className={
                       selectedMethod === opt.value
-                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2'
-                        : 'gap-2'
+                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2 rounded-full'
+                        : 'gap-2 rounded-full'
                     }
                   >
                     <Icon className="size-4 shrink-0" />
@@ -688,11 +637,12 @@ export function VisitsContent() {
               })}
             </div>
             <DialogFooter className="gap-3">
-              <Button variant="cancel" onClick={closeMethodModal}>
+              <Button variant="cancel" className="rounded-full" onClick={closeMethodModal}>
                 Cancel
               </Button>
               <Button
                 variant="success"
+                className="rounded-full"
                 onClick={startVisit}
                 disabled={checkInMutation.isPending || !selectedMethod}
               >
@@ -708,11 +658,15 @@ export function VisitsContent() {
       <Dialog open={endVisitOpen} onOpenChange={setEndVisitOpen}>
         <DialogContent
           id="end-visit-dialog-content"
-          className="sm:max-w-2xl max-h-[90vh] overflow-y-auto z-[10000]"
+          showCloseButton={false}
+          className={cn(DETAIL_DIALOG_CONTENT_CLASS, 'z-[10000]')}
           overlayClassName="z-[10000]"
-          showCloseButton
+          onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader>
+          <div className="absolute top-4 right-4 z-10">
+            <DetailDialogCloseButton />
+          </div>
+          <DialogHeader className="pr-24">
             <DialogTitle>End visit</DialogTitle>
             <DialogDescription>Add visit details and optionally a photo.</DialogDescription>
           </DialogHeader>
@@ -1380,12 +1334,13 @@ export function VisitsContent() {
               </div>
             ) : null}
           </div>
-          <DialogFooter>
-            <Button variant="cancel" onClick={() => setEndVisitOpen(false)}>
+          <DialogFooter className="gap-3">
+            <Button variant="cancel" className="rounded-full" onClick={() => setEndVisitOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="success"
+              className="rounded-full"
               onClick={submitEndVisit}
               disabled={checkOutMutation.isPending}
             >
@@ -1398,222 +1353,15 @@ export function VisitsContent() {
 
       {/* Visit history: date range, region, business type, user, search, export */}
       <section>
-        <h2 className="text-lg font-medium text-foreground mb-4">Visit history</h2>
-        <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-0">
-              <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
-                  >
-                    <CalendarIcon className="size-4" />
-                    {useAllTime
-                      ? 'All time'
-                      : startDate.getTime() === endDate.getTime()
-                        ? format(startDate, 'MMM d, yyyy')
-                        : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
-                  <div className="p-2 flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant={useAllTime ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setUseAllTime(true)}
-                      >
-                        All time
-                      </Button>
-                      <span className="text-xs text-muted-foreground">or pick a date range below</span>
-                    </div>
-                    <div className="flex flex-row gap-6">
-                      <div>
-                        <p className="text-sm font-medium">Start date</p>
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={(d) => {
-                            if (d) {
-                              setUseAllTime(false);
-                              setStartDate(d);
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">End date</p>
-                        <Calendar
-                          mode="single"
-                          selected={endDate}
-                          onSelect={(d) => {
-                            if (d) selectEndDateAndClose(d);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              {(() => {
-                const isDefaultRange =
-                  !useAllTime && isSameDay(startDate, today) && isSameDay(endDate, today);
-                return useAllTime || !isDefaultRange ? (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      resetDateRangeToDefault();
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        resetDateRangeToDefault();
-                      }
-                    }}
-                    className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
-                    aria-label="Reset to today"
-                  >
-                    <XIcon className="size-4 text-red-600" />
-                  </span>
-                ) : null;
-              })()}
-            </div>
-            <Select
-              value={selectedRegion || 'all'}
-              onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
-                <MapPinIcon className="size-4 shrink-0" />
-                <SelectValue placeholder="All regions" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All regions</SelectItem>
-                {uniqueRegions.map((region) => (
-                  <SelectItem key={region} value={region}>
-                    <span className="flex items-center gap-2">
-                      <MapPinIcon className="size-4 shrink-0" />
-                      {region}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedBusinessType || 'all'}
-              onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
-                <BriefcaseIcon className="size-4 shrink-0" />
-                <SelectValue placeholder="All business types" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All business types</SelectItem>
-                {uniqueBusinessTypes.map((bt) => {
-                  const label = bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt;
-                  const IconComponent = businessTypeIconMap.get(bt) ?? MoreHorizontal;
-                  return (
-                    <SelectItem key={bt} value={bt}>
-                      <span className="flex items-center gap-2">
-                        <IconComponent className="size-4 shrink-0" />
-                        {label}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedUserUid || 'all'}
-              onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
-                <UsersIcon className="size-4 shrink-0" />
-                <SelectValue placeholder="All users" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All users</SelectItem>
-                {usersList.map((u) => {
-                  const fullName = [u.name, u.surname].filter(Boolean).join(' ').trim() || u.email || `User ${u.uid}`;
-                  const imgSrc = (u as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (u as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
-                  return (
-                    <SelectItem key={u.uid} value={String(u.uid)}>
-                      <span className="flex items-center gap-2">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={imgSrc} alt={fullName} />
-                          <AvatarFallback className="text-xs">
-                            {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {fullName}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-nowrap items-center gap-2">
-            <div className="relative w-56 min-w-0 shrink sm:w-64">
-              <Input
-                placeholder="Search visits…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
-                  searchQuery && 'pr-8'
-                )}
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600"
-                  aria-label="Clear search"
-                >
-                  <XIcon className="size-4 text-red-600" />
-                </button>
-              ) : null}
-            </div>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'outline'}
-              size="sm"
-              className="h-9 bg-white border-gray-200 text-foreground gap-1.5 shrink-0"
-              onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
-            >
-              {viewMode === 'map' ? (
-                <>
-                  <List className="size-4" />
-                  View table
-                </>
-              ) : (
-                <>
-                  <MapIcon className="size-4" />
-                  View on map
-                </>
-              )}
-            </Button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 w-9 p-0 bg-white border-gray-200 text-foreground shrink-0"
-                  onClick={handleOpenVisitsSummary}
-                  disabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
-                  aria-label="View visits summary"
-                >
-                  <Table2 className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View visits summary</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
+        <VisitHistoryToolbar
+          uniqueRegions={uniqueRegions}
+          uniqueBusinessTypes={uniqueBusinessTypes}
+          businessTypeLabelMap={businessTypeLabelMap}
+          businessTypeIconMap={businessTypeIconMap}
+          usersList={usersList}
+          visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
+          onOpenVisitsSummary={handleOpenVisitsSummary}
+        />
         {viewMode === 'table' ? (
           <VisitsTable
             checkIns={filteredCheckIns}
