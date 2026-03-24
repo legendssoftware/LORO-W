@@ -5,6 +5,12 @@ export interface GetMapReportParams {
   orgId?: number;
   branchId?: number;
   userId?: number;
+  /** ISO date string (inclusive) */
+  startDate?: string;
+  /** ISO date string (inclusive) */
+  endDate?: string;
+  /** Wide historical window on the server */
+  allTime?: boolean;
 }
 
 /** Backend returns the map payload directly (no wrapper). Axios response body is MapDataResponse. */
@@ -30,6 +36,9 @@ export async function getMapReport(
   if (params?.orgId != null) search.set('orgId', String(params.orgId));
   if (params?.branchId != null) search.set('branchId', String(params.branchId));
   if (params?.userId != null) search.set('userId', String(params.userId));
+  if (params?.startDate) search.set('startDate', params.startDate);
+  if (params?.endDate) search.set('endDate', params.endDate);
+  if (params?.allTime === true) search.set('allTime', 'true');
   const qs = search.toString();
   const { data } = await client.get<MapDataResponse | { data: MapDataResponse }>(
     `/reports/map${qs ? `?${qs}` : ''}`

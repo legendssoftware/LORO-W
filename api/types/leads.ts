@@ -111,6 +111,14 @@ export interface LeadImportResponse {
   failed: number;
   errors: Array<{ row: number; error: string }>;
   assignments?: Array<{ leadId: number; userId: number; userName: string }>;
+  /** Per-user assignment counts for receipt UI */
+  assignmentSummary?: Array<{
+    userId: number;
+    userName: string;
+    leadsAssigned: number;
+  }>;
+  remindersCreated?: number;
+  remindersFailed?: number;
   message?: string;
 }
 

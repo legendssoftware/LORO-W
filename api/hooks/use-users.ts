@@ -14,6 +14,7 @@ export function useUsers(options?: {
   page?: number;
   limit?: number;
   search?: string;
+  branchId?: number;
 }) {
   const client = useApiClient();
   return useQuery({
@@ -22,12 +23,14 @@ export function useUsers(options?: {
       options?.page ?? 1,
       options?.limit ?? 100,
       options?.search ?? '',
+      options?.branchId ?? null,
     ],
     queryFn: async () => {
       const res = await getUsers(client, {
         page: options?.page ?? 1,
         limit: options?.limit ?? 100,
         search: options?.search,
+        ...(options?.branchId != null ? { branchId: options.branchId } : {}),
       });
       return Array.isArray(res?.data) ? res.data : [];
     },

@@ -13,6 +13,9 @@ function getMapReportQueryKey(params: GetMapReportParams | undefined) {
     params?.orgId ?? null,
     params?.branchId ?? null,
     params?.userId ?? null,
+    params?.startDate ?? null,
+    params?.endDate ?? null,
+    params?.allTime ?? null,
   ] as const;
 }
 
@@ -35,4 +38,12 @@ export function useMapReport(
     staleTime: 1 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
+}
+
+/** Reports Visualiser: same as useMapReport (GET /reports/map with date / all-time options). */
+export function useReportsMapData(
+  params?: GetMapReportParams,
+  options?: { enabled?: boolean }
+) {
+  return useMapReport(params, options);
 }
