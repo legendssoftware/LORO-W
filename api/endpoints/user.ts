@@ -161,12 +161,13 @@ export interface GetUserPreferencesResponse {
  */
 export async function getUsers(
   client: AxiosInstance,
-  params?: { page?: number; limit?: number; search?: string }
+  params?: { page?: number; limit?: number; search?: string; branchId?: number }
 ): Promise<GetUsersResponse> {
   const search = new URLSearchParams();
   if (params?.page != null) search.set('page', String(params.page));
   if (params?.limit != null) search.set('limit', String(params.limit));
   if (params?.search) search.set('search', params.search);
+  if (params?.branchId != null) search.set('branchId', String(params.branchId));
   const qs = search.toString();
   const { data } = await client.get<GetUsersResponse>(`/user${qs ? `?${qs}` : ''}`);
   return data;

@@ -98,6 +98,12 @@ export async function createLead(
 
 export interface ImportLeadsFromCSVParams {
   assignedUserIds?: number[];
+  /**
+   * Branch UID: when assigning by branch (no assignedUserIds), round-robin among users
+   * in this branch; leads are filed under this branch. When `assignedUserIds` is set,
+   * optional filing branch for elevated roles (server enforces access).
+   */
+  targetBranchId?: number;
   followUpInterval?: string;
   followUpDuration?: number;
   /** Default lead source (e.g. WEBSITE, REFERRAL) when CSV does not provide Source. */
@@ -189,6 +195,9 @@ export async function importLeadsFromCSV(
   const search = new URLSearchParams();
   if (params.assignedUserIds?.length) {
     search.set('assignedUserIds', params.assignedUserIds.join(','));
+  }
+  if (params.targetBranchId != null) {
+    search.set('targetBranchId', String(params.targetBranchId));
   }
   if (params.followUpInterval) search.set('followUpInterval', params.followUpInterval);
   if (params.followUpDuration != null) search.set('followUpDuration', String(params.followUpDuration));

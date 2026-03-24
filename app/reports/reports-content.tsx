@@ -1,7 +1,15 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
-import { Map } from 'lucide-react';
+import {
+  CalendarDays,
+  Clock,
+  Contact,
+  LayoutDashboard,
+  Map,
+  MapPin,
+  TrendingUp,
+} from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -14,12 +22,12 @@ import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import type { SyncProfile } from '@/api/types';
 
 const REPORT_TABS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'visits', label: 'Visits' },
-  { value: 'attendance', label: 'Attendance' },
-  { value: 'leads', label: 'Leads' },
-  { value: 'planning', label: 'Planning' },
-  { value: 'sales', label: 'Sales' },
+  { value: 'overview', label: 'Overview', Icon: LayoutDashboard },
+  { value: 'visits', label: 'Visits', Icon: MapPin },
+  { value: 'attendance', label: 'Attendance', Icon: Clock },
+  { value: 'leads', label: 'Leads', Icon: Contact },
+  { value: 'planning', label: 'Planning', Icon: CalendarDays },
+  { value: 'sales', label: 'Sales', Icon: TrendingUp },
   { value: 'visualiser', label: 'Visualiser', Icon: Map },
 ] as const;
 
@@ -70,8 +78,7 @@ function ReportsTabsEqualWidth({
         className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6"
       >
         {REPORT_TABS.map((tab) => {
-          const { value, label } = tab;
-          const Icon = 'Icon' in tab ? tab.Icon : undefined;
+          const { value, label, Icon } = tab;
           return (
             <TabsTrigger
               key={value}
@@ -83,7 +90,7 @@ function ReportsTabsEqualWidth({
                   : undefined
               }
             >
-              {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
+              <Icon className="size-4 shrink-0" aria-hidden />
               {label}
             </TabsTrigger>
           );

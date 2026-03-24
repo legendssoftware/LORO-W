@@ -21,8 +21,9 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useImportLeadsMutation, useUsers } from '@/api/hooks';
+import { useImportLeadsMutation, useUsers, useBranches } from '@/api/hooks';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
+import type { LeadImportResponse } from '@/api/types/leads';
 import {
   LEAD_IMPORT_SAMPLE_CSV,
   LEAD_IMPORT_SAMPLE_FILENAME,
@@ -35,6 +36,8 @@ import {
   Tag,
   Upload,
   Users,
+  Building2,
+  CheckCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -65,36 +68,75 @@ export interface ImportLeadsModalProps {
   onSuccess?: () => void;
 }
 
+type AssignmentMode = 'users' | 'branch';
+type Step = 'form' | 'receipt';
+
+function branchLabel(b: { name?: string; alias?: string | null }) {
+  const n = (b.alias || b.name || '').trim();
+  return n || 'Branch';
+}
+
 export function ImportLeadsModal({
   open,
   onOpenChange,
   assignedUserIds,
   onSuccess,
 }: ImportLeadsModalProps) {
+  const [step, setStep] = useState<Step>('form');
+  const [lastResult, setLastResult] = useState<LeadImportResponse | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState<string>('');
+  const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>('users');
+  const [branchPoolId, setBranchPoolId] = useState<string>('');
+  const [leadFileBranchId, setLeadFileBranchId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const importMutation = useImportLeadsMutation();
-  const { data: users = [] } = useUsers({ limit: 100, enabled: open });
+  const { data: teamUsers = [] } = useUsers({
+    limit: 100,
+    enabled: open && assignmentMode === 'users',
+  });
+  const branchUsersQuery = useUsers({
+    limit: 500,
+    branchId: branchPoolId ? Number(branchPoolId) : undefined,
+    enabled: open && assignmentMode === 'branch' && !!branchPoolId,
+  });
+  const branchUsers = branchUsersQuery.data ?? [];
+  const branchPoolLoading =
+    assignmentMode === 'branch' &&
+    !!branchPoolId &&
+    (branchUsersQuery.isLoading || branchUsersQuery.isFetching);
+  const branchPoolEmpty =
+    assignmentMode === 'branch' &&
+    !!branchPoolId &&
+    branchUsersQuery.isFetched &&
+    !branchPoolLoading &&
+    branchUsers.length === 0;
+
+  const { data: branches = [] } = useBranches({ enabled: open });
 
   const filteredUsers = useMemo(() => {
     const q = assigneeSearch.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) => {
+    if (!q) return teamUsers;
+    return teamUsers.filter((u) => {
       const name = `${u.name} ${u.surname}`.toLowerCase();
       const email = (u.email || '').toLowerCase();
       return name.includes(q) || email.includes(q);
     });
-  }, [users, assigneeSearch]);
+  }, [teamUsers, assigneeSearch]);
 
   useEffect(() => {
     if (open) {
+      setStep('form');
+      setLastResult(null);
       setSelectedUserIds(
         assignedUserIds?.length ? [...assignedUserIds] : []
       );
+      setAssignmentMode('users');
+      setBranchPoolId('');
+      setLeadFileBranchId('');
     }
   }, [open, assignedUserIds]);
 
@@ -104,9 +146,14 @@ export function ImportLeadsModal({
     );
   }
 
-  let assigneesSummary = 'All active sales reps (round-robin)';
-  if (selectedUserIds.length === 1) {
-    const u = users.find((x) => x.uid === selectedUserIds[0]);
+  let assigneesSummary = 'All active sales reps in your branch (round-robin)';
+  if (assignmentMode === 'branch') {
+    const b = branches.find((x) => String(x.uid) === branchPoolId);
+    assigneesSummary = b
+      ? `Round-robin among active users at ${branchLabel(b)}—see the list below.`
+      : 'Choose a branch to load the assignment pool.';
+  } else if (selectedUserIds.length === 1) {
+    const u = teamUsers.find((x) => x.uid === selectedUserIds[0]);
     assigneesSummary =
       [u?.name, u?.surname].filter(Boolean).join(' ').trim() ||
       u?.email ||
@@ -137,14 +184,31 @@ export function ImportLeadsModal({
       toast.error('Please select a CSV file to upload.');
       return;
     }
+    if (assignmentMode === 'branch') {
+      if (branches.length === 0) {
+        toast.error('No branches are available to assign by branch.');
+        return;
+      }
+      if (!branchPoolId) {
+        toast.error('Select a branch to assign leads to its team members.');
+        return;
+      }
+    }
     const formData = new FormData();
     formData.append('file', file);
     const params: ImportLeadsFromCSVParams = {
       followUpInterval: 'WEEKLY',
       followUpDuration: 90,
     };
-    if (selectedUserIds.length > 0) {
-      params.assignedUserIds = selectedUserIds;
+    if (assignmentMode === 'branch') {
+      params.targetBranchId = Number(branchPoolId);
+    } else {
+      if (selectedUserIds.length > 0) {
+        params.assignedUserIds = selectedUserIds;
+      }
+      if (leadFileBranchId) {
+        params.targetBranchId = Number(leadFileBranchId);
+      }
     }
     if (source?.trim()) {
       params.source = source.trim();
@@ -157,14 +221,8 @@ export function ImportLeadsModal({
             `Imported ${result.imported} leads. ${result.failed > 0 ? `${result.failed} failed.` : ''}`
         );
         onSuccess?.();
-        onOpenChange(false);
-        setFile(null);
-        setSource('');
-        setSelectedUserIds([]);
-        setAssigneeSearch('');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        setLastResult(result);
+        setStep('receipt');
       } else {
         const errMsg =
           result.errors?.[0]?.error || result.message || 'Import failed.';
@@ -179,15 +237,24 @@ export function ImportLeadsModal({
     }
   };
 
+  function resetFormForNewUpload() {
+    setStep('form');
+    setLastResult(null);
+    setFile(null);
+    setSource('');
+    setSelectedUserIds([]);
+    setAssigneeSearch('');
+    setAssignmentMode('users');
+    setBranchPoolId('');
+    setLeadFileBranchId('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
   const handleOpenChange = (next: boolean) => {
     if (!next && !importMutation.isPending) {
-      setFile(null);
-      setSource('');
-      setSelectedUserIds([]);
-      setAssigneeSearch('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      resetFormForNewUpload();
     }
     onOpenChange(next);
   };
@@ -227,9 +294,9 @@ export function ImportLeadsModal({
                 Each row needs at least one of name, email, or phone.
               </li>
               <li>
-                Upload your file, optionally select team members below, then
-                import. Leads are assigned in round-robin among selected users;
-                leave none selected to use all active sales reps.
+                Choose assignment: pick specific team members, or pick a branch
+                to round-robin among everyone in that branch. In team mode you can
+                optionally file leads under another branch (when your role allows).
               </li>
               <li>
                 Follow-up tasks are created for imported leads; team members may
@@ -246,148 +313,380 @@ export function ImportLeadsModal({
             </button>
           </div>
         </DialogHeader>
-        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <Label htmlFor="import-csv-file">CSV file</Label>
-            </div>
-            <input
-              id="import-csv-file"
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
-              onChange={handleFileChange}
-            />
-            {file ? (
-              <div className="space-y-1">
-                <p className="text-foreground text-sm">Uploaded file</p>
-                <p className="text-sm">
-                  <span className="font-bold text-purple-600">{file.name}</span>{' '}
-                  <span className="text-muted-foreground">
-                    ({(file.size / 1024).toFixed(1)} KB)
-                  </span>
+        {step === 'receipt' && lastResult ? (
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
+            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50/80 p-4 dark:border-green-900 dark:bg-green-950/40">
+              <CheckCircle2 className="size-6 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+              <div className="min-w-0 space-y-1">
+                <p className="font-semibold text-foreground">Import complete</p>
+                <p className="text-muted-foreground text-sm">
+                  {lastResult.message ||
+                    `Imported ${lastResult.imported} leads${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
                 </p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="rounded-md border border-input bg-muted/30 p-3">
+                <p className="text-muted-foreground text-xs">Imported</p>
+                <p className="text-2xl font-semibold tabular-nums">{lastResult.imported}</p>
+              </div>
+              <div className="rounded-md border border-input bg-muted/30 p-3">
+                <p className="text-muted-foreground text-xs">Failed rows</p>
+                <p className="text-2xl font-semibold tabular-nums">{lastResult.failed}</p>
+              </div>
+              <div className="rounded-md border border-input bg-muted/30 p-3">
+                <p className="text-muted-foreground text-xs">Reminders created</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {lastResult.remindersCreated ?? 0}
+                  {(lastResult.remindersFailed ?? 0) > 0 ? (
+                    <span className="text-destructive text-sm font-normal">
+                      {' '}
+                      ({lastResult.remindersFailed} failed)
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+            {(lastResult.assignmentSummary?.length ?? 0) > 0 ? (
+              <div className="grid gap-2">
+                <p className="text-sm font-medium text-foreground">Leads per team member</p>
+                <div className="max-h-[min(220px,40vh)] overflow-y-auto rounded-md border border-input">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-muted/80">
+                      <tr className="border-b border-input text-left">
+                        <th className="p-2 font-medium">Name</th>
+                        <th className="p-2 font-medium text-right">Leads</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lastResult.assignmentSummary!.map((row) => (
+                        <tr key={row.userId} className="border-b border-input/60 last:border-0">
+                          <td className="p-2">{row.userName}</td>
+                          <td className="p-2 text-right tabular-nums">{row.leadsAssigned}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
+            {(lastResult.errors?.length ?? 0) > 0 ? (
+              <div className="grid gap-2">
+                <p className="text-sm font-medium text-destructive">Row errors</p>
+                <ScrollArea className="h-[min(120px,24vh)] rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                  <ul className="space-y-1 text-xs text-destructive">
+                    {lastResult.errors.slice(0, 20).map((e, i) => (
+                      <li key={`${e.row}-${i}`}>
+                        Row {e.row}: {e.error}
+                      </li>
+                    ))}
+                    {lastResult.errors.length > 20 ? (
+                      <li>…and {lastResult.errors.length - 20} more</li>
+                    ) : null}
+                  </ul>
+                </ScrollArea>
               </div>
             ) : null}
           </div>
-
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <Label>Assign to team members (optional)</Label>
-            </div>
-            <p className="text-muted-foreground text-xs">{assigneesSummary}</p>
-            <Label htmlFor="import-assignee-search" className="sr-only">
-              Search team members
-            </Label>
-            <Input
-              id="import-assignee-search"
-              type="search"
-              placeholder="Search team members…"
-              value={assigneeSearch}
-              onChange={(e) => setAssigneeSearch(e.target.value)}
-              className="h-9"
-            />
-            <ScrollArea className="h-[min(240px,40vh)] rounded-md border border-input">
-              <div className="space-y-0 p-2">
-                {users.length === 0 ? (
-                  <p className="text-muted-foreground px-2 py-3 text-sm">
-                    No users loaded.
+        ) : (
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <Label htmlFor="import-csv-file">CSV file</Label>
+              </div>
+              <input
+                id="import-csv-file"
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
+                onChange={handleFileChange}
+              />
+              {file ? (
+                <div className="space-y-1">
+                  <p className="text-foreground text-sm">Uploaded file</p>
+                  <p className="text-sm">
+                    <span className="font-bold text-purple-600">{file.name}</span>{' '}
+                    <span className="text-muted-foreground">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
                   </p>
-                ) : filteredUsers.length === 0 ? (
-                  <p className="text-muted-foreground px-2 py-3 text-sm">
-                    No matches.
+                </div>
+              ) : null}
+            </div>
+
+            <div className="grid gap-3">
+              <Label className="text-foreground">Assignment</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={assignmentMode === 'users' ? 'default' : 'outline'}
+                  className={
+                    assignmentMode === 'users'
+                      ? 'border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white [&_svg]:text-white'
+                      : ''
+                  }
+                  onClick={() => setAssignmentMode('users')}
+                >
+                  <Users className="mr-1.5 size-4" aria-hidden />
+                  Selected team members
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={assignmentMode === 'branch' ? 'default' : 'outline'}
+                  className={
+                    assignmentMode === 'branch'
+                      ? 'border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white [&_svg]:text-white'
+                      : ''
+                  }
+                  onClick={() => setAssignmentMode('branch')}
+                >
+                  <Building2 className="mr-1.5 size-4" aria-hidden />
+                  Assign by branch
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs">{assigneesSummary}</p>
+            </div>
+
+            {assignmentMode === 'branch' ? (
+              <div className="grid gap-2">
+                <Label htmlFor="import-branch-pool">Branch</Label>
+                {branches.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    No branches available for this organization.
                   </p>
                 ) : (
-                  filteredUsers.map((u) => {
-                    const fullName =
-                      [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                      u.email ||
-                      `User ${u.uid}`;
-                    const imgSrc =
-                      (u as { photoURL?: string | null; avatar?: string | null })
-                        .photoURL ??
-                      (u as { photoURL?: string | null; avatar?: string | null })
-                        .avatar ??
-                      undefined;
-                    return (
-                      <label
-                        key={u.uid}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                      >
-                        <Checkbox
-                          checked={selectedUserIds.includes(u.uid)}
-                          onCheckedChange={() => toggleAssigneeUser(u.uid)}
-                        />
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={imgSrc} alt={fullName} />
-                          <AvatarFallback className="text-xs">
-                            {fullName !== `User ${u.uid}`
-                              ? fullName.slice(0, 2).toUpperCase()
-                              : String(u.uid).slice(-2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{fullName}</span>
-                      </label>
-                    );
-                  })
+                  <>
+                    <Select
+                      value={branchPoolId || undefined}
+                      onValueChange={setBranchPoolId}
+                    >
+                      <SelectTrigger id="import-branch-pool" className="w-full">
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b) => (
+                          <SelectItem key={b.uid} value={String(b.uid)}>
+                            {branchLabel(b)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-muted-foreground text-xs">
+                      Leads are filed under this branch. Imports rotate in round-robin
+                      across the active users shown below.
+                    </span>
+                    {branchPoolLoading ? (
+                      <p className="text-muted-foreground flex items-center gap-2 text-xs">
+                        <Loader2Icon className="size-3.5 shrink-0 animate-spin" aria-hidden />
+                        Loading team for this branch…
+                      </p>
+                    ) : branchPoolEmpty ? (
+                      <p className="text-destructive text-xs">
+                        No active users in this branch—choose another branch or use team
+                        member selection.
+                      </p>
+                    ) : branchUsers.length > 0 ? (
+                      <div className="rounded-md border border-dashed border-input bg-muted/20 px-2 py-1.5">
+                        <p className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wide">
+                          Assignment pool
+                        </p>
+                        <p className="text-muted-foreground text-[11px] leading-relaxed">
+                          {branchUsers
+                            .map((u) =>
+                              [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                              u.email ||
+                              `User ${u.uid}`
+                            )
+                            .join(' · ')}
+                        </p>
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
-            </ScrollArea>
-            <span className="text-muted-foreground text-xs">
-              Round-robin among selected users; empty = all reps.
-            </span>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <Label htmlFor="import-source">Default source (optional)</Label>
-            </div>
-            <Select value={source || undefined} onValueChange={setSource}>
-              <SelectTrigger id="import-source" className="w-full">
-                <SelectValue placeholder="Use CSV Source or leave blank" />
-              </SelectTrigger>
-              <SelectContent>
-                {LEAD_SOURCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-muted-foreground text-xs">
-              Applied to all imported leads when the CSV does not provide a
-              Source.
-            </span>
-          </div>
-        </div>
-        <DialogFooter className="shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={importMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!file || importMutation.isPending}
-            className="bg-purple-600 text-white hover:bg-purple-700 focus-visible:ring-purple-600/50"
-          >
-            {importMutation.isPending ? (
-              <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
-                Importing…
-              </>
             ) : (
-              'Import'
+              <>
+                <div className="grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <Label>Team members (optional)</Label>
+                  </div>
+                  <Label htmlFor="import-assignee-search" className="sr-only">
+                    Search team members
+                  </Label>
+                  <Input
+                    id="import-assignee-search"
+                    type="search"
+                    placeholder="Search team members…"
+                    value={assigneeSearch}
+                    onChange={(e) => setAssigneeSearch(e.target.value)}
+                    className="h-9"
+                  />
+                  <ScrollArea className="h-[min(240px,40vh)] rounded-md border border-input">
+                    <div className="space-y-0 p-2">
+                      {teamUsers.length === 0 ? (
+                        <p className="text-muted-foreground px-2 py-3 text-sm">
+                          No users loaded.
+                        </p>
+                      ) : filteredUsers.length === 0 ? (
+                        <p className="text-muted-foreground px-2 py-3 text-sm">
+                          No matches.
+                        </p>
+                      ) : (
+                        filteredUsers.map((u) => {
+                          const fullName =
+                            [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                            u.email ||
+                            `User ${u.uid}`;
+                          const imgSrc =
+                            (u as { photoURL?: string | null; avatar?: string | null })
+                              .photoURL ??
+                            (u as { photoURL?: string | null; avatar?: string | null })
+                              .avatar ??
+                            undefined;
+                          return (
+                            <label
+                              key={u.uid}
+                              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                            >
+                              <Checkbox
+                                checked={selectedUserIds.includes(u.uid)}
+                                onCheckedChange={() => toggleAssigneeUser(u.uid)}
+                              />
+                              <Avatar className="size-6 shrink-0">
+                                <AvatarImage src={imgSrc} alt={fullName} />
+                                <AvatarFallback className="text-xs">
+                                  {fullName !== `User ${u.uid}`
+                                    ? fullName.slice(0, 2).toUpperCase()
+                                    : String(u.uid).slice(-2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{fullName}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <span className="text-muted-foreground text-xs">
+                    Round-robin among selected users; leave empty for all reps in your
+                    branch.
+                  </span>
+                </div>
+
+                {branches.length > 0 ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="import-lead-branch">File leads under branch (optional)</Label>
+                    <Select
+                      value={leadFileBranchId || '__default__'}
+                      onValueChange={(v) =>
+                        setLeadFileBranchId(v === '__default__' ? '' : v)
+                      }
+                    >
+                      <SelectTrigger id="import-lead-branch" className="w-full">
+                        <SelectValue placeholder="Default (your branch)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__default__">Default (your branch)</SelectItem>
+                        {branches.map((b) => (
+                          <SelectItem key={b.uid} value={String(b.uid)}>
+                            {branchLabel(b)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-muted-foreground text-xs">
+                      When set, imported leads use this branch; your role must allow it.
+                    </span>
+                  </div>
+                ) : null}
+              </>
             )}
-          </Button>
+
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <Label htmlFor="import-source">Default source (optional)</Label>
+              </div>
+              <Select value={source || undefined} onValueChange={setSource}>
+                <SelectTrigger id="import-source" className="w-full">
+                  <SelectValue placeholder="Use CSV Source or leave blank" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_SOURCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground text-xs">
+                Applied to all imported leads when the CSV does not provide a
+                Source.
+              </span>
+            </div>
+          </div>
+        )}
+        <DialogFooter className="shrink-0">
+          {step === 'receipt' && lastResult ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  handleOpenChange(false);
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                onClick={resetFormForNewUpload}
+                className="border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
+              >
+                <Upload className="mr-2 size-4" aria-hidden />
+                Upload more
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={importMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={
+                  !file ||
+                  importMutation.isPending ||
+                  (assignmentMode === 'branch' &&
+                    (branches.length === 0 ||
+                      !branchPoolId ||
+                      branchPoolLoading ||
+                      branchPoolEmpty))
+                }
+                className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
+              >
+                {importMutation.isPending ? (
+                  <>
+                    <Loader2Icon className="mr-2 size-4 animate-spin" />
+                    Importing…
+                  </>
+                ) : (
+                  'Import'
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
