@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useImportLeadsMutation, useUsers, useBranches } from '@/api/hooks';
+import { useImportLeadsMutation, useUsers, useBranches, useApiClient } from '@/api/hooks';
+import { getUsers, type UserListItem } from '@/api/endpoints/user';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 import type { LeadImportResponse } from '@/api/types/leads';
 import {
@@ -87,31 +89,51 @@ export function ImportLeadsModal({
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState<string>('');
   const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>('users');
-  const [branchPoolId, setBranchPoolId] = useState<string>('');
+  const [branchPoolIds, setBranchPoolIds] = useState<number[]>([]);
   const [leadFileBranchId, setLeadFileBranchId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const importMutation = useImportLeadsMutation();
+  const apiClient = useApiClient();
   const { data: teamUsers = [] } = useUsers({
     limit: 100,
     enabled: open && assignmentMode === 'users',
   });
-  const branchUsersQuery = useUsers({
-    limit: 500,
-    branchId: branchPoolId ? Number(branchPoolId) : undefined,
-    enabled: open && assignmentMode === 'branch' && !!branchPoolId,
+  const branchUsersQueries = useQueries({
+    queries: branchPoolIds.map((bid) => ({
+      queryKey: ['users', 1, 500, '', bid] as const,
+      queryFn: () =>
+        getUsers(apiClient, { page: 1, limit: 500, branchId: bid }),
+      enabled: open && assignmentMode === 'branch' && branchPoolIds.length > 0,
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    })),
   });
-  const branchUsers = branchUsersQuery.data ?? [];
+  const branchUsers = useMemo(() => {
+    const map = new Map<number, UserListItem>();
+    for (const q of branchUsersQueries) {
+      const rows = q.data?.data;
+      if (!rows) continue;
+      for (const u of rows) {
+        map.set(u.uid, u);
+      }
+    }
+    return Array.from(map.values());
+  }, [branchUsersQueries]);
   const branchPoolLoading =
     assignmentMode === 'branch' &&
-    !!branchPoolId &&
-    (branchUsersQuery.isLoading || branchUsersQuery.isFetching);
+    branchPoolIds.length > 0 &&
+    branchUsersQueries.some((q) => q.isLoading || q.isFetching);
+  const branchPoolFetched =
+    branchPoolIds.length > 0 &&
+    branchUsersQueries.length > 0 &&
+    branchUsersQueries.every((q) => q.isFetched || q.isError);
   const branchPoolEmpty =
     assignmentMode === 'branch' &&
-    !!branchPoolId &&
-    branchUsersQuery.isFetched &&
+    branchPoolIds.length > 0 &&
+    branchPoolFetched &&
     !branchPoolLoading &&
     branchUsers.length === 0;
 
@@ -135,7 +157,7 @@ export function ImportLeadsModal({
         assignedUserIds?.length ? [...assignedUserIds] : []
       );
       setAssignmentMode('users');
-      setBranchPoolId('');
+      setBranchPoolIds([]);
       setLeadFileBranchId('');
     }
   }, [open, assignedUserIds]);
@@ -146,12 +168,26 @@ export function ImportLeadsModal({
     );
   }
 
+  function toggleBranchPool(uid: number) {
+    setBranchPoolIds((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  }
+
   let assigneesSummary = 'All active sales reps in your branch (round-robin)';
   if (assignmentMode === 'branch') {
-    const b = branches.find((x) => String(x.uid) === branchPoolId);
-    assigneesSummary = b
-      ? `Round-robin among active users at ${branchLabel(b)}—see the list below.`
-      : 'Choose a branch to load the assignment pool.';
+    if (branchPoolIds.length === 0) {
+      assigneesSummary =
+        'Select one or more branches to load the assignment pool (round-robin across all active users in those branches).';
+    } else if (branchPoolIds.length === 1) {
+      const b = branches.find((x) => x.uid === branchPoolIds[0]);
+      assigneesSummary = b
+        ? `Round-robin among active users at ${branchLabel(b)}—see the list below.`
+        : 'Round-robin among active users in the selected branch—see the list below.';
+    } else {
+      assigneesSummary =
+        'Round-robin among active users across the selected branches—see the list below.';
+    }
   } else if (selectedUserIds.length === 1) {
     const u = teamUsers.find((x) => x.uid === selectedUserIds[0]);
     assigneesSummary =
@@ -189,8 +225,8 @@ export function ImportLeadsModal({
         toast.error('No branches are available to assign by branch.');
         return;
       }
-      if (!branchPoolId) {
-        toast.error('Select a branch to assign leads to its team members.');
+      if (branchPoolIds.length === 0) {
+        toast.error('Select at least one branch to assign leads to its team members.');
         return;
       }
     }
@@ -201,7 +237,7 @@ export function ImportLeadsModal({
       followUpDuration: 90,
     };
     if (assignmentMode === 'branch') {
-      params.targetBranchId = Number(branchPoolId);
+      params.targetBranchIds = branchPoolIds;
     } else {
       if (selectedUserIds.length > 0) {
         params.assignedUserIds = selectedUserIds;
@@ -245,7 +281,7 @@ export function ImportLeadsModal({
     setSelectedUserIds([]);
     setAssigneeSearch('');
     setAssignmentMode('users');
-    setBranchPoolId('');
+    setBranchPoolIds([]);
     setLeadFileBranchId('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -294,8 +330,8 @@ export function ImportLeadsModal({
                 Each row needs at least one of name, email, or phone.
               </li>
               <li>
-                Choose assignment: pick specific team members, or pick a branch
-                to round-robin among everyone in that branch. In team mode you can
+                Choose assignment: pick specific team members, or pick one or more
+                branches to round-robin among everyone in those branches. In team mode you can
                 optionally file leads under another branch (when your role allows).
               </li>
               <li>
@@ -453,41 +489,47 @@ export function ImportLeadsModal({
 
             {assignmentMode === 'branch' ? (
               <div className="grid gap-2">
-                <Label htmlFor="import-branch-pool">Branch</Label>
+                <Label id="import-branch-pool-label">Branches</Label>
                 {branches.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
                     No branches available for this organization.
                   </p>
                 ) : (
                   <>
-                    <Select
-                      value={branchPoolId || undefined}
-                      onValueChange={setBranchPoolId}
+                    <ScrollArea
+                      className="h-[min(200px,32vh)] rounded-md border border-input"
+                      aria-labelledby="import-branch-pool-label"
                     >
-                      <SelectTrigger id="import-branch-pool" className="w-full">
-                        <SelectValue placeholder="Select a branch" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <div className="space-y-0 p-2">
                         {branches.map((b) => (
-                          <SelectItem key={b.uid} value={String(b.uid)}>
-                            {branchLabel(b)}
-                          </SelectItem>
+                          <label
+                            key={b.uid}
+                            htmlFor={`import-branch-pool-${b.uid}`}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                          >
+                            <Checkbox
+                              id={`import-branch-pool-${b.uid}`}
+                              checked={branchPoolIds.includes(b.uid)}
+                              onCheckedChange={() => toggleBranchPool(b.uid)}
+                            />
+                            <span className="text-sm">{branchLabel(b)}</span>
+                          </label>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    </ScrollArea>
                     <span className="text-muted-foreground text-xs">
-                      Leads are filed under this branch. Imports rotate in round-robin
-                      across the active users shown below.
+                      With multiple branches, each lead is filed under the assignee&apos;s branch.
+                      Imports rotate (load-aware) across the active users shown below.
                     </span>
                     {branchPoolLoading ? (
                       <p className="text-muted-foreground flex items-center gap-2 text-xs">
                         <Loader2Icon className="size-3.5 shrink-0 animate-spin" aria-hidden />
-                        Loading team for this branch…
+                        Loading teams for selected branches…
                       </p>
                     ) : branchPoolEmpty ? (
                       <p className="text-destructive text-xs">
-                        No active users in this branch—choose another branch or use team
-                        member selection.
+                        No active users in the selected branches—choose different branches or use
+                        team member selection.
                       </p>
                     ) : branchUsers.length > 0 ? (
                       <div className="rounded-md border border-dashed border-input bg-muted/20 px-2 py-1.5">
@@ -670,7 +712,7 @@ export function ImportLeadsModal({
                   importMutation.isPending ||
                   (assignmentMode === 'branch' &&
                     (branches.length === 0 ||
-                      !branchPoolId ||
+                      branchPoolIds.length === 0 ||
                       branchPoolLoading ||
                       branchPoolEmpty))
                 }

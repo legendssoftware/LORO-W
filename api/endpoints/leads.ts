@@ -99,8 +99,13 @@ export async function createLead(
 export interface ImportLeadsFromCSVParams {
   assignedUserIds?: number[];
   /**
-   * Branch UID: when assigning by branch (no assignedUserIds), round-robin among users
-   * in this branch; leads are filed under this branch. When `assignedUserIds` is set,
+   * Branch UIDs: when assigning by branch (no assignedUserIds), round-robin among users
+   * in any of these branches (union). Takes precedence over `targetBranchId` for the pool.
+   */
+  targetBranchIds?: number[];
+  /**
+   * Branch UID: when assigning by branch (no assignedUserIds) and `targetBranchIds` is not set,
+   * round-robin among users in this branch; leads are filed under this branch. When `assignedUserIds` is set,
    * optional filing branch for elevated roles (server enforces access).
    */
   targetBranchId?: number;
@@ -195,6 +200,9 @@ export async function importLeadsFromCSV(
   const search = new URLSearchParams();
   if (params.assignedUserIds?.length) {
     search.set('assignedUserIds', params.assignedUserIds.join(','));
+  }
+  if (params.targetBranchIds?.length) {
+    search.set('targetBranchIds', params.targetBranchIds.join(','));
   }
   if (params.targetBranchId != null) {
     search.set('targetBranchId', String(params.targetBranchId));
