@@ -1,300 +1,110 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { endOfDay, format, startOfDay } from 'date-fns';
-import { useTokenReady, useSessionSync, useCheckIns, useUsers, useBranches } from '@/api/hooks';
+import { Map } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
-import type { VisitExportItem } from '@/api/types/reports';
-import { mapCheckInsFromApi, getVisitBranchUid } from '@/lib/utils/visits-export';
-import { VisitsChartsSection, extractRegionFromVisit } from '@/app/reports/tabs/visits-charts-section';
-import { MapViewTab } from '@/app/reports/tabs/map-view-tab';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UsersIcon, MapPinIcon } from '@/lib/icons';
-import { CalendarIcon, Building2, Map, Users } from 'lucide-react';
-import { AttendanceReportTab } from '@/app/reports/tabs/attendance-report-tab';
-import type { DateRange } from 'react-day-picker';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
+import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
+import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
+import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
+import type { SyncProfile } from '@/api/types';
 
-type ReportsTab = 'visits' | 'map' | 'attendance';
+const REPORT_TABS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'visits', label: 'Visits' },
+  { value: 'attendance', label: 'Attendance' },
+  { value: 'leads', label: 'Leads' },
+  { value: 'planning', label: 'Planning' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'visualiser', label: 'Visualiser', Icon: Map },
+] as const;
 
-const today = new Date();
-const defaultReportStart = startOfDay(today);
-const defaultReportEnd = endOfDay(today);
+const tabTriggerClassName =
+  'inline-flex items-center gap-2 shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
 
-/** Visits report: visit charts with date range and User/Region/Branch filters. Admin-only. Default date range is today only. */
-function VisitsReportTab({ isTokenReady }: { isTokenReady: boolean }) {
-  const [mounted, setMounted] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(() => defaultReportStart);
-  const [endDate, setEndDate] = useState<Date>(() => defaultReportEnd);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [pickerRange, setPickerRange] = useState<DateRange | undefined>({
-    from: defaultReportStart,
-    to: defaultReportEnd,
-  });
-  const [selectedUserUid, setSelectedUserUid] = useState<string>('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
-  const [selectedBranchUid, setSelectedBranchUid] = useState<string>('');
-
-  useEffect(() => setMounted(true), []);
-
-  const dateRange = { start: startDate, end: endDate };
-
-  const checkInsQuery = useCheckIns(
-    {
-      startDate: startOfDay(dateRange.start).toISOString(),
-      endDate: endOfDay(dateRange.end).toISOString(),
-      ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
-      ...(selectedBranchUid ? { branchId: Number(selectedBranchUid) } : {}),
-    },
-    { enabled: mounted && isTokenReady }
+function ReportsPlaceholderPanel() {
+  return (
+    <p className="text-center text-muted-foreground py-12">Reports coming soon</p>
   );
+}
 
-  const now = new Date();
-  const checkInsTodayQuery = useCheckIns(
-    {
-      startDate: startOfDay(now).toISOString(),
-      endDate: endOfDay(now).toISOString(),
-      ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
-      ...(selectedBranchUid ? { branchId: Number(selectedBranchUid) } : {}),
-    },
-    { enabled: mounted && isTokenReady }
-  );
+function ReportsTabsEqualWidth({
+  profile,
+}: {
+  profile: SyncProfile | null | undefined;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
 
-  const usersQuery = useUsers({ limit: 200, enabled: mounted && isTokenReady });
-  const branchesQuery = useBranches({ enabled: mounted && isTokenReady });
+  const measureTabWidths = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const buttons = [...el.querySelectorAll('[role="tab"]')] as HTMLElement[];
+    if (buttons.length === 0) return;
+    const maxPx = Math.max(
+      ...buttons.map((b) => b.getBoundingClientRect().width)
+    );
+    if (maxPx > 0) setTabWidthPx(Math.ceil(maxPx));
+  }, []);
 
-  const usersList = usersQuery.data ?? [];
+  useLayoutEffect(() => {
+    measureTabWidths();
+  }, [measureTabWidths]);
 
-  const rawCheckIns: VisitExportItem[] = useMemo(
-    () =>
-      mapCheckInsFromApi(
-        checkInsQuery.data?.checkIns ?? [],
-        usersList,
-        branchesQuery.data ?? []
-      ),
-    [checkInsQuery.data?.checkIns, usersList, branchesQuery.data]
-  );
-
-  const rawCheckInsToday: VisitExportItem[] = useMemo(
-    () =>
-      mapCheckInsFromApi(
-        checkInsTodayQuery.data?.checkIns ?? [],
-        usersList,
-        branchesQuery.data ?? []
-      ),
-    [checkInsTodayQuery.data?.checkIns, usersList, branchesQuery.data]
-  );
-
-  const regionOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of rawCheckIns) {
-      set.add(extractRegionFromVisit(c));
-    }
-    return Array.from(set).sort();
-  }, [rawCheckIns]);
-
-  const filteredCheckIns = useMemo(() => {
-    let list = rawCheckIns;
-    if (selectedUserUid) {
-      const uid = Number(selectedUserUid);
-      list = list.filter((c) => (c.owner as { uid?: number } | undefined)?.uid === uid);
-    }
-    if (selectedRegion) {
-      list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
-    }
-    if (selectedBranchUid) {
-      const branchUid = Number(selectedBranchUid);
-      list = list.filter((c) => getVisitBranchUid(c) === branchUid);
-    }
-    return list;
-  }, [rawCheckIns, selectedUserUid, selectedRegion, selectedBranchUid]);
-
-  const checkInsTodayForHourly = useMemo(() => {
-    let list = rawCheckInsToday;
-    if (selectedUserUid) {
-      const uid = Number(selectedUserUid);
-      list = list.filter((c) => (c.owner as { uid?: number } | undefined)?.uid === uid);
-    }
-    if (selectedRegion) {
-      list = list.filter((c) => extractRegionFromVisit(c) === selectedRegion);
-    }
-    if (selectedBranchUid) {
-      const branchUid = Number(selectedBranchUid);
-      list = list.filter((c) => getVisitBranchUid(c) === branchUid);
-    }
-    return list;
-  }, [rawCheckInsToday, selectedUserUid, selectedRegion, selectedBranchUid]);
-
-  const visitsTodayCount = checkInsTodayForHourly.length;
-
-  const isLoading = checkInsQuery.isLoading || checkInsTodayQuery.isLoading;
-
-  const handleApplyDateRange = () => {
-    if (pickerRange?.from) {
-      const start = pickerRange.from;
-      const end = pickerRange.to ?? pickerRange.from;
-      const orderedStart = start < end ? start : end;
-      const orderedEnd = start < end ? end : start;
-      setStartDate(orderedStart);
-      setEndDate(orderedEnd);
-      setPopoverOpen(false);
-    }
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    setPopoverOpen(open);
-    if (!open) return;
-    setPickerRange({ from: dateRange.start, to: dateRange.end });
-  };
-
-  const users = usersQuery.data ?? [];
-  const branches = branchesQuery.data ?? [];
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => measureTabWidths());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureTabWidths]);
 
   return (
-    <div className="space-y-4">
-      <div className="shrink-0 mb-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            {!isLoading && (
-              <p className="text-sm text-muted-foreground">
-                {format(dateRange.start, 'MMM d, yyyy')} – {format(dateRange.end, 'MMM d, yyyy')}
-                {' · '}
-                Visits Today:{' '}
-                <strong>{visitsTodayCount.toLocaleString()}</strong>
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select
-              value={selectedUserUid || 'all'}
-              onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+    <Tabs defaultValue="overview" className="w-full">
+      <TabsList
+        ref={listRef}
+        className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6"
+      >
+        {REPORT_TABS.map((tab) => {
+          const { value, label } = tab;
+          const Icon = 'Icon' in tab ? tab.Icon : undefined;
+          return (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className={tabTriggerClassName}
+              style={
+                tabWidthPx != null
+                  ? { minWidth: tabWidthPx, width: tabWidthPx }
+                  : undefined
+              }
             >
-              <SelectTrigger className="w-[160px] shrink-0 bg-white border-gray-200 text-foreground gap-2">
-                <SelectValue placeholder="User" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <span className="flex items-center gap-2">
-                    <UsersIcon className="size-4 shrink-0" />
-                    All users
-                  </span>
-                </SelectItem>
-                {users.map((u) => {
-                  const fullName = [u.name, u.surname].filter(Boolean).join(' ').trim() || `User ${u.uid}`;
-                  const imgSrc = (u as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (u as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
-                  const initials = fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2);
-                  return (
-                    <SelectItem key={u.uid} value={String(u.uid)}>
-                      <span className="flex items-center gap-2">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={imgSrc} alt={fullName} />
-                          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                        </Avatar>
-                        {fullName}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedRegion || 'all'}
-              onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="w-[180px] shrink-0 bg-white border-gray-200 text-foreground gap-2">
-                <SelectValue placeholder="Region" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <span className="flex items-center gap-2">
-                    <MapPinIcon className="size-4 shrink-0" />
-                    All regions
-                  </span>
-                </SelectItem>
-                {regionOptions.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    <span className="flex items-center gap-2">
-                      <MapPinIcon className="size-4 shrink-0" />
-                      {r}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedBranchUid || 'all'}
-              onValueChange={(v) => setSelectedBranchUid(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="w-[160px] shrink-0 bg-white border-gray-200 text-foreground gap-2">
-                <SelectValue placeholder="Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <span className="flex items-center gap-2">
-                    <Building2 className="size-4 shrink-0" />
-                    All branches
-                  </span>
-                </SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.uid} value={String(b.uid)}>
-                    <span className="flex items-center gap-2">
-                      <Building2 className="size-4 shrink-0" />
-                      {b.name?.trim() || `Branch ${b.uid}`}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Popover open={popoverOpen} onOpenChange={handleOpenChange}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0">
-                  <CalendarIcon className="size-4" />
-                  Filter
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <div className="p-3 space-y-3">
-                  <Calendar
-                    mode="range"
-                    selected={pickerRange}
-                    onSelect={setPickerRange}
-                    defaultMonth={dateRange.start}
-                    numberOfMonths={2}
-                  />
-                  <div className="flex justify-end border-t pt-3">
-                    <Button size="sm" onClick={handleApplyDateRange}>
-                      Apply
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        <VisitsChartsSection
-          checkIns={filteredCheckIns}
-          checkInsTodayForHourly={checkInsTodayForHourly}
-          reportTotal={filteredCheckIns.length}
-          reportLoading={isLoading}
-          branches={branches}
-        />
-      </div>
-    </div>
+              {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
+              {label}
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+      {REPORT_TABS.map(({ value }) => (
+        <TabsContent key={value} value={value}>
+          {value === 'attendance' ? (
+            <ReportsAttendanceTab profile={profile} />
+          ) : value === 'visits' ? (
+            <ReportsVisitsTab profile={profile} />
+          ) : value === 'leads' ? (
+            <ReportsLeadsTab profile={profile} />
+          ) : value === 'visualiser' ? (
+            <ReportsVisualiserTab profile={profile} />
+          ) : (
+            <ReportsPlaceholderPanel />
+          )}
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }
 
@@ -304,7 +114,6 @@ export function ReportsContent() {
   const { backendUserData: profile } = useSessionSync();
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const isVisitsAdmin = profile?.accessLevel?.toLowerCase() === 'admin';
-  const [activeTab, setActiveTab] = useState<ReportsTab>('visits');
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -320,52 +129,7 @@ export function ReportsContent() {
               Reports are available to staff only.
             </p>
           ) : isVisitsAdmin ? (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('visits')}
-                  className={
-                    activeTab === 'visits'
-                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
-                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
-                  }
-                >
-                  <CalendarIcon className="size-4 mr-2" />
-                  Visits
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('map')}
-                  className={
-                    activeTab === 'map'
-                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
-                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
-                  }
-                >
-                  <Map className="size-4 mr-2" />
-                  Map View
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('attendance')}
-                  className={
-                    activeTab === 'attendance'
-                      ? 'rounded-md bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
-                      : 'rounded-md text-gray-500 hover:bg-transparent hover:text-foreground'
-                  }
-                >
-                  <Users className="size-4 mr-2" />
-                  Attendance
-                </Button>
-              </div>
-              {activeTab === 'visits' && <VisitsReportTab isTokenReady={isTokenReady} />}
-              {activeTab === 'map' && <MapViewTab />}
-              {activeTab === 'attendance' && <AttendanceReportTab isTokenReady={isTokenReady} />}
-            </div>
+            <ReportsTabsEqualWidth profile={profile} />
           ) : (
             <p className="text-center text-muted-foreground py-12">
               Reports are available to admin only.

@@ -28,6 +28,14 @@ import {
   LEAD_IMPORT_SAMPLE_FILENAME,
 } from '@/api/types/leads';
 import { Loader2Icon } from '@/lib/icons';
+import {
+  CircleHelp,
+  Download,
+  FileSpreadsheet,
+  Tag,
+  Upload,
+  Users,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 /** LeadSource values accepted by POST /leads/import-csv (source query param). */
@@ -203,9 +211,13 @@ export function ImportLeadsModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-3rem)] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Import leads from CSV</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-left">
+            <Upload className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+            Import leads from CSV
+          </DialogTitle>
           <div className="space-y-2 text-left">
-            <h3 className="text-foreground text-base font-semibold">
+            <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
+              <CircleHelp className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               How this works
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
@@ -227,15 +239,19 @@ export function ImportLeadsModal({
             <button
               type="button"
               onClick={handleDownloadSample}
-              className="text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+              className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
             >
+              <Download className="size-4 shrink-0" aria-hidden />
               Download sample CSV
             </button>
           </div>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
           <div className="grid gap-2">
-            <Label htmlFor="import-csv-file">CSV file</Label>
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Label htmlFor="import-csv-file">CSV file</Label>
+            </div>
             <input
               id="import-csv-file"
               ref={fileInputRef}
@@ -258,7 +274,10 @@ export function ImportLeadsModal({
           </div>
 
           <div className="grid gap-2">
-            <Label>Assign to team members (optional)</Label>
+            <div className="flex items-center gap-2">
+              <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Label>Assign to team members (optional)</Label>
+            </div>
             <p className="text-muted-foreground text-xs">{assigneesSummary}</p>
             <Label htmlFor="import-assignee-search" className="sr-only">
               Search team members
@@ -323,7 +342,10 @@ export function ImportLeadsModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="import-source">Default source (optional)</Label>
+            <div className="flex items-center gap-2">
+              <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Label htmlFor="import-source">Default source (optional)</Label>
+            </div>
             <Select value={source || undefined} onValueChange={setSource}>
               <SelectTrigger id="import-source" className="w-full">
                 <SelectValue placeholder="Use CSV Source or leave blank" />

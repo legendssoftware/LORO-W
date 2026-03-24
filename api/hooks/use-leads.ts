@@ -82,7 +82,17 @@ export function useLeadsReport(
 ) {
   const client = useApiClient();
   return useQuery({
-    queryKey: [...QUERY_KEY_PREFIX, 'report', params.from, params.to],
+    queryKey: [
+      ...QUERY_KEY_PREFIX,
+      'report',
+      params.from,
+      params.to,
+      params.branchId ?? null,
+      params.ownerId ?? null,
+      params.status ?? null,
+      params.source ?? null,
+      params.search ?? null,
+    ],
     queryFn: async () => getLeadsReport(client, params),
     enabled: (options?.enabled !== false) && !!params.from && !!params.to,
     staleTime: 5 * 60 * 1000,

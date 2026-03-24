@@ -11,6 +11,20 @@ export interface DomainReportResponse {
   meta: { from: string; to: string };
 }
 
+/** GET /leads/report — extended analytics (see server LeadsReportResponseDto). */
+export interface LeadsReportResponse extends DomainReportResponse {
+  totalEstimatedValue: number;
+  valueByStatus: { name: string; value: number }[];
+  byRegion: { name: string; value: number }[];
+  byUser: { name: string; value: number }[];
+  byBranch: { name: string; value: number }[];
+  bySource: { name: string; value: number }[];
+  /** When `from` === `to` (single day): new leads per hour 0–23 in org timezone. */
+  byHour?: { hour: number; count: number }[];
+  /** With activity vs no activity (interactions and/or edits after creation). */
+  byEngagement?: { name: string; value: number }[];
+}
+
 export interface ClaimsListResponse {
   data?: Array<{
     uid: number;

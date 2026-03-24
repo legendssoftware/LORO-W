@@ -15,6 +15,13 @@ export interface LeadListItem {
   leadScore?: number;
   temperature?: string;
   priority?: string;
+  /** Matches server `Lead.lifecycleStage` */
+  lifecycleStage?: string;
+  form?: string;
+  channel?: string;
+  labels?: string[];
+  secondaryPhoneNumber?: string;
+  whatsAppNumber?: string;
   estimatedValue?: number;
   nextFollowUpDate?: string;
   lastContactDate?: string;
@@ -82,11 +89,19 @@ export interface GetLeadsParams {
   priority?: string;
   source?: string;
   ownerId?: number;
+  /** Branch uid (admin/owner only; omit for all branches) */
+  branchId?: number;
 }
 
 export interface GetLeadsReportParams {
   from: string; // YYYY-MM-DD
-  to: string;   // YYYY-MM-DD
+  to: string; // YYYY-MM-DD
+  /** Branch uid (admin/owner only; omit for all branches) */
+  branchId?: number;
+  ownerId?: number;
+  status?: string;
+  source?: string;
+  search?: string;
 }
 
 /** Response from POST /leads/import-csv */

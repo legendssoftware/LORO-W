@@ -260,7 +260,8 @@ const METHOD_OF_CONTACT_LABELS: Record<string, string> = {
   whatsapp: 'Whatsapp',
 };
 
-function parseDurationToMinutes(duration: string | null | undefined): number {
+/** Parses visit duration strings like "1h 30m" to total minutes. */
+export function parseDurationToMinutes(duration: string | null | undefined): number {
   if (!duration || typeof duration !== 'string') return 0;
   const hoursMatch = duration.match(/(\d+)h/);
   const minutesMatch = duration.match(/(\d+)m/);
@@ -328,33 +329,48 @@ export function extractRegionFromVisit(c: VisitExportItem): string {
   return [cityPart, codePart, countryPart].filter(Boolean).join(', ') || 'Not set';
 }
 
+/** Drops comma-separated segments that are only postal / area codes (digits). */
+function filterPostalAddressParts(parts: string[]): string[] {
+  return parts.filter((p) => {
+    const t = p.trim();
+    if (!t) return false;
+    if (/^\d{4,8}$/.test(t)) return false;
+    return true;
+  });
+}
+
 /**
- * Region group key for filter dropdown: "City, State, Country" (no postal code).
- * Same city/area codes collapse into one option; multi-country is clear (e.g. "Benoni, Gauteng, South Africa", "Gaborone, Botswana").
+ * Region group key for filters and charts: **province/state + country** (no city when state exists; no postal codes).
+ * Collapses visits in the same province under one bucket (e.g. multiple cities in Gauteng → "Gauteng, South Africa").
  */
 export function getRegionGroupKey(c: VisitExportItem): string {
   const addr: CheckInContactAddress | null | undefined =
     c.fullAddress ?? c.checkOutFullAddress ?? c.contactAddress;
   if (!addr) return 'Not set';
 
-  const cityLabel = (addr.city ?? addr.state ?? '').trim();
-  const stateLabel = (addr.state ?? '').trim();
-  const countryLabel = (addr.country ?? '').trim();
-  if (cityLabel || stateLabel || countryLabel) {
-    const parts = [cityLabel, stateLabel, countryLabel].filter(Boolean);
-    if (parts.length > 1 && parts[0] === parts[1]) parts.splice(1, 1);
-    return parts.join(', ') || 'Not set';
+  const country = (addr.country ?? '').trim();
+  const state = (addr.state ?? '').trim();
+  const city = (addr.city ?? '').trim();
+
+  if (country || state || city) {
+    if (state && country) return `${state}, ${country}`;
+    if (state) return state;
+    if (city && country) return `${city}, ${country}`;
+    if (country) return country;
+    if (city) return city;
+    return 'Not set';
   }
 
   const formatted = (addr.formattedAddress ?? '').trim();
   if (!formatted) return 'Not set';
-  const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 2) return 'Not set';
-  const secondLast = parts[parts.length - 2];
-  const codePart = /^\d{4,5}$/.test(secondLast) ? secondLast : '';
-  const cityPart = (codePart ? parts[parts.length - 3] ?? '' : secondLast).trim();
-  const countryPart = (parts[parts.length - 1] ?? '').trim();
-  const out = [cityPart, countryPart].filter(Boolean).join(', ');
+
+  let parts = formatted.split(',').map((p) => p.trim()).filter(Boolean);
+  parts = filterPostalAddressParts(parts);
+  if (parts.length === 0) return 'Not set';
+  if (parts.length === 1) return parts[0] ?? 'Not set';
+  const region = parts[parts.length - 2] ?? '';
+  const countryPart = parts[parts.length - 1] ?? '';
+  const out = [region, countryPart].filter(Boolean).join(', ');
   return out || 'Not set';
 }
 

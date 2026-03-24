@@ -47,13 +47,19 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DetailDialogCloseButton,
+  DetailFieldRow,
+  DetailSectionHeading,
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DETAIL_FIELD_GRID_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -74,8 +80,38 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil, UserPlus, ChevronRight, Users } from 'lucide-react';
-import { CalendarIcon, ChevronDownIcon, Loader2Icon, XIcon } from '@/lib/icons';
+import {
+  Pencil,
+  UserPlus,
+  ChevronRight,
+  Users,
+  Clock,
+  LogIn,
+  LogOut,
+  Timer,
+  MapPin,
+  Image as ImageIcon,
+  Paperclip,
+  StickyNote,
+  ClipboardList,
+  User,
+  Building2,
+  Mail,
+  Phone,
+  Briefcase,
+  CalendarClock,
+  Link2,
+  Hash,
+  GitBranch,
+  Target,
+  Banknote,
+  UserCircle,
+  Smartphone,
+  MessageSquare,
+  UserCheck,
+  Landmark,
+} from 'lucide-react';
+import { CalendarIcon, ChevronDownIcon, Loader2Icon } from '@/lib/icons';
 import {
   Collapsible,
   CollapsibleContent,
@@ -231,8 +267,18 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       const imgSrc = o.photoURL ?? o.avatar ?? undefined;
       const branchName = getVisitBranchDisplayName(c);
       const roleLabel = formatRoleLabel(o.role);
+      const metaTooltip = [
+        o.phone ? `Phone: ${o.phone}` : '',
+        branchName ? `Branch: ${branchName}` : '',
+        roleLabel ? `Role: ${roleLabel}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
       return (
-        <span className="flex items-start gap-2 whitespace-normal">
+        <span
+          className="flex items-start gap-2 whitespace-normal"
+          title={metaTooltip || undefined}
+        >
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src={imgSrc} alt={fullName} />
             <AvatarFallback className="text-xs">
@@ -240,35 +286,18 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
             </AvatarFallback>
           </Avatar>
           <span className="space-y-0.5 block min-w-0">
-            <span className="block font-medium">{fullName}</span>
-            {o.email && (
+            <span className="block font-medium leading-tight">{fullName}</span>
+            {o.email ? (
               <a
                 href={`mailto:${o.email}`}
-                className={cn('block text-xs truncate', VISITS_TABLE_LINK_CLASS)}
+                className={cn('block text-xs truncate text-muted-foreground', VISITS_TABLE_LINK_CLASS)}
                 title={o.email}
                 onClick={(e) => e.stopPropagation()}
               >
                 {o.email}
               </a>
-            )}
-            <span className="block text-xs text-muted-foreground truncate">
-              {o.phone ? (
-                <>
-                  <a
-                    href={buildTelUrl(o.phone)}
-                    className={cn(VISITS_TABLE_LINK_CLASS)}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {o.phone}
-                  </a>
-                  {' · '}
-                </>
-              ) : null}
-              Branch: {branchName || '—'}
-              {roleLabel ? ` · Role: ${roleLabel}` : ''}
-            </span>
-            {!o.email && !o.phone && !branchName && !roleLabel && (
-              <span className="block text-xs text-muted-foreground">-</span>
+            ) : (
+              <span className="block text-xs text-muted-foreground">—</span>
             )}
           </span>
         </span>
@@ -788,7 +817,7 @@ function VisitDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className={DETAIL_DIALOG_CONTENT_CLASS}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -798,7 +827,7 @@ function VisitDetailDialog({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5 border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800"
+                    className="gap-1.5 rounded-full border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800"
                     onClick={(e) => {
                       e.stopPropagation();
                       setCreateLeadModalOpen(true);
@@ -810,7 +839,7 @@ function VisitDetailDialog({
                 )}
                 <Button
                   size="sm"
-                  className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                  className="gap-1.5 rounded-full bg-purple-600 text-white hover:bg-purple-700"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsEditing(true);
@@ -821,15 +850,7 @@ function VisitDetailDialog({
                 </Button>
               </>
             )}
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Close"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </DialogClose>
+            <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
             <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
@@ -839,59 +860,83 @@ function VisitDetailDialog({
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-semibold mb-2">Timing</h4>
-              <div className="space-y-1 text-muted-foreground">
-                <p>Check-in: {format(new Date(visit.checkInTime), 'MMM d, yyyy – h:mm a')}</p>
-                {visit.checkOutTime && (
-                  <p>Check-out: {format(new Date(visit.checkOutTime), 'MMM d, yyyy – h:mm a')}</p>
-                )}
-                {visit.duration && <p>Duration: {normalizeDurationDisplay(visit.duration)}</p>}
-              </div>
+              <DetailSectionHeading title="Timing" icon={Clock} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="Check-in"
+                  icon={LogIn}
+                  value={format(new Date(visit.checkInTime), 'MMM d, yyyy – h:mm a')}
+                />
+                <DetailFieldRow
+                  label="Check-out"
+                  icon={LogOut}
+                  value={
+                    visit.checkOutTime
+                      ? format(new Date(visit.checkOutTime), 'MMM d, yyyy – h:mm a')
+                      : '-'
+                  }
+                />
+                <DetailFieldRow
+                  label="Duration"
+                  icon={Timer}
+                  value={
+                    visit.duration ? normalizeDurationDisplay(visit.duration) : '-'
+                  }
+                />
+              </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Location</h4>
-              <div className="flex flex-col gap-1">
-                <span>
-                  In:{' '}
-                  {inAddr !== '#' ? (
-                    <a
-                      href={buildMapsUrl(visit.checkInLocation || inAddr)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={VISITS_TABLE_LINK_CLASS}
-                    >
-                      {inAddr}
-                    </a>
-                  ) : (
-                    inAddr
-                  )}
-                </span>
-                {(visit.checkOutLocation || outAddr !== '-') && (
-                  <span>
-                    Out:{' '}
-                    {outAddr !== '-' && outAddr !== '#' ? (
+              <DetailSectionHeading title="Location" icon={MapPin} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="In"
+                  icon={MapPin}
+                  value={
+                    inAddr !== '#' ? (
                       <a
-                        href={buildMapsUrl(visit.checkOutLocation || outAddr)}
+                        href={buildMapsUrl(visit.checkInLocation || inAddr)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={VISITS_TABLE_LINK_CLASS}
                       >
-                        {outAddr}
+                        {inAddr}
                       </a>
                     ) : (
-                      outAddr
-                    )}
-                  </span>
-                )}
-              </div>
+                      inAddr
+                    )
+                  }
+                />
+                <DetailFieldRow
+                  label="Out"
+                  icon={MapPin}
+                  value={
+                    visit.checkOutLocation || outAddr !== '-'
+                      ? outAddr !== '-' && outAddr !== '#'
+                        ? (
+                            <a
+                              href={buildMapsUrl(visit.checkOutLocation || outAddr)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={VISITS_TABLE_LINK_CLASS}
+                            >
+                              {outAddr}
+                            </a>
+                          )
+                        : (
+                            outAddr
+                          )
+                      : '-'
+                  }
+                />
+              </dl>
             </div>
             {(visit.methodOfContact === 'Physical' || !visit.methodOfContact) &&
             (visit.checkInPhoto || visit.checkOutPhoto || visit.contactImage) ? (
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Photos</h4>
+                  <DetailSectionHeading title="Photos" icon={ImageIcon} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {visit.checkInPhoto ? (
                       <div>
@@ -961,7 +1006,7 @@ function VisitDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Media</h4>
+                  <DetailSectionHeading title="Media" icon={Paperclip} />
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {visit.media.map((item, i) => {
                       const isImage = item.startsWith('http') && isImageUrl(item);
@@ -1061,7 +1106,7 @@ function VisitDetailDialog({
               </>
             ) : null}
             <div>
-              <h4 className="font-semibold mb-2">Details</h4>
+              <DetailSectionHeading title="Details" icon={ClipboardList} />
               {isEditing ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
@@ -1510,46 +1555,106 @@ function VisitDetailDialog({
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-x-4 gap-y-1 text-muted-foreground text-sm sm:grid-cols-2">
-                  <p><span className="font-medium text-foreground">Notes:</span> {visit.notes?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Resolution:</span> {visit.resolution?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Contact:</span> {visit.contactFullName?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Company:</span> {visit.companyName?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Method:</span> {visit.methodOfContact ? formatMethodOfContact(visit.methodOfContact) : '-'}</p>
-                  <p><span className="font-medium text-foreground">Building type:</span> {visit.buildingType ? String(visit.buildingType).replace(/_/g, ' ') : '-'}</p>
-                  <p><span className="font-medium text-foreground">Contact made:</span> {formatContactMade(visit.contactMade)}</p>
-                  <p><span className="font-medium text-foreground">Business type:</span> {visit.businessType ? String(visit.businessType).replace(/_/g, ' ') : '-'}</p>
-                  <p><span className="font-medium text-foreground">Person seen position:</span> {visit.personSeenPosition?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Cell:</span> {visit.contactCellPhone?.trim() ? (
-                    <a href={buildTelUrl(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactCellPhone}</a>
-                  ) : '-'}</p>
-                  <p><span className="font-medium text-foreground">Landline:</span> {visit.contactLandline?.trim() ? (
-                    <a href={buildTelUrl(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactLandline}</a>
-                  ) : '-'}</p>
-                  <p><span className="font-medium text-foreground">Contact email:</span> {visit.contactEmail?.trim() ? (
-                    <a href={`mailto:${visit.contactEmail}`} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactEmail}</a>
-                  ) : '-'}</p>
-                  <p className="sm:col-span-2"><span className="font-medium text-foreground">Contact address:</span> {formatContactAddress(visit.contactAddress)}</p>
-                  <p><span className="font-medium text-foreground">Meeting link:</span> {visit.meetingLink?.trim() ? (
-                    <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>Open link</a>
-                  ) : '-'}</p>
-                  <p><span className="font-medium text-foreground">Follow-up:</span> {visit.followUp?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Quote number:</span> {visit.quotationNumber?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Quotation status:</span> {visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}</p>
-                  <p><span className="font-medium text-foreground">Value (ex-VAT):</span> {formatSalesValue(visit.salesValue, (visit as { salesCurrency?: string }).salesCurrency)}</p>
-                  <p><span className="font-medium text-foreground">Lead:</span> {visit.lead?.name?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Client:</span> {visit.client?.name?.trim() || '-'}</p>
-                  <p><span className="font-medium text-foreground">Branch:</span> {getVisitBranchDisplayName(visit) || '-'}</p>
-                </div>
+                <dl className={DETAIL_FIELD_GRID_CLASS}>
+                  <DetailFieldRow label="Notes" icon={StickyNote} value={visit.notes?.trim() || '-'} />
+                  <DetailFieldRow label="Resolution" icon={ClipboardList} value={visit.resolution?.trim() || '-'} />
+                  <DetailFieldRow label="Contact" icon={User} value={visit.contactFullName?.trim() || '-'} />
+                  <DetailFieldRow label="Company" icon={Building2} value={visit.companyName?.trim() || '-'} />
+                  <DetailFieldRow
+                    label="Method"
+                    icon={MessageSquare}
+                    value={visit.methodOfContact ? formatMethodOfContact(visit.methodOfContact) : '-'}
+                  />
+                  <DetailFieldRow
+                    label="Building type"
+                    icon={Landmark}
+                    value={visit.buildingType ? String(visit.buildingType).replace(/_/g, ' ') : '-'}
+                  />
+                  <DetailFieldRow label="Contact made" icon={UserCheck} value={formatContactMade(visit.contactMade)} />
+                  <DetailFieldRow
+                    label="Business type"
+                    icon={Briefcase}
+                    value={visit.businessType ? String(visit.businessType).replace(/_/g, ' ') : '-'}
+                  />
+                  <DetailFieldRow
+                    label="Person seen position"
+                    icon={UserCircle}
+                    value={visit.personSeenPosition?.trim() || '-'}
+                  />
+                  <DetailFieldRow
+                    label="Cell"
+                    icon={Smartphone}
+                    value={
+                      visit.contactCellPhone?.trim() ? (
+                        <a href={buildTelUrl(visit.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactCellPhone}</a>
+                      ) : (
+                        '-'
+                      )
+                    }
+                  />
+                  <DetailFieldRow
+                    label="Landline"
+                    icon={Phone}
+                    value={
+                      visit.contactLandline?.trim() ? (
+                        <a href={buildTelUrl(visit.contactLandline)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactLandline}</a>
+                      ) : (
+                        '-'
+                      )
+                    }
+                  />
+                  <DetailFieldRow
+                    label="Contact email"
+                    icon={Mail}
+                    value={
+                      visit.contactEmail?.trim() ? (
+                        <a href={`mailto:${visit.contactEmail}`} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{visit.contactEmail}</a>
+                      ) : (
+                        '-'
+                      )
+                    }
+                  />
+                  <DetailFieldRow
+                    label="Contact address"
+                    icon={MapPin}
+                    value={formatContactAddress(visit.contactAddress)}
+                  />
+                  <DetailFieldRow
+                    label="Meeting link"
+                    icon={Link2}
+                    value={
+                      visit.meetingLink?.trim() ? (
+                        <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>Open link</a>
+                      ) : (
+                        '-'
+                      )
+                    }
+                  />
+                  <DetailFieldRow label="Follow-up" icon={CalendarClock} value={visit.followUp?.trim() || '-'} />
+                  <DetailFieldRow label="Quote number" icon={Hash} value={visit.quotationNumber?.trim() || '-'} />
+                  <DetailFieldRow
+                    label="Quotation status"
+                    icon={ClipboardList}
+                    value={visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}
+                  />
+                  <DetailFieldRow
+                    label="Value (ex-VAT)"
+                    icon={Banknote}
+                    value={formatSalesValue(visit.salesValue, (visit as { salesCurrency?: string }).salesCurrency)}
+                  />
+                  <DetailFieldRow label="Lead" icon={Target} value={visit.lead?.name?.trim() || '-'} />
+                  <DetailFieldRow label="Client" icon={Users} value={visit.client?.name?.trim() || '-'} />
+                  <DetailFieldRow label="Branch" icon={GitBranch} value={getVisitBranchDisplayName(visit) || '-'} />
+                </dl>
               )}
             </div>
           </div>
           {isEditing && (
             <DialogFooter className="gap-3">
-              <Button variant="cancel" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
+              <Button variant="cancel" className="rounded-full" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
                 Cancel
               </Button>
-              <Button variant="success" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+              <Button variant="success" className="rounded-full" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
                 {updateMutation.isPending && <Loader2Icon className="size-4 animate-spin mr-2" />}
                 Save
               </Button>

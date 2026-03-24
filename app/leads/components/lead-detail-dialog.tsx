@@ -6,13 +6,20 @@ import { format } from 'date-fns';
 import type { LeadListItem } from '@/api/types/leads';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DetailDialogCloseButton,
+  DetailFieldRow,
+  DetailSectionHeading,
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DETAIL_DIALOG_SMALL_CONTENT_CLASS,
+  DETAIL_FIELD_GRID_CLASS,
+} from '@/components/detail-dialog/detail-dialog-primitives';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -51,8 +58,42 @@ import {
   LEAD_TEMPERATURE_OPTIONS,
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
-import { Loader2Icon, XIcon } from '@/lib/icons';
-import { Pencil, MessageCircle, Send, Mail, MessageSquare, Phone } from 'lucide-react';
+import { Loader2Icon } from '@/lib/icons';
+import {
+  Activity,
+  BadgeCheck,
+  Banknote,
+  Building2,
+  CalendarCheck2,
+  CalendarClock,
+  CalendarPlus,
+  ClipboardList,
+  Hash,
+  Layers,
+  Clock,
+  Contact,
+  ListOrdered,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Paperclip,
+  Pencil,
+  Phone,
+  PhoneForwarded,
+  RefreshCw,
+  Smartphone,
+  Send,
+  Share2,
+  StickyNote,
+  Tag,
+  Target,
+  Thermometer,
+  Timer,
+  TrendingUp,
+  User,
+  UserCircle,
+  Users,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function getOptionLabel(
@@ -83,6 +124,27 @@ function formatCurrency(value: number | undefined): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatLifecycleStage(value: string | undefined): string {
+  if (!value?.trim()) return '-';
+  return value.replace(/_/g, ' ');
+}
+
+function formatLabels(labels: string[] | undefined): ReactNode {
+  if (!labels?.length) return '-';
+  return (
+    <div className="flex flex-wrap gap-1">
+      {labels.map((l, i) => (
+        <span
+          key={`${l}-${i}`}
+          className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
+        >
+          {l}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export interface LeadDetailDialogProps {
@@ -374,20 +436,12 @@ export function LeadDetailDialog({
   const ownerFullName = lead.owner
     ? [lead.owner.name, lead.owner.surname].filter(Boolean).join(' ').trim() || '-'
     : '-';
-  const fieldGridClass = 'grid grid-cols-2 gap-x-6 gap-y-3';
-  const fieldCell = (label: string, value: ReactNode) => (
-    <div>
-      <span className="text-muted-foreground">{label}</span>
-      <div className="font-medium">{value}</div>
-    </div>
-  );
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className={DETAIL_DIALOG_CONTENT_CLASS}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -457,15 +511,7 @@ export function LeadDetailDialog({
                 )}
               </Button>
             )}
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Close"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </DialogClose>
+            <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
             <DialogTitle>
@@ -561,7 +607,9 @@ export function LeadDetailDialog({
                   variant="outline"
                   className={`gap-1.5 ${engageChannel === 'whatsapp' ? 'bg-green-600 text-white hover:bg-green-700 border-green-600' : ''}`}
                   onClick={() => handleSelectEngageChannel('whatsapp')}
-                  disabled={!lead?.phone}
+                  disabled={
+                    !(lead?.whatsAppNumber?.trim() || lead?.phone?.trim())
+                  }
                 >
                   <Phone className="size-4" />
                   WhatsApp
@@ -659,65 +707,146 @@ export function LeadDetailDialog({
 
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-semibold mb-2">Contact</h4>
-              <dl className={fieldGridClass}>
-                {fieldCell('Name', lead.name?.trim() || '-')}
-                {fieldCell('Email', lead.email?.trim() || '-')}
-                {fieldCell('Phone', lead.phone?.trim() || '-')}
-                {fieldCell('Company', lead.companyName?.trim() || '-')}
+              <DetailSectionHeading title="Contact" icon={Contact} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow label="Name" value={lead.name?.trim() || '-'} icon={User} />
+                <DetailFieldRow label="Email" value={lead.email?.trim() || '-'} icon={Mail} />
+                <DetailFieldRow label="Phone" value={lead.phone?.trim() || '-'} icon={Phone} />
+                <DetailFieldRow
+                  label="Secondary phone"
+                  value={lead.secondaryPhoneNumber?.trim() || '-'}
+                  icon={PhoneForwarded}
+                />
+                <DetailFieldRow
+                  label="WhatsApp"
+                  value={lead.whatsAppNumber?.trim() || '-'}
+                  icon={Smartphone}
+                />
+                <DetailFieldRow
+                  label="Company"
+                  value={lead.companyName?.trim() || '-'}
+                  icon={Building2}
+                />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Status</h4>
-              <dl className={fieldGridClass}>
-                {fieldCell('Status', getOptionLabel(LEAD_STATUS_OPTIONS, lead.status))}
-                {fieldCell('Source', getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source))}
-                {fieldCell('Temperature', getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature))}
-                {fieldCell('Priority', getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority))}
+              <DetailSectionHeading title="Status" icon={BadgeCheck} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="Status"
+                  value={getOptionLabel(LEAD_STATUS_OPTIONS, lead.status)}
+                  icon={BadgeCheck}
+                />
+                <DetailFieldRow
+                  label="Source"
+                  value={getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source)}
+                  icon={Share2}
+                />
+                <DetailFieldRow
+                  label="Temperature"
+                  value={getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature)}
+                  icon={Thermometer}
+                />
+                <DetailFieldRow
+                  label="Priority"
+                  value={getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority)}
+                  icon={ListOrdered}
+                />
+                <DetailFieldRow
+                  label="Stage"
+                  value={formatLifecycleStage(lead.lifecycleStage)}
+                  icon={Layers}
+                />
+                <DetailFieldRow
+                  label="Form"
+                  value={lead.form?.trim() || '-'}
+                  icon={ClipboardList}
+                />
+                <DetailFieldRow
+                  label="Channel"
+                  value={lead.channel?.trim() || '-'}
+                  icon={Hash}
+                />
+                <DetailFieldRow label="Labels" value={formatLabels(lead.labels)} icon={Tag} />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Scoring & value</h4>
-              <dl className={fieldGridClass}>
-                {fieldCell('Lead score', lead.leadScore != null ? `${lead.leadScore}` : '-')}
-                {fieldCell('Estimated value', formatCurrency(lead.estimatedValue))}
+              <DetailSectionHeading title="Scoring & value" icon={TrendingUp} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="Lead score"
+                  value={lead.leadScore != null ? `${lead.leadScore}` : '-'}
+                  icon={Target}
+                />
+                <DetailFieldRow
+                  label="Estimated value"
+                  value={formatCurrency(lead.estimatedValue)}
+                  icon={Banknote}
+                />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Dates</h4>
-              <dl className={fieldGridClass}>
-                {fieldCell('Created', formatDateTime(lead.createdAt))}
-                {fieldCell('Updated', formatDateTime(lead.updatedAt))}
-                {fieldCell('Last contact', formatDate(lead.lastContactDate))}
-                {fieldCell('Next follow-up', formatDate(lead.nextFollowUpDate))}
+              <DetailSectionHeading title="Dates" icon={CalendarClock} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="Created"
+                  value={formatDateTime(lead.createdAt)}
+                  icon={CalendarPlus}
+                />
+                <DetailFieldRow
+                  label="Updated"
+                  value={formatDateTime(lead.updatedAt)}
+                  icon={RefreshCw}
+                />
+                <DetailFieldRow
+                  label="Last contact"
+                  value={formatDate(lead.lastContactDate)}
+                  icon={Clock}
+                />
+                <DetailFieldRow
+                  label="Next follow-up"
+                  value={formatDate(lead.nextFollowUpDate)}
+                  icon={CalendarCheck2}
+                />
               </dl>
             </div>
             {(lead.totalInteractions != null || lead.averageResponseTime != null) && (
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Activity</h4>
-                  <dl className={fieldGridClass}>
-                    {lead.totalInteractions != null &&
-                      fieldCell('Total interactions', lead.totalInteractions)}
-                    {lead.averageResponseTime != null &&
-                      fieldCell('Avg response time (hours)', lead.averageResponseTime)}
+                  <DetailSectionHeading title="Activity" icon={Activity} />
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    {lead.totalInteractions != null && (
+                      <DetailFieldRow
+                        label="Total interactions"
+                        value={lead.totalInteractions}
+                        icon={MessageSquare}
+                      />
+                    )}
+                    {lead.averageResponseTime != null && (
+                      <DetailFieldRow
+                        label="Avg response time (hours)"
+                        value={lead.averageResponseTime}
+                        icon={Timer}
+                      />
+                    )}
                   </dl>
                 </div>
               </>
             )}
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">People</h4>
-              <dl className={fieldGridClass}>
-                <div>
-                  <span className="text-muted-foreground">Owner</span>
-                  <div className="mt-0.5 flex items-center gap-2 font-medium">
-                    {lead.owner ? (
-                      <>
+              <DetailSectionHeading title="People" icon={Users} />
+              <dl className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailFieldRow
+                  label="Owner"
+                  icon={UserCircle}
+                  value={
+                    lead.owner ? (
+                      <div className="flex items-center gap-2">
                         <Avatar className="size-6">
                           <AvatarImage
                             src={
@@ -739,25 +868,28 @@ export function LeadDetailDialog({
                             .join(' ')
                             .trim() || lead.owner.email || '-'}
                         </span>
-                      </>
+                      </div>
                     ) : (
                       '-'
-                    )}
-                  </div>
-                </div>
+                    )
+                  }
+                />
                 {lead.assignees && lead.assignees.length > 0 ? (
-                  <div>
-                    <span className="text-muted-foreground">Assignees</span>
-                    <ul className="mt-0.5 list-inside list-disc font-medium">
-                      {lead.assignees.map((a, i) => (
-                        <li key={i}>
-                          {[a.name, a.email].filter(Boolean).join(' ') || '-'}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <DetailFieldRow
+                    label="Assignees"
+                    icon={Users}
+                    value={
+                      <ul className="list-inside list-disc font-medium">
+                        {lead.assignees.map((a, i) => (
+                          <li key={i}>
+                            {[a.name, a.email].filter(Boolean).join(' ') || '-'}
+                          </li>
+                        ))}
+                      </ul>
+                    }
+                  />
                 ) : (
-                  fieldCell('Assignees', '-')
+                  <DetailFieldRow label="Assignees" value="-" icon={Users} />
                 )}
               </dl>
             </div>
@@ -765,7 +897,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Notes</h4>
+                  <DetailSectionHeading title="Notes" icon={StickyNote} />
                   <p className="whitespace-pre-wrap text-muted-foreground">
                     {lead.notes.trim()}
                   </p>
@@ -776,7 +908,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Attachments</h4>
+                  <DetailSectionHeading title="Attachments" icon={Paperclip} />
                   <ul className="space-y-1">
                     {lead.attachments.map((url, i) => (
                       <li key={i}>
@@ -833,19 +965,11 @@ export function LeadDetailDialog({
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className={DETAIL_DIALOG_SMALL_CONTENT_CLASS}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 z-10">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Close"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </DialogClose>
+            <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
             <DialogTitle>Edit lead</DialogTitle>
@@ -993,19 +1117,11 @@ export function LeadDetailDialog({
       <Dialog open={statusChangeOpen} onOpenChange={setStatusChangeOpen}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14"
+          className={DETAIL_DIALOG_SMALL_CONTENT_CLASS}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 z-10">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Close"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </DialogClose>
+            <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
             <DialogTitle>
