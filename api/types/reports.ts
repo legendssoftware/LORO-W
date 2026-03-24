@@ -11,6 +11,18 @@ export interface DomainReportResponse {
   meta: { from: string; to: string };
 }
 
+/** GET /leads/report — extended analytics (see server LeadsReportResponseDto). */
+export interface LeadsReportResponse extends DomainReportResponse {
+  leadsTodayCount: number;
+  bySource: { name: string; value: number }[];
+  byRegion: { name: string; value: number }[];
+  byUser: { name: string; value: number }[];
+  visitsByHour: { hour: string; count: number }[];
+  convertedCount: number;
+  conversionEligibleTotal: number;
+  conversionRate: number;
+}
+
 export interface ClaimsListResponse {
   data?: Array<{
     uid: number;

@@ -3,6 +3,7 @@ import type {
   InteractionsByLeadResponse,
   CreateInteractionPayload,
   CreateInteractionResponse,
+  UploadInteractionAttachmentResponse,
 } from '@/api/types/interactions';
 
 /**
@@ -29,6 +30,22 @@ export async function createInteraction(
   const { data } = await client.post<CreateInteractionResponse>(
     '/interactions',
     payload
+  );
+  return data;
+}
+
+/**
+ * POST /interactions/upload — multipart file; returns public URL for `attachmentUrl`.
+ */
+export async function uploadInteractionAttachment(
+  client: AxiosInstance,
+  file: File
+): Promise<UploadInteractionAttachmentResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await client.post<UploadInteractionAttachmentResponse>(
+    '/interactions/upload',
+    formData
   );
   return data;
 }
