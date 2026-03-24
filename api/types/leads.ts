@@ -15,6 +15,13 @@ export interface LeadListItem {
   leadScore?: number;
   temperature?: string;
   priority?: string;
+  /** Matches server `Lead.lifecycleStage` */
+  lifecycleStage?: string;
+  form?: string;
+  channel?: string;
+  labels?: string[];
+  secondaryPhoneNumber?: string;
+  whatsAppNumber?: string;
   estimatedValue?: number;
   nextFollowUpDate?: string;
   lastContactDate?: string;

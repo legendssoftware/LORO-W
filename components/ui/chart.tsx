@@ -300,7 +300,7 @@ function ChartLegendContent({
 
           return (
             <div
-              key={payloadName ?? item.value ?? index}
+              key={`${String(payloadName ?? "item")}-${String(item.dataKey ?? "")}-${index}`}
               className={cn(
                 "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3",
                 itemClassName

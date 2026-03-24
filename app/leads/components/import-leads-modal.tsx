@@ -32,29 +32,11 @@ import {
   CircleHelp,
   Download,
   FileSpreadsheet,
-  Table2,
   Tag,
   Upload,
   Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-/** Common CSV headers → persisted API field names (see server csv-parser). */
-const CSV_TO_API_ROWS: ReadonlyArray<{ csv: string; api: string }> = [
-  { csv: 'Created', api: 'createdAt' },
-  { csv: 'Name', api: 'name' },
-  { csv: 'Email', api: 'email' },
-  { csv: 'Phone', api: 'phone' },
-  { csv: 'Secondary phone number', api: 'secondaryPhoneNumber' },
-  { csv: 'WhatsApp number', api: 'whatsAppNumber' },
-  { csv: 'companyName', api: 'companyName' },
-  { csv: 'Source', api: 'source' },
-  { csv: 'Form', api: 'form' },
-  { csv: 'Channel', api: 'channel' },
-  { csv: 'Stage', api: 'lifecycleStage' },
-  { csv: 'Owner', api: '(resolved server-side)' },
-  { csv: 'Labels', api: 'labels' },
-];
 
 /** LeadSource values accepted by POST /leads/import-csv (source query param). */
 const LEAD_SOURCE_OPTIONS = [
@@ -265,34 +247,6 @@ export function ImportLeadsModal({
           </div>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
-          <details className="rounded-md border border-input bg-muted/20 text-sm">
-            <summary className="cursor-pointer list-none px-3 py-2 font-medium text-foreground hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
-              <span className="flex items-center gap-2">
-                <Table2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                Column reference (CSV → API fields)
-              </span>
-            </summary>
-            <div className="space-y-3 border-t border-input px-3 py-3">
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                Headers in your file map to the same field names returned by GET{' '}
-                <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/leads</code>.
-                Additional optional columns (notes, enums, UTM, scoring, etc.) match{' '}
-                <code className="rounded bg-muted px-1 py-0.5 text-[11px]">POST /leads/import-csv</code>{' '}
-                API docs.
-              </p>
-              <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-xs">
-                <div className="text-muted-foreground font-medium">CSV column</div>
-                <div className="text-muted-foreground font-medium">API field</div>
-                {CSV_TO_API_ROWS.map((row) => (
-                  <div key={row.csv} className="contents">
-                    <div className="font-mono text-[11px] text-foreground">{row.csv}</div>
-                    <div className="font-mono text-[11px] text-foreground">{row.api}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </details>
-
           <div className="grid gap-2">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import type { LeadListItem } from '@/api/types/leads';
@@ -52,7 +53,41 @@ import {
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { Loader2Icon, XIcon } from '@/lib/icons';
-import { Pencil, MessageCircle, Send, Mail, MessageSquare, Phone } from 'lucide-react';
+import {
+  Activity,
+  BadgeCheck,
+  Banknote,
+  Building2,
+  CalendarCheck2,
+  CalendarClock,
+  CalendarPlus,
+  ClipboardList,
+  Hash,
+  Layers,
+  Clock,
+  Contact,
+  ListOrdered,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Paperclip,
+  Pencil,
+  Phone,
+  PhoneForwarded,
+  RefreshCw,
+  Smartphone,
+  Send,
+  Share2,
+  StickyNote,
+  Tag,
+  Target,
+  Thermometer,
+  Timer,
+  TrendingUp,
+  User,
+  UserCircle,
+  Users,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function getOptionLabel(
@@ -83,6 +118,56 @@ function formatCurrency(value: number | undefined): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatLifecycleStage(value: string | undefined): string {
+  if (!value?.trim()) return '-';
+  return value.replace(/_/g, ' ');
+}
+
+function formatLabels(labels: string[] | undefined): ReactNode {
+  if (!labels?.length) return '-';
+  return (
+    <div className="flex flex-wrap gap-1">
+      {labels.map((l, i) => (
+        <span
+          key={`${l}-${i}`}
+          className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
+        >
+          {l}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SectionHeading({ title, icon: Icon }: { title: string; icon: LucideIcon }) {
+  return (
+    <h4 className="mb-2 flex items-center gap-2 font-semibold">
+      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      {title}
+    </h4>
+  );
+}
+
+function FieldRow({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: ReactNode;
+  icon: LucideIcon;
+}) {
+  return (
+    <div>
+      <span className="text-muted-foreground flex items-center gap-1.5">
+        <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        {label}
+      </span>
+      <div className="font-medium">{value}</div>
+    </div>
+  );
 }
 
 export interface LeadDetailDialogProps {
@@ -375,12 +460,6 @@ export function LeadDetailDialog({
     ? [lead.owner.name, lead.owner.surname].filter(Boolean).join(' ').trim() || '-'
     : '-';
   const fieldGridClass = 'grid grid-cols-2 gap-x-6 gap-y-3';
-  const fieldCell = (label: string, value: ReactNode) => (
-    <div>
-      <span className="text-muted-foreground">{label}</span>
-      <div className="font-medium">{value}</div>
-    </div>
-  );
 
   return (
     <>
@@ -561,7 +640,9 @@ export function LeadDetailDialog({
                   variant="outline"
                   className={`gap-1.5 ${engageChannel === 'whatsapp' ? 'bg-green-600 text-white hover:bg-green-700 border-green-600' : ''}`}
                   onClick={() => handleSelectEngageChannel('whatsapp')}
-                  disabled={!lead?.phone}
+                  disabled={
+                    !(lead?.whatsAppNumber?.trim() || lead?.phone?.trim())
+                  }
                 >
                   <Phone className="size-4" />
                   WhatsApp
@@ -659,65 +740,146 @@ export function LeadDetailDialog({
 
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-semibold mb-2">Contact</h4>
+              <SectionHeading title="Contact" icon={Contact} />
               <dl className={fieldGridClass}>
-                {fieldCell('Name', lead.name?.trim() || '-')}
-                {fieldCell('Email', lead.email?.trim() || '-')}
-                {fieldCell('Phone', lead.phone?.trim() || '-')}
-                {fieldCell('Company', lead.companyName?.trim() || '-')}
+                <FieldRow label="Name" value={lead.name?.trim() || '-'} icon={User} />
+                <FieldRow label="Email" value={lead.email?.trim() || '-'} icon={Mail} />
+                <FieldRow label="Phone" value={lead.phone?.trim() || '-'} icon={Phone} />
+                <FieldRow
+                  label="Secondary phone"
+                  value={lead.secondaryPhoneNumber?.trim() || '-'}
+                  icon={PhoneForwarded}
+                />
+                <FieldRow
+                  label="WhatsApp"
+                  value={lead.whatsAppNumber?.trim() || '-'}
+                  icon={Smartphone}
+                />
+                <FieldRow
+                  label="Company"
+                  value={lead.companyName?.trim() || '-'}
+                  icon={Building2}
+                />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Status</h4>
+              <SectionHeading title="Status" icon={BadgeCheck} />
               <dl className={fieldGridClass}>
-                {fieldCell('Status', getOptionLabel(LEAD_STATUS_OPTIONS, lead.status))}
-                {fieldCell('Source', getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source))}
-                {fieldCell('Temperature', getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature))}
-                {fieldCell('Priority', getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority))}
+                <FieldRow
+                  label="Status"
+                  value={getOptionLabel(LEAD_STATUS_OPTIONS, lead.status)}
+                  icon={BadgeCheck}
+                />
+                <FieldRow
+                  label="Source"
+                  value={getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source)}
+                  icon={Share2}
+                />
+                <FieldRow
+                  label="Temperature"
+                  value={getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature)}
+                  icon={Thermometer}
+                />
+                <FieldRow
+                  label="Priority"
+                  value={getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority)}
+                  icon={ListOrdered}
+                />
+                <FieldRow
+                  label="Stage"
+                  value={formatLifecycleStage(lead.lifecycleStage)}
+                  icon={Layers}
+                />
+                <FieldRow
+                  label="Form"
+                  value={lead.form?.trim() || '-'}
+                  icon={ClipboardList}
+                />
+                <FieldRow
+                  label="Channel"
+                  value={lead.channel?.trim() || '-'}
+                  icon={Hash}
+                />
+                <FieldRow label="Labels" value={formatLabels(lead.labels)} icon={Tag} />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Scoring & value</h4>
+              <SectionHeading title="Scoring & value" icon={TrendingUp} />
               <dl className={fieldGridClass}>
-                {fieldCell('Lead score', lead.leadScore != null ? `${lead.leadScore}` : '-')}
-                {fieldCell('Estimated value', formatCurrency(lead.estimatedValue))}
+                <FieldRow
+                  label="Lead score"
+                  value={lead.leadScore != null ? `${lead.leadScore}` : '-'}
+                  icon={Target}
+                />
+                <FieldRow
+                  label="Estimated value"
+                  value={formatCurrency(lead.estimatedValue)}
+                  icon={Banknote}
+                />
               </dl>
             </div>
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">Dates</h4>
+              <SectionHeading title="Dates" icon={CalendarClock} />
               <dl className={fieldGridClass}>
-                {fieldCell('Created', formatDateTime(lead.createdAt))}
-                {fieldCell('Updated', formatDateTime(lead.updatedAt))}
-                {fieldCell('Last contact', formatDate(lead.lastContactDate))}
-                {fieldCell('Next follow-up', formatDate(lead.nextFollowUpDate))}
+                <FieldRow
+                  label="Created"
+                  value={formatDateTime(lead.createdAt)}
+                  icon={CalendarPlus}
+                />
+                <FieldRow
+                  label="Updated"
+                  value={formatDateTime(lead.updatedAt)}
+                  icon={RefreshCw}
+                />
+                <FieldRow
+                  label="Last contact"
+                  value={formatDate(lead.lastContactDate)}
+                  icon={Clock}
+                />
+                <FieldRow
+                  label="Next follow-up"
+                  value={formatDate(lead.nextFollowUpDate)}
+                  icon={CalendarCheck2}
+                />
               </dl>
             </div>
             {(lead.totalInteractions != null || lead.averageResponseTime != null) && (
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Activity</h4>
+                  <SectionHeading title="Activity" icon={Activity} />
                   <dl className={fieldGridClass}>
-                    {lead.totalInteractions != null &&
-                      fieldCell('Total interactions', lead.totalInteractions)}
-                    {lead.averageResponseTime != null &&
-                      fieldCell('Avg response time (hours)', lead.averageResponseTime)}
+                    {lead.totalInteractions != null && (
+                      <FieldRow
+                        label="Total interactions"
+                        value={lead.totalInteractions}
+                        icon={MessageSquare}
+                      />
+                    )}
+                    {lead.averageResponseTime != null && (
+                      <FieldRow
+                        label="Avg response time (hours)"
+                        value={lead.averageResponseTime}
+                        icon={Timer}
+                      />
+                    )}
                   </dl>
                 </div>
               </>
             )}
             <Separator />
             <div>
-              <h4 className="font-semibold mb-2">People</h4>
+              <SectionHeading title="People" icon={Users} />
               <dl className={fieldGridClass}>
-                <div>
-                  <span className="text-muted-foreground">Owner</span>
-                  <div className="mt-0.5 flex items-center gap-2 font-medium">
-                    {lead.owner ? (
-                      <>
+                <FieldRow
+                  label="Owner"
+                  icon={UserCircle}
+                  value={
+                    lead.owner ? (
+                      <div className="flex items-center gap-2">
                         <Avatar className="size-6">
                           <AvatarImage
                             src={
@@ -739,25 +901,28 @@ export function LeadDetailDialog({
                             .join(' ')
                             .trim() || lead.owner.email || '-'}
                         </span>
-                      </>
+                      </div>
                     ) : (
                       '-'
-                    )}
-                  </div>
-                </div>
+                    )
+                  }
+                />
                 {lead.assignees && lead.assignees.length > 0 ? (
-                  <div>
-                    <span className="text-muted-foreground">Assignees</span>
-                    <ul className="mt-0.5 list-inside list-disc font-medium">
-                      {lead.assignees.map((a, i) => (
-                        <li key={i}>
-                          {[a.name, a.email].filter(Boolean).join(' ') || '-'}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <FieldRow
+                    label="Assignees"
+                    icon={Users}
+                    value={
+                      <ul className="list-inside list-disc font-medium">
+                        {lead.assignees.map((a, i) => (
+                          <li key={i}>
+                            {[a.name, a.email].filter(Boolean).join(' ') || '-'}
+                          </li>
+                        ))}
+                      </ul>
+                    }
+                  />
                 ) : (
-                  fieldCell('Assignees', '-')
+                  <FieldRow label="Assignees" value="-" icon={Users} />
                 )}
               </dl>
             </div>
@@ -765,7 +930,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Notes</h4>
+                  <SectionHeading title="Notes" icon={StickyNote} />
                   <p className="whitespace-pre-wrap text-muted-foreground">
                     {lead.notes.trim()}
                   </p>
@@ -776,7 +941,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold mb-2">Attachments</h4>
+                  <SectionHeading title="Attachments" icon={Paperclip} />
                   <ul className="space-y-1">
                     {lead.attachments.map((url, i) => (
                       <li key={i}>

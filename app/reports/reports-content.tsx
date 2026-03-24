@@ -1,10 +1,13 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
+import type { SyncProfile } from '@/api/types';
 
 const REPORT_TABS = [
   { value: 'overview', label: 'Overview' },
@@ -15,9 +18,77 @@ const REPORT_TABS = [
   { value: 'sales', label: 'Sales' },
 ] as const;
 
+const tabTriggerClassName =
+  'shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
+
 function ReportsPlaceholderPanel() {
   return (
     <p className="text-center text-muted-foreground py-12">Reports coming soon</p>
+  );
+}
+
+function ReportsTabsEqualWidth({
+  profile,
+}: {
+  profile: SyncProfile | null | undefined;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
+
+  const measureTabWidths = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const buttons = [...el.querySelectorAll('[role="tab"]')] as HTMLElement[];
+    if (buttons.length === 0) return;
+    const maxPx = Math.max(
+      ...buttons.map((b) => b.getBoundingClientRect().width)
+    );
+    if (maxPx > 0) setTabWidthPx(Math.ceil(maxPx));
+  }, []);
+
+  useLayoutEffect(() => {
+    measureTabWidths();
+  }, [measureTabWidths]);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => measureTabWidths());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureTabWidths]);
+
+  return (
+    <Tabs defaultValue="overview" className="w-full">
+      <TabsList
+        ref={listRef}
+        className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6"
+      >
+        {REPORT_TABS.map(({ value, label }) => (
+          <TabsTrigger
+            key={value}
+            value={value}
+            className={tabTriggerClassName}
+            style={
+              tabWidthPx != null
+                ? { minWidth: tabWidthPx, width: tabWidthPx }
+                : undefined
+            }
+          >
+            {label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {REPORT_TABS.map(({ value }) => (
+        <TabsContent key={value} value={value}>
+          {value === 'attendance' ? (
+            <ReportsAttendanceTab profile={profile} />
+          ) : (
+            <ReportsPlaceholderPanel />
+          )}
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }
 
@@ -42,24 +113,7 @@ export function ReportsContent() {
               Reports are available to staff only.
             </p>
           ) : isVisitsAdmin ? (
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6">
-                {REPORT_TABS.map(({ value, label }) => (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    className="shrink-0 rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white"
-                  >
-                    {label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {REPORT_TABS.map(({ value }) => (
-                <TabsContent key={value} value={value}>
-                  <ReportsPlaceholderPanel />
-                </TabsContent>
-              ))}
-            </Tabs>
+            <ReportsTabsEqualWidth profile={profile} />
           ) : (
             <p className="text-center text-muted-foreground py-12">
               Reports are available to admin only.
