@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -18,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useImportLeadsMutation } from '@/api/hooks';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useImportLeadsMutation, useUsers } from '@/api/hooks';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 import {
   LEAD_IMPORT_SAMPLE_CSV,
@@ -48,7 +51,7 @@ const LEAD_SOURCE_OPTIONS = [
 export interface ImportLeadsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Optional: pre-selected user IDs to assign leads to (comma-separated or array). */
+  /** Optional: pre-selected user IDs when the dialog opens (seeds assignee checkboxes). */
   assignedUserIds?: number[];
   /** Callback when import succeeds (e.g. refresh list). */
   onSuccess?: () => void;
@@ -62,9 +65,47 @@ export function ImportLeadsModal({
 }: ImportLeadsModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const importMutation = useImportLeadsMutation();
+  const { data: users = [] } = useUsers({ limit: 100, enabled: open });
+
+  const filteredUsers = useMemo(() => {
+    const q = assigneeSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) => {
+      const name = `${u.name} ${u.surname}`.toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [users, assigneeSearch]);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedUserIds(
+        assignedUserIds?.length ? [...assignedUserIds] : []
+      );
+    }
+  }, [open, assignedUserIds]);
+
+  function toggleAssigneeUser(uid: number) {
+    setSelectedUserIds((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  }
+
+  let assigneesSummary = 'All active sales reps (round-robin)';
+  if (selectedUserIds.length === 1) {
+    const u = users.find((x) => x.uid === selectedUserIds[0]);
+    assigneesSummary =
+      [u?.name, u?.surname].filter(Boolean).join(' ').trim() ||
+      u?.email ||
+      `User ${selectedUserIds[0]}`;
+  } else if (selectedUserIds.length > 1) {
+    assigneesSummary = `${selectedUserIds.length} people selected`;
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -94,8 +135,8 @@ export function ImportLeadsModal({
       followUpInterval: 'WEEKLY',
       followUpDuration: 90,
     };
-    if (assignedUserIds?.length) {
-      params.assignedUserIds = assignedUserIds;
+    if (selectedUserIds.length > 0) {
+      params.assignedUserIds = selectedUserIds;
     }
     if (source?.trim()) {
       params.source = source.trim();
@@ -111,6 +152,8 @@ export function ImportLeadsModal({
         onOpenChange(false);
         setFile(null);
         setSource('');
+        setSelectedUserIds([]);
+        setAssigneeSearch('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -132,6 +175,8 @@ export function ImportLeadsModal({
     if (!next && !importMutation.isPending) {
       setFile(null);
       setSource('');
+      setSelectedUserIds([]);
+      setAssigneeSearch('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -156,25 +201,39 @@ export function ImportLeadsModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-3rem)] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import leads from CSV</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file (max 2MB). Optional columns: Created, Name, Email,
-            Source, Form, Channel, Stage, Owner, Labels, Phone, Secondary phone
-            number, WhatsApp number. Required: companyName and at least one of
-            name, email, or phone.
-          </DialogDescription>
-          <Button
-            type="button"
-            variant="link"
-            className="h-auto justify-start px-0 py-1 text-sm font-normal"
-            onClick={handleDownloadSample}
-          >
-            Download sample CSV
-          </Button>
+          <div className="space-y-2 text-left">
+            <h3 className="text-foreground text-base font-semibold">
+              How this works
+            </h3>
+            <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
+              <li>
+                Upload a CSV (max 2MB). Optional columns include Created, Name,
+                Email, Source, and more—see the sample file for the full list.
+                Each row needs at least one of name, email, or phone.
+              </li>
+              <li>
+                Upload your file, optionally select team members below, then
+                import. Leads are assigned in round-robin among selected users;
+                leave none selected to use all active sales reps.
+              </li>
+              <li>
+                Follow-up tasks are created for imported leads; team members may
+                receive push notifications on their devices.
+              </li>
+            </ul>
+            <button
+              type="button"
+              onClick={handleDownloadSample}
+              className="text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+            >
+              Download sample CSV
+            </button>
+          </div>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
           <div className="grid gap-2">
             <Label htmlFor="import-csv-file">CSV file</Label>
             <input
@@ -185,12 +244,84 @@ export function ImportLeadsModal({
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
               onChange={handleFileChange}
             />
-            {file && (
-              <span className="text-muted-foreground text-xs">
-                {file.name} ({(file.size / 1024).toFixed(1)} KB)
-              </span>
-            )}
+            {file ? (
+              <div className="space-y-1">
+                <p className="text-foreground text-sm">Uploaded file</p>
+                <p className="text-sm">
+                  <span className="font-bold text-purple-600">{file.name}</span>{' '}
+                  <span className="text-muted-foreground">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>
+                </p>
+              </div>
+            ) : null}
           </div>
+
+          <div className="grid gap-2">
+            <Label>Assign to team members (optional)</Label>
+            <p className="text-muted-foreground text-xs">{assigneesSummary}</p>
+            <Label htmlFor="import-assignee-search" className="sr-only">
+              Search team members
+            </Label>
+            <Input
+              id="import-assignee-search"
+              type="search"
+              placeholder="Search team members…"
+              value={assigneeSearch}
+              onChange={(e) => setAssigneeSearch(e.target.value)}
+              className="h-9"
+            />
+            <ScrollArea className="h-[min(240px,40vh)] rounded-md border border-input">
+              <div className="space-y-0 p-2">
+                {users.length === 0 ? (
+                  <p className="text-muted-foreground px-2 py-3 text-sm">
+                    No users loaded.
+                  </p>
+                ) : filteredUsers.length === 0 ? (
+                  <p className="text-muted-foreground px-2 py-3 text-sm">
+                    No matches.
+                  </p>
+                ) : (
+                  filteredUsers.map((u) => {
+                    const fullName =
+                      [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                      u.email ||
+                      `User ${u.uid}`;
+                    const imgSrc =
+                      (u as { photoURL?: string | null; avatar?: string | null })
+                        .photoURL ??
+                      (u as { photoURL?: string | null; avatar?: string | null })
+                        .avatar ??
+                      undefined;
+                    return (
+                      <label
+                        key={u.uid}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={selectedUserIds.includes(u.uid)}
+                          onCheckedChange={() => toggleAssigneeUser(u.uid)}
+                        />
+                        <Avatar className="size-6 shrink-0">
+                          <AvatarImage src={imgSrc} alt={fullName} />
+                          <AvatarFallback className="text-xs">
+                            {fullName !== `User ${u.uid}`
+                              ? fullName.slice(0, 2).toUpperCase()
+                              : String(u.uid).slice(-2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{fullName}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+            <span className="text-muted-foreground text-xs">
+              Round-robin among selected users; empty = all reps.
+            </span>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="import-source">Default source (optional)</Label>
             <Select value={source || undefined} onValueChange={setSource}>
@@ -211,7 +342,7 @@ export function ImportLeadsModal({
             </span>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -224,6 +355,7 @@ export function ImportLeadsModal({
             type="button"
             onClick={handleSubmit}
             disabled={!file || importMutation.isPending}
+            className="bg-purple-600 text-white hover:bg-purple-700 focus-visible:ring-purple-600/50"
           >
             {importMutation.isPending ? (
               <>
