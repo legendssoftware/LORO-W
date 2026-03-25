@@ -3,8 +3,9 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Users } from 'lucide-react';
 import type { LeadListItem } from '@/api/types/leads';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -126,8 +127,9 @@ function ownerDisplay(lead: LeadListItem): ReactNode {
 
 export interface GroupedByOwner {
   ownerKey: string;
-  owner: LeadListItem['owner'];
+  owner?: LeadListItem['owner'] | null;
   leads: LeadListItem[];
+  isUnassignedGroup?: boolean;
 }
 
 /** Stable key for grouping leads by owner. Prefer owner.uid; fallback to composite name|surname|email. */
@@ -166,8 +168,35 @@ function groupLeadsByOwner(leads: LeadListItem[]): GroupedByOwner[] {
   return grouped;
 }
 
+function buildGroupedRows(
+  assignedLeads: LeadListItem[],
+  unassignedLeads?: LeadListItem[]
+): GroupedByOwner[] {
+  const assignedGroups = groupLeadsByOwner(assignedLeads);
+  if (!unassignedLeads?.length) {
+    return assignedGroups;
+  }
+  const sorted = [...unassignedLeads].sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+  const first: GroupedByOwner = {
+    ownerKey: '__unassigned__',
+    owner: null,
+    leads: sorted,
+    isUnassignedGroup: true,
+  };
+  return [first, ...assignedGroups];
+}
+
 export interface LeadsTableProps {
+  /** Leads that have an owner; unassigned are passed via `unassignedLeads`. */
   leads: LeadListItem[];
+  /** Fetched from GET /leads/unassigned; rendered as the first group. */
+  unassignedLeads?: LeadListItem[];
+  /** `meta.total` from unassigned response (can exceed `unassignedLeads.length`). */
+  unassignedTotal?: number;
   isLoading?: boolean;
   emptyMessage?: string;
   /** Called when a lead row is clicked. */
@@ -176,12 +205,20 @@ export interface LeadsTableProps {
 
 export function LeadsTable({
   leads,
+  unassignedLeads,
+  unassignedTotal,
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
   onLeadClick,
 }: LeadsTableProps) {
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
-  const groupedByOwner = useMemo(() => groupLeadsByOwner(leads), [leads]);
+  const groupedByOwner = useMemo(
+    () => buildGroupedRows(leads, unassignedLeads),
+    [leads, unassignedLeads]
+  );
+
+  const hasUnassigned = (unassignedLeads?.length ?? 0) > 0;
+  const hasAssigned = leads.length > 0;
 
   if (isLoading) {
     return (
@@ -191,7 +228,7 @@ export function LeadsTable({
     );
   }
 
-  if (leads.length === 0) {
+  if (!hasUnassigned && !hasAssigned) {
     return (
       <p className="py-12 text-center text-muted-foreground">
         {emptyMessage}
@@ -230,7 +267,21 @@ export function LeadsTable({
                     )}
                   >
                     <span className="flex items-start gap-2 whitespace-normal min-w-0 flex-1">
-                      {group.ownerKey === '__unknown__' ? (
+                      {group.isUnassignedGroup ? (
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <Users className="size-4 text-muted-foreground" aria-hidden />
+                          </span>
+                          <span className="flex flex-wrap items-center gap-2 min-w-0">
+                            <span className="font-medium text-foreground">
+                              Unassigned
+                            </span>
+                            <Badge variant="secondary" className="text-xs font-medium">
+                              Unassigned
+                            </Badge>
+                          </span>
+                        </span>
+                      ) : group.ownerKey === '__unknown__' ? (
                         <span className="text-muted-foreground font-medium">
                           Unknown
                         </span>
@@ -239,8 +290,24 @@ export function LeadsTable({
                       )}
                     </span>
                     <span className="text-sm text-muted-foreground shrink-0">
-                      {group.leads.length} lead
-                      {group.leads.length !== 1 ? 's' : ''}
+                      {(() => {
+                        const totalForLabel =
+                          group.isUnassignedGroup && unassignedTotal != null
+                            ? unassignedTotal
+                            : group.leads.length;
+                        return (
+                          <>
+                            {totalForLabel} lead{totalForLabel !== 1 ? 's' : ''}
+                            {group.isUnassignedGroup &&
+                            unassignedTotal != null &&
+                            unassignedTotal > group.leads.length ? (
+                              <span className="ml-1 text-xs">
+                                ({group.leads.length} in view)
+                              </span>
+                            ) : null}
+                          </>
+                        );
+                      })()}
                     </span>
                     <ChevronRight
                       className={cn(
@@ -288,7 +355,17 @@ export function LeadsTable({
                             }}
                           >
                             <TableCell className="whitespace-nowrap text-sm">
-                              {lead.name?.trim() || '-'}
+                              <span className="flex items-center gap-2">
+                                {group.isUnassignedGroup ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                                  >
+                                    Unassigned
+                                  </Badge>
+                                ) : null}
+                                <span>{lead.name?.trim() || '-'}</span>
+                              </span>
                             </TableCell>
                             <TableCell className="min-w-0 text-sm">
                               {lead.companyName?.trim() || '-'}

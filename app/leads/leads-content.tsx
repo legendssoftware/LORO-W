@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { useLeads, useUsers } from '@/api/hooks';
+import { useLeads, useUnassignedLeads, useUsers } from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
@@ -78,8 +78,49 @@ export function LeadsContent() {
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
   };
 
+  const showUnassignedGroup =
+    !selectedUserId || selectedUserId === 'all' || selectedUserId === '';
+
+  const unassignedParams = {
+    page: 1,
+    limit: 100,
+    ...(useAllTime
+      ? {}
+      : {
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
+        }),
+    ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
+    ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
+    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+  };
+
   const leadsQuery = useLeads(leadsParams);
+  const unassignedQuery = useUnassignedLeads(unassignedParams, {
+    enabled: showUnassignedGroup,
+  });
+
   const leads = leadsQuery.data?.data ?? [];
+  const assignedOnlyLeads = useMemo(
+    () => leads.filter((l) => l.owner != null),
+    [leads]
+  );
+  const unassignedLeads = showUnassignedGroup
+    ? (unassignedQuery.data?.data ?? [])
+    : undefined;
+  const unassignedTotal = showUnassignedGroup
+    ? (unassignedQuery.data?.meta?.total ?? 0)
+    : undefined;
+
+  const listLoading =
+    leadsQuery.isLoading || (showUnassignedGroup && unassignedQuery.isLoading);
+
+  const refetchLeads = () => {
+    leadsQuery.refetch();
+    if (showUnassignedGroup) {
+      unassignedQuery.refetch();
+    }
+  };
 
   return (
     <section>
@@ -268,8 +309,10 @@ export function LeadsContent() {
         </div>
       </div>
       <LeadsTable
-        leads={leads}
-        isLoading={leadsQuery.isLoading}
+        leads={assignedOnlyLeads}
+        unassignedLeads={unassignedLeads}
+        unassignedTotal={unassignedTotal}
+        isLoading={listLoading}
         emptyMessage="No leads match your filters."
         onLeadClick={(lead) => {
           setSelectedLead(lead);
@@ -283,12 +326,12 @@ export function LeadsContent() {
           if (!open) setSelectedLead(null);
         }}
         lead={selectedLead}
-        onActionSuccess={() => leadsQuery.refetch()}
+        onActionSuccess={() => refetchLeads()}
       />
       <ImportLeadsModal
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
-        onSuccess={() => leadsQuery.refetch()}
+        onSuccess={() => refetchLeads()}
       />
     </section>
   );
