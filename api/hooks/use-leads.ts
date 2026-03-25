@@ -1,9 +1,15 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   getLeads,
+  getUnassignedLeads,
   getLeadsForUser,
   getLeadsReport,
   getLead,
@@ -12,6 +18,7 @@ import {
   deleteLead,
   restoreLead,
   reactivateLead,
+  reassignLeads,
   getEngageDraft,
   sendLeadEngage,
   importLeadsFromCSV,
@@ -19,8 +26,10 @@ import {
 import type {
   GetLeadsParams,
   GetLeadsReportParams,
+  GetUnassignedLeadsParams,
   CreateLeadPayload,
   UpdateLeadPayload,
+  ReassignLeadsPayload,
   EngageDraftParams,
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
@@ -29,6 +38,20 @@ import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 export const LEADS_QUERY_KEY_PREFIX = ['leads'] as const;
 
 const QUERY_KEY_PREFIX = LEADS_QUERY_KEY_PREFIX;
+
+/** Invalidates list, unassigned, report, grouped keys, and optional detail ref. */
+export function invalidateLeadQueries(
+  queryClient: QueryClient,
+  opts?: { detailRef?: number }
+) {
+  queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+  if (opts?.detailRef != null) {
+    queryClient.invalidateQueries({
+      queryKey: [...QUERY_KEY_PREFIX, 'detail', opts.detailRef],
+    });
+  }
+  queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+}
 
 /**
  * Fetches paginated leads list.
@@ -43,6 +66,27 @@ export function useLeads(
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'list', params],
     queryFn: async () => getLeads(client, params),
+    enabled: options?.enabled !== false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: (failureCount, error: { response?: { status?: number } }) => {
+      if (error?.response?.status === 403) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+/**
+ * Unassigned leads (GET /leads/unassigned) with shared list filters.
+ */
+export function useUnassignedLeads(
+  params: GetUnassignedLeadsParams = {},
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...QUERY_KEY_PREFIX, 'unassigned', params],
+    queryFn: async () => getUnassignedLeads(client, params),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -132,8 +176,7 @@ export function useCreateLeadMutation() {
   return useMutation({
     mutationFn: async (payload: CreateLeadPayload) => createLead(client, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient);
     },
   });
 }
@@ -151,9 +194,7 @@ export function useUpdateLeadMutation() {
     }: { ref: number; payload: UpdateLeadPayload }) =>
       updateLead(client, ref, payload),
     onSuccess: (_, { ref }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient, { detailRef: ref });
     },
   });
 }
@@ -167,9 +208,7 @@ export function useDeleteLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => deleteLead(client, ref),
     onSuccess: (_, ref) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient, { detailRef: ref });
     },
   });
 }
@@ -183,9 +222,7 @@ export function useRestoreLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => restoreLead(client, ref),
     onSuccess: (_, ref) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient, { detailRef: ref });
     },
   });
 }
@@ -199,9 +236,25 @@ export function useReactivateLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => reactivateLead(client, ref),
     onSuccess: (_, ref) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient, { detailRef: ref });
+    },
+  });
+}
+
+/**
+ * Reassign / transfer leads to another user. Invalidates all lead queries on success.
+ */
+export function useReassignLeadsMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: ReassignLeadsPayload) =>
+      reassignLeads(client, payload),
+    onSuccess: (_, payload) => {
+      const firstLead = payload.leadUids[0];
+      invalidateLeadQueries(queryClient, {
+        detailRef: firstLead,
+      });
     },
   });
 }
@@ -237,8 +290,7 @@ export function useSendLeadEngageMutation() {
       message: string;
     }) => sendLeadEngage(client, ref, { channel, message }),
     onSuccess: (_, { ref }) => {
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, 'detail', ref] });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient, { detailRef: ref });
     },
   });
 }
@@ -258,8 +310,7 @@ export function useImportLeadsMutation() {
       params: ImportLeadsFromCSVParams;
     }) => importLeadsFromCSV(client, formData, params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
-      queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateLeadQueries(queryClient);
     },
   });
 }

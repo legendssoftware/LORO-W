@@ -5,6 +5,9 @@ import type {
   LeadDetailResponse,
   GetLeadsParams,
   GetLeadsReportParams,
+  GetUnassignedLeadsParams,
+  ReassignLeadsPayload,
+  ReassignLeadsResponse,
   LeadImportResponse,
   CreateLeadPayload,
   CreateLeadResponse,
@@ -39,6 +42,44 @@ export async function getLeads(
   if (params.branchId != null) search.set('branchId', String(params.branchId));
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(`/leads${qs ? `?${qs}` : ''}`);
+  return data;
+}
+
+/**
+ * GET /leads/unassigned - paginated leads with no owner (aligned filters with getLeads).
+ */
+export async function getUnassignedLeads(
+  client: AxiosInstance,
+  params: GetUnassignedLeadsParams = {}
+): Promise<LeadsListResponse> {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  if (params.status) search.set('status', params.status);
+  if (params.search) search.set('search', params.search);
+  if (params.startDate) search.set('startDate', params.startDate);
+  if (params.endDate) search.set('endDate', params.endDate);
+  if (params.temperature) search.set('temperature', params.temperature);
+  if (params.minScore != null) search.set('minScore', String(params.minScore));
+  if (params.maxScore != null) search.set('maxScore', String(params.maxScore));
+  if (params.source) search.set('source', params.source);
+  if (params.branchId != null) search.set('branchId', String(params.branchId));
+  const qs = search.toString();
+  const { data } = await client.get<LeadsListResponse>(
+    `/leads/unassigned${qs ? `?${qs}` : ''}`
+  );
+  return data;
+}
+
+/**
+ * POST /leads/reassign - transfer lead ownership to one or more users.
+ * Client: `useReassignLeadsMutation` invalidates lead queries on success.
+ */
+export async function reassignLeads(
+  client: AxiosInstance,
+  payload: ReassignLeadsPayload
+): Promise<ReassignLeadsResponse> {
+  const { data } = await client.post<ReassignLeadsResponse>('/leads/reassign', payload);
   return data;
 }
 
@@ -129,6 +170,7 @@ export async function updateLead(
 
 /**
  * DELETE /leads/:ref - soft-delete a lead.
+ * Client: pair with `invalidateLeadQueries` from `@/api/hooks` / `useReassignLeadsMutation` patterns after mutations.
  */
 export async function deleteLead(
   client: AxiosInstance,

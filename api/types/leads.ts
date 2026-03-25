@@ -104,6 +104,43 @@ export interface GetLeadsReportParams {
   search?: string;
 }
 
+/** GET /leads/unassigned — same filters as list except no ownerId/priority on server. */
+export interface GetUnassignedLeadsParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  temperature?: string;
+  minScore?: number;
+  maxScore?: number;
+  source?: string;
+  branchId?: number;
+}
+
+export type LeadReassignStrategy = 'single' | 'round_robin' | 'least_loaded';
+
+/** POST /leads/reassign */
+export interface ReassignLeadsPayload {
+  leadUids: number[];
+  targetUserUids: number[];
+  strategy?: LeadReassignStrategy;
+  fromOwnerUid?: number;
+  syncBranchToTarget?: boolean;
+  reason?: string;
+}
+
+export interface ReassignLeadsResponse {
+  reassigned: number;
+  assignments: Array<{
+    leadUid: number;
+    newOwnerUid: number;
+    newOwnerClerkUserId: string;
+  }>;
+  message: string;
+}
+
 /** Response from POST /leads/import-csv (CSV or .xlsx upload) */
 export interface LeadImportResponse {
   success: boolean;
