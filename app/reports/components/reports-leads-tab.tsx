@@ -28,7 +28,13 @@ import {
   Users,
 } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
-import { useBranches, useLeads, useLeadsReport, useUsers } from '@/api/hooks';
+import {
+  useBranches,
+  useLeads,
+  useLeadsReport,
+  useUsers,
+  getBranchDisplayLabel,
+} from '@/api/hooks';
 import {
   Card,
   CardContent,
@@ -453,7 +459,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                 <SelectItem value="all">All branches</SelectItem>
                 {branches.map((b) => (
                   <SelectItem key={b.uid} value={String(b.uid)}>
-                    {b.name ?? `Branch ${b.uid}`}
+                    {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                   </SelectItem>
                 ))}
               </SelectContent>

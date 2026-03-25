@@ -21,7 +21,7 @@ import {
 import { BarChart3, Clock, Contact, Timer, Users } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
 import type { BranchListItem } from '@/api/types/branch';
-import { useBranches, useCheckIns, useUsers } from '@/api/hooks';
+import { useBranches, useCheckIns, useUsers, getBranchDisplayLabel } from '@/api/hooks';
 import type { VisitExportItem } from '@/api/types/reports';
 import {
   Card,
@@ -525,7 +525,7 @@ export function ReportsVisitsTab(_props: ReportsVisitsTabProps) {
               <SelectItem value="all">All branches</SelectItem>
               {branches.map((b) => (
                 <SelectItem key={b.uid} value={String(b.uid)}>
-                  {b.name ?? `Branch ${b.uid}`}
+                  {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                 </SelectItem>
               ))}
             </SelectContent>

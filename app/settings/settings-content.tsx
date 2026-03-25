@@ -22,7 +22,7 @@ import type {
   OrganisationHoursRecord,
   OrganisationHoursWeeklySchedule,
 } from '@/api/types/organisation';
-import type { BranchListItem } from '@/api/types/branch';
+import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
 import type { WeekdayKey } from './settings-types';
 import {
   BRANCHES_LIST_QUERY_KEY,
@@ -1790,7 +1790,7 @@ export function SettingsContent() {
                         disabled={branchTabs.length === 0}
                       >
                         {selectedBranch
-                          ? (selectedBranch.name ?? selectedBranch.ref)
+                          ? getBranchDisplayLabel(selectedBranch) || selectedBranch.ref
                           : branchTabs.length === 0
                             ? 'No branches'
                             : 'Select branch…'}
@@ -1806,7 +1806,7 @@ export function SettingsContent() {
                             {branchTabs.map((b) => (
                               <CommandItem
                                 key={b.ref}
-                                value={`${b.name ?? ''} ${b.ref ?? ''} ${b.email ?? ''}`}
+                                value={`${getBranchDisplayLabel(b)} ${b.name ?? ''} ${b.ref ?? ''} ${b.email ?? ''}`}
                                 onSelect={() => {
                                   if (b.ref) setBranchRef(b.ref);
                                   setBranchPickerOpen(false);
@@ -1819,7 +1819,7 @@ export function SettingsContent() {
                                   )}
                                 />
                                 <span className="truncate">
-                                  {b.name ?? b.ref}
+                                  {getBranchDisplayLabel(b) || b.ref}
                                   {b.ref ? (
                                     <span className="text-muted-foreground">
                                       {' · '}

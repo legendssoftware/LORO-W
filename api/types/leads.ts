@@ -104,11 +104,13 @@ export interface GetLeadsReportParams {
   search?: string;
 }
 
-/** Response from POST /leads/import-csv */
+/** Response from POST /leads/import-csv (CSV or .xlsx upload) */
 export interface LeadImportResponse {
   success: boolean;
   imported: number;
   failed: number;
+  /** Rows skipped: lead already exists for org (same email and/or phone, non-deleted) */
+  skippedDuplicates?: number;
   errors: Array<{ row: number; error: string }>;
   assignments?: Array<{ leadId: number; userId: number; userName: string }>;
   /** Per-user assignment counts for receipt UI */
@@ -124,6 +126,9 @@ export interface LeadImportResponse {
 
 /** Filename for the downloadable CSV template (lead import). */
 export const LEAD_IMPORT_SAMPLE_FILENAME = 'loro-leads-import-sample.csv';
+
+/** Filename for the downloadable Excel template (all supported columns + example rows). */
+export const LEAD_IMPORT_SAMPLE_XLSX_FILENAME = 'loro-leads-import-sample.xlsx';
 
 /**
  * Sample CSV aligned with server csv-parser: at least one of name, email, or phone per row;

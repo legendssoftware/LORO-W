@@ -1,6 +1,16 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Building2,
+  Briefcase,
+  ClipboardList,
+  Clock,
+  MapPin,
+  Timer,
+  User,
+} from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
 import { markerTypeLabel } from './map-report-constants';
 
@@ -130,12 +140,43 @@ function sectionShell(children: ReactNode) {
   );
 }
 
-function sectionHeading(label: string) {
+function sectionHeading(label: string, Icon?: LucideIcon) {
   return (
-    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-      {label}
+    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+      {Icon ? (
+        <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} aria-hidden focusable={false} />
+      ) : null}
+      <span>{label}</span>
     </h4>
   );
+}
+
+/** Definition-list label with leading icon (times, duration, location, etc.). */
+function DtIcon({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <dt className="text-muted-foreground shrink-0">
+      <span className="inline-flex items-center gap-1.5">
+        <Icon className="size-3.5 shrink-0 text-muted-foreground/90" strokeWidth={2} aria-hidden focusable={false} />
+        {children}
+      </span>
+    </dt>
+  );
+}
+
+function iconForSectionLabel(label: string): LucideIcon | undefined {
+  const key = label.toLowerCase();
+  if (key === 'user' || key === 'owner' || key === 'creator') return User;
+  if (key === 'branch' || key === 'client') return Building2;
+  if (key === 'location') return MapPin;
+  if (key === 'check-in') return ClipboardList;
+  if (key === 'attendance') return Clock;
+  if (key === 'shift') return Clock;
+  if (key === 'lead') return Briefcase;
+  if (key === 'details') return ClipboardList;
+  if (key === 'task' || key === 'journal' || key === 'claim') return ClipboardList;
+  if (key === 'geofencing') return MapPin;
+  if (key === 'schedule' || key === 'activity') return Timer;
+  return undefined;
 }
 
 function readAttendance(marker: MapMarkerBase): Record<string, unknown> | undefined {
@@ -144,14 +185,19 @@ function readAttendance(marker: MapMarkerBase): Record<string, unknown> | undefi
   return undefined;
 }
 
+/** Prefer ERP alias over legal name (matches API BranchService.getDisplayName / map payload). */
+function branchDisplayLabel(branch: { alias?: unknown; name?: unknown } | null | undefined): string | undefined {
+  if (!branch || typeof branch !== 'object') return undefined;
+  const alias = branch.alias;
+  if (typeof alias === 'string' && alias.trim()) return alias.trim();
+  const name = branch.name;
+  if (typeof name === 'string' && name.trim()) return name.trim();
+  return undefined;
+}
+
 function readBranchName(marker: MapMarkerBase): string | undefined {
   const ad = readAttendance(marker);
-  const b = ad?.branch;
-  if (b && typeof b === 'object' && b !== null && 'name' in b) {
-    const n = (b as { name?: unknown }).name;
-    if (typeof n === 'string' && n.trim()) return n.trim();
-  }
-  return undefined;
+  return branchDisplayLabel(ad?.branch as { alias?: unknown; name?: unknown } | null | undefined);
 }
 
 function CheckInVisitPopupBody({ marker }: { marker: MapMarkerBase }) {
@@ -162,7 +208,7 @@ function CheckInVisitPopupBody({ marker }: { marker: MapMarkerBase }) {
         duration?: unknown;
         checkInAddressDisplay?: string;
         checkOutAddressDisplay?: string;
-        branch?: { uid?: number; name?: string } | null;
+        branch?: { uid?: number; name?: string; alias?: string | null } | null;
       }
     | undefined;
   const owner = marker.owner as { name?: string; surname?: string } | undefined;
@@ -172,29 +218,29 @@ function CheckInVisitPopupBody({ marker }: { marker: MapMarkerBase }) {
 
   const checkInAddr = ci?.checkInAddressDisplay ?? '—';
   const checkOutAddr = ci?.checkOutAddressDisplay ?? '—';
-  const branchName = ci?.branch?.name?.trim();
+  const branchName = branchDisplayLabel(ci?.branch ?? null);
 
   return (
     <div className="space-y-3">
       {sectionShell(
         <>
-          {sectionHeading('Check-in')}
+          {sectionHeading('Check-in', ClipboardList)}
           <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-1.5 text-xs">
-            <dt className="text-muted-foreground shrink-0">Check-in time</dt>
+            <DtIcon icon={Clock}>Check-in time</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">
               {formatDateish(ci?.checkInTime)}
             </dd>
-            <dt className="text-muted-foreground shrink-0">Check-out time</dt>
+            <DtIcon icon={Clock}>Check-out time</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">
               {formatDateish(ci?.checkOutTime)}
             </dd>
-            <dt className="text-muted-foreground shrink-0">Duration</dt>
+            <DtIcon icon={Timer}>Duration</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">
               {formatPrimitive(ci?.duration) || '—'}
             </dd>
-            <dt className="text-muted-foreground shrink-0">Check-in location</dt>
+            <DtIcon icon={MapPin}>Check-in location</DtIcon>
             <dd className="min-w-0 font-medium text-foreground leading-snug">{checkInAddr}</dd>
-            <dt className="text-muted-foreground shrink-0">Check-out location</dt>
+            <DtIcon icon={MapPin}>Check-out location</DtIcon>
             <dd className="min-w-0 font-medium text-foreground leading-snug">{checkOutAddr}</dd>
           </dl>
         </>
@@ -202,14 +248,14 @@ function CheckInVisitPopupBody({ marker }: { marker: MapMarkerBase }) {
       {branchName
         ? sectionShell(
             <>
-              {sectionHeading('Branch')}
+              {sectionHeading('Branch', Building2)}
               <p className="text-xs font-medium text-foreground leading-snug">{branchName}</p>
             </>
           )
         : null}
       {sectionShell(
         <>
-          {sectionHeading('User')}
+          {sectionHeading('User', User)}
           <p className="text-xs font-medium text-foreground leading-snug">{ownerName}</p>
         </>
       )}
@@ -228,13 +274,13 @@ function ShiftEndPopupBody({ marker }: { marker: MapMarkerBase }) {
     <div className="space-y-3">
       {sectionShell(
         <>
-          {sectionHeading('Shift')}
+          {sectionHeading('Shift', Clock)}
           <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-1.5 text-xs">
-            <dt className="text-muted-foreground shrink-0">Shift start</dt>
+            <DtIcon icon={Clock}>Shift start</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">{formatDateish(checkIn)}</dd>
-            <dt className="text-muted-foreground shrink-0">Shift end</dt>
+            <DtIcon icon={Clock}>Shift end</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">{formatDateish(checkOut)}</dd>
-            <dt className="text-muted-foreground shrink-0">Duration</dt>
+            <DtIcon icon={Timer}>Duration</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">{formatPrimitive(duration) || '—'}</dd>
           </dl>
         </>
@@ -242,7 +288,7 @@ function ShiftEndPopupBody({ marker }: { marker: MapMarkerBase }) {
       {branchName
         ? sectionShell(
             <>
-              {sectionHeading('Branch')}
+              {sectionHeading('Branch', Building2)}
               <p className="text-xs font-medium text-foreground leading-snug">{branchName}</p>
             </>
           )
@@ -260,9 +306,9 @@ function ShiftStartPopupBody({ marker }: { marker: MapMarkerBase }) {
     <div className="space-y-3">
       {sectionShell(
         <>
-          {sectionHeading('Shift')}
+          {sectionHeading('Shift', Clock)}
           <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-1.5 text-xs">
-            <dt className="text-muted-foreground shrink-0">Shift start</dt>
+            <DtIcon icon={Clock}>Shift start</DtIcon>
             <dd className="min-w-0 font-medium text-foreground">{formatDateish(started)}</dd>
           </dl>
         </>
@@ -270,7 +316,7 @@ function ShiftStartPopupBody({ marker }: { marker: MapMarkerBase }) {
       {branchName
         ? sectionShell(
             <>
-              {sectionHeading('Branch')}
+              {sectionHeading('Branch', Building2)}
               <p className="text-xs font-medium text-foreground leading-snug">{branchName}</p>
             </>
           )
@@ -361,7 +407,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
         <div className="mb-3">
           {sectionShell(
             <>
-              {sectionHeading('Details')}
+              {sectionHeading('Details', ClipboardList)}
               <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1.5 text-xs">
                 {primitiveRows.map(({ key, value }) => (
                   <div key={key} className="contents">
@@ -381,7 +427,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
             <>
               {sectionShell(
                 <>
-                  {sectionHeading(label)}
+                  {sectionHeading(label, iconForSectionLabel(label))}
                   <p className="text-xs font-medium text-foreground">{value}</p>
                 </>
               )}
@@ -390,9 +436,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
             <>
               {sectionShell(
                 <>
-                  <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                    {label}
-                  </h4>
+                  {sectionHeading(label, iconForSectionLabel(label))}
                   {renderValue(value, 0, true)}
                 </>
               )}
