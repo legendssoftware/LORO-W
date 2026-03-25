@@ -117,6 +117,7 @@ export async function getLeadsReport(
   if (params.status) search.set('status', params.status);
   if (params.source) search.set('source', params.source);
   if (params.search) search.set('search', params.search);
+  if (params.dateBasis) search.set('dateBasis', params.dateBasis);
   const { data } = await client.get<LeadsReportResponse>(
     `/leads/report?${search.toString()}`
   );

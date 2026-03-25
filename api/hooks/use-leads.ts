@@ -2,6 +2,7 @@
 
 import {
   useQuery,
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   type QueryClient,
@@ -38,7 +39,16 @@ import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 /** Query key prefix for leads. Use for invalidateQueries/refetchQueries after create, import, or other lead mutations. */
 export const LEADS_QUERY_KEY_PREFIX = ['leads'] as const;
 
+/** Matches server default/max page size for list endpoints when omitted. */
+export const LEADS_LIST_PAGE_SIZE = 100;
+
 const QUERY_KEY_PREFIX = LEADS_QUERY_KEY_PREFIX;
+
+function getNextLeadsPageParam(lastPage: { meta?: { page?: number; totalPages?: number } }): number | undefined {
+  const m = lastPage?.meta;
+  if (m == null || typeof m.page !== 'number' || typeof m.totalPages !== 'number') return undefined;
+  return m.page < m.totalPages ? m.page + 1 : undefined;
+}
 
 /** Invalidates list, unassigned, report, grouped keys, and optional detail ref. */
 export function invalidateLeadQueries(
@@ -98,6 +108,62 @@ export function useUnassignedLeads(
   });
 }
 
+export type GetLeadsInfiniteParams = Omit<GetLeadsParams, 'page'>;
+
+/**
+ * Paginated GET /leads with Load more — 100 rows per request by default.
+ */
+export function useLeadsInfinite(
+  params: GetLeadsInfiniteParams = {},
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  const limit = params.limit ?? LEADS_LIST_PAGE_SIZE;
+  const listParams = { ...params, limit };
+  return useInfiniteQuery({
+    queryKey: [...QUERY_KEY_PREFIX, 'list', 'infinite', listParams],
+    queryFn: async ({ pageParam }) =>
+      getLeads(client, { ...listParams, page: pageParam as number }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
+    enabled: options?.enabled !== false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: (failureCount, error: { response?: { status?: number } }) => {
+      if (error?.response?.status === 403) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+export type GetUnassignedLeadsInfiniteParams = Omit<GetUnassignedLeadsParams, 'page'>;
+
+/**
+ * Paginated GET /leads/unassigned with Load more — 100 rows per request by default.
+ */
+export function useUnassignedLeadsInfinite(
+  params: GetUnassignedLeadsInfiniteParams = {},
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  const limit = params.limit ?? LEADS_LIST_PAGE_SIZE;
+  const listParams = { ...params, limit };
+  return useInfiniteQuery({
+    queryKey: [...QUERY_KEY_PREFIX, 'unassigned', 'infinite', listParams],
+    queryFn: async ({ pageParam }) =>
+      getUnassignedLeads(client, { ...listParams, page: pageParam as number }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
+    enabled: options?.enabled !== false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: (failureCount, error: { response?: { status?: number } }) => {
+      if (error?.response?.status === 403) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
 /**
  * Fetches leads for the authenticated user (owner or assignee) with stats and pagination meta.
  * Enterprise-only; no retry on 403.
@@ -135,6 +201,7 @@ export function useLeadsReport(
       'report',
       params.from,
       params.to,
+      params.dateBasis ?? 'created',
       params.branchId ?? null,
       params.ownerId ?? null,
       params.status ?? null,
