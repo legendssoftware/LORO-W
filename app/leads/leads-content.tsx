@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { useLeads, useUnassignedLeads, useUsers } from '@/api/hooks';
+import {
+  useLeadsInfinite,
+  useUnassignedLeadsInfinite,
+  LEADS_LIST_PAGE_SIZE,
+  useUsers,
+} from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
@@ -62,8 +67,7 @@ export function LeadsContent() {
   const { data: users = [] } = useUsers({ limit: 100 });
 
   const leadsParams = {
-    page: 1,
-    limit: 100,
+    limit: LEADS_LIST_PAGE_SIZE,
     ...(useAllTime
       ? {}
       : {
@@ -82,8 +86,7 @@ export function LeadsContent() {
     !selectedUserId || selectedUserId === 'all' || selectedUserId === '';
 
   const unassignedParams = {
-    page: 1,
-    limit: 100,
+    limit: LEADS_LIST_PAGE_SIZE,
     ...(useAllTime
       ? {}
       : {
@@ -95,21 +98,24 @@ export function LeadsContent() {
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
   };
 
-  const leadsQuery = useLeads(leadsParams);
-  const unassignedQuery = useUnassignedLeads(unassignedParams, {
+  const leadsQuery = useLeadsInfinite(leadsParams);
+  const unassignedQuery = useUnassignedLeadsInfinite(unassignedParams, {
     enabled: showUnassignedGroup,
   });
 
-  const leads = leadsQuery.data?.data ?? [];
+  const leads = useMemo(
+    () => leadsQuery.data?.pages.flatMap((p) => p.data ?? []) ?? [],
+    [leadsQuery.data]
+  );
   const assignedOnlyLeads = useMemo(
     () => leads.filter((l) => l.owner != null),
     [leads]
   );
   const unassignedLeads = showUnassignedGroup
-    ? (unassignedQuery.data?.data ?? [])
+    ? (unassignedQuery.data?.pages.flatMap((p) => p.data ?? []) ?? [])
     : undefined;
   const unassignedTotal = showUnassignedGroup
-    ? (unassignedQuery.data?.meta?.total ?? 0)
+    ? (unassignedQuery.data?.pages[0]?.meta?.total ?? 0)
     : undefined;
 
   const listLoading =
@@ -319,6 +325,34 @@ export function LeadsContent() {
           setLeadDialogOpen(true);
         }}
       />
+      {(leadsQuery.hasNextPage || (showUnassignedGroup && unassignedQuery.hasNextPage)) && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {leadsQuery.hasNextPage ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 border-gray-200 bg-white"
+              onClick={() => leadsQuery.fetchNextPage()}
+              disabled={leadsQuery.isFetchingNextPage}
+            >
+              {leadsQuery.isFetchingNextPage ? 'Loading…' : 'Load more leads'}
+            </Button>
+          ) : null}
+          {showUnassignedGroup && unassignedQuery.hasNextPage ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 border-gray-200 bg-white"
+              onClick={() => unassignedQuery.fetchNextPage()}
+              disabled={unassignedQuery.isFetchingNextPage}
+            >
+              {unassignedQuery.isFetchingNextPage ? 'Loading…' : 'Load more unassigned'}
+            </Button>
+          ) : null}
+        </div>
+      )}
       <LeadDetailDialog
         open={leadDialogOpen}
         onOpenChange={(open) => {

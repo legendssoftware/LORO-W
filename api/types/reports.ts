@@ -11,8 +11,14 @@ export interface DomainReportResponse {
   meta: { from: string; to: string };
 }
 
+/** GET /leads/report — meta includes how the date range was applied (present on current API). */
+export type LeadsReportMeta = DomainReportResponse['meta'] & {
+  dateBasis?: 'created' | 'activity';
+};
+
 /** GET /leads/report — extended analytics (see server LeadsReportResponseDto). */
-export interface LeadsReportResponse extends DomainReportResponse {
+export interface LeadsReportResponse extends Omit<DomainReportResponse, 'meta'> {
+  meta: LeadsReportMeta;
   totalEstimatedValue: number;
   valueByStatus: { name: string; value: number }[];
   byRegion: { name: string; value: number }[];

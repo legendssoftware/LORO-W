@@ -2,6 +2,7 @@ import type { AxiosInstance } from 'axios';
 import type {
   LeadsListResponse,
   LeadsForUserResponse,
+  GetLeadsForUserParams,
   LeadDetailResponse,
   GetLeadsParams,
   GetLeadsReportParams,
@@ -84,12 +85,19 @@ export async function reassignLeads(
 }
 
 /**
- * GET /leads/for - leads for the authenticated user (owner or assignee) with stats.
+ * GET /leads/for - leads for the authenticated user (owner or assignee) with stats and pagination meta.
  */
 export async function getLeadsForUser(
-  client: AxiosInstance
+  client: AxiosInstance,
+  params: GetLeadsForUserParams = {}
 ): Promise<LeadsForUserResponse> {
-  const { data } = await client.get<LeadsForUserResponse>('/leads/for');
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  const qs = search.toString();
+  const { data } = await client.get<LeadsForUserResponse>(
+    `/leads/for${qs ? `?${qs}` : ''}`
+  );
   return data;
 }
 
@@ -109,6 +117,7 @@ export async function getLeadsReport(
   if (params.status) search.set('status', params.status);
   if (params.source) search.set('source', params.source);
   if (params.search) search.set('search', params.search);
+  if (params.dateBasis) search.set('dateBasis', params.dateBasis);
   const { data } = await client.get<LeadsReportResponse>(
     `/leads/report?${search.toString()}`
   );

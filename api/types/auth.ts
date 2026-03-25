@@ -23,6 +23,10 @@ export interface SyncProfile {
   name?: string;
   surname?: string;
   username?: string;
+  phone?: string;
+  photoURL?: string | null;
+  avatar?: string | null;
+  businesscardURL?: string | null;
   accessLevel?: AccessLevel | string;
   role?: string;
   organisationRef?: string;

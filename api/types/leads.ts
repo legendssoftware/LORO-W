@@ -64,10 +64,23 @@ export interface LeadsForUserStats {
   avgLeadScore: number;
 }
 
+export interface LeadsForUserMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetLeadsForUserParams {
+  page?: number;
+  limit?: number;
+}
+
 export interface LeadsForUserResponse {
-  leads: LeadListItem[];
+  leads: LeadListItem[] | null;
   message: string;
-  stats: LeadsForUserStats;
+  stats: LeadsForUserStats | null;
+  meta: LeadsForUserMeta;
 }
 
 export interface LeadDetailResponse {
@@ -93,6 +106,9 @@ export interface GetLeadsParams {
   branchId?: number;
 }
 
+/** Passed as `dateBasis` on GET /leads/report — matches server LeadsReportDateBasis. */
+export type LeadsReportDateBasis = 'created' | 'activity';
+
 export interface GetLeadsReportParams {
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
@@ -102,6 +118,11 @@ export interface GetLeadsReportParams {
   status?: string;
   source?: string;
   search?: string;
+  /**
+   * `created` (default): leads created in range.
+   * `activity`: leads touched in range (`updatedAt` in range after `createdAt`).
+   */
+  dateBasis?: LeadsReportDateBasis;
 }
 
 /** GET /leads/unassigned — same filters as list except no ownerId/priority on server. */
