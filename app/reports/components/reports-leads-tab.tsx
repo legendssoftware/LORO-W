@@ -2,9 +2,14 @@
 
 import { useMemo, useState, type ComponentType } from 'react';
 import {
+  eachDayOfInterval,
   format,
   isSameDay,
+  parseISO,
   startOfDay,
+  endOfMonth,
+  startOfMonth,
+  subMonths,
 } from 'date-fns';
 import {
   Bar,
@@ -18,7 +23,6 @@ import {
   YAxis,
 } from 'recharts';
 import {
-  Activity,
   BarChart3,
   Building2,
   CircleDollarSign,
@@ -83,6 +87,12 @@ import {
 
 /** Max categories per chart (rest grouped as Other where applicable). */
 const CHART_TOP_N = 10;
+
+function getPreviousCalendarMonthRange(): { start: Date; end: Date } {
+  const now = startOfDay(new Date());
+  const refMonth = subMonths(now, 1);
+  return { start: startOfMonth(refMonth), end: endOfMonth(refMonth) };
+}
 
 const LEAD_STATUS_OPTIONS = [
   'PENDING',
@@ -162,9 +172,12 @@ export interface ReportsLeadsTabProps {
 }
 
 export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
-  const today = startOfDay(new Date());
-  const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
-  const [endDate, setEndDate] = useState(() => startOfDay(new Date()));
+  const [startDate, setStartDate] = useState(
+    () => getPreviousCalendarMonthRange().start
+  );
+  const [endDate, setEndDate] = useState(
+    () => getPreviousCalendarMonthRange().end
+  );
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
@@ -177,10 +190,17 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
   const dateTo = format(endDate, 'yyyy-MM-dd');
   const elevated = isElevatedAccess(profile);
 
+  const defaultReportRange = useMemo(
+    () => getPreviousCalendarMonthRange(),
+    // Recompute when the calendar month changes (so “default” stays previous month).
+    [format(startOfDay(new Date()), 'yyyy-MM')]
+  );
+
   const reportParams = useMemo(
     () => ({
       from: dateFrom,
       to: dateTo,
+      dateBasis: 'activity' as const,
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
@@ -286,54 +306,30 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
     return buildPipelineValueAxis(maxVal);
   }, [valueBarData]);
 
-  const lineConfig = {
-    count: { label: 'New leads', color: ATT_CHART_HSL.c2 },
+  const activityLineConfig = {
+    count: { label: 'Leads touched', color: ATT_CHART_HSL.c2 },
   } satisfies ChartConfig;
 
   const isSingleDayRange = dateFrom === dateTo;
-  const useHourlyTrend =
+  const useHourlyActivity =
     isSingleDayRange && (report?.byHour?.length ?? 0) > 0;
 
-  const trendDataHourly = useMemo(() => {
-    const rows = report?.byHour ?? [];
-    if (rows.length === 0) return [];
-    return rows.map((d) => ({
-      label: `${String(d.hour).padStart(2, '0')}:00`,
-      count: d.count,
-    }));
-  }, [report?.byHour]);
-
-  const trendDataDaily = useMemo(() => {
-    const sorted = [...(report?.byDay ?? [])].sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-    return sorted.slice(-CHART_TOP_N).map((d) => ({
-      date: d.date,
-      count: d.count,
-    }));
-  }, [report?.byDay]);
-
-  const trendChartData = useHourlyTrend ? trendDataHourly : trendDataDaily;
-  const trendXKey = useHourlyTrend ? 'label' : 'date';
-
-  const engagementDonut = useMemo(() => {
-    const rows = (report?.byEngagement ?? []).map((r) => ({
-      name: r.name,
-      value: r.value,
-    }));
-    const slices = rows.map((row, i) => ({
-      id: `e${i}`,
-      label: humanizeReportLabel(row.name),
-      value: row.value,
-      fill: BAR_PALETTE[i % BAR_PALETTE.length],
-    }));
-    const cfg: ChartConfig = {};
-    slices.forEach((s) => {
-      cfg[s.id] = { label: s.label, color: s.fill };
+  const activityLineChartData = useMemo(() => {
+    if (!report) return [];
+    if (useHourlyActivity) {
+      return (report.byHour ?? []).map((d) => ({
+        label: `${String(d.hour).padStart(2, '0')}:00`,
+        count: d.count,
+      }));
+    }
+    const counts = new Map((report.byDay ?? []).map((x) => [x.date, x.count]));
+    const start = parseISO(dateFrom);
+    const end = parseISO(dateTo);
+    return eachDayOfInterval({ start, end }).map((d) => {
+      const key = format(d, 'yyyy-MM-dd');
+      return { label: format(d, 'MMM d'), date: key, count: counts.get(key) ?? 0 };
     });
-    const sum = slices.reduce((a, s) => a + s.value, 0);
-    return { slices, config: cfg, sum };
-  }, [report?.byEngagement]);
+  }, [report, dateFrom, dateTo, useHourlyActivity]);
 
   const byUserTop = useMemo(
     () =>
@@ -371,8 +367,10 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
     [report?.byRegion]
   );
 
+  const isActivityReport = reportParams.dateBasis === 'activity';
   const isDefaultRange =
-    isSameDay(startDate, today) && isSameDay(endDate, today);
+    isSameDay(startDate, defaultReportRange.start) &&
+    isSameDay(endDate, defaultReportRange.end);
   const periodLabel = `${dateFrom} – ${dateTo}`;
   const isLoading = reportQuery.isLoading;
   const total = report?.total ?? 0;
@@ -435,9 +433,9 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
               <button
                 type="button"
                 onClick={() => {
-                  const d = startOfDay(new Date());
-                  setStartDate(d);
-                  setEndDate(d);
+                  const r = getPreviousCalendarMonthRange();
+                  setStartDate(r.start);
+                  setEndDate(r.end);
                 }}
                 className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
                 aria-label="Reset date range"
@@ -553,11 +551,72 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
         <>
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">
+              Lead activity
+            </h2>
+            <Card className="border-gray-200 bg-white">
+              <CardHeader>
+                <CardTitle>
+                  {useHourlyActivity
+                    ? 'Lead activity by hour'
+                    : 'Lead activity over time'}
+                </CardTitle>
+                <CardDescription>
+                  {isActivityReport
+                    ? useHourlyActivity
+                      ? 'Count of leads touched (updated after creation) by hour for the selected day — organization timezone.'
+                      : 'Daily count of leads with activity in range: last update falls between the dates and is after the record was created.'
+                    : 'Leads in report cohort by day or hour.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={activityLineConfig}
+                  className="aspect-auto h-[300px] w-full"
+                >
+                  <LineChart
+                    data={activityLineChartData}
+                    margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      interval={useHourlyActivity ? 2 : 'preserveStartEnd'}
+                      tick={{ fontSize: useHourlyActivity ? 10 : 11 }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="var(--color-count)"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground">
               Period summary
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
-                label="Total leads"
+                label={isActivityReport ? 'Leads touched' : 'Total leads'}
                 value={String(total)}
                 icon={Users}
                 iconClassName="text-violet-600"
@@ -587,7 +646,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
             <h2 className="text-lg font-semibold text-foreground">
               Pipeline and status
             </h2>
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <Card className="border-gray-200 bg-white">
                 <CardHeader>
                   <CardTitle>Leads by status</CardTitle>
@@ -605,7 +664,11 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                       config={statusDonut.config}
                       data={statusDonut.slices}
                       centerPrimary={statusDonut.sum.toLocaleString()}
-                      centerSecondary="Leads in range"
+                      centerSecondary={
+                        isActivityReport
+                          ? 'Touched leads in range'
+                          : 'Leads in range'
+                      }
                     />
                   )}
                 </CardContent>
@@ -671,33 +734,6 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                   </ChartContainer>
                 </CardContent>
               </Card>
-
-              <Card className="border-gray-200 bg-white">
-                <CardHeader className="flex flex-row items-start gap-2">
-                  <Activity className="size-5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div>
-                    <CardTitle>Lead activity</CardTitle>
-                    <CardDescription>
-                      Interactions logged or record edited after creation vs no activity
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {engagementDonut.slices.length === 0 ||
-                  engagementDonut.sum === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No data
-                    </p>
-                  ) : (
-                    <ReportDonutChart
-                      config={engagementDonut.config}
-                      data={engagementDonut.slices}
-                      centerPrimary={engagementDonut.sum.toLocaleString()}
-                      centerSecondary="Leads in range"
-                    />
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </section>
 
@@ -736,56 +772,6 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                 icon={Building2}
               />
             </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">Trends</h2>
-            <Card className="border-gray-200 bg-white">
-              <CardHeader>
-                <CardTitle>
-                  {useHourlyTrend ? 'New leads by hour' : 'New leads over time'}
-                </CardTitle>
-                <CardDescription>
-                  {useHourlyTrend
-                    ? 'Counts for the selected day (organization timezone)'
-                    : `Daily count (last ${CHART_TOP_N} days in range)`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={lineConfig}
-                  className="aspect-auto h-[250px] w-full"
-                >
-                  <LineChart
-                    data={trendChartData}
-                    margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey={trendXKey}
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      interval={useHourlyTrend ? 2 : undefined}
-                      tick={{ fontSize: useHourlyTrend ? 10 : 12 }}
-                    />
-                    <YAxis tickLine={false} axisLine={false} allowDecimals={false} />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="count"
-                      stroke="var(--color-count)"
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
           </section>
 
           {total === 0 ? (

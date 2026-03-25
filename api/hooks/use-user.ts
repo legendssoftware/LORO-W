@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
+import { getSessionSyncQueryKey } from '@/api/hooks/use-session-sync';
+import { useSessionStore } from '@/store/session-store';
 import {
   getUserByRef,
   patchUser,
@@ -48,9 +50,31 @@ export function usePatchUser(ref: string | null) {
       if (!ref) throw new Error('User ref required');
       return patchUser(client, ref, body);
     },
-    onSuccess: (_, __, ___) => {
+    onSuccess: (_data, body) => {
       if (ref) {
         queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
+      }
+      const currentUid = useSessionStore.getState().profileData?.uid;
+      const refNum = ref != null ? Number(ref) : NaN;
+      const isSelf =
+        currentUid != null &&
+        !Number.isNaN(refNum) &&
+        Number(currentUid) === refNum;
+      const profileFields = [
+        'photoURL',
+        'avatar',
+        'name',
+        'surname',
+        'email',
+        'phone',
+        'username',
+        'businesscardURL',
+      ] as const;
+      const touchesProfile = profileFields.some(
+        (k) => body[k as keyof PatchUserBody] !== undefined
+      );
+      if (isSelf && touchesProfile) {
+        queryClient.invalidateQueries({ queryKey: getSessionSyncQueryKey() });
       }
     },
   });
