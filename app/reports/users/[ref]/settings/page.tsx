@@ -18,6 +18,7 @@ import {
   useUsers,
   useClients,
   useSessionSync,
+  getBranchDisplayLabel,
 } from '@/api/hooks';
 import type { PatchUserBody, PatchUserTargetBody } from '@/api/endpoints/user';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
@@ -946,7 +947,7 @@ export default function UserSettingsPage() {
                             >
                               <span className="flex items-center gap-2">
                                 <MapPinIcon className="size-4 shrink-0" />
-                                {b.name ?? `Branch ${b.uid}`}
+                                {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                               </span>
                             </SelectItem>
                           ))}
@@ -1889,7 +1890,9 @@ export default function UserSettingsPage() {
                                         }
                                       }}
                                     />
-                                    <span>{b.name ?? `Branch ${b.uid}`}</span>
+                                    <span>
+                                      {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
+                                    </span>
                                   </label>
                                 );
                               })}
@@ -1917,7 +1920,10 @@ export default function UserSettingsPage() {
                                   )
                                 }
                               >
-                                {b?.name ?? uid} ×
+                                {b
+                                  ? getBranchDisplayLabel(b) || `Branch ${uid}`
+                                  : uid}{' '}
+                                ×
                               </Badge>
                             );
                           })}

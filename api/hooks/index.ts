@@ -20,7 +20,7 @@ export {
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport, useReportsMapData } from './use-map-report';
-export { useBranches } from './use-branches';
+export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
 export { useClients, useClientsInfinite } from './use-clients';
 export { useUsers } from './use-users';

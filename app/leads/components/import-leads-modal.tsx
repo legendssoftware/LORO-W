@@ -22,7 +22,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useImportLeadsMutation, useUsers, useBranches, useApiClient } from '@/api/hooks';
+import {
+  useImportLeadsMutation,
+  useUsers,
+  useBranches,
+  useApiClient,
+  getBranchDisplayLabel,
+} from '@/api/hooks';
 import { getUsers, type UserListItem } from '@/api/endpoints/user';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 import type { LeadImportResponse } from '@/api/types/leads';
@@ -30,6 +36,7 @@ import {
   LEAD_IMPORT_SAMPLE_CSV,
   LEAD_IMPORT_SAMPLE_FILENAME,
 } from '@/api/types/leads';
+import { triggerDownloadLeadImportSampleXlsx } from '@/lib/leads-import-sample-xlsx';
 import { Loader2Icon } from '@/lib/icons';
 import {
   CircleHelp,
@@ -73,9 +80,8 @@ export interface ImportLeadsModalProps {
 type AssignmentMode = 'users' | 'branch';
 type Step = 'form' | 'receipt';
 
-function branchLabel(b: { name?: string; alias?: string | null }) {
-  const n = (b.alias || b.name || '').trim();
-  return n || 'Branch';
+function importBranchLabel(b: { name?: string; alias?: string | null }) {
+  return getBranchDisplayLabel(b) || 'Branch';
 }
 
 export function ImportLeadsModal({
@@ -182,7 +188,7 @@ export function ImportLeadsModal({
     } else if (branchPoolIds.length === 1) {
       const b = branches.find((x) => x.uid === branchPoolIds[0]);
       assigneesSummary = b
-        ? `Round-robin among active users at ${branchLabel(b)}—see the list below.`
+        ? `Round-robin among active users at ${importBranchLabel(b)}—see the list below.`
         : 'Round-robin among active users in the selected branch—see the list below.';
     } else {
       assigneesSummary =
@@ -201,8 +207,10 @@ export function ImportLeadsModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      if (!selected.name.toLowerCase().endsWith('.csv')) {
-        toast.error('Please select a CSV file.');
+      const lower = selected.name.toLowerCase();
+      const ok = lower.endsWith('.csv') || lower.endsWith('.xlsx');
+      if (!ok) {
+        toast.error('Please select a CSV or Excel (.xlsx) file.');
         return;
       }
       if (selected.size > 2 * 1024 * 1024) {
@@ -217,7 +225,7 @@ export function ImportLeadsModal({
 
   const handleSubmit = async () => {
     if (!file) {
-      toast.error('Please select a CSV file to upload.');
+      toast.error('Please select a CSV or Excel file to upload.');
       return;
     }
     if (assignmentMode === 'branch') {
@@ -316,7 +324,7 @@ export function ImportLeadsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-left">
             <Upload className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            Import leads from CSV
+            Import leads from CSV or Excel
           </DialogTitle>
           <div className="space-y-2 text-left">
             <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
@@ -325,8 +333,9 @@ export function ImportLeadsModal({
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
               <li>
-                Upload a CSV (max 2MB). Optional columns include Created, Name,
-                Email, Source, and more—see the sample file for the full list.
+                Use a <strong>CSV</strong> or <strong>Excel .xlsx</strong> file (max 2MB). Excel uses the first
+                worksheet only. Download <strong>both</strong> sample files below to see every supported column.
+                Exports with title, street, city, phone, url, website, and category columns are mapped automatically.
                 Each row needs at least one of name, email, or phone.
               </li>
               <li>
@@ -339,14 +348,27 @@ export function ImportLeadsModal({
                 receive push notifications on their devices.
               </li>
             </ul>
-            <button
-              type="button"
-              onClick={handleDownloadSample}
-              className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
-            >
-              <Download className="size-4 shrink-0" aria-hidden />
-              Download sample CSV
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Sample files
+              </span>
+              <button
+                type="button"
+                onClick={handleDownloadSample}
+                className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+              >
+                <Download className="size-4 shrink-0" aria-hidden />
+                Download sample CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerDownloadLeadImportSampleXlsx()}
+                className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+              >
+                <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
+                Download sample Excel (.xlsx)
+              </button>
+            </div>
           </div>
         </DialogHeader>
         {step === 'receipt' && lastResult ? (
@@ -429,13 +451,13 @@ export function ImportLeadsModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="import-csv-file">CSV file</Label>
+                <Label htmlFor="import-csv-file">Spreadsheet file</Label>
               </div>
               <input
                 id="import-csv-file"
                 ref={fileInputRef}
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
                 onChange={handleFileChange}
               />
@@ -512,7 +534,7 @@ export function ImportLeadsModal({
                               checked={branchPoolIds.includes(b.uid)}
                               onCheckedChange={() => toggleBranchPool(b.uid)}
                             />
-                            <span className="text-sm">{branchLabel(b)}</span>
+                            <span className="text-sm">{importBranchLabel(b)}</span>
                           </label>
                         ))}
                       </div>
@@ -636,7 +658,7 @@ export function ImportLeadsModal({
                         <SelectItem value="__default__">Default (your branch)</SelectItem>
                         {branches.map((b) => (
                           <SelectItem key={b.uid} value={String(b.uid)}>
-                            {branchLabel(b)}
+                            {importBranchLabel(b)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -656,7 +678,7 @@ export function ImportLeadsModal({
               </div>
               <Select value={source || undefined} onValueChange={setSource}>
                 <SelectTrigger id="import-source" className="w-full">
-                  <SelectValue placeholder="Use CSV Source or leave blank" />
+                  <SelectValue placeholder="Use file Source column or leave blank" />
                 </SelectTrigger>
                 <SelectContent>
                   {LEAD_SOURCE_OPTIONS.map((opt) => (
@@ -667,7 +689,7 @@ export function ImportLeadsModal({
                 </SelectContent>
               </Select>
               <span className="text-muted-foreground text-xs">
-                Applied to all imported leads when the CSV does not provide a
+                Applied to all imported leads when the spreadsheet does not provide a
                 Source.
               </span>
             </div>

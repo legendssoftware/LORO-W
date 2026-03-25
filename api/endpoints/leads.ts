@@ -190,7 +190,7 @@ export async function sendLeadEngage(
 }
 
 /**
- * POST /leads/import-csv - import leads from CSV file, optionally assigning to specific users.
+ * POST /leads/import-csv - import leads from a CSV or Excel (.xlsx) file (first sheet), optionally assigning to specific users.
  */
 export async function importLeadsFromCSV(
   client: AxiosInstance,

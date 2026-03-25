@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getBranches } from '@/api/endpoints/branch';
+export { getBranchDisplayLabel } from '@/api/types/branch';
 
 const QUERY_KEY = ['branches'] as const;
 

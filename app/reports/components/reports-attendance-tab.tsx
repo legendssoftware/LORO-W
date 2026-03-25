@@ -38,6 +38,7 @@ import {
   useBranches,
   useDailyOverview,
   useUsers,
+  getBranchDisplayLabel,
 } from '@/api/hooks';
 import {
   Card,
@@ -527,7 +528,7 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
               <SelectItem value="all">All branches</SelectItem>
               {branches.map((b) => (
                 <SelectItem key={b.uid} value={String(b.uid)}>
-                  {b.name ?? `Branch ${b.uid}`}
+                  {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                 </SelectItem>
               ))}
             </SelectContent>
