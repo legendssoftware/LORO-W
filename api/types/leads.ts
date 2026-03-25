@@ -64,10 +64,23 @@ export interface LeadsForUserStats {
   avgLeadScore: number;
 }
 
+export interface LeadsForUserMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetLeadsForUserParams {
+  page?: number;
+  limit?: number;
+}
+
 export interface LeadsForUserResponse {
-  leads: LeadListItem[];
+  leads: LeadListItem[] | null;
   message: string;
-  stats: LeadsForUserStats;
+  stats: LeadsForUserStats | null;
+  meta: LeadsForUserMeta;
 }
 
 export interface LeadDetailResponse {

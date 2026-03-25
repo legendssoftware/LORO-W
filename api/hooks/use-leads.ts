@@ -27,6 +27,7 @@ import type {
   GetLeadsParams,
   GetLeadsReportParams,
   GetUnassignedLeadsParams,
+  GetLeadsForUserParams,
   CreateLeadPayload,
   UpdateLeadPayload,
   ReassignLeadsPayload,
@@ -98,14 +99,17 @@ export function useUnassignedLeads(
 }
 
 /**
- * Fetches leads for the authenticated user (owner or assignee) with stats.
+ * Fetches leads for the authenticated user (owner or assignee) with stats and pagination meta.
  * Enterprise-only; no retry on 403.
  */
-export function useLeadsForUser(options?: { enabled?: boolean }) {
+export function useLeadsForUser(
+  params: GetLeadsForUserParams = {},
+  options?: { enabled?: boolean }
+) {
   const client = useApiClient();
   return useQuery({
-    queryKey: [...QUERY_KEY_PREFIX, 'for'],
-    queryFn: async () => getLeadsForUser(client),
+    queryKey: [...QUERY_KEY_PREFIX, 'for', params],
+    queryFn: async () => getLeadsForUser(client, params),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
