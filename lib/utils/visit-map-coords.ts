@@ -98,6 +98,7 @@ export function visitExportItemsToMapMarkers(visits: VisitExportItem[]): MapMark
           ? {
               uid: v.branch.uid,
               name: v.branch.name,
+              alias: v.branch.alias,
             }
           : null,
       },

@@ -41,3 +41,14 @@ export interface GetBranchResponse {
   branch: BranchDetail | null;
   message: string;
 }
+
+/**
+ * ERP-style UI label: trimmed alias, else legal name (mirrors server BranchService.getDisplayName).
+ */
+export function getBranchDisplayLabel(
+  branch: Pick<BranchListItem, 'name' | 'alias'> | null | undefined
+): string {
+  const alias = branch?.alias?.trim();
+  if (alias) return alias;
+  return (branch?.name ?? '').trim();
+}

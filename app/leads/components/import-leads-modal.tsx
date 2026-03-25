@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -21,13 +22,21 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useImportLeadsMutation, useUsers, useBranches } from '@/api/hooks';
+import {
+  useImportLeadsMutation,
+  useUsers,
+  useBranches,
+  useApiClient,
+  getBranchDisplayLabel,
+} from '@/api/hooks';
+import { getUsers, type UserListItem } from '@/api/endpoints/user';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 import type { LeadImportResponse } from '@/api/types/leads';
 import {
   LEAD_IMPORT_SAMPLE_CSV,
   LEAD_IMPORT_SAMPLE_FILENAME,
 } from '@/api/types/leads';
+import { triggerDownloadLeadImportSampleXlsx } from '@/lib/leads-import-sample-xlsx';
 import { Loader2Icon } from '@/lib/icons';
 import {
   CircleHelp,
@@ -71,9 +80,8 @@ export interface ImportLeadsModalProps {
 type AssignmentMode = 'users' | 'branch';
 type Step = 'form' | 'receipt';
 
-function branchLabel(b: { name?: string; alias?: string | null }) {
-  const n = (b.alias || b.name || '').trim();
-  return n || 'Branch';
+function importBranchLabel(b: { name?: string; alias?: string | null }) {
+  return getBranchDisplayLabel(b) || 'Branch';
 }
 
 export function ImportLeadsModal({
@@ -87,31 +95,51 @@ export function ImportLeadsModal({
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState<string>('');
   const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>('users');
-  const [branchPoolId, setBranchPoolId] = useState<string>('');
+  const [branchPoolIds, setBranchPoolIds] = useState<number[]>([]);
   const [leadFileBranchId, setLeadFileBranchId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const importMutation = useImportLeadsMutation();
+  const apiClient = useApiClient();
   const { data: teamUsers = [] } = useUsers({
     limit: 100,
     enabled: open && assignmentMode === 'users',
   });
-  const branchUsersQuery = useUsers({
-    limit: 500,
-    branchId: branchPoolId ? Number(branchPoolId) : undefined,
-    enabled: open && assignmentMode === 'branch' && !!branchPoolId,
+  const branchUsersQueries = useQueries({
+    queries: branchPoolIds.map((bid) => ({
+      queryKey: ['users', 1, 500, '', bid] as const,
+      queryFn: () =>
+        getUsers(apiClient, { page: 1, limit: 500, branchId: bid }),
+      enabled: open && assignmentMode === 'branch' && branchPoolIds.length > 0,
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    })),
   });
-  const branchUsers = branchUsersQuery.data ?? [];
+  const branchUsers = useMemo(() => {
+    const map = new Map<number, UserListItem>();
+    for (const q of branchUsersQueries) {
+      const rows = q.data?.data;
+      if (!rows) continue;
+      for (const u of rows) {
+        map.set(u.uid, u);
+      }
+    }
+    return Array.from(map.values());
+  }, [branchUsersQueries]);
   const branchPoolLoading =
     assignmentMode === 'branch' &&
-    !!branchPoolId &&
-    (branchUsersQuery.isLoading || branchUsersQuery.isFetching);
+    branchPoolIds.length > 0 &&
+    branchUsersQueries.some((q) => q.isLoading || q.isFetching);
+  const branchPoolFetched =
+    branchPoolIds.length > 0 &&
+    branchUsersQueries.length > 0 &&
+    branchUsersQueries.every((q) => q.isFetched || q.isError);
   const branchPoolEmpty =
     assignmentMode === 'branch' &&
-    !!branchPoolId &&
-    branchUsersQuery.isFetched &&
+    branchPoolIds.length > 0 &&
+    branchPoolFetched &&
     !branchPoolLoading &&
     branchUsers.length === 0;
 
@@ -135,7 +163,7 @@ export function ImportLeadsModal({
         assignedUserIds?.length ? [...assignedUserIds] : []
       );
       setAssignmentMode('users');
-      setBranchPoolId('');
+      setBranchPoolIds([]);
       setLeadFileBranchId('');
     }
   }, [open, assignedUserIds]);
@@ -146,12 +174,26 @@ export function ImportLeadsModal({
     );
   }
 
+  function toggleBranchPool(uid: number) {
+    setBranchPoolIds((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  }
+
   let assigneesSummary = 'All active sales reps in your branch (round-robin)';
   if (assignmentMode === 'branch') {
-    const b = branches.find((x) => String(x.uid) === branchPoolId);
-    assigneesSummary = b
-      ? `Round-robin among active users at ${branchLabel(b)}—see the list below.`
-      : 'Choose a branch to load the assignment pool.';
+    if (branchPoolIds.length === 0) {
+      assigneesSummary =
+        'Select one or more branches to load the assignment pool (round-robin across all active users in those branches).';
+    } else if (branchPoolIds.length === 1) {
+      const b = branches.find((x) => x.uid === branchPoolIds[0]);
+      assigneesSummary = b
+        ? `Round-robin among active users at ${importBranchLabel(b)}—see the list below.`
+        : 'Round-robin among active users in the selected branch—see the list below.';
+    } else {
+      assigneesSummary =
+        'Round-robin among active users across the selected branches—see the list below.';
+    }
   } else if (selectedUserIds.length === 1) {
     const u = teamUsers.find((x) => x.uid === selectedUserIds[0]);
     assigneesSummary =
@@ -165,8 +207,10 @@ export function ImportLeadsModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      if (!selected.name.toLowerCase().endsWith('.csv')) {
-        toast.error('Please select a CSV file.');
+      const lower = selected.name.toLowerCase();
+      const ok = lower.endsWith('.csv') || lower.endsWith('.xlsx');
+      if (!ok) {
+        toast.error('Please select a CSV or Excel (.xlsx) file.');
         return;
       }
       if (selected.size > 2 * 1024 * 1024) {
@@ -181,7 +225,7 @@ export function ImportLeadsModal({
 
   const handleSubmit = async () => {
     if (!file) {
-      toast.error('Please select a CSV file to upload.');
+      toast.error('Please select a CSV or Excel file to upload.');
       return;
     }
     if (assignmentMode === 'branch') {
@@ -189,8 +233,8 @@ export function ImportLeadsModal({
         toast.error('No branches are available to assign by branch.');
         return;
       }
-      if (!branchPoolId) {
-        toast.error('Select a branch to assign leads to its team members.');
+      if (branchPoolIds.length === 0) {
+        toast.error('Select at least one branch to assign leads to its team members.');
         return;
       }
     }
@@ -201,7 +245,7 @@ export function ImportLeadsModal({
       followUpDuration: 90,
     };
     if (assignmentMode === 'branch') {
-      params.targetBranchId = Number(branchPoolId);
+      params.targetBranchIds = branchPoolIds;
     } else {
       if (selectedUserIds.length > 0) {
         params.assignedUserIds = selectedUserIds;
@@ -245,7 +289,7 @@ export function ImportLeadsModal({
     setSelectedUserIds([]);
     setAssigneeSearch('');
     setAssignmentMode('users');
-    setBranchPoolId('');
+    setBranchPoolIds([]);
     setLeadFileBranchId('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -280,7 +324,7 @@ export function ImportLeadsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-left">
             <Upload className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            Import leads from CSV
+            Import leads from CSV or Excel
           </DialogTitle>
           <div className="space-y-2 text-left">
             <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
@@ -289,13 +333,14 @@ export function ImportLeadsModal({
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
               <li>
-                Upload a CSV (max 2MB). Optional columns include Created, Name,
-                Email, Source, and more—see the sample file for the full list.
+                Use a <strong>CSV</strong> or <strong>Excel .xlsx</strong> file (max 2MB). Excel uses the first
+                worksheet only. Download <strong>both</strong> sample files below to see every supported column.
+                Exports with title, street, city, phone, url, website, and category columns are mapped automatically.
                 Each row needs at least one of name, email, or phone.
               </li>
               <li>
-                Choose assignment: pick specific team members, or pick a branch
-                to round-robin among everyone in that branch. In team mode you can
+                Choose assignment: pick specific team members, or pick one or more
+                branches to round-robin among everyone in those branches. In team mode you can
                 optionally file leads under another branch (when your role allows).
               </li>
               <li>
@@ -303,14 +348,27 @@ export function ImportLeadsModal({
                 receive push notifications on their devices.
               </li>
             </ul>
-            <button
-              type="button"
-              onClick={handleDownloadSample}
-              className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
-            >
-              <Download className="size-4 shrink-0" aria-hidden />
-              Download sample CSV
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Sample files
+              </span>
+              <button
+                type="button"
+                onClick={handleDownloadSample}
+                className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+              >
+                <Download className="size-4 shrink-0" aria-hidden />
+                Download sample CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerDownloadLeadImportSampleXlsx()}
+                className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
+              >
+                <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
+                Download sample Excel (.xlsx)
+              </button>
+            </div>
           </div>
         </DialogHeader>
         {step === 'receipt' && lastResult ? (
@@ -393,13 +451,13 @@ export function ImportLeadsModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="import-csv-file">CSV file</Label>
+                <Label htmlFor="import-csv-file">Spreadsheet file</Label>
               </div>
               <input
                 id="import-csv-file"
                 ref={fileInputRef}
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium"
                 onChange={handleFileChange}
               />
@@ -453,41 +511,47 @@ export function ImportLeadsModal({
 
             {assignmentMode === 'branch' ? (
               <div className="grid gap-2">
-                <Label htmlFor="import-branch-pool">Branch</Label>
+                <Label id="import-branch-pool-label">Branches</Label>
                 {branches.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
                     No branches available for this organization.
                   </p>
                 ) : (
                   <>
-                    <Select
-                      value={branchPoolId || undefined}
-                      onValueChange={setBranchPoolId}
+                    <ScrollArea
+                      className="h-[min(200px,32vh)] rounded-md border border-input"
+                      aria-labelledby="import-branch-pool-label"
                     >
-                      <SelectTrigger id="import-branch-pool" className="w-full">
-                        <SelectValue placeholder="Select a branch" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <div className="space-y-0 p-2">
                         {branches.map((b) => (
-                          <SelectItem key={b.uid} value={String(b.uid)}>
-                            {branchLabel(b)}
-                          </SelectItem>
+                          <label
+                            key={b.uid}
+                            htmlFor={`import-branch-pool-${b.uid}`}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                          >
+                            <Checkbox
+                              id={`import-branch-pool-${b.uid}`}
+                              checked={branchPoolIds.includes(b.uid)}
+                              onCheckedChange={() => toggleBranchPool(b.uid)}
+                            />
+                            <span className="text-sm">{importBranchLabel(b)}</span>
+                          </label>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    </ScrollArea>
                     <span className="text-muted-foreground text-xs">
-                      Leads are filed under this branch. Imports rotate in round-robin
-                      across the active users shown below.
+                      With multiple branches, each lead is filed under the assignee&apos;s branch.
+                      Imports rotate (load-aware) across the active users shown below.
                     </span>
                     {branchPoolLoading ? (
                       <p className="text-muted-foreground flex items-center gap-2 text-xs">
                         <Loader2Icon className="size-3.5 shrink-0 animate-spin" aria-hidden />
-                        Loading team for this branch…
+                        Loading teams for selected branches…
                       </p>
                     ) : branchPoolEmpty ? (
                       <p className="text-destructive text-xs">
-                        No active users in this branch—choose another branch or use team
-                        member selection.
+                        No active users in the selected branches—choose different branches or use
+                        team member selection.
                       </p>
                     ) : branchUsers.length > 0 ? (
                       <div className="rounded-md border border-dashed border-input bg-muted/20 px-2 py-1.5">
@@ -594,7 +658,7 @@ export function ImportLeadsModal({
                         <SelectItem value="__default__">Default (your branch)</SelectItem>
                         {branches.map((b) => (
                           <SelectItem key={b.uid} value={String(b.uid)}>
-                            {branchLabel(b)}
+                            {importBranchLabel(b)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -614,7 +678,7 @@ export function ImportLeadsModal({
               </div>
               <Select value={source || undefined} onValueChange={setSource}>
                 <SelectTrigger id="import-source" className="w-full">
-                  <SelectValue placeholder="Use CSV Source or leave blank" />
+                  <SelectValue placeholder="Use file Source column or leave blank" />
                 </SelectTrigger>
                 <SelectContent>
                   {LEAD_SOURCE_OPTIONS.map((opt) => (
@@ -625,7 +689,7 @@ export function ImportLeadsModal({
                 </SelectContent>
               </Select>
               <span className="text-muted-foreground text-xs">
-                Applied to all imported leads when the CSV does not provide a
+                Applied to all imported leads when the spreadsheet does not provide a
                 Source.
               </span>
             </div>
@@ -670,7 +734,7 @@ export function ImportLeadsModal({
                   importMutation.isPending ||
                   (assignmentMode === 'branch' &&
                     (branches.length === 0 ||
-                      !branchPoolId ||
+                      branchPoolIds.length === 0 ||
                       branchPoolLoading ||
                       branchPoolEmpty))
                 }

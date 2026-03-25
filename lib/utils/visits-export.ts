@@ -4,7 +4,7 @@
  */
 
 import { format } from 'date-fns';
-import type { BranchListItem } from '@/api/types/branch';
+import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
 import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
@@ -105,7 +105,7 @@ export function resolveBranchChartLabel(
   const uid = getVisitBranchUid(c);
   if (uid != null) {
     const b = branches.find((br) => br.uid === uid);
-    const n = (b?.alias?.trim() || b?.name?.trim());
+    const n = b ? getBranchDisplayLabel(b) : '';
     if (n) return n;
     const fromVisit = getVisitBranchDisplayName(c);
     if (fromVisit) return fromVisit;
@@ -134,7 +134,7 @@ export function enrichVisitsWithUserBranches(
 
   const branchNameByUid = new Map<number, string>();
   for (const b of branches ?? []) {
-    const n = (b.alias?.trim() || b.name?.trim());
+    const n = getBranchDisplayLabel(b);
     if (n) branchNameByUid.set(b.uid, n);
   }
 

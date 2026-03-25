@@ -20,7 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSessionSync, useBranches, useCreateLeadMutation, useApiClient } from '@/api/hooks';
+import {
+  useSessionSync,
+  useBranches,
+  useCreateLeadMutation,
+  useApiClient,
+  getBranchDisplayLabel,
+} from '@/api/hooks';
 import { uploadFile } from '@/api/endpoints/upload';
 import {
   LEAD_STATUS_OPTIONS,
@@ -967,7 +973,7 @@ export function CreateLeadModal({
                     <SelectItem key={b.uid} value={String(b.uid)}>
                       <span className="flex items-center gap-2">
                         <MapPinIcon className="size-4 shrink-0" />
-                        {b.name ?? `Branch ${b.uid}`}
+                        {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                       </span>
                     </SelectItem>
                   ))}

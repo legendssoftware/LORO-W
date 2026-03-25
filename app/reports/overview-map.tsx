@@ -22,7 +22,7 @@ import {
   Coffee,
   type LucideIcon,
 } from 'lucide-react';
-import { useMapReport, useBranches, useUsers } from '@/api/hooks';
+import { useMapReport, useBranches, useUsers, getBranchDisplayLabel } from '@/api/hooks';
 import type { MapMarkerBase, MapDataResponse } from '@/api/types/map';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -368,7 +368,7 @@ function OverviewMapInner() {
               <SelectItem value="all">All branches</SelectItem>
               {branches.map((b) => (
                 <SelectItem key={b.uid} value={String(b.uid)}>
-                  {b.name ?? `Branch ${b.uid}`}
+                  {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
                 </SelectItem>
               ))}
             </SelectContent>
