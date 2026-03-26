@@ -109,8 +109,11 @@ export interface GetLeadsParams {
   priority?: string;
   source?: string;
   ownerId?: number;
-  /** Branch uid (admin/owner only; omit for all branches) */
-  branchId?: number;
+  /**
+   * `me` (default): leads you own or are assigned to.
+   * `all`: entire organization (admin or owner only; server returns 403 otherwise).
+   */
+  scope?: 'me' | 'all';
 }
 
 export interface GetLeadsReportParams {
@@ -141,7 +144,11 @@ export interface GetUnassignedLeadsParams {
   minScore?: number;
   maxScore?: number;
   source?: string;
-  branchId?: number;
+  /**
+   * `me` (default): unassigned leads where you appear in assignees.
+   * `all`: all unassigned in org (admin or owner only).
+   */
+  scope?: 'me' | 'all';
 }
 
 export type LeadReassignStrategy = 'single' | 'round_robin' | 'least_loaded';

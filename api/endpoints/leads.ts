@@ -21,7 +21,7 @@ import type { LeadsReportResponse } from '@/api/types/reports';
 
 /**
  * GET /leads - paginated list of leads.
- * Admin/owner: all leads. User: own leads only (owner or assignee).
+ * Use `scope=all` for org-wide (admin/owner) or `scope=me` for owner/assignee (default).
  */
 export async function getLeads(
   client: AxiosInstance,
@@ -41,7 +41,7 @@ export async function getLeads(
   if (params.priority) search.set('priority', params.priority);
   if (params.source) search.set('source', params.source);
   if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
-  if (params.branchId != null) search.set('branchId', String(params.branchId));
+  if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(`/leads${qs ? `?${qs}` : ''}`);
   return data;
@@ -65,7 +65,7 @@ export async function getUnassignedLeads(
   if (params.minScore != null) search.set('minScore', String(params.minScore));
   if (params.maxScore != null) search.set('maxScore', String(params.maxScore));
   if (params.source) search.set('source', params.source);
-  if (params.branchId != null) search.set('branchId', String(params.branchId));
+  if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(
     `/leads/unassigned${qs ? `?${qs}` : ''}`

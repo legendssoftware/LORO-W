@@ -229,29 +229,28 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       endDate: dateTo,
       /** Align list scope with GET /leads/report (activity in range), not createdAt-only. */
       dateBasis: 'activity' as const,
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-      ...(selectedOwnerUid !== 'all'
+      scope: (elevated ? 'all' : 'me') as 'all' | 'me',
+      ...(elevated && selectedOwnerUid !== 'all'
         ? { ownerId: Number(selectedOwnerUid) }
         : {}),
       ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
       ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
     }),
-    [
-      dateFrom,
-      dateTo,
-      elevated,
-      selectedBranchId,
-      selectedOwnerUid,
-      selectedStatus,
-      selectedSource,
-    ]
+    [dateFrom, dateTo, elevated, selectedOwnerUid, selectedStatus, selectedSource]
   );
 
   const listQuery = useLeads(listParams, {
     enabled: Boolean(dateFrom && dateTo) && summaryOpen,
   });
+
+  const summaryDialogLeads = useMemo(() => {
+    const rows = listQuery.data?.data ?? [];
+    if (!elevated || selectedBranchId === 'all') return rows;
+    const bid = Number(selectedBranchId);
+    return rows.filter(
+      (l) => (l as { branch?: { uid?: number } }).branch?.uid === bid
+    );
+  }, [listQuery.data?.data, elevated, selectedBranchId]);
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({ limit: 200 });
@@ -538,7 +537,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       <LeadsSummaryDialog
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
-        leads={listQuery.data?.data ?? []}
+        leads={summaryDialogLeads}
         isLoading={listQuery.isLoading}
         periodLabel={periodLabel}
       />
