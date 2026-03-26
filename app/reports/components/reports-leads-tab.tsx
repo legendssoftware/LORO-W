@@ -337,6 +337,20 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
     [report?.byUser]
   );
 
+  const userActivityBarConfig = {
+    count: { label: 'Leads', color: ATT_CHART_HSL.c2 },
+  } satisfies ChartConfig;
+
+  const userActivityBarData = useMemo(
+    () =>
+      byUserTop.map((row) => ({
+        user: formatOwnerChartName(row.name),
+        rawName: row.name,
+        count: row.value,
+      })),
+    [byUserTop]
+  );
+
   const byBranchTop = useMemo(
     () =>
       takeTopNWithOther(
@@ -661,11 +675,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                       config={statusDonut.config}
                       data={statusDonut.slices}
                       centerPrimary={statusDonut.sum.toLocaleString()}
-                      centerSecondary={
-                        isActivityReport
-                          ? 'Touched leads in range'
-                          : 'Leads in range'
-                      }
+                      centerSecondary="Total Leads"
                     />
                   )}
                 </CardContent>
@@ -732,6 +742,101 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
                 </CardContent>
               </Card>
             </div>
+
+            <Card className="border-gray-200 bg-white">
+              <CardHeader>
+                <CardTitle>Lead activity by user</CardTitle>
+                <CardDescription>
+                  Top 10 owners by lead count in range (remaining grouped as
+                  Other)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userActivityBarData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No data
+                  </p>
+                ) : (
+                  <ChartContainer
+                    config={userActivityBarConfig}
+                    className="aspect-auto h-[300px] w-full"
+                  >
+                    <BarChart
+                      data={userActivityBarData}
+                      accessibilityLayer
+                      margin={{ top: 28, right: 8, left: 8, bottom: 8 }}
+                      barCategoryGap="20%"
+                      barGap={4}
+                    >
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="user"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                        angle={-25}
+                        textAnchor="end"
+                        height={70}
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) =>
+                          String(v).length > 20
+                            ? `${String(v).slice(0, 18)}…`
+                            : String(v)
+                        }
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        allowDecimals={false}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            hideLabel
+                            formatter={(value, _name, item) => (
+                              <div className="flex w-full flex-wrap items-center justify-between gap-2 gap-x-4">
+                                <span className="text-muted-foreground">
+                                  {String(
+                                    (
+                                      item?.payload as {
+                                        rawName?: string;
+                                      }
+                                    )?.rawName ?? ''
+                                  )}
+                                </span>
+                                <span className="text-foreground font-mono font-medium tabular-nums">
+                                  {typeof value === 'number'
+                                    ? value.toLocaleString()
+                                    : String(value)}
+                                </span>
+                              </div>
+                            )}
+                          />
+                        }
+                      />
+                      <Bar dataKey="count" radius={8}>
+                        {userActivityBarData.map((entry, index) => (
+                          <Cell
+                            key={`${entry.rawName}-${index}`}
+                            fill={
+                              BAR_PALETTE[index % BAR_PALETTE.length]
+                            }
+                          />
+                        ))}
+                        <LabelList
+                          position="top"
+                          dataKey="count"
+                          offset={6}
+                          className="fill-foreground text-xs"
+                        />
+                      </Bar>
+                      <ChartLegend content={<ChartLegendContent />} />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </CardContent>
+            </Card>
           </section>
 
           <section className="space-y-3">

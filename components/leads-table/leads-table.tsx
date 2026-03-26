@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow, isToday } from 'date-fns';
 import { ChevronRight, Users } from 'lucide-react';
 import type { LeadListItem } from '@/api/types/leads';
 import { Badge } from '@/components/ui/badge';
@@ -102,6 +102,32 @@ function priorityCell(value: string | undefined): ReactNode {
   return (
     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', badgeClass)}>
       {display}
+    </span>
+  );
+}
+
+function parseLeadDate(iso: string | undefined): Date | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function lastEditedCell(lead: LeadListItem): ReactNode {
+  const d = parseLeadDate(lead.updatedAt);
+  if (!d) return '—';
+  const relative = formatDistanceToNow(d, { addSuffix: true });
+  const editedToday = isToday(d);
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      <span className="whitespace-nowrap">{relative}</span>
+      {editedToday ? (
+        <Badge
+          variant="secondary"
+          className="shrink-0 border-emerald-200 bg-emerald-100 text-[10px] font-medium text-emerald-800"
+        >
+          Today
+        </Badge>
+      ) : null}
     </span>
   );
 }
@@ -323,23 +349,33 @@ export function LeadsTable({
                     <Table className="min-w-max">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="whitespace-nowrap">Name</TableHead>
-                          <TableHead className="whitespace-nowrap">Company</TableHead>
+                          <TableHead className="max-w-[200px] whitespace-nowrap md:max-w-[240px]">
+                            Name
+                          </TableHead>
+                          <TableHead className="max-w-[200px] whitespace-nowrap md:max-w-[240px]">
+                            Company
+                          </TableHead>
                           <TableHead className="whitespace-nowrap">Status</TableHead>
                           <TableHead className="whitespace-nowrap">Source</TableHead>
                           <TableHead className="whitespace-nowrap">Temperature</TableHead>
                           <TableHead className="whitespace-nowrap">Priority</TableHead>
                           <TableHead className="whitespace-nowrap">Created</TableHead>
+                          <TableHead className="whitespace-nowrap">Last edited</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
-                        {group.leads.map((lead) => (
+                        {group.leads.map((lead) => {
+                          const updated = parseLeadDate(lead.updatedAt);
+                          const actionedToday = updated != null && isToday(updated);
+                          return (
                           <TableRow
                             key={lead.uid}
                             className={cn(
                               'border-b-0',
+                              actionedToday && '!bg-emerald-50/50',
                               onLeadClick &&
-                                'cursor-pointer transition-colors hover:bg-muted/50'
+                                'cursor-pointer transition-colors hover:bg-muted/50',
+                              actionedToday && onLeadClick && 'hover:!bg-emerald-50/70'
                             )}
                             role={onLeadClick ? 'button' : undefined}
                             tabIndex={onLeadClick ? 0 : undefined}
@@ -354,7 +390,7 @@ export function LeadsTable({
                               }
                             }}
                           >
-                            <TableCell className="whitespace-nowrap text-sm">
+                            <TableCell className="max-w-[200px] min-w-0 text-sm md:max-w-[240px]">
                               <span className="flex items-center gap-2">
                                 {group.isUnassignedGroup ? (
                                   <Badge
@@ -364,11 +400,21 @@ export function LeadsTable({
                                     Unassigned
                                   </Badge>
                                 ) : null}
-                                <span>{lead.name?.trim() || '-'}</span>
+                                <span
+                                  className="truncate"
+                                  title={lead.name?.trim() || undefined}
+                                >
+                                  {lead.name?.trim() || '-'}
+                                </span>
                               </span>
                             </TableCell>
-                            <TableCell className="min-w-0 text-sm">
-                              {lead.companyName?.trim() || '-'}
+                            <TableCell
+                              className="max-w-[200px] min-w-0 text-sm md:max-w-[240px]"
+                              title={lead.companyName?.trim() || undefined}
+                            >
+                              <span className="block truncate">
+                                {lead.companyName?.trim() || '-'}
+                              </span>
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-sm">
                               {optionCell(
@@ -403,8 +449,12 @@ export function LeadsTable({
                                   )
                                 : '-'}
                             </TableCell>
+                            <TableCell className="min-w-0 max-w-[200px] text-sm md:max-w-[240px]">
+                              {lastEditedCell(lead)}
+                            </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

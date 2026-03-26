@@ -46,6 +46,7 @@ export function LeadsContent() {
     startDate,
     endDate,
     useAllTime,
+    dateBasis,
     selectedStatus,
     selectedSource,
     selectedUserId,
@@ -53,7 +54,9 @@ export function LeadsContent() {
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
     setStartDate,
+    setEndDate,
     setUseAllTime,
+    setDateBasis,
     selectEndDateAndClose,
     resetDateRangeToDefault,
     setSelectedStatus,
@@ -95,6 +98,7 @@ export function LeadsContent() {
       : {
           startDate: format(startDate, 'yyyy-MM-dd'),
           endDate: format(endDate, 'yyyy-MM-dd'),
+          ...(dateBasis === 'activity' ? { dateBasis: 'activity' as const } : {}),
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
@@ -242,6 +246,51 @@ export function LeadsContent() {
               ) : null;
             })()}
           </div>
+          <Select
+            value={useAllTime ? 'created' : dateBasis}
+            onValueChange={(v) =>
+              setDateBasis(v as 'created' | 'activity')
+            }
+            disabled={useAllTime}
+          >
+            <SelectTrigger
+              className="h-9 min-w-[200px] w-[240px] border-gray-200 bg-white text-foreground disabled:opacity-60"
+              title={
+                useAllTime
+                  ? 'Choose a date range to filter by created date or last activity'
+                  : 'Created: lead created in range. Last activity: updated in range (excludes never edited).'
+              }
+            >
+              <SelectValue placeholder="Range applies to" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created">Created in range</SelectItem>
+              <SelectItem value="activity">
+                <span className="flex flex-col items-start gap-0.5 text-left">
+                  <span>Last activity in range</span>
+                  <span className="text-[10px] font-normal text-muted-foreground">
+                    Excludes leads never edited after creation
+                  </span>
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 border-gray-200 bg-white text-foreground"
+            title="Sets range to today and filters by last activity (server: updated in range, edited after creation)."
+            onClick={() => {
+              const now = new Date();
+              setStartDate(now);
+              setEndDate(now);
+              setUseAllTime(false);
+              setDateBasis('activity');
+            }}
+          >
+            Today&apos;s activity
+          </Button>
           {canViewAll ? (
             <Select
               value={listScope}
@@ -292,35 +341,36 @@ export function LeadsContent() {
               ))}
             </SelectContent>
           </Select>
-          <Select
-            value={selectedUserId || 'all'}
-            onValueChange={(v) => setSelectedUserId(v)}
-            disabled={listScope === 'me'}
-          >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All users</SelectItem>
-              {users.map((user) => {
-                const fullName = [user.name, user.surname].filter(Boolean).join(' ') || user.email || `User ${user.uid}`;
-                const imgSrc = (user as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (user as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
-                return (
-                  <SelectItem key={user.uid} value={String(user.uid)}>
-                    <span className="flex items-center gap-2">
-                      <Avatar className="size-6 shrink-0">
-                        <AvatarImage src={imgSrc} alt={fullName} />
-                        <AvatarFallback className="text-xs">
-                          {fullName !== `User ${user.uid}` ? fullName.slice(0, 2).toUpperCase() : String(user.uid).slice(-2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {fullName}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {listScope === 'all' ? (
+            <Select
+              value={selectedUserId || 'all'}
+              onValueChange={(v) => setSelectedUserId(v)}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All users</SelectItem>
+                {users.map((user) => {
+                  const fullName = [user.name, user.surname].filter(Boolean).join(' ') || user.email || `User ${user.uid}`;
+                  const imgSrc = (user as { photoURL?: string | null; avatar?: string | null }).photoURL ?? (user as { photoURL?: string | null; avatar?: string | null }).avatar ?? undefined;
+                  return (
+                    <SelectItem key={user.uid} value={String(user.uid)}>
+                      <span className="flex items-center gap-2">
+                        <Avatar className="size-6 shrink-0">
+                          <AvatarImage src={imgSrc} alt={fullName} />
+                          <AvatarFallback className="text-xs">
+                            {fullName !== `User ${user.uid}` ? fullName.slice(0, 2).toUpperCase() : String(user.uid).slice(-2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {fullName}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : null}
         </div>
         <div className="flex flex-nowrap items-center gap-2">
           <div className="relative w-56 min-w-0 shrink sm:w-64">
