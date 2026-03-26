@@ -66,7 +66,7 @@ export function invalidateLeadQueries(
 
 /**
  * Fetches paginated leads list.
- * Admin/owner: all leads. User: own leads only.
+ * Pass `scope: 'all'` (admin/owner) or `scope: 'me'` (default) — see GET /leads.
  * Enterprise-only; no retry on 403.
  */
 export function useLeads(

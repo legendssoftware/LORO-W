@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format, isSameDay } from 'date-fns';
 import {
   useLeadsInfinite,
@@ -36,6 +36,8 @@ import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
 } from '@/lib/lead-form-utils';
+import { useSessionStore } from '@/store/session-store';
+import { canViewAllOrgLeads } from '@/lib/leads-scope';
 
 const today = new Date();
 
@@ -66,8 +68,28 @@ export function LeadsContent() {
 
   const { data: users = [] } = useUsers({ limit: 100 });
 
+  const profile = useSessionStore((s) => s.profileData);
+  const canViewAll = useMemo(
+    () => canViewAllOrgLeads(profile?.accessLevel ?? profile?.role),
+    [profile?.accessLevel, profile?.role]
+  );
+  /** Explicit choice when user can switch org vs personal list; null = derive from role. */
+  const [listScopeChoice, setListScopeChoice] = useState<'me' | 'all' | null>(null);
+  const listScope = listScopeChoice ?? (canViewAll ? 'all' : 'me');
+
+  useEffect(() => {
+    setListScopeChoice(null);
+  }, [canViewAll]);
+
+  useEffect(() => {
+    if (listScope === 'me' && selectedUserId && selectedUserId !== 'all') {
+      setSelectedUserId('all');
+    }
+  }, [listScope, selectedUserId, setSelectedUserId]);
+
   const leadsParams = {
     limit: LEADS_LIST_PAGE_SIZE,
+    scope: listScope,
     ...(useAllTime
       ? {}
       : {
@@ -76,7 +98,10 @@ export function LeadsContent() {
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
-    ...(selectedUserId && selectedUserId !== 'all' && !Number.isNaN(Number(selectedUserId))
+    ...(listScope === 'all' &&
+    selectedUserId &&
+    selectedUserId !== 'all' &&
+    !Number.isNaN(Number(selectedUserId))
       ? { ownerId: Number(selectedUserId) }
       : {}),
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
@@ -87,6 +112,7 @@ export function LeadsContent() {
 
   const unassignedParams = {
     limit: LEADS_LIST_PAGE_SIZE,
+    scope: listScope,
     ...(useAllTime
       ? {}
       : {
@@ -216,6 +242,20 @@ export function LeadsContent() {
               ) : null;
             })()}
           </div>
+          {canViewAll ? (
+            <Select
+              value={listScope}
+              onValueChange={(v) => setListScopeChoice(v as 'me' | 'all')}
+            >
+              <SelectTrigger className="h-9 min-w-[160px] w-[200px] border-gray-200 bg-white text-foreground">
+                <SelectValue placeholder="List scope" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All organization</SelectItem>
+                <SelectItem value="me">My leads</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
           <Select
             value={selectedStatus || 'all'}
             onValueChange={(v) => setSelectedStatus(v)}
@@ -255,6 +295,7 @@ export function LeadsContent() {
           <Select
             value={selectedUserId || 'all'}
             onValueChange={(v) => setSelectedUserId(v)}
+            disabled={listScope === 'me'}
           >
             <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
               <SelectValue placeholder="All users" />

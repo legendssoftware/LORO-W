@@ -7,9 +7,6 @@ import {
   isSameDay,
   parseISO,
   startOfDay,
-  endOfMonth,
-  startOfMonth,
-  subMonths,
 } from 'date-fns';
 import {
   Bar,
@@ -88,10 +85,9 @@ import {
 /** Max categories per chart (rest grouped as Other where applicable). */
 const CHART_TOP_N = 10;
 
-function getPreviousCalendarMonthRange(): { start: Date; end: Date } {
-  const now = startOfDay(new Date());
-  const refMonth = subMonths(now, 1);
-  return { start: startOfMonth(refMonth), end: endOfMonth(refMonth) };
+function getDefaultLeadsReportDateRange(): { start: Date; end: Date } {
+  const today = startOfDay(new Date());
+  return { start: today, end: today };
 }
 
 const LEAD_STATUS_OPTIONS = [
@@ -173,10 +169,10 @@ export interface ReportsLeadsTabProps {
 
 export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
   const [startDate, setStartDate] = useState(
-    () => getPreviousCalendarMonthRange().start
+    () => getDefaultLeadsReportDateRange().start
   );
   const [endDate, setEndDate] = useState(
-    () => getPreviousCalendarMonthRange().end
+    () => getDefaultLeadsReportDateRange().end
   );
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
@@ -191,9 +187,9 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
   const elevated = isElevatedAccess(profile);
 
   const defaultReportRange = useMemo(
-    () => getPreviousCalendarMonthRange(),
-    // Recompute when the calendar month changes (so “default” stays previous month).
-    [format(startOfDay(new Date()), 'yyyy-MM')]
+    () => getDefaultLeadsReportDateRange(),
+    // Recompute when the local calendar day changes so “default” stays today.
+    [format(startOfDay(new Date()), 'yyyy-MM-dd')]
   );
 
   const reportParams = useMemo(
@@ -231,29 +227,30 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       limit: 500,
       startDate: dateFrom,
       endDate: dateTo,
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-      ...(selectedOwnerUid !== 'all'
+      /** Align list scope with GET /leads/report (activity in range), not createdAt-only. */
+      dateBasis: 'activity' as const,
+      scope: (elevated ? 'all' : 'me') as 'all' | 'me',
+      ...(elevated && selectedOwnerUid !== 'all'
         ? { ownerId: Number(selectedOwnerUid) }
         : {}),
       ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
       ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
     }),
-    [
-      dateFrom,
-      dateTo,
-      elevated,
-      selectedBranchId,
-      selectedOwnerUid,
-      selectedStatus,
-      selectedSource,
-    ]
+    [dateFrom, dateTo, elevated, selectedOwnerUid, selectedStatus, selectedSource]
   );
 
   const listQuery = useLeads(listParams, {
     enabled: Boolean(dateFrom && dateTo) && summaryOpen,
   });
+
+  const summaryDialogLeads = useMemo(() => {
+    const rows = listQuery.data?.data ?? [];
+    if (!elevated || selectedBranchId === 'all') return rows;
+    const bid = Number(selectedBranchId);
+    return rows.filter(
+      (l) => (l as { branch?: { uid?: number } }).branch?.uid === bid
+    );
+  }, [listQuery.data?.data, elevated, selectedBranchId]);
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({ limit: 200 });
@@ -433,7 +430,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
               <button
                 type="button"
                 onClick={() => {
-                  const r = getPreviousCalendarMonthRange();
+                  const r = getDefaultLeadsReportDateRange();
                   setStartDate(r.start);
                   setEndDate(r.end);
                 }}
@@ -540,7 +537,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       <LeadsSummaryDialog
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
-        leads={listQuery.data?.data ?? []}
+        leads={summaryDialogLeads}
         isLoading={listQuery.isLoading}
         periodLabel={periodLabel}
       />

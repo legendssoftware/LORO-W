@@ -89,6 +89,9 @@ export interface LeadDetailResponse {
   stats?: unknown;
 }
 
+/** Passed as `dateBasis` on GET /leads and GET /leads/report — matches server LeadsReportDateBasis. */
+export type LeadsReportDateBasis = 'created' | 'activity';
+
 export interface GetLeadsParams {
   page?: number;
   limit?: number;
@@ -96,18 +99,22 @@ export interface GetLeadsParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  /**
+   * When `startDate` and `endDate` are set: `created` (default) vs `activity` — same as GET /leads/report.
+   */
+  dateBasis?: LeadsReportDateBasis;
   temperature?: string;
   minScore?: number;
   maxScore?: number;
   priority?: string;
   source?: string;
   ownerId?: number;
-  /** Branch uid (admin/owner only; omit for all branches) */
-  branchId?: number;
+  /**
+   * `me` (default): leads you own or are assigned to.
+   * `all`: entire organization (admin or owner only; server returns 403 otherwise).
+   */
+  scope?: 'me' | 'all';
 }
-
-/** Passed as `dateBasis` on GET /leads/report — matches server LeadsReportDateBasis. */
-export type LeadsReportDateBasis = 'created' | 'activity';
 
 export interface GetLeadsReportParams {
   from: string; // YYYY-MM-DD
@@ -137,7 +144,11 @@ export interface GetUnassignedLeadsParams {
   minScore?: number;
   maxScore?: number;
   source?: string;
-  branchId?: number;
+  /**
+   * `me` (default): unassigned leads where you appear in assignees.
+   * `all`: all unassigned in org (admin or owner only).
+   */
+  scope?: 'me' | 'all';
 }
 
 export type LeadReassignStrategy = 'single' | 'round_robin' | 'least_loaded';
