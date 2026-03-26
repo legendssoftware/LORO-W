@@ -89,6 +89,9 @@ export interface LeadDetailResponse {
   stats?: unknown;
 }
 
+/** Passed as `dateBasis` on GET /leads and GET /leads/report — matches server LeadsReportDateBasis. */
+export type LeadsReportDateBasis = 'created' | 'activity';
+
 export interface GetLeadsParams {
   page?: number;
   limit?: number;
@@ -96,6 +99,10 @@ export interface GetLeadsParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  /**
+   * When `startDate` and `endDate` are set: `created` (default) vs `activity` — same as GET /leads/report.
+   */
+  dateBasis?: LeadsReportDateBasis;
   temperature?: string;
   minScore?: number;
   maxScore?: number;
@@ -105,9 +112,6 @@ export interface GetLeadsParams {
   /** Branch uid (admin/owner only; omit for all branches) */
   branchId?: number;
 }
-
-/** Passed as `dateBasis` on GET /leads/report — matches server LeadsReportDateBasis. */
-export type LeadsReportDateBasis = 'created' | 'activity';
 
 export interface GetLeadsReportParams {
   from: string; // YYYY-MM-DD

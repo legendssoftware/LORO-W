@@ -34,6 +34,7 @@ export async function getLeads(
   if (params.search) search.set('search', params.search);
   if (params.startDate) search.set('startDate', params.startDate);
   if (params.endDate) search.set('endDate', params.endDate);
+  if (params.dateBasis) search.set('dateBasis', params.dateBasis);
   if (params.temperature) search.set('temperature', params.temperature);
   if (params.minScore != null) search.set('minScore', String(params.minScore));
   if (params.maxScore != null) search.set('maxScore', String(params.maxScore));

@@ -7,9 +7,6 @@ import {
   isSameDay,
   parseISO,
   startOfDay,
-  endOfMonth,
-  startOfMonth,
-  subMonths,
 } from 'date-fns';
 import {
   Bar,
@@ -88,10 +85,9 @@ import {
 /** Max categories per chart (rest grouped as Other where applicable). */
 const CHART_TOP_N = 10;
 
-function getPreviousCalendarMonthRange(): { start: Date; end: Date } {
-  const now = startOfDay(new Date());
-  const refMonth = subMonths(now, 1);
-  return { start: startOfMonth(refMonth), end: endOfMonth(refMonth) };
+function getDefaultLeadsReportDateRange(): { start: Date; end: Date } {
+  const today = startOfDay(new Date());
+  return { start: today, end: today };
 }
 
 const LEAD_STATUS_OPTIONS = [
@@ -173,10 +169,10 @@ export interface ReportsLeadsTabProps {
 
 export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
   const [startDate, setStartDate] = useState(
-    () => getPreviousCalendarMonthRange().start
+    () => getDefaultLeadsReportDateRange().start
   );
   const [endDate, setEndDate] = useState(
-    () => getPreviousCalendarMonthRange().end
+    () => getDefaultLeadsReportDateRange().end
   );
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
@@ -191,9 +187,9 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
   const elevated = isElevatedAccess(profile);
 
   const defaultReportRange = useMemo(
-    () => getPreviousCalendarMonthRange(),
-    // Recompute when the calendar month changes (so “default” stays previous month).
-    [format(startOfDay(new Date()), 'yyyy-MM')]
+    () => getDefaultLeadsReportDateRange(),
+    // Recompute when the local calendar day changes so “default” stays today.
+    [format(startOfDay(new Date()), 'yyyy-MM-dd')]
   );
 
   const reportParams = useMemo(
@@ -231,6 +227,8 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       limit: 500,
       startDate: dateFrom,
       endDate: dateTo,
+      /** Align list scope with GET /leads/report (activity in range), not createdAt-only. */
+      dateBasis: 'activity' as const,
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
@@ -433,7 +431,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
               <button
                 type="button"
                 onClick={() => {
-                  const r = getPreviousCalendarMonthRange();
+                  const r = getDefaultLeadsReportDateRange();
                   setStartDate(r.start);
                   setEndDate(r.end);
                 }}
