@@ -59,6 +59,14 @@ function initialsSourceForVisitMarker(marker: MapMarkerBase): string {
   return String(marker.name ?? marker.id ?? 'visit');
 }
 
+/** Owner-based label for lead pins (assignee avatar ring). */
+function initialsSourceForLeadMarker(marker: MapMarkerBase): string {
+  const o = marker.owner as { name?: string; surname?: string } | undefined;
+  const fromOwner = [o?.name, o?.surname].filter(Boolean).join(' ').trim();
+  if (fromOwner) return fromOwner;
+  return String(marker.name ?? marker.id ?? 'lead');
+}
+
 function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
   const mt = String(marker.markerType ?? '');
   if (
@@ -72,9 +80,17 @@ function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
   if (mt === 'competitor') return marker.logoUrl as string | undefined;
   if (mt === 'branch') return marker.logoUrl as string | undefined;
   if (mt === 'lead') {
+    const img = marker.image as string | undefined;
+    const owner = marker.owner as { photoURL?: string; avatar?: string } | undefined;
     const ld = marker.leadData as { image?: string } | undefined;
     const loc = marker.location as { imageUrl?: string } | undefined;
-    return ld?.image || loc?.imageUrl;
+    return (
+      img ||
+      owner?.photoURL ||
+      owner?.avatar ||
+      ld?.image ||
+      loc?.imageUrl
+    );
   }
   if (mt === 'check-in-visit') {
     const img = marker.image as string | undefined;
@@ -108,7 +124,11 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
   const imgUrl = resolveMarkerImageUrl(marker);
   const name = String(marker.name ?? marker.id ?? mt);
   const initialsLabel =
-    mt === 'check-in-visit' ? initialsSourceForVisitMarker(marker) : name;
+    mt === 'check-in-visit'
+      ? initialsSourceForVisitMarker(marker)
+      : mt === 'lead'
+        ? initialsSourceForLeadMarker(marker)
+        : name;
 
   const inner = imgUrl ? (
     createElement('img', {
@@ -141,7 +161,16 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
           fontFamily: 'system-ui, sans-serif',
         },
       },
-      ['check-in', 'shift-start', 'shift-end', 'break-start', 'break-end', 'claim', 'check-in-visit'].includes(mt)
+      [
+        'check-in',
+        'shift-start',
+        'shift-end',
+        'break-start',
+        'break-end',
+        'claim',
+        'check-in-visit',
+        'lead',
+      ].includes(mt)
         ? getInitials(initialsLabel)
         : genericPlaceholderChar(mt)
     )
