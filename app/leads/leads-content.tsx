@@ -97,7 +97,7 @@ export function LeadsContent() {
 
   const dedupeMutation = useDedupeLeadsMutation();
   /** Org-wide list for admin/owner; personal list otherwise (no UI toggle). */
-  const listScope = canViewAll ? 'all' : 'me';
+  const listScope: 'me' | 'all' = canViewAll ? 'all' : 'me';
 
   const leadsParams = {
     limit: LEADS_LIST_PAGE_SIZE,
