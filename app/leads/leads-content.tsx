@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { format, isSameDay, startOfMonth } from 'date-fns';
 import {
   useLeadsInfinite,
   useUnassignedLeadsInfinite,
   LEADS_LIST_PAGE_SIZE,
   useUsers,
+  useDedupeLeadsMutation,
 } from '@/api/hooks';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
@@ -27,7 +28,8 @@ import {
 } from '@/components/ui/select';
 import { CalendarIcon, XIcon } from '@/lib/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload as UploadIcon } from 'lucide-react';
+import { CopyMinus, Upload as UploadIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { LeadsTable } from '@/components/leads-table/leads-table';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
@@ -37,7 +39,20 @@ import {
   LEAD_SOURCE_OPTIONS_WITH_ALL,
 } from '@/lib/lead-form-utils';
 import { useSessionStore } from '@/store/session-store';
-import { canViewAllOrgLeads } from '@/lib/leads-scope';
+import { canViewAllOrgLeads, canDedupeOrgLeads } from '@/lib/leads-scope';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export function LeadsContent() {
   const {
@@ -64,6 +79,7 @@ export function LeadsContent() {
   } = useLeadsStore();
 
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
@@ -74,19 +90,14 @@ export function LeadsContent() {
     () => canViewAllOrgLeads(profile?.accessLevel ?? profile?.role),
     [profile?.accessLevel, profile?.role]
   );
-  /** Explicit choice when user can switch org vs personal list; null = derive from role. */
-  const [listScopeChoice, setListScopeChoice] = useState<'me' | 'all' | null>(null);
-  const listScope = listScopeChoice ?? (canViewAll ? 'all' : 'me');
+  const canDedupe = useMemo(
+    () => canDedupeOrgLeads(profile?.accessLevel, profile?.role),
+    [profile?.accessLevel, profile?.role]
+  );
 
-  useEffect(() => {
-    setListScopeChoice(null);
-  }, [canViewAll]);
-
-  useEffect(() => {
-    if (listScope === 'me' && selectedUserId && selectedUserId !== 'all') {
-      setSelectedUserId('all');
-    }
-  }, [listScope, selectedUserId, setSelectedUserId]);
+  const dedupeMutation = useDedupeLeadsMutation();
+  /** Org-wide list for admin/owner; personal list otherwise (no UI toggle). */
+  const listScope = canViewAll ? 'all' : 'me';
 
   const leadsParams = {
     limit: LEADS_LIST_PAGE_SIZE,
@@ -292,25 +303,11 @@ export function LeadsContent() {
           >
             Today&apos;s activity
           </Button>
-          {canViewAll ? (
-            <Select
-              value={listScope}
-              onValueChange={(v) => setListScopeChoice(v as 'me' | 'all')}
-            >
-              <SelectTrigger className="h-9 min-w-[160px] w-[200px] border-gray-200 bg-white text-foreground">
-                <SelectValue placeholder="List scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All organization</SelectItem>
-                <SelectItem value="me">My leads</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : null}
           <Select
             value={selectedStatus || 'all'}
             onValueChange={(v) => setSelectedStatus(v)}
           >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+            <SelectTrigger className="h-9 min-w-[100px] w-[128px] border-gray-200 bg-white text-foreground">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -328,7 +325,7 @@ export function LeadsContent() {
             value={selectedSource || 'all'}
             onValueChange={(v) => setSelectedSource(v)}
           >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+            <SelectTrigger className="h-9 min-w-[100px] w-[128px] border-gray-200 bg-white text-foreground">
               <SelectValue placeholder="All sources" />
             </SelectTrigger>
             <SelectContent>
@@ -395,15 +392,97 @@ export function LeadsContent() {
               </button>
             ) : null}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 gap-1.5 border-gray-200 bg-white text-foreground"
-            onClick={() => setImportModalOpen(true)}
-          >
-            <UploadIcon className="size-4" />
-            Import
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-9 shrink-0 border-neutral-300 bg-white text-neutral-950 hover:bg-neutral-50 hover:text-neutral-950"
+                onClick={() => setImportModalOpen(true)}
+                aria-label="Import leads"
+              >
+                <UploadIcon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Import leads</TooltipContent>
+          </Tooltip>
+          {canDedupe ? (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-9 shrink-0 border-red-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => setDedupeDialogOpen(true)}
+                    disabled={dedupeMutation.isPending}
+                    aria-label="Dedupe leads"
+                  >
+                    <CopyMinus className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Remove duplicate leads for this organisation (keeps the oldest in each group)
+                </TooltipContent>
+              </Tooltip>
+              <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Deduplicate leads?</DialogTitle>
+                    <DialogDescription>
+                      This permanently deletes duplicate leads in your organisation. For each group with the same email
+                      or the same name and phone number, we keep the oldest lead and move interactions onto it. This
+                      cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="gap-2 sm:gap-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setDedupeDialogOpen(false)}
+                      disabled={dedupeMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        dedupeMutation.mutate(undefined, {
+                          onSuccess: (data) => {
+                            toast.success(data.message);
+                            setDedupeDialogOpen(false);
+                          },
+                          onError: (err: unknown) => {
+                            const msg =
+                              err &&
+                              typeof err === 'object' &&
+                              'response' in err &&
+                              err.response &&
+                              typeof err.response === 'object' &&
+                              'data' in err.response &&
+                              err.response.data &&
+                              typeof err.response.data === 'object' &&
+                              'message' in err.response.data &&
+                              typeof (err.response.data as { message: unknown }).message === 'string'
+                                ? (err.response.data as { message: string }).message
+                                : err instanceof Error
+                                  ? err.message
+                                  : 'Dedupe failed';
+                            toast.error(msg);
+                          },
+                        })
+                      }
+                      disabled={dedupeMutation.isPending}
+                    >
+                      {dedupeMutation.isPending ? 'Running…' : 'Run dedupe'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          ) : null}
         </div>
       </div>
       <LeadsTable

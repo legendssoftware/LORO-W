@@ -23,6 +23,7 @@ import {
   getEngageDraft,
   sendLeadEngage,
   importLeadsFromCSV,
+  dedupeLeads,
 } from '@/api/endpoints/leads';
 import type {
   GetLeadsParams,
@@ -380,6 +381,18 @@ export function useImportLeadsMutation() {
       formData: FormData;
       params: ImportLeadsFromCSVParams;
     }) => importLeadsFromCSV(client, formData, params),
+    onSuccess: () => {
+      invalidateLeadQueries(queryClient);
+    },
+  });
+}
+
+/** POST /leads/dedupe - merge duplicates for current org; invalidates lead queries on success. */
+export function useDedupeLeadsMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => dedupeLeads(client),
     onSuccess: () => {
       invalidateLeadQueries(queryClient);
     },
