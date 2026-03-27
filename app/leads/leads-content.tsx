@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, startOfMonth } from 'date-fns';
 import {
   useLeadsInfinite,
   useUnassignedLeadsInfinite,
@@ -38,8 +38,6 @@ import {
 } from '@/lib/lead-form-utils';
 import { useSessionStore } from '@/store/session-store';
 import { canViewAllOrgLeads } from '@/lib/leads-scope';
-
-const today = new Date();
 
 export function LeadsContent() {
   const {
@@ -222,8 +220,11 @@ export function LeadsContent() {
               </PopoverContent>
             </Popover>
             {(() => {
+              const now = new Date();
               const isDefaultRange =
-                !useAllTime && isSameDay(startDate, today) && isSameDay(endDate, today);
+                !useAllTime &&
+                isSameDay(startDate, startOfMonth(now)) &&
+                isSameDay(endDate, now);
               return useAllTime || !isDefaultRange ? (
                 <span
                   role="button"
@@ -239,7 +240,7 @@ export function LeadsContent() {
                     }
                   }}
                   className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Reset to today"
+                  aria-label="Reset to this month"
                 >
                   <XIcon className="size-4 text-red-600" />
                 </span>
