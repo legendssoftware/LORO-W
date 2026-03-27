@@ -173,6 +173,12 @@ export interface ReassignLeadsResponse {
   message: string;
 }
 
+/** Response from POST /leads/dedupe */
+export interface LeadDedupeResponse {
+  removed: number;
+  message: string;
+}
+
 /** Response from POST /leads/import-csv (CSV or .xlsx upload) */
 export interface LeadImportResponse {
   success: boolean;

@@ -10,6 +10,7 @@ import type {
   ReassignLeadsPayload,
   ReassignLeadsResponse,
   LeadImportResponse,
+  LeadDedupeResponse,
   CreateLeadPayload,
   CreateLeadResponse,
   UpdateLeadPayload,
@@ -238,6 +239,14 @@ export async function sendLeadEngage(
   payload: { channel: 'email' | 'sms' | 'whatsapp'; message: string }
 ): Promise<LeadActionResponse> {
   const { data } = await client.post<LeadActionResponse>(`/leads/${ref}/send-engage`, payload);
+  return data;
+}
+
+/**
+ * POST /leads/dedupe - remove duplicate leads for the current org (keeps oldest per group).
+ */
+export async function dedupeLeads(client: AxiosInstance): Promise<LeadDedupeResponse> {
+  const { data } = await client.post<LeadDedupeResponse>('/leads/dedupe');
   return data;
 }
 

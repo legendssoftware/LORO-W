@@ -74,7 +74,7 @@ function VisitMapTableToggleButton() {
       ) : (
         <>
           <MapIcon className="size-4" />
-          View on map
+          Visualiser
         </>
       )}
     </Button>
