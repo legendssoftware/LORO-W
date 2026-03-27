@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, startOfMonth } from 'date-fns';
 import { Map as MapIcon, List, Table2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,8 +27,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
-
-const today = new Date();
 
 export interface VisitHistoryUserRow {
   uid: number;
@@ -188,8 +186,11 @@ export function VisitHistoryToolbar({
               </PopoverContent>
             </Popover>
             {(() => {
+              const now = new Date();
               const isDefaultRange =
-                !useAllTime && isSameDay(startDate, today) && isSameDay(endDate, today);
+                !useAllTime &&
+                isSameDay(startDate, startOfMonth(now)) &&
+                isSameDay(endDate, now);
               return useAllTime || !isDefaultRange ? (
                 <span
                   role="button"
@@ -205,7 +206,7 @@ export function VisitHistoryToolbar({
                     }
                   }}
                   className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
-                  aria-label="Reset to today"
+                  aria-label="Reset to this month"
                 >
                   <XIcon className="size-4 text-red-600" />
                 </span>

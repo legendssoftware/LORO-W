@@ -5,6 +5,7 @@ import { format, subMonths, startOfDay, endOfDay, eachDayOfInterval, getDay, add
 import { Car, Building2, Users } from 'lucide-react';
 import { useMonthlyAttendance, useCheckIns, useLeadsReport, useClaims, useSessionSync } from '@/api/hooks';
 import type { ReportCardUser } from '@/app/reports/types';
+import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
 import {
@@ -25,13 +26,6 @@ import { Button } from '@/components/ui/button';
 import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 
-interface AttendanceRecordShape {
-  checkIn?: string;
-  checkOut?: string | null;
-  duration?: string | null;
-  lateMinutes?: number | null;
-}
-
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
 
 type ShiftType = 'same_day' | 'next_day_clockout' | null;
@@ -51,7 +45,7 @@ function getShiftType(checkIn?: string | null, checkOut?: string | null): ShiftT
 interface DayRecord {
   date: string;
   status: RowStatus;
-  attendanceRecord?: AttendanceRecordShape;
+  attendanceRecord?: MonthlyCalendarAttendanceRecord;
   shiftType: ShiftType;
 }
 
@@ -136,18 +130,18 @@ export function UserAttendanceRecordsModal({
   const records = useMemo((): DayRecord[] => {
     const attendanceByDate = new Map<
       string,
-      { status: string; attendanceRecord?: AttendanceRecordShape }
+      { status: string; attendanceRecord?: MonthlyCalendarAttendanceRecord }
     >();
 
     const currentDays = (currentMonthQuery.data?.days ?? []) as Array<{
       date: string;
       status: string;
-      attendanceRecord?: AttendanceRecordShape;
+      attendanceRecord?: MonthlyCalendarAttendanceRecord;
     }>;
     const prevDays = (prevMonthQuery.data?.days ?? []) as Array<{
       date: string;
       status: string;
-      attendanceRecord?: AttendanceRecordShape;
+      attendanceRecord?: MonthlyCalendarAttendanceRecord;
     }>;
 
     for (const d of [...prevDays, ...currentDays]) {
@@ -325,6 +319,15 @@ export function UserAttendanceRecordsModal({
     }
   };
 
+  const formatDistanceKm = (km: number | null | undefined): string => {
+    if (km == null || Number.isNaN(Number(km))) return '—';
+    const n = Number(km);
+    if (n < 0) return '—';
+    const rounded = Math.round(n * 100) / 100;
+    const isWhole = Number.isInteger(rounded);
+    return `${isWhole ? String(rounded) : rounded.toFixed(2)} km`;
+  };
+
   const summary = useMemo(() => {
     const endFull = endOfDay(new Date(today.getFullYear(), today.getMonth(), 25));
     const missed = records.filter((r) => r.status === 'missed').length;
@@ -496,7 +499,7 @@ export function UserAttendanceRecordsModal({
                       {dayMetrics[r.date]?.claimsCount ?? '—'}
                     </TableCell>
                     <TableCell className="tabular-nums text-muted-foreground">
-                      —
+                      {formatDistanceKm(r.attendanceRecord?.distanceTravelledKm)}
                     </TableCell>
                     <TableCell className="tabular-nums">
                       {(() => {

@@ -3,13 +3,14 @@
  * Centralizes date range, filters, and UI state (mirrors visits-store pattern).
  */
 
+import { startOfMonth } from 'date-fns';
 import { create } from 'zustand';
 
 import type { LeadsReportDateBasis } from '@/api/types/leads';
 
-const today = new Date();
-const defaultEnd = today;
-const defaultStart = today;
+const now = new Date();
+const defaultStart = startOfMonth(now);
+const defaultEnd = now;
 
 export interface LeadsFiltersState {
   startDate: Date;
@@ -71,8 +72,8 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
 
   resetDateRangeToDefault: () =>
     set({
-      startDate: defaultStart,
-      endDate: defaultEnd,
+      startDate: startOfMonth(new Date()),
+      endDate: new Date(),
       useAllTime: false,
       dateBasis: 'created',
     }),
