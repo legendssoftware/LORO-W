@@ -60,13 +60,25 @@ export interface AttendanceMetricsResponse {
     metrics: AttendanceMetrics;
 }
 
+/** Slim attendance row from GET /att/user/:ref/monthly (includes resolved travel distance). */
+export interface MonthlyCalendarAttendanceRecord {
+    uid: number;
+    checkIn: string;
+    checkOut?: string | null;
+    status: string;
+    duration?: string | null;
+    lateMinutes?: number | null;
+    /** Kilometres travelled for the shift; null if unknown. */
+    distanceTravelledKm?: number | null;
+}
+
 /** Single day in monthly attendance (GET /att/user/:ref/monthly) */
 export interface MonthlyAttendanceDay {
     date: string;
     dayNumber: number;
     dayOfWeek: number;
     status: "attended" | "missed" | "future";
-    attendanceRecord?: unknown;
+    attendanceRecord?: MonthlyCalendarAttendanceRecord;
 }
 
 export interface MonthlyAttendanceResponse {
