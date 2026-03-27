@@ -113,20 +113,32 @@ function parseLeadDate(iso: string | undefined): Date | null {
 }
 
 function lastEditedCell(lead: LeadListItem): ReactNode {
-  const d = parseLeadDate(lead.updatedAt);
+  const iso = lead.lastActivityAt ?? lead.updatedAt;
+  const d = parseLeadDate(iso);
   if (!d) return '—';
   const relative = formatDistanceToNow(d, { addSuffix: true });
   const editedToday = isToday(d);
+  const summary = lead.lastActivitySummary?.trim();
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <span className="whitespace-nowrap">{relative}</span>
-      {editedToday ? (
-        <Badge
-          variant="secondary"
-          className="shrink-0 border-emerald-200 bg-emerald-100 text-[10px] font-medium text-emerald-800"
-        >
-          Today
-        </Badge>
+    <span className="flex min-w-0 max-w-[260px] flex-col gap-0.5">
+      <span className="whitespace-nowrap text-xs text-muted-foreground">
+        {format(d, 'MMM d, yyyy · h:mm a')}
+      </span>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <span className="whitespace-nowrap text-sm">{relative}</span>
+        {editedToday ? (
+          <Badge
+            variant="secondary"
+            className="shrink-0 border-emerald-200 bg-emerald-100 text-[10px] font-medium text-emerald-800"
+          >
+            Today
+          </Badge>
+        ) : null}
+      </span>
+      {summary ? (
+        <span className="line-clamp-2 text-xs text-muted-foreground" title={summary}>
+          {summary}
+        </span>
       ) : null}
     </span>
   );
@@ -365,7 +377,8 @@ export function LeadsTable({
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
                         {group.leads.map((lead) => {
-                          const updated = parseLeadDate(lead.updatedAt);
+                          const editedIso = lead.lastActivityAt ?? lead.updatedAt;
+                          const updated = parseLeadDate(editedIso);
                           const actionedToday = updated != null && isToday(updated);
                           return (
                           <TableRow

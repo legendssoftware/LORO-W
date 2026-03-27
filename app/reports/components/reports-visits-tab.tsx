@@ -1,6 +1,12 @@
 'use client';
 
-import { useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 import {
   format,
   isSameDay,
@@ -73,6 +79,7 @@ import {
 } from '@/lib/utils/visits-export';
 import { METHOD_OPTIONS } from '@/lib/visit-form-utils';
 import { formatOwnerChartName } from '@/lib/utils/report-labels';
+import type { ReportsMode } from '@/app/reports/reports-content';
 
 const PALETTE = [
   REPORT_CHART_HSL.c1,
@@ -220,9 +227,13 @@ const lineHourConfig = {
 
 export interface ReportsVisitsTabProps {
   profile: SyncProfile | null | undefined;
+  reportsMode: ReportsMode;
 }
 
-export function ReportsVisitsTab(_props: ReportsVisitsTabProps) {
+export function ReportsVisitsTab({
+  profile,
+  reportsMode,
+}: ReportsVisitsTabProps) {
   const today = startOfDay(new Date());
 
   const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
@@ -231,6 +242,11 @@ export function ReportsVisitsTab(_props: ReportsVisitsTabProps) {
 
   const [selectedBranchId, setSelectedBranchId] = useState('all');
   const [selectedUserUid, setSelectedUserUid] = useState('all');
+
+  useEffect(() => {
+    if (reportsMode !== 'self' || profile?.uid == null) return;
+    setSelectedUserUid(String(profile.uid));
+  }, [reportsMode, profile?.uid]);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('all');
@@ -239,17 +255,27 @@ export function ReportsVisitsTab(_props: ReportsVisitsTabProps) {
   const startIso = startOfDay(startDate).toISOString();
   const endIso = endOfDay(endDate).toISOString();
 
+  const checkInUserUid =
+    reportsMode === 'self' && profile?.uid != null
+      ? String(profile.uid)
+      : selectedUserUid !== 'all'
+        ? selectedUserUid
+        : undefined;
+
   const checkInsQuery = useCheckIns(
     {
       startDate: startIso,
       endDate: endIso,
-      ...(selectedUserUid !== 'all' ? { userUid: selectedUserUid } : {}),
+      ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
     },
     { enabled: true }
   );
 
   const { data: branches = [] } = useBranches();
-  const { data: usersList = [] } = useUsers({ limit: 200 });
+  const { data: usersList = [] } = useUsers({
+    limit: 200,
+    enabled: reportsMode === 'org',
+  });
 
   const mappedRaw = useMemo(
     () =>
@@ -531,33 +557,35 @@ export function ReportsVisitsTab(_props: ReportsVisitsTabProps) {
             </SelectContent>
           </Select>
 
-          <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All users</SelectItem>
-              {usersList.map((u) => {
-                const fullName =
-                  [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                  u.email ||
-                  `User ${u.uid}`;
-                return (
-                  <SelectItem key={u.uid} value={String(u.uid)}>
-                    <span className="flex items-center gap-2">
-                      <Avatar className="size-6 shrink-0">
-                        <AvatarImage src={undefined} alt="" />
-                        <AvatarFallback className="text-xs">
-                          {fullName.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {fullName}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {reportsMode === 'org' ? (
+            <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent className="z-[10001]">
+                <SelectItem value="all">All users</SelectItem>
+                {usersList.map((u) => {
+                  const fullName =
+                    [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                    u.email ||
+                    `User ${u.uid}`;
+                  return (
+                    <SelectItem key={u.uid} value={String(u.uid)}>
+                      <span className="flex items-center gap-2">
+                        <Avatar className="size-6 shrink-0">
+                          <AvatarImage src={undefined} alt="" />
+                          <AvatarFallback className="text-xs">
+                            {fullName.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {fullName}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : null}
 
           <Select
             value={selectedRegion || 'all'}

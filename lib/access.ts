@@ -4,7 +4,35 @@
  */
 
 /** Paths any signed-in user with "standard" role can access (view-only scope) */
-export const STANDARD_USER_PATHS = ["/dashboard", "/visits", "/leads", "/planning"] as const;
+export const STANDARD_USER_PATHS = [
+    "/dashboard",
+    "/visits",
+    "/leads",
+    "/planning",
+    "/reports",
+] as const;
+
+/** Matches server ReportsController.getAccessScope `isElevated` (org-wide reports / map). */
+const REPORTS_ELEVATED_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+    "developer",
+    "support",
+    "hr",
+    "supervisor",
+    "executive",
+]);
+
+/**
+ * True when the user sees org-wide report filters and data (vs self-scoped).
+ * Keep in sync with server `getAccessScope` / reports map clamp logic.
+ */
+export function isReportsElevatedViewer(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return REPORTS_ELEVATED_LEVELS.has(level);
+}
 
 export type StandardUserPath = (typeof STANDARD_USER_PATHS)[number];
 
@@ -168,6 +196,7 @@ export function getAllowedRoutes(
         { path: "/visits", label: "Visits" },
         { path: "/leads", label: "Leads" },
         { path: "/planning", label: "Planning" },
+        { path: "/reports", label: "Reports" },
     ];
 
     if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {

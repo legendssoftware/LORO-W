@@ -54,6 +54,8 @@ export interface VisitHistoryToolbarProps {
   showMapTableToggle?: boolean;
   /** Default: visible "Visit history" heading. Pass null to omit. */
   sectionHeading?: ReactNode | null;
+  /** When false, hides the user filter (e.g. self-scoped Reports visualiser). Default true. */
+  showUserFilter?: boolean;
 }
 
 function VisitMapTableToggleButton() {
@@ -95,6 +97,7 @@ export function VisitHistoryToolbar({
   showVisitsSummaryButton = true,
   showMapTableToggle = true,
   sectionHeading,
+  showUserFilter = true,
 }: VisitHistoryToolbarProps) {
   const {
     startDate,
@@ -257,36 +260,38 @@ export function VisitHistoryToolbar({
               })}
             </SelectContent>
           </Select>
-          <Select
-            value={selectedUserUid || 'all'}
-            onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-          >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
-              <UsersIcon className="size-4 shrink-0" />
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All users</SelectItem>
-              {usersList.map((u) => {
-                const fullName =
-                  [u.name, u.surname].filter(Boolean).join(' ').trim() || u.email || `User ${u.uid}`;
-                const imgSrc = u.photoURL ?? u.avatar ?? undefined;
-                return (
-                  <SelectItem key={u.uid} value={String(u.uid)}>
-                    <span className="flex items-center gap-2">
-                      <Avatar className="size-6 shrink-0">
-                        <AvatarImage src={imgSrc} alt={fullName} />
-                        <AvatarFallback className="text-xs">
-                          {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {fullName}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {showUserFilter ? (
+            <Select
+              value={selectedUserUid || 'all'}
+              onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+                <UsersIcon className="size-4 shrink-0" />
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent className="z-[10001]">
+                <SelectItem value="all">All users</SelectItem>
+                {usersList.map((u) => {
+                  const fullName =
+                    [u.name, u.surname].filter(Boolean).join(' ').trim() || u.email || `User ${u.uid}`;
+                  const imgSrc = u.photoURL ?? u.avatar ?? undefined;
+                  return (
+                    <SelectItem key={u.uid} value={String(u.uid)}>
+                      <span className="flex items-center gap-2">
+                        <Avatar className="size-6 shrink-0">
+                          <AvatarImage src={imgSrc} alt={fullName} />
+                          <AvatarFallback className="text-xs">
+                            {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {fullName}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : null}
         </div>
         <div className="flex flex-nowrap items-center gap-2">
           <div className="relative w-56 min-w-0 shrink sm:w-64">
