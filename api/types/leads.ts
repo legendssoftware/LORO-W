@@ -30,6 +30,19 @@ export interface LeadListItem {
   attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
+  /** ISO timestamp of the latest user-facing activity log entry (if recorded). */
+  lastActivityAt?: string;
+  /** One-line summary of the most recent activity. */
+  lastActivitySummary?: string;
+  /** Newest-first audit entries returned on detail/list when present. */
+  activity?: Array<{
+    at: string;
+    action: string;
+    summary: string;
+    userId?: number;
+    clerkUserId?: string;
+    userName?: string;
+  }>;
   owner?: {
     uid?: number;
     name?: string;

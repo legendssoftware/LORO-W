@@ -13,13 +13,15 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { isStaffDashboardVisible } from '@/lib/access';
+import { isReportsElevatedViewer } from '@/lib/access';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
 import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
 import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import type { SyncProfile } from '@/api/types';
+
+export type ReportsMode = 'org' | 'self';
 
 const REPORT_TABS = [
   { value: 'overview', label: 'Overview', Icon: LayoutDashboard },
@@ -42,8 +44,10 @@ function ReportsPlaceholderPanel() {
 
 function ReportsTabsEqualWidth({
   profile,
+  reportsMode,
 }: {
   profile: SyncProfile | null | undefined;
+  reportsMode: ReportsMode;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
@@ -99,13 +103,13 @@ function ReportsTabsEqualWidth({
       {REPORT_TABS.map(({ value }) => (
         <TabsContent key={value} value={value}>
           {value === 'attendance' ? (
-            <ReportsAttendanceTab profile={profile} />
+            <ReportsAttendanceTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'visits' ? (
-            <ReportsVisitsTab profile={profile} />
+            <ReportsVisitsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'leads' ? (
-            <ReportsLeadsTab profile={profile} />
+            <ReportsLeadsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'visualiser' ? (
-            <ReportsVisualiserTab profile={profile} />
+            <ReportsVisualiserTab profile={profile} reportsMode={reportsMode} />
           ) : (
             <ReportsPlaceholderPanel />
           )}
@@ -119,8 +123,11 @@ export function ReportsContent() {
   const { isSignedIn } = useAuth();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
-  const isStaff = isStaffDashboardVisible(profile?.accessLevel);
-  const isVisitsAdmin = profile?.accessLevel?.toLowerCase() === 'admin';
+  const reportsMode: ReportsMode = isReportsElevatedViewer(
+    profile?.accessLevel
+  )
+    ? 'org'
+    : 'self';
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -131,16 +138,10 @@ export function ReportsContent() {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {!isSignedIn || !isTokenReady ? (
             <LoadingSpinner wrapperClassName="py-12" />
-          ) : profile && !isStaff ? (
-            <p className="text-center text-muted-foreground py-12">
-              Reports are available to staff only.
-            </p>
-          ) : isVisitsAdmin ? (
-            <ReportsTabsEqualWidth profile={profile} />
+          ) : profile ? (
+            <ReportsTabsEqualWidth profile={profile} reportsMode={reportsMode} />
           ) : (
-            <p className="text-center text-muted-foreground py-12">
-              Reports are available to admin only.
-            </p>
+            <LoadingSpinner wrapperClassName="py-12" />
           )}
         </div>
       </main>

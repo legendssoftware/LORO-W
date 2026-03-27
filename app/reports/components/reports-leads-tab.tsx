@@ -76,6 +76,7 @@ import {
 } from '@/lib/utils/report-labels';
 import { LeadsSummaryDialog } from '@/app/reports/components/leads-summary-dialog';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-attendance-tab';
+import type { ReportsMode } from '@/app/reports/reports-content';
 import {
   buildPipelineValueAxis,
   formatAxisTickThousands,
@@ -165,9 +166,10 @@ function KpiCard({
 
 export interface ReportsLeadsTabProps {
   profile: SyncProfile | null | undefined;
+  reportsMode: ReportsMode;
 }
 
-export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
+export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) {
   const [startDate, setStartDate] = useState(
     () => getDefaultLeadsReportDateRange().start
   );
@@ -197,10 +199,14 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       from: dateFrom,
       to: dateTo,
       dateBasis: 'activity' as const,
-      ...(elevated && selectedBranchId !== 'all'
+      ...(reportsMode === 'org' &&
+      elevated &&
+      selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
-      ...(selectedOwnerUid !== 'all'
+      ...(reportsMode === 'org' &&
+      elevated &&
+      selectedOwnerUid !== 'all'
         ? { ownerId: Number(selectedOwnerUid) }
         : {}),
       ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
@@ -210,6 +216,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       dateFrom,
       dateTo,
       elevated,
+      reportsMode,
       selectedBranchId,
       selectedOwnerUid,
       selectedStatus,
@@ -229,14 +236,26 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
       endDate: dateTo,
       /** Align list scope with GET /leads/report (activity in range), not createdAt-only. */
       dateBasis: 'activity' as const,
-      scope: (elevated ? 'all' : 'me') as 'all' | 'me',
-      ...(elevated && selectedOwnerUid !== 'all'
+      scope: (reportsMode === 'org' && elevated ? 'all' : 'me') as
+        | 'all'
+        | 'me',
+      ...(reportsMode === 'org' &&
+      elevated &&
+      selectedOwnerUid !== 'all'
         ? { ownerId: Number(selectedOwnerUid) }
         : {}),
       ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
       ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
     }),
-    [dateFrom, dateTo, elevated, selectedOwnerUid, selectedStatus, selectedSource]
+    [
+      dateFrom,
+      dateTo,
+      elevated,
+      reportsMode,
+      selectedOwnerUid,
+      selectedStatus,
+      selectedSource,
+    ]
   );
 
   const listQuery = useLeads(listParams, {
@@ -456,7 +475,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
             ) : null}
           </div>
 
-          {elevated ? (
+          {reportsMode === 'org' && elevated ? (
             <Select
               value={selectedBranchId}
               onValueChange={setSelectedBranchId}
@@ -503,7 +522,7 @@ export function ReportsLeadsTab({ profile }: ReportsLeadsTabProps) {
             </SelectContent>
           </Select>
 
-          {elevated ? (
+          {reportsMode === 'org' && elevated ? (
             <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
               <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                 <SelectValue placeholder="All owners" />

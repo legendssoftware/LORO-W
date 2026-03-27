@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { endOfDay, startOfDay } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
@@ -28,6 +28,7 @@ import { mapCheckInsFromApi } from '@/lib/utils/visits-export';
 import { useOrgName } from '@/lib/org-id-context';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
+import type { ReportsMode } from '@/app/reports/reports-content';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -36,9 +37,13 @@ const ReportsVisualiserMap = dynamic(
 
 export interface ReportsVisualiserTabProps {
   profile: SyncProfile | null | undefined;
+  reportsMode: ReportsMode;
 }
 
-export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
+export function ReportsVisualiserTab({
+  profile,
+  reportsMode,
+}: ReportsVisualiserTabProps) {
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   const orgName = useOrgName();
@@ -53,16 +58,30 @@ export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
     selectedUserUid,
     searchQuery,
   } = useVisitsStore();
+  const setStoreUserUid = useVisitsStore((s) => s.setSelectedUserUid);
+
+  useEffect(() => {
+    if (reportsMode !== 'self' || profile?.uid == null) return;
+    setStoreUserUid(String(profile.uid));
+  }, [reportsMode, profile?.uid, setStoreUserUid]);
 
   const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
   const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
 
-  const usersQuery = useUsers({ limit: 200, enabled: mounted });
+  const usersQuery = useUsers({
+    limit: 200,
+    enabled: mounted && reportsMode === 'org',
+  });
   const usersList = usersQuery.data ?? [];
   const branchesQuery = useBranches({ enabled: mounted });
   const branchMarkersQuery = useBranchMapMarkers(branchesQuery.data, {
     enabled: mounted && (branchesQuery.data?.length ?? 0) > 0,
   });
+
+  const checkInUserUid =
+    reportsMode === 'self' && profile?.uid != null
+      ? String(profile.uid)
+      : selectedUserUid || undefined;
 
   const checkInsQuery = useCheckIns(
     {
@@ -72,7 +91,7 @@ export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
             startDate: startOfDay(startDate).toISOString(),
             endDate: endOfDay(endDate).toISOString(),
           }),
-      ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
+      ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
     },
     { enabled: mounted }
   );
@@ -116,8 +135,12 @@ export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
 
   const mapReportParams = useMemo((): GetMapReportParams => {
     const base: GetMapReportParams = {};
-    if (selectedUserUid) {
-      const uid = parseInt(selectedUserUid, 10);
+    const uidStr =
+      reportsMode === 'self' && profile?.uid != null
+        ? String(profile.uid)
+        : selectedUserUid;
+    if (uidStr) {
+      const uid = parseInt(uidStr, 10);
       if (!Number.isNaN(uid)) base.userId = uid;
     }
     if (useAllTime) {
@@ -127,7 +150,7 @@ export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
       base.endDate = endOfDay(endDate).toISOString();
     }
     return base;
-  }, [useAllTime, startDate, endDate, selectedUserUid]);
+  }, [useAllTime, startDate, endDate, selectedUserUid, reportsMode, profile?.uid]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
   const influenceCircles = mapReport.data?.influenceCircles ?? [];
@@ -162,6 +185,7 @@ export function ReportsVisualiserTab(_props: ReportsVisualiserTabProps) {
         visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
         onOpenVisitsSummary={handleOpenVisitsSummary}
         showMapTableToggle={false}
+        showUserFilter={reportsMode === 'org'}
       />
       <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col">
         {mapReport.isLoading ? (

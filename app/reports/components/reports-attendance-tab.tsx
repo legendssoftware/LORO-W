@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   format,
   isSameDay,
@@ -77,6 +77,7 @@ import { cn } from '@/lib/utils';
 import { AttendanceHoursSummaryDialog } from '@/app/reports/components/attendance-hours-summary-dialog';
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
+import type { ReportsMode } from '@/app/reports/reports-content';
 
 export { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
@@ -232,9 +233,13 @@ function filterUserMetricsForSummary(
 
 export interface ReportsAttendanceTabProps {
   profile: SyncProfile | null | undefined;
+  reportsMode: ReportsMode;
 }
 
-export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
+export function ReportsAttendanceTab({
+  profile,
+  reportsMode,
+}: ReportsAttendanceTabProps) {
   const today = startOfDay(new Date());
   const todayStr = format(today, 'yyyy-MM-dd');
 
@@ -247,6 +252,13 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
   const [selectedUserUid, setSelectedUserUid] = useState<string>('all');
   const [summaryOpen, setSummaryOpen] = useState(false);
 
+  useEffect(() => {
+    if (reportsMode !== 'self' || profile?.uid == null) return;
+    setSelectedUserUid(String(profile.uid));
+    setSelectedBranchId('all');
+    setSelectedRole('all');
+  }, [reportsMode, profile?.uid]);
+
   const dateFrom = format(startDate, 'yyyy-MM-dd');
   const dateTo = format(endDate, 'yyyy-MM-dd');
 
@@ -256,12 +268,16 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
     dateFrom,
     dateTo,
     includeUserDetails: false as const,
-    branchId:
-      selectedBranchId !== 'all' ? selectedBranchId : undefined,
-    role:
-      selectedRole !== 'all'
-        ? (selectedRole as (typeof ROLE_OPTIONS)[number])
-        : undefined,
+    ...(reportsMode === 'org'
+      ? {
+          branchId:
+            selectedBranchId !== 'all' ? selectedBranchId : undefined,
+          role:
+            selectedRole !== 'all'
+              ? (selectedRole as (typeof ROLE_OPTIONS)[number])
+              : undefined,
+        }
+      : {}),
   };
 
   const reportQuery = useAttendanceReport(reportParamsBase, {
@@ -291,7 +307,10 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
   );
 
   const { data: branches = [] } = useBranches();
-  const { data: usersList = [] } = useUsers({ limit: 200 });
+  const { data: usersList = [] } = useUsers({
+    limit: 200,
+    enabled: reportsMode === 'org',
+  });
 
   const rawCheckIns = useMemo(
     () => parseCheckIns(rangeQuery.data?.checkIns ?? []),
@@ -517,64 +536,68 @@ export function ReportsAttendanceTab({ profile }: ReportsAttendanceTabProps) {
             ) : null}
           </div>
 
-          <Select
-            value={selectedBranchId}
-            onValueChange={setSelectedBranchId}
-          >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
-              <SelectValue placeholder="All branches" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All branches</SelectItem>
-              {branches.map((b) => (
-                <SelectItem key={b.uid} value={String(b.uid)}>
-                  {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {reportsMode === 'org' ? (
+            <>
+              <Select
+                value={selectedBranchId}
+                onValueChange={setSelectedBranchId}
+              >
+                <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                  <SelectValue placeholder="All branches" />
+                </SelectTrigger>
+                <SelectContent className="z-[10001]">
+                  <SelectItem value="all">All branches</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.uid} value={String(b.uid)}>
+                      {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
-              <SelectValue placeholder="All roles" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All roles</SelectItem>
-              {ROLE_OPTIONS.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {r}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                  <SelectValue placeholder="All roles" />
+                </SelectTrigger>
+                <SelectContent className="z-[10001]">
+                  <SelectItem value="all">All roles</SelectItem>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All users</SelectItem>
-              {usersList.map((u) => {
-                const fullName =
-                  [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                  u.email ||
-                  `User ${u.uid}`;
-                return (
-                  <SelectItem key={u.uid} value={String(u.uid)}>
-                    <span className="flex items-center gap-2">
-                      <Avatar className="size-6 shrink-0">
-                        <AvatarImage src={undefined} alt="" />
-                        <AvatarFallback className="text-xs">
-                          {fullName.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {fullName}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+              <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
+                <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+                  <SelectValue placeholder="All users" />
+                </SelectTrigger>
+                <SelectContent className="z-[10001]">
+                  <SelectItem value="all">All users</SelectItem>
+                  {usersList.map((u) => {
+                    const fullName =
+                      [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                      u.email ||
+                      `User ${u.uid}`;
+                    return (
+                      <SelectItem key={u.uid} value={String(u.uid)}>
+                        <span className="flex items-center gap-2">
+                          <Avatar className="size-6 shrink-0">
+                            <AvatarImage src={undefined} alt="" />
+                            <AvatarFallback className="text-xs">
+                              {fullName.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          {fullName}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </>
+          ) : null}
         </div>
 
         <div className="flex flex-nowrap items-center gap-2 min-w-0">
