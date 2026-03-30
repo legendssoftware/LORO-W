@@ -4,7 +4,14 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AttendanceMetrics } from '@/api/types';
+import { useUserTarget, useProfileSales } from '@/api/hooks';
+import {
+  canFetchProfileSales,
+  hasSalesTargetForProfileSales,
+} from '@/lib/dashboard-profile-sales-gate';
 import { TimerIcon } from '@/lib/icons';
+import { MapPinIcon } from 'lucide-react';
+import { DashboardTargetsRadial } from '@/components/dashboard-targets-radial';
 
 /** Current month name (e.g. "February"). */
 function getCurrentMonthName(): string {
@@ -28,10 +35,24 @@ function getPayrollPeriodLabel(): string {
 export function DashboardMetricsCard({
   metrics,
   isLoading,
+  userRef,
 }: {
   metrics: AttendanceMetrics | null | undefined;
   isLoading: boolean;
+  userRef: string | null;
 }) {
+  const monthLabel = useMemo(() => getCurrentMonthName(), []);
+  const payrollLabel = useMemo(() => getPayrollPeriodLabel(), []);
+
+  const targetQuery = useUserTarget(userRef, { enabled: !!userRef });
+  const shouldFetchProfileSales = useMemo(() => {
+    const ut = targetQuery.data?.userTarget ?? null;
+    return hasSalesTargetForProfileSales(ut) || canFetchProfileSales(ut);
+  }, [targetQuery.data?.userTarget]);
+  const profileSalesQuery = useProfileSales({
+    enabled: !!userRef && shouldFetchProfileSales,
+  });
+
   if (isLoading) {
     return (
       <Card>
@@ -48,6 +69,26 @@ export function DashboardMetricsCard({
               </div>
             ))}
           </div>
+          <div className="mt-6 border-t border-gray-200 pt-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Skeleton className="h-5 w-5 rounded-md" />
+              <Skeleton className="h-4 w-48 rounded-md" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+                <Skeleton className="h-3 w-32 rounded-md" />
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-full rounded-md" />
+              </div>
+              <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
+                <Skeleton className="h-3 w-24 rounded-md" />
+                <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -55,8 +96,30 @@ export function DashboardMetricsCard({
   if (!metrics?.totalHours) return null;
 
   const { today, thisWeek, thisMonth, payrollHours } = metrics.totalHours;
-  const monthLabel = useMemo(() => getCurrentMonthName(), []);
-  const payrollLabel = useMemo(() => getPayrollPeriodLabel(), []);
+
+  const calendarInvoiceCount = metrics.productivity?.erpTaxInvoices.thisMonth.invoiceCount;
+  const profileInvoiceHeaders = profileSalesQuery.data?.transactionCount;
+  const taxInvoiceDisplay = (() => {
+    if (calendarInvoiceCount != null) return String(calendarInvoiceCount);
+    if (
+      shouldFetchProfileSales &&
+      profileSalesQuery.isFetching &&
+      profileSalesQuery.data === undefined &&
+      !profileSalesQuery.isError
+    ) {
+      return '…';
+    }
+    if (profileInvoiceHeaders != null) return String(profileInvoiceHeaders);
+    return '—';
+  })();
+  const taxInvoiceHint =
+    calendarInvoiceCount == null && profileInvoiceHeaders != null
+      ? 'Calendar-month count (attendance metrics) was unavailable. This number is distinct tax invoice and credit note document numbers for your sales target period — same source as GET /erp/profile/sales (COUNT(DISTINCT doc_number) on sales lines).'
+      : calendarInvoiceCount != null &&
+          profileInvoiceHeaders != null &&
+          profileInvoiceHeaders !== calendarInvoiceCount
+        ? `Your sales target period has ${profileInvoiceHeaders} distinct invoice/credit headers (may differ from calendar month).`
+        : null;
 
   return (
     <Card>
@@ -91,6 +154,62 @@ export function DashboardMetricsCard({
             </div>
           </div>
         </div>
+
+        {metrics.productivity ? (
+          <div className="mt-6 border-t border-gray-200 pt-6">
+            <div className="mb-4 flex items-center gap-2">
+              <MapPinIcon className="size-5 text-primary" aria-hidden />
+              <span className="text-sm font-medium uppercase text-foreground">
+                CRM visits &amp; invoices (ERP)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-gray-200 bg-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">This month · {monthLabel}</p>
+                <dl className="mt-2 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">Completed visits</dt>
+                    <dd className="font-medium tabular-nums text-foreground">
+                      {metrics.productivity.visits.thisMonth.completedVisitCount}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">Visit hours (total)</dt>
+                    <dd className="font-medium tabular-nums text-foreground">
+                      {metrics.productivity.visits.thisMonth.totalVisitHours}h
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">Avg / visit</dt>
+                    <dd className="font-medium tabular-nums text-foreground">
+                      {metrics.productivity.visits.thisMonth.averageVisitHours}h
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">Tax invoices (ERP)</dt>
+                    <dd className="font-medium tabular-nums text-foreground">{taxInvoiceDisplay}</dd>
+                  </div>
+                  {taxInvoiceHint ? (
+                    <p className="-mt-0.5 text-[10px] leading-snug text-muted-foreground">{taxInvoiceHint}</p>
+                  ) : null}
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">Utilization (net / worked)</dt>
+                    <dd className="font-medium tabular-nums text-foreground">
+                      {metrics.productivity.net.thisMonth.productivityUtilizationPct}%
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+              <DashboardTargetsRadial userRef={userRef} />
+            </div>
+            <p className="mt-4 text-xs leading-snug text-muted-foreground">
+              Adm &amp; invoicing time is not deducted from visit hours until tracked. Calendar-month tax invoice counts
+              come from attendance metrics (doc_type = 1, your rep code). When that is unavailable but your target
+              period and rep code are set, the dashboard uses GET /erp/profile/sales (distinct invoice and credit note
+              document numbers for that period). &quot;—&quot; means neither source returned a value.
+            </p>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

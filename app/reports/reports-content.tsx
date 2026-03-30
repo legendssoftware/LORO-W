@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Map,
   MapPin,
+  Target,
   TrendingUp,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -19,6 +20,7 @@ import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendanc
 import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
 import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
+import { ReportsTargetsTab } from '@/app/reports/components/reports-targets-tab';
 import type { SyncProfile } from '@/api/types';
 
 export type ReportsMode = 'org' | 'self';
@@ -28,6 +30,7 @@ const REPORT_TABS = [
   { value: 'visits', label: 'Visits', Icon: MapPin },
   { value: 'attendance', label: 'Attendance', Icon: Clock },
   { value: 'leads', label: 'Leads', Icon: Contact },
+  { value: 'targets', label: 'Targets', Icon: Target },
   { value: 'planning', label: 'Planning', Icon: CalendarDays },
   { value: 'sales', label: 'Sales', Icon: TrendingUp },
   { value: 'visualiser', label: 'Visualiser', Icon: Map },
@@ -108,6 +111,8 @@ function ReportsTabsEqualWidth({
             <ReportsVisitsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'leads' ? (
             <ReportsLeadsTab profile={profile} reportsMode={reportsMode} />
+          ) : value === 'targets' ? (
+            <ReportsTargetsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'visualiser' ? (
             <ReportsVisualiserTab profile={profile} reportsMode={reportsMode} />
           ) : (

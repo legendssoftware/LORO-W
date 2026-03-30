@@ -249,6 +249,7 @@ export function DashboardContent() {
             <DashboardMetricsCard
               metrics={metricsQuery.data}
               isLoading={metricsQuery.isLoading}
+              userRef={profile?.uid != null ? String(profile.uid) : null}
             />
             {isSyncing ? (
               <div className="rounded border border-gray-200 bg-card p-4">

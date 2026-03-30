@@ -43,6 +43,49 @@ export interface BreakBody {
     breakLongitude?: number;
 }
 
+/** Nested GET /att/metrics — CRM visits + ERP + net utilization (optional on older payloads). */
+export interface ProductivityVisitWindow {
+    completedVisitCount: number;
+    totalVisitHours: number;
+    averageVisitHours: number;
+    /** Same as total visit hours until Adm/Inv time is tracked separately */
+    visitHoursLessAdmInv: number;
+}
+
+export interface ProductivityInvoiceWindow {
+    /** Null when user has no erpSalesRepCode or ERP query failed */
+    invoiceCount: number | null;
+}
+
+export interface ProductivityNetWindow {
+    regularWorkedHours: number;
+    admInvHoursEstimate: number;
+    netProductivityHours: number;
+    productivityUtilizationPct: number;
+}
+
+export interface AttendanceProductivityMetrics {
+    assumptions: string;
+    visits: {
+        today: ProductivityVisitWindow;
+        thisWeek: ProductivityVisitWindow;
+        thisMonth: ProductivityVisitWindow;
+        payrollHours: ProductivityVisitWindow;
+    };
+    erpTaxInvoices: {
+        today: ProductivityInvoiceWindow;
+        thisWeek: ProductivityInvoiceWindow;
+        thisMonth: ProductivityInvoiceWindow;
+        payrollHours: ProductivityInvoiceWindow;
+    };
+    net: {
+        today: ProductivityNetWindow;
+        thisWeek: ProductivityNetWindow;
+        thisMonth: ProductivityNetWindow;
+        payrollHours: ProductivityNetWindow;
+    };
+}
+
 /** GET /att/metrics response (self). Used for Total hours card and streak. */
 export interface AttendanceMetrics {
     totalHours: {
@@ -53,6 +96,7 @@ export interface AttendanceMetrics {
         payrollHours: number;
     };
     attendanceStreak?: number;
+    productivity?: AttendanceProductivityMetrics;
 }
 
 export interface AttendanceMetricsResponse {

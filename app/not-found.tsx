@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4">
+    <div className="fixed inset-0 z-[100] flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto bg-black px-4">
       <h1 className="text-3xl font-bold text-white">Page not found</h1>
       <p className="mt-2 text-white/80">
         The page you&apos;re looking for doesn&apos;t exist or has been moved.
