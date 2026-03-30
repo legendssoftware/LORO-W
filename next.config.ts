@@ -1,15 +1,14 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { fileURLToPath } from "url";
 
-/** Project root: config directory, or cwd when __dirname is not set (ESM). */
-const projectRoot =
-  typeof __dirname !== "undefined"
-    ? path.resolve(__dirname)
-    : path.resolve(process.cwd());
+/** Next app root (directory containing this file). Never use process.cwd() — it breaks resolution when dev runs from the repo root. */
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  turbopack: { root: projectRoot },
-  outputFileTracingRoot: projectRoot,
+  // Next.js 16 requires turbopack.root and outputFileTracingRoot to be the same absolute path.
+  turbopack: { root: appRoot },
+  outputFileTracingRoot: appRoot,
   images: {
     remotePatterns: [
       {
@@ -33,7 +32,7 @@ const nextConfig: NextConfig = {
     config.resolve ??= {};
     config.resolve.alias = {
       ...config.resolve.alias,
-      "lucide-react": path.join(projectRoot, "node_modules", "lucide-react"),
+      "lucide-react": path.join(appRoot, "node_modules", "lucide-react"),
     };
     return config;
   },
