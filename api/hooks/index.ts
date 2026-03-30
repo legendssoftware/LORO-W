@@ -20,6 +20,7 @@ export {
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport, useReportsMapData } from './use-map-report';
+export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
 export { useClients, useClientsInfinite } from './use-clients';
@@ -78,6 +79,7 @@ export {
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
 export { useClaims } from './use-claims';
+export { useProfileSales } from './use-profile-sales';
 export {
   useInteractionsByLead,
   useCreateInteractionMutation,
