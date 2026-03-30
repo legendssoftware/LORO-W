@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { CheckIcon, XIcon } from '@/lib/icons';
+import { CalendarOff } from 'lucide-react';
 import {
   Select,
   SelectContent,
