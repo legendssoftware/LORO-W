@@ -92,7 +92,7 @@ export interface AttendanceMetrics {
         today: number;
         thisWeek: number;
         thisMonth: number;
-        /** Hours in payroll period (26th previous month to 25th current month) */
+        /** Hours in current rolling payroll window (26th–25th cycle; see server getPayrollPeriod) */
         payrollHours: number;
     };
     attendanceStreak?: number;

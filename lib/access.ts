@@ -94,6 +94,11 @@ const ORG_SETTINGS_ACCESS_LEVELS = new Set<string>([
     "manager",
 ]);
 
+/** True when access level is exactly Admin (dashboard CRM targets column hide). */
+export function isAdminAccessLevel(accessLevel: string | undefined): boolean {
+    return normalize(accessLevel) === 'admin';
+}
+
 /**
  * Whether the user may open organisation / branch admin settings (web UI).
  */

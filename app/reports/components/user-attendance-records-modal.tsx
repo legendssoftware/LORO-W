@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, type ReactNode } from 'react';
-import { format, subMonths, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
+import { format, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
 import { Car, Building2, Users } from 'lucide-react';
 import { useMonthlyAttendance, useCheckIns, useLeadsReport, useClaims, useSessionSync } from '@/api/hooks';
 import type { ReportCardUser } from '@/app/reports/types';
 import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
+import { getPayrollPeriodRange } from '@/lib/payroll-period';
 import {
   Dialog,
   DialogContent,
@@ -69,40 +70,45 @@ export function UserAttendanceRecordsModal({
 }) {
   const open = !!user;
   const today = new Date();
+  const todayKey = format(today, 'yyyy-MM-dd');
   const { backendUserData: profile } = useSessionSync();
   const currentUserRef = profile?.uid != null ? String(profile.uid) : null;
   const isViewingAnotherUser = open && user != null && currentUserRef != null && user.ref !== currentUserRef;
 
-  const { periodStartStr, periodEndStr, periodStart, periodEnd } = useMemo(() => {
-    const start = startOfDay(new Date(today.getFullYear(), today.getMonth() - 1, 26));
-    const endRaw = new Date(today.getFullYear(), today.getMonth(), 25);
-    const end = today <= endRaw ? endOfDay(today) : endOfDay(endRaw);
+  const { periodStartStr, periodEndStr, periodStart, periodEnd, periodEndFull } = useMemo(() => {
+    const { start, end: capEnd } = getPayrollPeriodRange(today);
+    const end = today <= capEnd ? endOfDay(today) : capEnd;
     return {
       periodStartStr: format(start, 'yyyy-MM-dd'),
       periodEndStr: format(end, 'yyyy-MM-dd'),
       periodStart: start,
       periodEnd: end,
+      periodEndFull: capEnd,
     };
-  }, [today.getTime()]);
+  }, [todayKey]);
 
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
-  const prevDate = subMonths(today, 1);
-  const prevYear = prevDate.getFullYear();
-  const prevMonth = prevDate.getMonth() + 1;
+  const { periodMonthA, periodMonthB } = useMemo(() => {
+    const { start, end } = getPayrollPeriodRange(today);
+    const a = { year: start.getFullYear(), month: start.getMonth() + 1 };
+    const b = { year: end.getFullYear(), month: end.getMonth() + 1 };
+    return { periodMonthA: a, periodMonthB: b };
+  }, [todayKey]);
 
-  const currentMonthQuery = useMonthlyAttendance(
+  const samePeriodMonth =
+    periodMonthA.year === periodMonthB.year && periodMonthA.month === periodMonthB.month;
+
+  const periodFirstMonthQuery = useMonthlyAttendance(
     user?.ref ?? null,
-    currentYear,
-    currentMonth,
+    periodMonthA.year,
+    periodMonthA.month,
     { enabled: open && !!user?.ref }
   );
 
-  const prevMonthQuery = useMonthlyAttendance(
+  const periodSecondMonthQuery = useMonthlyAttendance(
     user?.ref ?? null,
-    prevYear,
-    prevMonth,
-    { enabled: open && !!user?.ref }
+    periodMonthB.year,
+    periodMonthB.month,
+    { enabled: open && !!user?.ref && !samePeriodMonth }
   );
 
   const checkInsQuery = useCheckIns(
@@ -123,8 +129,8 @@ export function UserAttendanceRecordsModal({
   );
 
   const isLoading =
-    currentMonthQuery.isLoading ||
-    prevMonthQuery.isLoading ||
+    periodFirstMonthQuery.isLoading ||
+    (samePeriodMonth ? false : periodSecondMonthQuery.isLoading) ||
     (open && (checkInsQuery.isLoading || leadsReportQuery.isLoading || claimsQuery.isLoading));
 
   const records = useMemo((): DayRecord[] => {
@@ -133,18 +139,18 @@ export function UserAttendanceRecordsModal({
       { status: string; attendanceRecord?: MonthlyCalendarAttendanceRecord }
     >();
 
-    const currentDays = (currentMonthQuery.data?.days ?? []) as Array<{
+    const firstDays = (periodFirstMonthQuery.data?.days ?? []) as Array<{
       date: string;
       status: string;
       attendanceRecord?: MonthlyCalendarAttendanceRecord;
     }>;
-    const prevDays = (prevMonthQuery.data?.days ?? []) as Array<{
+    const secondDays = (periodSecondMonthQuery.data?.days ?? []) as Array<{
       date: string;
       status: string;
       attendanceRecord?: MonthlyCalendarAttendanceRecord;
     }>;
 
-    for (const d of [...prevDays, ...currentDays]) {
+    for (const d of [...firstDays, ...secondDays]) {
       if (d.date >= periodStartStr && d.date <= periodEndStr) {
         attendanceByDate.set(d.date, {
           status: d.status,
@@ -197,8 +203,8 @@ export function UserAttendanceRecordsModal({
 
     return rows.sort((a, b) => b.date.localeCompare(a.date));
   }, [
-    currentMonthQuery.data?.days,
-    prevMonthQuery.data?.days,
+    periodFirstMonthQuery.data?.days,
+    periodSecondMonthQuery.data?.days,
     periodStartStr,
     periodEndStr,
     periodStart,
@@ -329,7 +335,7 @@ export function UserAttendanceRecordsModal({
   };
 
   const summary = useMemo(() => {
-    const endFull = endOfDay(new Date(today.getFullYear(), today.getMonth(), 25));
+    const endFull = periodEndFull;
     const missed = records.filter((r) => r.status === 'missed').length;
     const attended = records.filter((r) =>
       ['present', 'late', 'incomplete'].includes(r.status) ||
@@ -343,7 +349,7 @@ export function UserAttendanceRecordsModal({
     const remaining = futureDays.filter((d) => getDay(d) !== 0).length;
     const forgottenOuts = records.filter((r) => r.shiftType === 'next_day_clockout').length;
     return { missed, attended, remaining, forgottenOuts };
-  }, [records, today]);
+  }, [records, todayKey, periodEndFull]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -357,7 +363,7 @@ export function UserAttendanceRecordsModal({
               {user ? `${user.name} – Attendance Records` : 'Attendance Records'}
             </DialogTitle>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
-              Current payroll period (26th prev month – 25th current month)
+              Current payroll period (rolling 26th–25th cycle)
             </p>
           </DialogHeader>
           <Button

@@ -12,20 +12,13 @@ import {
 import { TimerIcon } from '@/lib/icons';
 import { MapPinIcon } from 'lucide-react';
 import { DashboardTargetsRadial } from '@/components/dashboard-targets-radial';
+import { formatPayrollPeriodLabel } from '@/lib/payroll-period';
+import { isAdminAccessLevel } from '@/lib/access';
+import { cn } from '@/lib/utils';
 
 /** Current month name (e.g. "February"). */
 function getCurrentMonthName(): string {
   return new Date().toLocaleString('default', { month: 'long' });
-}
-
-/** Payroll period label: "26 Jan to 25 Feb" (26th prev month to 25th current month). */
-function getPayrollPeriodLabel(): string {
-  const now = new Date();
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 26);
-  const currMonth = new Date(now.getFullYear(), now.getMonth(), 25);
-  const fmt = (d: Date) =>
-    `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
-  return `${fmt(prevMonth)} to ${fmt(currMonth)}`;
 }
 
 /**
@@ -36,13 +29,17 @@ export function DashboardMetricsCard({
   metrics,
   isLoading,
   userRef,
+  accessLevel,
 }: {
   metrics: AttendanceMetrics | null | undefined;
   isLoading: boolean;
   userRef: string | null;
+  /** When Admin and user has no personal sales target, CRM targets column is hidden. */
+  accessLevel?: string | null;
 }) {
   const monthLabel = useMemo(() => getCurrentMonthName(), []);
-  const payrollLabel = useMemo(() => getPayrollPeriodLabel(), []);
+  const payrollLabel = formatPayrollPeriodLabel(new Date());
+  const adminNoTargetsCrmSkeleton = isAdminAccessLevel(accessLevel ?? undefined);
 
   const targetQuery = useUserTarget(userRef, { enabled: !!userRef });
   const shouldFetchProfileSales = useMemo(() => {
@@ -74,7 +71,12 @@ export function DashboardMetricsCard({
               <Skeleton className="h-5 w-5 rounded-md" />
               <Skeleton className="h-4 w-48 rounded-md" />
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div
+              className={cn(
+                'grid grid-cols-1 gap-4',
+                !adminNoTargetsCrmSkeleton && 'sm:grid-cols-2'
+              )}
+            >
               <div className="space-y-3 rounded-lg border border-gray-200 p-4">
                 <Skeleton className="h-3 w-32 rounded-md" />
                 <Skeleton className="h-4 w-full rounded-md" />
@@ -83,10 +85,12 @@ export function DashboardMetricsCard({
                 <Skeleton className="h-4 w-full rounded-md" />
                 <Skeleton className="h-4 w-full rounded-md" />
               </div>
-              <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
-                <Skeleton className="h-3 w-24 rounded-md" />
-                <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
-              </div>
+              {adminNoTargetsCrmSkeleton ? null : (
+                <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
+                  <Skeleton className="h-3 w-24 rounded-md" />
+                  <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -120,6 +124,12 @@ export function DashboardMetricsCard({
           profileInvoiceHeaders !== calendarInvoiceCount
         ? `Your sales target period has ${profileInvoiceHeaders} distinct invoice/credit headers (may differ from calendar month).`
         : null;
+
+  const hideAdminTargetsColumn =
+    isAdminAccessLevel(accessLevel ?? undefined) &&
+    !targetQuery.isLoading &&
+    !targetQuery.isError &&
+    !hasSalesTargetForProfileSales(targetQuery.data?.userTarget ?? null);
 
   return (
     <Card>
@@ -163,7 +173,12 @@ export function DashboardMetricsCard({
                 CRM visits &amp; invoices (ERP)
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div
+              className={cn(
+                'grid grid-cols-1 gap-4',
+                !hideAdminTargetsColumn && 'sm:grid-cols-2'
+              )}
+            >
               <div className="rounded-lg border border-gray-200 bg-card p-4">
                 <p className="text-xs font-medium text-muted-foreground">This month · {monthLabel}</p>
                 <dl className="mt-2 space-y-1.5 text-sm">
@@ -200,7 +215,7 @@ export function DashboardMetricsCard({
                   </div>
                 </dl>
               </div>
-              <DashboardTargetsRadial userRef={userRef} />
+              {hideAdminTargetsColumn ? null : <DashboardTargetsRadial userRef={userRef} />}
             </div>
             <p className="mt-4 text-xs leading-snug text-muted-foreground">
               Adm &amp; invoicing time is not deducted from visit hours until tracked. Calendar-month tax invoice counts

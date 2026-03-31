@@ -12,7 +12,7 @@ function getPayrollHoursAllQueryKey(params: PayrollHoursAllParams) {
 }
 
 /**
- * Fetches payroll hours for all users (26th previous month to 25th current month).
+ * Fetches payroll hours for all users (current rolling 26th–25th payroll window).
  * Admin/Manager/HR.
  */
 export function usePayrollHoursAll(
