@@ -20,7 +20,12 @@ export function useMonthlyAttendance(
   const m = month ?? new Date().getMonth() + 1;
   return useQuery({
     queryKey: [...QUERY_KEY, ref, y, m],
-    queryFn: () => getMonthlyAttendance(client, ref!, { year: y, month: m }),
+    queryFn: () =>
+      getMonthlyAttendance(client, ref!, {
+        year: y,
+        month: m,
+        includeDistance: false,
+      }),
     enabled: (options?.enabled !== false) && ref != null && String(ref).length > 0,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

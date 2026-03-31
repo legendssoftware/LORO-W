@@ -41,6 +41,9 @@ export interface UserListItem {
   name: string;
   surname: string;
   email: string;
+  clerkUserId?: string;
+  photoURL?: string | null;
+  avatar?: string | null;
   [key: string]: unknown;
 }
 

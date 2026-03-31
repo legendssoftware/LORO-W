@@ -112,16 +112,63 @@ function parseLeadDate(iso: string | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function lastEditedCell(lead: LeadListItem): ReactNode {
-  const d = parseLeadDate(lead.lastActivityAt);
-  if (!d) return '—';
-  const relative = formatDistanceToNow(d, { addSuffix: true });
-  const editedToday = isToday(d);
-  const summary = lead.lastActivitySummary?.trim();
-  return (
+/** Org user row used to render the latest activity actor avatar (from GET /user). */
+export interface LeadActivityActorProfile {
+  name: string;
+  surname: string;
+  photoURL?: string | null;
+  avatar?: string | null;
+}
+
+export interface LeadActivityActorLookup {
+  byUid: ReadonlyMap<number, LeadActivityActorProfile>;
+  byClerkId: ReadonlyMap<string, LeadActivityActorProfile>;
+}
+
+function resolveActivityActor(
+  lead: LeadListItem,
+  lookup?: LeadActivityActorLookup
+): LeadActivityActorProfile | undefined {
+  if (!lookup) return undefined;
+  const entry = lead.activity?.[0];
+  if (!entry) return undefined;
+  if (entry.userId != null) {
+    const byUid = lookup.byUid.get(entry.userId);
+    if (byUid) return byUid;
+  }
+  const cid = entry.clerkUserId?.trim();
+  if (cid) return lookup.byClerkId.get(cid);
+  return undefined;
+}
+
+/** Same “touch” date as the Last edited cell: Clerk activity, else creation. */
+export function effectiveLeadTouchDate(lead: LeadListItem): Date | null {
+  return parseLeadDate(lead.lastActivityAt) ?? parseLeadDate(lead.createdAt);
+}
+
+function lastEditedCell(
+  lead: LeadListItem,
+  activityActorLookup?: LeadActivityActorLookup
+): ReactNode {
+  const activityDate = parseLeadDate(lead.lastActivityAt);
+  const createdDate = parseLeadDate(lead.createdAt);
+  const displayDate = activityDate ?? createdDate;
+  if (!displayDate) return '—';
+
+  const usingCreationFallback = activityDate == null && createdDate != null;
+  const relative = formatDistanceToNow(displayDate, { addSuffix: true });
+  const editedToday = isToday(displayDate);
+  const summaryTrimmed = lead.lastActivitySummary?.trim();
+  const summary =
+    summaryTrimmed ||
+    (usingCreationFallback ? 'Lead created' : undefined);
+
+  const actor = resolveActivityActor(lead, activityActorLookup);
+
+  const textBlock = (
     <span className="flex min-w-0 max-w-[260px] flex-col gap-0.5">
       <span className="whitespace-nowrap text-xs text-muted-foreground">
-        {format(d, 'MMM d, yyyy · h:mm a')}
+        {format(displayDate, 'MMM d, yyyy · h:mm a')}
       </span>
       <span className="flex flex-wrap items-center gap-1.5">
         <span className="whitespace-nowrap text-sm">{relative}</span>
@@ -139,6 +186,24 @@ function lastEditedCell(lead: LeadListItem): ReactNode {
           {summary}
         </span>
       ) : null}
+    </span>
+  );
+
+  if (!actor) return textBlock;
+
+  const fullName =
+    [actor.name, actor.surname].filter(Boolean).join(' ').trim() || 'User';
+  const imgSrc = actor.photoURL ?? actor.avatar ?? undefined;
+  const initials =
+    fullName !== 'User' ? fullName.slice(0, 2).toUpperCase() : '?';
+
+  return (
+    <span className="flex min-w-0 max-w-[280px] items-start gap-2">
+      <Avatar className="mt-0.5 size-6 shrink-0" title={fullName}>
+        <AvatarImage src={imgSrc} alt={fullName} />
+        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+      </Avatar>
+      {textBlock}
     </span>
   );
 }
@@ -238,6 +303,8 @@ export interface LeadsTableProps {
   emptyMessage?: string;
   /** Called when a lead row is clicked. */
   onLeadClick?: (lead: LeadListItem) => void;
+  /** Org users (e.g. from useUsers) keyed by uid and clerkUserId for activity actor avatars. */
+  activityActorLookup?: LeadActivityActorLookup;
 }
 
 export function LeadsTable({
@@ -247,6 +314,7 @@ export function LeadsTable({
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
   onLeadClick,
+  activityActorLookup,
 }: LeadsTableProps) {
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
   const groupedByOwner = useMemo(
@@ -376,7 +444,7 @@ export function LeadsTable({
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
                         {group.leads.map((lead) => {
-                          const updated = parseLeadDate(lead.lastActivityAt);
+                          const updated = effectiveLeadTouchDate(lead);
                           const actionedToday = updated != null && isToday(updated);
                           return (
                           <TableRow
@@ -461,7 +529,7 @@ export function LeadsTable({
                                 : '-'}
                             </TableCell>
                             <TableCell className="min-w-0 max-w-[200px] text-sm md:max-w-[240px]">
-                              {lastEditedCell(lead)}
+                              {lastEditedCell(lead, activityActorLookup)}
                             </TableCell>
                           </TableRow>
                           );

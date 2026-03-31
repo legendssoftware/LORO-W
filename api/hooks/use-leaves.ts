@@ -23,9 +23,5 @@ export function useLeaves(clerkUserId: string | null | undefined, options?: { en
     refetchOnWindowFocus: true,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
   });
 }
