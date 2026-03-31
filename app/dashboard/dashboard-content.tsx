@@ -250,6 +250,7 @@ export function DashboardContent() {
               metrics={metricsQuery.data}
               isLoading={metricsQuery.isLoading}
               userRef={profile?.uid != null ? String(profile.uid) : null}
+              accessLevel={profile?.accessLevel}
             />
             {isSyncing ? (
               <div className="rounded border border-gray-200 bg-card p-4">

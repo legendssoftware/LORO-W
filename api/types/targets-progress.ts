@@ -1,4 +1,4 @@
-export type TargetsProgressBucket = 'week' | 'fortnight' | 'month';
+export type TargetsProgressBucket = 'day' | 'week' | 'fortnight' | 'month';
 
 export interface TargetsProgressBucketRow {
   key: string;

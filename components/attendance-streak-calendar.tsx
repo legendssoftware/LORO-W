@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { CheckIcon, XIcon } from '@/lib/icons';
 import { CalendarOff } from 'lucide-react';
 import {
@@ -30,9 +30,21 @@ export interface AttendanceStreakCalendarProps {
 }
 
 export function AttendanceStreakCalendar({ userRef, headerTrailing }: AttendanceStreakCalendarProps) {
-  const now = useMemo(() => new Date(), []);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [calendarNow, setCalendarNow] = useState(() => new Date());
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const didSyncClientDate = useRef(false);
+
+  useEffect(() => {
+    if (didSyncClientDate.current) return;
+    didSyncClientDate.current = true;
+    const d = new Date();
+    setCalendarNow(d);
+    setSelectedYear(d.getFullYear());
+    setSelectedMonth(d.getMonth() + 1);
+  }, []);
+
+  const now = calendarNow;
 
   const { data, isLoading } = useMonthlyAttendance(
     userRef ?? null,
@@ -52,7 +64,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
       });
     }
     return opts.reverse();
-  }, [now]);
+  }, [now.getTime()]);
 
   const valueKey = `${selectedYear}-${selectedMonth}`;
 
