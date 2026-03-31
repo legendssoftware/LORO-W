@@ -7,6 +7,7 @@ import {
   AreaChart,
   CartesianGrid,
   Line,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -55,9 +56,15 @@ import {
   userListItemHasPerformanceTarget,
 } from '@/app/reports/utils/user-has-performance-target';
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
+import { ReportsActivityByDayChart } from '@/app/reports/components/reports-activity-by-day-chart';
+import { ReportsCurrentProgressTable } from '@/app/reports/components/reports-current-progress-table';
+import { userBehindForSelectedRange } from '@/app/reports/utils/targets-progress-display';
 
 const selectTriggerClass =
   'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
+
+/** Fixed daily pace benchmark per reporting user (overview scope line; hourly view uses ÷24). */
+const SCOPE_TARGET_PER_USER_PER_DAY = 60;
 
 function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
@@ -153,6 +160,22 @@ const visitsChartConfig = {
   },
 } satisfies ChartConfig;
 
+const callsChartConfig = {
+  achievedCalls: {
+    label: 'Achieved calls',
+    color: REPORT_CHART_HSL.c5,
+  },
+  targetCalls: {
+    label: 'Target (prorated)',
+    color: REPORT_CHART_HSL.c2,
+  },
+} satisfies ChartConfig;
+
+const scopeTargetLegend = {
+  label: 'Scope benchmark',
+  color: REPORT_CHART_HSL.c1,
+} as const;
+
 type TooltipPayloadItem = {
   dataKey?: string;
   value?: number;
@@ -167,14 +190,24 @@ function OverviewTooltipBody({
 }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
-  metric: 'leads' | 'visits';
+  metric: 'leads' | 'visits' | 'calls';
 }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
   if (!row || typeof row !== 'object') return null;
 
-  const aKey = metric === 'leads' ? 'achievedLeads' : 'achievedVisits';
-  const tKey = metric === 'leads' ? 'targetLeads' : 'targetVisits';
+  const aKey =
+    metric === 'leads'
+      ? 'achievedLeads'
+      : metric === 'visits'
+        ? 'achievedVisits'
+        : 'achievedCalls';
+  const tKey =
+    metric === 'leads'
+      ? 'targetLeads'
+      : metric === 'visits'
+        ? 'targetVisits'
+        : 'targetCalls';
   const achieved = Number(row[aKey] ?? 0);
   const target = Number(row[tKey] ?? 0);
   const { delta, pct } = variationLine(achieved, target);
@@ -228,6 +261,7 @@ export function ReportsOverviewTab({
     React.useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] =
     React.useState<string>('all');
+  const [onlyBehind, setOnlyBehind] = React.useState(false);
 
   const elevated =
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
@@ -264,6 +298,28 @@ export function ReportsOverviewTab({
     };
   }, [timeframe, selectedDay, monthAnchor, filterSuffix]);
 
+  const activityProgressParams = React.useMemo(() => {
+    if (timeframe === 'day') {
+      const d = formatUtcYmd(selectedDay);
+      return {
+        from: d,
+        to: d,
+        bucket: 'day' as const,
+        ...filterSuffix,
+      };
+    }
+    const { from, to } = getUtcMonthRange(monthAnchor);
+    return {
+      from,
+      to,
+      bucket: 'day' as const,
+      ...filterSuffix,
+    };
+  }, [timeframe, selectedDay, monthAnchor, filterSuffix]);
+
+  const activityDateFrom = activityProgressParams.from;
+  const activityDateTo = activityProgressParams.to;
+
   const {
     data: progressData,
     isLoading,
@@ -271,6 +327,15 @@ export function ReportsOverviewTab({
     error,
   } = useTargetsProgress(progressParams, {
     enabled: Boolean(progressParams.from && progressParams.to),
+  });
+
+  const {
+    data: activityProgressData,
+    isLoading: activityLoading,
+    isError: activityIsError,
+    error: activityError,
+  } = useTargetsProgress(activityProgressParams, {
+    enabled: Boolean(activityProgressParams.from && activityProgressParams.to),
   });
 
   const { data: branches = [] } = useBranches();
@@ -294,6 +359,20 @@ export function ReportsOverviewTab({
     if (!ok) setSelectedOwnerUid('all');
   }, [elevated, reportingUsers, selectedOwnerUid]);
 
+  React.useEffect(() => {
+    if (!elevated) setOnlyBehind(false);
+  }, [elevated]);
+
+  const activityUsersWithTargets = React.useMemo(
+    () => (activityProgressData?.users ?? []).filter((u) => u.hasTarget),
+    [activityProgressData?.users]
+  );
+
+  const activityBehindCount = React.useMemo(
+    () => activityUsersWithTargets.filter(userBehindForSelectedRange).length,
+    [activityUsersWithTargets]
+  );
+
   const chartData = React.useMemo(
     () =>
       bucketRowsToChartData(
@@ -302,6 +381,88 @@ export function ReportsOverviewTab({
       ),
     [progressData?.aggregateBuckets, timeframe]
   );
+
+  const scopedHeadcount = React.useMemo(
+    () =>
+      !elevated
+        ? 1
+        : selectedOwnerUid !== 'all'
+          ? 1
+          : reportingUsers.length,
+    [elevated, selectedOwnerUid, reportingUsers]
+  );
+
+  const scopedLineY = React.useMemo(
+    () =>
+      (SCOPE_TARGET_PER_USER_PER_DAY * scopedHeadcount) /
+      (timeframe === 'day' ? 24 : 1),
+    [scopedHeadcount, timeframe]
+  );
+
+  const scopeCardNote =
+    timeframe === 'day'
+      ? `Scope line: ${SCOPE_TARGET_PER_USER_PER_DAY * scopedHeadcount}/day ÷ 24 h (60 × ${scopedHeadcount} user${scopedHeadcount === 1 ? '' : 's'}).`
+      : `Scope line: ${SCOPE_TARGET_PER_USER_PER_DAY * scopedHeadcount}/day (60 × ${scopedHeadcount} user${scopedHeadcount === 1 ? '' : 's'}).`;
+
+  const leadsYMax = React.useMemo(() => {
+    let max = scopedLineY;
+    for (const row of chartData) {
+      max = Math.max(
+        max,
+        Number(row.achievedLeads ?? 0),
+        Number(row.targetLeads ?? 0)
+      );
+    }
+    return Math.max(Math.ceil(max * 1.12), 1);
+  }, [chartData, scopedLineY]);
+
+  const visitsYMax = React.useMemo(() => {
+    let max = scopedLineY;
+    for (const row of chartData) {
+      max = Math.max(
+        max,
+        Number(row.achievedVisits ?? 0),
+        Number(row.targetVisits ?? 0)
+      );
+    }
+    return Math.max(Math.ceil(max * 1.12), 1);
+  }, [chartData, scopedLineY]);
+
+  const callsYMax = React.useMemo(() => {
+    let max = scopedLineY;
+    for (const row of chartData) {
+      max = Math.max(
+        max,
+        Number(row.achievedCalls ?? 0),
+        Number(row.targetCalls ?? 0)
+      );
+    }
+    return Math.max(Math.ceil(max * 1.12), 1);
+  }, [chartData, scopedLineY]);
+
+  const leadsChartConfigMerged = {
+    ...leadsChartConfig,
+    scopeTarget: {
+      label: scopeTargetLegend.label,
+      color: scopeTargetLegend.color,
+    },
+  } satisfies ChartConfig;
+
+  const visitsChartConfigMerged = {
+    ...visitsChartConfig,
+    scopeTarget: {
+      label: scopeTargetLegend.label,
+      color: scopeTargetLegend.color,
+    },
+  } satisfies ChartConfig;
+
+  const callsChartConfigMerged = {
+    ...callsChartConfig,
+    scopeTarget: {
+      label: scopeTargetLegend.label,
+      color: scopeTargetLegend.color,
+    },
+  } satisfies ChartConfig;
 
   const rangeDescription =
     timeframe === 'day'
@@ -316,8 +477,10 @@ export function ReportsOverviewTab({
         leadsT: acc.leadsT + b.targetLeads,
         visA: acc.visA + b.achievedVisits,
         visT: acc.visT + b.targetVisits,
+        callsA: acc.callsA + b.achievedCalls,
+        callsT: acc.callsT + b.targetCalls,
       }),
-      { leadsA: 0, leadsT: 0, visA: 0, visT: 0 }
+      { leadsA: 0, leadsT: 0, visA: 0, visT: 0, callsA: 0, callsT: 0 }
     );
   }, [progressData?.aggregateBuckets]);
 
@@ -505,6 +668,39 @@ export function ReportsOverviewTab({
         ) : null}
       </div>
 
+      <div className="flex flex-col gap-6">
+        {activityLoading ? (
+          <LoadingSpinner wrapperClassName="py-10" />
+        ) : activityIsError ? (
+          <p className="text-center text-destructive py-6">
+            {(activityError as Error)?.message ??
+              'Failed to load activity progress'}
+          </p>
+        ) : (
+          <>
+            <ReportsActivityByDayChart
+              aggregateBuckets={activityProgressData?.aggregateBuckets}
+              dateFrom={activityDateFrom}
+              dateTo={activityDateTo}
+              elevated={elevated}
+              usersInScopeCount={activityUsersWithTargets.length}
+              behindCount={activityBehindCount}
+            />
+            <ReportsCurrentProgressTable
+              usersWithTargets={activityUsersWithTargets}
+              dateFrom={activityDateFrom}
+              dateTo={activityDateTo}
+              elevated={elevated}
+              onlyBehind={onlyBehind}
+              onOnlyBehindChange={setOnlyBehind}
+              isLoading={false}
+              isError={false}
+              error={null}
+            />
+          </>
+        )}
+      </div>
+
       {isLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />
       ) : isError ? (
@@ -523,12 +719,12 @@ export function ReportsOverviewTab({
               <CardDescription>
                 Achieved leads vs prorated target — {rangeDescription}. Range
                 totals: {totals.leadsA.toLocaleString()} achieved /{' '}
-                {totals.leadsT.toLocaleString()} target.
+                {totals.leadsT.toLocaleString()} target. {scopeCardNote}
               </CardDescription>
             </CardHeader>
             <CardContent className="pl-0 sm:pr-2">
               <ChartContainer
-                config={leadsChartConfig}
+                config={leadsChartConfigMerged}
                 className="aspect-auto h-[340px] w-full min-w-0"
               >
                 <AreaChart
@@ -569,17 +765,11 @@ export function ReportsOverviewTab({
                     interval={trendAxis.xAxis.interval}
                   />
                   <YAxis
-                    allowDecimals={false}
+                    allowDecimals={timeframe === 'day'}
                     tickLine={false}
                     axisLine={false}
                     width={40}
-                    domain={[
-                      0,
-                      (max: number) =>
-                        Number.isFinite(max)
-                          ? Math.max(Math.ceil(max * 1.12), 1)
-                          : 1,
-                    ]}
+                    domain={[0, leadsYMax]}
                   />
                   <ChartTooltip
                     cursor={false}
@@ -611,8 +801,25 @@ export function ReportsOverviewTab({
                     dot={false}
                     strokeDasharray="5 5"
                   />
+                  {scopedLineY > 0 ? (
+                    <ReferenceLine
+                      y={scopedLineY}
+                      stroke="var(--color-scopeTarget)"
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      ifOverflow="extendDomain"
+                    />
+                  ) : null}
                 </AreaChart>
               </ChartContainer>
+              <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 px-2 text-xs sm:px-4">
+                <span
+                  className="inline-block size-2.5 shrink-0 rounded-sm"
+                  style={{ background: scopeTargetLegend.color }}
+                  aria-hidden
+                />
+                <span>{scopeTargetLegend.label}</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -622,12 +829,12 @@ export function ReportsOverviewTab({
               <CardDescription>
                 Achieved visits (physical check-ins) vs prorated target —{' '}
                 {rangeDescription}. Range totals: {totals.visA.toLocaleString()}{' '}
-                achieved / {totals.visT.toLocaleString()} target.
+                achieved / {totals.visT.toLocaleString()} target. {scopeCardNote}
               </CardDescription>
             </CardHeader>
             <CardContent className="pl-0 sm:pr-2">
               <ChartContainer
-                config={visitsChartConfig}
+                config={visitsChartConfigMerged}
                 className="aspect-auto h-[340px] w-full min-w-0"
               >
                 <AreaChart
@@ -668,17 +875,11 @@ export function ReportsOverviewTab({
                     interval={trendAxis.xAxis.interval}
                   />
                   <YAxis
-                    allowDecimals={false}
+                    allowDecimals={timeframe === 'day'}
                     tickLine={false}
                     axisLine={false}
                     width={40}
-                    domain={[
-                      0,
-                      (max: number) =>
-                        Number.isFinite(max)
-                          ? Math.max(Math.ceil(max * 1.12), 1)
-                          : 1,
-                    ]}
+                    domain={[0, visitsYMax]}
                   />
                   <ChartTooltip
                     cursor={false}
@@ -710,8 +911,136 @@ export function ReportsOverviewTab({
                     dot={false}
                     strokeDasharray="5 5"
                   />
+                  {scopedLineY > 0 ? (
+                    <ReferenceLine
+                      y={scopedLineY}
+                      stroke="var(--color-scopeTarget)"
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      ifOverflow="extendDomain"
+                    />
+                  ) : null}
                 </AreaChart>
               </ChartContainer>
+              <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 px-2 text-xs sm:px-4">
+                <span
+                  className="inline-block size-2.5 shrink-0 rounded-sm"
+                  style={{ background: scopeTargetLegend.color }}
+                  aria-hidden
+                />
+                <span>{scopeTargetLegend.label}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200 bg-white shadow-sm min-w-0">
+            <CardHeader>
+              <CardTitle>Calls trend</CardTitle>
+              <CardDescription>
+                Achieved calls (non-physical check-ins, e.g. telephone) vs
+                prorated target — {rangeDescription}. Range totals:{' '}
+                {totals.callsA.toLocaleString()} achieved /{' '}
+                {totals.callsT.toLocaleString()} target. {scopeCardNote}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pl-0 sm:pr-2">
+              <ChartContainer
+                config={callsChartConfigMerged}
+                className="aspect-auto h-[340px] w-full min-w-0"
+              >
+                <AreaChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{ ...trendAxis.chartMargin }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="fillAchievedCallsOverview"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-achievedCalls)"
+                        stopOpacity={0.85}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-achievedCalls)"
+                        stopOpacity={0.12}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="xTick"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
+                    minTickGap={trendAxis.xAxis.minTickGap}
+                    angle={trendAxis.xAxis.angle}
+                    textAnchor={trendAxis.xAxis.textAnchor}
+                    height={trendAxis.xAxis.height}
+                    interval={trendAxis.xAxis.interval}
+                  />
+                  <YAxis
+                    allowDecimals={timeframe === 'day'}
+                    tickLine={false}
+                    axisLine={false}
+                    width={40}
+                    domain={[0, callsYMax]}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={({ active, payload }) => (
+                      <OverviewTooltipBody
+                        active={active}
+                        payload={payload as TooltipPayloadItem[]}
+                        metric="calls"
+                      />
+                    )}
+                  />
+                  <ChartLegend
+                    verticalAlign="top"
+                    content={<ChartLegendContent className="flex-wrap" />}
+                  />
+                  <Area
+                    name={callsChartConfig.achievedCalls.label}
+                    dataKey="achievedCalls"
+                    type="natural"
+                    fill="url(#fillAchievedCallsOverview)"
+                    stroke="var(--color-achievedCalls)"
+                  />
+                  <Line
+                    name={callsChartConfig.targetCalls.label}
+                    type="monotone"
+                    dataKey="targetCalls"
+                    stroke="var(--color-targetCalls)"
+                    strokeWidth={2}
+                    dot={false}
+                    strokeDasharray="5 5"
+                  />
+                  {scopedLineY > 0 ? (
+                    <ReferenceLine
+                      y={scopedLineY}
+                      stroke="var(--color-scopeTarget)"
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      ifOverflow="extendDomain"
+                    />
+                  ) : null}
+                </AreaChart>
+              </ChartContainer>
+              <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 px-2 text-xs sm:px-4">
+                <span
+                  className="inline-block size-2.5 shrink-0 rounded-sm"
+                  style={{ background: scopeTargetLegend.color }}
+                  aria-hidden
+                />
+                <span>{scopeTargetLegend.label}</span>
+              </div>
             </CardContent>
           </Card>
         </div>

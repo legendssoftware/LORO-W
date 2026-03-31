@@ -1,19 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import * as React from 'react';
 import { format, startOfDay } from 'date-fns';
-import {
-  AlertTriangle,
-  Building2,
-  CalendarIcon,
-  CalendarRange,
-  Target,
-  User,
-  Users,
-} from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Building2, CalendarIcon, User } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
-import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import {
   useBranches,
   useTargetsProgress,
@@ -21,25 +11,16 @@ import {
   getBranchDisplayLabel,
 } from '@/api/hooks';
 import { isReportsElevatedViewer } from '@/lib/access';
-import { exportToCsv } from '@/lib/utils/report-export';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import {
   Popover,
@@ -53,22 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
-import {
-  userListItemHasPerformanceTarget,
-} from '@/app/reports/utils/user-has-performance-target';
+import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
 import {
   ReportDonutChart,
   type ReportDonutSlice,
@@ -144,171 +113,12 @@ function formatUtcYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Monday–Sunday UTC, aligned with server `startOfMondayWeek`. */
-function getUtcWeekRange(ref: Date): { from: string; to: string } {
-  const x = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate()));
-  const dow = x.getUTCDay();
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  x.setUTCDate(x.getUTCDate() + mondayOffset);
-  const monday = x;
-  const sunday = new Date(monday);
-  sunday.setUTCDate(sunday.getUTCDate() + 6);
-  return { from: formatUtcYmd(monday), to: formatUtcYmd(sunday) };
-}
-
-/** Full calendar month UTC containing `ref`. */
-function getUtcMonthRange(ref: Date): { from: string; to: string } {
-  const y = ref.getUTCFullYear();
-  const m = ref.getUTCMonth();
-  const start = new Date(Date.UTC(y, m, 1));
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  const end = new Date(Date.UTC(y, m, lastDay));
-  return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
-}
-
-/** Single UTC calendar day. */
-function getUtcTodayRange(ref: Date): { from: string; to: string } {
-  const d = formatUtcYmd(
-    new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate()))
-  );
-  return { from: d, to: d };
-}
-
-type ShortfallScope = 'today' | 'week' | 'month';
-
-function simplePeriodTarget(periodTarget: number, scope: 'week' | 'month'): number {
-  if (scope === 'week') return Math.round(periodTarget / 4);
-  return periodTarget;
-}
-
-/** Mon–Fri inclusive between two UTC calendar days (`yyyy-MM-dd`), aligned with server `workingDaysInclusive`. */
-function utcWorkingDaysInclusive(fromYmd: string, toYmd: string): number {
-  const [y1, m1, d1] = fromYmd.split('-').map(Number);
-  const [y2, m2, d2] = toYmd.split('-').map(Number);
-  const start = new Date(Date.UTC(y1, m1 - 1, d1));
-  const end = new Date(Date.UTC(y2, m2 - 1, d2));
-  if (end < start) return 0;
-  let count = 0;
-  const cur = new Date(start);
-  while (cur <= end) {
-    const dow = cur.getUTCDay();
-    if (dow >= 1 && dow <= 5) count++;
-    cur.setUTCDate(cur.getUTCDate() + 1);
-  }
-  return count;
-}
-
-function minIsoDate(a: string, b: string): string {
-  return a <= b ? a : b;
-}
-
-/** Scales full-period shortfall target by elapsed Mon–Fri through today (UTC) vs total Mon–Fri in the range. */
-function trimShortfallDisplayTarget(
-  baseT: number,
-  rangeFrom: string,
-  rangeTo: string,
-  now: Date
-): number {
-  if (baseT <= 0) return 0;
-  const todayYmd = formatUtcYmd(
-    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-  );
-  const totalWd = utcWorkingDaysInclusive(rangeFrom, rangeTo);
-  if (totalWd <= 0) return baseT;
-  const endYmd = minIsoDate(rangeTo, todayYmd);
-  if (endYmd < rangeFrom) return 0;
-  const elapsedWd = utcWorkingDaysInclusive(rangeFrom, endYmd);
-  return Math.round((baseT * elapsedWd) / totalWd);
-}
-
-function shortfallTrimmedTarget(
-  scope: 'week' | 'month',
-  periodTarget: number,
-  rangeFrom: string,
-  rangeTo: string,
-  now: Date
-): number {
-  if ((periodTarget ?? 0) <= 0) return 0;
-  const baseT = simplePeriodTarget(periodTarget, scope);
-  return trimShortfallDisplayTarget(baseT, rangeFrom, rangeTo, now);
-}
-
-function shortfallMetricBehindTrimmed(
-  scope: 'week' | 'month',
-  achieved: number,
-  periodTarget: number,
-  rangeFrom: string,
-  rangeTo: string,
-  now: Date
-): boolean {
-  if ((periodTarget ?? 0) <= 0) return false;
-  const tgt = shortfallTrimmedTarget(scope, periodTarget, rangeFrom, rangeTo, now);
-  return achieved < tgt;
-}
-
-function shortfallMetricShortfallTrimmed(
-  scope: 'week' | 'month',
-  achieved: number,
-  periodTarget: number,
-  rangeFrom: string,
-  rangeTo: string,
-  now: Date
-): number | null {
-  if ((periodTarget ?? 0) <= 0) return null;
-  const tgt = shortfallTrimmedTarget(scope, periodTarget, rangeFrom, rangeTo, now);
-  return Math.max(0, tgt - achieved);
-}
-
-function achievedActivityTotal(u: TargetsProgressUserSummary): number {
-  return u.achievedCallsInRange + u.achievedVisitsInRange;
-}
-
-function userBehindToday(u: TargetsProgressUserSummary): boolean {
-  const combined = achievedActivityTotal(u);
-  const behindActivity =
-    u.periodTargetVisits > 0 && combined < u.cumulativeTargetVisitsEnd;
-  const behindLeads =
-    u.periodTargetLeads > 0 && u.belowCumulativeLeads;
-  return behindActivity || behindLeads;
-}
-
-function userBehindOnAny(
-  u: TargetsProgressUserSummary,
-  scope: ShortfallScope,
-  shortfallRange: { from: string; to: string },
-  now: Date
-): boolean {
-  if (scope === 'today') return userBehindToday(u);
-  return (
-    shortfallMetricBehindTrimmed(
-      scope,
-      achievedActivityTotal(u),
-      u.periodTargetVisits,
-      shortfallRange.from,
-      shortfallRange.to,
-      now
-    ) ||
-    shortfallMetricBehindTrimmed(
-      scope,
-      u.achievedLeadsInRange,
-      u.periodTargetLeads,
-      shortfallRange.from,
-      shortfallRange.to,
-      now
-    )
+/** Map local calendar picker dates to UTC `yyyy-MM-dd` for the API (same idea as Overview). */
+function localDateToUtcYmd(d: Date): string {
+  return formatUtcYmd(
+    new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
   );
 }
-
-const chartConfig = {
-  achievedActivity: {
-    label: 'Activity',
-    color: REPORT_CHART_HSL.c4,
-  },
-  achievedLeads: {
-    label: 'Leads',
-    color: REPORT_CHART_HSL.c3,
-  },
-} satisfies ChartConfig;
 
 export interface ReportsTargetsTabProps {
   profile: SyncProfile | null | undefined;
@@ -320,24 +130,19 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
 
-  const [{ start: rangeStart, end: rangeEnd }, setRange] = useState(defaultRange);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [shortfallScope, setShortfallScope] = useState<ShortfallScope>('today');
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
-  const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
-  const [onlyBehind, setOnlyBehind] = useState(false);
+  const [{ start: rangeStart, end: rangeEnd }, setRange] = React.useState(
+    defaultRange
+  );
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [selectedBranchId, setSelectedBranchId] =
+    React.useState<string>('all');
+  const [selectedOwnerUid, setSelectedOwnerUid] =
+    React.useState<string>('all');
 
-  const dateFrom = format(rangeStart, 'yyyy-MM-dd');
-  const dateTo = format(rangeEnd, 'yyyy-MM-dd');
+  const dateFrom = localDateToUtcYmd(rangeStart);
+  const dateTo = localDateToUtcYmd(rangeEnd);
 
-  const shortfallRange = useMemo(() => {
-    const now = new Date();
-    if (shortfallScope === 'today') return getUtcTodayRange(now);
-    if (shortfallScope === 'week') return getUtcWeekRange(now);
-    return getUtcMonthRange(now);
-  }, [shortfallScope]);
-
-  const filterSuffix = useMemo(
+  const filterSuffix = React.useMemo(
     () => ({
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
@@ -349,7 +154,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     [elevated, selectedBranchId, selectedOwnerUid]
   );
 
-  const chartProgressParams = useMemo(
+  const chartProgressParams = React.useMemo(
     () => ({
       from: dateFrom,
       to: dateTo,
@@ -357,21 +162,6 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       ...filterSuffix,
     }),
     [dateFrom, dateTo, filterSuffix]
-  );
-
-  const shortfallProgressParams = useMemo(
-    () => ({
-      from: shortfallRange.from,
-      to: shortfallRange.to,
-      bucket:
-        shortfallScope === 'today'
-          ? ('day' as const)
-          : shortfallScope === 'week'
-            ? ('week' as const)
-            : ('month' as const),
-      ...filterSuffix,
-    }),
-    [shortfallRange.from, shortfallRange.to, shortfallScope, filterSuffix]
   );
 
   const {
@@ -383,15 +173,6 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     enabled: Boolean(dateFrom && dateTo),
   });
 
-  const {
-    data: shortfallData,
-    isLoading: shortfallLoading,
-    isError: shortfallIsError,
-    error: shortfallError,
-  } = useTargetsProgress(shortfallProgressParams, {
-    enabled: Boolean(shortfallRange.from && shortfallRange.to),
-  });
-
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({
     enabled: elevated,
@@ -401,186 +182,48 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       : {}),
   });
 
-  const reportingUsers = useMemo(
+  const reportingUsers = React.useMemo(
     () =>
       elevated ? usersList.filter(userListItemHasPerformanceTarget) : usersList,
     [elevated, usersList]
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!elevated || selectedOwnerUid === 'all') return;
     const ok = reportingUsers.some((u) => String(u.uid) === selectedOwnerUid);
     if (!ok) setSelectedOwnerUid('all');
   }, [elevated, reportingUsers, selectedOwnerUid]);
 
-  useEffect(() => {
-    if (!elevated) setOnlyBehind(false);
-  }, [elevated]);
-
-  const chartSeriesData = useMemo(() => {
-    const rows = chartData?.aggregateBuckets ?? [];
-    return rows.map((b) => ({
-      label: b.label.length > 14 ? b.key : b.label,
-      fullLabel: b.label,
-      achievedActivity: b.achievedCalls + b.achievedVisits,
-      achievedLeads: b.achievedLeads,
-    }));
-  }, [chartData?.aggregateBuckets]);
-
-  const checkInsDonutSlices = useMemo(
+  const checkInsDonutSlices = React.useMemo(
     () => recordToDonutSlices(mergeBucketCounts(chartData?.aggregateBuckets)),
     [chartData?.aggregateBuckets]
   );
-  const leadsDonutSlices = useMemo(
+  const leadsDonutSlices = React.useMemo(
     () => recordToDonutSlices(mergeLeadSources(chartData?.aggregateBuckets)),
     [chartData?.aggregateBuckets]
   );
-  const checkInsDonutConfig = useMemo(
+  const checkInsDonutConfig = React.useMemo(
     () => slicesToChartConfig(checkInsDonutSlices),
     [checkInsDonutSlices]
   );
-  const leadsDonutConfig = useMemo(
+  const leadsDonutConfig = React.useMemo(
     () => slicesToChartConfig(leadsDonutSlices),
     [leadsDonutSlices]
   );
-  const checkInsDonutTotal = useMemo(
+  const checkInsDonutTotal = React.useMemo(
     () => checkInsDonutSlices.reduce((s, x) => s + x.value, 0),
     [checkInsDonutSlices]
   );
-  const leadsDonutTotal = useMemo(
+  const leadsDonutTotal = React.useMemo(
     () => leadsDonutSlices.reduce((s, x) => s + x.value, 0),
     [leadsDonutSlices]
   );
 
-  const summarySubtitle = useMemo(() => {
+  const summarySubtitle = React.useMemo(() => {
     if (!elevated) return 'End-of-range cumulative (your progress)';
     if (selectedOwnerUid !== 'all') return 'End-of-range cumulative (selected user)';
     return 'End-of-range cumulative (org aggregate)';
   }, [elevated, selectedOwnerUid]);
-
-  /** API already omits no-target users; keep filter for older servers / mixed clients. */
-  const shortfallUsersWithTargets = useMemo(
-    () => (shortfallData?.users ?? []).filter((u) => u.hasTarget),
-    [shortfallData?.users]
-  );
-
-  const chartUsersWithTargets = useMemo(
-    () => (chartData?.users ?? []).filter((u) => u.hasTarget),
-    [chartData?.users]
-  );
-
-  const tableUsers = useMemo(() => {
-    const list = shortfallUsersWithTargets;
-    if (!onlyBehind) return list;
-    const now = new Date();
-    return list.filter((u) =>
-      userBehindOnAny(u, shortfallScope, shortfallRange, now)
-    );
-  }, [shortfallUsersWithTargets, onlyBehind, shortfallScope, shortfallRange]);
-
-  const behindCount = useMemo(() => {
-    const now = new Date();
-    return shortfallUsersWithTargets.filter((u) =>
-      userBehindOnAny(u, shortfallScope, shortfallRange, now)
-    ).length;
-  }, [shortfallUsersWithTargets, shortfallScope, shortfallRange]);
-
-  function downloadShortfallCsv() {
-    const now = new Date();
-    const users = shortfallUsersWithTargets.filter((u) =>
-      onlyBehind ? userBehindOnAny(u, shortfallScope, shortfallRange, now) : true
-    );
-    const scopeLabel =
-      shortfallScope === 'today'
-        ? 'today'
-        : shortfallScope === 'week'
-          ? 'week'
-          : 'month';
-    const headers = [
-      'UID',
-      'Name',
-      'Surname',
-      'Scope',
-      `Target activity (${scopeLabel})`,
-      'Achieved activity',
-      'Shortfall activity',
-      `Target leads (${scopeLabel})`,
-      'Achieved leads',
-      'Shortfall leads',
-      'Behind on targets',
-    ];
-    const rows = users.map((u) => {
-      let ta: number;
-      let tl: number;
-      let sa: number | null;
-      let sl: number | null;
-      const achievedAct = achievedActivityTotal(u);
-      if (shortfallScope === 'today') {
-        ta = u.cumulativeTargetVisitsEnd;
-        tl = u.cumulativeTargetLeadsEnd;
-        sa =
-          u.periodTargetVisits > 0
-            ? Math.max(0, u.cumulativeTargetVisitsEnd - achievedAct)
-            : null;
-        sl = u.periodTargetLeads > 0 ? u.shortfallLeads : null;
-      } else {
-        ta = shortfallTrimmedTarget(
-          shortfallScope,
-          u.periodTargetVisits,
-          shortfallRange.from,
-          shortfallRange.to,
-          now
-        );
-        tl = shortfallTrimmedTarget(
-          shortfallScope,
-          u.periodTargetLeads,
-          shortfallRange.from,
-          shortfallRange.to,
-          now
-        );
-        sa = shortfallMetricShortfallTrimmed(
-          shortfallScope,
-          achievedAct,
-          u.periodTargetVisits,
-          shortfallRange.from,
-          shortfallRange.to,
-          now
-        );
-        sl = shortfallMetricShortfallTrimmed(
-          shortfallScope,
-          u.achievedLeadsInRange,
-          u.periodTargetLeads,
-          shortfallRange.from,
-          shortfallRange.to,
-          now
-        );
-      }
-      return [
-        String(u.uid),
-        u.name,
-        u.surname,
-        scopeLabel,
-        u.periodTargetVisits > 0 ? String(ta) : '',
-        String(achievedAct),
-        sa != null ? String(sa) : '',
-        u.periodTargetLeads > 0 ? String(tl) : '',
-        String(u.achievedLeadsInRange),
-        sl != null ? String(sl) : '',
-        userBehindOnAny(u, shortfallScope, shortfallRange, now) ? 'yes' : 'no',
-      ];
-    });
-    exportToCsv(
-      headers,
-      rows,
-      `targets-shortfall-${shortfallRange.from}-${shortfallRange.to}-${scopeLabel}`
-    );
-  }
-
-  const isLoading = chartLoading;
-  const isError = chartIsError;
-  const error = chartError;
-
-  const shortfallEvalNow = new Date();
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -681,96 +324,18 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
             </Select>
           </>
         ) : null}
-
-        <Button
-          type="button"
-          className="h-9 w-full shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:ml-auto sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
-          disabled={!shortfallUsersWithTargets.length}
-          onClick={() => downloadShortfallCsv()}
-        >
-          Export CSV
-        </Button>
       </div>
 
-      {isLoading ? (
+      {chartLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />
-      ) : isError ? (
+      ) : chartIsError ? (
         <p className="text-center text-destructive py-8">
-          {(error as Error)?.message ?? 'Failed to load targets progress'}
+          {(chartError as Error)?.message ?? 'Failed to load targets progress'}
         </p>
       ) : (
         <>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="border border-gray-200 bg-white shadow-sm lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="size-5" aria-hidden />
-                  Achieved activity by day
-                </CardTitle>
-                <CardDescription>
-                  Activity (all check-ins) and leads per day ({dateFrom} – {dateTo})
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pl-0">
-                {chartSeriesData.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8 px-6">
-                    No days in this range.
-                  </p>
-                ) : (
-                  <ChartContainer config={chartConfig} className="h-[340px] w-full">
-                    <BarChart accessibilityLayer data={chartSeriesData}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="label"
-                        tickLine={false}
-                        tickMargin={10}
-                        axisLine={false}
-                      />
-                      <YAxis tickLine={false} axisLine={false} width={40} />
-                      <ChartTooltip
-                        cursor={false}
-                        content={
-                          <ChartTooltipContent
-                            indicator="dashed"
-                            labelFormatter={(_, payload) =>
-                              (payload?.[0]?.payload as { fullLabel?: string })
-                                ?.fullLabel ?? ''
-                            }
-                          />
-                        }
-                      />
-                      <ChartLegend
-                        content={<ChartLegendContent className="flex-wrap" />}
-                        verticalAlign="top"
-                      />
-                      <Bar
-                        dataKey="achievedActivity"
-                        fill="var(--color-achievedActivity)"
-                        radius={4}
-                      />
-                      <Bar
-                        dataKey="achievedLeads"
-                        fill="var(--color-achievedLeads)"
-                        radius={4}
-                      />
-                    </BarChart>
-                  </ChartContainer>
-                )}
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-1 text-sm text-muted-foreground">
-                <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
-                  <Users className="size-4 shrink-0" aria-hidden />
-                  {chartUsersWithTargets.length} user(s) in scope
-                  {elevated && behindCount > 0 ? (
-                    <span className="text-amber-700 dark:text-amber-400">
-                      · {behindCount} behind (current progress scope)
-                    </span>
-                  ) : null}
-                </div>
-              </CardFooter>
-            </Card>
-
-            <Card className="border border-gray-200 bg-white shadow-sm">
+          <div className="grid gap-4">
+            <Card className="border border-gray-200 bg-white shadow-sm max-w-xl">
               <CardHeader>
                 <CardTitle className="text-base">Summary</CardTitle>
                 <CardDescription>{summarySubtitle}</CardDescription>
@@ -784,11 +349,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                       <p className="text-muted-foreground">No data for this range.</p>
                     );
                   }
-                  function row(
-                    label: string,
-                    target: number,
-                    achieved: number
-                  ) {
+                  function row(label: string, target: number, achieved: number) {
                     return (
                       <div className="rounded-md border border-gray-100 bg-gray-50/80 px-3 py-2 dark:bg-zinc-900/40">
                         <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -807,8 +368,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                       {row(
                         'Activity',
                         last.cumulativeTargetVisits,
-                        last.cumulativeAchievedCalls +
-                          last.cumulativeAchievedVisits
+                        last.cumulativeAchievedCalls + last.cumulativeAchievedVisits
                       )}
                       {row(
                         'Leads',
@@ -867,186 +427,6 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <AlertTriangle className="size-5 text-amber-600" aria-hidden />
-                Current Progress
-              </h2>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                {elevated ? (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="only-behind"
-                      checked={onlyBehind}
-                      onCheckedChange={setOnlyBehind}
-                    />
-                    <Label htmlFor="only-behind" className="text-sm cursor-pointer">
-                      Behind on Targets
-                    </Label>
-                  </div>
-                ) : null}
-                <Select
-                  value={shortfallScope}
-                  onValueChange={(v) => setShortfallScope(v as ShortfallScope)}
-                >
-                  <SelectTrigger
-                    className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
-                  >
-                    <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
-                    <SelectValue placeholder="Period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today (UTC)</SelectItem>
-                    <SelectItem value="week">This week (UTC)</SelectItem>
-                    <SelectItem value="month">This month (UTC)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {shortfallIsError ? (
-              <p className="text-sm text-destructive">
-                {(shortfallError as Error)?.message ?? 'Failed to load current progress data'}
-              </p>
-            ) : null}
-
-            <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
-              {shortfallLoading ? (
-                <div className="flex justify-center py-12">
-                  <LoadingSpinner />
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[160px]">Name</TableHead>
-                      <TableHead className="text-right" colSpan={3}>
-                        Activity
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          T / A / short · target from check-ins
-                        </span>
-                      </TableHead>
-                      <TableHead className="text-right" colSpan={3}>
-                        Leads
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          T / A / short
-                        </span>
-                      </TableHead>
-                      <TableHead className="text-right min-w-[72px]">Behind</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tableUsers.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="text-center text-muted-foreground py-8"
-                        >
-                          No rows for this filter.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      tableUsers.map((u) => {
-                        let ta: number;
-                        let tl: number;
-                        let sa: number | null;
-                        let sl: number | null;
-                        const achievedAct = achievedActivityTotal(u);
-                        if (shortfallScope === 'today') {
-                          ta = u.cumulativeTargetVisitsEnd;
-                          tl = u.cumulativeTargetLeadsEnd;
-                          sa =
-                            u.periodTargetVisits > 0
-                              ? Math.max(
-                                  0,
-                                  u.cumulativeTargetVisitsEnd - achievedAct
-                                )
-                              : null;
-                          sl = u.periodTargetLeads > 0 ? u.shortfallLeads : null;
-                        } else {
-                          ta = shortfallTrimmedTarget(
-                            shortfallScope,
-                            u.periodTargetVisits,
-                            shortfallRange.from,
-                            shortfallRange.to,
-                            shortfallEvalNow
-                          );
-                          tl = shortfallTrimmedTarget(
-                            shortfallScope,
-                            u.periodTargetLeads,
-                            shortfallRange.from,
-                            shortfallRange.to,
-                            shortfallEvalNow
-                          );
-                          sa = shortfallMetricShortfallTrimmed(
-                            shortfallScope,
-                            achievedAct,
-                            u.periodTargetVisits,
-                            shortfallRange.from,
-                            shortfallRange.to,
-                            shortfallEvalNow
-                          );
-                          sl = shortfallMetricShortfallTrimmed(
-                            shortfallScope,
-                            u.achievedLeadsInRange,
-                            u.periodTargetLeads,
-                            shortfallRange.from,
-                            shortfallRange.to,
-                            shortfallEvalNow
-                          );
-                        }
-                        const behind = userBehindOnAny(
-                          u,
-                          shortfallScope,
-                          shortfallRange,
-                          shortfallEvalNow
-                        );
-                        const hasAnyMetricTarget =
-                          u.periodTargetVisits > 0 || u.periodTargetLeads > 0;
-                        return (
-                          <TableRow
-                            key={u.uid}
-                            className={cn(
-                              behind &&
-                                hasAnyMetricTarget &&
-                                'bg-red-50 text-red-950 dark:bg-red-950/35 dark:text-red-50'
-                            )}
-                          >
-                            <TableCell className="font-medium">
-                              {[u.name, u.surname].filter(Boolean).join(' ')}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                              {u.periodTargetVisits > 0 ? ta : '—'}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {achievedAct}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {sa != null ? sa : '—'}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                              {u.periodTargetLeads > 0 ? tl : '—'}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {u.achievedLeadsInRange}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {sl != null ? sl : '—'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {behind ? 'Yes' : 'No'}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
           </div>
         </>
       )}
