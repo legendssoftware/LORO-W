@@ -326,12 +326,15 @@ export interface ReportsVisualiserMapProps {
   allMarkers: MapMarkerBase[];
   influenceCircles: InfluenceCircle[];
   className?: string;
+  /** Non-blocking banner while /reports/map is loading or refetching */
+  mapLayerBusy?: boolean;
 }
 
 function ReportsVisualiserMapInner({
   allMarkers,
   influenceCircles,
   className,
+  mapLayerBusy = false,
 }: ReportsVisualiserMapProps) {
   const center = useMemo((): [number, number] => {
     if (allMarkers.length === 0 && influenceCircles.length === 0) return DEFAULT_CENTER;
@@ -347,6 +350,15 @@ function ReportsVisualiserMapInner({
     <div className={cn('flex flex-col min-h-0', className)}>
       <style dangerouslySetInnerHTML={{ __html: customMarkerStyles }} />
       <div className="flex-1 min-h-0 rounded border overflow-hidden bg-muted/30 relative">
+        {mapLayerBusy ? (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-[2000] border-b border-border/80 bg-background/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur-sm"
+            role="status"
+            aria-live="polite"
+          >
+            Loading attendance and map layers…
+          </div>
+        ) : null}
         <MapContainer
           center={center}
           zoom={DEFAULT_ZOOM}

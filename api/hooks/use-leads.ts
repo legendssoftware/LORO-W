@@ -37,13 +37,19 @@ import type {
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 
-/** Query key prefix for leads. Use for invalidateQueries/refetchQueries after create, import, or other lead mutations. */
+/** Query key prefix for leads. Use for invalidateQueries after create, import, or other lead mutations. */
 export const LEADS_QUERY_KEY_PREFIX = ['leads'] as const;
 
 /** Matches server default/max page size for list endpoints when omitted. */
 export const LEADS_LIST_PAGE_SIZE = 100;
 
 const QUERY_KEY_PREFIX = LEADS_QUERY_KEY_PREFIX;
+
+export type LeadsListHookOptions = {
+  enabled?: boolean;
+  /** Skip global Axios error toast; use inline error UI (e.g. leads page banner). */
+  skipErrorToast?: boolean;
+};
 
 function getNextLeadsPageParam(lastPage: { meta?: { page?: number; totalPages?: number } }): number | undefined {
   const m = lastPage?.meta;
@@ -62,29 +68,25 @@ export function invalidateLeadQueries(
       queryKey: [...QUERY_KEY_PREFIX, 'detail', opts.detailRef],
     });
   }
-  queryClient.refetchQueries({ queryKey: QUERY_KEY_PREFIX });
 }
 
 /**
  * Fetches paginated leads list.
  * Pass `scope: 'all'` (admin/owner) or `scope: 'me'` (default) — see GET /leads.
- * Enterprise-only; no retry on 403.
  */
 export function useLeads(
   params: GetLeadsParams = {},
-  options?: { enabled?: boolean }
+  options?: LeadsListHookOptions
 ) {
   const client = useApiClient();
+  const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'list', params],
-    queryFn: async () => getLeads(client, params),
+    queryFn: async () => getLeads(client, params, listOpts),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -93,19 +95,17 @@ export function useLeads(
  */
 export function useUnassignedLeads(
   params: GetUnassignedLeadsParams = {},
-  options?: { enabled?: boolean }
+  options?: LeadsListHookOptions
 ) {
   const client = useApiClient();
+  const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'unassigned', params],
-    queryFn: async () => getUnassignedLeads(client, params),
+    queryFn: async () => getUnassignedLeads(client, params, listOpts),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -116,24 +116,22 @@ export type GetLeadsInfiniteParams = Omit<GetLeadsParams, 'page'>;
  */
 export function useLeadsInfinite(
   params: GetLeadsInfiniteParams = {},
-  options?: { enabled?: boolean }
+  options?: LeadsListHookOptions
 ) {
   const client = useApiClient();
   const limit = params.limit ?? LEADS_LIST_PAGE_SIZE;
   const listParams = { ...params, limit };
+  const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useInfiniteQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'list', 'infinite', listParams],
     queryFn: async ({ pageParam }) =>
-      getLeads(client, { ...listParams, page: pageParam as number }),
+      getLeads(client, { ...listParams, page: pageParam as number }, listOpts),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -144,30 +142,27 @@ export type GetUnassignedLeadsInfiniteParams = Omit<GetUnassignedLeadsParams, 'p
  */
 export function useUnassignedLeadsInfinite(
   params: GetUnassignedLeadsInfiniteParams = {},
-  options?: { enabled?: boolean }
+  options?: LeadsListHookOptions
 ) {
   const client = useApiClient();
   const limit = params.limit ?? LEADS_LIST_PAGE_SIZE;
   const listParams = { ...params, limit };
+  const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useInfiniteQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'unassigned', 'infinite', listParams],
     queryFn: async ({ pageParam }) =>
-      getUnassignedLeads(client, { ...listParams, page: pageParam as number }),
+      getUnassignedLeads(client, { ...listParams, page: pageParam as number }, listOpts),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
 /**
  * Fetches leads for the authenticated user (owner or assignee) with stats and pagination meta.
- * Enterprise-only; no retry on 403.
  */
 export function useLeadsForUser(
   params: GetLeadsForUserParams = {},
@@ -180,10 +175,7 @@ export function useLeadsForUser(
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -213,10 +205,7 @@ export function useLeadsReport(
     enabled: (options?.enabled !== false) && !!params.from && !!params.to,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -232,15 +221,11 @@ export function useLead(ref: number | null | undefined, options?: { enabled?: bo
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
   });
 }
 
 /**
- * Create a new lead. Invalidates and refetches leads list on success.
+ * Create a new lead. Invalidates leads list on success.
  */
 export function useCreateLeadMutation() {
   const client = useApiClient();
@@ -368,7 +353,7 @@ export function useSendLeadEngageMutation() {
 }
 
 /**
- * Import leads from CSV file. Invalidates and refetches leads list on success.
+ * Import leads from CSV file. Invalidates leads list on success.
  */
 export function useImportLeadsMutation() {
   const client = useApiClient();

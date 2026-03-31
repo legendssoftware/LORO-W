@@ -25,7 +25,6 @@ export const TASKS_LIST_QUERY_KEY = ['tasks'] as const;
 
 /**
  * Fetches paginated tasks list with optional filters.
- * Enterprise-only; no retry on 403.
  */
 export function useTasks(
   params: GetTasksParams = {},
@@ -38,10 +37,7 @@ export function useTasks(
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -59,10 +55,6 @@ export function useTask(
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: (failureCount, error: { response?: { status?: number } }) => {
-      if (error?.response?.status === 403) return false;
-      return failureCount < 2;
-    },
   });
 }
 
@@ -76,7 +68,6 @@ export function useCreateTaskMutation() {
     mutationFn: (payload: CreateTaskPayload) => createTask(client, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -98,7 +89,6 @@ export function useUpdateTaskMutation() {
       queryClient.invalidateQueries({
         queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', variables.ref],
       });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -114,7 +104,6 @@ export function useDeleteTaskMutation() {
     onSuccess: (_, ref) => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       queryClient.removeQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', ref] });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -134,7 +123,6 @@ export function useToggleJobStatusMutation() {
           queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', id],
         });
       }
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -150,7 +138,6 @@ export function useCompleteSubtaskMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -170,7 +157,6 @@ export function useUpdateSubtaskMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }
@@ -186,7 +172,6 @@ export function useDeleteSubtaskMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
-      void queryClient.refetchQueries({ queryKey: TASKS_LIST_QUERY_KEY });
     },
   });
 }

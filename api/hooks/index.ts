@@ -47,6 +47,7 @@ export { useCheckIns, useCheckInsReport, useCheckInStatus } from './use-check-in
 export {
   LEADS_QUERY_KEY_PREFIX,
   LEADS_LIST_PAGE_SIZE,
+  type LeadsListHookOptions,
   invalidateLeadQueries,
   useLeads,
   useLeadsInfinite,

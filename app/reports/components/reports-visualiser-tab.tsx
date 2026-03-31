@@ -133,8 +133,9 @@ export function ReportsVisualiserTab({
     [checkIns, searchQuery, selectedRegion, selectedBusinessType]
   );
 
+  /** Map report: today-only (or allTime), decoupled from visits toolbar date range; skip reverse-geocode for speed */
   const mapReportParams = useMemo((): GetMapReportParams => {
-    const base: GetMapReportParams = {};
+    const base: GetMapReportParams = { resolveMarkerAddresses: false };
     const uidStr =
       reportsMode === 'self' && profile?.uid != null
         ? String(profile.uid)
@@ -146,11 +147,12 @@ export function ReportsVisualiserTab({
     if (useAllTime) {
       base.allTime = true;
     } else {
-      base.startDate = startOfDay(startDate).toISOString();
-      base.endDate = endOfDay(endDate).toISOString();
+      const now = new Date();
+      base.startDate = startOfDay(now).toISOString();
+      base.endDate = endOfDay(now).toISOString();
     }
     return base;
-  }, [useAllTime, startDate, endDate, selectedUserUid, reportsMode, profile?.uid]);
+  }, [useAllTime, selectedUserUid, reportsMode, profile]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
   const influenceCircles = mapReport.data?.influenceCircles ?? [];
@@ -187,20 +189,21 @@ export function ReportsVisualiserTab({
         showMapTableToggle={false}
         showUserFilter={reportsMode === 'org'}
       />
-      <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col">
-        {mapReport.isLoading ? (
-          <LoadingSpinner wrapperClassName="py-12 flex-1" />
-        ) : mapReport.isError ? (
-          <p className="text-sm text-destructive text-center py-8 flex-1">
+      <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col relative">
+        {mapReport.isError ? (
+          <p
+            className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+            role="alert"
+          >
             {mapReport.error?.message ?? 'Could not load map data.'}
           </p>
-        ) : (
-          <ReportsVisualiserMap
-            allMarkers={mergedMapMarkers}
-            influenceCircles={influenceCircles}
-            className="flex-1 min-h-0"
-          />
-        )}
+        ) : null}
+        <ReportsVisualiserMap
+          allMarkers={mergedMapMarkers}
+          influenceCircles={influenceCircles}
+          mapLayerBusy={mapReport.isFetching && !mapReport.isError}
+          className="flex-1 min-h-0"
+        />
       </div>
 
       <VisitsSummaryModal

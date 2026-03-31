@@ -20,13 +20,19 @@ import type {
 } from '@/api/types/leads';
 import type { LeadsReportResponse } from '@/api/types/reports';
 
+export type LeadsListRequestOpts = {
+  /** When true, Axios error interceptor skips toast (use inline query error UI). */
+  skipErrorToast?: boolean;
+};
+
 /**
  * GET /leads - paginated list of leads.
  * Use `scope=all` for org-wide (admin/owner) or `scope=me` for owner/assignee (default).
  */
 export async function getLeads(
   client: AxiosInstance,
-  params: GetLeadsParams = {}
+  params: GetLeadsParams = {},
+  opts?: LeadsListRequestOpts
 ): Promise<LeadsListResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -44,7 +50,10 @@ export async function getLeads(
   if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
   if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
-  const { data } = await client.get<LeadsListResponse>(`/leads${qs ? `?${qs}` : ''}`);
+  const { data } = await client.get<LeadsListResponse>(
+    `/leads${qs ? `?${qs}` : ''}`,
+    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+  );
   return data;
 }
 
@@ -53,7 +62,8 @@ export async function getLeads(
  */
 export async function getUnassignedLeads(
   client: AxiosInstance,
-  params: GetUnassignedLeadsParams = {}
+  params: GetUnassignedLeadsParams = {},
+  opts?: LeadsListRequestOpts
 ): Promise<LeadsListResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -69,7 +79,8 @@ export async function getUnassignedLeads(
   if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(
-    `/leads/unassigned${qs ? `?${qs}` : ''}`
+    `/leads/unassigned${qs ? `?${qs}` : ''}`,
+    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
   );
   return data;
 }

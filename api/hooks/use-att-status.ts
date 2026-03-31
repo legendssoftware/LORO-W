@@ -33,8 +33,8 @@ export function useAttStatus(options?: { enabled?: boolean }) {
       };
     },
     enabled: options?.enabled !== false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnMount: true,
-    staleTime: 90 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 }

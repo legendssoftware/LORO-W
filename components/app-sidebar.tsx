@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useSessionSync } from "@/api/hooks";
+import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard";
 import {
   canAccessOrgSettings,
   getAllowedRoutes,
@@ -60,6 +61,7 @@ export function AppSidebar() {
   const { isSignedIn } = useAuth();
   const [faqOpen, setFaqOpen] = useState(false);
   const { backendUserData: profile } = useSessionSync();
+  const prefetchDashboard = usePrefetchDashboardQueries();
   const {
     startDemoCall,
     endDemoCall,
@@ -109,7 +111,13 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={route.path}>
                       <SidebarMenuButton asChild isActive={isActive}>
-                        <Link href={route.path} onClick={closeSidebar}>
+                        <Link
+                          href={route.path}
+                          onClick={closeSidebar}
+                          onPointerEnter={() => {
+                            if (route.path === "/dashboard") prefetchDashboard();
+                          }}
+                        >
                           {Icon && <Icon className="size-5 shrink-0" />}
                           <span>{route.label}</span>
                         </Link>

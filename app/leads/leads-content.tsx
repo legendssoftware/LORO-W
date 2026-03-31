@@ -30,10 +30,16 @@ import { CalendarIcon, XIcon } from '@/lib/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CopyMinus, Upload as UploadIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { LeadsTable } from '@/components/leads-table/leads-table';
+import {
+  LeadsTable,
+  type LeadActivityActorLookup,
+  type LeadActivityActorProfile,
+} from '@/components/leads-table/leads-table';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { cn } from '@/lib/utils';
+import { QueryErrorBanner } from '@/components/query-error-banner';
+import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
@@ -84,6 +90,23 @@ export function LeadsContent() {
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
   const { data: users = [] } = useUsers({ limit: 100 });
+
+  const activityActorLookup = useMemo<LeadActivityActorLookup>(() => {
+    const byUid = new Map<number, LeadActivityActorProfile>();
+    const byClerkId = new Map<string, LeadActivityActorProfile>();
+    for (const u of users) {
+      const row: LeadActivityActorProfile = {
+        name: u.name,
+        surname: u.surname,
+        photoURL: u.photoURL ?? null,
+        avatar: u.avatar ?? null,
+      };
+      byUid.set(u.uid, row);
+      const cid = typeof u.clerkUserId === 'string' ? u.clerkUserId.trim() : '';
+      if (cid) byClerkId.set(cid, row);
+    }
+    return { byUid, byClerkId };
+  }, [users]);
 
   const profile = useSessionStore((s) => s.profileData);
   const canViewAll = useMemo(
@@ -137,9 +160,10 @@ export function LeadsContent() {
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
   };
 
-  const leadsQuery = useLeadsInfinite(leadsParams);
+  const leadsQuery = useLeadsInfinite(leadsParams, { skipErrorToast: true });
   const unassignedQuery = useUnassignedLeadsInfinite(unassignedParams, {
     enabled: showUnassignedGroup,
+    skipErrorToast: true,
   });
 
   const leads = useMemo(
@@ -161,15 +185,32 @@ export function LeadsContent() {
     leadsQuery.isLoading || (showUnassignedGroup && unassignedQuery.isLoading);
 
   const refetchLeads = () => {
-    leadsQuery.refetch();
+    void leadsQuery.refetch();
     if (showUnassignedGroup) {
-      unassignedQuery.refetch();
+      void unassignedQuery.refetch();
     }
   };
+
+  const listError =
+    leadsQuery.isError
+      ? leadsQuery.error
+      : showUnassignedGroup && unassignedQuery.isError
+        ? unassignedQuery.error
+        : null;
 
   return (
     <section>
       <h2 className="mb-4 text-lg font-medium text-foreground">Lead history</h2>
+      {listError != null ? (
+        <QueryErrorBanner
+          className="mb-4"
+          message={getQueryErrorMessage(
+            listError,
+            'Could not load leads. Try again.'
+          )}
+          onRetry={refetchLeads}
+        />
+      ) : null}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-0">
@@ -491,6 +532,7 @@ export function LeadsContent() {
         unassignedTotal={unassignedTotal}
         isLoading={listLoading}
         emptyMessage="No leads match your filters."
+        activityActorLookup={activityActorLookup}
         onLeadClick={(lead) => {
           setSelectedLead(lead);
           setLeadDialogOpen(true);

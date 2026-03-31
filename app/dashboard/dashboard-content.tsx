@@ -33,7 +33,7 @@ export function DashboardContent() {
   const { user: clerkUser } = useUser();
   const { isTokenReady } = useTokenReady();
   const apiClient = useApiClient();
-  const { backendUserData: profile, isSyncing } = useSessionSync();
+  const { backendUserData: profile } = useSessionSync();
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
@@ -50,6 +50,12 @@ export function DashboardContent() {
       isPresent: false,
     };
   }, [profile?.uid, clerkUser?.fullName, clerkUser?.primaryEmailAddress?.emailAddress]);
+
+  /** Numeric uid from sync, or Clerk id — server monthly endpoint resolves both. */
+  const calendarUserRef = useMemo(
+    () => profile?.uid ?? clerkUser?.id ?? null,
+    [profile?.uid, clerkUser?.id]
+  );
 
   const attQuery = useAttStatus({
     enabled: isTokenReady,
@@ -252,54 +258,22 @@ export function DashboardContent() {
               userRef={profile?.uid != null ? String(profile.uid) : null}
               accessLevel={profile?.accessLevel}
             />
-            {isSyncing ? (
-              <div className="rounded border border-gray-200 bg-card p-4">
-                <div className="mb-4 flex flex-col gap-3">
-                  <Skeleton className="h-6 w-28 rounded-md" />
-                  <div className="flex w-full gap-2">
-                    <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-[140px] md:flex-none" />
-                    <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-24 md:flex-none" />
-                  </div>
-                </div>
-                <div className="mx-auto max-w-full lg:max-w-[50%]">
-                  <div className="grid grid-cols-7 gap-1 text-center">
-                    {Array.from({ length: 7 }).map((_, i) => (
-                      <Skeleton key={i} className="mx-auto h-3 w-8 rounded-md" />
-                    ))}
-                  </div>
-                  <div className="mt-1 grid grid-cols-7 gap-1">
-                    {Array.from({ length: 35 }).map((_, i) => (
-                      <Skeleton key={i} className="aspect-square rounded-full" />
-                    ))}
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4">
-                    {[1, 2, 3].map((i) => (
-                      <span key={i} className="flex items-center gap-1.5">
-                        <Skeleton className="size-4 shrink-0 rounded-full" />
-                        <Skeleton className="h-3 w-14 rounded-md" />
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <AttendanceStreakCalendar
-                userRef={profile?.uid}
-                headerTrailing={
-                  currentUserForModal ? (
-                    <button
-                      type="button"
-                      onClick={() => setAttendanceModalUser(currentUserForModal)}
-                      className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-gray-200 bg-white px-2 text-sm text-foreground hover:bg-gray-50 md:w-auto md:px-3"
-                      aria-label="View attendance logs"
-                    >
-                      <Clock className="size-4 shrink-0" />
-                      <span>Logs</span>
-                    </button>
-                  ) : undefined
-                }
-              />
-            )}
+            <AttendanceStreakCalendar
+              userRef={calendarUserRef}
+              headerTrailing={
+                currentUserForModal ? (
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceModalUser(currentUserForModal)}
+                    className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-gray-200 bg-white px-2 text-sm text-foreground hover:bg-gray-50 md:w-auto md:px-3"
+                    aria-label="View attendance logs"
+                  >
+                    <Clock className="size-4 shrink-0" />
+                    <span>Logs</span>
+                  </button>
+                ) : undefined
+              }
+            />
             <UserAttendanceRecordsModal
               user={attendanceModalUser}
               onClose={() => setAttendanceModalUser(null)}
