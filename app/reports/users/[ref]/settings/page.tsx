@@ -253,6 +253,7 @@ type UserBaseline = {
   accessLevel?: string | null;
   departmentId?: number | null;
   branch?: { uid?: number } | null;
+  branchUid?: number | null;
   managedBranches?: number[];
   managedStaff?: number[];
   businesscardURL?: string | null;
@@ -260,6 +261,12 @@ type UserBaseline = {
   userEmployeementProfile?: Record<string, unknown> | null;
   assignedClientIds?: number[];
 };
+
+/** Primary branch FK from API: treat non-positive / invalid as unassigned (never send uid 0 on PATCH). */
+function normalizePrimaryBranchUid(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 0) return null;
+  return value;
+}
 
 /** Build userTarget object from target form values (only defined, non-empty). */
 function buildUserTargetBody(values: TargetFormValues): PatchUserTargetBody | undefined {
@@ -316,9 +323,10 @@ function buildPatchBody(user: UserBaseline | null | undefined, values: FormValue
   if (!sameNum(user.departmentId ?? undefined, values.departmentId))
     body.departmentId = values.departmentId ?? undefined;
 
-  const userBranchUid = user.branch?.uid ?? null;
-  if (!sameNum(userBranchUid, values.branchUid))
-    body.branch = values.branchUid != null ? { uid: values.branchUid } : undefined;
+  const userBranchUid = normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null);
+  const valuesBranchNorm = normalizePrimaryBranchUid(values.branchUid ?? null);
+  if (!sameNum(userBranchUid, valuesBranchNorm))
+    body.branch = valuesBranchNorm != null ? { uid: valuesBranchNorm } : undefined;
 
   if (!sameArr(user.managedBranches, values.managedBranches))
     body.managedBranches =
@@ -498,7 +506,7 @@ export default function UserSettingsPage() {
         status: (user.status as string) ?? 'active',
         accessLevel: (user.accessLevel as string) ?? '',
         departmentId: (user.departmentId as number) ?? null,
-        branchUid: user.branch?.uid ?? null,
+        branchUid: normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null),
         managedBranches: (user as { managedBranches?: number[] }).managedBranches ?? [],
         managedStaff: (user as { managedStaff?: number[] }).managedStaff ?? [],
         businesscardURL: up.businesscardURL ?? null,
@@ -922,7 +930,9 @@ export default function UserSettingsPage() {
                 <FormField
                   control={form.control}
                   name="branchUid"
-                  render={({ field }) => (
+                  render={({ field }) => {
+                    const normalizedBranch = normalizePrimaryBranchUid(field.value ?? null);
+                    return (
                     <FormItem>
                       <FormLabel>Branch</FormLabel>
                       <Select
@@ -930,7 +940,7 @@ export default function UserSettingsPage() {
                           field.onChange(v === '__none__' ? null : Number(v))
                         }
                         value={
-                          field.value != null ? String(field.value) : '__none__'
+                          normalizedBranch != null ? String(normalizedBranch) : '__none__'
                         }
                       >
                         <FormControl>
@@ -955,7 +965,8 @@ export default function UserSettingsPage() {
                       </Select>
                       <FormMessage />
                     </FormItem>
-                  )}
+                    );
+                  }}
                 />
               </CardContent>
             </Card>
