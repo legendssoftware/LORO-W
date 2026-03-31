@@ -2,7 +2,13 @@
 
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { format, formatDistanceToNow, isToday } from 'date-fns';
+import {
+  differenceInCalendarDays,
+  format,
+  formatDistanceToNow,
+  isToday,
+  startOfDay,
+} from 'date-fns';
 import { ChevronRight, Users } from 'lucide-react';
 import type { LeadListItem } from '@/api/types/leads';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +48,7 @@ const LEAD_STATUS_ICON_COLORS: Record<string, string> = {
   CONVERTED: 'text-green-600',
   DECLINED: 'text-red-600',
   CANCELLED: 'text-red-600',
+  DISCARDED: 'text-slate-500',
   PENDING: 'text-amber-600',
   REVIEW: 'text-amber-600',
 };
@@ -141,9 +148,55 @@ function resolveActivityActor(
   return undefined;
 }
 
-/** Same “touch” date as the Last edited cell: Clerk activity, else creation. */
+/** Same “touch” date as the Activity column: last activity timestamp, else creation. */
 export function effectiveLeadTouchDate(lead: LeadListItem): Date | null {
   return parseLeadDate(lead.lastActivityAt) ?? parseLeadDate(lead.createdAt);
+}
+
+function leadTouchRecency(touch: Date | null): {
+  isTodayTouch: boolean;
+  isStaleRed: boolean;
+  isStaleAmber: boolean;
+} {
+  if (!touch || Number.isNaN(touch.getTime())) {
+    return { isTodayTouch: false, isStaleRed: false, isStaleAmber: false };
+  }
+  if (isToday(touch)) {
+    return { isTodayTouch: true, isStaleRed: false, isStaleAmber: false };
+  }
+  const daysSinceTouch = differenceInCalendarDays(
+    startOfDay(new Date()),
+    startOfDay(touch)
+  );
+  if (daysSinceTouch > 7) {
+    return { isTodayTouch: false, isStaleRed: true, isStaleAmber: false };
+  }
+  if (daysSinceTouch > 3) {
+    return { isTodayTouch: false, isStaleRed: false, isStaleAmber: true };
+  }
+  return { isTodayTouch: false, isStaleRed: false, isStaleAmber: false };
+}
+
+function formatLeadActivitySummaryLine(
+  lead: LeadListItem,
+  rawLine: string | undefined
+): string | undefined {
+  if (!rawLine?.trim()) return undefined;
+  const trimmed = rawLine.trim();
+  if (lead.lastActivityIsLoro !== true) return trimmed;
+
+  const withLoroPrefix = (text: string) => {
+    const t = text.trim();
+    if (/^LORO\b/i.test(t)) return t;
+    return `LORO ${t}`;
+  };
+
+  const action = lead.lastActivityAction;
+  if (action === 'created') return 'LORO created this lead';
+  if (action === 'updated') return 'LORO updated this lead';
+  if (action === 'system') return withLoroPrefix(trimmed);
+  if (action === 'status_changed') return withLoroPrefix(trimmed);
+  return withLoroPrefix(trimmed);
 }
 
 function lastEditedCell(
@@ -159,11 +212,16 @@ function lastEditedCell(
   const relative = formatDistanceToNow(displayDate, { addSuffix: true });
   const editedToday = isToday(displayDate);
   const summaryTrimmed = lead.lastActivitySummary?.trim();
+  const summaryRaw =
+    summaryTrimmed || (usingCreationFallback ? 'Lead created' : undefined);
   const summary =
-    summaryTrimmed ||
-    (usingCreationFallback ? 'Lead created' : undefined);
+    usingCreationFallback && !summaryTrimmed
+      ? 'LORO created this lead'
+      : formatLeadActivitySummaryLine(lead, summaryRaw);
 
-  const actor = resolveActivityActor(lead, activityActorLookup);
+  const actorResolved = resolveActivityActor(lead, activityActorLookup);
+  const actor =
+    lead.lastActivityIsLoro !== true && actorResolved ? actorResolved : undefined;
 
   const textBlock = (
     <span className="flex min-w-0 max-w-[260px] flex-col gap-0.5">
@@ -439,22 +497,36 @@ export function LeadsTable({
                           <TableHead className="whitespace-nowrap">Temperature</TableHead>
                           <TableHead className="whitespace-nowrap">Priority</TableHead>
                           <TableHead className="whitespace-nowrap">Created</TableHead>
-                          <TableHead className="whitespace-nowrap">Last edited</TableHead>
+                          <TableHead className="whitespace-nowrap">Activity</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
                         {group.leads.map((lead) => {
-                          const updated = effectiveLeadTouchDate(lead);
-                          const actionedToday = updated != null && isToday(updated);
+                          const touch = effectiveLeadTouchDate(lead);
+                          const {
+                            isTodayTouch,
+                            isStaleRed,
+                            isStaleAmber,
+                          } = leadTouchRecency(touch);
                           return (
                           <TableRow
                             key={lead.uid}
                             className={cn(
                               'border-b-0',
-                              actionedToday && '!bg-emerald-50/50',
+                              isTodayTouch && '!bg-emerald-50/50',
+                              isStaleRed && '!bg-red-50/50',
+                              isStaleAmber && '!bg-amber-50/50',
                               onLeadClick &&
                                 'cursor-pointer transition-colors hover:bg-muted/50',
-                              actionedToday && onLeadClick && 'hover:!bg-emerald-50/70'
+                              isTodayTouch &&
+                                onLeadClick &&
+                                'hover:!bg-emerald-50/70',
+                              isStaleRed &&
+                                onLeadClick &&
+                                'hover:!bg-red-50/70',
+                              isStaleAmber &&
+                                onLeadClick &&
+                                'hover:!bg-amber-50/70'
                             )}
                             role={onLeadClick ? 'button' : undefined}
                             tabIndex={onLeadClick ? 0 : undefined}

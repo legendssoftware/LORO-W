@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   eachDayOfInterval,
   format,
@@ -9,13 +9,13 @@ import {
   startOfDay,
 } from 'date-fns';
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   LabelList,
-  Line,
-  LineChart,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -78,6 +78,9 @@ import { LeadsSummaryDialog } from '@/app/reports/components/leads-summary-dialo
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-attendance-tab';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import {
+  userListItemHasPerformanceTarget,
+} from '@/app/reports/utils/user-has-performance-target';
+import {
   buildPipelineValueAxis,
   formatAxisTickThousands,
   takeTopNWithOther,
@@ -98,6 +101,7 @@ const LEAD_STATUS_OPTIONS = [
   'DECLINED',
   'CONVERTED',
   'CANCELLED',
+  'DISCARDED',
 ] as const;
 
 const LEAD_SOURCE_OPTIONS = [
@@ -272,7 +276,29 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
   }, [listQuery.data?.data, elevated, selectedBranchId]);
 
   const { data: branches = [] } = useBranches();
-  const { data: usersList = [] } = useUsers({ limit: 200 });
+  const { data: usersList = [] } = useUsers({
+    limit: 200,
+    enabled: reportsMode === 'org' && elevated,
+    ...(selectedBranchId !== 'all'
+      ? { branchId: Number(selectedBranchId) }
+      : {}),
+  });
+
+  const reportingUsers = useMemo(
+    () =>
+      reportsMode === 'org' && elevated
+        ? usersList.filter(userListItemHasPerformanceTarget)
+        : usersList,
+    [elevated, reportsMode, usersList]
+  );
+
+  useEffect(() => {
+    if (!(reportsMode === 'org' && elevated) || selectedOwnerUid === 'all') {
+      return;
+    }
+    const ok = reportingUsers.some((u) => String(u.uid) === selectedOwnerUid);
+    if (!ok) setSelectedOwnerUid('all');
+  }, [elevated, reportsMode, reportingUsers, selectedOwnerUid]);
 
   const report = reportQuery.data;
 
@@ -478,7 +504,10 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
           {reportsMode === 'org' && elevated ? (
             <Select
               value={selectedBranchId}
-              onValueChange={setSelectedBranchId}
+              onValueChange={(v) => {
+                setSelectedBranchId(v);
+                setSelectedOwnerUid('all');
+              }}
             >
               <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                 <SelectValue placeholder="All branches" />
@@ -529,7 +558,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               </SelectTrigger>
               <SelectContent className="z-[10001]">
                 <SelectItem value="all">All owners</SelectItem>
-                {usersList.map((u) => {
+                {reportingUsers.map((u) => {
                   const fullName =
                     [u.name, u.surname].filter(Boolean).join(' ').trim() ||
                     u.email ||
@@ -593,8 +622,8 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                 <CardDescription>
                   {isActivityReport
                     ? useHourlyActivity
-                      ? 'Count of leads touched (updated after creation) by hour for the selected day — organization timezone.'
-                      : 'Daily count of leads with activity in range: last update falls between the dates and is after the record was created.'
+                      ? 'Count of leads with updatedAt in range by hour for the selected day — organization timezone.'
+                      : 'Daily count of leads whose updatedAt falls in the range (new creates and edits).'
                     : 'Leads in report cohort by day or hour.'}
                 </CardDescription>
               </CardHeader>
@@ -603,10 +632,30 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                   config={activityLineConfig}
                   className="aspect-auto h-[300px] w-full"
                 >
-                  <LineChart
+                  <AreaChart
                     data={activityLineChartData}
                     margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
                   >
+                    <defs>
+                      <linearGradient
+                        id="fillLeadActivity"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="var(--color-count)"
+                          stopOpacity={0.85}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="var(--color-count)"
+                          stopOpacity={0.12}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid vertical={false} />
                     <XAxis
                       dataKey="label"
@@ -625,16 +674,18 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                       cursor={false}
                       content={<ChartTooltipContent />}
                     />
-                    <Line
-                      type="monotone"
+                    <Area
+                      type="natural"
                       dataKey="count"
+                      name={String(activityLineConfig.count.label)}
                       stroke="var(--color-count)"
                       strokeWidth={2}
+                      fill="url(#fillLeadActivity)"
                       dot={{ r: 3 }}
                       activeDot={{ r: 5 }}
                     />
                     <ChartLegend content={<ChartLegendContent />} />
-                  </LineChart>
+                  </AreaChart>
                 </ChartContainer>
               </CardContent>
             </Card>

@@ -131,7 +131,6 @@ export function useLeadsInfinite(
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -157,7 +156,6 @@ export function useUnassignedLeadsInfinite(
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
   });
 }
 

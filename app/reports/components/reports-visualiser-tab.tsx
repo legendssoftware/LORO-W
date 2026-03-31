@@ -29,6 +29,10 @@ import { useOrgName } from '@/lib/org-id-context';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-content';
+import {
+  filterVisitExportItemsByReportingUserUids,
+  userListItemHasPerformanceTarget,
+} from '@/app/reports/utils/user-has-performance-target';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -73,6 +77,25 @@ export function ReportsVisualiserTab({
     enabled: mounted && reportsMode === 'org',
   });
   const usersList = usersQuery.data ?? [];
+
+  const reportingUsers = useMemo(
+    () =>
+      reportsMode === 'org'
+        ? usersList.filter(userListItemHasPerformanceTarget)
+        : usersList,
+    [reportsMode, usersList]
+  );
+
+  const allowedReportingUids = useMemo(
+    () => new Set(reportingUsers.map((u) => u.uid)),
+    [reportingUsers]
+  );
+
+  useEffect(() => {
+    if (reportsMode !== 'org' || !selectedUserUid) return;
+    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
+    if (!ok) setStoreUserUid('');
+  }, [reportsMode, reportingUsers, selectedUserUid, setStoreUserUid]);
   const branchesQuery = useBranches({ enabled: mounted });
   const branchMarkersQuery = useBranchMapMarkers(branchesQuery.data, {
     enabled: mounted && (branchesQuery.data?.length ?? 0) > 0,
@@ -96,15 +119,27 @@ export function ReportsVisualiserTab({
     { enabled: mounted }
   );
 
-  const checkIns = useMemo(
-    () =>
-      mapCheckInsFromApi(
-        checkInsQuery.data?.checkIns ?? [],
-        usersList,
-        branchesQuery.data ?? []
-      ),
-    [checkInsQuery.data, usersList, branchesQuery.data]
-  );
+  const checkIns = useMemo(() => {
+    const base = mapCheckInsFromApi(
+      checkInsQuery.data?.checkIns ?? [],
+      usersList,
+      branchesQuery.data ?? []
+    );
+    const applyReportingFilter =
+      reportsMode === 'org' && !selectedUserUid;
+    return filterVisitExportItemsByReportingUserUids(
+      base,
+      allowedReportingUids,
+      applyReportingFilter
+    );
+  }, [
+    allowedReportingUids,
+    branchesQuery.data,
+    checkInsQuery.data,
+    reportsMode,
+    selectedUserUid,
+    usersList,
+  ]);
 
   const uniqueRegions = useMemo(() => getSortedUniqueRegions(checkIns), [checkIns]);
 
@@ -183,7 +218,7 @@ export function ReportsVisualiserTab({
         uniqueBusinessTypes={uniqueBusinessTypes}
         businessTypeLabelMap={businessTypeLabelMap}
         businessTypeIconMap={businessTypeIconMap}
-        usersList={usersList}
+        usersList={reportingUsers}
         visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
         onOpenVisitsSummary={handleOpenVisitsSummary}
         showMapTableToggle={false}
