@@ -4,17 +4,18 @@ import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   format,
   isSameDay,
+  parseISO,
   startOfDay,
 } from 'date-fns';
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Label,
   LabelList,
-  Line,
-  LineChart,
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
@@ -78,6 +79,9 @@ import { AttendanceHoursSummaryDialog } from '@/app/reports/components/attendanc
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import type { ReportsMode } from '@/app/reports/reports-content';
+import {
+  userListItemHasPerformanceTarget,
+} from '@/app/reports/utils/user-has-performance-target';
 
 export { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
@@ -154,6 +158,8 @@ function filterCheckIns(
     role: string;
     userUid: string;
     search: string;
+    /** Org “all users”: restrict to these numeric user ids (owners with performance targets). */
+    reportingUserUids?: Set<number> | null;
   }
 ): RangeCheckIn[] {
   const q = filters.search.trim().toLowerCase();
@@ -172,6 +178,13 @@ function filterCheckIns(
     if (filters.userUid !== 'all') {
       const uid = Number(filters.userUid);
       if (!Number.isFinite(uid) || o?.uid !== uid) return false;
+    }
+    if (
+      filters.reportingUserUids &&
+      filters.userUid === 'all'
+    ) {
+      const uid = o?.uid;
+      if (uid == null || !filters.reportingUserUids.has(uid)) return false;
     }
     if (q) {
       const name = [o?.name, o?.surname]
@@ -310,7 +323,29 @@ export function ReportsAttendanceTab({
   const { data: usersList = [] } = useUsers({
     limit: 200,
     enabled: reportsMode === 'org',
+    ...(selectedBranchId !== 'all'
+      ? { branchId: Number(selectedBranchId) }
+      : {}),
   });
+
+  const reportingUsers = useMemo(
+    () =>
+      reportsMode === 'org'
+        ? usersList.filter(userListItemHasPerformanceTarget)
+        : usersList,
+    [reportsMode, usersList]
+  );
+
+  const allowedReportingUids = useMemo(
+    () => new Set(reportingUsers.map((u) => u.uid)),
+    [reportingUsers]
+  );
+
+  useEffect(() => {
+    if (reportsMode !== 'org' || selectedUserUid === 'all') return;
+    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
+    if (!ok) setSelectedUserUid('all');
+  }, [reportsMode, reportingUsers, selectedUserUid]);
 
   const rawCheckIns = useMemo(
     () => parseCheckIns(rangeQuery.data?.checkIns ?? []),
@@ -323,8 +358,18 @@ export function ReportsAttendanceTab({
       role: selectedRole,
       userUid: selectedUserUid,
       search: '',
+      reportingUserUids:
+        reportsMode === 'org' && selectedUserUid === 'all'
+          ? allowedReportingUids
+          : null,
     }),
-    [selectedBranchId, selectedRole, selectedUserUid]
+    [
+      allowedReportingUids,
+      reportsMode,
+      selectedBranchId,
+      selectedRole,
+      selectedUserUid,
+    ]
   );
 
   const checkIns = useMemo(
@@ -334,11 +379,24 @@ export function ReportsAttendanceTab({
 
   const summaryUserMetrics = useMemo(() => {
     const rows = reportDetailQuery.data?.report.userMetrics ?? [];
-    return filterUserMetricsForSummary(rows, {
+    let out = filterUserMetricsForSummary(rows, {
       userUid: selectedUserUid,
       search: '',
     });
-  }, [reportDetailQuery.data?.report.userMetrics, selectedUserUid]);
+    if (reportsMode === 'org' && selectedUserUid === 'all') {
+      if (allowedReportingUids.size === 0) {
+        out = [];
+      } else {
+        out = out.filter((r) => allowedReportingUids.has(r.userId));
+      }
+    }
+    return out;
+  }, [
+    allowedReportingUids,
+    reportDetailQuery.data?.report.userMetrics,
+    reportsMode,
+    selectedUserUid,
+  ]);
 
   const pieConfig = {
     late: { label: 'Late', color: ATT_CHART_HSL.c1 },
@@ -540,7 +598,10 @@ export function ReportsAttendanceTab({
             <>
               <Select
                 value={selectedBranchId}
-                onValueChange={setSelectedBranchId}
+                onValueChange={(v) => {
+                  setSelectedBranchId(v);
+                  setSelectedUserUid('all');
+                }}
               >
                 <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                   <SelectValue placeholder="All branches" />
@@ -575,7 +636,7 @@ export function ReportsAttendanceTab({
                 </SelectTrigger>
                 <SelectContent className="z-[10001]">
                   <SelectItem value="all">All users</SelectItem>
-                  {usersList.map((u) => {
+                  {reportingUsers.map((u) => {
                     const fullName =
                       [u.name, u.surname].filter(Boolean).join(' ').trim() ||
                       u.email ||
@@ -809,10 +870,30 @@ export function ReportsAttendanceTab({
                       config={lineConfig}
                       className="h-[300px] w-full"
                     >
-                      <LineChart
+                      <AreaChart
                         data={lineData}
                         margin={{ left: 12, right: 12, top: 8, bottom: 12 }}
                       >
+                        <defs>
+                          <linearGradient
+                            id="fillOnTimePctDaily"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="var(--color-onTimePct)"
+                              stopOpacity={0.85}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="var(--color-onTimePct)"
+                              stopOpacity={0.12}
+                            />
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
                           dataKey="date"
@@ -829,26 +910,53 @@ export function ReportsAttendanceTab({
                           tickFormatter={(v) => `${v}%`}
                         />
                         <ChartTooltip
-                          content={
-                            <ChartTooltipContent
-                              labelFormatter={(label) =>
-                                typeof label === 'string'
-                                  ? label
-                                  : String(label)
-                              }
-                            />
-                          }
+                          cursor={false}
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const raw = payload[0]?.value;
+                            const pct =
+                              typeof raw === 'number'
+                                ? raw
+                                : Number.parseFloat(String(raw));
+                            const dateStr =
+                              typeof label === 'string'
+                                ? label
+                                : label != null
+                                  ? String(label)
+                                  : '';
+                            const title =
+                              /^\d{4}-\d{2}-\d{2}$/.test(dateStr) &&
+                              !Number.isNaN(parseISO(dateStr).getTime())
+                                ? format(parseISO(dateStr), 'MMM d')
+                                : dateStr;
+                            return (
+                              <div className="border-border/50 bg-background grid min-w-[10rem] gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+                                <div className="font-medium">{title}</div>
+                                <div className="flex justify-between gap-4 font-mono tabular-nums">
+                                  <span className="text-muted-foreground">
+                                    On-time %
+                                  </span>
+                                  <span className="font-medium text-foreground">
+                                    {Number.isFinite(pct)
+                                      ? `${pct}%`
+                                      : String(raw)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }}
                         />
                         <ChartLegend
                           content={<ChartLegendContent />}
                           verticalAlign="top"
                         />
-                        <Line
-                          type="monotone"
+                        <Area
+                          type="natural"
                           dataKey="onTimePct"
                           name="On-time %"
                           stroke="var(--color-onTimePct)"
                           strokeWidth={2}
+                          fill="url(#fillOnTimePctDaily)"
                           dot={(props) => {
                             const { cx, cy, payload, index } = props;
                             const pct = payload?.onTimePct ?? 0;
@@ -874,7 +982,7 @@ export function ReportsAttendanceTab({
                           }}
                           activeDot={{ r: 5 }}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ChartContainer>
                     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1.5">

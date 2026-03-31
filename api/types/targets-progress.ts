@@ -1,4 +1,4 @@
-export type TargetsProgressBucket = 'day' | 'week' | 'fortnight' | 'month';
+export type TargetsProgressBucket = 'day' | 'hour' | 'week' | 'fortnight' | 'month';
 
 export interface TargetsProgressBucketRow {
   key: string;
@@ -17,6 +17,8 @@ export interface TargetsProgressBucketRow {
   cumulativeAchievedVisits: number;
   cumulativeTargetLeads: number;
   cumulativeAchievedLeads: number;
+  checkInsByMethod?: Record<string, number>;
+  leadsBySource?: Record<string, number>;
 }
 
 export interface TargetsProgressUserSummary {

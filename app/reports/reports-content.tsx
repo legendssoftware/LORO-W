@@ -21,6 +21,7 @@ import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
 import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import { ReportsTargetsTab } from '@/app/reports/components/reports-targets-tab';
+import { ReportsOverviewTab } from '@/app/reports/components/reports-overview-tab';
 import type { SyncProfile } from '@/api/types';
 
 export type ReportsMode = 'org' | 'self';
@@ -105,7 +106,9 @@ function ReportsTabsEqualWidth({
       </TabsList>
       {REPORT_TABS.map(({ value }) => (
         <TabsContent key={value} value={value}>
-          {value === 'attendance' ? (
+          {value === 'overview' ? (
+            <ReportsOverviewTab profile={profile} reportsMode={reportsMode} />
+          ) : value === 'attendance' ? (
             <ReportsAttendanceTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'visits' ? (
             <ReportsVisitsTab profile={profile} reportsMode={reportsMode} />

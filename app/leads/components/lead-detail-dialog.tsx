@@ -121,6 +121,11 @@ function getOptionLabel(
   return options.find((o) => o.value === value)?.label ?? value;
 }
 
+/** Status pills in this dialog; discarded uses the dedicated “Discard this lead” action instead. */
+const LEAD_STATUS_OPTIONS_FOR_DIALOG = LEAD_STATUS_OPTIONS.filter(
+  (o) => o.value !== 'DISCARDED'
+);
+
 function formatDate(s: string | undefined): string {
   if (!s) return '-';
   const d = new Date(s);
@@ -179,6 +184,7 @@ export function LeadDetailDialog({
 }: LeadDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [statusChangeOpen, setStatusChangeOpen] = useState(false);
   const [statusChangeTarget, setStatusChangeTarget] = useState<string | null>(null);
   const [statusChangeReason, setStatusChangeReason] = useState('');
@@ -232,8 +238,11 @@ export function LeadDetailDialog({
   const editHydrateKeyRef = useRef('');
 
   const canReactivate =
-    lead?.status === 'DECLINED' || lead?.status === 'CANCELLED';
+    lead?.status === 'DECLINED' ||
+    lead?.status === 'CANCELLED' ||
+    lead?.status === 'DISCARDED';
   const isConverted = lead?.status === 'CONVERTED';
+  const isDiscarded = lead?.status === 'DISCARDED';
 
   useEffect(() => {
     if (!open) {
@@ -245,6 +254,7 @@ export function LeadDetailDialog({
       setEngageChannel(null);
       setEngageDraft('');
       setEditOpen(false);
+      setDiscardConfirmOpen(false);
       editHydrateKeyRef.current = '';
       setEditImageFile(null);
       setEditImagePreview(null);
@@ -384,8 +394,25 @@ export function LeadDetailDialog({
     });
   };
 
+  const handleDiscardLead = () => {
+    if (leadUid == null) return;
+    updateMutation.mutate(
+      { ref: leadUid, payload: { status: 'DISCARDED' } },
+      {
+        onSuccess: () => {
+          toast.success('Lead discarded');
+          setDiscardConfirmOpen(false);
+          onActionSuccess?.();
+        },
+        onError: (err: { message?: string }) => {
+          toast.error(err?.message ?? 'Failed to discard lead');
+        },
+      }
+    );
+  };
+
   const handleConvertToClient = () => {
-    if (leadUid == null || isConverted) return;
+    if (leadUid == null || isConverted || isDiscarded) return;
     updateMutation.mutate(
       {
         ref: leadUid,
@@ -1199,7 +1226,7 @@ export function LeadDetailDialog({
               size="sm"
               className="rounded-full"
               onClick={handleConvertToClient}
-              disabled={!leadUid || isConverted || updateMutation.isPending}
+              disabled={!leadUid || isConverted || isDiscarded || updateMutation.isPending}
             >
               {updateMutation.isPending && !isConverted ? (
                 <Loader2Icon className="size-4 animate-spin" />
@@ -1208,19 +1235,38 @@ export function LeadDetailDialog({
               )}
             </Button>
             <div className="flex flex-wrap gap-2">
-              {LEAD_STATUS_OPTIONS.map((opt) => (
+              {LEAD_STATUS_OPTIONS_FOR_DIALOG.map((opt) => (
                 <Button
                   key={opt.value}
                   variant={lead.status === opt.value ? 'secondary' : 'outline'}
                   size="sm"
                   className="rounded-full"
-                  disabled={!leadUid || lead.status === opt.value}
+                  disabled={
+                    !leadUid ||
+                    lead.status === opt.value ||
+                    isDiscarded ||
+                    isConverted
+                  }
                   onClick={() => openStatusChange(opt.value)}
                 >
                   Set to {opt.label}
                 </Button>
               ))}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => setDiscardConfirmOpen(true)}
+              disabled={
+                !leadUid ||
+                isDiscarded ||
+                isConverted ||
+                updateMutation.isPending
+              }
+            >
+              Discard this lead
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1337,6 +1383,35 @@ export function LeadDetailDialog({
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
                 'Delete'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={discardConfirmOpen} onOpenChange={setDiscardConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard this lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The lead will be marked as discarded. You can reactivate it later from
+              this dialog, like declined or cancelled leads.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updateMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="rounded-full"
+              onClick={handleDiscardLead}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                'Discard lead'
               )}
             </Button>
           </AlertDialogFooter>
