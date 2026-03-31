@@ -1,8 +1,15 @@
 'use client';
 
-import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
-import { Building2, CalendarIcon, User } from 'lucide-react';
+import {
+  Building2,
+  CalendarIcon,
+  Target,
+  User,
+  Users,
+} from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import type { SyncProfile } from '@/api/types';
 import {
   useBranches,
@@ -17,10 +24,18 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { ChartConfig } from '@/components/ui/chart';
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import {
   Popover,
@@ -37,7 +52,9 @@ import {
 import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
-import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
+import {
+  userListItemHasPerformanceTarget,
+} from '@/app/reports/utils/user-has-performance-target';
 import {
   ReportDonutChart,
   type ReportDonutSlice,
@@ -106,19 +123,16 @@ function defaultRange(): { start: Date; end: Date } {
   return { start: today, end: today };
 }
 
-function formatUtcYmd(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-/** Map local calendar picker dates to UTC `yyyy-MM-dd` for the API (same idea as Overview). */
-function localDateToUtcYmd(d: Date): string {
-  return formatUtcYmd(
-    new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  );
-}
+const chartConfig = {
+  achievedActivity: {
+    label: 'Activity',
+    color: REPORT_CHART_HSL.c4,
+  },
+  achievedLeads: {
+    label: 'Leads',
+    color: REPORT_CHART_HSL.c3,
+  },
+} satisfies ChartConfig;
 
 export interface ReportsTargetsTabProps {
   profile: SyncProfile | null | undefined;
@@ -130,19 +144,15 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
 
-  const [{ start: rangeStart, end: rangeEnd }, setRange] = React.useState(
-    defaultRange
-  );
-  const [popoverOpen, setPopoverOpen] = React.useState(false);
-  const [selectedBranchId, setSelectedBranchId] =
-    React.useState<string>('all');
-  const [selectedOwnerUid, setSelectedOwnerUid] =
-    React.useState<string>('all');
+  const [{ start: rangeStart, end: rangeEnd }, setRange] = useState(defaultRange);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
+  const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
 
-  const dateFrom = localDateToUtcYmd(rangeStart);
-  const dateTo = localDateToUtcYmd(rangeEnd);
+  const dateFrom = format(rangeStart, 'yyyy-MM-dd');
+  const dateTo = format(rangeEnd, 'yyyy-MM-dd');
 
-  const filterSuffix = React.useMemo(
+  const filterSuffix = useMemo(
     () => ({
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
@@ -154,7 +164,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     [elevated, selectedBranchId, selectedOwnerUid]
   );
 
-  const chartProgressParams = React.useMemo(
+  const chartProgressParams = useMemo(
     () => ({
       from: dateFrom,
       to: dateTo,
@@ -182,48 +192,67 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       : {}),
   });
 
-  const reportingUsers = React.useMemo(
+  const reportingUsers = useMemo(
     () =>
       elevated ? usersList.filter(userListItemHasPerformanceTarget) : usersList,
     [elevated, usersList]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!elevated || selectedOwnerUid === 'all') return;
     const ok = reportingUsers.some((u) => String(u.uid) === selectedOwnerUid);
     if (!ok) setSelectedOwnerUid('all');
   }, [elevated, reportingUsers, selectedOwnerUid]);
 
-  const checkInsDonutSlices = React.useMemo(
+  const chartSeriesData = useMemo(() => {
+    const rows = chartData?.aggregateBuckets ?? [];
+    return rows.map((b) => ({
+      label: b.label.length > 14 ? b.key : b.label,
+      fullLabel: b.label,
+      achievedActivity: b.achievedCalls + b.achievedVisits,
+      achievedLeads: b.achievedLeads,
+    }));
+  }, [chartData?.aggregateBuckets]);
+
+  const checkInsDonutSlices = useMemo(
     () => recordToDonutSlices(mergeBucketCounts(chartData?.aggregateBuckets)),
     [chartData?.aggregateBuckets]
   );
-  const leadsDonutSlices = React.useMemo(
+  const leadsDonutSlices = useMemo(
     () => recordToDonutSlices(mergeLeadSources(chartData?.aggregateBuckets)),
     [chartData?.aggregateBuckets]
   );
-  const checkInsDonutConfig = React.useMemo(
+  const checkInsDonutConfig = useMemo(
     () => slicesToChartConfig(checkInsDonutSlices),
     [checkInsDonutSlices]
   );
-  const leadsDonutConfig = React.useMemo(
+  const leadsDonutConfig = useMemo(
     () => slicesToChartConfig(leadsDonutSlices),
     [leadsDonutSlices]
   );
-  const checkInsDonutTotal = React.useMemo(
+  const checkInsDonutTotal = useMemo(
     () => checkInsDonutSlices.reduce((s, x) => s + x.value, 0),
     [checkInsDonutSlices]
   );
-  const leadsDonutTotal = React.useMemo(
+  const leadsDonutTotal = useMemo(
     () => leadsDonutSlices.reduce((s, x) => s + x.value, 0),
     [leadsDonutSlices]
   );
 
-  const summarySubtitle = React.useMemo(() => {
+  const summarySubtitle = useMemo(() => {
     if (!elevated) return 'End-of-range cumulative (your progress)';
     if (selectedOwnerUid !== 'all') return 'End-of-range cumulative (selected user)';
     return 'End-of-range cumulative (org aggregate)';
   }, [elevated, selectedOwnerUid]);
+
+  const chartUsersWithTargets = useMemo(
+    () => (chartData?.users ?? []).filter((u) => u.hasTarget),
+    [chartData?.users]
+  );
+
+  const isLoading = chartLoading;
+  const isError = chartIsError;
+  const error = chartError;
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -326,16 +355,80 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         ) : null}
       </div>
 
-      {chartLoading ? (
+      {isLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />
-      ) : chartIsError ? (
+      ) : isError ? (
         <p className="text-center text-destructive py-8">
-          {(chartError as Error)?.message ?? 'Failed to load targets progress'}
+          {(error as Error)?.message ?? 'Failed to load targets progress'}
         </p>
       ) : (
         <>
-          <div className="grid gap-4">
-            <Card className="border border-gray-200 bg-white shadow-sm max-w-xl">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="border border-gray-200 bg-white shadow-sm lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="size-5" aria-hidden />
+                  Achieved activity by day
+                </CardTitle>
+                <CardDescription>
+                  Activity (all check-ins) and leads per day ({dateFrom} – {dateTo})
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pl-0">
+                {chartSeriesData.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8 px-6">
+                    No days in this range.
+                  </p>
+                ) : (
+                  <ChartContainer config={chartConfig} className="h-[340px] w-full">
+                    <BarChart accessibilityLayer data={chartSeriesData}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                      />
+                      <YAxis tickLine={false} axisLine={false} width={40} />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            indicator="dashed"
+                            labelFormatter={(_, payload) =>
+                              (payload?.[0]?.payload as { fullLabel?: string })
+                                ?.fullLabel ?? ''
+                            }
+                          />
+                        }
+                      />
+                      <ChartLegend
+                        content={<ChartLegendContent className="flex-wrap" />}
+                        verticalAlign="top"
+                      />
+                      <Bar
+                        dataKey="achievedActivity"
+                        fill="var(--color-achievedActivity)"
+                        radius={4}
+                      />
+                      <Bar
+                        dataKey="achievedLeads"
+                        fill="var(--color-achievedLeads)"
+                        radius={4}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-1 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                  <Users className="size-4 shrink-0" aria-hidden />
+                  {chartUsersWithTargets.length} user(s) in scope
+                </div>
+              </CardFooter>
+            </Card>
+
+            <Card className="border border-gray-200 bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Summary</CardTitle>
                 <CardDescription>{summarySubtitle}</CardDescription>
@@ -349,7 +442,11 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                       <p className="text-muted-foreground">No data for this range.</p>
                     );
                   }
-                  function row(label: string, target: number, achieved: number) {
+                  function row(
+                    label: string,
+                    target: number,
+                    achieved: number
+                  ) {
                     return (
                       <div className="rounded-md border border-gray-100 bg-gray-50/80 px-3 py-2 dark:bg-zinc-900/40">
                         <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -368,7 +465,8 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                       {row(
                         'Activity',
                         last.cumulativeTargetVisits,
-                        last.cumulativeAchievedCalls + last.cumulativeAchievedVisits
+                        last.cumulativeAchievedCalls +
+                          last.cumulativeAchievedVisits
                       )}
                       {row(
                         'Leads',
