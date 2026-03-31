@@ -30,11 +30,11 @@ export interface LeadListItem {
   attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
-  /** ISO timestamp of the latest user-facing activity log entry (if recorded). */
+  /** ISO timestamp of the latest activity by an authenticated Clerk user (omitted when only system automation touched the lead). */
   lastActivityAt?: string;
-  /** One-line summary of the most recent activity. */
+  /** Summary for that latest Clerk-user activity (excludes system jobs). */
   lastActivitySummary?: string;
-  /** Newest-first audit entries returned on detail/list when present. */
+  /** Newest-first log: Clerk-user entries only in API responses (system rows filtered server-side). */
   activity?: Array<{
     at: string;
     action: string;

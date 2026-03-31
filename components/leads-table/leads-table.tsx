@@ -113,8 +113,7 @@ function parseLeadDate(iso: string | undefined): Date | null {
 }
 
 function lastEditedCell(lead: LeadListItem): ReactNode {
-  const iso = lead.lastActivityAt ?? lead.updatedAt;
-  const d = parseLeadDate(iso);
+  const d = parseLeadDate(lead.lastActivityAt);
   if (!d) return '—';
   const relative = formatDistanceToNow(d, { addSuffix: true });
   const editedToday = isToday(d);
@@ -377,8 +376,7 @@ export function LeadsTable({
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
                         {group.leads.map((lead) => {
-                          const editedIso = lead.lastActivityAt ?? lead.updatedAt;
-                          const updated = parseLeadDate(editedIso);
+                          const updated = parseLeadDate(lead.lastActivityAt);
                           const actionedToday = updated != null && isToday(updated);
                           return (
                           <TableRow
