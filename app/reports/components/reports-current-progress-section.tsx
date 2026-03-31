@@ -1,11 +1,17 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CalendarRange } from 'lucide-react';
+import { AlertTriangle, CalendarIcon, CalendarRange } from 'lucide-react';
 import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import { useTargetsProgress } from '@/api/hooks';
 import { exportToCsv } from '@/lib/utils/report-export';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -36,6 +42,11 @@ function formatUtcYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function utcToday(): Date {
+  const n = new Date();
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+}
+
 function getUtcWeekRange(ref: Date): { from: string; to: string } {
   const x = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate()));
   const dow = x.getUTCDay();
@@ -63,7 +74,7 @@ function getUtcTodayRange(ref: Date): { from: string; to: string } {
   return { from: d, to: d };
 }
 
-type ShortfallScope = 'today' | 'week' | 'month';
+type ShortfallScope = 'day' | 'week' | 'month';
 
 function minIsoDate(a: string, b: string): string {
   return a <= b ? a : b;
@@ -164,7 +175,7 @@ function userBehindOnAny(
   shortfallRange: { from: string; to: string },
   now: Date
 ): boolean {
-  if (scope === 'today') return userBehindToday(u);
+  if (scope === 'day') return userBehindToday(u);
   return (
     shortfallMetricBehindTrimmed(
       scope,
@@ -194,22 +205,26 @@ export function ReportsCurrentProgressSection({
   elevated,
   filterSuffix,
 }: ReportsCurrentProgressSectionProps) {
-  const [shortfallScope, setShortfallScope] = useState<ShortfallScope>('today');
+  const [shortfallScope, setShortfallScope] = useState<ShortfallScope>('day');
   const [onlyBehind, setOnlyBehind] = useState(false);
+  const [selectedProgressDay, setSelectedProgressDay] = useState<Date>(() =>
+    utcToday()
+  );
+  const [dayPopoverOpen, setDayPopoverOpen] = useState(false);
 
   const shortfallRange = useMemo(() => {
     const now = new Date();
-    if (shortfallScope === 'today') return getUtcTodayRange(now);
+    if (shortfallScope === 'day') return getUtcTodayRange(selectedProgressDay);
     if (shortfallScope === 'week') return getUtcWeekRange(now);
     return getUtcMonthRange(now);
-  }, [shortfallScope]);
+  }, [shortfallScope, selectedProgressDay]);
 
   const shortfallProgressParams = useMemo(
     () => ({
       from: shortfallRange.from,
       to: shortfallRange.to,
       bucket:
-        shortfallScope === 'today'
+        shortfallScope === 'day'
           ? ('day' as const)
           : shortfallScope === 'week'
             ? ('week' as const)
@@ -250,8 +265,8 @@ export function ReportsCurrentProgressSection({
         : true
     );
     const scopeLabel =
-      shortfallScope === 'today'
-        ? 'today'
+      shortfallScope === 'day'
+        ? 'day'
         : shortfallScope === 'week'
           ? 'week'
           : 'month';
@@ -274,7 +289,7 @@ export function ReportsCurrentProgressSection({
       let sa: number | null;
       let sl: number | null;
       const achievedAct = achievedActivityTotal(u);
-      if (shortfallScope === 'today') {
+      if (shortfallScope === 'day') {
         ta = u.cumulativeTargetVisitsEnd;
         tl = u.cumulativeTargetLeadsEnd;
         sa =
@@ -368,11 +383,61 @@ export function ReportsCurrentProgressSection({
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="today">Today (UTC)</SelectItem>
+              <SelectItem value="day">Single day (UTC)</SelectItem>
               <SelectItem value="week">This week (UTC)</SelectItem>
               <SelectItem value="month">This month (UTC)</SelectItem>
             </SelectContent>
           </Select>
+          {shortfallScope === 'day' ? (
+            <Popover open={dayPopoverOpen} onOpenChange={setDayPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    'h-9 w-full justify-start text-left font-normal sm:w-[220px]',
+                    selectTriggerClass
+                  )}
+                >
+                  <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+                  {formatUtcYmd(selectedProgressDay)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedProgressDay}
+                  onSelect={(d) => {
+                    if (d)
+                      setSelectedProgressDay(
+                        new Date(
+                          Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+                        )
+                      );
+                  }}
+                  initialFocus
+                />
+                <div className="flex flex-wrap justify-end gap-2 border-t p-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedProgressDay(utcToday())}
+                  >
+                    Today (UTC)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDayPopoverOpen(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : null}
           <Button
             type="button"
             className="h-9 w-full shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
@@ -432,7 +497,7 @@ export function ReportsCurrentProgressSection({
                   let sa: number | null;
                   let sl: number | null;
                   const achievedAct = achievedActivityTotal(u);
-                  if (shortfallScope === 'today') {
+                  if (shortfallScope === 'day') {
                     ta = u.cumulativeTargetVisitsEnd;
                     tl = u.cumulativeTargetLeadsEnd;
                     sa =
