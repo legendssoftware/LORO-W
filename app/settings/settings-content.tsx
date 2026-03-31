@@ -875,17 +875,12 @@ export function SettingsContent() {
                     }
                   >
                     <SelectTrigger id="org-status" className="max-w-xs bg-white border-gray-200">
-                      <div className="flex min-w-0 items-center gap-2">
-                        {(() => {
-                          const meta = optionByValue(
-                            ORG_STATUS_SELECT_OPTIONS,
-                            profileForm.status
-                          );
-                          const Icon = meta?.Icon ?? HelpCircle;
-                          return <Icon className="size-4 shrink-0" />;
-                        })()}
-                        <SelectValue placeholder="Status" />
-                      </div>
+                      {/* 
+                        Radix SelectValue renders the selected SelectItem's ItemText.
+                        Our SelectItems include an icon + label, so rendering an icon here
+                        duplicates the selected icon (the bug shown in screenshots).
+                      */}
+                      <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
                       {!optionByValue(ORG_STATUS_SELECT_OPTIONS, profileForm.status) ? (
@@ -1241,17 +1236,12 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <div className="flex min-w-0 items-center gap-2">
-                            {(() => {
-                              const meta = optionByValue(
-                                THEME_SELECT_OPTIONS,
-                                regionalForm.theme
-                              );
-                              const Icon = meta?.Icon ?? HelpCircle;
-                              return <Icon className="size-4 shrink-0" />;
-                            })()}
-                            <SelectValue />
-                          </div>
+                          {/* 
+                            Radix SelectValue renders the selected SelectItem's ItemText.
+                            Our SelectItems include an icon + label, so rendering an icon here
+                            duplicates the selected icon (the bug shown in screenshots).
+                          */}
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {THEME_SELECT_OPTIONS.map(({ value, label, Icon }) => (
@@ -1398,17 +1388,12 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger id="gtype" className="w-full">
-                          <div className="flex min-w-0 items-center gap-2">
-                            {(() => {
-                              const meta = optionByValue(
-                                GEOFENCE_NOTIFICATION_SELECT_OPTIONS,
-                                regionalForm.geofenceDefaultNotificationType
-                              );
-                              const Icon = meta?.Icon ?? HelpCircle;
-                              return <Icon className="size-4 shrink-0" />;
-                            })()}
-                            <SelectValue />
-                          </div>
+                          {/* 
+                            Radix SelectValue renders the selected SelectItem's ItemText.
+                            Our SelectItems include an icon + label, so rendering an icon here
+                            duplicates the selected icon (the bug shown in screenshots).
+                          */}
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {!optionByValue(
@@ -1915,17 +1900,12 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger>
-                          <div className="flex min-w-0 items-center gap-2">
-                            {(() => {
-                              const meta = optionByValue(
-                                BRANCH_STATUS_SELECT_OPTIONS,
-                                branchForm.status
-                              );
-                              const Icon = meta?.Icon ?? HelpCircle;
-                              return <Icon className="size-4 shrink-0" />;
-                            })()}
-                            <SelectValue />
-                          </div>
+                          {/* 
+                            Radix SelectValue renders the selected SelectItem's ItemText.
+                            Our SelectItems include an icon + label, so rendering an icon here
+                            duplicates the selected icon (the bug shown in screenshots).
+                          */}
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {!optionByValue(
