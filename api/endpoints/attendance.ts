@@ -233,7 +233,7 @@ export interface PayrollHoursAllParams {
 
 /**
  * GET /att/payroll-hours/all - payroll hours for all users in the organization.
- * Returns hours for 26th previous month to 25th current month. Admin/Manager/HR.
+ * Returns hours for the current rolling payroll window (26th–25th cycle). Admin/Manager/HR.
  */
 export async function getPayrollHoursAll(
     client: AxiosInstance,

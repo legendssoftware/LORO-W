@@ -1,11 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format, startOfDay, startOfMonth } from 'date-fns';
-import { AlertTriangle, CalendarIcon, Target, Users } from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
+import {
+  AlertTriangle,
+  Building2,
+  CalendarIcon,
+  CalendarRange,
+  Target,
+  User,
+  Users,
+} from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import type { SyncProfile } from '@/api/types';
-import type { TargetsProgressBucket, TargetsProgressUserSummary } from '@/api/types/targets-progress';
+import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import {
   useBranches,
   useTargetsProgress,
@@ -26,6 +34,8 @@ import {
 } from '@/components/ui/card';
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -55,31 +65,126 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
+import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
-type TargetMetric = 'calls' | 'visits' | 'leads';
+const selectTriggerClass =
+  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
 
 function defaultRange(): { start: Date; end: Date } {
   const today = startOfDay(new Date());
-  return { start: startOfMonth(today), end: today };
+  return { start: today, end: today };
 }
 
-function metricLabels(m: TargetMetric): { target: string; achieved: string } {
-  if (m === 'calls') return { target: 'Call target', achieved: 'Calls made' };
-  if (m === 'visits') return { target: 'Visit target', achieved: 'Visits' };
-  return { target: 'Lead target', achieved: 'Leads' };
+function formatUtcYmd(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-function rowBelowMetric(u: TargetsProgressUserSummary, m: TargetMetric): boolean {
-  if (m === 'calls') return u.belowCumulativeCalls;
-  if (m === 'visits') return u.belowCumulativeVisits;
-  return u.belowCumulativeLeads;
+/** Monday–Sunday UTC, aligned with server `startOfMondayWeek`. */
+function getUtcWeekRange(ref: Date): { from: string; to: string } {
+  const x = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate()));
+  const dow = x.getUTCDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  x.setUTCDate(x.getUTCDate() + mondayOffset);
+  const monday = x;
+  const sunday = new Date(monday);
+  sunday.setUTCDate(sunday.getUTCDate() + 6);
+  return { from: formatUtcYmd(monday), to: formatUtcYmd(sunday) };
 }
 
-function rowShortfall(u: TargetsProgressUserSummary, m: TargetMetric): number {
-  if (m === 'calls') return u.shortfallCalls;
-  if (m === 'visits') return u.shortfallVisits;
-  return u.shortfallLeads;
+/** Full calendar month UTC containing `ref`. */
+function getUtcMonthRange(ref: Date): { from: string; to: string } {
+  const y = ref.getUTCFullYear();
+  const m = ref.getUTCMonth();
+  const start = new Date(Date.UTC(y, m, 1));
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const end = new Date(Date.UTC(y, m, lastDay));
+  return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
 }
+
+/** Single UTC calendar day. */
+function getUtcTodayRange(ref: Date): { from: string; to: string } {
+  const d = formatUtcYmd(
+    new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate()))
+  );
+  return { from: d, to: d };
+}
+
+type ShortfallScope = 'today' | 'week' | 'month';
+
+function simplePeriodTarget(periodTarget: number, scope: 'week' | 'month'): number {
+  if (scope === 'week') return Math.round(periodTarget / 4);
+  return periodTarget;
+}
+
+function shortfallMetricBehindSimple(
+  scope: 'week' | 'month',
+  achieved: number,
+  periodTarget: number
+): boolean {
+  if ((periodTarget ?? 0) <= 0) return false;
+  const tgt = simplePeriodTarget(periodTarget, scope);
+  return achieved < tgt;
+}
+
+function shortfallMetricShortfallSimple(
+  scope: 'week' | 'month',
+  achieved: number,
+  periodTarget: number
+): number | null {
+  if ((periodTarget ?? 0) <= 0) return null;
+  const tgt = simplePeriodTarget(periodTarget, scope);
+  return Math.max(0, tgt - achieved);
+}
+
+function userBehindToday(u: TargetsProgressUserSummary): boolean {
+  return (
+    (u.periodTargetCalls > 0 && u.belowCumulativeCalls) ||
+    (u.periodTargetVisits > 0 && u.belowCumulativeVisits) ||
+    (u.periodTargetLeads > 0 && u.belowCumulativeLeads)
+  );
+}
+
+function userBehindOnAny(
+  u: TargetsProgressUserSummary,
+  scope: ShortfallScope
+): boolean {
+  if (scope === 'today') return userBehindToday(u);
+  return (
+    shortfallMetricBehindSimple(
+      scope,
+      u.achievedCallsInRange,
+      u.periodTargetCalls
+    ) ||
+    shortfallMetricBehindSimple(
+      scope,
+      u.achievedVisitsInRange,
+      u.periodTargetVisits
+    ) ||
+    shortfallMetricBehindSimple(
+      scope,
+      u.achievedLeadsInRange,
+      u.periodTargetLeads
+    )
+  );
+}
+
+const chartConfig = {
+  achievedLeads: {
+    label: 'Leads',
+    color: REPORT_CHART_HSL.c3,
+  },
+  achievedVisits: {
+    label: 'Visits',
+    color: REPORT_CHART_HSL.c4,
+  },
+  achievedCalls: {
+    label: 'Calls',
+    color: REPORT_CHART_HSL.c1,
+  },
+} satisfies ChartConfig;
 
 export interface ReportsTargetsTabProps {
   profile: SyncProfile | null | undefined;
@@ -89,8 +194,7 @@ export interface ReportsTargetsTabProps {
 export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabProps) {
   const [{ start: rangeStart, end: rangeEnd }, setRange] = useState(defaultRange);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [bucket, setBucket] = useState<TargetsProgressBucket>('week');
-  const [metric, setMetric] = useState<TargetMetric>('calls');
+  const [shortfallScope, setShortfallScope] = useState<ShortfallScope>('week');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
   const [onlyBehind, setOnlyBehind] = useState(false);
@@ -101,11 +205,15 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
 
-  const progressParams = useMemo(
+  const shortfallRange = useMemo(() => {
+    const now = new Date();
+    if (shortfallScope === 'today') return getUtcTodayRange(now);
+    if (shortfallScope === 'week') return getUtcWeekRange(now);
+    return getUtcMonthRange(now);
+  }, [shortfallScope]);
+
+  const filterSuffix = useMemo(
     () => ({
-      from: dateFrom,
-      to: dateTo,
-      bucket,
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
@@ -113,18 +221,50 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         ? { userUid: Number(selectedOwnerUid) }
         : {}),
     }),
-    [
-      dateFrom,
-      dateTo,
-      bucket,
-      elevated,
-      selectedBranchId,
-      selectedOwnerUid,
-    ]
+    [elevated, selectedBranchId, selectedOwnerUid]
   );
 
-  const { data, isLoading, isError, error } = useTargetsProgress(progressParams, {
+  const chartProgressParams = useMemo(
+    () => ({
+      from: dateFrom,
+      to: dateTo,
+      bucket: 'day' as const,
+      ...filterSuffix,
+    }),
+    [dateFrom, dateTo, filterSuffix]
+  );
+
+  const shortfallProgressParams = useMemo(
+    () => ({
+      from: shortfallRange.from,
+      to: shortfallRange.to,
+      bucket:
+        shortfallScope === 'today'
+          ? ('day' as const)
+          : shortfallScope === 'week'
+            ? ('week' as const)
+            : ('month' as const),
+      ...filterSuffix,
+    }),
+    [shortfallRange.from, shortfallRange.to, shortfallScope, filterSuffix]
+  );
+
+  const {
+    data: chartData,
+    isLoading: chartLoading,
+    isError: chartIsError,
+    error: chartError,
+  } = useTargetsProgress(chartProgressParams, {
     enabled: Boolean(dateFrom && dateTo),
+  });
+
+  const {
+    data: shortfallData,
+    isLoading: shortfallLoading,
+    isError: shortfallIsError,
+    error: shortfallError,
+  } = useTargetsProgress(shortfallProgressParams, {
+    enabled: Boolean(shortfallRange.from && shortfallRange.to),
   });
 
   const { data: branches = [] } = useBranches();
@@ -136,115 +276,137 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       : {}),
   });
 
-  const ml = metricLabels(metric);
+  const chartSeriesData = useMemo(() => {
+    const rows = chartData?.aggregateBuckets ?? [];
+    return rows.map((b) => ({
+      label: b.label.length > 14 ? b.key : b.label,
+      fullLabel: b.label,
+      achievedLeads: b.achievedLeads,
+      achievedVisits: b.achievedVisits,
+      achievedCalls: b.achievedCalls,
+    }));
+  }, [chartData?.aggregateBuckets]);
 
-  const chartConfig = useMemo(
-    () =>
-      ({
-        target: {
-          label: ml.target,
-          color: 'var(--chart-1)',
-        },
-        achieved: {
-          label: ml.achieved,
-          color: 'var(--chart-2)',
-        },
-      }) satisfies ChartConfig,
-    [ml.target, ml.achieved]
-  );
-
-  const chartData = useMemo(() => {
-    const rows = data?.aggregateBuckets ?? [];
-    return rows.map((b) => {
-      let target = 0;
-      let achieved = 0;
-      if (metric === 'calls') {
-        target = b.targetCalls;
-        achieved = b.achievedCalls;
-      } else if (metric === 'visits') {
-        target = b.targetVisits;
-        achieved = b.achievedVisits;
-      } else {
-        target = b.targetLeads;
-        achieved = b.achievedLeads;
-      }
-      return {
-        label: b.label.length > 14 ? b.key : b.label,
-        fullLabel: b.label,
-        target,
-        achieved,
-      };
-    });
-  }, [data?.aggregateBuckets, metric]);
+  const summarySubtitle = useMemo(() => {
+    if (!elevated) return 'End-of-range cumulative (your progress)';
+    if (selectedOwnerUid !== 'all') return 'End-of-range cumulative (selected user)';
+    return 'End-of-range cumulative (org aggregate)';
+  }, [elevated, selectedOwnerUid]);
 
   const tableUsers = useMemo(() => {
-    const list = data?.users ?? [];
+    const list = shortfallData?.users ?? [];
     if (!onlyBehind) return list;
-    return list.filter((u) => rowBelowMetric(u, metric));
-  }, [data?.users, onlyBehind, metric]);
+    return list.filter((u) => userBehindOnAny(u, shortfallScope));
+  }, [shortfallData?.users, onlyBehind, shortfallScope]);
 
   const behindCount = useMemo(() => {
-    return (data?.users ?? []).filter((u) => rowBelowMetric(u, metric)).length;
-  }, [data?.users, metric]);
+    return (shortfallData?.users ?? []).filter((u) =>
+      userBehindOnAny(u, shortfallScope)
+    ).length;
+  }, [shortfallData?.users, shortfallScope]);
 
   function downloadShortfallCsv() {
-    const users = (data?.users ?? []).filter((u) => rowBelowMetric(u, metric));
+    const users = (shortfallData?.users ?? []).filter((u) =>
+      onlyBehind ? userBehindOnAny(u, shortfallScope) : true
+    );
+    const scopeLabel =
+      shortfallScope === 'today'
+        ? 'today'
+        : shortfallScope === 'week'
+          ? 'week'
+          : 'month';
     const headers = [
       'UID',
       'Name',
       'Surname',
-      'Has target',
-      'Period target (calls)',
-      'Period target (visits)',
-      'Period target (leads)',
+      'Scope',
+      `Target calls (${scopeLabel})`,
       'Achieved calls',
-      'Achieved visits',
-      'Achieved leads',
       'Shortfall calls',
+      `Target visits (${scopeLabel})`,
+      'Achieved visits',
       'Shortfall visits',
+      `Target leads (${scopeLabel})`,
+      'Achieved leads',
       'Shortfall leads',
-      'Behind on calls',
-      'Behind on visits',
-      'Behind on leads',
+      'Behind on targets',
     ];
-    const rows = users.map((u) => [
-      String(u.uid),
-      u.name,
-      u.surname,
-      u.hasTarget ? 'yes' : 'no',
-      String(u.periodTargetCalls),
-      String(u.periodTargetVisits),
-      String(u.periodTargetLeads),
-      String(u.achievedCallsInRange),
-      String(u.achievedVisitsInRange),
-      String(u.achievedLeadsInRange),
-      String(u.shortfallCalls),
-      String(u.shortfallVisits),
-      String(u.shortfallLeads),
-      u.belowCumulativeCalls ? 'yes' : 'no',
-      u.belowCumulativeVisits ? 'yes' : 'no',
-      u.belowCumulativeLeads ? 'yes' : 'no',
-    ]);
+    const rows = users.map((u) => {
+      let tc: number;
+      let tv: number;
+      let tl: number;
+      let sc: number | null;
+      let sv: number | null;
+      let sl: number | null;
+      if (shortfallScope === 'today') {
+        tc = u.cumulativeTargetCallsEnd;
+        tv = u.cumulativeTargetVisitsEnd;
+        tl = u.cumulativeTargetLeadsEnd;
+        sc = u.periodTargetCalls > 0 ? u.shortfallCalls : null;
+        sv = u.periodTargetVisits > 0 ? u.shortfallVisits : null;
+        sl = u.periodTargetLeads > 0 ? u.shortfallLeads : null;
+      } else {
+        tc = simplePeriodTarget(u.periodTargetCalls, shortfallScope);
+        tv = simplePeriodTarget(u.periodTargetVisits, shortfallScope);
+        tl = simplePeriodTarget(u.periodTargetLeads, shortfallScope);
+        sc = shortfallMetricShortfallSimple(
+          shortfallScope,
+          u.achievedCallsInRange,
+          u.periodTargetCalls
+        );
+        sv = shortfallMetricShortfallSimple(
+          shortfallScope,
+          u.achievedVisitsInRange,
+          u.periodTargetVisits
+        );
+        sl = shortfallMetricShortfallSimple(
+          shortfallScope,
+          u.achievedLeadsInRange,
+          u.periodTargetLeads
+        );
+      }
+      return [
+        String(u.uid),
+        u.name,
+        u.surname,
+        scopeLabel,
+        u.periodTargetCalls > 0 ? String(tc) : '',
+        String(u.achievedCallsInRange),
+        sc != null ? String(sc) : '',
+        u.periodTargetVisits > 0 ? String(tv) : '',
+        String(u.achievedVisitsInRange),
+        sv != null ? String(sv) : '',
+        u.periodTargetLeads > 0 ? String(tl) : '',
+        String(u.achievedLeadsInRange),
+        sl != null ? String(sl) : '',
+        userBehindOnAny(u, shortfallScope) ? 'yes' : 'no',
+      ];
+    });
     exportToCsv(
       headers,
       rows,
-      `targets-shortfall-${dateFrom}-${dateTo}`
+      `targets-shortfall-${shortfallRange.from}-${shortfallRange.to}-${scopeLabel}`
     );
   }
 
+  const isLoading = chartLoading;
+  const isError = chartIsError;
+  const error = chartError;
+
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
               variant="outline"
               className={cn(
-                'w-full justify-start text-left font-normal sm:w-[260px]'
+                'h-9 w-full justify-start text-left font-normal sm:w-[260px]',
+                selectTriggerClass
               )}
             >
-              <CalendarIcon className="mr-2 size-4" />
+              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
               {format(rangeStart, 'MMM d, yyyy')} –{' '}
               {format(rangeEnd, 'MMM d, yyyy')}
             </Button>
@@ -263,14 +425,17 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 }
               }}
             />
-            <div className="flex justify-end gap-2 border-t p-2">
+            <div className="flex flex-wrap justify-end gap-2 border-t p-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setRange(defaultRange())}
+                onClick={() => {
+                  const today = startOfDay(new Date());
+                  setRange({ start: today, end: today });
+                }}
               >
-                This month
+                Today
               </Button>
               <Button
                 type="button"
@@ -284,31 +449,6 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
           </PopoverContent>
         </Popover>
 
-        <Select
-          value={bucket}
-          onValueChange={(v) => setBucket(v as TargetsProgressBucket)}
-        >
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Bucket" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Week</SelectItem>
-            <SelectItem value="fortnight">Fortnight</SelectItem>
-            <SelectItem value="month">Month</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={metric} onValueChange={(v) => setMetric(v as TargetMetric)}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Metric" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="calls">Calls</SelectItem>
-            <SelectItem value="visits">Visits</SelectItem>
-            <SelectItem value="leads">Leads</SelectItem>
-          </SelectContent>
-        </Select>
-
         {elevated ? (
           <>
             <Select
@@ -318,7 +458,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 setSelectedOwnerUid('all');
               }}
             >
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger
+                className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
+              >
+                <Building2 className="size-4 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="Branch" />
               </SelectTrigger>
               <SelectContent>
@@ -331,11 +474,11 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
               </SelectContent>
             </Select>
 
-            <Select
-              value={selectedOwnerUid}
-              onValueChange={setSelectedOwnerUid}
-            >
-              <SelectTrigger className="w-full sm:w-[220px]">
+            <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
+              <SelectTrigger
+                className={cn(selectTriggerClass, 'sm:min-w-[220px] sm:w-[220px]')}
+              >
+                <User className="size-4 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="User" />
               </SelectTrigger>
               <SelectContent>
@@ -352,9 +495,8 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
         <Button
           type="button"
-          variant="secondary"
-          className="w-full sm:w-auto"
-          disabled={!data?.users?.length}
+          className="h-9 w-full shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:ml-auto sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
+          disabled={!shortfallData?.users?.length}
           onClick={() => downloadShortfallCsv()}
         >
           Export CSV
@@ -362,9 +504,14 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Targets are prorated by weekday across each user&apos;s target period (intersected with
-        this date range). Achieved counts come from check-ins (physical = visits, other = calls)
-        and leads created in range. External ERP adjustments to targets aren&apos;t shown here.
+        Chart and summary use the date range above (daily buckets). Targets are prorated by
+        weekday across each user&apos;s target period. Achieved counts come from check-ins
+        (physical = visits, other = calls) and leads created in range. The shortfall list can use{' '}
+        <strong className="font-medium text-foreground">today</strong>,{' '}
+        <strong className="font-medium text-foreground">this week</strong>, or{' '}
+        <strong className="font-medium text-foreground">this month</strong> (UTC). Today uses the
+        API prorated day target; week uses period target ÷ 4; month uses full period targets.
+        External ERP adjustments aren&apos;t shown here.
       </p>
 
       {isLoading ? (
@@ -380,20 +527,20 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="size-5" aria-hidden />
-                  Target vs achieved
+                  Achieved activity by day
                 </CardTitle>
                 <CardDescription>
-                  {ml.target} and {ml.achieved} by {bucket} ({dateFrom} – {dateTo})
+                  Leads, visits, and calls achieved per day ({dateFrom} – {dateTo})
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-0">
-                {chartData.length === 0 ? (
+                {chartSeriesData.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8 px-6">
-                    No buckets in this range.
+                    No days in this range.
                   </p>
                 ) : (
-                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
-                    <BarChart accessibilityLayer data={chartData}>
+                  <ChartContainer config={chartConfig} className="h-[340px] w-full">
+                    <BarChart accessibilityLayer data={chartSeriesData}>
                       <CartesianGrid vertical={false} />
                       <XAxis
                         dataKey="label"
@@ -414,14 +561,23 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                           />
                         }
                       />
+                      <ChartLegend
+                        content={<ChartLegendContent className="flex-wrap" />}
+                        verticalAlign="top"
+                      />
                       <Bar
-                        dataKey="target"
-                        fill="var(--color-target)"
+                        dataKey="achievedLeads"
+                        fill="var(--color-achievedLeads)"
                         radius={4}
                       />
                       <Bar
-                        dataKey="achieved"
-                        fill="var(--color-achieved)"
+                        dataKey="achievedVisits"
+                        fill="var(--color-achievedVisits)"
+                        radius={4}
+                      />
+                      <Bar
+                        dataKey="achievedCalls"
+                        fill="var(--color-achievedCalls)"
                         radius={4}
                       />
                     </BarChart>
@@ -429,12 +585,12 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 )}
               </CardContent>
               <CardFooter className="flex-col items-start gap-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2 font-medium text-foreground">
-                  <Users className="size-4" aria-hidden />
-                  {data?.users.length ?? 0} user(s) in scope
+                <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                  <Users className="size-4 shrink-0" aria-hidden />
+                  {chartData?.users.length ?? 0} user(s) in scope
                   {elevated && behindCount > 0 ? (
                     <span className="text-amber-700 dark:text-amber-400">
-                      · {behindCount} behind on {metric}
+                      · {behindCount} behind (shortfall list scope)
                     </span>
                   ) : null}
                 </div>
@@ -444,40 +600,52 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
             <Card className="border border-gray-200 bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Summary</CardTitle>
-                <CardDescription>End-of-range cumulative (org aggregate)</CardDescription>
+                <CardDescription>{summarySubtitle}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-3 text-sm">
                 {(() => {
-                  const b = data?.aggregateBuckets ?? [];
+                  const b = chartData?.aggregateBuckets ?? [];
                   const last = b[b.length - 1];
                   if (!last) {
                     return (
                       <p className="text-muted-foreground">No data for this range.</p>
                     );
                   }
+                  function row(
+                    label: string,
+                    target: number,
+                    achieved: number
+                  ) {
+                    return (
+                      <div className="rounded-md border border-gray-100 bg-gray-50/80 px-3 py-2 dark:bg-zinc-900/40">
+                        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                        <p className="mt-1 tabular-nums text-foreground">
+                          <span className="text-muted-foreground">Target </span>
+                          <span className="font-medium">{target}</span>
+                          <span className="mx-1.5 text-muted-foreground">·</span>
+                          <span className="text-muted-foreground">Achieved </span>
+                          <span className="font-medium">{achieved}</span>
+                        </p>
+                      </div>
+                    );
+                  }
                   return (
                     <>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">Calls</span>
-                        <span className="tabular-nums">
-                          {last.cumulativeAchievedCalls} /{' '}
-                          {last.cumulativeTargetCalls}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">Visits</span>
-                        <span className="tabular-nums">
-                          {last.cumulativeAchievedVisits} /{' '}
-                          {last.cumulativeTargetVisits}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">Leads</span>
-                        <span className="tabular-nums">
-                          {last.cumulativeAchievedLeads} /{' '}
-                          {last.cumulativeTargetLeads}
-                        </span>
-                      </div>
+                      {row(
+                        'Calls',
+                        last.cumulativeTargetCalls,
+                        last.cumulativeAchievedCalls
+                      )}
+                      {row(
+                        'Visits',
+                        last.cumulativeTargetVisits,
+                        last.cumulativeAchievedVisits
+                      )}
+                      {row(
+                        'Leads',
+                        last.cumulativeTargetLeads,
+                        last.cumulativeAchievedLeads
+                      )}
                     </>
                   );
                 })()}
@@ -486,85 +654,186 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <AlertTriangle className="size-5 text-amber-600" aria-hidden />
                 Shortfall list (HR)
               </h2>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="only-behind"
-                  checked={onlyBehind}
-                  onCheckedChange={setOnlyBehind}
-                />
-                <Label htmlFor="only-behind" className="text-sm cursor-pointer">
-                  Only users behind target ({metric})
-                </Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Select
+                  value={shortfallScope}
+                  onValueChange={(v) => setShortfallScope(v as ShortfallScope)}
+                >
+                  <SelectTrigger
+                    className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
+                  >
+                    <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
+                    <SelectValue placeholder="Period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today (UTC)</SelectItem>
+                    <SelectItem value="week">This week (UTC)</SelectItem>
+                    <SelectItem value="month">This month (UTC)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="only-behind"
+                    checked={onlyBehind}
+                    onCheckedChange={setOnlyBehind}
+                  />
+                  <Label htmlFor="only-behind" className="text-sm cursor-pointer">
+                    Behind on Targets
+                  </Label>
+                </div>
               </div>
             </div>
 
+            {shortfallIsError ? (
+              <p className="text-sm text-destructive">
+                {(shortfallError as Error)?.message ?? 'Failed to load shortfall data'}
+              </p>
+            ) : null}
+
             <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="text-right">Target ({metric})</TableHead>
-                    <TableHead className="text-right">Achieved</TableHead>
-                    <TableHead className="text-right">Shortfall</TableHead>
-                    <TableHead className="text-right">Behind</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableUsers.length === 0 ? (
+              {shortfallLoading ? (
+                <div className="flex justify-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No rows for this filter.
-                      </TableCell>
+                      <TableHead className="min-w-[160px]">Name</TableHead>
+                      <TableHead className="text-right" colSpan={3}>
+                        Calls{' '}
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          T / A / short
+                        </span>
+                      </TableHead>
+                      <TableHead className="text-right" colSpan={3}>
+                        Visits
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          T / A / short
+                        </span>
+                      </TableHead>
+                      <TableHead className="text-right" colSpan={3}>
+                        Leads
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          T / A / short
+                        </span>
+                      </TableHead>
+                      <TableHead className="text-right min-w-[72px]">Behind</TableHead>
                     </TableRow>
-                  ) : (
-                    tableUsers.map((u) => {
-                      let targetEnd = 0;
-                      let achieved = 0;
-                      if (metric === 'calls') {
-                        targetEnd = u.cumulativeTargetCallsEnd;
-                        achieved = u.achievedCallsInRange;
-                      } else if (metric === 'visits') {
-                        targetEnd = u.cumulativeTargetVisitsEnd;
-                        achieved = u.achievedVisitsInRange;
-                      } else {
-                        targetEnd = u.cumulativeTargetLeadsEnd;
-                        achieved = u.achievedLeadsInRange;
-                      }
-                      const sh = rowShortfall(u, metric);
-                      const behind = rowBelowMetric(u, metric);
-                      return (
-                        <TableRow key={u.uid}>
-                          <TableCell className="font-medium">
-                            {[u.name, u.surname].filter(Boolean).join(' ')}
-                            {!u.hasTarget ? (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                (no target set)
-                              </span>
-                            ) : null}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {targetEnd}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {achieved}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {u.hasTarget ? sh : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {u.hasTarget ? (behind ? 'Yes' : 'No') : '—'}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {tableUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={11}
+                          className="text-center text-muted-foreground py-8"
+                        >
+                          No rows for this filter.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      tableUsers.map((u) => {
+                        let tc: number;
+                        let tv: number;
+                        let tl: number;
+                        let sc: number | null;
+                        let sv: number | null;
+                        let sl: number | null;
+                        if (shortfallScope === 'today') {
+                          tc = u.cumulativeTargetCallsEnd;
+                          tv = u.cumulativeTargetVisitsEnd;
+                          tl = u.cumulativeTargetLeadsEnd;
+                          sc = u.periodTargetCalls > 0 ? u.shortfallCalls : null;
+                          sv = u.periodTargetVisits > 0 ? u.shortfallVisits : null;
+                          sl = u.periodTargetLeads > 0 ? u.shortfallLeads : null;
+                        } else {
+                          tc = simplePeriodTarget(u.periodTargetCalls, shortfallScope);
+                          tv = simplePeriodTarget(u.periodTargetVisits, shortfallScope);
+                          tl = simplePeriodTarget(u.periodTargetLeads, shortfallScope);
+                          sc = shortfallMetricShortfallSimple(
+                            shortfallScope,
+                            u.achievedCallsInRange,
+                            u.periodTargetCalls
+                          );
+                          sv = shortfallMetricShortfallSimple(
+                            shortfallScope,
+                            u.achievedVisitsInRange,
+                            u.periodTargetVisits
+                          );
+                          sl = shortfallMetricShortfallSimple(
+                            shortfallScope,
+                            u.achievedLeadsInRange,
+                            u.periodTargetLeads
+                          );
+                        }
+                        const behind = userBehindOnAny(u, shortfallScope);
+                        const hasAnyMetricTarget =
+                          u.periodTargetCalls > 0 ||
+                          u.periodTargetVisits > 0 ||
+                          u.periodTargetLeads > 0;
+                        return (
+                          <TableRow
+                            key={u.uid}
+                            className={cn(
+                              behind &&
+                                hasAnyMetricTarget &&
+                                'bg-red-50 text-red-950 dark:bg-red-950/35 dark:text-red-50'
+                            )}
+                          >
+                            <TableCell className="font-medium">
+                              {[u.name, u.surname].filter(Boolean).join(' ')}
+                              {!u.hasTarget ? (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  (no target set)
+                                </span>
+                              ) : null}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {u.periodTargetCalls > 0 ? tc : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {u.achievedCallsInRange}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {sc != null ? sc : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {u.periodTargetVisits > 0 ? tv : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {u.achievedVisitsInRange}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {sv != null ? sv : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {u.periodTargetLeads > 0 ? tl : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {u.achievedLeadsInRange}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {sl != null ? sl : '—'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {!hasAnyMetricTarget
+                                ? '—'
+                                : behind
+                                  ? 'Yes'
+                                  : 'No'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </div>
         </>
