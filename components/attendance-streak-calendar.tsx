@@ -23,8 +23,8 @@ function colIndex(dayOfWeek: number): number {
 }
 
 export interface AttendanceStreakCalendarProps {
-  /** User ref (profile.uid) - required to show calendar */
-  userRef?: number | null;
+  /** User ref (numeric uid or Clerk user id) — server resolves both */
+  userRef?: number | string | null;
   /** Optional content rendered in the header row to the right of the month selector (e.g. Logs button). */
   headerTrailing?: React.ReactNode;
 }

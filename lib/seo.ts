@@ -1,5 +1,14 @@
 import type { Metadata } from 'next';
 
+/** Canonical origin for metadata, OG URLs, and sitemap. Set in production via NEXT_PUBLIC_SITE_URL. */
+export function getSiteUrl(): string {
+  const raw =
+    typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_SITE_URL?.trim()
+      : undefined;
+  return (raw && raw.replace(/\/$/, '')) || 'http://localhost:3000';
+}
+
 const siteName = 'LORO';
 const title =
   'Home | South Africa\'s all-in-one platform for HR, time tracking, payroll, leave management and more';
@@ -35,6 +44,7 @@ const author = {
  * Title uses a template so child pages get "Page name | Description | LORO".
  */
 export const defaultMetadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: title,
     template: '%s | LORO',

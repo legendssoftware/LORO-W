@@ -33,12 +33,18 @@ export async function getAttStatus(
 
 /**
  * GET /att/metrics - attendance metrics for the authenticated user (self).
+ * scope=dashboard: server uses a bounded query and slimmer work (web dashboard).
  */
 export async function getAttMetrics(
-    client: AxiosInstance
+    client: AxiosInstance,
+    params?: { scope?: "full" | "dashboard" },
 ): Promise<AttendanceMetricsResponse> {
-    const { data } =
-        await client.get<AttendanceMetricsResponse>("/att/metrics");
+    const search = new URLSearchParams();
+    if (params?.scope === "dashboard") search.set("scope", "dashboard");
+    const qs = search.toString();
+    const { data } = await client.get<AttendanceMetricsResponse>(
+        `/att/metrics${qs ? `?${qs}` : ""}`,
+    );
     return data;
 }
 
@@ -95,11 +101,12 @@ export async function getAttendanceByDateRange(
 export async function getMonthlyAttendance(
     client: AxiosInstance,
     ref: string | number,
-    params?: { year?: number; month?: number }
+    params?: { year?: number; month?: number; includeDistance?: boolean }
 ): Promise<MonthlyAttendanceResponse> {
     const search = new URLSearchParams();
     if (params?.year != null) search.set("year", String(params.year));
     if (params?.month != null) search.set("month", String(params.month));
+    if (params?.includeDistance === false) search.set("includeDistance", "false");
     const qs = search.toString();
     const { data } = await client.get<MonthlyAttendanceResponse>(
         `/att/user/${ref}/monthly${qs ? `?${qs}` : ""}`

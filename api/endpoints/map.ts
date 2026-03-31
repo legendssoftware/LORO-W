@@ -11,6 +11,11 @@ export interface GetMapReportParams {
   endDate?: string;
   /** Wide historical window on the server */
   allTime?: boolean;
+  /**
+   * When false, server skips reverse-geocoding attendance coords (faster).
+   * When both start/end omitted and not allTime, server defaults to **today**.
+   */
+  resolveMarkerAddresses?: boolean;
 }
 
 /** Backend returns the map payload directly (no wrapper). Axios response body is MapDataResponse. */
@@ -26,6 +31,7 @@ function isMapDataResponse(value: unknown): value is MapDataResponse {
 /**
  * GET /reports/map - map data for visualization (Leaflet-ready).
  * Auth: Bearer token; org defaults to user's org. Optional branchId/userId filter.
+ * If startDate/endDate are omitted and allTime is false, the server uses **today** only.
  * Normalizes response: backend returns payload directly; accept that or a wrapped { data }.
  */
 export async function getMapReport(
@@ -39,6 +45,7 @@ export async function getMapReport(
   if (params?.startDate) search.set('startDate', params.startDate);
   if (params?.endDate) search.set('endDate', params.endDate);
   if (params?.allTime === true) search.set('allTime', 'true');
+  if (params?.resolveMarkerAddresses === false) search.set('resolveMarkerAddresses', 'false');
   const qs = search.toString();
   const { data } = await client.get<MapDataResponse | { data: MapDataResponse }>(
     `/reports/map${qs ? `?${qs}` : ''}`

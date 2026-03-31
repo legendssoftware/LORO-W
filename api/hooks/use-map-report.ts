@@ -16,6 +16,7 @@ function getMapReportQueryKey(params: GetMapReportParams | undefined) {
     params?.startDate ?? null,
     params?.endDate ?? null,
     params?.allTime ?? null,
+    params?.resolveMarkerAddresses ?? null,
   ] as const;
 }
 

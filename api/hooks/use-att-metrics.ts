@@ -16,13 +16,13 @@ export function useAttMetrics(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: async () => {
-      const response = await getAttMetrics(client);
+      const response = await getAttMetrics(client, { scope: 'dashboard' });
       return response.metrics as AttendanceMetrics;
     },
     enabled: options?.enabled !== false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    staleTime: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
