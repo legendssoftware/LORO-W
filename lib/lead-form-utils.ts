@@ -56,6 +56,7 @@ import {
   CheckCircle,
   XCircle,
   Ban,
+  Archive,
   LayoutGrid,
   TrendingUp,
   Building,
@@ -101,6 +102,7 @@ export const LEAD_STATUS_OPTIONS: { value: string; label: string; icon: IconComp
   { value: 'DECLINED', label: 'Declined', icon: XCircle },
   { value: 'CONVERTED', label: 'Converted', icon: CheckCircle },
   { value: 'CANCELLED', label: 'Cancelled', icon: Ban },
+  { value: 'DISCARDED', label: 'Discarded', icon: Archive },
 ];
 
 export const LEAD_STATUS_OPTIONS_WITH_ALL: { value: string; label: string; icon: IconComponent }[] = [

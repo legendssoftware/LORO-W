@@ -33,6 +33,8 @@ export interface ReportDonutChartProps {
   /** Subtitle under the primary (e.g. "Leads" / "Check-ins"). */
   centerSecondary: string;
   className?: string;
+  /** Extra classes for tooltip shell (wider cards for long slice labels). */
+  tooltipClassName?: string;
   /** Field on each pie row used to look up `ChartConfig` (must match slice `id`, mapped as `name`; default `name`). */
   legendNameKey?: string;
 }
@@ -47,6 +49,7 @@ export function ReportDonutChart({
   centerPrimary,
   centerSecondary,
   className,
+  tooltipClassName,
   legendNameKey = 'name',
 }: ReportDonutChartProps) {
   const pieRows = data.map((d) => ({
@@ -67,7 +70,13 @@ export function ReportDonutChart({
       <PieChart>
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent hideLabel nameKey={legendNameKey} />}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              nameKey={legendNameKey}
+              className={tooltipClassName ?? 'min-w-[12rem]'}
+            />
+          }
         />
         <Pie
           data={pieRows}

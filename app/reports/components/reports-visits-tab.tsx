@@ -14,13 +14,13 @@ import {
   endOfDay,
 } from 'date-fns';
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   LabelList,
-  Line,
-  LineChart,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -80,6 +80,10 @@ import {
 import { METHOD_OPTIONS } from '@/lib/visit-form-utils';
 import { formatOwnerChartName } from '@/lib/utils/report-labels';
 import type { ReportsMode } from '@/app/reports/reports-content';
+import {
+  filterVisitExportItemsByReportingUserUids,
+  userListItemHasPerformanceTarget,
+} from '@/app/reports/utils/user-has-performance-target';
 
 const PALETTE = [
   REPORT_CHART_HSL.c1,
@@ -221,8 +225,9 @@ const avgMinutesBarConfig = {
   minutes: { label: 'Avg duration (min)', color: REPORT_CHART_HSL.c4 },
 } satisfies ChartConfig;
 
+/** Matches Overview “Visits trend” stroke (c4). */
 const lineHourConfig = {
-  count: { label: 'Visits', color: REPORT_CHART_HSL.c2 },
+  count: { label: 'Visits', color: REPORT_CHART_HSL.c4 },
 } satisfies ChartConfig;
 
 export interface ReportsVisitsTabProps {
@@ -275,17 +280,51 @@ export function ReportsVisitsTab({
   const { data: usersList = [] } = useUsers({
     limit: 200,
     enabled: reportsMode === 'org',
+    ...(selectedBranchId !== 'all'
+      ? { branchId: Number(selectedBranchId) }
+      : {}),
   });
 
-  const mappedRaw = useMemo(
+  const reportingUsers = useMemo(
     () =>
-      mapCheckInsFromApi(
-        checkInsQuery.data?.checkIns ?? [],
-        usersList,
-        branches as BranchListItem[]
-      ),
-    [checkInsQuery.data?.checkIns, usersList, branches]
+      reportsMode === 'org'
+        ? usersList.filter(userListItemHasPerformanceTarget)
+        : usersList,
+    [reportsMode, usersList]
   );
+
+  const allowedReportingUids = useMemo(
+    () => new Set(reportingUsers.map((u) => u.uid)),
+    [reportingUsers]
+  );
+
+  useEffect(() => {
+    if (reportsMode !== 'org' || selectedUserUid === 'all') return;
+    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
+    if (!ok) setSelectedUserUid('all');
+  }, [reportsMode, reportingUsers, selectedUserUid]);
+
+  const mappedRaw = useMemo(() => {
+    const base = mapCheckInsFromApi(
+      checkInsQuery.data?.checkIns ?? [],
+      usersList,
+      branches as BranchListItem[]
+    );
+    const applyReportingFilter =
+      reportsMode === 'org' && selectedUserUid === 'all';
+    return filterVisitExportItemsByReportingUserUids(
+      base,
+      allowedReportingUids,
+      applyReportingFilter
+    );
+  }, [
+    allowedReportingUids,
+    branches,
+    checkInsQuery.data?.checkIns,
+    reportsMode,
+    selectedUserUid,
+    usersList,
+  ]);
 
   const uniqueRegions = useMemo(
     () => getSortedUniqueRegions(mappedRaw),
@@ -543,7 +582,13 @@ export function ReportsVisitsTab({
             ) : null}
           </div>
 
-          <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+          <Select
+            value={selectedBranchId}
+            onValueChange={(v) => {
+              setSelectedBranchId(v);
+              setSelectedUserUid('all');
+            }}
+          >
             <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
               <SelectValue placeholder="All branches" />
             </SelectTrigger>
@@ -564,7 +609,7 @@ export function ReportsVisitsTab({
               </SelectTrigger>
               <SelectContent className="z-[10001]">
                 <SelectItem value="all">All users</SelectItem>
-                {usersList.map((u) => {
+                {reportingUsers.map((u) => {
                   const fullName =
                     [u.name, u.surname].filter(Boolean).join(' ').trim() ||
                     u.email ||
@@ -785,10 +830,30 @@ export function ReportsVisitsTab({
                       config={lineHourConfig}
                       className="aspect-auto h-[250px] w-full min-w-0"
                     >
-                      <LineChart
+                      <AreaChart
                         data={visitsByHourLine}
                         margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
                       >
+                        <defs>
+                          <linearGradient
+                            id="fillVisitsByHour"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="var(--color-count)"
+                              stopOpacity={0.85}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="var(--color-count)"
+                              stopOpacity={0.12}
+                            />
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid vertical={false} />
                         <XAxis
                           dataKey="hour"
@@ -811,15 +876,17 @@ export function ReportsVisitsTab({
                           content={<ChartLegendContent />}
                           verticalAlign="top"
                         />
-                        <Line
-                          type="monotone"
+                        <Area
+                          type="natural"
                           dataKey="count"
                           name="Visits"
                           stroke="var(--color-count)"
                           strokeWidth={2}
+                          fill="url(#fillVisitsByHour)"
                           dot={{ r: 4 }}
+                          activeDot={{ r: 5 }}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ChartContainer>
                   )}
                 </CardContent>
@@ -866,11 +933,35 @@ export function ReportsVisitsTab({
                         />
                         <ChartTooltip
                           cursor={false}
-                          content={
-                            <ChartTooltipContent
-                              formatter={(v) => [`${v} min`, 'Avg duration']}
-                            />
-                          }
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const raw = payload[0]?.value;
+                            const minutes =
+                              typeof raw === 'number'
+                                ? raw
+                                : Number.parseFloat(String(raw));
+                            const title =
+                              typeof label === 'string'
+                                ? label
+                                : label != null
+                                  ? String(label)
+                                  : '';
+                            return (
+                              <div className="border-border/50 bg-background grid min-w-[10rem] gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+                                <div className="font-medium">{title}</div>
+                                <div className="flex justify-between gap-4 font-mono tabular-nums">
+                                  <span className="text-muted-foreground">
+                                    Avg duration (min)
+                                  </span>
+                                  <span className="font-medium text-foreground">
+                                    {Number.isFinite(minutes)
+                                      ? `${minutes} min`
+                                      : String(raw)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }}
                         />
                         <Bar dataKey="minutes" radius={8}>
                           <LabelList

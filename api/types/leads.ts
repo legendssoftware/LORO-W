@@ -30,11 +30,15 @@ export interface LeadListItem {
   attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
-  /** ISO timestamp of the latest activity by an authenticated Clerk user (omitted when only system automation touched the lead). */
+  /** ISO timestamp of the newest activity log entry (user or system). */
   lastActivityAt?: string;
-  /** Summary for that latest Clerk-user activity (excludes system jobs). */
+  /** Summary for the newest activity log entry. */
   lastActivitySummary?: string;
-  /** Newest-first log: Clerk-user entries only in API responses (system rows filtered server-side). */
+  /** True when the newest entry is system automation or has no Clerk actor (show as LORO in UI). */
+  lastActivityIsLoro?: boolean;
+  /** `action` from the newest activity log entry (e.g. created, updated, system). */
+  lastActivityAction?: string;
+  /** Newest-first log: Clerk-user entries only in API responses (system rows omitted; use lastActivity* + lastActivityIsLoro for full latest event). */
   activity?: Array<{
     at: string;
     action: string;
@@ -113,7 +117,7 @@ export interface GetLeadsParams {
   startDate?: string;
   endDate?: string;
   /**
-   * When `startDate` and `endDate` are set: `created` (default) vs `activity` — same as GET /leads/report.
+   * When `startDate` and `endDate` are set: `created` (default) vs `activity` (newest log time; same as report).
    */
   dateBasis?: LeadsReportDateBasis;
   temperature?: string;
@@ -140,7 +144,7 @@ export interface GetLeadsReportParams {
   search?: string;
   /**
    * `created` (default): leads created in range.
-   * `activity`: leads touched in range (`updatedAt` in range after `createdAt`).
+   * `activity`: newest activity log entry in range (matches GET /leads / UI Activity column).
    */
   dateBasis?: LeadsReportDateBasis;
 }
@@ -153,6 +157,8 @@ export interface GetUnassignedLeadsParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  /** When `startDate` and `endDate` are set: same as GET /leads. */
+  dateBasis?: LeadsReportDateBasis;
   temperature?: string;
   minScore?: number;
   maxScore?: number;

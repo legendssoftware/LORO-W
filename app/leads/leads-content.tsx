@@ -154,6 +154,7 @@ export function LeadsContent() {
       : {
           startDate: format(startDate, 'yyyy-MM-dd'),
           endDate: format(endDate, 'yyyy-MM-dd'),
+          ...(dateBasis === 'activity' ? { dateBasis: 'activity' as const } : {}),
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
