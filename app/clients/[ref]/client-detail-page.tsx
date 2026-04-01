@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { ClientFormDialog } from '../components/client-form-dialog';
@@ -82,10 +83,12 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
           </Button>
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-foreground truncate">
-              {client?.name ?? 'Client'}
+              {client?.name ? formatDisplayName(client.name) || client.name : 'Client'}
             </h1>
             {client?.email ? (
-              <p className="text-sm text-muted-foreground truncate">{client.email}</p>
+              <p className="text-sm text-muted-foreground truncate">
+                {formatEmailDisplay(client.email)}
+              </p>
             ) : null}
           </div>
         </div>
@@ -134,10 +137,18 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
               </div>
             </CardHeader>
             <CardContent className="space-y-0">
-              <Row label="Contact person" value={client.contactPerson ?? '—'} />
+              <Row
+                label="Contact person"
+                value={
+                  client.contactPerson ? formatDisplayName(client.contactPerson) : '—'
+                }
+              />
               <Row label="Phone" value={client.phone ?? '—'} />
               <Row label="Alt. phone" value={client.alternativePhone ?? '—'} />
-              <Row label="Email" value={client.email ?? '—'} />
+              <Row
+                label="Email"
+                value={client.email ? formatEmailDisplay(client.email) : '—'}
+              />
               {client.website ? (
                 <Row
                   label="Website"
@@ -188,8 +199,11 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
                     label="Sales rep"
                     value={
                       client.assignedSalesRep?.name
-                        ? client.assignedSalesRep.name
-                        : client.assignedSalesRep?.email ?? '—'
+                        ? formatDisplayName(client.assignedSalesRep.name) ||
+                          client.assignedSalesRep.name
+                        : client.assignedSalesRep?.email
+                          ? formatEmailDisplay(client.assignedSalesRep.email)
+                          : '—'
                     }
                   />
                 </div>

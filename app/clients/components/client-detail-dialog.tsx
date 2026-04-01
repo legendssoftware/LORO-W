@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -101,7 +102,9 @@ export function ClientDetailDialog({
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0 space-y-1 pr-12">
             <div className="flex items-start justify-between gap-2">
               <DialogTitle className="text-left leading-tight">
-                {listItem?.name ?? 'Client'}
+                {listItem?.name
+                  ? formatDisplayName(listItem.name) || listItem.name
+                  : 'Client'}
               </DialogTitle>
               {ref != null ? (
                 <Button variant="ghost" size="icon" className="shrink-0 -mt-1" asChild>
@@ -112,7 +115,9 @@ export function ClientDetailDialog({
               ) : null}
             </div>
             {listItem?.email ? (
-              <p className="text-xs text-muted-foreground text-left">{listItem.email}</p>
+              <p className="text-xs text-muted-foreground text-left">
+                {formatEmailDisplay(listItem.email)}
+              </p>
             ) : null}
           </DialogHeader>
 
@@ -137,10 +142,20 @@ export function ClientDetailDialog({
                     {client.category ? <Badge variant="outline">{client.category}</Badge> : null}
                   </div>
                   <ModalSection title="Contact">
-                    <ModalRow label="Contact person" value={client.contactPerson ?? '—'} />
+                    <ModalRow
+                      label="Contact person"
+                      value={
+                        client.contactPerson
+                          ? formatDisplayName(client.contactPerson)
+                          : '—'
+                      }
+                    />
                     <ModalRow label="Phone" value={client.phone ?? '—'} />
                     <ModalRow label="Alt. phone" value={client.alternativePhone ?? '—'} />
-                    <ModalRow label="Email" value={client.email ?? '—'} />
+                    <ModalRow
+                      label="Email"
+                      value={client.email ? formatEmailDisplay(client.email) : '—'}
+                    />
                     {client.website ? (
                       <ModalRow
                         label="Website"
@@ -177,8 +192,11 @@ export function ClientDetailDialog({
                       label="Sales rep"
                       value={
                         client.assignedSalesRep?.name
-                          ? client.assignedSalesRep.name
-                          : client.assignedSalesRep?.email ?? '—'
+                          ? formatDisplayName(client.assignedSalesRep.name) ||
+                            client.assignedSalesRep.name
+                          : client.assignedSalesRep?.email
+                            ? formatEmailDisplay(client.assignedSalesRep.email)
+                            : '—'
                       }
                     />
                     {client.description ? (
