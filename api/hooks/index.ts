@@ -23,7 +23,17 @@ export { useMapReport, useReportsMapData } from './use-map-report';
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
-export { useClients, useClientsInfinite } from './use-clients';
+export {
+  CLIENTS_QUERY_KEY_PREFIX,
+  invalidateClientQueries,
+  useClients,
+  useClientsInfinite,
+  useClient,
+  useCreateClientMutation,
+  useUpdateClientMutation,
+  useDeleteClientMutation,
+  useRestoreClientMutation,
+} from './use-clients';
 export { useUsers } from './use-users';
 export {
   useUser,

@@ -1,11 +1,12 @@
 import { AuthPageShell } from '@/components/auth-page-shell';
 import { SignUpForm } from '@/components/sign-up-form';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
-export const metadata = {
-  title:
-    'Sign up | Create your LORO account to get started with time tracking and workforce management',
-  description: 'Create your LORO account. Get started with HR, time tracking, payroll and more.',
-};
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.signUp.title,
+  description: PAGE_COPY.signUp.description,
+  path: '/sign-up',
+});
 
 export default function SignUpPage() {
   return (

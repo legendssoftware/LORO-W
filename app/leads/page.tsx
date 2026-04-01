@@ -1,14 +1,16 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { LeadsContent } from './leads-content';
 import { LeadsActions } from './leads-actions';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Leads | Manage and track your sales leads',
-  description: 'View, track, and manage your sales leads. LORO lead management.',
-};
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.leads.title,
+  description: PAGE_COPY.leads.description,
+  path: '/leads',
+});
 
 export default async function LeadsPage() {
   const { userId } = await auth();

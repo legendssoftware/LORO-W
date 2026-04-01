@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, startTransition } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import {
   Dialog,
@@ -37,6 +37,10 @@ import {
   LEAD_IMPORT_SAMPLE_FILENAME,
 } from '@/api/types/leads';
 import { triggerDownloadLeadImportSampleXlsx } from '@/lib/leads-import-sample-xlsx';
+import {
+  countLeadImportDataRows,
+  LARGE_IMPORT_ROW_THRESHOLD,
+} from '@/lib/count-lead-import-data-rows';
 import { Loader2Icon } from '@/lib/icons';
 import {
   CircleHelp,
@@ -79,6 +83,11 @@ export interface ImportLeadsModalProps {
 
 type AssignmentMode = 'users' | 'branch';
 type Step = 'form' | 'receipt';
+type RowCountStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+function fileRowCountKey(f: File) {
+  return `${f.name}:${f.size}:${f.lastModified}`;
+}
 
 function importBranchLabel(b: { name?: string; alias?: string | null }) {
   return getBranchDisplayLabel(b) || 'Branch';
@@ -96,10 +105,13 @@ export function ImportLeadsModal({
   const [source, setSource] = useState<string>('');
   const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>('users');
   const [branchPoolIds, setBranchPoolIds] = useState<number[]>([]);
-  const [leadFileBranchId, setLeadFileBranchId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [rowCount, setRowCount] = useState<number | null>(null);
+  const [rowCountStatus, setRowCountStatus] = useState<RowCountStatus>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rowCountJobRef = useRef(0);
+  const rowCountCacheRef = useRef<{ key: string; n: number } | null>(null);
 
   const importMutation = useImportLeadsMutation();
   const apiClient = useApiClient();
@@ -156,7 +168,8 @@ export function ImportLeadsModal({
   }, [teamUsers, assigneeSearch]);
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    startTransition(() => {
       setStep('form');
       setLastResult(null);
       setSelectedUserIds(
@@ -164,8 +177,11 @@ export function ImportLeadsModal({
       );
       setAssignmentMode('users');
       setBranchPoolIds([]);
-      setLeadFileBranchId('');
-    }
+      rowCountJobRef.current += 1;
+      setRowCount(null);
+      setRowCountStatus('idle');
+      rowCountCacheRef.current = null;
+    });
   }, [open, assignedUserIds]);
 
   function toggleAssigneeUser(uid: number) {
@@ -217,10 +233,59 @@ export function ImportLeadsModal({
         toast.error('File size must be under 2MB.');
         return;
       }
+      rowCountJobRef.current += 1;
+      const seq = rowCountJobRef.current;
       setFile(selected);
+      setRowCount(null);
+      setRowCountStatus('loading');
+      rowCountCacheRef.current = null;
+      void countLeadImportDataRows(selected)
+        .then((n) => {
+          if (seq !== rowCountJobRef.current) return;
+          rowCountCacheRef.current = {
+            key: fileRowCountKey(selected),
+            n,
+          };
+          setRowCount(n);
+          setRowCountStatus('ready');
+        })
+        .catch(() => {
+          if (seq !== rowCountJobRef.current) return;
+          setRowCountStatus('error');
+          toast.error('Could not read row count from file.');
+        });
     } else {
+      rowCountJobRef.current += 1;
       setFile(null);
+      setRowCount(null);
+      setRowCountStatus('idle');
+      rowCountCacheRef.current = null;
     }
+  };
+
+  function resetFormForNewUpload() {
+    rowCountJobRef.current += 1;
+    setStep('form');
+    setLastResult(null);
+    setFile(null);
+    setSource('');
+    setSelectedUserIds([]);
+    setAssigneeSearch('');
+    setAssignmentMode('users');
+    setBranchPoolIds([]);
+    setRowCount(null);
+    setRowCountStatus('idle');
+    rowCountCacheRef.current = null;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      resetFormForNewUpload();
+    }
+    onOpenChange(next);
   };
 
   const handleSubmit = async () => {
@@ -246,17 +311,62 @@ export function ImportLeadsModal({
     };
     if (assignmentMode === 'branch') {
       params.targetBranchIds = branchPoolIds;
-    } else {
-      if (selectedUserIds.length > 0) {
-        params.assignedUserIds = selectedUserIds;
-      }
-      if (leadFileBranchId) {
-        params.targetBranchId = Number(leadFileBranchId);
-      }
+    } else if (selectedUserIds.length > 0) {
+      params.assignedUserIds = selectedUserIds;
     }
     if (source?.trim()) {
       params.source = source.trim();
     }
+
+    const key = fileRowCountKey(file);
+    let dataRows: number;
+    const cached = rowCountCacheRef.current;
+    if (cached?.key === key) {
+      dataRows = cached.n;
+    } else {
+      try {
+        dataRows = await countLeadImportDataRows(file);
+        rowCountCacheRef.current = { key, n: dataRows };
+        setRowCount(dataRows);
+        setRowCountStatus('ready');
+      } catch {
+        toast.error('Could not read rows from file. Try again or re-upload.');
+        return;
+      }
+    }
+
+    if (dataRows > LARGE_IMPORT_ROW_THRESHOLD) {
+      toast(
+        'Leads are importing in the background. You can keep working—check back shortly.',
+        { duration: 6000 }
+      );
+      importMutation.mutate(
+        { formData, params, longRunning: true },
+        {
+          onSuccess: (result) => {
+            if (result.success) {
+              onSuccess?.();
+            } else {
+              const errMsg =
+                result.errors?.[0]?.error ||
+                result.message ||
+                'Import failed.';
+              toast.error(errMsg);
+            }
+          },
+          onError: (err: unknown) => {
+            const message =
+              err && typeof err === 'object' && 'message' in err
+                ? String((err as { message: string }).message)
+                : 'Import failed.';
+            toast.error(message);
+          },
+        }
+      );
+      handleOpenChange(false);
+      return;
+    }
+
     try {
       const result = await importMutation.mutateAsync({ formData, params });
       if (result.success) {
@@ -279,28 +389,6 @@ export function ImportLeadsModal({
           : 'Import failed.';
       toast.error(message);
     }
-  };
-
-  function resetFormForNewUpload() {
-    setStep('form');
-    setLastResult(null);
-    setFile(null);
-    setSource('');
-    setSelectedUserIds([]);
-    setAssigneeSearch('');
-    setAssignmentMode('users');
-    setBranchPoolIds([]);
-    setLeadFileBranchId('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }
-
-  const handleOpenChange = (next: boolean) => {
-    if (!next && !importMutation.isPending) {
-      resetFormForNewUpload();
-    }
-    onOpenChange(next);
   };
 
   const handleDownloadSample = () => {
@@ -470,6 +558,29 @@ export function ImportLeadsModal({
                       ({(file.size / 1024).toFixed(1)} KB)
                     </span>
                   </p>
+                  {rowCountStatus === 'loading' ? (
+                    <p className="text-muted-foreground flex items-center gap-2 text-xs">
+                      <Loader2Icon className="size-3.5 shrink-0 animate-spin" aria-hidden />
+                      Counting data rows…
+                    </p>
+                  ) : rowCountStatus === 'error' ? (
+                    <p className="text-destructive text-xs">
+                      Could not read this file—choose another or try again.
+                    </p>
+                  ) : rowCountStatus === 'ready' && rowCount != null ? (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">
+                        <span className="tabular-nums">{rowCount}</span> data row
+                        {rowCount === 1 ? '' : 's'} detected (excluding header).
+                      </p>
+                      {rowCount > LARGE_IMPORT_ROW_THRESHOLD ? (
+                        <p className="text-foreground text-xs font-medium">
+                          Large import: the dialog will close while the file uploads and the server
+                          processes rows—this can take several minutes.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -641,33 +752,6 @@ export function ImportLeadsModal({
                     branch.
                   </span>
                 </div>
-
-                {branches.length > 0 ? (
-                  <div className="grid gap-2">
-                    <Label htmlFor="import-lead-branch">File leads under branch (optional)</Label>
-                    <Select
-                      value={leadFileBranchId || '__default__'}
-                      onValueChange={(v) =>
-                        setLeadFileBranchId(v === '__default__' ? '' : v)
-                      }
-                    >
-                      <SelectTrigger id="import-lead-branch" className="w-full">
-                        <SelectValue placeholder="Default (your branch)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">Default (your branch)</SelectItem>
-                        {branches.map((b) => (
-                          <SelectItem key={b.uid} value={String(b.uid)}>
-                            {importBranchLabel(b)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-muted-foreground text-xs">
-                      When set, imported leads use this branch; your role must allow it.
-                    </span>
-                  </div>
-                ) : null}
               </>
             )}
 
@@ -731,6 +815,8 @@ export function ImportLeadsModal({
                 onClick={handleSubmit}
                 disabled={
                   !file ||
+                  rowCountStatus === 'loading' ||
+                  rowCountStatus === 'error' ||
                   importMutation.isPending ||
                   (assignmentMode === 'branch' &&
                     (branches.length === 0 ||

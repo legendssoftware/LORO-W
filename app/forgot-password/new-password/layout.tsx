@@ -1,9 +1,10 @@
-import type { Metadata } from 'next';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'New password | Set your new LORO password',
-  description: 'Enter your new password to complete the reset and sign in to LORO.',
-};
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.forgotPasswordNew.title,
+  description: PAGE_COPY.forgotPasswordNew.description,
+  path: '/forgot-password/new-password',
+});
 
 export default function NewPasswordLayout({
   children,

@@ -160,6 +160,13 @@ export interface VisitListItem {
   branch?: { uid?: number; name?: string; alias?: string | null } | null;
   /** Sales value for the visit (for day metrics aggregation). */
   salesValue?: number | null;
+  /** Linked quotation (partial select on list API) for visit value / pipeline. */
+  quotation?: {
+    uid?: number;
+    quotationNumber?: string;
+    totalAmount?: number | string | null;
+    currency?: string | null;
+  } | null;
   /** Site type: office, shop, etc. (for time breakdown: client vs office). */
   buildingType?: string | null;
   [key: string]: unknown;
