@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import {
   useUpdateLeadMutation,
   useDeleteLeadMutation,
@@ -635,7 +636,10 @@ export function LeadDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className={DETAIL_DIALOG_CONTENT_CLASS}
+          className={cn(
+            DETAIL_DIALOG_CONTENT_CLASS,
+            'flex flex-col overflow-hidden gap-0',
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -711,7 +715,7 @@ export function LeadDetailDialog({
             )}
             <DetailDialogCloseButton />
           </div>
-          <DialogHeader className="pr-24 pt-12 mt-2 gap-2 sm:pt-14">
+          <DialogHeader className="pr-24 pt-12 mt-2 gap-2 sm:pt-14 shrink-0">
             <DialogTitle>
               {lead.name?.trim() || lead.companyName?.trim() || `Lead #${lead.uid}`}
             </DialogTitle>
@@ -720,6 +724,7 @@ export function LeadDetailDialog({
             </DialogDescription>
           </DialogHeader>
 
+          <div className="min-h-0 flex-1 overflow-y-auto space-y-4">
           {chatOpen && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
               <h4 className="font-semibold text-sm">Team chat</h4>
@@ -1205,42 +1210,43 @@ export function LeadDetailDialog({
               </>
             )}
           </div>
+          </div>
 
-          <DialogFooter className="gap-3">
-            <Button
-              variant="destructive"
-              className="rounded-full"
-              onClick={() => setDeleteConfirmOpen(true)}
-              disabled={!leadUid}
+          <div className="shrink-0 border-t bg-background pt-3 mt-4 -mx-6 px-6 pb-1">
+            <p className="font-semibold text-sm mb-2">Change status</p>
+            <div
+              className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2"
+              role="toolbar"
+              aria-label="Lead actions"
             >
-              Delete
-            </Button>
-          </DialogFooter>
-
-          <div className="border-t pt-3 space-y-3">
-            <p className="font-semibold">
-              Change status
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={handleConvertToClient}
-              disabled={!leadUid || isConverted || isDiscarded || updateMutation.isPending}
-            >
-              {updateMutation.isPending && !isConverted ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                'Convert to client'
-              )}
-            </Button>
-            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full shrink-0 border-destructive/60 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={!leadUid}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full shrink-0"
+                onClick={handleConvertToClient}
+                disabled={!leadUid || isConverted || isDiscarded || updateMutation.isPending}
+              >
+                {updateMutation.isPending && !isConverted ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  'Convert to client'
+                )}
+              </Button>
               {LEAD_STATUS_OPTIONS_FOR_DIALOG.map((opt) => (
                 <Button
                   key={opt.value}
                   variant={lead.status === opt.value ? 'secondary' : 'outline'}
                   size="sm"
-                  className="rounded-full"
+                  className="rounded-full shrink-0"
                   disabled={
                     !leadUid ||
                     lead.status === opt.value ||
@@ -1252,21 +1258,21 @@ export function LeadDetailDialog({
                   Set to {opt.label}
                 </Button>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full shrink-0"
+                onClick={() => setDiscardConfirmOpen(true)}
+                disabled={
+                  !leadUid ||
+                  isDiscarded ||
+                  isConverted ||
+                  updateMutation.isPending
+                }
+              >
+                Discard this lead
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={() => setDiscardConfirmOpen(true)}
-              disabled={
-                !leadUid ||
-                isDiscarded ||
-                isConverted ||
-                updateMutation.isPending
-              }
-            >
-              Discard this lead
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
