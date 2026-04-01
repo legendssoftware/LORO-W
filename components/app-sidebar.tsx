@@ -24,6 +24,7 @@ import {
   UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
+import { Building2, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
 import { useVapiDemoCall } from "@/hooks/use-vapi-demo-call";
@@ -50,6 +51,8 @@ const ROUTE_ICONS: Record<
   "/reports": BarChart3Icon,
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,
+  "/pipeline": GitBranch,
+  "/clients": Building2,
   "/planning": CheckSquareIcon,
   "/staff": UsersIcon,
   "/settings": SettingsIcon,

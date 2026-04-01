@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Privacy Policy',
-  description:
-    'Privacy Policy for LORO mobile and web applications. How we collect, use, and protect your data. Legend Systems.',
-};
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.privacy.title,
+  description: PAGE_COPY.privacy.description,
+  path: '/privacy-policy',
+  indexable: true,
+});
 
 export default function PrivacyPolicyPage() {
   return (

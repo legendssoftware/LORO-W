@@ -265,10 +265,19 @@ export async function dedupeLeads(client: AxiosInstance): Promise<LeadDedupeResp
 /**
  * POST /leads/import-csv - import leads from a CSV or Excel (.xlsx) file (first sheet), optionally assigning to specific users.
  */
+/** Server-side import can take several minutes for large spreadsheets. */
+const IMPORT_CSV_LONG_TIMEOUT_MS = 10 * 60 * 1000;
+
+export type ImportLeadsFromCSVOptions = {
+  /** Use extended client timeout (default instance timeout is too short for big imports). */
+  longRunning?: boolean;
+};
+
 export async function importLeadsFromCSV(
   client: AxiosInstance,
   formData: FormData,
-  params: ImportLeadsFromCSVParams
+  params: ImportLeadsFromCSVParams,
+  options?: ImportLeadsFromCSVOptions
 ): Promise<LeadImportResponse> {
   const search = new URLSearchParams();
   if (params.assignedUserIds?.length) {
@@ -283,9 +292,12 @@ export async function importLeadsFromCSV(
   if (params.followUpInterval) search.set('followUpInterval', params.followUpInterval);
   if (params.followUpDuration != null) search.set('followUpDuration', String(params.followUpDuration));
   if (params.source?.trim()) search.set('source', params.source.trim());
+  const axiosConfig =
+    options?.longRunning === true ? { timeout: IMPORT_CSV_LONG_TIMEOUT_MS } : undefined;
   const { data } = await client.post<LeadImportResponse>(
     `/leads/import-csv?${search.toString()}`,
-    formData
+    formData,
+    axiosConfig
   );
   return data;
 }
