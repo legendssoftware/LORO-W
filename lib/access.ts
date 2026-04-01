@@ -8,6 +8,8 @@ export const STANDARD_USER_PATHS = [
     "/dashboard",
     "/visits",
     "/leads",
+    "/pipeline",
+    "/clients",
     "/planning",
     "/reports",
 ] as const;
@@ -168,6 +170,8 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/staff", label: "Staff" },
     { path: "/visits", label: "Visits" },
     { path: "/leads", label: "Leads" },
+    { path: "/pipeline", label: "Pipeline" },
+    { path: "/clients", label: "Clients" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
 ];
@@ -200,6 +204,8 @@ export function getAllowedRoutes(
         { path: "/dashboard", label: "Home" },
         { path: "/visits", label: "Visits" },
         { path: "/leads", label: "Leads" },
+        { path: "/pipeline", label: "Pipeline" },
+        { path: "/clients", label: "Clients" },
         { path: "/planning", label: "Planning" },
         { path: "/reports", label: "Reports" },
     ];

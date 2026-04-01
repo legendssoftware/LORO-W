@@ -1,5 +1,12 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
+
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.notFound.title,
+  description: PAGE_COPY.notFound.description,
+  path: false,
+});
 
 export default function NotFound() {
   return (

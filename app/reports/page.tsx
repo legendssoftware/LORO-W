@@ -2,8 +2,15 @@ import nextDynamic from 'next/dynamic';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.reports.title,
+  description: PAGE_COPY.reports.description,
+  path: '/reports',
+});
 
 const ReportsContent = nextDynamic(
   () =>

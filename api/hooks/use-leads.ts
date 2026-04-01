@@ -360,10 +360,15 @@ export function useImportLeadsMutation() {
     mutationFn: async ({
       formData,
       params,
+      longRunning,
     }: {
       formData: FormData;
       params: ImportLeadsFromCSVParams;
-    }) => importLeadsFromCSV(client, formData, params),
+      longRunning?: boolean;
+    }) =>
+      importLeadsFromCSV(client, formData, params, {
+        longRunning: longRunning === true,
+      }),
     onSuccess: () => {
       invalidateLeadQueries(queryClient);
     },

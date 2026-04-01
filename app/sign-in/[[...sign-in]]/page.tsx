@@ -1,11 +1,12 @@
 import { AuthPageShell } from '@/components/auth-page-shell';
 import { SignInForm } from '@/components/sign-in-form';
+import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
-export const metadata = {
-  title:
-    'Sign in | Sign in to your LORO account to access the dashboard and manage your time',
-  description: 'Sign in to LORO to access your dashboard, attendance and workforce tools.',
-};
+export const metadata = buildPageMetadata({
+  segmentTitle: PAGE_COPY.signIn.title,
+  description: PAGE_COPY.signIn.description,
+  path: '/sign-in',
+});
 
 export default function SignInPage() {
   return (
