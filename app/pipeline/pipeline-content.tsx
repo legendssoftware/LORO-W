@@ -14,6 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  isPipelineLeadsOrgWide,
+  isPipelineVisitsOrgWide,
+} from '@/lib/pipeline-scope';
 import { PipelineCharts } from './pipeline-charts';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -188,6 +192,11 @@ function aggregateQuotationValueByCurrency(visits: VisitListItem[]): Map<string,
 export function PipelineContent() {
   const { backendUserData: profile, isSyncing } = useSessionSync();
   const userRef = profile?.uid != null ? String(profile.uid) : null;
+  const accessLevel =
+    profile?.accessLevel != null ? String(profile.accessLevel) : undefined;
+
+  const leadsOrgWide = isPipelineLeadsOrgWide(accessLevel);
+  const visitsOrgWide = isPipelineVisitsOrgWide(accessLevel);
 
   const targetQuery = useUserTarget(userRef, {
     enabled: !isSyncing && !!userRef,
@@ -213,7 +222,7 @@ export function PipelineContent() {
     {
       startDate: period.from,
       endDate: period.to,
-      userUid: userRef ?? undefined,
+      ...(visitsOrgWide ? {} : { userUid: userRef ?? undefined }),
     },
     { enabled: !!userRef && !!period.from && !!period.to }
   );
@@ -334,6 +343,12 @@ export function PipelineContent() {
 
       <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">Lead pipeline</h2>
+            {leadsOrgWide ? (
+              <p className="text-xs text-muted-foreground -mt-1">
+                Organisation rollup for this date range. Totals follow server rules (e.g. owners with
+                performance targets).
+              </p>
+            ) : null}
             {reportQuery.isError ? (
               <p className="text-sm text-destructive">
                 Could not load lead analytics. You may not have access to leads for this org, or the
@@ -432,6 +447,11 @@ export function PipelineContent() {
 
       <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">Visits</h2>
+            {visitsOrgWide ? (
+              <p className="text-xs text-muted-foreground -mt-1">
+                All organisation check-outs in this date range.
+              </p>
+            ) : null}
             {checkInsQuery.isError ? (
               <p className="text-sm text-destructive">Could not load visits for this period.</p>
             ) : checkInsQuery.isLoading ? (
