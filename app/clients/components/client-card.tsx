@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { cn } from '@/lib/utils';
 
 function formatZar(n: unknown): string {
@@ -101,12 +102,18 @@ export function ClientCard({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="font-medium text-foreground truncate leading-tight">{client.name}</p>
+            <p className="font-medium text-foreground truncate leading-tight">
+              {formatDisplayName(client.name) || client.name}
+            </p>
             {client.contactPerson ? (
-              <p className="text-xs text-muted-foreground truncate">{client.contactPerson}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {formatDisplayName(client.contactPerson)}
+              </p>
             ) : null}
             {client.email ? (
-              <p className="text-xs text-muted-foreground truncate">{client.email}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {formatEmailDisplay(client.email)}
+              </p>
             ) : null}
             {client.phone ? (
               <p className="text-xs text-muted-foreground truncate">{client.phone}</p>
