@@ -9,6 +9,7 @@ import { syncClerk } from '@/api/endpoints/auth';
 import type { SyncResult, SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
 import { useOrgId } from '@/lib/org-id-context';
+import { getClerkTokenParams } from '@/lib/clerk-session-token';
 
 function getProfileFromSyncData(data: unknown): SyncProfile | null {
   if (data && typeof data === 'object' && 'profileData' in data) {
@@ -54,7 +55,7 @@ export function useSessionSync() {
     queryKey,
     enabled: shouldSync && isTokenReady,
     queryFn: async (): Promise<SyncResult> => {
-      const token = await getToken({ organizationId: orgId ?? undefined });
+      const token = await getToken(getClerkTokenParams(orgId));
       if (!token) throw new Error('No token available');
       return syncClerk(client, token);
     },
@@ -69,7 +70,7 @@ export function useSessionSync() {
 
   const forceSyncMutation = useMutation({
     mutationFn: async (): Promise<SyncResult> => {
-      const token = await getToken({ organizationId: orgId ?? undefined });
+      const token = await getToken(getClerkTokenParams(orgId));
       if (!token) throw new Error('No token available');
       return syncClerk(client, token, { forceSync: true });
     },

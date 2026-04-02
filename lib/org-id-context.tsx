@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useOrganization } from '@clerk/nextjs';
+import { useOrganization, useUser } from '@clerk/nextjs';
 
 type OrgIdContextValue = {
   orgId: string | null;
@@ -19,8 +19,8 @@ type OrgIdContextValue = {
 const OrgIdContext = createContext<OrgIdContextValue | null>(null);
 
 /**
- * Provides orgId and orgName from server (initial) and syncs with Clerk's useOrganization when mounted.
- * useOrganization is only called client-side (inside OrgIdSync when mounted) to avoid SSR errors.
+ * Provides orgId/orgName: SSR seed from auth().orgId or user.publicMetadata.organisationRef, then
+ * optionally syncs when Clerk has an active Organization. Without Clerk Orgs, client sync never overwrites.
  */
 export function OrgIdProvider({
   initialOrgId,
@@ -65,14 +65,62 @@ function OrgIdSync({ children }: { children: ReactNode }) {
 function OrgIdSyncInner({ children }: { children: ReactNode }) {
   const context = useContext(OrgIdContext);
   const { organization } = useOrganization();
+  const { user, isLoaded: isUserLoaded } = useUser();
+
+  if (!context) {
+    return <>{children}</>;
+  }
+
+  const { orgId, setOrg } = context;
+
+  return (
+    <>
+      <OrgIdEffects
+        organizationId={organization?.id ?? null}
+        organizationName={organization?.name ?? null}
+        orgId={orgId}
+        setOrg={setOrg}
+        isUserLoaded={isUserLoaded}
+        user={user}
+      />
+      {children}
+    </>
+  );
+}
+
+function OrgIdEffects({
+  organizationId,
+  organizationName,
+  orgId,
+  setOrg,
+  isUserLoaded,
+  user,
+}: {
+  organizationId: string | null;
+  organizationName: string | null;
+  orgId: string | null;
+  setOrg: OrgIdContextValue['setOrg'];
+  isUserLoaded: boolean;
+  user: ReturnType<typeof useUser>['user'];
+}) {
+  useEffect(() => {
+    if (organizationId) {
+      setOrg(organizationId, organizationName);
+    }
+  }, [organizationId, organizationName, setOrg]);
 
   useEffect(() => {
-    if (context) {
-      context.setOrg(organization?.id ?? null, organization?.name ?? null);
+    if (!isUserLoaded || !user || orgId != null) {
+      return;
     }
-  }, [organization?.id, organization?.name, context]);
+    const ref = user.publicMetadata?.organisationRef;
+    const refStr = typeof ref === 'string' && ref.length > 0 ? ref : null;
+    if (refStr) {
+      setOrg(refStr, null);
+    }
+  }, [isUserLoaded, user, user?.publicMetadata?.organisationRef, orgId, setOrg]);
 
-  return <>{children}</>;
+  return null;
 }
 
 /**

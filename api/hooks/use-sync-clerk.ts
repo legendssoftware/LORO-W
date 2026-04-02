@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useOrgId } from '@/lib/org-id-context';
+import { getClerkTokenParams } from '@/lib/clerk-session-token';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { syncClerk } from '@/api/endpoints/auth';
 import type { SyncResult } from '@/api/types';
@@ -22,7 +23,7 @@ export function useSyncClerk(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...QUERY_KEY, orgId ?? ''] as const,
     queryFn: async (): Promise<SyncResult> => {
-      const token = await getToken({ organizationId: orgId ?? undefined });
+      const token = await getToken(getClerkTokenParams(orgId));
       if (!token) return { profileData: undefined };
       return syncClerk(client, token);
     },
