@@ -8,6 +8,7 @@ import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { syncClerk } from '@/api/endpoints/auth';
 import type { SyncResult, SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
+import { useOrgId } from '@/lib/org-id-context';
 
 function getProfileFromSyncData(data: unknown): SyncProfile | null {
   if (data && typeof data === 'object' && 'profileData' in data) {
@@ -27,6 +28,7 @@ const SESSION_SYNC_QUERY_KEY = ['session-profile-sync'] as const;
  */
 export function useSessionSync() {
   const client = useApiClient();
+  const orgId = useOrgId();
   const { isSignedIn, isLoaded: isClerkLoaded, getToken, sessionId } = useAuth();
   const { user: clerkUser } = useUser();
   const { isTokenReady } = useTokenReady();
@@ -35,8 +37,8 @@ export function useSessionSync() {
   const startSession = useSessionStore((s) => s.startSession);
 
   const queryKey = useMemo(
-    () => [...SESSION_SYNC_QUERY_KEY, isSignedIn, sessionId ?? ''],
-    [isSignedIn, sessionId]
+    () => [...SESSION_SYNC_QUERY_KEY, isSignedIn, sessionId ?? '', orgId ?? ''],
+    [isSignedIn, sessionId, orgId]
   );
 
   const existingBackendData = useMemo(
@@ -52,7 +54,7 @@ export function useSessionSync() {
     queryKey,
     enabled: shouldSync && isTokenReady,
     queryFn: async (): Promise<SyncResult> => {
-      const token = await getToken();
+      const token = await getToken({ organizationId: orgId ?? undefined });
       if (!token) throw new Error('No token available');
       return syncClerk(client, token);
     },
@@ -67,7 +69,7 @@ export function useSessionSync() {
 
   const forceSyncMutation = useMutation({
     mutationFn: async (): Promise<SyncResult> => {
-      const token = await getToken();
+      const token = await getToken({ organizationId: orgId ?? undefined });
       if (!token) throw new Error('No token available');
       return syncClerk(client, token, { forceSync: true });
     },
