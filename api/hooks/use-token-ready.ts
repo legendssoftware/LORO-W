@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgId } from '@/lib/org-id-context';
+import { getClerkTokenParams } from '@/lib/clerk-session-token';
 
 /**
  * Resolves the Clerk token once when the user is signed in so we can gate API
@@ -23,7 +24,7 @@ export function useTokenReady() {
 
     let cancelled = false;
 
-    getToken({ organizationId: orgId ?? undefined })
+    getToken(getClerkTokenParams(orgId))
       .then((token) => {
         if (!cancelled) {
           setIsTokenReady(!!token);

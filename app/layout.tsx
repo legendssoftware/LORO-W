@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Urbanist, Lora } from 'next/font/google';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
 import { OrgIdProvider } from '@/lib/org-id-context';
@@ -29,18 +29,30 @@ const lora = Lora({
 
 export const metadata = defaultMetadata;
 
+function organisationRefFromPublicMetadata(
+  user: Awaited<ReturnType<typeof currentUser>>,
+): string | null {
+  if (!user?.publicMetadata || typeof user.publicMetadata !== 'object') {
+    return null;
+  }
+  const ref = (user.publicMetadata as Record<string, unknown>).organisationRef;
+  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const { orgId } = await auth();
+  const clerkUser = await currentUser();
+  const initialOrgId = orgId ?? organisationRefFromPublicMetadata(clerkUser);
 
   return (
     <ClerkProvider afterSignOutUrl="/sign-in" dynamic>
       <html lang="en" className="light" suppressHydrationWarning>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
-          <OrgIdProvider initialOrgId={orgId ?? null}>
+          <OrgIdProvider initialOrgId={initialOrgId}>
           <QueryProvider>
           <TooltipProvider>
             <SidebarProvider defaultOpen={false}>
