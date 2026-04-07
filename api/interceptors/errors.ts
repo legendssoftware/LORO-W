@@ -35,21 +35,29 @@ function isNetworkError(err: unknown): boolean {
  * Normalizes Axios error response body to ApiError shape.
  * Network-style errors (no response, timeout, ERR_NETWORK) get a single user-facing message.
  */
+function nestResponseMessage(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const raw = (data as { message?: unknown }).message;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw) && raw.every((x) => typeof x === 'string')) return raw.join(' ');
+  return null;
+}
+
 function normalizeError(err: unknown): ApiError {
   if (err && typeof err === 'object' && 'response' in err) {
     const res = (err as { response?: { data?: unknown; status?: number } }).response;
     if (res) {
       const data = res.data;
+      const fromBody = nestResponseMessage(data);
       const message =
-        data && typeof data === 'object' && 'message' in data && typeof (data as { message: unknown }).message === 'string'
-          ? (data as { message: string }).message
-          : res.status === 401
+        fromBody ??
+          (res.status === 401
             ? 'Unauthorized'
             : res.status === 403
               ? 'Forbidden'
               : res.status && res.status >= 500
                 ? 'Server error. Please try again.'
-                : 'Request failed';
+                : 'Request failed');
       return {
         message,
         status: res.status,
