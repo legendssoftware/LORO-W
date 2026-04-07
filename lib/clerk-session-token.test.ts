@@ -21,9 +21,16 @@ describe('isClerkOrganizationId', () => {
 });
 
 describe('getClerkTokenParams', () => {
-  it('passes organizationId only for org_ prefix', () => {
-    expect(getClerkTokenParams('org_x')).toEqual({ organizationId: 'org_x' });
+  it('omits organizationId when org id does not match active Clerk org', () => {
+    expect(getClerkTokenParams('org_x')).toEqual({});
+    expect(getClerkTokenParams('org_x', null)).toEqual({});
+    expect(getClerkTokenParams('org_x', 'org_y')).toEqual({});
+    expect(getClerkTokenParams('org_x', 'org_x')).toEqual({ organizationId: 'org_x' });
+  });
+
+  it('never passes Clerk organizationId for app-owned tenant ids', () => {
     expect(getClerkTokenParams('loro_org_x')).toEqual({});
+    expect(getClerkTokenParams('loro_org_x', 'org_x')).toEqual({});
     expect(getClerkTokenParams(null)).toEqual({});
   });
 });

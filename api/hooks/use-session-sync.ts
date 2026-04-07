@@ -8,8 +8,9 @@ import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { syncClerk } from '@/api/endpoints/auth';
 import type { SyncResult, SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
-import { useOrgId } from '@/lib/org-id-context';
+import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams } from '@/lib/clerk-session-token';
+import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 function getProfileFromSyncData(data: unknown): SyncProfile | null {
   if (data && typeof data === 'object' && 'profileData' in data) {
@@ -30,6 +31,7 @@ const SESSION_SYNC_QUERY_KEY = ['session-profile-sync'] as const;
 export function useSessionSync() {
   const client = useApiClient();
   const orgId = useOrgId();
+  const activeClerkOrganizationId = useActiveClerkOrganizationId();
   const { isSignedIn, isLoaded: isClerkLoaded, getToken, sessionId } = useAuth();
   const { user: clerkUser } = useUser();
   const { isTokenReady } = useTokenReady();
@@ -51,11 +53,34 @@ export function useSessionSync() {
     isClerkLoaded && isSignedIn && !existingBackendData
   );
 
+  const syncQueryEnabled = shouldSync && isTokenReady;
+
+  useEffect(() => {
+    if (!isApiDebugEnabled()) return;
+    debugApi('useSessionSync gate', {
+      shouldSync,
+      isTokenReady,
+      enabled: syncQueryEnabled,
+      hasCachedProfile: Boolean(existingBackendData),
+      isClerkLoaded,
+      isSignedIn,
+    });
+  }, [
+    shouldSync,
+    isTokenReady,
+    syncQueryEnabled,
+    existingBackendData,
+    isClerkLoaded,
+    isSignedIn,
+  ]);
+
   const { data, isLoading, error } = useQuery({
     queryKey,
-    enabled: shouldSync && isTokenReady,
+    enabled: syncQueryEnabled,
     queryFn: async (): Promise<SyncResult> => {
-      const token = await getToken(getClerkTokenParams(orgId));
+      const token = await getToken(
+        getClerkTokenParams(orgId, activeClerkOrganizationId)
+      );
       if (!token) throw new Error('No token available');
       return syncClerk(client, token);
     },
@@ -70,7 +95,9 @@ export function useSessionSync() {
 
   const forceSyncMutation = useMutation({
     mutationFn: async (): Promise<SyncResult> => {
-      const token = await getToken(getClerkTokenParams(orgId));
+      const token = await getToken(
+        getClerkTokenParams(orgId, activeClerkOrganizationId)
+      );
       if (!token) throw new Error('No token available');
       return syncClerk(client, token, { forceSync: true });
     },
@@ -121,6 +148,23 @@ export function useSessionSync() {
       startSession({ profileData: profile });
     }
   }, [data, startSession]);
+
+  useEffect(() => {
+    if (!isApiDebugEnabled()) return;
+    if (!error) return;
+    debugApi('useSessionSync query error', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }, [error]);
+
+  useEffect(() => {
+    if (!isApiDebugEnabled()) return;
+    const mutErr = forceSyncMutation.error;
+    if (!mutErr) return;
+    debugApi('useSessionSync forceSync error', {
+      message: mutErr instanceof Error ? mutErr.message : String(mutErr),
+    });
+  }, [forceSyncMutation.error]);
 
   useEffect(() => {
     if (!clerkUser || !data) return;
