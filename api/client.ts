@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import { applyErrorInterceptors } from '@/api/interceptors/errors';
+import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4400';
 
@@ -18,10 +19,15 @@ function delay(ms: number): Promise<void> {
  * Attempts getToken() with short retries so the first requests after sign-in can get a token
  * once Clerk has it ready. If still null after retries, rejects so the request is not sent.
  */
-async function getTokenWithRetry(getToken: GetTokenFn): Promise<string> {
+async function getTokenWithRetry(
+  getToken: GetTokenFn
+): Promise<{ token: string; attempts: number }> {
   for (let attempt = 1; attempt <= TOKEN_MAX_ATTEMPTS; attempt++) {
     const token = await getToken();
-    if (token) return token;
+    if (token) return { token, attempts: attempt };
+    if (isApiDebugEnabled()) {
+      debugApi('getToken retry', { attempt, maxAttempts: TOKEN_MAX_ATTEMPTS });
+    }
     if (attempt < TOKEN_MAX_ATTEMPTS) {
       await delay(TOKEN_RETRY_DELAY_MS);
     }
@@ -56,9 +62,29 @@ export function createApiClient(getToken?: GetTokenFn): AxiosInstance {
   if (getToken) {
     instance.interceptors.request.use(
       async (config) => {
-        const token = await getTokenWithRetry(getToken);
-        config.headers.Authorization = `Bearer ${token}`;
-        return config;
+        const method = (config.method ?? 'get').toUpperCase();
+        const path = config.url ?? '';
+        if (isApiDebugEnabled()) {
+          debugApi('axios request', { phase: 'before_token', method, path });
+        }
+        try {
+          const { token, attempts } = await getTokenWithRetry(getToken);
+          if (isApiDebugEnabled()) {
+            debugApi('axios request', { phase: 'token_ok', method, path, attempts });
+          }
+          config.headers.Authorization = `Bearer ${token}`;
+          return config;
+        } catch (err) {
+          if (isApiDebugEnabled()) {
+            debugApi('axios request', {
+              phase: 'token_failed',
+              method,
+              path,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+          throw err;
+        }
       },
       (err) => Promise.reject(err)
     );

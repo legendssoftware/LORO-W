@@ -13,7 +13,10 @@ import { useOrganization, useUser } from '@clerk/nextjs';
 type OrgIdContextValue = {
   orgId: string | null;
   orgName: string | null;
+  /** Clerk session’s active organization (`useOrganization().organization?.id`). Used to avoid passing a stale/wrong `org_…` into `getToken()`. */
+  activeClerkOrganizationId: string | null;
   setOrg: (id: string | null, name: string | null) => void;
+  setActiveClerkOrganizationId: (id: string | null) => void;
 };
 
 const OrgIdContext = createContext<OrgIdContextValue | null>(null);
@@ -31,14 +34,29 @@ export function OrgIdProvider({
 }) {
   const [orgId, setOrgIdState] = useState<string | null>(initialOrgId);
   const [orgName, setOrgNameState] = useState<string | null>(null);
+  const [activeClerkOrganizationId, setActiveClerkOrganizationState] = useState<
+    string | null
+  >(null);
 
   const setOrg = useCallback((id: string | null, name: string | null) => {
     setOrgIdState(id);
     setOrgNameState(name);
   }, []);
 
+  const setActiveClerkOrganizationId = useCallback((id: string | null) => {
+    setActiveClerkOrganizationState(id);
+  }, []);
+
   return (
-    <OrgIdContext.Provider value={{ orgId, orgName, setOrg }}>
+    <OrgIdContext.Provider
+      value={{
+        orgId,
+        orgName,
+        activeClerkOrganizationId,
+        setOrg,
+        setActiveClerkOrganizationId,
+      }}
+    >
       <OrgIdSync>{children}</OrgIdSync>
     </OrgIdContext.Provider>
   );
@@ -71,10 +89,14 @@ function OrgIdSyncInner({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const { orgId, setOrg } = context;
+  const { orgId, setOrg, setActiveClerkOrganizationId } = context;
 
   return (
     <>
+      <OrgIdClerkSessionSync
+        activeOrganizationId={organization?.id ?? null}
+        setActiveClerkOrganizationId={setActiveClerkOrganizationId}
+      />
       <OrgIdEffects
         organizationId={organization?.id ?? null}
         organizationName={organization?.name ?? null}
@@ -86,6 +108,20 @@ function OrgIdSyncInner({ children }: { children: ReactNode }) {
       {children}
     </>
   );
+}
+
+function OrgIdClerkSessionSync({
+  activeOrganizationId,
+  setActiveClerkOrganizationId,
+}: {
+  activeOrganizationId: string | null;
+  setActiveClerkOrganizationId: OrgIdContextValue['setActiveClerkOrganizationId'];
+}) {
+  useEffect(() => {
+    setActiveClerkOrganizationId(activeOrganizationId);
+  }, [activeOrganizationId, setActiveClerkOrganizationId]);
+
+  return null;
 }
 
 function OrgIdEffects({
@@ -145,4 +181,16 @@ export function useOrgName(): string | null {
     throw new Error('useOrgName must be used within OrgIdProvider');
   }
   return ctx.orgName;
+}
+
+/**
+ * Clerk’s active organization id for the session. Use with `getClerkTokenParams` so
+ * `organizationId` is only sent when it matches this value (avoids Clerk 404 on token mint).
+ */
+export function useActiveClerkOrganizationId(): string | null {
+  const ctx = useContext(OrgIdContext);
+  if (!ctx) {
+    throw new Error('useActiveClerkOrganizationId must be used within OrgIdProvider');
+  }
+  return ctx.activeClerkOrganizationId;
 }

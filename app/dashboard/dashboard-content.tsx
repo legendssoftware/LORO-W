@@ -24,6 +24,7 @@ import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/app/reports/types';
+import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
@@ -63,6 +64,38 @@ export function DashboardContent() {
   const metricsQuery = useAttMetrics({
     enabled: isTokenReady,
   });
+
+  useEffect(() => {
+    if (!isApiDebugEnabled()) return;
+    const attErr = attQuery.error;
+    const metricsErr = metricsQuery.error;
+    debugApi('dashboard React Query', {
+      isSignedIn,
+      isTokenReady,
+      attFetchStatus: attQuery.fetchStatus,
+      metricsFetchStatus: metricsQuery.fetchStatus,
+      attIsFetching: attQuery.isFetching,
+      metricsIsFetching: metricsQuery.isFetching,
+      attError:
+        attErr instanceof Error ? attErr.message : attErr ? String(attErr) : undefined,
+      metricsError:
+        metricsErr instanceof Error
+          ? metricsErr.message
+          : metricsErr
+            ? String(metricsErr)
+            : undefined,
+    });
+  }, [
+    isSignedIn,
+    isTokenReady,
+    attQuery.fetchStatus,
+    metricsQuery.fetchStatus,
+    attQuery.isFetching,
+    metricsQuery.isFetching,
+    attQuery.error,
+    metricsQuery.error,
+  ]);
+
   const attCheckInMutation = useAttCheckInMutation();
   const attCheckOutMutation = useAttCheckOutMutation();
   const breakMutation = useBreakMutation();

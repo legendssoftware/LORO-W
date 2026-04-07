@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { useOrgId } from '@/lib/org-id-context';
-import { getClerkTokenParams } from '@/lib/clerk-session-token';
+import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
+import { getClerkTokenParams, isClerkOrganizationId } from '@/lib/clerk-session-token';
+import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 /**
  * Resolves the Clerk token once when the user is signed in so we can gate API
@@ -14,32 +15,56 @@ import { getClerkTokenParams } from '@/lib/clerk-session-token';
 export function useTokenReady() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const orgId = useOrgId();
+  const activeClerkOrganizationId = useActiveClerkOrganizationId();
   const [isTokenReady, setIsTokenReady] = useState(false);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
+      if (isApiDebugEnabled()) {
+        debugApi('useTokenReady', { isLoaded, isSignedIn, reset: true });
+      }
       setIsTokenReady(false);
       return;
     }
 
     let cancelled = false;
+    const tokenParams = getClerkTokenParams(orgId, activeClerkOrganizationId);
+    if (isApiDebugEnabled()) {
+      debugApi('useTokenReady getToken', {
+        orgId,
+        activeClerkOrganizationId,
+        passesClerkOrganizationId: isClerkOrganizationId(orgId),
+        hasOrganizationIdParam: 'organizationId' in tokenParams,
+      });
+    }
 
-    getToken(getClerkTokenParams(orgId))
+    getToken(tokenParams)
       .then((token) => {
         if (!cancelled) {
           setIsTokenReady(!!token);
         }
+        if (isApiDebugEnabled()) {
+          debugApi('useTokenReady result', {
+            hasToken: !!token,
+            tokenLength: token ? token.length : 0,
+          });
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
           setIsTokenReady(false);
+        }
+        if (isApiDebugEnabled()) {
+          debugApi('useTokenReady getToken rejected', {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, orgId, getToken]);
+  }, [isLoaded, isSignedIn, orgId, activeClerkOrganizationId, getToken]);
 
   const isTokenLoading = isSignedIn && !isTokenReady;
   return { isTokenReady, isTokenLoading };
