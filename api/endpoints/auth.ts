@@ -14,9 +14,13 @@ export async function syncClerk(
   clerkToken: string,
   options?: SyncClerkOptions
 ): Promise<SyncResult> {
-  const { data } = await client.post<SyncResult>('/auth/sync-clerk', {
-    clerkToken,
-    forceSync: options?.forceSync,
-  });
+  const { data } = await client.post<SyncResult>(
+    '/auth/sync-clerk',
+    {
+      clerkToken,
+      forceSync: options?.forceSync,
+    },
+    { meta: { skipErrorToast: true } }
+  );
   return data;
 }

@@ -3,6 +3,9 @@ import type { ApiError } from '@/api/types';
 
 type ErrorWithApiError = Error & { apiError?: ApiError };
 
+/** Server returns this when Clerk JWT verify fails on POST /auth/sync-clerk (and client-auth sync). */
+export const CLERK_JWT_INVALID_CODE = 'CLERK_JWT_INVALID';
+
 /**
  * Extracts normalized API error from thrown values (Axios interceptor attaches `apiError`).
  */
@@ -47,4 +50,18 @@ export function getQueryErrorMessage(error: unknown, fallback = 'Something went 
   if (api?.message) return api.message;
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+}
+
+/** True when sync-clerk failed with an invalid/expired Clerk JWT — client should sign out. */
+export function shouldEndSessionAfterClerkSyncFailure(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status !== 401) return false;
+  const api = getApiError(error);
+  if (api?.code === CLERK_JWT_INVALID_CODE) return true;
+  const msg = (api?.message ?? '').toLowerCase();
+  return (
+    msg.includes('session has expired') ||
+    msg.includes('session is invalid') ||
+    msg.includes('could not be verified')
+  );
 }

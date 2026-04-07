@@ -11,6 +11,12 @@ import { useSessionStore } from '@/store/session-store';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams } from '@/lib/clerk-session-token';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
+import {
+  defaultQueryRetry,
+  defaultQueryRetryDelay,
+  shouldEndSessionAfterClerkSyncFailure,
+} from '@/lib/api/query-error';
+import { useSignOut } from '@/hooks/use-sign-out';
 
 function getProfileFromSyncData(data: unknown): SyncProfile | null {
   if (data && typeof data === 'object' && 'profileData' in data) {
@@ -38,6 +44,8 @@ export function useSessionSync() {
   const queryClient = useQueryClient();
   const updateSessionMetadata = useSessionStore((s) => s.updateSessionMetadata);
   const startSession = useSessionStore((s) => s.startSession);
+  const { performSignOut } = useSignOut();
+  const signOutAfterSyncHandledRef = useRef(false);
 
   const queryKey = useMemo(
     () => [...SESSION_SYNC_QUERY_KEY, isSignedIn, sessionId ?? '', orgId ?? ''],
@@ -86,8 +94,8 @@ export function useSessionSync() {
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    retry: 2,
-    retryDelay: 1000,
+    retry: defaultQueryRetry,
+    retryDelay: defaultQueryRetryDelay,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -141,6 +149,18 @@ export function useSessionSync() {
     sessionId,
     updateSessionMetadata,
   ]);
+
+  useEffect(() => {
+    signOutAfterSyncHandledRef.current = false;
+  }, [sessionId, isSignedIn]);
+
+  useEffect(() => {
+    const syncErr = error ?? forceSyncMutation.error;
+    if (!syncErr || !shouldEndSessionAfterClerkSyncFailure(syncErr)) return;
+    if (signOutAfterSyncHandledRef.current) return;
+    signOutAfterSyncHandledRef.current = true;
+    void performSignOut();
+  }, [error, forceSyncMutation.error, performSignOut]);
 
   useEffect(() => {
     const profile = data ? getProfileFromSyncData(data) : null;
