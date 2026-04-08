@@ -6,6 +6,21 @@ import { getUsers } from '@/api/endpoints/user';
 
 const QUERY_KEY = ['users'] as const;
 
+export function usersListQueryKey(options?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  branchId?: number;
+}) {
+  return [
+    ...QUERY_KEY,
+    options?.page ?? 1,
+    options?.limit ?? 100,
+    options?.search ?? '',
+    options?.branchId ?? null,
+  ] as const;
+}
+
 /**
  * Fetches org-scoped user list (GET /user) for dropdowns and multi-select UIs.
  */
@@ -18,13 +33,7 @@ export function useUsers(options?: {
 }) {
   const client = useApiClient();
   return useQuery({
-    queryKey: [
-      ...QUERY_KEY,
-      options?.page ?? 1,
-      options?.limit ?? 100,
-      options?.search ?? '',
-      options?.branchId ?? null,
-    ],
+    queryKey: usersListQueryKey(options),
     queryFn: async () => {
       const res = await getUsers(client, {
         page: options?.page ?? 1,

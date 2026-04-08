@@ -7,7 +7,7 @@ import type { MapDataResponse } from '@/api/types/map';
 
 const MAP_REPORT_QUERY_KEY = ['reports', 'map'] as const;
 
-function getMapReportQueryKey(params: GetMapReportParams | undefined) {
+export function mapReportQueryKey(params: GetMapReportParams | undefined) {
   return [
     ...MAP_REPORT_QUERY_KEY,
     params?.orgId ?? null,
@@ -31,7 +31,7 @@ export function useMapReport(
   const client = useApiClient();
 
   return useQuery({
-    queryKey: getMapReportQueryKey(params),
+    queryKey: mapReportQueryKey(params),
     queryFn: async (): Promise<MapDataResponse> => {
       return getMapReport(client, params);
     },

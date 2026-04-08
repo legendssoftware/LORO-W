@@ -22,6 +22,7 @@ import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualise
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import { ReportsTargetsTab } from '@/app/reports/components/reports-targets-tab';
 import { ReportsOverviewTab } from '@/app/reports/components/reports-overview-tab';
+import { useReportsPrefetch } from '@/app/reports/use-reports-prefetch';
 import type { SyncProfile } from '@/api/types';
 
 export type ReportsMode = 'org' | 'self';
@@ -136,6 +137,12 @@ export function ReportsContent() {
   )
     ? 'org'
     : 'self';
+
+  useReportsPrefetch({
+    enabled: Boolean(isSignedIn && isTokenReady && profile),
+    reportsMode,
+    profile,
+  });
 
   return (
     <div className="flex flex-col h-full min-h-0">

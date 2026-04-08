@@ -7,6 +7,8 @@ export { getBranchDisplayLabel } from '@/api/types/branch';
 
 const QUERY_KEY = ['branches'] as const;
 
+export const BRANCHES_QUERY_KEY = QUERY_KEY;
+
 /**
  * Fetches org-scoped branch list (GET /branch) for dropdowns and selection UIs.
  */

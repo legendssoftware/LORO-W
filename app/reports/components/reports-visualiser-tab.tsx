@@ -29,10 +29,7 @@ import { useOrgName } from '@/lib/org-id-context';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-content';
-import {
-  filterVisitExportItemsByReportingUserUids,
-  userListItemHasPerformanceTarget,
-} from '@/app/reports/utils/user-has-performance-target';
+import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -86,11 +83,6 @@ export function ReportsVisualiserTab({
     [reportsMode, usersList]
   );
 
-  const allowedReportingUids = useMemo(
-    () => new Set(reportingUsers.map((u) => u.uid)),
-    [reportingUsers]
-  );
-
   useEffect(() => {
     if (reportsMode !== 'org' || !selectedUserUid) return;
     const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
@@ -119,27 +111,15 @@ export function ReportsVisualiserTab({
     { enabled: mounted }
   );
 
-  const checkIns = useMemo(() => {
-    const base = mapCheckInsFromApi(
-      checkInsQuery.data?.checkIns ?? [],
-      usersList,
-      branchesQuery.data ?? []
-    );
-    const applyReportingFilter =
-      reportsMode === 'org' && !selectedUserUid;
-    return filterVisitExportItemsByReportingUserUids(
-      base,
-      allowedReportingUids,
-      applyReportingFilter
-    );
-  }, [
-    allowedReportingUids,
-    branchesQuery.data,
-    checkInsQuery.data,
-    reportsMode,
-    selectedUserUid,
-    usersList,
-  ]);
+  const checkIns = useMemo(
+    () =>
+      mapCheckInsFromApi(
+        checkInsQuery.data?.checkIns ?? [],
+        usersList,
+        branchesQuery.data ?? []
+      ),
+    [branchesQuery.data, checkInsQuery.data, usersList]
+  );
 
   const uniqueRegions = useMemo(() => getSortedUniqueRegions(checkIns), [checkIns]);
 
