@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useEffect,
   useMemo,
   useState,
   type ComponentType,
@@ -60,7 +59,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LoadingSpinner } from '@/components/loading-spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarIcon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
@@ -80,10 +79,7 @@ import {
 import { METHOD_OPTIONS } from '@/lib/visit-form-utils';
 import { formatOwnerChartName } from '@/lib/utils/report-labels';
 import type { ReportsMode } from '@/app/reports/reports-content';
-import {
-  filterVisitExportItemsByReportingUserUids,
-  userListItemHasPerformanceTarget,
-} from '@/app/reports/utils/user-has-performance-target';
+import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
 
 const PALETTE = [
   REPORT_CHART_HSL.c1,
@@ -248,10 +244,6 @@ export function ReportsVisitsTab({
   const [selectedBranchId, setSelectedBranchId] = useState('all');
   const [selectedUserUid, setSelectedUserUid] = useState('all');
 
-  useEffect(() => {
-    if (reportsMode !== 'self' || profile?.uid == null) return;
-    setSelectedUserUid(String(profile.uid));
-  }, [reportsMode, profile?.uid]);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('all');
@@ -259,22 +251,6 @@ export function ReportsVisitsTab({
 
   const startIso = startOfDay(startDate).toISOString();
   const endIso = endOfDay(endDate).toISOString();
-
-  const checkInUserUid =
-    reportsMode === 'self' && profile?.uid != null
-      ? String(profile.uid)
-      : selectedUserUid !== 'all'
-        ? selectedUserUid
-        : undefined;
-
-  const checkInsQuery = useCheckIns(
-    {
-      startDate: startIso,
-      endDate: endIso,
-      ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
-    },
-    { enabled: true }
-  );
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({
@@ -293,38 +269,40 @@ export function ReportsVisitsTab({
     [reportsMode, usersList]
   );
 
-  const allowedReportingUids = useMemo(
-    () => new Set(reportingUsers.map((u) => u.uid)),
-    [reportingUsers]
-  );
-
-  useEffect(() => {
-    if (reportsMode !== 'org' || selectedUserUid === 'all') return;
-    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
-    if (!ok) setSelectedUserUid('all');
+  const effectiveOwnerUid = useMemo(() => {
+    if (reportsMode !== 'org' || selectedUserUid === 'all') {
+      return selectedUserUid;
+    }
+    return reportingUsers.some((u) => String(u.uid) === selectedUserUid)
+      ? selectedUserUid
+      : 'all';
   }, [reportsMode, reportingUsers, selectedUserUid]);
 
-  const mappedRaw = useMemo(() => {
-    const base = mapCheckInsFromApi(
-      checkInsQuery.data?.checkIns ?? [],
-      usersList,
-      branches as BranchListItem[]
-    );
-    const applyReportingFilter =
-      reportsMode === 'org' && selectedUserUid === 'all';
-    return filterVisitExportItemsByReportingUserUids(
-      base,
-      allowedReportingUids,
-      applyReportingFilter
-    );
-  }, [
-    allowedReportingUids,
-    branches,
-    checkInsQuery.data?.checkIns,
-    reportsMode,
-    selectedUserUid,
-    usersList,
-  ]);
+  const checkInUserUid =
+    reportsMode === 'self' && profile?.uid != null
+      ? String(profile.uid)
+      : effectiveOwnerUid !== 'all'
+        ? effectiveOwnerUid
+        : undefined;
+
+  const checkInsQuery = useCheckIns(
+    {
+      startDate: startIso,
+      endDate: endIso,
+      ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
+    },
+    { enabled: true }
+  );
+
+  const mappedRaw = useMemo(
+    () =>
+      mapCheckInsFromApi(
+        checkInsQuery.data?.checkIns ?? [],
+        usersList,
+        branches as BranchListItem[]
+      ),
+    [branches, checkInsQuery.data?.checkIns, usersList]
+  );
 
   const uniqueRegions = useMemo(
     () => getSortedUniqueRegions(mappedRaw),
@@ -481,13 +459,14 @@ export function ReportsVisitsTab({
   const isDefaultRange =
     isSameDay(startDate, today) && isSameDay(endDate, today);
   const periodLabel = `${format(startDate, 'yyyy-MM-dd')} – ${format(endDate, 'yyyy-MM-dd')}`;
-  const isLoading = checkInsQuery.isLoading;
+  const showVisitsSkeleton =
+    checkInsQuery.isLoading && !checkInsQuery.data;
   const hasVisits = filteredVisits.length > 0;
 
   const userShareDonut = useMemo(() => {
     const slices = allocationPie.map((p, i) => ({
       id: `u${i}`,
-      label: p.name,
+      label: p.name === 'Other' ? p.name : formatOwnerChartName(p.name),
       value: p.value,
       fill: p.fill,
     }));
@@ -603,7 +582,7 @@ export function ReportsVisitsTab({
           </Select>
 
           {reportsMode === 'org' ? (
-            <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
+            <Select value={effectiveOwnerUid} onValueChange={setSelectedUserUid}>
               <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
                 <SelectValue placeholder="All users" />
               </SelectTrigger>
@@ -703,8 +682,19 @@ export function ReportsVisitsTab({
         periodLabel={periodLabel}
       />
 
-      {isLoading ? (
-        <LoadingSpinner wrapperClassName="py-16" />
+      {showVisitsSkeleton ? (
+        <div className="space-y-8 py-2" aria-busy aria-label="Loading visit analytics">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-28 w-full rounded-lg" />
+            <Skeleton className="h-28 w-full rounded-lg" />
+          </div>
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <Skeleton className="h-[280px] w-full min-h-[200px] rounded-lg lg:col-span-1" />
+            <Skeleton className="h-[280px] w-full min-h-[200px] rounded-lg lg:col-span-1" />
+            <Skeleton className="h-[300px] w-full min-h-[200px] rounded-lg lg:col-span-2" />
+          </div>
+          <Skeleton className="h-[240px] w-full rounded-lg" />
+        </div>
       ) : (
         <>
           <section className="space-y-3">

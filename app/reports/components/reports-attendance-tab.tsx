@@ -138,17 +138,22 @@ type RangeCheckIn = {
   owner?: RangeOwner | null;
 };
 
-function isRangeCheckIn(row: unknown): row is RangeCheckIn {
-  return (
-    typeof row === 'object' &&
-    row !== null &&
-    'checkIn' in row &&
-    typeof (row as RangeCheckIn).checkIn === 'string'
-  );
-}
-
+/** Accepts `checkIn` or legacy/alternate `checkInTime` from API payloads. */
 function parseCheckIns(rows: unknown[]): RangeCheckIn[] {
-  return rows.filter(isRangeCheckIn);
+  const out: RangeCheckIn[] = [];
+  for (const row of rows) {
+    if (typeof row !== 'object' || row === null) continue;
+    const r = row as Record<string, unknown>;
+    const checkIn =
+      typeof r.checkIn === 'string'
+        ? r.checkIn
+        : typeof r.checkInTime === 'string'
+          ? r.checkInTime
+          : null;
+    if (checkIn == null) continue;
+    out.push({ ...r, checkIn } as RangeCheckIn);
+  }
+  return out;
 }
 
 function filterCheckIns(
@@ -158,7 +163,7 @@ function filterCheckIns(
     role: string;
     userUid: string;
     search: string;
-    /** Org “all users”: restrict to these numeric user ids (owners with performance targets). */
+    /** When set, rows are restricted to these owner uids (unused for org-wide “all users”). */
     reportingUserUids?: Set<number> | null;
   }
 ): RangeCheckIn[] {
@@ -336,11 +341,6 @@ export function ReportsAttendanceTab({
     [reportsMode, usersList]
   );
 
-  const allowedReportingUids = useMemo(
-    () => new Set(reportingUsers.map((u) => u.uid)),
-    [reportingUsers]
-  );
-
   useEffect(() => {
     if (reportsMode !== 'org' || selectedUserUid === 'all') return;
     const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
@@ -358,18 +358,9 @@ export function ReportsAttendanceTab({
       role: selectedRole,
       userUid: selectedUserUid,
       search: '',
-      reportingUserUids:
-        reportsMode === 'org' && selectedUserUid === 'all'
-          ? allowedReportingUids
-          : null,
+      reportingUserUids: null,
     }),
-    [
-      allowedReportingUids,
-      reportsMode,
-      selectedBranchId,
-      selectedRole,
-      selectedUserUid,
-    ]
+    [selectedBranchId, selectedRole, selectedUserUid]
   );
 
   const checkIns = useMemo(
@@ -379,24 +370,11 @@ export function ReportsAttendanceTab({
 
   const summaryUserMetrics = useMemo(() => {
     const rows = reportDetailQuery.data?.report.userMetrics ?? [];
-    let out = filterUserMetricsForSummary(rows, {
+    return filterUserMetricsForSummary(rows, {
       userUid: selectedUserUid,
       search: '',
     });
-    if (reportsMode === 'org' && selectedUserUid === 'all') {
-      if (allowedReportingUids.size === 0) {
-        out = [];
-      } else {
-        out = out.filter((r) => allowedReportingUids.has(r.userId));
-      }
-    }
-    return out;
-  }, [
-    allowedReportingUids,
-    reportDetailQuery.data?.report.userMetrics,
-    reportsMode,
-    selectedUserUid,
-  ]);
+  }, [reportDetailQuery.data?.report.userMetrics, selectedUserUid]);
 
   const pieConfig = {
     late: { label: 'Late', color: ATT_CHART_HSL.c1 },
@@ -516,9 +494,10 @@ export function ReportsAttendanceTab({
   const avg = reportQuery.data?.report.organizationMetrics?.averageTimes;
 
   const isLoadingMain =
-    reportQuery.isLoading ||
-    rangeQuery.isLoading ||
-    dailyOverviewQuery.isLoading;
+    reportQuery.isLoading || rangeQuery.isLoading;
+
+  const dailyOverviewLoading =
+    dailyOverviewQuery.isLoading && !dailyOverviewQuery.data;
 
   const hasRangeCheckIns = checkIns.length > 0;
 
@@ -736,81 +715,92 @@ export function ReportsAttendanceTab({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-1 items-center pb-0">
-                  <ChartContainer
-                    config={radialConfig}
-                    className="mx-auto aspect-square w-full max-w-[280px]"
-                  >
-                    <RadialBarChart
-                      data={radialData}
-                      endAngle={180}
-                      innerRadius={80}
-                      outerRadius={130}
+                  {dailyOverviewLoading ? (
+                    <LoadingSpinner wrapperClassName="min-h-[220px] py-8 w-full" />
+                  ) : dailyOverviewQuery.isError ? (
+                    <p className="text-sm text-destructive text-center w-full px-4 py-12">
+                      Could not load today&apos;s attendance rate.{' '}
+                      {dailyOverviewQuery.error instanceof Error
+                        ? dailyOverviewQuery.error.message
+                        : null}
+                    </p>
+                  ) : (
+                    <ChartContainer
+                      config={radialConfig}
+                      className="mx-auto aspect-square w-full max-w-[280px]"
                     >
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <PolarRadiusAxis
-                        tick={false}
-                        tickLine={false}
-                        axisLine={false}
+                      <RadialBarChart
+                        data={radialData}
+                        endAngle={180}
+                        innerRadius={80}
+                        outerRadius={130}
                       >
-                        <Label
-                          content={({ viewBox }) => {
-                            if (
-                              viewBox &&
-                              'cx' in viewBox &&
-                              'cy' in viewBox
-                            ) {
-                              return (
-                                <text
-                                  x={viewBox.cx}
-                                  y={viewBox.cy}
-                                  textAnchor="middle"
-                                >
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={(viewBox.cy || 0) - 16}
-                                    className="fill-foreground text-2xl font-bold"
-                                  >
-                                    {attendanceRateToday}%
-                                  </tspan>
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={(viewBox.cy || 0) + 4}
-                                    className="fill-muted-foreground"
-                                  >
-                                    Attendance today
-                                  </tspan>
-                                </text>
-                              );
-                            }
-                          }}
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel />}
                         />
-                      </PolarRadiusAxis>
-                      <RadialBar
-                        name="Present"
-                        dataKey="attended"
-                        stackId="a"
-                        cornerRadius={6}
-                        fill="var(--color-attended)"
-                        className="stroke-transparent stroke-2"
-                      />
-                      <RadialBar
-                        name="Absent"
-                        dataKey="remainder"
-                        stackId="a"
-                        cornerRadius={6}
-                        fill="var(--color-remainder)"
-                        className="stroke-transparent stroke-2"
-                      />
-                      <ChartLegend
-                        payload={radialLegendPayload}
-                        content={<ChartLegendContent />}
-                        verticalAlign="bottom"
-                      />
-                    </RadialBarChart>
-                  </ChartContainer>
+                        <PolarRadiusAxis
+                          tick={false}
+                          tickLine={false}
+                          axisLine={false}
+                        >
+                          <Label
+                            content={({ viewBox }) => {
+                              if (
+                                viewBox &&
+                                'cx' in viewBox &&
+                                'cy' in viewBox
+                              ) {
+                                return (
+                                  <text
+                                    x={viewBox.cx}
+                                    y={viewBox.cy}
+                                    textAnchor="middle"
+                                  >
+                                    <tspan
+                                      x={viewBox.cx}
+                                      y={(viewBox.cy || 0) - 16}
+                                      className="fill-foreground text-2xl font-bold"
+                                    >
+                                      {attendanceRateToday}%
+                                    </tspan>
+                                    <tspan
+                                      x={viewBox.cx}
+                                      y={(viewBox.cy || 0) + 4}
+                                      className="fill-muted-foreground"
+                                    >
+                                      Attendance today
+                                    </tspan>
+                                  </text>
+                                );
+                              }
+                            }}
+                          />
+                        </PolarRadiusAxis>
+                        <RadialBar
+                          name="Present"
+                          dataKey="attended"
+                          stackId="a"
+                          cornerRadius={6}
+                          fill="var(--color-attended)"
+                          className="stroke-transparent stroke-2"
+                        />
+                        <RadialBar
+                          name="Absent"
+                          dataKey="remainder"
+                          stackId="a"
+                          cornerRadius={6}
+                          fill="var(--color-remainder)"
+                          className="stroke-transparent stroke-2"
+                        />
+                        <ChartLegend
+                          payload={radialLegendPayload}
+                          content={<ChartLegendContent />}
+                          verticalAlign="bottom"
+                        />
+                      </RadialBarChart>
+                    </ChartContainer>
+                  )}
                 </CardContent>
                 <CardFooter className="flex-col gap-1 text-sm text-muted-foreground">
                   <p>

@@ -10,7 +10,9 @@ import type { TargetsProgressData } from '@/api/types/targets-progress';
 
 const QUERY_KEY = ['reports', 'targets-progress'] as const;
 
-function queryKey(params: GetTargetsProgressParams | undefined) {
+export function targetsProgressQueryKey(
+  params: GetTargetsProgressParams | undefined
+) {
   return [
     ...QUERY_KEY,
     params?.from ?? null,
@@ -28,7 +30,7 @@ export function useTargetsProgress(
 ) {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKey(params),
+    queryKey: targetsProgressQueryKey(params),
     queryFn: async (): Promise<TargetsProgressData> => {
       if (!params?.from || !params?.to) {
         throw new Error('from and to are required');
