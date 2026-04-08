@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
 import type {
   UseCheckInsParams,
@@ -16,6 +16,16 @@ export const CHECK_INS_LIST_QUERY_KEY = ['check-ins'] as const;
 
 /** Query key for current user check-in status (used for invalidate/refetch after start or end visit). */
 export const CHECK_IN_STATUS_QUERY_KEY = ['check-in-status'] as const;
+
+export function checkInsListQueryKey(params?: UseCheckInsParams) {
+  return [
+    ...CHECK_INS_LIST_QUERY_KEY,
+    params?.startDate,
+    params?.endDate,
+    params?.userUid,
+    params?.branchId,
+  ] as const;
+}
 
 async function fetchCheckIns(
   token: string | null,
@@ -37,13 +47,31 @@ async function fetchCheckIns(
   return res.json();
 }
 
+/**
+ * Warms the same cache entry as useCheckIns (e.g. Reports idle prefetch).
+ */
+export function prefetchCheckInsList(
+  queryClient: QueryClient,
+  getToken: () => Promise<string | null | undefined>,
+  params?: UseCheckInsParams
+): Promise<void> {
+  if (!DEFAULT_API_URL) return Promise.resolve();
+  return queryClient.prefetchQuery({
+    queryKey: checkInsListQueryKey(params),
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchCheckIns(token ?? null, params);
+    },
+  });
+}
+
 export function useCheckIns(
   params?: UseCheckInsParams,
   options?: { enabled?: boolean }
 ): UseCheckInsResult {
   const { getToken } = useAuth();
   const query = useQuery({
-    queryKey: [...CHECK_INS_LIST_QUERY_KEY, params?.startDate, params?.endDate, params?.userUid, params?.branchId],
+    queryKey: checkInsListQueryKey(params),
     queryFn: async () => {
       const token = await getToken();
       return fetchCheckIns(token, params);
