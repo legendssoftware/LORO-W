@@ -1,8 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { format } from 'date-fns';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { format, formatDistanceToNow } from 'date-fns';
 import type { LeadListItem } from '@/api/types/leads';
 import {
   Dialog,
@@ -21,6 +21,8 @@ import {
   DETAIL_FIELD_GRID_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -87,6 +89,7 @@ import {
   CalendarPlus,
   ClipboardList,
   Hash,
+  History,
   Layers,
   Clock,
   Contact,
@@ -113,6 +116,12 @@ import {
   Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {
+  formatLeadActivitySummaryForRow,
+  leadActivityActionPresentation,
+  resolveActivityUserProfile,
+  type ActivityActorLookupUser,
+} from '@/lib/lead-activity-display';
 
 function getOptionLabel(
   options: { value: string; label: string }[],
@@ -231,8 +240,30 @@ export function LeadDetailDialog({
   const sendEngageMutation = useSendLeadEngageMutation();
   const client = useApiClient();
   const leadDetailQuery = useLead(leadUid ?? null, {
-    enabled: editOpen && leadUid != null,
+    enabled: open && leadUid != null,
   });
+
+  const activityTimelineUsersQuery = useUsers({
+    limit: 100,
+    enabled: open && leadUid != null,
+  });
+  const activityTimelineUsers: ActivityActorLookupUser[] =
+    activityTimelineUsersQuery.data ?? [];
+
+  const leadAuditLogEntries = useMemo(() => {
+    const d = leadDetailQuery.data?.lead;
+    if (d?.activityAuditFull && d.activityAuditFull.length > 0) {
+      return d.activityAuditFull;
+    }
+    if (d?.activity && d.activity.length > 0) return d.activity;
+    const l = lead;
+    if (l?.activityAuditFull && l.activityAuditFull.length > 0) {
+      return l.activityAuditFull;
+    }
+    return l?.activity ?? [];
+  }, [leadDetailQuery.data?.lead, lead]);
+
+  const loadingAudit = leadDetailQuery.isLoading && leadAuditLogEntries.length === 0;
 
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editAttachmentInputRef = useRef<HTMLInputElement>(null);
@@ -1100,7 +1131,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Activity" icon={Activity} />
+                  <DetailSectionHeading title="Engagement" icon={Activity} />
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
                     {lead.totalInteractions != null && (
                       <DetailFieldRow
@@ -1120,6 +1151,82 @@ export function LeadDetailDialog({
                 </div>
               </>
             )}
+            <Separator />
+            <div>
+              <DetailSectionHeading title="History" icon={History} />
+              {loadingAudit ? (
+                <p className="text-sm text-muted-foreground">Loading activity…</p>
+              ) : leadAuditLogEntries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
+              ) : (
+                <ScrollArea className="max-h-[280px] pr-3">
+                  <ul className="flex flex-col gap-3">
+                    {leadAuditLogEntries.map((entry, idx) => {
+                      const pres = leadActivityActionPresentation(entry.action);
+                      const summary = formatLeadActivitySummaryForRow(entry);
+                      const actor = resolveActivityUserProfile(entry, activityTimelineUsers);
+                      const at = entry.at ? new Date(entry.at) : null;
+                      const when =
+                        at && !Number.isNaN(at.getTime())
+                          ? format(at, 'MMM d, yyyy · h:mm a')
+                          : '—';
+                      const relative =
+                        at && !Number.isNaN(at.getTime())
+                          ? formatDistanceToNow(at, { addSuffix: true })
+                          : '';
+                      return (
+                        <li
+                          key={`${entry.at}-${entry.action}-${idx}`}
+                          className="flex gap-3 rounded-md border border-border/60 bg-muted/20 p-2.5 text-sm"
+                        >
+                          {actor ? (
+                            <Avatar className="size-8 shrink-0">
+                              <AvatarImage
+                                src={actor.photoURL ?? undefined}
+                                alt={actor.name}
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {actor.name.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          ) : (
+                            <Avatar className="size-8 shrink-0">
+                              <AvatarFallback className="bg-violet-100 text-[10px] font-medium text-violet-900">
+                                L
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className={`border px-1.5 py-0 text-[10px] font-medium ${pres.className}`}
+                              >
+                                {pres.label}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">{when}</span>
+                              {relative ? (
+                                <span className="text-xs text-muted-foreground">
+                                  ({relative})
+                                </span>
+                              ) : null}
+                            </div>
+                            {actor ? (
+                              <p className="text-xs font-medium text-foreground">
+                                {actor.name}
+                              </p>
+                            ) : (
+                              <p className="text-xs font-medium text-violet-900">LORO</p>
+                            )}
+                            <p className="text-muted-foreground">{summary}</p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </ScrollArea>
+              )}
+            </div>
             <Separator />
             <div>
               <DetailSectionHeading title="People" icon={Users} />

@@ -3,6 +3,18 @@
  * Aligned with server leads controller and LeadsService.
  */
 
+/** One row in `Lead.activity` / `activityAuditFull` (server `LeadActivityLogEntry`). */
+export interface LeadActivityLogItem {
+  at: string;
+  action: string;
+  summary: string;
+  userId?: number;
+  clerkUserId?: string;
+  userName?: string;
+  changes?: Record<string, { from: unknown; to: unknown }>;
+  meta?: Record<string, unknown>;
+}
+
 export interface LeadListItem {
   uid: number;
   name?: string;
@@ -38,15 +50,12 @@ export interface LeadListItem {
   lastActivityIsLoro?: boolean;
   /** `action` from the newest activity log entry (e.g. created, updated, system). */
   lastActivityAction?: string;
-  /** Newest-first log: Clerk-user entries only in API responses (system rows omitted; use lastActivity* + lastActivityIsLoro for full latest event). */
-  activity?: Array<{
-    at: string;
-    action: string;
-    summary: string;
-    userId?: number;
-    clerkUserId?: string;
-    userName?: string;
-  }>;
+  /** Newest-first log: Clerk-user entries only in list/some responses (system rows omitted; use lastActivity* + lastActivityIsLoro for headline). */
+  activity?: LeadActivityLogItem[];
+  /**
+   * GET lead detail only: full newest-first audit log including `system` rows (for timelines).
+   */
+  activityAuditFull?: LeadActivityLogItem[] | null;
   owner?: {
     uid?: number;
     name?: string;
