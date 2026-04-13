@@ -91,6 +91,7 @@ import {
   Globe,
   Clock,
   Share2,
+  BedDouble,
 } from 'lucide-react';
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
@@ -170,6 +171,8 @@ export const INDUSTRY_OPTIONS: { value: string; label: string; icon: IconCompone
   { value: 'CONSULTING', label: 'Consulting', icon: LightbulbIcon },
   { value: 'MARKETING', label: 'Marketing', icon: Megaphone },
   { value: 'LEGAL', label: 'Legal', icon: Scale },
+  { value: 'UPHOLSTERY', label: 'Upholstery', icon: BedDouble },
+  { value: 'SHOP_FITTERS', label: 'Shop fitters', icon: HardHat },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal },
 ];
 

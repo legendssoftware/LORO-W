@@ -55,6 +55,7 @@ import {
   Crown,
   UserCircle,
   Minus,
+  BedDouble,
 } from 'lucide-react';
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
@@ -90,6 +91,8 @@ export const TYPE_OF_BUSINESS_OPTIONS: { value: string; label: string; icon: Ico
   { value: 'CONSULTING', label: 'Consulting', icon: Lightbulb },
   { value: 'MARKETING', label: 'Marketing', icon: Megaphone },
   { value: 'LEGAL', label: 'Legal', icon: Scale },
+  { value: 'UPHOLSTERY', label: 'Upholstery', icon: BedDouble },
+  { value: 'SHOP_FITTERS', label: 'Shop fitters', icon: HardHat },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal },
 ];
 
