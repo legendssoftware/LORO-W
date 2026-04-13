@@ -34,6 +34,10 @@ import {
   LEAD_TEMPERATURE_OPTIONS,
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
+import {
+  formatListLastActivitySummaryLine,
+  leadActivityActionPresentation,
+} from '@/lib/lead-activity-display';
 
 function getIconForValue<T extends { value: string; icon: React.ComponentType<{ className?: string }> }>(
   options: T[],
@@ -177,28 +181,6 @@ function leadTouchRecency(touch: Date | null): {
   return { isTodayTouch: false, isStaleRed: false, isStaleAmber: false };
 }
 
-function formatLeadActivitySummaryLine(
-  lead: LeadListItem,
-  rawLine: string | undefined
-): string | undefined {
-  if (!rawLine?.trim()) return undefined;
-  const trimmed = rawLine.trim();
-  if (lead.lastActivityIsLoro !== true) return trimmed;
-
-  const withLoroPrefix = (text: string) => {
-    const t = text.trim();
-    if (/^LORO\b/i.test(t)) return t;
-    return `LORO ${t}`;
-  };
-
-  const action = lead.lastActivityAction;
-  if (action === 'created') return 'LORO created this lead';
-  if (action === 'updated') return 'LORO updated this lead';
-  if (action === 'system') return withLoroPrefix(trimmed);
-  if (action === 'status_changed') return withLoroPrefix(trimmed);
-  return withLoroPrefix(trimmed);
-}
-
 function lastEditedCell(
   lead: LeadListItem,
   activityActorLookup?: LeadActivityActorLookup
@@ -217,9 +199,13 @@ function lastEditedCell(
   const summary =
     usingCreationFallback && !summaryTrimmed
       ? 'LORO created this lead'
-      : formatLeadActivitySummaryLine(lead, summaryRaw);
+      : formatListLastActivitySummaryLine(lead, summaryRaw);
 
   const actorResolved = resolveActivityActor(lead, activityActorLookup);
+  const actionBadge =
+    lead.lastActivityAction != null && lead.lastActivityAction !== ''
+      ? leadActivityActionPresentation(lead.lastActivityAction)
+      : null;
   const actor =
     lead.lastActivityIsLoro !== true && actorResolved ? actorResolved : undefined;
 
@@ -230,6 +216,14 @@ function lastEditedCell(
       </span>
       <span className="flex flex-wrap items-center gap-1.5">
         <span className="whitespace-nowrap text-sm">{relative}</span>
+        {actionBadge ? (
+          <Badge
+            variant="outline"
+            className={`shrink-0 border px-1.5 py-0 text-[10px] font-medium ${actionBadge.className}`}
+          >
+            {actionBadge.label}
+          </Badge>
+        ) : null}
         {editedToday ? (
           <Badge
             variant="secondary"

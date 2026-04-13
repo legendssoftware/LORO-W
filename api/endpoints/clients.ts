@@ -24,6 +24,9 @@ export interface GetClientsParams {
   category?: string;
 }
 
+/** When omitted, matches server default for GET /clients (max 100 per page). */
+const DEFAULT_GET_CLIENTS_PAGE_SIZE = 100;
+
 /**
  * GET /clients - list org-scoped clients (paginated).
  */
@@ -31,9 +34,11 @@ export async function getClients(
   client: AxiosInstance,
   params?: GetClientsParams
 ): Promise<GetClientsResponse> {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? DEFAULT_GET_CLIENTS_PAGE_SIZE;
   const search = new URLSearchParams();
-  if (params?.page != null) search.set('page', String(params.page));
-  if (params?.limit != null) search.set('limit', String(params.limit));
+  search.set('page', String(page));
+  search.set('limit', String(limit));
   if (params?.search) search.set('search', params.search);
   if (params?.status) search.set('status', params.status);
   if (params?.category) search.set('category', params.category);
