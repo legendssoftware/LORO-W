@@ -109,10 +109,19 @@ export interface LeadsForUserResponse {
   meta: LeadsForUserMeta;
 }
 
+/** GET /leads/:id — org-wide non-deleted counts by key statuses (server aggregate). */
+export interface OrganisationLeadPipelineStats {
+  total: number;
+  pending: number;
+  approved: number;
+  inReview: number;
+  declined: number;
+}
+
 export interface LeadDetailResponse {
   lead: LeadListItem | null;
   message: string;
-  stats?: unknown;
+  stats?: OrganisationLeadPipelineStats | null;
 }
 
 /** Passed as `dateBasis` on GET /leads and GET /leads/report — matches server LeadsReportDateBasis. */
