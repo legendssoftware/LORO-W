@@ -17,8 +17,78 @@ import {
   MapPin,
   Car,
 } from 'lucide-react';
-import type { StatusFilter } from '@/app/reports/types';
+import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
+
+/** Sentinel: no role/branch dimension filter applied. */
+export const STAFF_DIMENSION_FILTER_ALL = '__all__';
+
+/** Sentinel: filter to users with no role or no branch string. */
+export const STAFF_DIMENSION_FILTER_NONE = '__none__';
+
+/**
+ * Build role dropdown options from the current user list (dedupes by case-insensitive key).
+ */
+export function buildStaffRoleFilterItems(users: ReportCardUser[]): { value: string; label: string }[] {
+  const byLower = new Map<string, string>();
+  let hasUnassigned = false;
+  for (const u of users) {
+    const r = u.role?.trim();
+    if (!r) {
+      hasUnassigned = true;
+      continue;
+    }
+    const k = r.toLowerCase();
+    if (!byLower.has(k)) byLower.set(k, r);
+  }
+  const items: { value: string; label: string }[] = [
+    { value: STAFF_DIMENSION_FILTER_ALL, label: 'All roles' },
+  ];
+  if (hasUnassigned) items.push({ value: STAFF_DIMENSION_FILTER_NONE, label: 'Unassigned' });
+  const sorted = [...byLower.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  for (const [low, label] of sorted) {
+    items.push({ value: low, label });
+  }
+  return items;
+}
+
+/**
+ * Build branch dropdown options from the current user list (dedupes by case-insensitive key).
+ */
+export function buildStaffBranchFilterItems(users: ReportCardUser[]): { value: string; label: string }[] {
+  const byLower = new Map<string, string>();
+  let hasUnassigned = false;
+  for (const u of users) {
+    const b = u.branch?.trim();
+    if (!b) {
+      hasUnassigned = true;
+      continue;
+    }
+    const k = b.toLowerCase();
+    if (!byLower.has(k)) byLower.set(k, b);
+  }
+  const items: { value: string; label: string }[] = [
+    { value: STAFF_DIMENSION_FILTER_ALL, label: 'All branches' },
+  ];
+  if (hasUnassigned) items.push({ value: STAFF_DIMENSION_FILTER_NONE, label: 'Unassigned' });
+  const sorted = [...byLower.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  for (const [low, label] of sorted) {
+    items.push({ value: low, label });
+  }
+  return items;
+}
+
+export function staffUserMatchesRoleFilter(user: ReportCardUser, filter: string): boolean {
+  if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
+  if (filter === STAFF_DIMENSION_FILTER_NONE) return !user.role?.trim();
+  return user.role?.trim().toLowerCase() === filter;
+}
+
+export function staffUserMatchesBranchFilter(user: ReportCardUser, filter: string): boolean {
+  if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
+  if (filter === STAFF_DIMENSION_FILTER_NONE) return !user.branch?.trim();
+  return user.branch?.trim().toLowerCase() === filter;
+}
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
 

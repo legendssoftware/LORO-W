@@ -38,6 +38,7 @@ export { useUsers } from './use-users';
 export {
   useUser,
   useUserTarget,
+  useDailyProductivity,
   useUserPreferences,
   usePatchUser,
   usePatchUserTarget,

@@ -21,7 +21,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { XIcon } from '@/lib/icons';
-import { STAFF_STATUS_FILTER_OPTIONS } from '@/lib/staff-filter-utils';
+import {
+  STAFF_STATUS_FILTER_OPTIONS,
+  STAFF_DIMENSION_FILTER_ALL,
+  buildStaffRoleFilterItems,
+  buildStaffBranchFilterItems,
+  staffUserMatchesRoleFilter,
+  staffUserMatchesBranchFilter,
+} from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
@@ -36,7 +43,7 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import { PayrollSummaryDialog } from '@/app/reports/components/payroll-summary-dialog';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Briefcase, MapPinned } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
@@ -48,6 +55,8 @@ export function StaffContent() {
   const today = new Date();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [roleFilter, setRoleFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
+  const [branchFilter, setBranchFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [detailUser, setDetailUser] = useState<ReportCardUser | null>(null);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -171,16 +180,43 @@ export function StaffContent() {
     branchLocationRadiusMeters,
   ]);
 
+  const roleFilterItems = useMemo(
+    () => buildStaffRoleFilterItems(statusFilteredUsers),
+    [statusFilteredUsers]
+  );
+  const branchFilterItems = useMemo(
+    () => buildStaffBranchFilterItems(statusFilteredUsers),
+    [statusFilteredUsers]
+  );
+
+  useEffect(() => {
+    const valid = roleFilterItems.some((i) => i.value === roleFilter);
+    if (!valid) setRoleFilter(STAFF_DIMENSION_FILTER_ALL);
+  }, [roleFilterItems, roleFilter]);
+
+  useEffect(() => {
+    const valid = branchFilterItems.some((i) => i.value === branchFilter);
+    if (!valid) setBranchFilter(STAFF_DIMENSION_FILTER_ALL);
+  }, [branchFilterItems, branchFilter]);
+
+  const roleBranchFilteredUsers = useMemo(() => {
+    return statusFilteredUsers.filter(
+      (u) =>
+        staffUserMatchesRoleFilter(u, roleFilter) &&
+        staffUserMatchesBranchFilter(u, branchFilter)
+    );
+  }, [statusFilteredUsers, roleFilter, branchFilter]);
+
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return statusFilteredUsers;
-    return statusFilteredUsers.filter(
+    if (!q) return roleBranchFilteredUsers;
+    return roleBranchFilteredUsers.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         (u.phone && u.phone.toLowerCase().includes(q))
     );
-  }, [statusFilteredUsers, search]);
+  }, [roleBranchFilteredUsers, search]);
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const isLoading =
@@ -239,6 +275,60 @@ export function StaffContent() {
                   onClick={() => setStatusFilter('all')}
                   className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
                   aria-label="Clear status filter"
+                >
+                  <XIcon className="size-4 text-muted-foreground" />
+                </button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[140px] sm:w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleFilterItems.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <Briefcase className="size-4 shrink-0" />
+                        {opt.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {roleFilter !== STAFF_DIMENSION_FILTER_ALL ? (
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter(STAFF_DIMENSION_FILTER_ALL)}
+                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+                  aria-label="Clear role filter"
+                >
+                  <XIcon className="size-4 text-muted-foreground" />
+                </button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
+                  <SelectValue placeholder="Branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branchFilterItems.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <MapPinned className="size-4 shrink-0" />
+                        {opt.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {branchFilter !== STAFF_DIMENSION_FILTER_ALL ? (
+                <button
+                  type="button"
+                  onClick={() => setBranchFilter(STAFF_DIMENSION_FILTER_ALL)}
+                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+                  aria-label="Clear branch filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
                 </button>

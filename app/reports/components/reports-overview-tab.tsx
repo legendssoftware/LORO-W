@@ -12,8 +12,10 @@ import {
 } from 'recharts';
 import { Building2, CalendarIcon, User } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
+import type { VisitListItem } from '@/api/types/visits';
 import {
   useBranches,
+  useCheckIns,
   useTargetsProgress,
   useUsers,
   getBranchDisplayLabel,
@@ -118,6 +120,44 @@ function bucketRowsToChartData(
     achievedCalls: b.achievedCalls,
     targetCalls: b.targetCalls,
   }));
+}
+
+/** Count check-ins whose checkInTime falls in [startDate, endDate] (inclusive), matching /check-ins list API (all contact methods). */
+function countCheckInsInBucketWindow(
+  checkIns: VisitListItem[],
+  startDate: string,
+  endDate: string
+): number {
+  const startMs = new Date(startDate).getTime();
+  const endMs = new Date(endDate).getTime();
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return 0;
+  let n = 0;
+  for (const c of checkIns) {
+    const t = new Date(c.checkInTime).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (t >= startMs && t <= endMs) n += 1;
+  }
+  return n;
+}
+
+function mergeChartRowsWithCheckInVisits(
+  rows: TargetsProgressBucketRow[],
+  checkIns: VisitListItem[],
+  timeframe: OverviewTimeframe
+) {
+  const base = bucketRowsToChartData(rows, timeframe);
+  return base.map((row, i) => {
+    const b = rows[i];
+    if (!b) return row;
+    return {
+      ...row,
+      achievedVisits: countCheckInsInBucketWindow(
+        checkIns,
+        b.startDate,
+        b.endDate
+      ),
+    };
+  });
 }
 
 function variationLine(
@@ -265,6 +305,42 @@ export function ReportsOverviewTab({
     };
   }, [timeframe, selectedDay, monthAnchor, filterSuffix]);
 
+  const checkInsParams = React.useMemo(() => {
+    const { from, to } =
+      timeframe === 'day'
+        ? { from: formatUtcYmd(selectedDay), to: formatUtcYmd(selectedDay) }
+        : getUtcMonthRange(monthAnchor);
+    const startIso = `${from}T00:00:00.000Z`;
+    const endIso = `${to}T23:59:59.999Z`;
+    return {
+      startDate: startIso,
+      endDate: endIso,
+      ...(reportsMode === 'self' && profile?.uid != null
+        ? { userUid: String(profile.uid) }
+        : elevated && selectedOwnerUid !== 'all'
+          ? { userUid: selectedOwnerUid }
+          : {}),
+      ...(elevated && selectedBranchId !== 'all'
+        ? { branchId: Number(selectedBranchId) }
+        : {}),
+    };
+  }, [
+    timeframe,
+    selectedDay,
+    monthAnchor,
+    reportsMode,
+    profile,
+    elevated,
+    selectedOwnerUid,
+    selectedBranchId,
+  ]);
+
+  const checkInsEnabled = Boolean(
+    checkInsParams.startDate &&
+      checkInsParams.endDate &&
+      (reportsMode !== 'self' || profile?.uid != null)
+  );
+
   const {
     data: progressData,
     isLoading,
@@ -272,6 +348,15 @@ export function ReportsOverviewTab({
     error,
   } = useTargetsProgress(progressParams, {
     enabled: Boolean(progressParams.from && progressParams.to),
+  });
+
+  const {
+    data: checkInsData,
+    isLoading: checkInsLoading,
+    isError: checkInsIsError,
+    error: checkInsError,
+  } = useCheckIns(checkInsParams, {
+    enabled: checkInsEnabled,
   });
 
   const { data: branches = [] } = useBranches();
@@ -297,11 +382,12 @@ export function ReportsOverviewTab({
 
   const chartData = React.useMemo(
     () =>
-      bucketRowsToChartData(
+      mergeChartRowsWithCheckInVisits(
         progressData?.aggregateBuckets ?? [],
+        checkInsData?.checkIns ?? [],
         timeframe
       ),
-    [progressData?.aggregateBuckets, timeframe]
+    [progressData?.aggregateBuckets, checkInsData?.checkIns, timeframe]
   );
 
   const rangeDescription =
@@ -311,16 +397,22 @@ export function ReportsOverviewTab({
 
   const totals = React.useMemo(() => {
     const rows = progressData?.aggregateBuckets ?? [];
-    return rows.reduce(
+    const checkIns = checkInsData?.checkIns ?? [];
+    const visA = rows.reduce(
+      (sum, b) =>
+        sum + countCheckInsInBucketWindow(checkIns, b.startDate, b.endDate),
+      0
+    );
+    const { leadsA, leadsT, visT } = rows.reduce(
       (acc, b) => ({
         leadsA: acc.leadsA + b.achievedLeads,
         leadsT: acc.leadsT + b.targetLeads,
-        visA: acc.visA + b.achievedVisits,
         visT: acc.visT + b.targetVisits,
       }),
-      { leadsA: 0, leadsT: 0, visA: 0, visT: 0 }
+      { leadsA: 0, leadsT: 0, visT: 0 }
     );
-  }, [progressData?.aggregateBuckets]);
+    return { leadsA, leadsT, visA, visT };
+  }, [progressData?.aggregateBuckets, checkInsData?.checkIns]);
 
   const trendAxis = React.useMemo(() => {
     const isMonth = timeframe === 'month';
@@ -340,6 +432,13 @@ export function ReportsOverviewTab({
       },
     };
   }, [timeframe]);
+
+  const chartsLoading = isLoading || (checkInsEnabled && checkInsLoading);
+  const chartsError = isError || (checkInsEnabled && checkInsIsError);
+  const chartsErrorMessage =
+    (error as Error | undefined)?.message ??
+    (checkInsError as Error | undefined)?.message ??
+    'Failed to load trend data';
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -506,12 +605,10 @@ export function ReportsOverviewTab({
         ) : null}
       </div>
 
-      {isLoading ? (
+      {chartsLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />
-      ) : isError ? (
-        <p className="text-center text-destructive py-8">
-          {(error as Error)?.message ?? 'Failed to load trend data'}
-        </p>
+      ) : chartsError ? (
+        <p className="text-center text-destructive py-8">{chartsErrorMessage}</p>
       ) : (
         <div className="flex flex-col gap-6">
           {chartData.length === 0 ? (
@@ -623,9 +720,10 @@ export function ReportsOverviewTab({
             <CardHeader>
               <CardTitle>Visits trend</CardTitle>
               <CardDescription>
-                Achieved visits (physical check-ins) vs prorated target —{' '}
-                {rangeDescription}. Range totals: {totals.visA.toLocaleString()}{' '}
-                achieved / {totals.visT.toLocaleString()} target.
+                Achieved visits (all types, same as Visits tab / check-ins API) vs
+                prorated target — {rangeDescription}. Range totals:{' '}
+                {totals.visA.toLocaleString()} achieved /{' '}
+                {totals.visT.toLocaleString()} target.
               </CardDescription>
             </CardHeader>
             <CardContent className="pl-0 sm:pr-2">
