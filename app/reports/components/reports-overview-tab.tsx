@@ -10,12 +10,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Building2, CalendarIcon, User } from 'lucide-react';
+import { Building2, CalendarIcon, List, User } from 'lucide-react';
+import type { UserListItem } from '@/api/endpoints/user';
 import type { SyncProfile } from '@/api/types';
 import type { VisitListItem } from '@/api/types/visits';
 import {
   useBranches,
   useCheckIns,
+  useLeadsReport,
   useTargetsProgress,
   useUsers,
   getBranchDisplayLabel,
@@ -58,6 +60,14 @@ import {
 } from '@/app/reports/utils/user-has-performance-target';
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
 import { ReportsCurrentProgressSection } from '@/app/reports/components/reports-current-progress-section';
+import { OverviewDailySummaryDialog } from '@/app/reports/components/overview-daily-summary-dialog';
+import {
+  buildOverviewDailySummaryRows,
+  buildSelfOverviewDailySummaryRow,
+  countVisitsByOwnerUid,
+  getOverviewSummaryUtcDay,
+  mapLeadsByUserFromReport,
+} from '@/app/reports/utils/overview-daily-summary';
 
 const selectTriggerClass =
   'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
@@ -269,6 +279,7 @@ export function ReportsOverviewTab({
     React.useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] =
     React.useState<string>('all');
+  const [summaryDialogOpen, setSummaryDialogOpen] = React.useState(false);
 
   const elevated =
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
@@ -440,6 +451,158 @@ export function ReportsOverviewTab({
     (checkInsError as Error | undefined)?.message ??
     'Failed to load trend data';
 
+  const summaryUtcDay = React.useMemo(
+    () => getOverviewSummaryUtcDay(timeframe, selectedDay, monthAnchor),
+    [timeframe, selectedDay, monthAnchor]
+  );
+  const summaryYmd = formatUtcYmd(summaryUtcDay);
+
+  const summaryCheckInsParams = React.useMemo(() => {
+    const startIso = `${summaryYmd}T00:00:00.000Z`;
+    const endIso = `${summaryYmd}T23:59:59.999Z`;
+    return {
+      startDate: startIso,
+      endDate: endIso,
+      ...(reportsMode === 'self' && profile?.uid != null
+        ? { userUid: String(profile.uid) }
+        : elevated && selectedOwnerUid !== 'all'
+          ? { userUid: selectedOwnerUid }
+          : {}),
+      ...(elevated && selectedBranchId !== 'all'
+        ? { branchId: Number(selectedBranchId) }
+        : {}),
+    };
+  }, [
+    summaryYmd,
+    reportsMode,
+    profile?.uid,
+    elevated,
+    selectedOwnerUid,
+    selectedBranchId,
+  ]);
+
+  const summaryCheckInsEnabled =
+    summaryDialogOpen &&
+    Boolean(summaryCheckInsParams.startDate && summaryCheckInsParams.endDate) &&
+    (reportsMode !== 'self' || profile?.uid != null);
+
+  const {
+    data: summaryCheckInsData,
+    isLoading: summaryCheckInsLoading,
+    isError: summaryCheckInsIsError,
+    error: summaryCheckInsError,
+  } = useCheckIns(summaryCheckInsParams, {
+    enabled: summaryCheckInsEnabled,
+  });
+
+  const summaryLeadsParams = React.useMemo(
+    () => ({
+      from: summaryYmd,
+      to: summaryYmd,
+      dateBasis: 'activity' as const,
+      ...(elevated && selectedBranchId !== 'all'
+        ? { branchId: Number(selectedBranchId) }
+        : {}),
+      ...(elevated && selectedOwnerUid !== 'all'
+        ? { ownerId: Number(selectedOwnerUid) }
+        : {}),
+    }),
+    [summaryYmd, elevated, selectedBranchId, selectedOwnerUid]
+  );
+
+  const {
+    data: summaryLeadsData,
+    isLoading: summaryLeadsLoading,
+    isError: summaryLeadsIsError,
+    error: summaryLeadsError,
+  } = useLeadsReport(summaryLeadsParams, {
+    enabled: summaryDialogOpen && Boolean(summaryYmd),
+  });
+
+  const summaryTableUsers = React.useMemo((): UserListItem[] => {
+    if (!elevated) return [];
+    let list = usersList;
+    if (selectedOwnerUid !== 'all') {
+      list = list.filter((u) => String(u.uid) === selectedOwnerUid);
+    }
+    return list;
+  }, [elevated, usersList, selectedOwnerUid]);
+
+  const branchesByUid = React.useMemo(
+    () => new Map(branches.map((b) => [b.uid, b])),
+    [branches]
+  );
+
+  const summaryRows = React.useMemo(() => {
+    const visitsByUid = countVisitsByOwnerUid(
+      summaryCheckInsData?.checkIns ?? []
+    );
+    const leadMap = mapLeadsByUserFromReport(summaryLeadsData?.byUser);
+    if (!elevated && profile) {
+      return [
+        buildSelfOverviewDailySummaryRow(
+          profile,
+          visitsByUid,
+          leadMap,
+          branchesByUid
+        ),
+      ];
+    }
+    return buildOverviewDailySummaryRows(
+      summaryTableUsers,
+      visitsByUid,
+      leadMap,
+      branchesByUid
+    );
+  }, [
+    summaryCheckInsData?.checkIns,
+    summaryLeadsData?.byUser,
+    elevated,
+    profile,
+    summaryTableUsers,
+    branchesByUid,
+  ]);
+
+  const summaryScopeDescription = React.useMemo(() => {
+    if (!elevated) return 'Your activity';
+    const parts: string[] = [];
+    if (selectedBranchId === 'all') {
+      parts.push('All branches');
+    } else {
+      const b = branches.find((x) => String(x.uid) === selectedBranchId);
+      parts.push(b ? `Branch: ${getBranchDisplayLabel(b)}` : 'Branch filter');
+    }
+    if (selectedOwnerUid === 'all') {
+      parts.push('All users');
+    } else {
+      const u =
+        usersList.find((x) => String(x.uid) === selectedOwnerUid) ??
+        reportingUsers.find((x) => String(x.uid) === selectedOwnerUid);
+      parts.push(
+        u
+          ? `User: ${[u.name, u.surname].filter(Boolean).join(' ')}`
+          : 'One user'
+      );
+    }
+    return parts.join(' · ');
+  }, [
+    elevated,
+    selectedBranchId,
+    selectedOwnerUid,
+    branches,
+    reportingUsers,
+    usersList,
+  ]);
+
+  const summaryLoading =
+    summaryDialogOpen && (summaryCheckInsLoading || summaryLeadsLoading);
+  const summaryErrorMessage =
+    summaryDialogOpen && (summaryCheckInsIsError || summaryLeadsIsError)
+      ? (summaryCheckInsError as Error | undefined)?.message ??
+        (summaryLeadsError as Error | undefined)?.message ??
+        'Failed to load summary'
+      : null;
+
   return (
     <div className="flex flex-col gap-6 pb-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -603,7 +766,27 @@ export function ReportsOverviewTab({
             </Select>
           </>
         ) : null}
+
+        <Button
+          type="button"
+          variant="secondary"
+          className={cn(selectTriggerClass, 'h-9 shrink-0')}
+          onClick={() => setSummaryDialogOpen(true)}
+        >
+          <List className="mr-2 size-4 shrink-0" aria-hidden />
+          Summary
+        </Button>
       </div>
+
+      <OverviewDailySummaryDialog
+        open={summaryDialogOpen}
+        onOpenChange={setSummaryDialogOpen}
+        summaryDateYmd={summaryYmd}
+        scopeDescription={summaryScopeDescription}
+        rows={summaryRows}
+        isLoading={summaryLoading}
+        errorMessage={summaryErrorMessage}
+      />
 
       {chartsLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />

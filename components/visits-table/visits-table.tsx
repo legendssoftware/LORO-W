@@ -536,7 +536,9 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
 ];
 
 /** Columns for the nested visit table (all except Sales Person). */
-const VISITS_TABLE_COLUMNS = VISITS_DISPLAY_COLUMNS.filter((col) => col.key !== 'salesPerson');
+export const VISITS_TABLE_COLUMNS = VISITS_DISPLAY_COLUMNS.filter(
+  (col) => col.key !== 'salesPerson'
+);
 
 export interface GroupedByOwner {
   ownerKey: string;
@@ -554,7 +556,7 @@ function getOwnerKey(owner: VisitExportItem['owner']): string {
 }
 
 /** Group check-ins by owner; sort groups by visit count (most first), visits within group by date (newest first). */
-function groupCheckInsByOwner(checkIns: VisitExportItem[]): GroupedByOwner[] {
+export function groupCheckInsByOwner(checkIns: VisitExportItem[]): GroupedByOwner[] {
   const map = new Map<string, VisitExportItem[]>();
   for (const c of checkIns) {
     const key = getOwnerKey(c.owner);

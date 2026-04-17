@@ -77,7 +77,7 @@ import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-sche
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { VisitsSummaryModal } from '@/app/reports/visits-summary-modal';
+import type { VisitsSummaryModalPayload } from '@/app/reports/visits-summary-modal';
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
@@ -144,7 +144,11 @@ function VisitElapsedTimer({ visitStartTime }: { visitStartTime: string }) {
   );
 }
 
-export function VisitsContent() {
+export function VisitsContent({
+  onRequestVisitsSummary,
+}: {
+  onRequestVisitsSummary: (payload: VisitsSummaryModalPayload) => void;
+}) {
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   useSessionSync();
@@ -197,8 +201,6 @@ export function VisitsContent() {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaUrlInput, setMediaUrlInput] = useState('');
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
-  const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
-  const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
   const [clientComboboxOpen, setClientComboboxOpen] = useState(false);
   const orgName = useOrgName();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -365,8 +367,13 @@ export function VisitsContent() {
   };
 
   const handleOpenVisitsSummary = () => {
-    setVisitsSummaryRunAt(new Date());
-    setVisitsSummaryOpen(true);
+    onRequestVisitsSummary({
+      checkIns: filteredCheckIns,
+      startDate,
+      endDate,
+      companyName: orgName ?? 'Organisation',
+      useAllTime,
+    });
   };
 
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1375,16 +1382,6 @@ export function VisitsContent() {
           </div>
         )}
 
-        <VisitsSummaryModal
-          open={visitsSummaryOpen}
-          onOpenChange={setVisitsSummaryOpen}
-          checkIns={filteredCheckIns}
-          startDate={startDate}
-          endDate={endDate}
-          runAt={visitsSummaryRunAt}
-          companyName={orgName ?? 'Organisation'}
-          useAllTime={useAllTime}
-        />
       </section>
     </div>
   );
