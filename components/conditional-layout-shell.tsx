@@ -5,13 +5,8 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AccessGuard } from '@/components/access-guard';
-
-/** Routes that use full document flow (window scroll) instead of the fixed viewport dashboard shell. */
-const FULL_DOCUMENT_ROUTES = ['/', '/sign-in', '/sign-up', '/onboarding', '/forgot-password', '/privacy-policy'];
-
-function isFullDocumentRoute(pathname: string): boolean {
-  return FULL_DOCUMENT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-}
+import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
+import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 
 /**
  * Renders the dashboard shell (sidebar + fixed viewport + overflow-y-auto) only for app routes.
@@ -31,6 +26,7 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
       <AppSidebar />
       <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar">
         <ConditionalAppHeader />
+        <SalesBenchmarksWelcomeDialog />
         <ErrorBoundary>
           <AccessGuard>
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">

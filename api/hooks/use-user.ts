@@ -11,6 +11,7 @@ import {
   restoreUser,
   deleteUserPermanently,
   getUserTarget,
+  getDailyProductivity,
   patchUserTarget,
   getUserPreferences,
   type PatchUserBody,
@@ -20,6 +21,7 @@ import {
 
 const QUERY_KEY_PREFIX = ['user'] as const;
 const TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
+const DAILY_PRODUCTIVITY_KEY_PREFIX = ['user', 'daily-productivity'] as const;
 
 export function useUser(
   ref: string | null,
@@ -141,6 +143,28 @@ export function useUserTarget(ref: string | null, options?: { enabled?: boolean 
       return res;
     },
     enabled: (options?.enabled !== false && !!ref) ?? false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+export function useDailyProductivity(
+  ref: string | null,
+  startDate: string | null,
+  endDate: string | null,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...DAILY_PRODUCTIVITY_KEY_PREFIX, ref, startDate, endDate],
+    queryFn: async () => {
+      if (!ref || !startDate || !endDate) {
+        return { message: '', days: [] };
+      }
+      return getDailyProductivity(client, ref, { startDate, endDate });
+    },
+    enabled:
+      (options?.enabled !== false && !!ref && !!startDate && !!endDate) ?? false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });

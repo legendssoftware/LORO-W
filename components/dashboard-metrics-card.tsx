@@ -14,6 +14,7 @@ import { MapPinIcon } from 'lucide-react';
 import { DashboardTargetsRadial } from '@/components/dashboard-targets-radial';
 import { formatPayrollPeriodLabel } from '@/lib/payroll-period';
 import { isAdminAccessLevel } from '@/lib/access';
+import { userHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
 import { cn } from '@/lib/utils';
 
 /** Current month name (e.g. "February"). */
@@ -50,6 +51,20 @@ export function DashboardMetricsCard({
     enabled: !!userRef && shouldFetchProfileSales,
   });
 
+  const ut = targetQuery.data?.userTarget ?? null;
+  const hasCrmTargets =
+    userHasPerformanceTarget(ut as Record<string, unknown> | null) ||
+    hasSalesTargetForProfileSales(ut);
+  const showCrmVisitsSection =
+    !!userRef && targetQuery.isSuccess && !targetQuery.isError && hasCrmTargets;
+  const showCrmSkeletonBlock =
+    !!userRef &&
+    (targetQuery.isLoading || targetQuery.isPending
+      ? true
+      : targetQuery.isSuccess
+        ? hasCrmTargets
+        : false);
+
   if (isLoading) {
     return (
       <Card>
@@ -66,33 +81,35 @@ export function DashboardMetricsCard({
               </div>
             ))}
           </div>
-          <div className="mt-6 border-t border-gray-200 pt-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Skeleton className="h-5 w-5 rounded-md" />
-              <Skeleton className="h-4 w-48 rounded-md" />
-            </div>
-            <div
-              className={cn(
-                'grid grid-cols-1 gap-4',
-                !adminNoTargetsCrmSkeleton && 'sm:grid-cols-2'
-              )}
-            >
-              <div className="space-y-3 rounded-lg border border-gray-200 p-4">
-                <Skeleton className="h-3 w-32 rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
+          {showCrmSkeletonBlock ? (
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <div className="mb-4 flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded-md" />
+                <Skeleton className="h-4 w-48 rounded-md" />
               </div>
-              {adminNoTargetsCrmSkeleton ? null : (
-                <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
-                  <Skeleton className="h-3 w-24 rounded-md" />
-                  <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
+              <div
+                className={cn(
+                  'grid grid-cols-1 gap-4',
+                  !adminNoTargetsCrmSkeleton && 'sm:grid-cols-2'
+                )}
+              >
+                <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+                  <Skeleton className="h-3 w-32 rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
                 </div>
-              )}
+                {adminNoTargetsCrmSkeleton ? null : (
+                  <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
         </CardContent>
       </Card>
     );
@@ -165,7 +182,7 @@ export function DashboardMetricsCard({
           </div>
         </div>
 
-        {metrics.productivity ? (
+        {metrics.productivity && showCrmVisitsSection ? (
           <div className="mt-6 border-t border-gray-200 pt-6">
             <div className="mb-4 flex items-center gap-2">
               <MapPinIcon className="size-5 text-primary" aria-hidden />

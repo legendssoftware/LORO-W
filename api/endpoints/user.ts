@@ -258,6 +258,39 @@ export async function getUserTarget(
   return data;
 }
 
+/** GET /user/:ref/daily-productivity — matches server DailyProductivityDayRow */
+export interface DailyProductivityDay {
+  date: string;
+  score: number | null;
+  components?: {
+    salesPct?: number;
+    visitsPct?: number;
+    callsPct?: number;
+    leadsPct?: number;
+    invoicesPct?: number;
+  };
+}
+
+export interface GetDailyProductivityResponse {
+  message: string;
+  days: DailyProductivityDay[];
+}
+
+/**
+ * GET /user/:ref/daily-productivity — daily score vs targets (ERP + visits/calls/leads).
+ */
+export async function getDailyProductivity(
+  client: AxiosInstance,
+  ref: string,
+  params: { startDate: string; endDate: string }
+): Promise<GetDailyProductivityResponse> {
+  const { data } = await client.get<GetDailyProductivityResponse>(
+    `/user/${ref}/daily-productivity`,
+    { params: { startDate: params.startDate, endDate: params.endDate } }
+  );
+  return data;
+}
+
 /**
  * PATCH /user/:ref/target - update user targets. Ref can be numeric uid string (e.g. "45").
  */
