@@ -64,7 +64,13 @@ export function SalesBenchmarksWelcomeDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[min(85vh,640px)] gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent
+        showCloseButton={false}
+        className="max-h-[min(85vh,640px)] gap-0 overflow-hidden p-0 sm:max-w-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="bg-violet-50 px-6 pt-8 pb-4 text-center">
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-violet-100">
             <Phone className="size-7 text-violet-600" aria-hidden />
@@ -92,8 +98,13 @@ export function SalesBenchmarksWelcomeDialog() {
         </div>
 
         <DialogFooter className="border-t border-border px-6 py-4 sm:justify-center">
-          <Button type="button" className="w-full sm:w-auto" onClick={() => handleOpenChange(false)}>
-            Got it
+          <Button
+            type="button"
+            variant="success"
+            className="w-full text-center whitespace-normal sm:w-auto"
+            onClick={() => handleOpenChange(false)}
+          >
+            I have read and acknowledged it
           </Button>
         </DialogFooter>
       </DialogContent>
