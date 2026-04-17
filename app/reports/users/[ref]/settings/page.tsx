@@ -59,7 +59,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AccessLevel, UserRole } from '@/api/types';
+import { AccessLevel } from '@/api/types';
 import { cn } from '@/lib/utils';
 
 /** Icons for user status options in the form. */
@@ -69,17 +69,7 @@ const USER_STATUS_ICONS: Record<string, React.ComponentType<{ className?: string
   suspended: PauseCircle,
 };
 
-/** Icons for role options; fallback to User. */
-const ROLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  admin: Shield,
-  manager: UserCheck,
-  team_leader: UserCheck,
-  staff: User,
-  client: User,
-  guest: User,
-};
-
-/** Icons for access level options; fallback to User. */
+/** Icons for access level / role options (same enum list); fallback to User. */
 const ACCESS_LEVEL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   owner: Crown,
   admin: Shield,
@@ -146,20 +136,12 @@ const employmentProfileSchema = z.object({
 const targetFormSchema = z.object({
   targetSalesAmount: z.number().optional().nullable(),
   targetQuotationsAmount: z.number().optional().nullable(),
-  currentSalesAmount: z.number().optional().nullable(),
-  currentQuotationsAmount: z.number().optional().nullable(),
-  currentOrdersAmount: z.number().optional().nullable(),
   targetCurrency: z.string().optional().nullable(),
   targetHoursWorked: z.number().optional().nullable(),
-  currentHoursWorked: z.number().optional().nullable(),
   targetNewClients: z.number().optional().nullable(),
-  currentNewClients: z.number().optional().nullable(),
   targetNewLeads: z.number().optional().nullable(),
-  currentNewLeads: z.number().optional().nullable(),
   targetCheckIns: z.number().optional().nullable(),
-  currentCheckIns: z.number().optional().nullable(),
   targetCalls: z.number().optional().nullable(),
-  currentCalls: z.number().optional().nullable(),
   targetPeriod: z.string().optional().nullable(),
   periodStartDate: z.string().optional().nullable(),
   periodEndDate: z.string().optional().nullable(),
@@ -207,6 +189,27 @@ function formatEnumLabel(value: string): string {
     .split(/[\s_-]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
+}
+
+/** Normalize API date strings (ISO or yyyy-mm-dd) for date inputs. */
+function parseFormDateInput(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (!t) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+    const d = new Date(t);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  if (v instanceof Date) {
+    return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  }
+  try {
+    const d = new Date(v as string | number | Date);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  } catch {
+    return null;
+  }
 }
 
 /** ISO 4217 currency options for target currency dropdown. */
@@ -271,9 +274,9 @@ function normalizePrimaryBranchUid(value: number | null | undefined): number | n
 /** Build userTarget object from target form values (only defined, non-empty). */
 function buildUserTargetBody(values: TargetFormValues): PatchUserTargetBody | undefined {
   const keys: (keyof PatchUserTargetBody)[] = [
-    'targetSalesAmount', 'targetQuotationsAmount', 'currentSalesAmount', 'currentQuotationsAmount', 'currentOrdersAmount',
-    'targetCurrency', 'targetHoursWorked', 'currentHoursWorked', 'targetNewClients', 'currentNewClients',
-    'targetNewLeads', 'currentNewLeads', 'targetCheckIns', 'currentCheckIns', 'targetCalls', 'currentCalls',
+    'targetSalesAmount', 'targetQuotationsAmount',
+    'targetCurrency', 'targetHoursWorked', 'targetNewClients',
+    'targetNewLeads', 'targetCheckIns', 'targetCalls',
     'targetPeriod', 'periodStartDate', 'periodEndDate', 'isRecurring', 'recurringInterval', 'carryForwardUnfulfilled',
     'baseSalary', 'carInstalment', 'carInsurance', 'fuel', 'cellPhoneAllowance', 'carMaintenance', 'cgicCosts', 'totalCost', 'erpSalesRepCode',
   ];
@@ -373,26 +376,14 @@ function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormV
     v === null || v === undefined ? null : typeof v === 'number' && !Number.isNaN(v) ? v : null;
   const str = (v: unknown): string | null =>
     v === null || v === undefined ? null : typeof v === 'string' ? v : null;
-  const dateStr = (v: unknown): string | null => {
-    if (v === null || v === undefined) return null;
-    if (typeof v === 'string') return v.slice(0, 10);
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    try {
-      const d = new Date(v as string | number | Date);
-      return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-    } catch {
-      return null;
-    }
-  };
   const bool = (v: unknown): boolean | null =>
     v === null || v === undefined ? null : typeof v === 'boolean' ? v : null;
   if (!ut) {
     return {
-      targetSalesAmount: null, targetQuotationsAmount: null, currentSalesAmount: null,
-      currentQuotationsAmount: null, currentOrdersAmount: null, targetCurrency: null,
-      targetHoursWorked: null, currentHoursWorked: null, targetNewClients: null, currentNewClients: null,
-      targetNewLeads: null, currentNewLeads: null, targetCheckIns: null, currentCheckIns: null,
-      targetCalls: null, currentCalls: null, targetPeriod: null, periodStartDate: null, periodEndDate: null,
+      targetSalesAmount: null, targetQuotationsAmount: null, targetCurrency: null,
+      targetHoursWorked: null, targetNewClients: null,
+      targetNewLeads: null, targetCheckIns: null, targetCalls: null, targetPeriod: null,
+      periodStartDate: null, periodEndDate: null,
       isRecurring: null, recurringInterval: null, carryForwardUnfulfilled: null,
       baseSalary: null, carInstalment: null, carInsurance: null, fuel: null, cellPhoneAllowance: null,
       carMaintenance: null, cgicCosts: null, totalCost: null, erpSalesRepCode: null,
@@ -401,23 +392,15 @@ function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormV
   return {
     targetSalesAmount: num(ut.targetSalesAmount),
     targetQuotationsAmount: num(ut.targetQuotationsAmount),
-    currentSalesAmount: num(ut.currentSalesAmount),
-    currentQuotationsAmount: num(ut.currentQuotationsAmount),
-    currentOrdersAmount: num(ut.currentOrdersAmount),
     targetCurrency: str(ut.targetCurrency),
     targetHoursWorked: num(ut.targetHoursWorked),
-    currentHoursWorked: num(ut.currentHoursWorked),
     targetNewClients: num(ut.targetNewClients),
-    currentNewClients: num(ut.currentNewClients),
     targetNewLeads: num(ut.targetNewLeads),
-    currentNewLeads: num(ut.currentNewLeads),
     targetCheckIns: num(ut.targetCheckIns),
-    currentCheckIns: num(ut.currentCheckIns),
     targetCalls: num(ut.targetCalls),
-    currentCalls: num(ut.currentCalls),
     targetPeriod: str(ut.targetPeriod),
-    periodStartDate: dateStr(ut.periodStartDate),
-    periodEndDate: dateStr(ut.periodEndDate),
+    periodStartDate: parseFormDateInput(ut.periodStartDate),
+    periodEndDate: parseFormDateInput(ut.periodEndDate),
     isRecurring: bool(ut.isRecurring),
     recurringInterval: (ut.recurringInterval === 'daily' || ut.recurringInterval === 'weekly' || ut.recurringInterval === 'monthly') ? ut.recurringInterval : null,
     carryForwardUnfulfilled: bool(ut.carryForwardUnfulfilled),
@@ -495,11 +478,16 @@ export default function UserSettingsPage() {
       };
       const profile = up.userProfile ?? null;
       const emp = up.userEmployeementProfile ?? null;
+      const empEmail = (emp?.email as string | undefined)?.trim();
+      const empContact = (emp?.contactNumber as string | undefined)?.trim();
+      const primaryEmail = (user.email?.trim() || empEmail || '') as string;
+      const primaryPhone =
+        (user.phone?.trim() || empContact || null) as string | null;
       form.reset({
         name: user.name ?? '',
         surname: user.surname ?? '',
-        email: user.email ?? '',
-        phone: user.phone ?? null,
+        email: primaryEmail,
+        phone: primaryPhone,
         userref: (user as { userref?: string }).userref ?? null,
         hrID: (user as { hrID?: number }).hrID ?? null,
         role: (user.role as string) ?? '',
@@ -516,7 +504,7 @@ export default function UserSettingsPage() {
           hairColor: (profile.hairColor as string) ?? null,
           eyeColor: (profile.eyeColor as string) ?? null,
           gender: (profile.gender as string) ?? null,
-          dateOfBirth: profile.dateOfBirth ? (typeof profile.dateOfBirth === 'string' ? profile.dateOfBirth : new Date(profile.dateOfBirth as Date).toISOString().slice(0, 10)) : null,
+          dateOfBirth: parseFormDateInput(profile.dateOfBirth),
           address: (profile.address as string) ?? null,
           city: (profile.city as string) ?? null,
           country: (profile.country as string) ?? null,
@@ -525,11 +513,11 @@ export default function UserSettingsPage() {
           branchref: (emp.branchref as string) ?? null,
           position: (emp.position as string) ?? null,
           department: (emp.department as string) ?? null,
-          startDate: emp.startDate ? (typeof emp.startDate === 'string' ? emp.startDate : new Date(emp.startDate as Date).toISOString().slice(0, 10)) : null,
-          endDate: emp.endDate ? (typeof emp.endDate === 'string' ? emp.endDate : new Date(emp.endDate as Date).toISOString().slice(0, 10)) : null,
+          startDate: parseFormDateInput(emp.startDate),
+          endDate: parseFormDateInput(emp.endDate),
           isCurrentlyEmployed: (emp.isCurrentlyEmployed as boolean) ?? null,
-          email: (emp.email as string) ?? null,
-          contactNumber: (emp.contactNumber as string) ?? null,
+          email: empEmail || null,
+          contactNumber: empContact || null,
         } : { branchref: null, position: null, department: null, startDate: null, endDate: null, isCurrentlyEmployed: null, email: null, contactNumber: null },
         assignedClientIds: up.assignedClientIds ?? [],
       });
@@ -549,9 +537,9 @@ export default function UserSettingsPage() {
   const onTargetSubmit = (values: TargetFormValues) => {
     const body: PatchUserTargetBody = {};
     const keys: (keyof PatchUserTargetBody)[] = [
-      'targetSalesAmount', 'targetQuotationsAmount', 'currentSalesAmount', 'currentQuotationsAmount', 'currentOrdersAmount',
-      'targetCurrency', 'targetHoursWorked', 'currentHoursWorked', 'targetNewClients', 'currentNewClients',
-      'targetNewLeads', 'currentNewLeads', 'targetCheckIns', 'currentCheckIns', 'targetCalls', 'currentCalls',
+      'targetSalesAmount', 'targetQuotationsAmount',
+      'targetCurrency', 'targetHoursWorked', 'targetNewClients',
+      'targetNewLeads', 'targetCheckIns', 'targetCalls',
       'targetPeriod', 'periodStartDate', 'periodEndDate', 'isRecurring', 'recurringInterval', 'carryForwardUnfulfilled',
       'baseSalary', 'carInstalment', 'carInsurance', 'fuel', 'cellPhoneAllowance', 'carMaintenance', 'cgicCosts', 'totalCost', 'erpSalesRepCode',
     ];
@@ -626,9 +614,6 @@ export default function UserSettingsPage() {
   }
 
   const accessLevels = Object.values(AccessLevel).filter(
-    (v) => typeof v === 'string'
-  ) as string[];
-  const roles = Object.values(UserRole).filter(
     (v) => typeof v === 'string'
   ) as string[];
 
@@ -809,8 +794,8 @@ export default function UserSettingsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {roles.map((role) => {
-                              const RoleIcon = ROLE_ICONS[role] ?? User;
+                            {accessLevels.map((role) => {
+                              const RoleIcon = ACCESS_LEVEL_ICONS[role] ?? User;
                               return (
                                 <SelectItem key={role} value={role}>
                                   <span className="flex items-center gap-2">
@@ -1351,67 +1336,10 @@ export default function UserSettingsPage() {
                       />
                       <FormField
                         control={targetForm.control}
-                        name="currentSalesAmount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current sales (amount)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="any"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
                         name="targetQuotationsAmount"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Target quotations</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="any"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
-                        name="currentQuotationsAmount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current quotations</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="any"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
-                        name="currentOrdersAmount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current orders (amount)</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -1479,36 +1407,10 @@ export default function UserSettingsPage() {
                       />
                       <FormField
                         control={targetForm.control}
-                        name="currentHoursWorked"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current hours</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
                         name="targetNewClients"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Target new clients</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
-                        name="currentNewClients"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current new clients</FormLabel>
                             <FormControl>
                               <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
@@ -1531,19 +1433,6 @@ export default function UserSettingsPage() {
                       />
                       <FormField
                         control={targetForm.control}
-                        name="currentNewLeads"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current new leads</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
                         name="targetCheckIns"
                         render={({ field }) => (
                           <FormItem>
@@ -1557,36 +1446,10 @@ export default function UserSettingsPage() {
                       />
                       <FormField
                         control={targetForm.control}
-                        name="currentCheckIns"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current check-ins</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
                         name="targetCalls"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Target calls</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={targetForm.control}
-                        name="currentCalls"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current calls</FormLabel>
                             <FormControl>
                               <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>

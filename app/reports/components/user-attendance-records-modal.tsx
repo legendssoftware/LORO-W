@@ -2,8 +2,15 @@
 
 import { useMemo, type ReactNode } from 'react';
 import { format, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
-import { Car, Building2, Users } from 'lucide-react';
-import { useMonthlyAttendance, useCheckIns, useLeadsReport, useClaims, useSessionSync } from '@/api/hooks';
+import { AlertCircle, Car, Building2, Users } from 'lucide-react';
+import {
+  useMonthlyAttendance,
+  useCheckIns,
+  useLeadsReport,
+  useClaims,
+  useSessionSync,
+  useDailyProductivity,
+} from '@/api/hooks';
 import type { ReportCardUser } from '@/app/reports/types';
 import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
@@ -15,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Table,
   TableBody,
@@ -60,6 +68,9 @@ interface DayMetrics {
   leadsCount: number;
   claimsCount: number;
 }
+
+const PRODUCTIVITY_COLUMN_HINT =
+  'Target-based score (0–100) from your HR targets and ERP activity. Not the same as Utilization % on the main dashboard.';
 
 export function UserAttendanceRecordsModal({
   user,
@@ -128,10 +139,21 @@ export function UserAttendanceRecordsModal({
     { enabled: open }
   );
 
+  const productivityQuery = useDailyProductivity(
+    user?.ref ?? null,
+    periodStartStr,
+    periodEndStr,
+    { enabled: open && !!user?.ref }
+  );
+
   const isLoading =
     periodFirstMonthQuery.isLoading ||
     (samePeriodMonth ? false : periodSecondMonthQuery.isLoading) ||
-    (open && (checkInsQuery.isLoading || leadsReportQuery.isLoading || claimsQuery.isLoading));
+    (open &&
+      (checkInsQuery.isLoading ||
+        leadsReportQuery.isLoading ||
+        claimsQuery.isLoading ||
+        productivityQuery.isLoading));
 
   const records = useMemo((): DayRecord[] => {
     const attendanceByDate = new Map<
@@ -226,7 +248,7 @@ export function UserAttendanceRecordsModal({
     const checkIns = (checkInsQuery.data?.checkIns ?? []) as VisitListItem[];
     // Visit date = check-in date only (matches attendance record date); do not use check-out date.
     for (const c of checkIns) {
-      const dateKey = c.checkInTime ? new Date(c.checkInTime).toISOString().slice(0, 10) : '';
+      const dateKey = c.checkInTime ? format(new Date(c.checkInTime), 'yyyy-MM-dd') : '';
       if (!dateKey) continue;
       if (!map[dateKey]) map[dateKey] = { ...empty };
       const m = map[dateKey];
@@ -250,7 +272,7 @@ export function UserAttendanceRecordsModal({
     for (const claim of claimsList) {
       const created = claim.createdAt;
       if (!created) continue;
-      const dateKey = new Date(created).toISOString().slice(0, 10);
+      const dateKey = format(new Date(created), 'yyyy-MM-dd');
       if (!map[dateKey]) map[dateKey] = { ...empty };
       map[dateKey].claimsCount += 1;
     }
@@ -261,6 +283,36 @@ export function UserAttendanceRecordsModal({
     leadsReportQuery.data?.byDay,
     claimsQuery.data?.data,
   ]);
+
+  const productivityByDate = useMemo(() => {
+    const map: Record<string, number | null> = {};
+    for (const row of productivityQuery.data?.days ?? []) {
+      map[row.date] = row.score;
+    }
+    return map;
+  }, [productivityQuery.data?.days]);
+
+  const formatProductivityTooltip = (date: string): string | undefined => {
+    if (productivityQuery.isError) {
+      return 'Productivity could not be loaded. Try again later.';
+    }
+    const row = productivityQuery.data?.days?.find((d) => d.date === date);
+    if (row && row.score == null) {
+      return `${PRODUCTIVITY_COLUMN_HINT} No score: day outside your target period, or no applicable targets (sales, visits, calls, leads).`;
+    }
+    const c = row?.components;
+    if (!c || Object.keys(c).length === 0) {
+      return row?.score != null ? PRODUCTIVITY_COLUMN_HINT : undefined;
+    }
+    const parts: string[] = [];
+    if (c.salesPct != null) parts.push(`Sales ${c.salesPct}%`);
+    if (c.invoicesPct != null) parts.push(`Invoices ${c.invoicesPct}%`);
+    if (c.visitsPct != null) parts.push(`Visits ${c.visitsPct}%`);
+    if (c.callsPct != null) parts.push(`Calls ${c.callsPct}%`);
+    if (c.leadsPct != null) parts.push(`Leads ${c.leadsPct}%`);
+    const breakdown = parts.length > 0 ? parts.join(' · ') : '';
+    return [PRODUCTIVITY_COLUMN_HINT, breakdown].filter(Boolean).join(' ');
+  };
 
   const formatTime = (iso?: string | null): string => {
     if (!iso) return '—';
@@ -363,7 +415,10 @@ export function UserAttendanceRecordsModal({
               {user ? `${user.name} – Attendance Records` : 'Attendance Records'}
             </DialogTitle>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
-              Current payroll period (rolling 26th–25th cycle)
+              Current payroll period (rolling 26th–25th cycle).{' '}
+              <span className="block sm:inline sm:before:content-['·_'] sm:before:mx-1">
+                Productivity is a target-based 0–100 score (HR targets + ERP); it is not the Utilization % shown on the dashboard card.
+              </span>
             </p>
           </DialogHeader>
           <Button
@@ -378,6 +433,18 @@ export function UserAttendanceRecordsModal({
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[60vh]">
+          {productivityQuery.isError ? (
+            <Alert variant="destructive" className="mb-3">
+              <AlertCircle aria-hidden />
+              <AlertTitle>Productivity could not be loaded</AlertTitle>
+              <AlertDescription>
+                Daily scores are unavailable. You can still review attendance; try closing and reopening this dialog.
+                {productivityQuery.error instanceof Error
+                  ? ` (${productivityQuery.error.message})`
+                  : ''}
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {isLoading ? (
             <p className="text-sm text-muted-foreground py-8">
               Loading attendance records…
@@ -403,6 +470,9 @@ export function UserAttendanceRecordsModal({
                   <TableHead>Claims</TableHead>
                   <TableHead>Distance</TableHead>
                   <TableHead>Avg visit time</TableHead>
+                  <TableHead title={PRODUCTIVITY_COLUMN_HINT} className="max-w-[9rem]">
+                    Productivity
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -513,6 +583,17 @@ export function UserAttendanceRecordsModal({
                         if (!m || m.visitCount === 0) return '—';
                         const avgMins = Math.round(m.totalVisitMinutes / m.visitCount);
                         return formatMinutesToDuration(avgMins);
+                      })()}
+                    </TableCell>
+                    <TableCell
+                      className="tabular-nums"
+                      title={formatProductivityTooltip(r.date)}
+                    >
+                      {(() => {
+                        if (productivityQuery.isError) return '—';
+                        const s = productivityByDate[r.date];
+                        if (s == null) return '—';
+                        return String(s);
                       })()}
                     </TableCell>
                   </TableRow>
