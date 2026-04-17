@@ -6,6 +6,7 @@ import {
   SignUpButton,
   SignedIn,
   SignedOut,
+  useAuth,
   useClerk,
   useUser,
 } from '@clerk/nextjs';
@@ -17,7 +18,10 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LayoutDashboardIcon, PowerIcon } from '@/lib/icons';
 import { useSessionSync } from '@/api/hooks';
 import { useSignOut } from '@/hooks/use-sign-out';
-import { LORO_WELCOME_SHOWN_SESSION_KEY } from '@/lib/client-session-keys';
+import {
+  LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
+  LORO_WELCOME_SHOWN_SESSION_KEY,
+} from '@/lib/client-session-keys';
 import { useSidebar } from '@/components/ui/sidebar';
 
 /** Human-readable label for access level (e.g. owner → Owner). */
@@ -28,6 +32,7 @@ function roleLabel(accessLevel: string | undefined): string {
 }
 
 export function AppHeader() {
+  const { sessionId } = useAuth();
   const { isLoaded, isSignedIn, user } = useUser();
   const { openUserProfile } = useClerk();
   const { performSignOut } = useSignOut();
@@ -52,6 +57,21 @@ export function AppHeader() {
     )
       return;
 
+    // Sales benchmarks dialog on /dashboard is the welcome for that session; skip toast until dismissed for this Clerk session.
+    if (typeof window !== 'undefined' && isSignedIn) {
+      try {
+        if (!sessionId) {
+          return;
+        }
+        const dismissedFor = sessionStorage.getItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
+        if (dismissedFor !== sessionId) {
+          return;
+        }
+      } catch {
+        // storage unavailable — allow toast below
+      }
+    }
+
     welcomeShown.current = true;
     sessionStorage.setItem(LORO_WELCOME_SHOWN_SESSION_KEY, '1');
     const name =
@@ -60,7 +80,7 @@ export function AppHeader() {
       icon: '✨',
       duration: 4000,
     });
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, user, sessionId]);
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">

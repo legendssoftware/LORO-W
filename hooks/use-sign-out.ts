@@ -3,7 +3,11 @@
 import { useClerk } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSessionSyncQueryKey } from '@/api/hooks';
-import { LORO_WELCOME_SHOWN_SESSION_KEY } from '@/lib/client-session-keys';
+import {
+  LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
+  LORO_SALES_BENCHMARKS_WELCOME_DISMISSED_KEY,
+  LORO_WELCOME_SHOWN_SESSION_KEY,
+} from '@/lib/client-session-keys';
 import { useSessionStore } from '@/store/session-store';
 
 const SIGN_IN_PATH = '/sign-in';
@@ -23,6 +27,8 @@ export function useSignOut() {
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.removeItem(LORO_WELCOME_SHOWN_SESSION_KEY);
+        sessionStorage.removeItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
+        localStorage.removeItem(LORO_SALES_BENCHMARKS_WELCOME_DISMISSED_KEY);
       } catch {
         /* ignore private mode / quota */
       }
