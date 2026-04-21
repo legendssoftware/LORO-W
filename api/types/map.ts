@@ -29,6 +29,9 @@ export interface GeofenceMapDefaults {
 
 /** Influence sphere on the map; kind matches marker types for styling (incl. branch + action markers). */
 export type InfluenceCircleKind =
+  | 'organisation'
+  | 'organization'
+  | 'org'
   | 'client'
   | 'competitor'
   | 'branch'
@@ -55,7 +58,36 @@ export interface InfluenceCircle {
   radiusMeters: number;
 }
 
+export interface MapOrganisationSummary {
+  uid: number;
+  name: string;
+  status: string;
+  logo: string | null;
+  timezone: string;
+}
+
+export interface MapLayers {
+  branches: MapMarkerBase[];
+  competitors: MapMarkerBase[];
+  clients: MapMarkerBase[];
+  activity: {
+    leads: MapMarkerBase[];
+    checkIns: MapMarkerBase[];
+    shiftStarts: MapMarkerBase[];
+    shiftEnds: MapMarkerBase[];
+    breakStarts: MapMarkerBase[];
+    breakEnds: MapMarkerBase[];
+    journals: MapMarkerBase[];
+    tasks: MapMarkerBase[];
+    quotations: MapMarkerBase[];
+    claims: MapMarkerBase[];
+    workers: MapMarkerBase[];
+  };
+}
+
 export interface MapDataResponse {
+  organisation?: MapOrganisationSummary;
+  layers?: MapLayers;
   workers: MapMarkerBase[];
   clients: MapMarkerBase[];
   competitors: MapMarkerBase[];
@@ -73,7 +105,13 @@ export interface MapDataResponse {
   allMarkers: MapMarkerBase[];
   geofenceMapDefaults?: GeofenceMapDefaults;
   influenceCircles?: InfluenceCircle[];
-  mapDateRange?: { start: string; end: string };
+  mapDateRange?: {
+    start: string;
+    end: string;
+    timezone?: string;
+    startCalendarYmd?: string;
+    endCalendarYmd?: string;
+  };
   events: Array<{
     id: string | number;
     type: string;

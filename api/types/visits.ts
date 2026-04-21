@@ -132,6 +132,7 @@ export interface CheckOutResponse {
 
 export interface VisitListItem {
   uid: number;
+  ownerClerkUserId?: string | null;
   checkInTime: string;
   checkOutTime?: string | null;
   duration?: string | null;
@@ -150,6 +151,7 @@ export interface VisitListItem {
   /** Check-in owner; API may include uid, branch, and profile fields used for display and enrichment. */
   owner?: {
     uid?: number;
+    clerkUserId?: string;
     name?: string;
     surname?: string;
     email?: string;

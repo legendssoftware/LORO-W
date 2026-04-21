@@ -21,9 +21,12 @@ export function parseLatLngFromVisitLocation(
 
 function ownerDisplayName(v: VisitExportItem): string {
   const o = v.owner;
-  if (!o) return 'Unknown';
-  const n = [o.name, (o as { surname?: string }).surname].filter(Boolean).join(' ').trim();
-  return n || o.email || `User ${(o as { uid?: number }).uid ?? ''}`;
+  if (!o) {
+    const ownerClerkUserId = (v as { ownerClerkUserId?: string | null }).ownerClerkUserId;
+    return ownerClerkUserId ? `User ${ownerClerkUserId.slice(-6)}` : 'Unknown';
+  }
+  const n = [o.name, o.surname].filter(Boolean).join(' ').trim();
+  return n || o.email || `User ${o.uid ?? ''}`;
 }
 
 /** Prefer structured address; never show raw lat,lng in UI — use a short GPS label when only coordinates exist. */

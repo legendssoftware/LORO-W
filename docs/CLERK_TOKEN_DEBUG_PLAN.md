@@ -17,7 +17,7 @@
 ## Steps to run in Cursor browser and inspect Network tab
 
 1. **Open the app in Cursor’s built-in browser**
-   - Use “Simple Browser” or “Open in Browser” on `http://localhost:3000` (dev server already running from repo root: `cd web && npm run dev`).
+   - Use “Simple Browser” or “Open in Browser” on `http://localhost:3000` (dev server already running from repo root: `cd web && yarn dev`).
 
 2. **Reproduce the failure**
    - Go to `http://localhost:3000/sign-in` and sign in.

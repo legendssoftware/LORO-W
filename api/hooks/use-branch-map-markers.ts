@@ -20,14 +20,20 @@ function branchListKey(branches: BranchListItem[] | undefined): string {
  */
 export function useBranchMapMarkers(
   branches: BranchListItem[] | undefined,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; logoUrl?: string | null }
 ) {
   const list = branches ?? [];
   const enabled = options?.enabled !== false && list.length > 0;
 
   return useQuery({
-    queryKey: ['reports', 'branch-map-markers', branchListKey(branches)],
-    queryFn: (): Promise<MapMarkerBase[]> => buildBranchMarkersFromList(list),
+    queryKey: [
+      'reports',
+      'branch-map-markers',
+      branchListKey(branches),
+      options?.logoUrl ?? '',
+    ],
+    queryFn: (): Promise<MapMarkerBase[]> =>
+      buildBranchMarkersFromList(list, { logoUrl: options?.logoUrl }),
     enabled,
     staleTime: 12 * 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,

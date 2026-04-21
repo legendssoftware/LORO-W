@@ -435,8 +435,8 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
 
   return (
     <div className="space-y-8 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
           <div className="flex items-center gap-0">
             <Popover
               open={dateRangePopoverOpen}
@@ -447,7 +447,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
+                  className="h-9 w-[185px] shrink-0 bg-white border-gray-200 text-foreground justify-center gap-2 sm:w-auto"
                 >
                   <CalendarIcon className="size-4" />
                   {startDate.getTime() === endDate.getTime()
@@ -455,12 +455,9 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                     : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent
-                className="w-auto min-w-[480px] p-0 z-[10001]"
-                align="start"
-              >
+              <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
                 <div className="p-2 flex flex-col gap-3">
-                  <div className="flex flex-row gap-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
                     <div>
                       <p className="text-sm font-medium">Start date</p>
                       <Calendar
@@ -509,7 +506,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                 setSelectedOwnerUid('all');
               }}
             >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+              <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
                 <SelectValue placeholder="All branches" />
               </SelectTrigger>
               <SelectContent className="z-[10001]">
@@ -524,7 +521,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
           ) : null}
 
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+            <SelectTrigger className="h-9 w-[170px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent className="z-[10001]">
@@ -538,7 +535,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
           </Select>
 
           <Select value={selectedSource} onValueChange={setSelectedSource}>
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+            <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
               <SelectValue placeholder="All sources" />
             </SelectTrigger>
             <SelectContent className="z-[10001]">
@@ -553,7 +550,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
 
           {reportsMode === 'org' && elevated ? (
             <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground">
+              <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
                 <SelectValue placeholder="All owners" />
               </SelectTrigger>
               <SelectContent className="z-[10001]">
@@ -580,19 +577,18 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               </SelectContent>
             </Select>
           ) : null}
-        </div>
-
-        <div className="flex flex-nowrap items-center gap-2 min-w-0">
+          <div className="flex w-[150px] shrink-0 min-w-0 flex-nowrap items-center gap-2 sm:w-auto">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 bg-white border-gray-200 text-foreground gap-2 shrink-0"
+            className="h-9 w-full bg-white border-gray-200 text-foreground gap-2 shrink-0 sm:w-auto"
             onClick={() => setSummaryOpen(true)}
           >
             <BarChart3 className="size-4" />
             Summary
           </Button>
+          </div>
         </div>
       </div>
 
@@ -612,7 +608,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
             <h2 className="text-lg font-semibold text-foreground">
               Lead activity
             </h2>
-            <Card className="border-gray-200 bg-white">
+            <Card className="min-w-0 border-gray-200 bg-white">
               <CardHeader>
                 <CardTitle>
                   {useHourlyActivity
@@ -728,7 +724,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               Pipeline and status
             </h2>
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <Card className="border-gray-200 bg-white">
+              <Card className="min-w-0 border-gray-200 bg-white">
                 <CardHeader>
                   <CardTitle>Leads by status</CardTitle>
                   <CardDescription>
@@ -751,7 +747,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                 </CardContent>
               </Card>
 
-              <Card className="border-gray-200 bg-white">
+              <Card className="min-w-0 border-gray-200 bg-white">
                 <CardHeader>
                   <CardTitle>Value by status</CardTitle>
                   <CardDescription>
@@ -813,7 +809,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               </Card>
             </div>
 
-            <Card className="border-gray-200 bg-white">
+            <Card className="min-w-0 border-gray-200 bg-white">
               <CardHeader>
                 <CardTitle>Lead activity by user</CardTitle>
                 <CardDescription>
@@ -995,7 +991,7 @@ function BreakdownPieCard({
   );
 
   return (
-    <Card className="border-gray-200 bg-white">
+    <Card className="min-w-0 border-gray-200 bg-white">
       <CardHeader className="flex flex-row items-start gap-2">
         <Icon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>
@@ -1060,7 +1056,7 @@ function BreakdownBarCard({
   } satisfies ChartConfig;
 
   return (
-    <Card className="border-gray-200 bg-white">
+    <Card className="min-w-0 border-gray-200 bg-white">
       <CardHeader className="flex flex-row items-start gap-2">
         <Icon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>

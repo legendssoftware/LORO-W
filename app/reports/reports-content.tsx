@@ -2,14 +2,12 @@
 
 import { useAuth } from '@clerk/nextjs';
 import {
-  CalendarDays,
   Clock,
   Contact,
   LayoutDashboard,
   Map,
   MapPin,
   Target,
-  TrendingUp,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
@@ -33,19 +31,11 @@ const REPORT_TABS = [
   { value: 'attendance', label: 'Attendance', Icon: Clock },
   { value: 'leads', label: 'Leads', Icon: Contact },
   { value: 'targets', label: 'Targets', Icon: Target },
-  { value: 'planning', label: 'Planning', Icon: CalendarDays },
-  { value: 'sales', label: 'Sales', Icon: TrendingUp },
   { value: 'visualiser', label: 'Visualiser', Icon: Map },
 ] as const;
 
 const tabTriggerClassName =
   'inline-flex items-center gap-2 shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
-
-function ReportsPlaceholderPanel() {
-  return (
-    <p className="text-center text-muted-foreground py-12">Reports coming soon</p>
-  );
-}
 
 function ReportsTabsEqualWidth({
   profile,
@@ -56,6 +46,8 @@ function ReportsTabsEqualWidth({
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
+  const [activeTab, setActiveTab] =
+    useState<(typeof REPORT_TABS)[number]['value']>('overview');
 
   const measureTabWidths = useCallback(() => {
     const el = listRef.current;
@@ -80,11 +72,24 @@ function ReportsTabsEqualWidth({
     return () => ro.disconnect();
   }, [measureTabWidths]);
 
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const activeTabButton = el.querySelector(
+      '[role="tab"][data-state="active"]'
+    ) as HTMLElement | null;
+    activeTabButton?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, [activeTab]);
+
   return (
-    <Tabs defaultValue="overview" className="w-full">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as (typeof REPORT_TABS)[number]['value'])} className="w-full">
       <TabsList
         ref={listRef}
-        className="h-auto w-full flex flex-wrap justify-start gap-4 bg-transparent p-0 sm:gap-6"
+        className="h-auto w-full flex flex-nowrap justify-start gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap bg-transparent p-0 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
       >
         {REPORT_TABS.map((tab) => {
           const { value, label, Icon } = tab;
@@ -119,9 +124,7 @@ function ReportsTabsEqualWidth({
             <ReportsTargetsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'visualiser' ? (
             <ReportsVisualiserTab profile={profile} reportsMode={reportsMode} />
-          ) : (
-            <ReportsPlaceholderPanel />
-          )}
+          ) : null}
         </TabsContent>
       ))}
     </Tabs>
