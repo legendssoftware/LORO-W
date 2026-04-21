@@ -359,9 +359,10 @@ export function ReportsCurrentProgressSection({
           <AlertTriangle className="size-5 text-amber-600" aria-hidden />
           Current Progress
         </h2>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:w-auto">
+          <div className="flex w-max min-w-full flex-nowrap items-center gap-2 sm:flex-wrap">
           {elevated ? (
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Switch
                 id="only-behind-overview"
                 checked={onlyBehind}
@@ -377,7 +378,10 @@ export function ReportsCurrentProgressSection({
             onValueChange={(v) => setShortfallScope(v as ShortfallScope)}
           >
             <SelectTrigger
-              className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
+              className={cn(
+                selectTriggerClass,
+                'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
+              )}
             >
               <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
               <SelectValue placeholder="Period" />
@@ -395,7 +399,7 @@ export function ReportsCurrentProgressSection({
                   type="button"
                   variant="outline"
                   className={cn(
-                    'h-9 w-full justify-start text-left font-normal sm:w-[220px]',
+                    'h-9 w-[190px] shrink-0 justify-start text-left font-normal sm:w-[220px]',
                     selectTriggerClass
                   )}
                 >
@@ -403,7 +407,10 @@ export function ReportsCurrentProgressSection({
                   {formatUtcYmd(selectedProgressDay)}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-[80vw] max-w-sm p-0 sm:w-auto"
+                align="center"
+              >
                 <Calendar
                   mode="single"
                   selected={selectedProgressDay}
@@ -440,12 +447,13 @@ export function ReportsCurrentProgressSection({
           ) : null}
           <Button
             type="button"
-            className="h-9 w-full shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
+            className="h-9 w-[130px] shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
             disabled={!shortfallUsersWithTargets.length}
             onClick={() => downloadShortfallCsv()}
           >
             Export CSV
           </Button>
+          </div>
         </div>
       </div>
 

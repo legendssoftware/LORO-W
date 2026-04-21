@@ -19,10 +19,10 @@ Work from this directory (`web/`) so dependencies and the Next.js dev server res
 4. Install and run the dev server (from `web/`):
    ```bash
    cd web
-   npm install
-   npm run dev
+   yarn install
+   yarn dev
    ```
-   From the monorepo root you can use: `npm install --prefix web && npm run dev --prefix web`.
+   From the monorepo root you can use: `yarn --cwd web install && yarn --cwd web dev`.
 
 ## Routes
 

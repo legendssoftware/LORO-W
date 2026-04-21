@@ -519,6 +519,25 @@ export function ReportsOverviewTab({
     enabled: summaryDialogOpen && Boolean(summaryYmd),
   });
 
+  const summaryProgressParams = React.useMemo(
+    () => ({
+      from: summaryYmd,
+      to: summaryYmd,
+      bucket: 'day' as const,
+      ...(elevated && selectedBranchId !== 'all'
+        ? { branchId: Number(selectedBranchId) }
+        : {}),
+      ...(elevated && selectedOwnerUid !== 'all'
+        ? { userUid: Number(selectedOwnerUid) }
+        : {}),
+    }),
+    [summaryYmd, elevated, selectedBranchId, selectedOwnerUid]
+  );
+
+  const { data: summaryProgressData } = useTargetsProgress(summaryProgressParams, {
+    enabled: summaryDialogOpen && Boolean(summaryYmd),
+  });
+
   const summaryTableUsers = React.useMemo((): UserListItem[] => {
     if (!elevated) return [];
     let list = usersList;
@@ -533,6 +552,12 @@ export function ReportsOverviewTab({
     [branches]
   );
 
+  const summaryTargetsByUid = React.useMemo(
+    () =>
+      new Map((summaryProgressData?.users ?? []).map((u) => [u.uid, u] as const)),
+    [summaryProgressData?.users]
+  );
+
   const summaryRows = React.useMemo(() => {
     const visitsByUid = countVisitsByOwnerUid(
       summaryCheckInsData?.checkIns ?? []
@@ -544,7 +569,8 @@ export function ReportsOverviewTab({
           profile,
           visitsByUid,
           leadMap,
-          branchesByUid
+          branchesByUid,
+          summaryTargetsByUid
         ),
       ];
     }
@@ -552,15 +578,18 @@ export function ReportsOverviewTab({
       summaryTableUsers,
       visitsByUid,
       leadMap,
-      branchesByUid
+      branchesByUid,
+      summaryTargetsByUid
     );
   }, [
     summaryCheckInsData?.checkIns,
     summaryLeadsData?.byUser,
+    summaryProgressData?.users,
     elevated,
     profile,
     summaryTableUsers,
     branchesByUid,
+    summaryTargetsByUid,
   ]);
 
   const summaryScopeDescription = React.useMemo(() => {
@@ -605,22 +634,26 @@ export function ReportsOverviewTab({
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-          <Select
-            value={timeframe}
-            onValueChange={(v) => setTimeframe(v as OverviewTimeframe)}
-          >
-            <SelectTrigger
-              className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
+      <div className="flex flex-col gap-3">
+        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
+            <Select
+              value={timeframe}
+              onValueChange={(v) => setTimeframe(v as OverviewTimeframe)}
             >
-              <SelectValue placeholder="Timeframe" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Single day (hourly)</SelectItem>
-              <SelectItem value="month">Month (daily)</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                className={cn(
+                  selectTriggerClass,
+                  'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
+                )}
+              >
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Single day (hourly)</SelectItem>
+                <SelectItem value="month">Month (daily)</SelectItem>
+              </SelectContent>
+            </Select>
 
           {timeframe === 'day' ? (
             <Popover open={dayPopoverOpen} onOpenChange={setDayPopoverOpen}>
@@ -629,7 +662,7 @@ export function ReportsOverviewTab({
                   type="button"
                   variant="outline"
                   className={cn(
-                    'h-9 w-full justify-start text-left font-normal sm:w-[220px]',
+                    'h-9 w-[190px] shrink-0 justify-start text-left font-normal sm:w-[220px]',
                     selectTriggerClass
                   )}
                 >
@@ -637,7 +670,10 @@ export function ReportsOverviewTab({
                   {formatUtcYmd(selectedDay)}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-[80vw] max-w-sm p-0 sm:w-auto"
+                align="center"
+              >
                 <Calendar
                   mode="single"
                   selected={selectedDay}
@@ -678,7 +714,7 @@ export function ReportsOverviewTab({
                   type="button"
                   variant="outline"
                   className={cn(
-                    'h-9 w-full justify-start text-left font-normal sm:w-[240px]',
+                    'h-9 w-[210px] shrink-0 justify-start text-left font-normal sm:w-[240px]',
                     selectTriggerClass
                   )}
                 >
@@ -686,7 +722,10 @@ export function ReportsOverviewTab({
                   {format(monthAnchor, 'MMM yyyy')}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-[80vw] max-w-sm p-0 sm:w-auto"
+                align="center"
+              >
                 <Calendar
                   mode="single"
                   selected={monthAnchor}
@@ -721,61 +760,70 @@ export function ReportsOverviewTab({
               </PopoverContent>
             </Popover>
           )}
+
+            {elevated ? (
+              <>
+                <Select
+                  value={selectedBranchId}
+                  onValueChange={(v) => {
+                    setSelectedBranchId(v);
+                    setSelectedOwnerUid('all');
+                  }}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      selectTriggerClass,
+                      'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
+                    )}
+                  >
+                    <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                    <SelectValue placeholder="Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.uid} value={String(b.uid)}>
+                        {getBranchDisplayLabel(b)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
+                  <SelectTrigger
+                    className={cn(
+                      selectTriggerClass,
+                      'w-[190px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
+                    )}
+                  >
+                    <User className="size-4 shrink-0 text-muted-foreground" />
+                    <SelectValue placeholder="User" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users</SelectItem>
+                    {reportingUsers.map((u) => (
+                      <SelectItem key={u.uid} value={String(u.uid)}>
+                        {[u.name, u.surname].filter(Boolean).join(' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : null}
+
+            <div className="flex w-[150px] shrink-0 sm:w-auto">
+              <Button
+                type="button"
+                variant="secondary"
+                className={cn(selectTriggerClass, 'h-9 w-full shrink-0 sm:w-auto')}
+                onClick={() => setSummaryDialogOpen(true)}
+              >
+                <List className="mr-2 size-4 shrink-0" aria-hidden />
+                Summary
+              </Button>
+            </div>
+          </div>
         </div>
-
-        {elevated ? (
-          <>
-            <Select
-              value={selectedBranchId}
-              onValueChange={(v) => {
-                setSelectedBranchId(v);
-                setSelectedOwnerUid('all');
-              }}
-            >
-              <SelectTrigger
-                className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
-              >
-                <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder="Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All branches</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.uid} value={String(b.uid)}>
-                    {getBranchDisplayLabel(b)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
-              <SelectTrigger
-                className={cn(selectTriggerClass, 'sm:min-w-[220px] sm:w-[220px]')}
-              >
-                <User className="size-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder="User" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All users</SelectItem>
-                {reportingUsers.map((u) => (
-                  <SelectItem key={u.uid} value={String(u.uid)}>
-                    {[u.name, u.surname].filter(Boolean).join(' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="secondary"
-          className={cn(selectTriggerClass, 'h-9 shrink-0')}
-          onClick={() => setSummaryDialogOpen(true)}
-        >
-          <List className="mr-2 size-4 shrink-0" aria-hidden />
-          Summary
-        </Button>
       </div>
 
       <OverviewDailySummaryDialog

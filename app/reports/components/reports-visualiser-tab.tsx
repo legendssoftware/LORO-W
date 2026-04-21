@@ -35,6 +35,13 @@ const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
   { ssr: false }
 );
+const ALLOWED_INFLUENCE_KINDS = new Set([
+  'organisation',
+  'organization',
+  'org',
+  'client',
+  'competitor',
+]);
 
 export interface ReportsVisualiserTabProps {
   profile: SyncProfile | null | undefined;
@@ -148,7 +155,7 @@ export function ReportsVisualiserTab({
     [checkIns, searchQuery, selectedRegion, selectedBusinessType]
   );
 
-  /** Map report: today-only (or allTime), decoupled from visits toolbar date range; skip reverse-geocode for speed */
+  /** Map report: org-local today on server when dates omitted; allTime for historical. Skip reverse-geocode for speed. */
   const mapReportParams = useMemo((): GetMapReportParams => {
     const base: GetMapReportParams = { resolveMarkerAddresses: false };
     const uidStr =
@@ -161,26 +168,92 @@ export function ReportsVisualiserTab({
     }
     if (useAllTime) {
       base.allTime = true;
-    } else {
-      const now = new Date();
-      base.startDate = startOfDay(now).toISOString();
-      base.endDate = endOfDay(now).toISOString();
     }
     return base;
   }, [useAllTime, selectedUserUid, reportsMode, profile]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
+  const orgLogoUrl = mapReport.data?.organisation?.logo ?? undefined;
+  const branchMarkersWithLogo = useMemo(
+    () =>
+      (branchMarkersQuery.data ?? []).map((marker) => ({
+        ...marker,
+        logoUrl: (marker.logoUrl as string | undefined) ?? orgLogoUrl,
+      })),
+    [branchMarkersQuery.data, orgLogoUrl]
+  );
   const influenceCircles = mapReport.data?.influenceCircles ?? [];
+  const filteredInfluenceCircles = useMemo(
+    () =>
+      influenceCircles.filter((circle) =>
+        ALLOWED_INFLUENCE_KINDS.has(
+          String(circle.kind ?? circle.markerType ?? '').toLowerCase()
+        )
+      ),
+    [influenceCircles]
+  );
+
+  const usersByClerkUserId = useMemo(() => {
+    const out = new Map<string, (typeof usersList)[number]>();
+    for (const user of usersList) {
+      const clerkUserId =
+        typeof user.clerkUserId === 'string' ? user.clerkUserId.trim() : '';
+      if (!clerkUserId) continue;
+      out.set(clerkUserId, user);
+    }
+    return out;
+  }, [usersList]);
+
+  const checkInsWithResolvedOwner = useMemo(
+    () =>
+      filteredCheckIns.map((visit) => {
+        const ownerClerkUserId =
+          typeof visit.ownerClerkUserId === 'string'
+            ? visit.ownerClerkUserId.trim()
+            : '';
+        if (!ownerClerkUserId) return visit;
+
+        const user = usersByClerkUserId.get(ownerClerkUserId);
+        if (!user) return visit;
+
+        const existingOwner = visit.owner ?? {};
+        const ownerName = existingOwner.name?.trim() || user.name?.trim();
+        const ownerSurname = existingOwner.surname?.trim() || user.surname?.trim();
+        const ownerEmail = existingOwner.email?.trim() || user.email?.trim();
+        const ownerHasIdentity = ownerName || ownerSurname || ownerEmail;
+        if (!ownerHasIdentity) return visit;
+
+        return {
+          ...visit,
+          owner: {
+            ...existingOwner,
+            uid: existingOwner.uid ?? user.uid,
+            clerkUserId: existingOwner.clerkUserId ?? ownerClerkUserId,
+            name: ownerName || undefined,
+            surname: ownerSurname || undefined,
+            email: ownerEmail || undefined,
+            photoURL: existingOwner.photoURL ?? (user.photoURL ?? undefined),
+            avatar: existingOwner.avatar ?? (user.avatar ?? undefined),
+          },
+        };
+      }),
+    [filteredCheckIns, usersByClerkUserId]
+  );
 
   const mergedMapMarkers = useMemo(() => {
     const fromApi = mapReport.data?.allMarkers ?? [];
     const withoutReplaced = fromApi.filter(
       (m) => m.markerType !== 'check-in-visit' && m.markerType !== 'branch'
     );
-    const fromCheckIns = visitExportItemsToMapMarkers(filteredCheckIns);
-    const fromBranches = branchMarkersQuery.data ?? [];
+    const fromCheckIns = visitExportItemsToMapMarkers(checkInsWithResolvedOwner);
+    const fromBranches = branchMarkersWithLogo;
     return [...withoutReplaced, ...fromCheckIns, ...fromBranches];
-  }, [mapReport.data?.allMarkers, filteredCheckIns, branchMarkersQuery.data]);
+  }, [
+    mapReport.data?.allMarkers,
+    orgLogoUrl,
+    checkInsWithResolvedOwner,
+    branchMarkersWithLogo,
+  ]);
 
   const handleOpenVisitsSummary = () => {
     setVisitsSummaryRunAt(new Date());
@@ -215,7 +288,7 @@ export function ReportsVisualiserTab({
         ) : null}
         <ReportsVisualiserMap
           allMarkers={mergedMapMarkers}
-          influenceCircles={influenceCircles}
+          influenceCircles={filteredInfluenceCircles}
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
           className="flex-1 min-h-0"
         />

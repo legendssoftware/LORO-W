@@ -114,7 +114,10 @@ import {
   Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { ActivityActorLookupUser } from '@/lib/lead-activity-display';
+import {
+  type ActivityActorLookupUser,
+  isLeadActivityLoroRow,
+} from '@/lib/lead-activity-display';
 import { LeadHistoryEntry } from './lead-history-entry';
 
 function getOptionLabel(
@@ -246,15 +249,15 @@ export function LeadDetailDialog({
 
   const leadAuditLogEntries = useMemo(() => {
     const d = leadDetailQuery.data?.lead;
-    if (d?.activityAuditFull && d.activityAuditFull.length > 0) {
-      return d.activityAuditFull;
-    }
-    if (d?.activity && d.activity.length > 0) return d.activity;
-    const l = lead;
-    if (l?.activityAuditFull && l.activityAuditFull.length > 0) {
-      return l.activityAuditFull;
-    }
-    return l?.activity ?? [];
+    const raw =
+      d?.activityAuditFull && d.activityAuditFull.length > 0
+        ? d.activityAuditFull
+        : d?.activity && d.activity.length > 0
+          ? d.activity
+          : lead?.activityAuditFull && lead.activityAuditFull.length > 0
+            ? lead.activityAuditFull
+            : lead?.activity ?? [];
+    return raw.filter((e) => !isLeadActivityLoroRow(e));
   }, [leadDetailQuery.data?.lead, lead]);
 
   const loadingAudit = leadDetailQuery.isLoading && leadAuditLogEntries.length === 0;

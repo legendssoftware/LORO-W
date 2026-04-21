@@ -256,62 +256,64 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              className={cn(
-                'h-9 w-full justify-start text-left font-normal sm:w-[260px]',
-                selectTriggerClass
-              )}
-            >
-              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-              {format(rangeStart, 'MMM d, yyyy')} –{' '}
-              {format(rangeEnd, 'MMM d, yyyy')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              numberOfMonths={2}
-              selected={{ from: rangeStart, to: rangeEnd }}
-              onSelect={(r) => {
-                if (r?.from) {
-                  setRange({
-                    start: startOfDay(r.from),
-                    end: startOfDay(r.to ?? r.from),
-                  });
-                }
-              }}
-            />
-            <div className="flex flex-wrap justify-end gap-2 border-t p-2">
+      <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const today = startOfDay(new Date());
-                  setRange({ start: today, end: today });
+                variant="outline"
+                className={cn(
+                  'h-9 w-[220px] shrink-0 justify-start text-left font-normal sm:w-[260px]',
+                  selectTriggerClass
+                )}
+              >
+                <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+                {format(rangeStart, 'MMM d, yyyy')} –{' '}
+                {format(rangeEnd, 'MMM d, yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[80vw] max-w-[34rem] p-0" align="center">
+              <Calendar
+                mode="range"
+                numberOfMonths={1}
+                className="sm:[&_.rdp-months]:flex sm:[&_.rdp-months]:gap-4"
+                selected={{ from: rangeStart, to: rangeEnd }}
+                onSelect={(r) => {
+                  if (r?.from) {
+                    setRange({
+                      start: startOfDay(r.from),
+                      end: startOfDay(r.to ?? r.from),
+                    });
+                  }
                 }}
-              >
-                Today
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPopoverOpen(false)}
-              >
-                Done
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+              />
+              <div className="flex flex-wrap justify-end gap-2 border-t p-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const today = startOfDay(new Date());
+                    setRange({ start: today, end: today });
+                  }}
+                >
+                  Today
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPopoverOpen(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-        {elevated ? (
-          <>
+          {elevated ? (
+            <>
             <Select
               value={selectedBranchId}
               onValueChange={(v) => {
@@ -320,7 +322,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
               }}
             >
               <SelectTrigger
-                className={cn(selectTriggerClass, 'sm:min-w-[200px] sm:w-[200px]')}
+                className={cn(
+                  selectTriggerClass,
+                  'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
+                )}
               >
                 <Building2 className="size-4 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="Branch" />
@@ -337,7 +342,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
             <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
               <SelectTrigger
-                className={cn(selectTriggerClass, 'sm:min-w-[220px] sm:w-[220px]')}
+                className={cn(
+                  selectTriggerClass,
+                  'w-[190px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
+                )}
               >
                 <User className="size-4 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="User" />
@@ -351,8 +359,9 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 ))}
               </SelectContent>
             </Select>
-          </>
-        ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
 
       {isLoading ? (
@@ -364,7 +373,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       ) : (
         <>
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="border border-gray-200 bg-white shadow-sm lg:col-span-2">
+            <Card className="min-w-0 border border-gray-200 bg-white shadow-sm lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="size-5" aria-hidden />
@@ -380,7 +389,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                     No days in this range.
                   </p>
                 ) : (
-                  <ChartContainer config={chartConfig} className="h-[340px] w-full">
+                  <ChartContainer
+                    config={chartConfig}
+                    className="h-[340px] w-full min-w-0"
+                  >
                     <BarChart accessibilityLayer data={chartSeriesData}>
                       <CartesianGrid vertical={false} />
                       <XAxis
@@ -428,7 +440,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
               </CardFooter>
             </Card>
 
-            <Card className="border border-gray-200 bg-white shadow-sm">
+            <Card className="min-w-0 border border-gray-200 bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Summary</CardTitle>
                 <CardDescription>{summarySubtitle}</CardDescription>
@@ -481,7 +493,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border border-gray-200 bg-white shadow-sm">
+            <Card className="min-w-0 border border-gray-200 bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Check-ins by contact type</CardTitle>
                 <CardDescription>

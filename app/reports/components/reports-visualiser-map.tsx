@@ -21,6 +21,36 @@ const customMarkerStyles = `
     border: none !important;
     background: transparent !important;
   }
+
+  .reports-viz-popup .leaflet-popup-content-wrapper {
+    border-radius: 18px;
+  }
+
+  .reports-viz-popup .leaflet-popup-content {
+    margin: 0;
+  }
+
+  .reports-viz-popup .leaflet-popup-close-button {
+    top: 10px !important;
+    right: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 9999px;
+    border: 2px solid #f43f5e;
+    background: #ffe4e6;
+    color: #f43f5e !important;
+    font-size: 26px !important;
+    font-weight: 700;
+    line-height: 26px !important;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .reports-viz-popup .leaflet-popup-close-button:hover {
+    background: #ffe4e6;
+    color: #f43f5e !important;
+    opacity: 0.95;
+  }
 `;
 
 const DEFAULT_CENTER: [number, number] = [-26.2041, 28.0473];

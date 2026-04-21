@@ -2,6 +2,7 @@ import type { UserListItem } from '@/api/endpoints/user';
 import type { SyncProfile } from '@/api/types/auth';
 import type { BranchListItem } from '@/api/types/branch';
 import { getBranchDisplayLabel } from '@/api/types/branch';
+import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import type { VisitListItem } from '@/api/types/visits';
 
 export type OverviewTimeframe = 'day' | 'month';
@@ -89,7 +90,9 @@ export interface OverviewDailySummaryRow {
   branchLabel: string;
   contacts: string;
   visits: number;
+  visitsTarget: number;
   leads: number;
+  leadsTarget: number;
 }
 
 function branchLabelForUser(
@@ -131,7 +134,8 @@ export function buildOverviewDailySummaryRows(
   users: UserListItem[],
   visitsByUid: Map<number, number>,
   leadByDisplayName: Map<string, number>,
-  branchesByUid: Map<number, BranchListItem>
+  branchesByUid: Map<number, BranchListItem>,
+  targetsByUid: Map<number, TargetsProgressUserSummary>
 ): OverviewDailySummaryRow[] {
   const sorted = [...users].sort(compareUserSort);
   return sorted.map((u) => {
@@ -146,7 +150,9 @@ export function buildOverviewDailySummaryRows(
       branchLabel: branchLabelForUser(u, branchesByUid),
       contacts: contactsLine(u),
       visits: visitsByUid.get(u.uid) ?? 0,
+      visitsTarget: targetsByUid.get(u.uid)?.cumulativeTargetVisitsEnd ?? 0,
       leads,
+      leadsTarget: targetsByUid.get(u.uid)?.cumulativeTargetLeadsEnd ?? 0,
     };
   });
 }
@@ -155,7 +161,8 @@ export function buildSelfOverviewDailySummaryRow(
   profile: SyncProfile,
   visitsByUid: Map<number, number>,
   leadByDisplayName: Map<string, number>,
-  branchesByUid: Map<number, BranchListItem>
+  branchesByUid: Map<number, BranchListItem>,
+  targetsByUid: Map<number, TargetsProgressUserSummary>
 ): OverviewDailySummaryRow {
   const fullName = normalizeOwnerDisplayLabel(
     profile.name ?? '',
@@ -186,6 +193,8 @@ export function buildSelfOverviewDailySummaryRow(
     branchLabel,
     contacts: contacts || '—',
     visits: visitsByUid.get(profile.uid) ?? 0,
+    visitsTarget: targetsByUid.get(profile.uid)?.cumulativeTargetVisitsEnd ?? 0,
     leads,
+    leadsTarget: targetsByUid.get(profile.uid)?.cumulativeTargetLeadsEnd ?? 0,
   };
 }

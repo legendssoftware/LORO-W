@@ -92,6 +92,8 @@ export {
 export { useLeaves } from './use-leaves';
 export { useClaims } from './use-claims';
 export { useProfileSales } from './use-profile-sales';
+export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
+export { useShopQuotations } from './use-shop-quotations';
 export {
   useInteractionsByLead,
   useCreateInteractionMutation,

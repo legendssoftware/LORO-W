@@ -38,7 +38,7 @@ export function VisitsSummaryDialog({
 }: VisitsSummaryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden sm:max-w-[95vw] lg:max-w-[90vw] p-6 gap-4">
+      <DialogContent className="max-h-[85vh] max-w-[calc(100%-1.5rem)] flex flex-col gap-4 overflow-hidden p-6 sm:max-w-[95vw] lg:max-w-[90vw]">
         <DialogHeader className="shrink-0">
           <DialogTitle>Visits summary</DialogTitle>
           <DialogDescription>

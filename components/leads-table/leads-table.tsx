@@ -10,7 +10,7 @@ import {
   startOfDay,
 } from 'date-fns';
 import { ChevronRight, Users } from 'lucide-react';
-import type { LeadListItem } from '@/api/types/leads';
+import type { LeadActivityLogItem, LeadListItem } from '@/api/types/leads';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -36,6 +36,7 @@ import {
 } from '@/lib/lead-form-utils';
 import {
   formatListLastActivitySummaryLine,
+  isLeadActivityLoroRow,
   leadActivityActionPresentation,
 } from '@/lib/lead-activity-display';
 
@@ -136,12 +137,18 @@ export interface LeadActivityActorLookup {
   byClerkId: ReadonlyMap<string, LeadActivityActorProfile>;
 }
 
+function firstNonLoroActivityEntry(lead: LeadListItem): LeadActivityLogItem | undefined {
+  const rows = lead.activity;
+  if (!Array.isArray(rows)) return undefined;
+  return rows.find((e) => !isLeadActivityLoroRow(e));
+}
+
 function resolveActivityActor(
   lead: LeadListItem,
   lookup?: LeadActivityActorLookup
 ): LeadActivityActorProfile | undefined {
   if (!lookup) return undefined;
-  const entry = lead.activity?.[0];
+  const entry = firstNonLoroActivityEntry(lead);
   if (!entry) return undefined;
   if (entry.userId != null) {
     const byUid = lookup.byUid.get(entry.userId);
@@ -152,9 +159,13 @@ function resolveActivityActor(
   return undefined;
 }
 
-/** Same “touch” date as the Activity column: last activity timestamp, else creation. */
+/** Same “touch” date as the Activity column: newest human activity, else API headline, else creation. */
 export function effectiveLeadTouchDate(lead: LeadListItem): Date | null {
-  return parseLeadDate(lead.lastActivityAt) ?? parseLeadDate(lead.createdAt);
+  return (
+    parseLeadDate(firstNonLoroActivityEntry(lead)?.at) ??
+    parseLeadDate(lead.lastActivityAt) ??
+    parseLeadDate(lead.createdAt)
+  );
 }
 
 function leadTouchRecency(touch: Date | null): {
@@ -185,7 +196,11 @@ function lastEditedCell(
   lead: LeadListItem,
   activityActorLookup?: LeadActivityActorLookup
 ): ReactNode {
-  const activityDate = parseLeadDate(lead.lastActivityAt);
+  const userEntry = firstNonLoroActivityEntry(lead);
+  const legacyLoroHeadline = lead.lastActivityIsLoro === true;
+  const activityDate = legacyLoroHeadline
+    ? null
+    : parseLeadDate(userEntry?.at) ?? parseLeadDate(lead.lastActivityAt);
   const createdDate = parseLeadDate(lead.createdAt);
   const displayDate = activityDate ?? createdDate;
   if (!displayDate) return '—';
@@ -193,19 +208,25 @@ function lastEditedCell(
   const usingCreationFallback = activityDate == null && createdDate != null;
   const relative = formatDistanceToNow(displayDate, { addSuffix: true });
   const editedToday = isToday(displayDate);
-  const summaryTrimmed = lead.lastActivitySummary?.trim();
+  const summaryTrimmed =
+    (!legacyLoroHeadline ? userEntry?.summary?.trim() : undefined) ??
+    (!legacyLoroHeadline ? lead.lastActivitySummary?.trim() : undefined);
   const summaryRaw =
     summaryTrimmed || (usingCreationFallback ? 'Lead created' : undefined);
   const summary =
     usingCreationFallback && !summaryTrimmed
-      ? 'LORO created this lead'
+      ? 'Lead created'
       : formatListLastActivitySummaryLine(lead, summaryRaw);
 
   const actorResolved = resolveActivityActor(lead, activityActorLookup);
+  const actionKey =
+    !legacyLoroHeadline && userEntry?.action
+      ? userEntry.action
+      : !legacyLoroHeadline && lead.lastActivityAction != null && lead.lastActivityAction !== ''
+        ? lead.lastActivityAction
+        : '';
   const actionBadge =
-    lead.lastActivityAction != null && lead.lastActivityAction !== ''
-      ? leadActivityActionPresentation(lead.lastActivityAction)
-      : null;
+    actionKey !== '' ? leadActivityActionPresentation(actionKey) : null;
   const actor =
     lead.lastActivityIsLoro !== true && actorResolved ? actorResolved : undefined;
 

@@ -3,7 +3,7 @@
  * Aligned with server leads controller and LeadsService.
  */
 
-/** One row in `Lead.activity` / `activityAuditFull` (server `LeadActivityLogEntry`). */
+/** One row in `Lead.activity` / `activityAuditFull` (server `LeadActivityLogEntry`); API omits `system`/LORO rows. */
 export interface LeadActivityLogItem {
   at: string;
   action: string;
@@ -42,18 +42,18 @@ export interface LeadListItem {
   attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
-  /** ISO timestamp of the newest activity log entry (user or system). */
+  /** ISO timestamp of the newest user-attributed activity log entry. */
   lastActivityAt?: string;
-  /** Summary for the newest activity log entry. */
+  /** Summary for the newest user-attributed activity log entry. */
   lastActivitySummary?: string;
-  /** True when the newest entry is system automation or has no Clerk actor (show as LORO in UI). */
+  /** Legacy: server API sets this to false when shaping payloads (automation is omitted, not flagged). */
   lastActivityIsLoro?: boolean;
-  /** `action` from the newest activity log entry (e.g. created, updated, system). */
+  /** `action` from the newest user-attributed activity log entry. */
   lastActivityAction?: string;
-  /** Newest-first log: Clerk-user entries only in list/some responses (system rows omitted; use lastActivity* + lastActivityIsLoro for headline). */
+  /** Newest-first log: Clerk-user entries only (system/LORO rows omitted). */
   activity?: LeadActivityLogItem[];
   /**
-   * GET lead detail only: full newest-first audit log including `system` rows (for timelines).
+   * GET lead detail only: same user-only newest-first list as `activity` (automation omitted).
    */
   activityAuditFull?: LeadActivityLogItem[] | null;
   owner?: {

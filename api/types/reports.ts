@@ -72,6 +72,7 @@ export interface CheckInContactAddress {
 /** Single check-in item with all fields needed for 12-column export and visit detail dialog. */
 export interface VisitExportItem {
   uid: number;
+  ownerClerkUserId?: string | null;
   checkInTime: string;
   checkOutTime?: string | null;
   duration?: string | null;
@@ -103,6 +104,8 @@ export interface VisitExportItem {
   contactMade?: boolean | null;
   media?: string[] | null;
   owner?: {
+    uid?: number;
+    clerkUserId?: string;
     name?: string;
     surname?: string;
     email?: string;

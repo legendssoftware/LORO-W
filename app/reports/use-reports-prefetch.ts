@@ -156,14 +156,10 @@ export function useReportsPrefetch(options: {
       const mapParams =
         reportsMode === 'self' && profile?.uid != null
           ? {
-              startDate: startIso,
-              endDate: endIso,
               resolveMarkerAddresses: false as const,
               userId: profile.uid,
             }
           : {
-              startDate: startIso,
-              endDate: endIso,
               resolveMarkerAddresses: false as const,
             };
 
