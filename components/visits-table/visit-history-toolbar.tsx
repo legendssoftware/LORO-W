@@ -129,15 +129,15 @@ export function VisitHistoryToolbar({
   return (
     <>
       {heading}
-      <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 mb-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           <div className="flex items-center gap-0">
             <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2"
+                  className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground justify-center gap-2 sm:w-auto"
                 >
                   <CalendarIcon className="size-4" />
                   {useAllTime
@@ -147,7 +147,7 @@ export function VisitHistoryToolbar({
                       : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
+              <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
                 <div className="p-2 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <Button
@@ -160,7 +160,7 @@ export function VisitHistoryToolbar({
                     </Button>
                     <span className="text-xs text-muted-foreground">or pick a date range below</span>
                   </div>
-                  <div className="flex flex-row gap-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
                     <div>
                       <p className="text-sm font-medium">Start date</p>
                       <Calendar
@@ -220,7 +220,7 @@ export function VisitHistoryToolbar({
             value={selectedRegion || 'all'}
             onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
           >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+            <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
               <MapPinIcon className="size-4 shrink-0" />
               <SelectValue placeholder="All regions" />
             </SelectTrigger>
@@ -240,7 +240,7 @@ export function VisitHistoryToolbar({
             value={selectedBusinessType || 'all'}
             onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
           >
-            <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+            <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
               <BriefcaseIcon className="size-4 shrink-0" />
               <SelectValue placeholder="All business types" />
             </SelectTrigger>
@@ -265,7 +265,7 @@ export function VisitHistoryToolbar({
               value={selectedUserUid || 'all'}
               onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
             >
-              <SelectTrigger className="h-9 min-w-[140px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
+              <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
                 <UsersIcon className="size-4 shrink-0" />
                 <SelectValue placeholder="All users" />
               </SelectTrigger>
@@ -293,8 +293,8 @@ export function VisitHistoryToolbar({
             </Select>
           ) : null}
         </div>
-        <div className="flex flex-nowrap items-center gap-2">
-          <div className="relative w-56 min-w-0 shrink sm:w-64">
+        <div className="flex w-full flex-nowrap items-center gap-2 sm:w-auto">
+          <div className="relative min-w-0 shrink basis-full sm:w-64 sm:basis-auto">
             <Input
               placeholder="Search visits…"
               value={searchQuery}

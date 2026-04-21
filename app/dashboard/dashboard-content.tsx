@@ -25,6 +25,7 @@ import { AttendanceStreakCalendar } from '@/components/attendance-streak-calenda
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/app/reports/types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
+import { buildClockInNotes } from '@/lib/clock-in-options';
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
@@ -158,7 +159,8 @@ export function DashboardContent() {
     };
   }, [isTokenReady, checkedIn, apiClient]);
 
-  const handleClockInWithNote = async (checkInNotes: string) => {
+  const handleClockInWithNote = async (modeLabel: string, additionalNote?: string) => {
+    const combined = buildClockInNotes(modeLabel, additionalNote);
     const position = await getPosition();
     const noLocationSuffix =
       position === null ? ' (browser location not granted)' : '';
@@ -167,7 +169,7 @@ export function DashboardContent() {
         status: 'present',
         checkIn: new Date().toISOString(),
         checkInNotes:
-          position !== null ? checkInNotes : `${checkInNotes}${noLocationSuffix}`,
+          position !== null ? combined : `${combined}${noLocationSuffix}`,
         ...(position !== null && {
           checkInLatitude: position.lat,
           checkInLongitude: position.lng,

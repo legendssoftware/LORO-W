@@ -31,7 +31,7 @@ function isMapDataResponse(value: unknown): value is MapDataResponse {
 /**
  * GET /reports/map - map data for visualization (Leaflet-ready).
  * Auth: Bearer token; org defaults to user's org. Optional branchId/userId filter.
- * If startDate/endDate are omitted and allTime is false, the server uses **today** only.
+ * If startDate/endDate are omitted and allTime is false, the server uses **today in the organisation timezone**.
  * Normalizes response: backend returns payload directly; accept that or a wrapped { data }.
  */
 export async function getMapReport(

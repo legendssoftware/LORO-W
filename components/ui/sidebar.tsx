@@ -173,7 +173,9 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Navigation menu.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col items-center text-center">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     );

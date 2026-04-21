@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import type { OverviewDailySummaryRow } from '@/app/reports/utils/overview-daily-summary';
+import { cn } from '@/lib/utils';
 
 export interface OverviewDailySummaryDialogProps {
   open: boolean;
@@ -76,7 +77,14 @@ export function OverviewDailySummaryDialog({
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <TableRow key={r.uid}>
+                  <TableRow
+                    key={r.uid}
+                    className={cn(
+                      r.visits === 0 && r.leads === 0
+                        ? 'bg-red-50/70 dark:bg-red-950/25'
+                        : 'bg-green-50/70 dark:bg-green-950/20'
+                    )}
+                  >
                     <TableCell className="align-top">
                       <div className="font-medium">{r.fullName}</div>
                       <div className="text-muted-foreground text-sm">{r.branchLabel}</div>
@@ -85,9 +93,18 @@ export function OverviewDailySummaryDialog({
                       </div>
                     </TableCell>
                     <TableCell className="align-top text-right font-mono tabular-nums text-sm">
-                      <span>{r.visits}</span>
-                      <span className="text-muted-foreground"> / </span>
-                      <span>{r.leads}</span>
+                      <div>
+                        <span className="text-muted-foreground">Visits </span>
+                        <span>{r.visits}</span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span>{r.visitsTarget}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Leads </span>
+                        <span>{r.leads}</span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span>{r.leadsTarget}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

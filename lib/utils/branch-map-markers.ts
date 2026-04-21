@@ -52,8 +52,10 @@ async function geocodeAddressLine(
  * Build branch markers from org branch list (GET /branch). Geocodes sequentially.
  */
 export async function buildBranchMarkersFromList(
-  branches: BranchListItem[]
+  branches: BranchListItem[],
+  options?: { logoUrl?: string | null }
 ): Promise<MapMarkerBase[]> {
+  const logoUrl = options?.logoUrl ?? undefined;
   const out: MapMarkerBase[] = [];
   let first = true;
   for (const b of branches) {
@@ -72,6 +74,7 @@ export async function buildBranchMarkersFromList(
       markerType: 'branch',
       address: line,
       branchUid: b.uid,
+      logoUrl,
     });
   }
   return out;

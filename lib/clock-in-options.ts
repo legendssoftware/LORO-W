@@ -28,12 +28,39 @@ export function labelsForOptionKeys(keys: ClockInOptionKey[]): ClockInOptionLabe
   return keys.map((k) => OPTION_KEY_TO_LABEL[k]);
 }
 
-/** Exact match to app clock-in labels; free-text bulk notes do not resolve to a key. */
+/** Max length for optional user text appended after the mode label (client + server aligned). */
+export const CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH = 2000;
+
+/**
+ * Persists mode label alone, or mode label + optional freeform note (second block after blank line).
+ * First line must stay an exact {@link OPTION_KEY_TO_LABEL} value for {@link optionKeyFromCheckInNotes}.
+ */
+export function buildClockInNotes(
+  modeLabel: string,
+  additionalNote?: string | null
+): string {
+  const extra = additionalNote?.trim();
+  if (!extra) return modeLabel;
+  const clipped = extra.slice(0, CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH);
+  return `${modeLabel}\n\n${clipped}`;
+}
+
+function firstLineOfNotes(notes: string): string {
+  const line = notes.split(/\r?\n/, 1)[0]?.trim() ?? '';
+  return line;
+}
+
+/**
+ * Resolves clock-in mode key from stored `checkInNotes`: exact match, or first line when a user note follows.
+ */
 export function optionKeyFromCheckInNotes(notes: string | null | undefined): ClockInOptionKey | null {
   const t = notes?.trim();
   if (!t) return null;
-  for (const key of Object.keys(OPTION_KEY_TO_LABEL) as ClockInOptionKey[]) {
-    if (OPTION_KEY_TO_LABEL[key] === t) return key;
+  const candidates = [t, firstLineOfNotes(t)];
+  for (const candidate of candidates) {
+    for (const key of Object.keys(OPTION_KEY_TO_LABEL) as ClockInOptionKey[]) {
+      if (OPTION_KEY_TO_LABEL[key] === candidate) return key;
+    }
   }
   return null;
 }

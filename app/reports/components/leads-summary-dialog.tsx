@@ -42,7 +42,7 @@ export function LeadsSummaryDialog({
 }: LeadsSummaryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="max-h-[85vh] max-w-[calc(100%-1.5rem)] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Leads summary</DialogTitle>
           <DialogDescription>
