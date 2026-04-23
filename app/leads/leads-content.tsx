@@ -212,7 +212,10 @@ export function LeadsContent() {
           onRetry={refetchLeads}
         />
       ) : null}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div
+        className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0"
+        data-tour="leads-toolbar"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-0">
             <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
@@ -527,18 +530,20 @@ export function LeadsContent() {
           ) : null}
         </div>
       </div>
-      <LeadsTable
-        leads={assignedOnlyLeads}
-        unassignedLeads={unassignedLeads}
-        unassignedTotal={unassignedTotal}
-        isLoading={listLoading}
-        emptyMessage="No leads match your filters."
-        activityActorLookup={activityActorLookup}
-        onLeadClick={(lead) => {
-          setSelectedLead(lead);
-          setLeadDialogOpen(true);
-        }}
-      />
+      <div data-tour="leads-table">
+        <LeadsTable
+          leads={assignedOnlyLeads}
+          unassignedLeads={unassignedLeads}
+          unassignedTotal={unassignedTotal}
+          isLoading={listLoading}
+          emptyMessage="No leads match your filters."
+          activityActorLookup={activityActorLookup}
+          onLeadClick={(lead) => {
+            setSelectedLead(lead);
+            setLeadDialogOpen(true);
+          }}
+        />
+      </div>
       {(leadsQuery.hasNextPage || (showUnassignedGroup && unassignedQuery.hasNextPage)) && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {leadsQuery.hasNextPage ? (

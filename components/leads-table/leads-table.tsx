@@ -443,6 +443,7 @@ export function LeadsTable({
                       index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
                       isExpanded && 'bg-muted/30'
                     )}
+                    {...(index === 0 ? { 'data-tour': 'leads-first-group-row' } : {})}
                   >
                     <span className="flex items-start gap-2 whitespace-normal min-w-0 flex-1">
                       {group.isUnassignedGroup ? (
@@ -516,7 +517,7 @@ export function LeadsTable({
                         </TableRow>
                       </TableHeader>
                       <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
-                        {group.leads.map((lead) => {
+                        {group.leads.map((lead, leadIndex) => {
                           const touch = effectiveLeadTouchDate(lead);
                           const {
                             isTodayTouch,
@@ -526,6 +527,11 @@ export function LeadsTable({
                           return (
                           <TableRow
                             key={lead.uid}
+                            {...(index === 0 &&
+                            leadIndex === 0 &&
+                            group.leads.length > 0
+                              ? { 'data-tour': 'leads-first-lead-row' }
+                              : {})}
                             className={cn(
                               'border-b-0',
                               isTodayTouch && '!bg-emerald-50/50',

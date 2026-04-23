@@ -7,74 +7,59 @@ import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
   getTodayIsoDate,
-  readDashboardAttendanceTourState,
-  writeDashboardAttendanceTourState,
-} from '@/lib/dashboard-attendance-tour-storage';
+  readVisitsTourState,
+  writeVisitsTourState,
+} from '@/lib/visits-tour-storage';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
 const TOUR_INTRO_DESCRIPTION =
-  'This is your Home dashboard: your day-to-day command centre for work time. Here you can start and end your shift, see your hours (today, this week, this month, and payroll period), and review attendance with the calendar, month selector, and logs. The next steps walk you through each part.';
+  'This is the Visits page: start or end a field visit, log how it went, and review your history in one place. The next steps walk through the status card, filters, and your visit list or map.';
 
 const TOUR_STEPS: DriveStep[] = [
   {
     popover: {
-      title: 'Welcome to your dashboard',
+      title: 'Welcome to Visits',
       description: TOUR_INTRO_DESCRIPTION,
     },
   },
   {
-    element: '[data-tour="attendance-button"]',
+    element: '[data-tour="visits-page-header"]',
     popover: {
-      title: 'Attendance Actions',
-      description: 'Use this button area to start your shift, take breaks, and end your shift.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="total-hours-worked-section"]',
-    popover: {
-      title: 'Total Hours Worked',
-      description: 'Track your hours for today, this week, this month, and payroll period at a glance.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="attendance-section"]',
-    popover: {
-      title: 'Attendance Section',
-      description: 'Review your monthly attendance card, legend, and quick actions in one place.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="attendance-month-selector"]',
-    popover: {
-      title: 'Change month',
+      title: 'Visits overview',
       description:
-        'Use this menu to pick a recent month and view your attendance for past months (up to the last three months).',
+        'The heading reminds you that this page is for live visit actions and for looking back at what you have already done.',
       side: 'bottom',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="attendance-logs-button"]',
+    element: '[data-tour="visits-visit-card"]',
     popover: {
-      title: 'View Logs',
-      description: 'Open your attendance logs for detailed daily records.',
+      title: 'Start or end a visit',
+      description:
+        'When you are free, use Start visit and pick how you are connecting (in person, phone, and so on). While a visit is running, the timer shows here; use End visit to close it and capture notes and outcomes.',
       side: 'bottom',
       align: 'center',
     },
   },
   {
-    element: '[data-tour="monthly-attendance-list"]',
+    element: '[data-tour="visits-toolbar"]',
     popover: {
-      title: 'Monthly Attendance List',
-      description: 'This monthly view shows attended, missed, and future days.',
+      title: 'Filter and explore history',
+      description:
+        'By default, your range runs from the start of this month through today. Change the dates, region, type of business, teammate, or search text whenever you need another slice of history. Open the visits summary for a grid report, and use Visualiser to switch the main area to a map.',
+      side: 'bottom',
+      align: 'center',
+    },
+  },
+  {
+    element: '[data-tour="visits-history-content"]',
+    popover: {
+      title: 'Your visit list or map',
+      description:
+        'In table view, use rows to open and update visit details. In map view, see where visits happened. Toggle between them from the bar above when you need a different view.',
       side: 'top',
       align: 'center',
     },
@@ -94,7 +79,7 @@ function areTourTargetsReady(): boolean {
   });
 }
 
-export function DashboardAttendanceTour() {
+export function VisitsTour() {
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const driverRef = useRef<Driver | null>(null);
@@ -102,7 +87,7 @@ export function DashboardAttendanceTour() {
   const wasCompletedRef = useRef(false);
 
   const shouldRun = useMemo(
-    () => Boolean(isLoaded && isSignedIn && userId && pathname === '/dashboard'),
+    () => Boolean(isLoaded && isSignedIn && userId && pathname === '/visits'),
     [isLoaded, isSignedIn, userId, pathname]
   );
 
@@ -118,7 +103,7 @@ export function DashboardAttendanceTour() {
     hasAttemptedStartRef.current = true;
 
     const today = getTodayIsoDate();
-    const stored = readDashboardAttendanceTourState(userId);
+    const stored = readVisitsTourState(userId);
     const currentState = stored ?? {
       date: today,
       resumeIndex: 0,
@@ -150,7 +135,7 @@ export function DashboardAttendanceTour() {
         TOUR_STEPS.length - 1
       );
 
-      writeDashboardAttendanceTourState(userId, {
+      writeVisitsTourState(userId, {
         date: today,
         resumeIndex: boundedStartIndex,
         completedToday: false,
@@ -167,7 +152,7 @@ export function DashboardAttendanceTour() {
         steps: TOUR_STEPS,
         onHighlighted: (_element, _step, { driver: activeDriver }) => {
           const activeIndex = activeDriver.getActiveIndex() ?? 0;
-          writeDashboardAttendanceTourState(userId, {
+          writeVisitsTourState(userId, {
             date: getTodayIsoDate(),
             resumeIndex: activeIndex,
             completedToday: false,
@@ -192,7 +177,7 @@ export function DashboardAttendanceTour() {
           const didComplete = wasCompletedRef.current;
           wasCompletedRef.current = false;
 
-          writeDashboardAttendanceTourState(userId, {
+          writeVisitsTourState(userId, {
             date: getTodayIsoDate(),
             resumeIndex: didComplete ? 0 : activeIndex,
             completedToday: didComplete,

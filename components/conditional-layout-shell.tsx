@@ -7,6 +7,8 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { AccessGuard } from '@/components/access-guard';
 import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
 import { DashboardAttendanceTour } from '@/components/dashboard-attendance-tour';
+import { LeadsTour } from '@/components/leads-tour';
+import { VisitsTour } from '@/components/visits-tour';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 
 /**
@@ -29,6 +31,8 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
         <ConditionalAppHeader />
         <SalesBenchmarksWelcomeDialog />
         <DashboardAttendanceTour />
+        <LeadsTour />
+        <VisitsTour />
         <ErrorBoundary>
           <AccessGuard>
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
