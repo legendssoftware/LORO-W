@@ -89,7 +89,10 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
   };
 
   return (
-    <div className="rounded border border-gray-200 bg-card p-4">
+    <div
+      className="rounded border border-gray-200 bg-card p-4"
+      data-tour="attendance-section"
+    >
       {isLoading ? (
         <>
           <div className="mb-4 flex flex-col gap-3">
@@ -132,6 +135,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
                   'min-w-0 md:w-[140px] md:flex-none md:shrink-0',
                   headerTrailing != null ? 'flex-1 basis-0' : 'flex-1'
                 )}
+                data-tour="attendance-month-selector"
               >
                 <Select
                   value={valueKey}
@@ -168,7 +172,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
               <p className="text-sm text-muted-foreground">No attendance data for this month.</p>
             </div>
           ) : (
-            <div className="mx-auto max-w-full lg:max-w-[50%]">
+            <div className="mx-auto max-w-full lg:max-w-[50%]" data-tour="monthly-attendance-list">
               <div className="grid grid-cols-7 gap-1 text-center">
                 {DAY_LABELS.map((label) => (
                   <div

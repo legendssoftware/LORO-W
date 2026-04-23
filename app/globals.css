@@ -91,6 +91,46 @@ body {
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Driver.js tour popovers — match app sans (see @theme --font-sans) */
+.loro-driver-tour,
+.loro-driver-tour * {
+  font-family: var(--font-sans, var(--font-urbanist)), ui-sans-serif, system-ui, sans-serif;
+}
+
+.loro-driver-tour .driver-popover-title {
+  color: #000;
+}
+
+.loro-driver-tour .driver-popover-description,
+.loro-driver-tour .driver-popover-description p {
+  color: #000;
+}
+
+.loro-driver-tour .driver-popover-description p {
+  margin: 0 0 0.5rem;
+}
+
+.loro-driver-tour .loro-driver-tour__faq {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.loro-driver-tour .loro-driver-tour__faq li {
+  margin-top: 0.25rem;
+}
+
+.loro-driver-tour .driver-popover-footer,
+.loro-driver-tour .driver-popover-progress-text {
+  color: #000;
+}
+
+.loro-driver-tour .driver-popover-next-btn,
+.loro-driver-tour .driver-popover-prev-btn,
+.loro-driver-tour .driver-popover-close-btn {
+  font-family: inherit;
+}
+
 .font-serif {
   font-family: var(--font-serif);
 }
