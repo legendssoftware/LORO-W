@@ -20,7 +20,6 @@ import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import Vapi from '@vapi-ai/web';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { PageTransition } from '@/components/animations/page-transition';
 import { MotionSection } from '@/components/animations/motion-section';
 import { StaggerContainer } from '@/components/animations/stagger-container';
@@ -286,7 +285,7 @@ export function LandingPage() {
           </FadeIn>
 
         <main className="flex-1">
-          {/* Hero — headline, email CTA, social proof, overlapping phones */}
+          {/* Hero — headline, social proof, app CTAs, overlapping phones */}
           <MotionSection className="relative min-h-screen flex flex-col justify-center py-12 md:py-20 lg:py-28 md:min-h-0" duration={0.8}>
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.12),transparent)]" aria-hidden />
             <div className="container relative mx-auto px-4 md:px-6 flex-1 flex flex-col justify-center">
@@ -304,16 +303,6 @@ export function LandingPage() {
                     </p>
                   </StaggerItem>
                   <StaggerItem className="flex flex-col items-center gap-3 w-full max-w-md">
-                    <div className="flex w-full gap-0 rounded-xl overflow-hidden bg-white/5 backdrop-blur-sm">
-                      <Input
-                        type="email"
-                        placeholder="enter your email"
-                        className="flex-1 rounded-none border-0 bg-transparent text-white placeholder:italic placeholder:text-white focus-visible:ring-0 focus-visible:border-0"
-                      />
-                      <Button className="font-body rounded-none shrink-0 bg-transparent text-white hover:bg-purple-600 hover:text-white border-0">
-                        Get Started
-                      </Button>
-                    </div>
                     <p className="font-body text-xs text-zinc-400">
                       Join LORO Community with 90+ members
                     </p>
@@ -329,7 +318,7 @@ export function LandingPage() {
                     </div>
                   </StaggerItem>
                 </StaggerContainer>
-                <div className="flex justify-center mt-3">
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
                   <Button
                     asChild
                     className="font-body rounded-lg bg-purple-600 text-white hover:bg-purple-700 border-0"
@@ -342,6 +331,13 @@ export function LandingPage() {
                     >
                       Try Our Android App
                     </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    className="font-body rounded-lg bg-purple-600 text-white hover:bg-purple-700 border-0"
+                    size="lg"
+                  >
+                    <Link href="/sign-in">My account</Link>
                   </Button>
                 </div>
                 <div className="relative mt-4 flex items-end justify-center" style={{ minHeight: 'clamp(338px, 52vw, 494px)' }}>

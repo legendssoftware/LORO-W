@@ -549,7 +549,7 @@ export function VisitsContent({
 
   return (
     <div className="container mx-auto  px-2 py-8 sm:px-6 flex flex-col gap-6 w-full">
-      <div>
+      <div data-tour="visits-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Visits</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Start or end a visit and view your visit history.
@@ -557,7 +557,7 @@ export function VisitsContent({
       </div>
 
       {/* Start or End visit: prominent status block (green when ready, red when on visit) */}
-      <div className="flex w-full flex-col items-center gap-4">
+      <div className="flex w-full flex-col items-center gap-4" data-tour="visits-visit-card">
         {checkedIn && visitStartTime && (
           <div className="flex w-full max-w-md flex-col items-center gap-1">
             <VisitElapsedTimer visitStartTime={visitStartTime} />
@@ -1360,28 +1360,31 @@ export function VisitsContent({
 
       {/* Visit history: date range, region, business type, user, search, export */}
       <section>
-        <VisitHistoryToolbar
-          uniqueRegions={uniqueRegions}
-          uniqueBusinessTypes={uniqueBusinessTypes}
-          businessTypeLabelMap={businessTypeLabelMap}
-          businessTypeIconMap={businessTypeIconMap}
-          usersList={usersList}
-          visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
-          onOpenVisitsSummary={handleOpenVisitsSummary}
-        />
-        {viewMode === 'table' ? (
-          <VisitsTable
-            checkIns={filteredCheckIns}
-            isLoading={checkInsQuery.isLoading}
-            emptyMessage={checkIns.length === 0 ? 'No visits yet. Start a visit to see it here.' : 'No visits match your search.'}
-            onVisitUpdated={() => checkInsQuery.refetch()}
+        <div data-tour="visits-toolbar">
+          <VisitHistoryToolbar
+            uniqueRegions={uniqueRegions}
+            uniqueBusinessTypes={uniqueBusinessTypes}
+            businessTypeLabelMap={businessTypeLabelMap}
+            businessTypeIconMap={businessTypeIconMap}
+            usersList={usersList}
+            visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
+            onOpenVisitsSummary={handleOpenVisitsSummary}
           />
-        ) : (
-          <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col">
-            <VisitsMap visits={filteredCheckIns} className="flex-1 min-h-0" />
-          </div>
-        )}
-
+        </div>
+        <div data-tour="visits-history-content">
+          {viewMode === 'table' ? (
+            <VisitsTable
+              checkIns={filteredCheckIns}
+              isLoading={checkInsQuery.isLoading}
+              emptyMessage={checkIns.length === 0 ? 'No visits yet. Start a visit to see it here.' : 'No visits match your search.'}
+              onVisitUpdated={() => checkInsQuery.refetch()}
+            />
+          ) : (
+            <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col">
+              <VisitsMap visits={filteredCheckIns} className="flex-1 min-h-0" />
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

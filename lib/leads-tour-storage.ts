@@ -1,29 +1,27 @@
 'use client';
 
-export interface DashboardAttendanceTourState {
+export interface LeadsTourState {
   date: string;
   resumeIndex: number;
   completedToday: boolean;
 }
 
-const DASHBOARD_ATTENDANCE_TOUR_KEY_PREFIX = 'loro_dashboard_attendance_tour_v2';
+const LEADS_TOUR_KEY_PREFIX = 'loro_leads_tour_v2';
 
-function buildDashboardAttendanceTourKey(userId: string): string {
-  return `${DASHBOARD_ATTENDANCE_TOUR_KEY_PREFIX}:${userId}`;
+function buildLeadsTourKey(userId: string): string {
+  return `${LEADS_TOUR_KEY_PREFIX}:${userId}`;
 }
 
 export function getTodayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function readDashboardAttendanceTourState(
-  userId: string
-): DashboardAttendanceTourState | null {
+export function readLeadsTourState(userId: string): LeadsTourState | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(buildDashboardAttendanceTourKey(userId));
+    const raw = localStorage.getItem(buildLeadsTourKey(userId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<DashboardAttendanceTourState>;
+    const parsed = JSON.parse(raw) as Partial<LeadsTourState>;
     if (
       typeof parsed.date !== 'string' ||
       typeof parsed.resumeIndex !== 'number' ||
@@ -41,13 +39,10 @@ export function readDashboardAttendanceTourState(
   }
 }
 
-export function writeDashboardAttendanceTourState(
-  userId: string,
-  state: DashboardAttendanceTourState
-): void {
+export function writeLeadsTourState(userId: string, state: LeadsTourState): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(buildDashboardAttendanceTourKey(userId), JSON.stringify(state));
+    localStorage.setItem(buildLeadsTourKey(userId), JSON.stringify(state));
   } catch {
     // ignore storage quota/private mode
   }

@@ -663,6 +663,7 @@ export function LeadDetailDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          data-tour="lead-detail-dialog"
           showCloseButton={false}
           className={cn(
             DETAIL_DIALOG_CONTENT_CLASS,
