@@ -67,7 +67,7 @@ export function DashboardMetricsCard({
 
   if (isLoading) {
     return (
-      <Card>
+      <Card data-tour="total-hours-worked-section">
         <CardContent className="px-4 pt-6 sm:px-6">
           <div className="mb-4 flex items-center gap-2">
             <Skeleton className="h-5 w-5 rounded-md" />
@@ -149,7 +149,7 @@ export function DashboardMetricsCard({
     !hasSalesTargetForProfileSales(targetQuery.data?.userTarget ?? null);
 
   return (
-    <Card>
+    <Card data-tour="total-hours-worked-section">
       <CardContent className="px-4 pt-6 sm:px-6">
         <div className="mb-4 flex items-center gap-2">
           <TimerIcon className="size-5 text-primary" aria-hidden />

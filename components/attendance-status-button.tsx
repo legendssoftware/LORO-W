@@ -239,7 +239,10 @@ export function AttendanceStatusButton({
   );
 
   return (
-    <div className="flex w-full flex-col items-center justify-center gap-4 px-2">
+    <div
+      className="flex w-full flex-col items-center justify-center gap-4 px-2"
+      data-tour="attendance-button"
+    >
       {showShiftTimer && (
         <div className="flex w-full max-w-md flex-col items-center gap-1">
           <span className="text-4xl font-semibold tabular-nums text-foreground">
