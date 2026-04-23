@@ -10,12 +10,20 @@ import {
   readDashboardAttendanceTourState,
   writeDashboardAttendanceTourState,
 } from '@/lib/dashboard-attendance-tour-storage';
+import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_FAQ_DESCRIPTION = `<p>If something looks off, try the following.</p><ul class="loro-driver-tour__faq"><li>Refresh this page to load the latest data.</li><li>Sign out and sign back in if the dashboard feels stuck or out of date.</li><li>Check your network connection if requests keep failing.</li></ul>`;
+const TOUR_INTRO_DESCRIPTION =
+  'This is your Home dashboard: your day-to-day command centre for work time. Here you can start and end your shift, see your hours (today, this week, this month, and payroll period), and review attendance with the calendar, month selector, and logs. The next steps walk you through each part.';
 
 const TOUR_STEPS: DriveStep[] = [
+  {
+    popover: {
+      title: 'Welcome to your dashboard',
+      description: TOUR_INTRO_DESCRIPTION,
+    },
+  },
   {
     element: '[data-tour="attendance-button"]',
     popover: {

@@ -1,0 +1,1 @@
+export const TOUR_FAQ_DESCRIPTION = `<p>If something looks off, try the following.</p><ul class="loro-driver-tour__faq"><li>Refresh this page to load the latest data.</li><li>Sign out and sign back in if the dashboard feels stuck or out of date.</li><li>Check your network connection if requests keep failing.</li></ul>`;

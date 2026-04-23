@@ -11,7 +11,10 @@ export function LeadsActions() {
   return (
     <>
       <div className="flex w-full flex-col items-center gap-4">
-        <div className="w-full rounded-xl border-2 p-4 sm:p-6 border-green-600 bg-green-600/10">
+        <div
+          className="w-full rounded-xl border-2 p-4 sm:p-6 border-green-600 bg-green-600/10"
+          data-tour="leads-create-banner"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-base font-medium text-foreground sm:text-lg">
               View and manage your sales leads.
