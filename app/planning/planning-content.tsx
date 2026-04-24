@@ -102,7 +102,10 @@ export function PlanningContent() {
   return (
     <section>
       <h2 className="mb-4 text-lg font-medium text-foreground">Task history</h2>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div
+        className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0"
+        data-tour="planning-toolbar"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-0">
             <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
@@ -282,12 +285,14 @@ export function PlanningContent() {
           </div>
         </div>
       </div>
-      <PlanningTable
-        tasks={filteredTasks}
-        isLoading={tasksQuery.isLoading}
-        emptyMessage={tasks.length === 0 ? 'No tasks match your filters.' : 'No tasks match your search.'}
-        onTaskUpdated={() => tasksQuery.refetch()}
-      />
+      <div data-tour="planning-task-table">
+        <PlanningTable
+          tasks={filteredTasks}
+          isLoading={tasksQuery.isLoading}
+          emptyMessage={tasks.length === 0 ? 'No tasks match your filters.' : 'No tasks match your search.'}
+          onTaskUpdated={() => tasksQuery.refetch()}
+        />
+      </div>
     </section>
   );
 }
