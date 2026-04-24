@@ -228,6 +228,12 @@ function addressPostalCode(addr: BranchListItem['address']): string {
   return typeof raw === 'string' ? raw : '';
 }
 
+/** Lowercase/trim for display (avoids all-caps legacy data; does not change postal shape). */
+function formatAddressForDisplay(s: string | null | undefined): string {
+  if (s == null) return '';
+  return s.trim().toLowerCase();
+}
+
 function branchListItemToForm(b: BranchListItem) {
   return {
     name: b.name ?? '',
@@ -238,12 +244,30 @@ function branchListItemToForm(b: BranchListItem) {
     website: b.website ?? '',
     status: (b.status as string) ?? 'active',
     country: b.country ?? 'SA',
-    street: b.address?.street ?? '',
-    suburb: b.address?.suburb ?? '',
-    city: b.address?.city ?? '',
-    state: b.address?.state ?? '',
-    addrCountry: b.address?.country ?? '',
-    postalCode: addressPostalCode(b.address),
+    street: formatAddressForDisplay(b.address?.street),
+    suburb: formatAddressForDisplay(b.address?.suburb),
+    city: formatAddressForDisplay(b.address?.city),
+    state: formatAddressForDisplay(b.address?.state),
+    addrCountry: formatAddressForDisplay(b.address?.country),
+    postalCode: addressPostalCode(b.address).trim(),
+  };
+}
+
+function normalizeBranchAddressForSave(f: {
+  street: string;
+  suburb: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+}) {
+  return {
+    street: f.street.trim().toLowerCase(),
+    suburb: f.suburb.trim().toLowerCase(),
+    city: f.city.trim().toLowerCase(),
+    state: f.state.trim().toLowerCase(),
+    country: f.country.trim().toLowerCase(),
+    postalCode: f.postalCode.trim(),
   };
 }
 
@@ -586,6 +610,12 @@ export function SettingsContent() {
     addrCountry: '',
     postalCode: '',
   });
+  const [branchFormDirty, setBranchFormDirty] = useState(false);
+
+  const setBranchFormUser: typeof setBranchForm = (updater) => {
+    setBranchFormDirty(true);
+    setBranchForm(updater);
+  };
 
   const branchDetailQuery = useQuery({
     queryKey: settingsBranchDetailKey(orgRef, branchRef),
@@ -599,7 +629,12 @@ export function SettingsContent() {
   }, [branches, branchRef]);
 
   useEffect(() => {
+    setBranchFormDirty(false);
+  }, [branchRef]);
+
+  useEffect(() => {
     if (activeTab !== 'branches' || !branchRef) return;
+    if (branchFormDirty) return;
 
     const detail = branchDetailQuery.data?.branch;
     if (detail?.ref === branchRef) {
@@ -607,20 +642,42 @@ export function SettingsContent() {
       return;
     }
 
+    if (branchDetailQuery.isFetching) {
+      const fromList = branches.find((x) => x.ref === branchRef) as
+        | BranchListItem
+        | undefined;
+      if (fromList?.ref) {
+        setBranchForm(branchListItemToForm(fromList));
+      }
+      return;
+    }
+
     const fromList = branches.find((x) => x.ref === branchRef) as
       | BranchListItem
       | undefined;
-    if (fromList?.ref) setBranchForm(branchListItemToForm(fromList));
+    if (fromList?.ref) {
+      setBranchForm(branchListItemToForm(fromList));
+    }
   }, [
     activeTab,
     branchRef,
     branches,
+    branchFormDirty,
     branchDetailQuery.data?.branch,
+    branchDetailQuery.isFetching,
   ]);
 
   const saveBranchMut = useMutation({
-    mutationFn: async () =>
-      patchBranch(client, branchRef, {
+    mutationFn: async () => {
+      const address = normalizeBranchAddressForSave({
+        street: branchForm.street,
+        suburb: branchForm.suburb,
+        city: branchForm.city,
+        state: branchForm.state,
+        country: branchForm.addrCountry,
+        postalCode: branchForm.postalCode,
+      });
+      return patchBranch(client, branchRef, {
         name: branchForm.name,
         alias: branchForm.alias || undefined,
         email: branchForm.email,
@@ -628,17 +685,45 @@ export function SettingsContent() {
         contactPerson: branchForm.contactPerson,
         website: branchForm.website,
         status: branchForm.status,
-        country: branchForm.country,
-        address: {
-          street: branchForm.street,
-          suburb: branchForm.suburb,
-          city: branchForm.city,
-          state: branchForm.state,
-          country: branchForm.addrCountry,
-          postalCode: branchForm.postalCode,
-        },
-      }),
-    onSuccess: () => {
+        country: branchForm.country.trim() || 'SA',
+        address,
+      });
+    },
+    onSuccess: (res) => {
+      const m = (res?.message ?? '').toLowerCase();
+      if (
+        m &&
+        (m.includes('not found') ||
+          m.includes('access denied') ||
+          m.includes('organization id is required') ||
+          m.includes('exception') ||
+          m.includes('validation') ||
+          m.includes('must be') ||
+          m.includes('postal code'))
+      ) {
+        toast.error(res?.message || 'Could not save branch');
+        return;
+      }
+      setBranchFormDirty(false);
+      setBranchForm((s) => {
+        const a = normalizeBranchAddressForSave({
+          street: s.street,
+          suburb: s.suburb,
+          city: s.city,
+          state: s.state,
+          country: s.addrCountry,
+          postalCode: s.postalCode,
+        });
+        return {
+          ...s,
+          street: a.street,
+          suburb: a.suburb,
+          city: a.city,
+          state: a.state,
+          addrCountry: a.country,
+          postalCode: a.postalCode,
+        };
+      });
       toast.success('Branch saved');
       queryClient.invalidateQueries({ queryKey: settingsOrgBranchesKey(orgRef) });
       queryClient.invalidateQueries({ queryKey: BRANCHES_LIST_QUERY_KEY });
@@ -731,6 +816,7 @@ export function SettingsContent() {
   }, [hoursQuery.data]);
 
   const resetBranchForm = useCallback(async () => {
+    setBranchFormDirty(false);
     await branchesQuery.refetch();
     if (branchRef) {
       await queryClient.refetchQueries({
@@ -1845,7 +1931,7 @@ export function SettingsContent() {
                         id="br-name"
                         value={branchForm.name}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, name: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, name: e.target.value }))
                         }
                       />
                     </div>
@@ -1855,7 +1941,7 @@ export function SettingsContent() {
                         id="br-alias"
                         value={branchForm.alias}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, alias: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, alias: e.target.value }))
                         }
                       />
                     </div>
@@ -1866,7 +1952,7 @@ export function SettingsContent() {
                         type="email"
                         value={branchForm.email}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, email: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, email: e.target.value }))
                         }
                       />
                     </div>
@@ -1876,7 +1962,7 @@ export function SettingsContent() {
                         id="br-phone"
                         value={branchForm.phone}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, phone: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, phone: e.target.value }))
                         }
                       />
                     </div>
@@ -1886,7 +1972,7 @@ export function SettingsContent() {
                         id="br-cp"
                         value={branchForm.contactPerson}
                         onChange={(e) =>
-                          setBranchForm((s) => ({
+                          setBranchFormUser((s) => ({
                             ...s,
                             contactPerson: e.target.value,
                           }))
@@ -1899,7 +1985,7 @@ export function SettingsContent() {
                         id="br-web"
                         value={branchForm.website}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, website: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, website: e.target.value }))
                         }
                       />
                     </div>
@@ -1908,7 +1994,7 @@ export function SettingsContent() {
                       <Select
                         value={branchForm.status}
                         onValueChange={(v) =>
-                          setBranchForm((s) => ({ ...s, status: v }))
+                          setBranchFormUser((s) => ({ ...s, status: v }))
                         }
                       >
                         <SelectTrigger>
@@ -1948,7 +2034,7 @@ export function SettingsContent() {
                         id="br-country"
                         value={branchForm.country}
                         onChange={(e) =>
-                          setBranchForm((s) => ({ ...s, country: e.target.value }))
+                          setBranchFormUser((s) => ({ ...s, country: e.target.value }))
                         }
                         placeholder="SA"
                       />
@@ -1978,12 +2064,14 @@ export function SettingsContent() {
                           id={`br-${key}`}
                           value={val}
                           onChange={(e) =>
-                            setBranchForm((s) => ({
+                            setBranchFormUser((s) => ({
                               ...s,
                               [key]: e.target.value,
                             }))
                           }
-                          className="bg-white border-gray-200"
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          className="bg-white border-gray-200 normal-case"
                         />
                       </div>
                     ))}
