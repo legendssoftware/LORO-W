@@ -18,7 +18,7 @@ export default async function PlanningPage() {
 
   return (
     <div className="container mx-auto px-2 py-8 sm:px-6 flex flex-col gap-6 w-full">
-      <div>
+      <div data-tour="planning-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Planning</h1>
         <p className="text-muted-foreground text-sm mt-1">
           View, track, and manage your tasks.

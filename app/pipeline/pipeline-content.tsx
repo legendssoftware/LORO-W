@@ -538,7 +538,7 @@ export function PipelineContent() {
   return (
     <div className="flex flex-col gap-8">
       {personalTargets && (
-        <section className="space-y-3">
+        <section className="space-y-3" data-tour="pipeline-targets-section">
           <h2 className="text-lg font-semibold text-foreground">Targets &amp; progress</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {TARGET_ROW_KEYS.map((key) => {
@@ -579,7 +579,7 @@ export function PipelineContent() {
         </section>
       )}
 
-      <section className="space-y-3">
+      <section className="space-y-3" data-tour="pipeline-quotations-section">
         <h2 className="text-lg font-semibold text-foreground">Quotations (ERP &amp; LORO)</h2>
         <p className="text-xs text-muted-foreground -mt-1">
           ERP: quotation documents for your profile period. LORO: app quotations with{' '}
@@ -909,7 +909,7 @@ export function PipelineContent() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3" data-tour="pipeline-lead-pipeline-section">
             <h2 className="text-lg font-semibold text-foreground">Lead pipeline</h2>
             {leadsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">
@@ -1013,7 +1013,7 @@ export function PipelineContent() {
             )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3" data-tour="pipeline-visits-section">
             <h2 className="text-lg font-semibold text-foreground">Visits</h2>
             {visitsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">

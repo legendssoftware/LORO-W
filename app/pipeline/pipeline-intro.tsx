@@ -12,7 +12,7 @@ export function PipelineIntro() {
   );
 
   return (
-    <div>
+    <div data-tour="pipeline-page-header">
       <h1 className="text-2xl font-semibold text-foreground">Pipeline</h1>
       <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
     </div>

@@ -9,6 +9,11 @@ import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welc
 import { DashboardAttendanceTour } from '@/components/dashboard-attendance-tour';
 import { LeadsTour } from '@/components/leads-tour';
 import { VisitsTour } from '@/components/visits-tour';
+import { StaffTour } from '@/components/staff-tour';
+import { ClientsTour } from '@/components/clients-tour';
+import { PipelineTour } from '@/components/pipeline-tour';
+import { PlanningTour } from '@/components/planning-tour';
+import { SettingsTour } from '@/components/settings-tour';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 
 /**
@@ -33,6 +38,11 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
         <DashboardAttendanceTour />
         <LeadsTour />
         <VisitsTour />
+        <StaffTour />
+        <ClientsTour />
+        <PipelineTour />
+        <PlanningTour />
+        <SettingsTour />
         <ErrorBoundary>
           <AccessGuard>
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">

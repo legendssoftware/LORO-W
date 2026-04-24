@@ -83,7 +83,10 @@ export function ClientsContent() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-        <div className="shrink-0 mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div
+          className="shrink-0 mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+          data-tour="clients-page-header"
+        >
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Clients</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -99,7 +102,10 @@ export function ClientsContent() {
           </Button>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:flex-wrap items-stretch lg:items-center justify-between gap-3 shrink-0 mb-4">
+        <div
+          className="flex flex-col lg:flex-row lg:flex-wrap items-stretch lg:items-center justify-between gap-3 shrink-0 mb-4"
+          data-tour="clients-toolbar"
+        >
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
               <Select
@@ -183,7 +189,7 @@ export function ClientsContent() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto" data-tour="clients-grid">
           {isLoading ? (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 12 }).map((_, i) => (

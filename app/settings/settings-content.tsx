@@ -772,7 +772,7 @@ export function SettingsContent() {
 
   return (
     <div className="container mx-auto flex w-full flex-col gap-6 px-2 py-8 sm:px-6">
-      <div>
+      <div data-tour="settings-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage organisation profile, appearance, regional defaults, hours, and branches.
@@ -783,7 +783,7 @@ export function SettingsContent() {
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-tour="settings-tab-nav">
             <Button
               type="button"
               variant="ghost"
@@ -837,7 +837,7 @@ export function SettingsContent() {
           </div>
 
           {activeTab === 'profile' && (
-            <div className={PANEL_CLASS}>
+            <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
                 <h2 className="text-lg font-medium">Organisation profile</h2>
                 <p className="text-sm text-muted-foreground">
@@ -978,7 +978,10 @@ export function SettingsContent() {
                   </div>
                 </Row>
               </div>
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+              <div
+                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                data-tour="settings-panel-actions"
+              >
                 <Button type="button" variant="cancel" onClick={resetProfile}>
                   Cancel
                 </Button>
@@ -995,7 +998,7 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'appearance' && (
-            <div className={PANEL_CLASS}>
+            <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
                 <h2 className="text-lg font-medium">Appearance</h2>
                 <p className="text-sm text-muted-foreground">
@@ -1114,7 +1117,10 @@ export function SettingsContent() {
                   </div>
                 </Row>
               </div>
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+              <div
+                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                data-tour="settings-panel-actions"
+              >
                 <Button type="button" variant="cancel" onClick={resetAppearance}>
                   Cancel
                 </Button>
@@ -1131,7 +1137,7 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'regional' && (
-            <div className={PANEL_CLASS}>
+            <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
                 <h2 className="text-lg font-medium">Regional &amp; preferences</h2>
                 <p className="text-sm text-muted-foreground">
@@ -1436,7 +1442,10 @@ export function SettingsContent() {
                   </div>
                 </Row>
               </div>
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+              <div
+                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                data-tour="settings-panel-actions"
+              >
                 <Button type="button" variant="cancel" onClick={resetRegional}>
                   Cancel
                 </Button>
@@ -1453,7 +1462,7 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'hours' && (
-            <div className={PANEL_CLASS}>
+            <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
                 <h2 className="text-lg font-medium">Operating hours</h2>
                 <p className="text-sm text-muted-foreground">
@@ -1737,7 +1746,10 @@ export function SettingsContent() {
                   </div>
                 </Row>
               </div>
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+              <div
+                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                data-tour="settings-panel-actions"
+              >
                 <Button type="button" variant="cancel" onClick={resetHours}>
                   Cancel
                 </Button>
@@ -1754,7 +1766,7 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'branches' && (
-            <div className={PANEL_CLASS}>
+            <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
                 <h2 className="text-lg font-medium">Branches</h2>
                 <p className="text-sm text-muted-foreground">
@@ -1978,7 +1990,10 @@ export function SettingsContent() {
                   </div>
                 </section>
               </div>
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+              <div
+                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                data-tour="settings-panel-actions"
+              >
                 <Button
                   type="button"
                   variant="cancel"
