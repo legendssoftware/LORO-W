@@ -239,7 +239,7 @@ export function StaffContent() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-        <div className="shrink-0 mb-6">
+        <div className="shrink-0 mb-6" data-tour="staff-page-header">
           <h1 className="text-2xl font-semibold text-foreground">
             Staff
           </h1>
@@ -248,7 +248,10 @@ export function StaffContent() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 shrink-0 mb-4">
+        <div
+          className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 shrink-0 mb-4"
+          data-tour="staff-toolbar"
+        >
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
               <Select
@@ -369,7 +372,7 @@ export function StaffContent() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto" data-tour="staff-grid">
           {isLoading ? (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 20 }).map((_, i) => (
