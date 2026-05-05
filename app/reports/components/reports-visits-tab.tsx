@@ -79,7 +79,11 @@ import {
 import { METHOD_OPTIONS } from '@/lib/visit-form-utils';
 import { formatOwnerChartName } from '@/lib/utils/report-labels';
 import type { ReportsMode } from '@/app/reports/reports-content';
-import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
+import {
+  buildReportingUserUidSet,
+  filterVisitExportItemsByReportingUserUids,
+  userListItemInLeadsVisitsReportingCohort,
+} from '@/app/reports/utils/user-has-performance-target';
 
 const PALETTE = [
   REPORT_CHART_HSL.c1,
@@ -264,9 +268,14 @@ export function ReportsVisitsTab({
   const reportingUsers = useMemo(
     () =>
       reportsMode === 'org'
-        ? usersList.filter(userListItemHasPerformanceTarget)
+        ? usersList.filter(userListItemInLeadsVisitsReportingCohort)
         : usersList,
     [reportsMode, usersList]
+  );
+
+  const reportingUidSet = useMemo(
+    () => buildReportingUserUidSet(reportingUsers),
+    [reportingUsers]
   );
 
   const effectiveOwnerUid = useMemo(() => {
@@ -321,6 +330,13 @@ export function ReportsVisitsTab({
       searchQuery: '',
     });
     list = filterByMethod(list, selectedMethod);
+    if (reportsMode === 'org' && effectiveOwnerUid === 'all') {
+      list = filterVisitExportItemsByReportingUserUids(
+        list,
+        reportingUidSet,
+        true
+      );
+    }
     return list;
   }, [
     mappedRaw,
@@ -328,6 +344,9 @@ export function ReportsVisitsTab({
     selectedRegion,
     selectedBusinessType,
     selectedMethod,
+    reportsMode,
+    effectiveOwnerUid,
+    reportingUidSet,
   ]);
 
   const visitsByUserBar = useMemo(() => {

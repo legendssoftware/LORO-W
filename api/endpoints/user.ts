@@ -13,6 +13,7 @@ export interface UserResponse {
   role: string;
   status: string;
   accessLevel: string;
+  workforceType?: string | null;
   organisationRef?: string | null;
   branchUid?: number | null;
   branch?: { uid: number; name?: string } | null;
@@ -65,6 +66,7 @@ export interface PatchUserBody {
   role?: string;
   status?: string;
   accessLevel?: string;
+  workforceType?: string;
   departmentId?: number;
   organisationRef?: string | null;
   userref?: string | null;

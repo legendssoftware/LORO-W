@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,9 +20,22 @@ import {
   useSessionSync,
   getBranchDisplayLabel,
 } from '@/api/hooks';
-import type { PatchUserBody, PatchUserTargetBody } from '@/api/endpoints/user';
+import type { PatchUserBody, PatchUserTargetBody, UserListItem } from '@/api/endpoints/user';
+import type { BranchListItem } from '@/api/types/branch';
+import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
-import { CheckCircle, XCircle, PauseCircle, User, Shield, Crown, UserCheck, Briefcase } from 'lucide-react';
+import {
+  Check,
+  CheckCircle,
+  XCircle,
+  PauseCircle,
+  User,
+  Shield,
+  Crown,
+  UserCheck,
+  Briefcase,
+  ChevronsUpDown,
+} from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,9 +71,62 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { AccessLevel } from '@/api/types';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
+
+function userSettingsMatchesSearch(haystack: string, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return haystack.toLowerCase().includes(q);
+}
+
+function getClientSearchHaystack(c: ClientListItem): string {
+  const r = c as Record<string, unknown>;
+  const str = (k: string) => (typeof r[k] === 'string' ? (r[k] as string) : '');
+  return [
+    c.name,
+    c.email,
+    c.contactPerson,
+    String(c.uid),
+    str('erpClientCode'),
+    str('clientCode'),
+    str('code'),
+  ]
+    .filter((x) => x != null && String(x).trim() !== '')
+    .join(' ');
+}
+
+function getBranchSearchHaystack(b: BranchListItem): string {
+  const addr = b.address;
+  return [
+    getBranchDisplayLabel(b),
+    String(b.uid),
+    b.ref,
+    b.name,
+    b.alias ?? '',
+    b.email,
+    b.contactPerson,
+    addr?.city,
+    addr?.suburb,
+  ]
+    .filter((x) => x != null && String(x).trim() !== '')
+    .join(' ');
+}
+
+function getStaffSearchHaystack(u: UserListItem): string {
+  const full = `${u.name} ${u.surname}`.trim();
+  return [full, u.name, u.surname, u.email, String(u.uid)]
+    .filter((x) => x != null && String(x).trim() !== '')
+    .join(' ');
+}
 
 /** Icons for user status options in the form. */
 const USER_STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -108,6 +174,14 @@ const ACCESS_LEVEL_ICONS: Record<string, React.ComponentType<{ className?: strin
   development: Briefcase,
   design: Briefcase,
 };
+
+function workforceTypeRowIcon(value: string): React.ComponentType<{ className?: string }> {
+  if (value.includes('sales')) return Briefcase;
+  if (value === WorkforceType.MANAGEMENT) return Crown;
+  if (value === WorkforceType.SECURITY) return Shield;
+  if (value === WorkforceType.FIELD_EMPLOYEE || value === WorkforceType.DRIVER) return MapPinIcon;
+  return User;
+}
 
 const profileSchema = z.object({
   height: z.string().optional().nullable(),
@@ -172,6 +246,7 @@ const formSchema = z.object({
   role: z.string().optional(),
   status: z.string().optional(),
   accessLevel: z.string().optional(),
+  workforceType: z.string().optional(),
   departmentId: z.union([z.number(), z.null()]).optional(),
   branchUid: z.union([z.number(), z.null()]).optional(),
   managedBranches: z.array(z.number()).optional(),
@@ -255,6 +330,7 @@ type UserBaseline = {
   role?: string | null;
   status?: string | null;
   accessLevel?: string | null;
+  workforceType?: string | null;
   departmentId?: number | null;
   branch?: { uid?: number } | null;
   branchUid?: number | null;
@@ -323,6 +399,8 @@ function buildPatchBody(user: UserBaseline | null | undefined, values: FormValue
     body.status = values.status?.trim() || undefined;
   if (!sameStr(user.accessLevel, values.accessLevel))
     body.accessLevel = values.accessLevel?.trim() || undefined;
+  if (!sameStr(user.workforceType, values.workforceType))
+    body.workforceType = values.workforceType?.trim() || undefined;
 
   if (!sameNum(user.departmentId ?? undefined, values.departmentId))
     body.departmentId = values.departmentId ?? undefined;
@@ -460,6 +538,37 @@ export default function UserSettingsPage() {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [permanentOpen, setPermanentOpen] = useState(false);
 
+  const [primaryBranchOpen, setPrimaryBranchOpen] = useState(false);
+  const [clientsPickerOpen, setClientsPickerOpen] = useState(false);
+  const [clientsSearch, setClientsSearch] = useState('');
+  const [managedBranchesPickerOpen, setManagedBranchesPickerOpen] = useState(false);
+  const [managedBranchesSearch, setManagedBranchesSearch] = useState('');
+  const [managedStaffPickerOpen, setManagedStaffPickerOpen] = useState(false);
+  const [managedStaffSearch, setManagedStaffSearch] = useState('');
+
+  const filteredClientsForPicker = useMemo(
+    () =>
+      clients.filter((c) =>
+        userSettingsMatchesSearch(getClientSearchHaystack(c), clientsSearch)
+      ),
+    [clients, clientsSearch]
+  );
+
+  const filteredBranchesForManagedPicker = useMemo(
+    () =>
+      branches.filter((b) =>
+        userSettingsMatchesSearch(getBranchSearchHaystack(b), managedBranchesSearch)
+      ),
+    [branches, managedBranchesSearch]
+  );
+
+  const filteredStaffForPicker = useMemo(() => {
+    const list = users.filter((u) => u.uid !== user?.uid);
+    return list.filter((u) =>
+      userSettingsMatchesSearch(getStaffSearchHaystack(u), managedStaffSearch)
+    );
+  }, [users, user?.uid, managedStaffSearch]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -472,6 +581,7 @@ export default function UserSettingsPage() {
       role: '',
       status: 'active',
       accessLevel: '',
+      workforceType: '',
       departmentId: null,
       branchUid: null,
       managedBranches: [],
@@ -509,6 +619,7 @@ export default function UserSettingsPage() {
         role: (user.role as string) ?? '',
         status: (user.status as string) ?? 'active',
         accessLevel: (user.accessLevel as string) ?? '',
+        workforceType: (user as { workforceType?: string | null }).workforceType ?? '',
         departmentId: (user.departmentId as number) ?? null,
         branchUid: normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null),
         managedBranches: (user as { managedBranches?: number[] }).managedBranches ?? [],
@@ -654,6 +765,9 @@ export default function UserSettingsPage() {
   const accessLevels = Object.values(AccessLevel).filter(
     (v) => typeof v === 'string'
   ) as string[];
+  const workforceTypeOptions = Object.values(WorkforceType).filter(
+    (v) => typeof v === 'string'
+  ) as string[];
 
   return (
     <div className="h-full overflow-auto flex flex-col items-center">
@@ -767,7 +881,7 @@ export default function UserSettingsPage() {
               <CardHeader>
                 <CardTitle>Identity & access</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  User reference, HR ID, role, access level and status.
+                  User reference, HR ID, role, access level, workforce type and status.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -815,7 +929,7 @@ export default function UserSettingsPage() {
                     )}
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <FormField
                     control={form.control}
                     name="role"
@@ -916,6 +1030,39 @@ export default function UserSettingsPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="workforceType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Workforce type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? ''}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Workforce type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {workforceTypeOptions.map((wt) => {
+                              const WtIcon = workforceTypeRowIcon(wt);
+                              return (
+                                <SelectItem key={wt} value={wt}>
+                                  <span className="flex items-center gap-2">
+                                    <WtIcon className="size-4 shrink-0" />
+                                    {formatEnumLabel(wt)}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 <FormField
                   control={form.control}
@@ -955,39 +1102,106 @@ export default function UserSettingsPage() {
                   name="branchUid"
                   render={({ field }) => {
                     const normalizedBranch = normalizePrimaryBranchUid(field.value ?? null);
+                    const selectedLabel =
+                      normalizedBranch != null
+                        ? (() => {
+                            const b = branches.find((x) => x.uid === normalizedBranch);
+                            return b
+                              ? getBranchDisplayLabel(b) || `Branch ${b.uid}`
+                              : `Branch ${normalizedBranch}`;
+                          })()
+                        : null;
                     return (
-                    <FormItem>
-                      <FormLabel>Branch</FormLabel>
-                      <Select
-                        onValueChange={(v) =>
-                          field.onChange(v === '__none__' ? null : Number(v))
-                        }
-                        value={
-                          normalizedBranch != null ? String(normalizedBranch) : '__none__'
-                        }
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select branch" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">None</SelectItem>
-                          {branches.map((b) => (
-                            <SelectItem
-                              key={b.uid}
-                              value={String(b.uid)}
-                            >
-                              <span className="flex items-center gap-2">
-                                <MapPinIcon className="size-4 shrink-0" />
-                                {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                      <FormItem>
+                        <FormLabel>Branch</FormLabel>
+                        <Popover
+                          open={primaryBranchOpen}
+                          onOpenChange={setPrimaryBranchOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={primaryBranchOpen}
+                                className={cn(
+                                  'w-full justify-between font-normal',
+                                  !selectedLabel && 'text-muted-foreground'
+                                )}
+                              >
+                                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                                  {selectedLabel ? (
+                                    <>
+                                      <MapPinIcon className="size-4 shrink-0" />
+                                      {selectedLabel}
+                                    </>
+                                  ) : (
+                                    'Select branch'
+                                  )}
+                                </span>
+                                <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[var(--radix-popover-trigger-width)] min-w-[200px] max-w-[min(100vw-2rem,24rem)] p-0"
+                            align="start"
+                          >
+                            <Command>
+                              <CommandInput placeholder="Search branches…" />
+                              <CommandList>
+                                <CommandEmpty>No branch found.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="none unassigned"
+                                    onSelect={() => {
+                                      field.onChange(null);
+                                      setPrimaryBranchOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'size-4 shrink-0',
+                                        normalizedBranch == null ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                    />
+                                    <span>None</span>
+                                  </CommandItem>
+                                  {branches.map((b) => {
+                                    const label =
+                                      getBranchDisplayLabel(b) || `Branch ${b.uid}`;
+                                    return (
+                                      <CommandItem
+                                        key={b.uid}
+                                        value={`${label} ${b.uid} ${b.ref ?? ''} ${b.name ?? ''}`}
+                                        onSelect={() => {
+                                          field.onChange(b.uid);
+                                          setPrimaryBranchOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            'size-4 shrink-0',
+                                            normalizedBranch === b.uid
+                                              ? 'opacity-100'
+                                              : 'opacity-0'
+                                          )}
+                                        />
+                                        <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                                          <MapPinIcon className="size-4 shrink-0" />
+                                          {label}
+                                        </span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
                     );
                   }}
                 />
@@ -1263,12 +1477,20 @@ export default function UserSettingsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assigned clients</FormLabel>
-                      <Popover>
+                      <Popover
+                        open={clientsPickerOpen}
+                        onOpenChange={(open) => {
+                          setClientsPickerOpen(open);
+                          if (!open) setClientsSearch('');
+                        }}
+                      >
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
+                              type="button"
                               variant="outline"
                               role="combobox"
+                              aria-expanded={clientsPickerOpen}
                               className={cn(
                                 'w-full justify-between font-normal',
                                 !field.value?.length && 'text-muted-foreground'
@@ -1282,37 +1504,52 @@ export default function UserSettingsPage() {
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
-                          <ScrollArea className="h-[200px]">
-                            <div className="p-2 space-y-2">
-                              {clients.map((c) => {
-                                const selected = field.value?.includes(c.uid) ?? false;
-                                return (
-                                  <label
-                                    key={c.uid}
-                                    className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
-                                  >
-                                    <Checkbox
-                                      checked={selected}
-                                      onCheckedChange={(checked) => {
-                                        const current = field.value ?? [];
-                                        if (checked) {
-                                          field.onChange([...current, c.uid]);
-                                        } else {
-                                          field.onChange(current.filter((id) => id !== c.uid));
-                                        }
-                                      }}
-                                    />
-                                    <span>{c.name ?? `Client ${c.uid}`}</span>
-                                  </label>
-                                );
-                              })}
-                              {clients.length === 0 && (
-                                <p className="text-sm text-muted-foreground py-4 text-center">
-                                  No clients available
-                                </p>
-                              )}
-                            </div>
-                          </ScrollArea>
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search clients…"
+                              value={clientsSearch}
+                              onValueChange={setClientsSearch}
+                            />
+                            <CommandList className="max-h-[200px]">
+                              <CommandGroup className="p-2">
+                                {clients.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No clients available
+                                  </p>
+                                ) : filteredClientsForPicker.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No clients found.
+                                  </p>
+                                ) : (
+                                  filteredClientsForPicker.map((c) => {
+                                    const selected =
+                                      field.value?.includes(c.uid) ?? false;
+                                    return (
+                                      <label
+                                        key={c.uid}
+                                        className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
+                                      >
+                                        <Checkbox
+                                          checked={selected}
+                                          onCheckedChange={(checked) => {
+                                            const current = field.value ?? [];
+                                            if (checked) {
+                                              field.onChange([...current, c.uid]);
+                                            } else {
+                                              field.onChange(
+                                                current.filter((id) => id !== c.uid)
+                                              );
+                                            }
+                                          }}
+                                        />
+                                        <span>{c.name ?? `Client ${c.uid}`}</span>
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </PopoverContent>
                       </Popover>
                       {field.value && field.value.length > 0 && (
@@ -1790,12 +2027,20 @@ export default function UserSettingsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Managed branches</FormLabel>
-                      <Popover>
+                      <Popover
+                        open={managedBranchesPickerOpen}
+                        onOpenChange={(open) => {
+                          setManagedBranchesPickerOpen(open);
+                          if (!open) setManagedBranchesSearch('');
+                        }}
+                      >
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
+                              type="button"
                               variant="outline"
                               role="combobox"
+                              aria-expanded={managedBranchesPickerOpen}
                               className={cn(
                                 'w-full justify-between font-normal',
                                 !field.value?.length && 'text-muted-foreground'
@@ -1809,41 +2054,55 @@ export default function UserSettingsPage() {
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
-                          <ScrollArea className="h-[200px]">
-                            <div className="p-2 space-y-2">
-                              {branches.map((b) => {
-                                const selected = field.value?.includes(b.uid) ?? false;
-                                return (
-                                  <label
-                                    key={b.uid}
-                                    className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
-                                  >
-                                    <Checkbox
-                                      checked={selected}
-                                      onCheckedChange={(checked) => {
-                                        const current = field.value ?? [];
-                                        if (checked) {
-                                          field.onChange([...current, b.uid]);
-                                        } else {
-                                          field.onChange(
-                                            current.filter((id) => id !== b.uid)
-                                          );
-                                        }
-                                      }}
-                                    />
-                                    <span>
-                                      {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                              {branches.length === 0 && (
-                                <p className="text-sm text-muted-foreground py-4 text-center">
-                                  No branches available
-                                </p>
-                              )}
-                            </div>
-                          </ScrollArea>
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search branches…"
+                              value={managedBranchesSearch}
+                              onValueChange={setManagedBranchesSearch}
+                            />
+                            <CommandList className="max-h-[200px]">
+                              <CommandGroup className="p-2">
+                                {branches.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No branches available
+                                  </p>
+                                ) : filteredBranchesForManagedPicker.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No branches found.
+                                  </p>
+                                ) : (
+                                  filteredBranchesForManagedPicker.map((b) => {
+                                    const selected =
+                                      field.value?.includes(b.uid) ?? false;
+                                    return (
+                                      <label
+                                        key={b.uid}
+                                        className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
+                                      >
+                                        <Checkbox
+                                          checked={selected}
+                                          onCheckedChange={(checked) => {
+                                            const current = field.value ?? [];
+                                            if (checked) {
+                                              field.onChange([...current, b.uid]);
+                                            } else {
+                                              field.onChange(
+                                                current.filter((id) => id !== b.uid)
+                                              );
+                                            }
+                                          }}
+                                        />
+                                        <span>
+                                          {getBranchDisplayLabel(b) ||
+                                            `Branch ${b.uid}`}
+                                        </span>
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </PopoverContent>
                       </Popover>
                       {field.value && field.value.length > 0 && (
@@ -1892,12 +2151,20 @@ export default function UserSettingsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Managed staff</FormLabel>
-                      <Popover>
+                      <Popover
+                        open={managedStaffPickerOpen}
+                        onOpenChange={(open) => {
+                          setManagedStaffPickerOpen(open);
+                          if (!open) setManagedStaffSearch('');
+                        }}
+                      >
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
+                              type="button"
                               variant="outline"
                               role="combobox"
+                              aria-expanded={managedStaffPickerOpen}
                               className={cn(
                                 'w-full justify-between font-normal',
                                 !field.value?.length && 'text-muted-foreground'
@@ -1911,43 +2178,55 @@ export default function UserSettingsPage() {
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
-                          <ScrollArea className="h-[200px]">
-                            <div className="p-2 space-y-2">
-                              {users
-                                .filter((u) => u.uid !== user?.uid)
-                                .map((u) => {
-                                  const selected =
-                                    field.value?.includes(u.uid) ?? false;
-                                  const label = `${u.name} ${u.surname}`.trim() || u.email;
-                                  return (
-                                    <label
-                                      key={u.uid}
-                                      className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
-                                    >
-                                      <Checkbox
-                                        checked={selected}
-                                        onCheckedChange={(checked) => {
-                                          const current = field.value ?? [];
-                                          if (checked) {
-                                            field.onChange([...current, u.uid]);
-                                          } else {
-                                            field.onChange(
-                                              current.filter((id) => id !== u.uid)
-                                            );
-                                          }
-                                        }}
-                                      />
-                                      <span className="truncate">{label}</span>
-                                    </label>
-                                  );
-                                })}
-                              {users.length === 0 && (
-                                <p className="text-sm text-muted-foreground py-4 text-center">
-                                  No users available
-                                </p>
-                              )}
-                            </div>
-                          </ScrollArea>
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search staff…"
+                              value={managedStaffSearch}
+                              onValueChange={setManagedStaffSearch}
+                            />
+                            <CommandList className="max-h-[200px]">
+                              <CommandGroup className="p-2">
+                                {users.filter((u) => u.uid !== user?.uid).length ===
+                                0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No users available
+                                  </p>
+                                ) : filteredStaffForPicker.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                    No staff found.
+                                  </p>
+                                ) : (
+                                  filteredStaffForPicker.map((u) => {
+                                    const selected =
+                                      field.value?.includes(u.uid) ?? false;
+                                    const label =
+                                      `${u.name} ${u.surname}`.trim() || u.email;
+                                    return (
+                                      <label
+                                        key={u.uid}
+                                        className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted"
+                                      >
+                                        <Checkbox
+                                          checked={selected}
+                                          onCheckedChange={(checked) => {
+                                            const current = field.value ?? [];
+                                            if (checked) {
+                                              field.onChange([...current, u.uid]);
+                                            } else {
+                                              field.onChange(
+                                                current.filter((id) => id !== u.uid)
+                                              );
+                                            }
+                                          }}
+                                        />
+                                        <span className="truncate">{label}</span>
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </PopoverContent>
                       </Popover>
                       {field.value && field.value.length > 0 && (

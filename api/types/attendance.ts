@@ -276,6 +276,8 @@ export interface DailyOverviewUser {
     employeeSince?: string;
     isActive?: boolean;
     role?: string;
+    /** Workforce cohort (server WorkforceType), for staff filtering and cards. */
+    workforceType?: string | null;
     earlyMinutes?: number;
     lateMinutes?: number;
     /** Decoded full address of shift start (clock-in) location. Present users only. */

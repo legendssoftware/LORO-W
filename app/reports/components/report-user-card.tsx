@@ -27,6 +27,7 @@ import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van } from 
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { formatEnumLabel } from '@/lib/format-enum-label';
 
 const CLOCK_IN_MODE_BADGE: Record<
   ClockInOptionKey,
@@ -356,6 +357,12 @@ export function ReportUserCard({
                   Branch: {user.branch || '—'}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">Role: {user.role || '—'}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  Workforce:{' '}
+                  {user.workforceType?.trim()
+                    ? formatEnumLabel(user.workforceType.trim())
+                    : '—'}
+                </p>
                 {user.phone ? (
                   <a
                     href={`tel:${user.phone}`}

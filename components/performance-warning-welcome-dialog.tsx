@@ -84,8 +84,11 @@ export function PerformanceWarningWelcomeDialog({
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
         showCloseButton={false}
+        data-performance-warning-open=""
+        overlayClassName="z-[11000]"
         className={cn(
-          'max-h-[min(85vh,640px)] gap-0 overflow-hidden p-0 sm:max-w-lg',
+          '!flex max-h-[min(92vh,760px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg',
+          'z-[11001]',
           'border-2',
           tier.border
         )}
@@ -93,7 +96,7 @@ export function PerformanceWarningWelcomeDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className={cn('px-6 pt-8 pb-4 text-center', tier.header)}>
+        <div className={cn('shrink-0 px-6 pt-6 pb-4 text-center sm:pt-8', tier.header)}>
           <div
             className={cn(
               'mx-auto mb-4 flex size-14 items-center justify-center rounded-full',
@@ -114,7 +117,7 @@ export function PerformanceWarningWelcomeDialog({
           </DialogHeader>
         </div>
 
-        <div className="max-h-[min(50vh,360px)] overflow-y-auto px-6 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
           <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
             {copy.bullets.map((line) => (
               <li key={line} className="text-foreground/90">
@@ -125,13 +128,13 @@ export function PerformanceWarningWelcomeDialog({
           <p className="mt-4 whitespace-pre-line text-sm text-muted-foreground">{copy.footerNote}</p>
         </div>
 
-        <DialogFooter className="border-t border-border px-6 py-4 sm:justify-center">
+        <DialogFooter className="shrink-0 flex-col gap-2 border-t border-border px-6 py-5 sm:flex-row sm:justify-center">
           <Button
             type="button"
             variant={level === 1 ? 'success' : 'default'}
             disabled={acknowledge.isPending}
             className={cn(
-              'w-full text-center whitespace-normal sm:w-auto',
+              'h-auto min-h-12 w-full whitespace-normal px-4 py-3 text-center text-sm leading-snug sm:w-full sm:max-w-md',
               level !== 1 && tier.buttonClass
             )}
             onClick={() => {
@@ -139,7 +142,7 @@ export function PerformanceWarningWelcomeDialog({
               void acknowledge.mutateAsync().then(() => setOpen(false));
             }}
           >
-            I have read and acknowledged it
+            I have read and I understand and acknowledge the warning.
           </Button>
         </DialogFooter>
       </DialogContent>

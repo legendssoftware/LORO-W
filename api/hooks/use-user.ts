@@ -236,6 +236,16 @@ export function useAcknowledgePerformanceWarning(ref: string | null) {
       if (ref) {
         queryClient.invalidateQueries({ queryKey: [...USER_TARGET_QUERY_KEY_PREFIX, ref] });
       }
+      const { profileData, startSession } = useSessionStore.getState();
+      const tw = profileData?.targetWarnings;
+      if (profileData != null && tw != null && typeof tw.level === 'number') {
+        startSession({
+          profileData: {
+            ...profileData,
+            targetWarnings: { ...tw, acknowledgedLevel: tw.level },
+          },
+        });
+      }
     },
   });
 }

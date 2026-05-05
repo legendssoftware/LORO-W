@@ -55,7 +55,7 @@ import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
-  userListItemHasPerformanceTarget,
+  userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import {
   ReportDonutChart,
@@ -207,7 +207,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
   const reportingUsers = useMemo(
     () =>
-      elevated ? usersList.filter(userListItemHasPerformanceTarget) : usersList,
+      elevated ? usersList.filter(userListItemInLeadsVisitsReportingCohort) : usersList,
     [elevated, usersList]
   );
 

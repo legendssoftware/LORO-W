@@ -22,6 +22,8 @@ import {
   SALES_BENCHMARKS_SECTIONS,
   SALES_BENCHMARKS_TITLE,
 } from '@/lib/sales-benchmarks-welcome-content';
+import { useSessionStore } from '@/store/session-store';
+import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 
 function persistDismiss(sessionId: string) {
   if (typeof window === 'undefined') return;
@@ -42,11 +44,16 @@ export function SalesBenchmarksWelcomeDialog({
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const [open, setOpen] = useState(false);
+  const profile = useSessionStore((s) => s.profileData);
 
   const inAppShell = !isFullDocumentRoute(pathname);
   const isDashboard = pathname === '/dashboard';
 
   useEffect(() => {
+    if (isGeneralWorkerWorkforce(profile?.workforceType)) {
+      setOpen(false);
+      return;
+    }
     if (!isLoaded || !isSignedIn || !inAppShell || !isDashboard || !sessionId) {
       return;
     }
@@ -62,7 +69,7 @@ export function SalesBenchmarksWelcomeDialog({
       return;
     }
     setOpen(true);
-  }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname, deferForPendingWarning]);
+  }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname, deferForPendingWarning, profile?.workforceType]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next && sessionId) {

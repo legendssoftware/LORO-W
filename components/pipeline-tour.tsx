@@ -6,10 +6,11 @@ import { usePathname } from 'next/navigation';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
-  getTodayIsoDate,
+  getCurrentYearMonth,
   readPipelineTourState,
   writePipelineTourState,
 } from '@/lib/pipeline-tour-storage';
+import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
@@ -104,6 +105,7 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
 export function PipelineTour() {
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const blockTours = usePerformanceWarningPendingSafe().pendingBlockingWarning;
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
@@ -121,23 +123,29 @@ export function PipelineTour() {
       driverRef.current = null;
       return;
     }
+    if (blockTours) {
+      hasAttemptedStartRef.current = false;
+      driverRef.current?.destroy();
+      driverRef.current = null;
+      return;
+    }
     if (hasAttemptedStartRef.current) return;
     hasAttemptedStartRef.current = true;
 
-    const today = getTodayIsoDate();
+    const period = getCurrentYearMonth();
     const stored = readPipelineTourState(userId);
     const currentState = stored ?? {
-      date: today,
+      period,
       resumeIndex: 0,
-      completedToday: false,
+      completedThisMonth: false,
     };
 
-    if (currentState.date !== today) {
-      currentState.date = today;
-      currentState.completedToday = false;
+    if (currentState.period !== period) {
+      currentState.period = period;
+      currentState.completedThisMonth = false;
     }
 
-    if (currentState.completedToday) return;
+    if (currentState.completedThisMonth) return;
 
     let pollCount = 0;
     const maxPollCount = 40;
@@ -162,9 +170,9 @@ export function PipelineTour() {
       );
 
       writePipelineTourState(userId, {
-        date: today,
+        period,
         resumeIndex: boundedStartIndex,
-        completedToday: false,
+        completedThisMonth: false,
       });
 
       const driverObj = driver({
@@ -179,9 +187,9 @@ export function PipelineTour() {
         onHighlighted: (_element, _step, { driver: activeDriver }) => {
           const activeIndex = activeDriver.getActiveIndex() ?? 0;
           writePipelineTourState(userId, {
-            date: getTodayIsoDate(),
+            period: getCurrentYearMonth(),
             resumeIndex: activeIndex,
-            completedToday: false,
+            completedThisMonth: false,
           });
         },
         onNextClick: (_element, _step, { driver: activeDriver }) => {
@@ -204,9 +212,9 @@ export function PipelineTour() {
           wasCompletedRef.current = false;
 
           writePipelineTourState(userId, {
-            date: getTodayIsoDate(),
+            period: getCurrentYearMonth(),
             resumeIndex: didComplete ? 0 : activeIndex,
-            completedToday: didComplete,
+            completedThisMonth: didComplete,
           });
         },
       });
@@ -222,7 +230,7 @@ export function PipelineTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId]);
+  }, [shouldRun, userId, blockTours]);
 
   return null;
 }

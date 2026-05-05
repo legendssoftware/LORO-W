@@ -1,19 +1,19 @@
 'use client';
 
+import { isYearMonthString } from '@/lib/tour-period';
+
+export { getCurrentYearMonth } from '@/lib/tour-period';
+
 export interface PlanningTourState {
-  date: string;
+  period: string;
   resumeIndex: number;
-  completedToday: boolean;
+  completedThisMonth: boolean;
 }
 
-const PLANNING_TOUR_KEY_PREFIX = 'loro_planning_tour_v1';
+const PLANNING_TOUR_KEY_PREFIX = 'loro_planning_tour_v2';
 
 function buildPlanningTourKey(userId: string): string {
   return `${PLANNING_TOUR_KEY_PREFIX}:${userId}`;
-}
-
-export function getTodayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function readPlanningTourState(userId: string): PlanningTourState | null {
@@ -23,16 +23,17 @@ export function readPlanningTourState(userId: string): PlanningTourState | null 
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PlanningTourState>;
     if (
-      typeof parsed.date !== 'string' ||
+      typeof parsed.period !== 'string' ||
+      !isYearMonthString(parsed.period) ||
       typeof parsed.resumeIndex !== 'number' ||
-      typeof parsed.completedToday !== 'boolean'
+      typeof parsed.completedThisMonth !== 'boolean'
     ) {
       return null;
     }
     return {
-      date: parsed.date,
+      period: parsed.period,
       resumeIndex: Math.max(0, Math.floor(parsed.resumeIndex)),
-      completedToday: parsed.completedToday,
+      completedThisMonth: parsed.completedThisMonth,
     };
   } catch {
     return null;

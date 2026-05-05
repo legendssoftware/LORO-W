@@ -36,6 +36,7 @@ export function fromDailyOverviewMergeMonthly(
       email: u.email ?? '',
       phone: u.phoneNumber ?? undefined,
       role: u.role ?? u.accessLevel,
+      workforceType: u.workforceType ?? null,
       branch: u.branchName,
       photoURL: u.profileImage ?? undefined,
       hoursThisMonth: hours,

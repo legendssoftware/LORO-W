@@ -29,7 +29,11 @@ import { useOrgName } from '@/lib/org-id-context';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-content';
-import { userListItemHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
+import {
+  buildReportingUserUidSet,
+  filterVisitExportItemsByReportingUserUids,
+  userListItemInLeadsVisitsReportingCohort,
+} from '@/app/reports/utils/user-has-performance-target';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -85,9 +89,14 @@ export function ReportsVisualiserTab({
   const reportingUsers = useMemo(
     () =>
       reportsMode === 'org'
-        ? usersList.filter(userListItemHasPerformanceTarget)
+        ? usersList.filter(userListItemInLeadsVisitsReportingCohort)
         : usersList,
     [reportsMode, usersList]
+  );
+
+  const reportingUidSet = useMemo(
+    () => buildReportingUserUidSet(reportingUsers),
+    [reportingUsers]
   );
 
   useEffect(() => {
@@ -128,7 +137,19 @@ export function ReportsVisualiserTab({
     [branchesQuery.data, checkInsQuery.data, usersList]
   );
 
-  const uniqueRegions = useMemo(() => getSortedUniqueRegions(checkIns), [checkIns]);
+  const checkInsForOrgReporting = useMemo(() => {
+    if (reportsMode !== 'org' || checkInUserUid) return checkIns;
+    return filterVisitExportItemsByReportingUserUids(
+      checkIns,
+      reportingUidSet,
+      true
+    );
+  }, [checkIns, reportsMode, checkInUserUid, reportingUidSet]);
+
+  const uniqueRegions = useMemo(
+    () => getSortedUniqueRegions(checkInsForOrgReporting),
+    [checkInsForOrgReporting]
+  );
 
   const businessTypeLabelMap = useMemo(
     () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
@@ -141,18 +162,23 @@ export function ReportsVisualiserTab({
   }, []);
 
   const uniqueBusinessTypes = useMemo(
-    () => getSortedUniqueBusinessTypes(checkIns),
-    [checkIns]
+    () => getSortedUniqueBusinessTypes(checkInsForOrgReporting),
+    [checkInsForOrgReporting]
   );
 
   const filteredCheckIns = useMemo(
     () =>
-      filterVisitCheckIns(checkIns, {
+      filterVisitCheckIns(checkInsForOrgReporting, {
         selectedRegion,
         selectedBusinessType,
         searchQuery,
       }),
-    [checkIns, searchQuery, selectedRegion, selectedBusinessType]
+    [
+      checkInsForOrgReporting,
+      searchQuery,
+      selectedRegion,
+      selectedBusinessType,
+    ]
   );
 
   /** Map report: org-local today on server when dates omitted; allTime for historical. Skip reverse-geocode for speed. */
