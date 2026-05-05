@@ -10,12 +10,14 @@ import {
   Users,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import Link from 'next/link';
 import type { SyncProfile } from '@/api/types';
 import {
   useBranches,
   useTargetsProgress,
   useUsers,
   getBranchDisplayLabel,
+  useSubThresholdDailyCalls,
 } from '@/api/hooks';
 import { isReportsElevatedViewer } from '@/lib/access';
 import { Button } from '@/components/ui/button';
@@ -53,7 +55,7 @@ import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
-  userListItemHasPerformanceTarget,
+  userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import {
   ReportDonutChart,
@@ -192,9 +194,20 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       : {}),
   });
 
+  const [callsBelowDate, setCallsBelowDate] = useState(() =>
+    format(startOfDay(new Date()), 'yyyy-MM-dd')
+  );
+
+  const callsBelowBranchId =
+    selectedBranchId !== 'all' ? Number(selectedBranchId) : undefined;
+  const { data: callsBelowData, isFetching: callsBelowLoading } = useSubThresholdDailyCalls(
+    elevated ? { date: callsBelowDate, branchId: callsBelowBranchId } : null,
+    { enabled: elevated && !!callsBelowDate }
+  );
+
   const reportingUsers = useMemo(
     () =>
-      elevated ? usersList.filter(userListItemHasPerformanceTarget) : usersList,
+      elevated ? usersList.filter(userListItemInLeadsVisitsReportingCohort) : usersList,
     [elevated, usersList]
   );
 
@@ -256,6 +269,97 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
   return (
     <div className="flex flex-col gap-6 pb-8">
+      {elevated ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Daily calls below threshold</CardTitle>
+            <CardDescription>
+              Users under {callsBelowData?.minCalls ?? 60} phone call check-ins for the selected org-local day (branch filter applies).{' '}
+              <Link href="/staff" className="text-violet-600 underline-offset-2 hover:underline">
+                Staff list
+              </Link>{' '}
+              to set performance warning tiers.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1">
+                <label htmlFor="calls-below-date" className="text-xs font-medium text-muted-foreground">
+                  Date
+                </label>
+                <input
+                  id="calls-below-date"
+                  type="date"
+                  className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                  value={callsBelowDate}
+                  onChange={(e) => setCallsBelowDate(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() =>
+                  setCallsBelowDate(format(startOfDay(new Date()), 'yyyy-MM-dd'))
+                }
+              >
+                Today
+              </Button>
+            </div>
+            {callsBelowLoading ? (
+              <div className="flex justify-center py-6">
+                <LoadingSpinner className="min-h-0" wrapperClassName="py-0" />
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-left">
+                      <th className="p-2 font-medium">User</th>
+                      <th className="p-2 font-medium">Calls</th>
+                      <th className="p-2 font-medium">Warning</th>
+                      <th className="p-2 font-medium" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(callsBelowData?.users ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-muted-foreground p-4 text-center">
+                          No users below threshold for this day.
+                        </td>
+                      </tr>
+                    ) : (
+                      (callsBelowData?.users ?? []).map((u) => (
+                        <tr key={u.uid} className="border-b last:border-0">
+                          <td className="p-2">
+                            <span className="font-medium">{u.fullName}</span>
+                            <span className="text-muted-foreground block text-xs">{u.email}</span>
+                          </td>
+                          <td className="p-2 tabular-nums">{u.callCount}</td>
+                          <td className="p-2">
+                            {u.targetWarnings?.level != null
+                              ? `L${u.targetWarnings.level}`
+                              : '—'}
+                          </td>
+                          <td className="p-2 text-right">
+                            <Link
+                              href={`/reports/users/${u.uid}/settings`}
+                              className="text-violet-600 text-xs underline-offset-2 hover:underline"
+                            >
+                              Settings
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
       <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>

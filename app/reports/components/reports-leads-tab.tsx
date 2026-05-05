@@ -78,7 +78,7 @@ import { LeadsSummaryDialog } from '@/app/reports/components/leads-summary-dialo
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-attendance-tab';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import {
-  userListItemHasPerformanceTarget,
+  userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import {
   buildPipelineValueAxis,
@@ -287,7 +287,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
   const reportingUsers = useMemo(
     () =>
       reportsMode === 'org' && elevated
-        ? usersList.filter(userListItemHasPerformanceTarget)
+        ? usersList.filter(userListItemInLeadsVisitsReportingCohort)
         : usersList,
     [elevated, reportsMode, usersList]
   );

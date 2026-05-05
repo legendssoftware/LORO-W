@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { WorkforceType } from '@/api/types/user';
 import {
   filterVisitExportItemsByReportingUserUids,
   userHasPerformanceTarget,
   userListItemHasPerformanceTarget,
+  userListItemInLeadsVisitsReportingCohort,
 } from './user-has-performance-target';
 
 describe('userHasPerformanceTarget', () => {
@@ -54,6 +56,34 @@ describe('userListItemHasPerformanceTarget', () => {
         email: 'a@b.c',
       })
     ).toBe(false);
+  });
+});
+
+describe('userListItemInLeadsVisitsReportingCohort', () => {
+  const base = {
+    uid: 1,
+    name: 'a',
+    surname: 'b',
+    email: 'a@b.c',
+    userTarget: { targetCalls: 1 },
+  };
+
+  it('excludes general_worker even with targets', () => {
+    expect(
+      userListItemInLeadsVisitsReportingCohort({
+        ...base,
+        workforceType: WorkforceType.GENERAL_WORKER,
+      })
+    ).toBe(false);
+  });
+
+  it('includes non–general-worker with targets', () => {
+    expect(
+      userListItemInLeadsVisitsReportingCohort({
+        ...base,
+        workforceType: WorkforceType.INTERNAL_SALES_REP,
+      })
+    ).toBe(true);
   });
 });
 

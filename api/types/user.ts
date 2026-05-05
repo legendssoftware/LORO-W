@@ -44,6 +44,33 @@ export const AccessLevel = {
 
 export type AccessLevel = (typeof AccessLevel)[keyof typeof AccessLevel];
 
+/** Workforce classification; mirrors server WorkforceType (reports use the same values in workforce-report-filters). */
+export const WorkforceType = {
+  INTERNAL_EMPLOYEE: 'internal_employee',
+  FIELD_EMPLOYEE: 'field_employee',
+  INTERNAL_SALES_REP: 'internal_sales_rep',
+  EXTERNAL_SALES_REP: 'external_sales_rep',
+  MANAGEMENT: 'management',
+  SUPPORT_ADMIN: 'support_admin',
+  SECURITY: 'security',
+  MAINTENANCE: 'maintenance',
+  EVENT_PLANNER: 'event_planner',
+  MARKETING: 'marketing',
+  HR: 'hr',
+  CLIENT: 'client',
+  FINANCE: 'finance',
+  ACCOUNTING: 'accounting',
+  LEGAL: 'legal',
+  OPERATIONS: 'operations',
+  IT: 'it',
+  DEVELOPMENT: 'development',
+  DESIGN: 'design',
+  DRIVER: 'driver',
+  GENERAL_WORKER: 'general_worker',
+} as const;
+
+export type WorkforceType = (typeof WorkforceType)[keyof typeof WorkforceType];
+
 export const Department = {
   SUPPORT: 'support',
   ENGINEERING: 'engineering',

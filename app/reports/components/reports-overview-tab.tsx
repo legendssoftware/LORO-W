@@ -56,7 +56,8 @@ import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
-  userListItemHasPerformanceTarget,
+  buildReportingUserUidSet,
+  userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
 import { ReportsCurrentProgressSection } from '@/app/reports/components/reports-current-progress-section';
@@ -91,6 +92,19 @@ function getUtcMonthRange(ref: Date): { from: string; to: string } {
   const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   const end = new Date(Date.UTC(y, m, lastDay));
   return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
+}
+
+function filterVisitListItemsByOwnerUids(
+  checkIns: VisitListItem[],
+  allowedUids: Set<number>,
+  apply: boolean
+): VisitListItem[] {
+  if (!apply) return checkIns;
+  return checkIns.filter((c) => {
+    const uid = c.owner?.uid;
+    if (uid == null) return false;
+    return allowedUids.has(uid);
+  });
 }
 
 type OverviewTimeframe = 'day' | 'month';
@@ -381,8 +395,13 @@ export function ReportsOverviewTab({
 
   const reportingUsers = React.useMemo(
     () =>
-      elevated ? usersList.filter(userListItemHasPerformanceTarget) : usersList,
+      elevated ? usersList.filter(userListItemInLeadsVisitsReportingCohort) : usersList,
     [elevated, usersList]
+  );
+
+  const reportingUidSet = React.useMemo(
+    () => buildReportingUserUidSet(reportingUsers),
+    [reportingUsers]
   );
 
   React.useEffect(() => {
@@ -391,14 +410,28 @@ export function ReportsOverviewTab({
     if (!ok) setSelectedOwnerUid('all');
   }, [elevated, reportingUsers, selectedOwnerUid]);
 
+  const checkInsForOverviewCharts = React.useMemo(() => {
+    const raw = checkInsData?.checkIns ?? [];
+    return filterVisitListItemsByOwnerUids(
+      raw,
+      reportingUidSet,
+      elevated && selectedOwnerUid === 'all'
+    );
+  }, [
+    checkInsData?.checkIns,
+    reportingUidSet,
+    elevated,
+    selectedOwnerUid,
+  ]);
+
   const chartData = React.useMemo(
     () =>
       mergeChartRowsWithCheckInVisits(
         progressData?.aggregateBuckets ?? [],
-        checkInsData?.checkIns ?? [],
+        checkInsForOverviewCharts,
         timeframe
       ),
-    [progressData?.aggregateBuckets, checkInsData?.checkIns, timeframe]
+    [progressData?.aggregateBuckets, checkInsForOverviewCharts, timeframe]
   );
 
   const rangeDescription =
@@ -408,7 +441,7 @@ export function ReportsOverviewTab({
 
   const totals = React.useMemo(() => {
     const rows = progressData?.aggregateBuckets ?? [];
-    const checkIns = checkInsData?.checkIns ?? [];
+    const checkIns = checkInsForOverviewCharts;
     const visA = rows.reduce(
       (sum, b) =>
         sum + countCheckInsInBucketWindow(checkIns, b.startDate, b.endDate),
@@ -423,7 +456,7 @@ export function ReportsOverviewTab({
       { leadsA: 0, leadsT: 0, visT: 0 }
     );
     return { leadsA, leadsT, visA, visT };
-  }, [progressData?.aggregateBuckets, checkInsData?.checkIns]);
+  }, [progressData?.aggregateBuckets, checkInsForOverviewCharts]);
 
   const trendAxis = React.useMemo(() => {
     const isMonth = timeframe === 'month';
@@ -540,12 +573,11 @@ export function ReportsOverviewTab({
 
   const summaryTableUsers = React.useMemo((): UserListItem[] => {
     if (!elevated) return [];
-    let list = usersList;
     if (selectedOwnerUid !== 'all') {
-      list = list.filter((u) => String(u.uid) === selectedOwnerUid);
+      return usersList.filter((u) => String(u.uid) === selectedOwnerUid);
     }
-    return list;
-  }, [elevated, usersList, selectedOwnerUid]);
+    return reportingUsers;
+  }, [elevated, usersList, selectedOwnerUid, reportingUsers]);
 
   const branchesByUid = React.useMemo(
     () => new Map(branches.map((b) => [b.uid, b])),
@@ -558,10 +590,22 @@ export function ReportsOverviewTab({
     [summaryProgressData?.users]
   );
 
-  const summaryRows = React.useMemo(() => {
-    const visitsByUid = countVisitsByOwnerUid(
-      summaryCheckInsData?.checkIns ?? []
+  const summaryCheckInsForTable = React.useMemo(() => {
+    const raw = summaryCheckInsData?.checkIns ?? [];
+    return filterVisitListItemsByOwnerUids(
+      raw,
+      reportingUidSet,
+      elevated && selectedOwnerUid === 'all'
     );
+  }, [
+    summaryCheckInsData?.checkIns,
+    reportingUidSet,
+    elevated,
+    selectedOwnerUid,
+  ]);
+
+  const summaryRows = React.useMemo(() => {
+    const visitsByUid = countVisitsByOwnerUid(summaryCheckInsForTable);
     const leadMap = mapLeadsByUserFromReport(summaryLeadsData?.byUser);
     if (!elevated && profile) {
       return [
@@ -582,7 +626,7 @@ export function ReportsOverviewTab({
       summaryTargetsByUid
     );
   }, [
-    summaryCheckInsData?.checkIns,
+    summaryCheckInsForTable,
     summaryLeadsData?.byUser,
     summaryProgressData?.users,
     elevated,

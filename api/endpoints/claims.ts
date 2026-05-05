@@ -7,6 +7,7 @@ export interface GetClaimsParams {
   status?: string;
   createdFrom?: string;
   createdTo?: string;
+  claimGroupUid?: number;
 }
 
 /**
@@ -23,6 +24,7 @@ export async function getClaims(
   if (params.status) search.set('status', params.status);
   if (params.createdFrom) search.set('createdFrom', params.createdFrom);
   if (params.createdTo) search.set('createdTo', params.createdTo);
+  if (params.claimGroupUid != null) search.set('claimGroupUid', String(params.claimGroupUid));
   const qs = search.toString();
   const { data } = await client.get<ClaimsListResponse>(`/claims${qs ? `?${qs}` : ''}`);
   return data;

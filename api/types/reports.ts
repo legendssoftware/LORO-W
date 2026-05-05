@@ -40,6 +40,8 @@ export interface ClaimsListResponse {
     claimRef?: string;
     category?: string;
     createdAt?: string;
+    claimGroupUid?: number | null;
+    claimGroup?: { uid: number; title: string; kind?: string } | null;
   }>;
   meta?: { total: number };
 }

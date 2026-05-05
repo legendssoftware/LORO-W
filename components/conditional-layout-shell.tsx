@@ -1,19 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { AppSidebar } from '@/components/app-sidebar';
-import { ConditionalAppHeader } from '@/components/conditional-app-header';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { AccessGuard } from '@/components/access-guard';
-import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
-import { DashboardAttendanceTour } from '@/components/dashboard-attendance-tour';
-import { LeadsTour } from '@/components/leads-tour';
-import { VisitsTour } from '@/components/visits-tour';
-import { StaffTour } from '@/components/staff-tour';
-import { ClientsTour } from '@/components/clients-tour';
-import { PipelineTour } from '@/components/pipeline-tour';
-import { PlanningTour } from '@/components/planning-tour';
-import { SettingsTour } from '@/components/settings-tour';
+import { PerformanceWarningGateProvider } from '@/contexts/performance-warning-pending-context';
+import { ConditionalLayoutShellInner } from '@/components/conditional-layout-shell-inner';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 
 /**
@@ -30,27 +19,8 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="flex h-svh w-full">
-      <AppSidebar />
-      <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar">
-        <ConditionalAppHeader />
-        <SalesBenchmarksWelcomeDialog />
-        <DashboardAttendanceTour />
-        <LeadsTour />
-        <VisitsTour />
-        <StaffTour />
-        <ClientsTour />
-        <PipelineTour />
-        <PlanningTour />
-        <SettingsTour />
-        <ErrorBoundary>
-          <AccessGuard>
-            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-              {children}
-            </div>
-          </AccessGuard>
-        </ErrorBoundary>
-      </div>
-    </div>
+    <PerformanceWarningGateProvider>
+      <ConditionalLayoutShellInner>{children}</ConditionalLayoutShellInner>
+    </PerformanceWarningGateProvider>
   );
 }

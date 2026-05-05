@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
+import { useSearchParams } from 'next/navigation';
 import {
   Clock,
   Contact,
@@ -37,6 +38,12 @@ const REPORT_TABS = [
 const tabTriggerClassName =
   'inline-flex items-center gap-2 shrink-0 justify-center whitespace-nowrap rounded-md border-0 bg-transparent px-4 py-2 text-sm font-medium text-zinc-500 shadow-none ring-0 transition-colors hover:bg-transparent hover:text-zinc-700 focus-visible:ring-violet-500/40 data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:hover:bg-violet-700 data-[state=active]:hover:text-white dark:text-zinc-400 dark:hover:text-zinc-300 dark:data-[state=active]:bg-violet-600 dark:data-[state=active]:text-white';
 
+function getValidReportsTab(value: string | null) {
+  return REPORT_TABS.some((tab) => tab.value === value)
+    ? (value as (typeof REPORT_TABS)[number]['value'])
+    : 'overview';
+}
+
 function ReportsTabsEqualWidth({
   profile,
   reportsMode,
@@ -44,10 +51,12 @@ function ReportsTabsEqualWidth({
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
 }) {
+  const searchParams = useSearchParams();
+  const initialTab = getValidReportsTab(searchParams.get('tab'));
   const listRef = useRef<HTMLDivElement>(null);
   const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
   const [activeTab, setActiveTab] =
-    useState<(typeof REPORT_TABS)[number]['value']>('overview');
+    useState<(typeof REPORT_TABS)[number]['value']>(initialTab);
 
   const measureTabWidths = useCallback(() => {
     const el = listRef.current;
@@ -63,6 +72,10 @@ function ReportsTabsEqualWidth({
   useLayoutEffect(() => {
     measureTabWidths();
   }, [measureTabWidths]);
+
+  useEffect(() => {
+    setActiveTab(getValidReportsTab(searchParams.get('tab')));
+  }, [searchParams]);
 
   useEffect(() => {
     const el = listRef.current;
