@@ -5,7 +5,8 @@ import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { readLeadsTourState, writeLeadsTourState, getTodayIsoDate } from '@/lib/leads-tour-storage';
+import { readLeadsTourState, writeLeadsTourState, getCurrentYearMonth } from '@/lib/leads-tour-storage';
+import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
@@ -184,6 +185,7 @@ function getActiveStepElement(driverInstance: Driver): string {
 export function LeadsTour() {
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const blockTours = usePerformanceWarningPendingSafe().pendingBlockingWarning;
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
@@ -203,23 +205,31 @@ export function LeadsTour() {
       driverRef.current = null;
       return;
     }
+    if (blockTours) {
+      hasAttemptedStartRef.current = false;
+      wasCompletedRef.current = false;
+      didAutoOpenFirstLeadRef.current = false;
+      driverRef.current?.destroy();
+      driverRef.current = null;
+      return;
+    }
     if (hasAttemptedStartRef.current) return;
     hasAttemptedStartRef.current = true;
 
-    const today = getTodayIsoDate();
+    const period = getCurrentYearMonth();
     const stored = readLeadsTourState(userId);
     const currentState = stored ?? {
-      date: today,
+      period,
       resumeIndex: 0,
-      completedToday: false,
+      completedThisMonth: false,
     };
 
-    if (currentState.date !== today) {
-      currentState.date = today;
-      currentState.completedToday = false;
+    if (currentState.period !== period) {
+      currentState.period = period;
+      currentState.completedThisMonth = false;
     }
 
-    if (currentState.completedToday) return;
+    if (currentState.completedThisMonth) return;
 
     let pollCount = 0;
     const maxPollCount = 40;
@@ -243,9 +253,9 @@ export function LeadsTour() {
       );
 
       writeLeadsTourState(userId, {
-        date: today,
+        period,
         resumeIndex: boundedStartIndex,
-        completedToday: false,
+        completedThisMonth: false,
       });
 
       const faqIndex = steps.length - 1;
@@ -297,9 +307,9 @@ export function LeadsTour() {
 
           const activeIndex = activeDriver.getActiveIndex() ?? 0;
           writeLeadsTourState(userId, {
-            date: getTodayIsoDate(),
+            period: getCurrentYearMonth(),
             resumeIndex: activeIndex,
-            completedToday: false,
+            completedThisMonth: false,
           });
         },
         onNextClick: (_element, _step, { driver: activeDriver }) => {
@@ -334,9 +344,9 @@ export function LeadsTour() {
           didAutoOpenFirstLeadRef.current = false;
 
           writeLeadsTourState(userId, {
-            date: getTodayIsoDate(),
+            period: getCurrentYearMonth(),
             resumeIndex: didComplete ? 0 : activeIndex,
-            completedToday: didComplete,
+            completedThisMonth: didComplete,
           });
         },
       });
@@ -353,7 +363,7 @@ export function LeadsTour() {
       wasCompletedRef.current = false;
       didAutoOpenFirstLeadRef.current = false;
     };
-  }, [shouldRun, userId]);
+  }, [shouldRun, userId, blockTours]);
 
   return null;
 }

@@ -2,7 +2,8 @@
  * Auth-related types: sync profile, session, token. Aligned with server sync response.
  */
 
-import type { AccessLevel } from './user';
+import type { TargetWarningsPayload } from '../endpoints/user';
+import type { AccessLevel, WorkforceType } from './user';
 
 /** Branch reference returned in profile */
 export interface BranchRef {
@@ -28,12 +29,16 @@ export interface SyncProfile {
   avatar?: string | null;
   businesscardURL?: string | null;
   accessLevel?: AccessLevel | string;
+  /** Staff sync only; aligns with server WorkforceType. */
+  workforceType?: WorkforceType | string | null;
   role?: string;
   organisationRef?: string;
   branchUid?: number;
   organisation?: OrganisationRef | null;
   branch?: BranchRef | null;
   clerkUserId?: string;
+  /** Staff sync: mirrors `user_targets.targetWarnings` for early UI before GET /user/:ref/target settles. */
+  targetWarnings?: TargetWarningsPayload | null;
 }
 
 /** Response shape of POST /auth/sync-clerk */

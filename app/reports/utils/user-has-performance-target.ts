@@ -1,5 +1,6 @@
 import type { UserListItem } from '@/api/endpoints/user';
 import type { VisitExportItem } from '@/api/types/reports';
+import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 
 function targetNum(v: unknown): number {
   if (v == null) return 0;
@@ -27,6 +28,12 @@ export function userListItemHasPerformanceTarget(user: UserListItem): boolean {
   const ut = (user as Record<string, unknown>).userTarget;
   if (!ut || typeof ut !== 'object') return userHasPerformanceTarget(null);
   return userHasPerformanceTarget(ut as Record<string, unknown>);
+}
+
+/** Org leads/visits/targets reporting cohort: performance targets required, general workers excluded (matches server rollups). */
+export function userListItemInLeadsVisitsReportingCohort(user: UserListItem): boolean {
+  if (isGeneralWorkerWorkforce(user.workforceType)) return false;
+  return userListItemHasPerformanceTarget(user);
 }
 
 export function buildReportingUserUidSet(

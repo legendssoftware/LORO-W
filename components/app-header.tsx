@@ -22,6 +22,7 @@ import {
   LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
   LORO_WELCOME_SHOWN_SESSION_KEY,
 } from '@/lib/client-session-keys';
+import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 import { useSidebar } from '@/components/ui/sidebar';
 
 /** Human-readable label for access level (e.g. owner → Owner). */
@@ -58,7 +59,8 @@ export function AppHeader() {
       return;
 
     // Sales benchmarks dialog on /dashboard is the welcome for that session; skip toast until dismissed for this Clerk session.
-    if (typeof window !== 'undefined' && isSignedIn) {
+    const skipBenchmarksDismissWait = isGeneralWorkerWorkforce(backendUserData?.workforceType);
+    if (!skipBenchmarksDismissWait && typeof window !== 'undefined' && isSignedIn) {
       try {
         if (!sessionId) {
           return;
@@ -80,7 +82,7 @@ export function AppHeader() {
       icon: '✨',
       duration: 4000,
     });
-  }, [isLoaded, isSignedIn, user, sessionId]);
+  }, [isLoaded, isSignedIn, user, sessionId, backendUserData?.workforceType]);
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">

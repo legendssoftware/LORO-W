@@ -14,13 +14,16 @@ import {
   getDailyProductivity,
   patchUserTarget,
   getUserPreferences,
+  postAcknowledgePerformanceWarning,
+  getSubThresholdDailyCalls,
   type PatchUserBody,
   type PatchUserTargetBody,
   type UserResponse,
 } from '@/api/endpoints/user';
 
 const QUERY_KEY_PREFIX = ['user'] as const;
-const TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
+export const USER_TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
+const TARGET_QUERY_KEY_PREFIX = USER_TARGET_QUERY_KEY_PREFIX;
 const DAILY_PRODUCTIVITY_KEY_PREFIX = ['user', 'daily-productivity'] as const;
 
 export function useUser(
@@ -203,4 +206,46 @@ export function usePatchUserTarget(ref: string | null) {
   });
 }
 
-export type { UserResponse, PatchUserBody, PatchUserTargetBody };
+export function useSubThresholdDailyCalls(
+  params: { date: string; branchId?: number; minCalls?: number } | null,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...QUERY_KEY_PREFIX, 'sub-threshold-calls', params?.date, params?.branchId, params?.minCalls],
+    queryFn: async () => {
+      if (!params?.date) {
+        return { message: '', date: '', minCalls: 60, users: [] };
+      }
+      return getSubThresholdDailyCalls(client, params);
+    },
+    enabled: (options?.enabled !== false && !!params?.date) ?? false,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAcknowledgePerformanceWarning(ref: string | null) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!ref) throw new Error('User ref required');
+      return postAcknowledgePerformanceWarning(client, ref);
+    },
+    onSuccess: () => {
+      if (ref) {
+        queryClient.invalidateQueries({ queryKey: [...USER_TARGET_QUERY_KEY_PREFIX, ref] });
+      }
+      const { profileData, startSession } = useSessionStore.getState();
+      const tw = profileData?.targetWarnings;
+      if (profileData != null && tw != null && typeof tw.level === 'number') {
+        startSession({
+          profileData: {
+            ...profileData,
+            targetWarnings: { ...tw, acknowledgedLevel: tw.level },
+          },
+        });
+      }
+    },
+  });
+}

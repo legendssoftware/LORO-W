@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
+import { formatEnumLabel } from '@/lib/format-enum-label';
 
 /** Sentinel: no role/branch dimension filter applied. */
 export const STAFF_DIMENSION_FILTER_ALL = '__all__';
@@ -78,6 +79,32 @@ export function buildStaffBranchFilterItems(users: ReportCardUser[]): { value: s
   return items;
 }
 
+/**
+ * Build workforce type filter options from the current user list (dedupe by case-insensitive key).
+ */
+export function buildStaffWorkforceFilterItems(users: ReportCardUser[]): { value: string; label: string }[] {
+  const byLower = new Map<string, string>();
+  let hasUnassigned = false;
+  for (const u of users) {
+    const w = u.workforceType?.trim();
+    if (!w) {
+      hasUnassigned = true;
+      continue;
+    }
+    const k = w.toLowerCase();
+    if (!byLower.has(k)) byLower.set(k, w);
+  }
+  const items: { value: string; label: string }[] = [
+    { value: STAFF_DIMENSION_FILTER_ALL, label: 'All workforce types' },
+  ];
+  if (hasUnassigned) items.push({ value: STAFF_DIMENSION_FILTER_NONE, label: 'Unassigned' });
+  const sorted = [...byLower.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  for (const [low, canonical] of sorted) {
+    items.push({ value: low, label: formatEnumLabel(canonical) });
+  }
+  return items;
+}
+
 export function staffUserMatchesRoleFilter(user: ReportCardUser, filter: string): boolean {
   if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
   if (filter === STAFF_DIMENSION_FILTER_NONE) return !user.role?.trim();
@@ -88,6 +115,12 @@ export function staffUserMatchesBranchFilter(user: ReportCardUser, filter: strin
   if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
   if (filter === STAFF_DIMENSION_FILTER_NONE) return !user.branch?.trim();
   return user.branch?.trim().toLowerCase() === filter;
+}
+
+export function staffUserMatchesWorkforceFilter(user: ReportCardUser, filter: string): boolean {
+  if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
+  if (filter === STAFF_DIMENSION_FILTER_NONE) return !user.workforceType?.trim();
+  return user.workforceType?.trim().toLowerCase() === filter;
 }
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;

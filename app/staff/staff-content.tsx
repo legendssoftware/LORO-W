@@ -14,6 +14,19 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,8 +39,10 @@ import {
   STAFF_DIMENSION_FILTER_ALL,
   buildStaffRoleFilterItems,
   buildStaffBranchFilterItems,
+  buildStaffWorkforceFilterItems,
   staffUserMatchesRoleFilter,
   staffUserMatchesBranchFilter,
+  staffUserMatchesWorkforceFilter,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { isStaffDashboardVisible } from '@/lib/access';
@@ -43,7 +58,7 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import { PayrollSummaryDialog } from '@/app/reports/components/payroll-summary-dialog';
-import { BarChart3, Briefcase, MapPinned } from 'lucide-react';
+import { BarChart3, Briefcase, Check, ChevronsUpDown, MapPinned, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
@@ -56,7 +71,9 @@ export function StaffContent() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [roleFilter, setRoleFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
+  const [workforceFilter, setWorkforceFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchFilter, setBranchFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
+  const [branchPickerOpen, setBranchPickerOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<ReportCardUser | null>(null);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -188,6 +205,10 @@ export function StaffContent() {
     () => buildStaffBranchFilterItems(statusFilteredUsers),
     [statusFilteredUsers]
   );
+  const workforceFilterItems = useMemo(
+    () => buildStaffWorkforceFilterItems(statusFilteredUsers),
+    [statusFilteredUsers]
+  );
 
   useEffect(() => {
     const valid = roleFilterItems.some((i) => i.value === roleFilter);
@@ -199,24 +220,35 @@ export function StaffContent() {
     if (!valid) setBranchFilter(STAFF_DIMENSION_FILTER_ALL);
   }, [branchFilterItems, branchFilter]);
 
-  const roleBranchFilteredUsers = useMemo(() => {
+  useEffect(() => {
+    const valid = workforceFilterItems.some((i) => i.value === workforceFilter);
+    if (!valid) setWorkforceFilter(STAFF_DIMENSION_FILTER_ALL);
+  }, [workforceFilterItems, workforceFilter]);
+
+  const dimensionFilteredUsers = useMemo(() => {
     return statusFilteredUsers.filter(
       (u) =>
         staffUserMatchesRoleFilter(u, roleFilter) &&
+        staffUserMatchesWorkforceFilter(u, workforceFilter) &&
         staffUserMatchesBranchFilter(u, branchFilter)
     );
-  }, [statusFilteredUsers, roleFilter, branchFilter]);
+  }, [statusFilteredUsers, roleFilter, workforceFilter, branchFilter]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return roleBranchFilteredUsers;
-    return roleBranchFilteredUsers.filter(
+    if (!q) return dimensionFilteredUsers;
+    return dimensionFilteredUsers.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         (u.phone && u.phone.toLowerCase().includes(q))
     );
-  }, [roleBranchFilteredUsers, search]);
+  }, [dimensionFilteredUsers, search]);
+
+  const branchFilterTriggerLabel = useMemo(
+    () => branchFilterItems.find((i) => i.value === branchFilter)?.label ?? 'All branches',
+    [branchFilterItems, branchFilter]
+  );
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
   const isLoading =
@@ -311,21 +343,81 @@ export function StaffContent() {
               ) : null}
             </div>
             <div className="flex items-center gap-1 min-w-0">
-              <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <Select value={workforceFilter} onValueChange={setWorkforceFilter}>
                 <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Branch" />
+                  <SelectValue placeholder="Workforce type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {branchFilterItems.map((opt) => (
+                  {workforceFilterItems.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       <span className="flex items-center gap-2">
-                        <MapPinned className="size-4 shrink-0" />
+                        <Users className="size-4 shrink-0" />
                         {opt.label}
                       </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {workforceFilter !== STAFF_DIMENSION_FILTER_ALL ? (
+                <button
+                  type="button"
+                  onClick={() => setWorkforceFilter(STAFF_DIMENSION_FILTER_ALL)}
+                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+                  aria-label="Clear workforce type filter"
+                >
+                  <XIcon className="size-4 text-muted-foreground" />
+                </button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1 min-w-0">
+              <Popover open={branchPickerOpen} onOpenChange={setBranchPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={branchPickerOpen}
+                    className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] justify-between bg-white border-gray-200 text-foreground font-normal [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0"
+                  >
+                    <span className="truncate">{branchFilterTriggerLabel}</span>
+                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] min-w-[200px] max-w-[min(100vw-2rem,24rem)] p-0"
+                  align="start"
+                >
+                  <Command>
+                    <CommandInput placeholder="Search branches…" />
+                    <CommandList>
+                      <CommandEmpty>No branch found.</CommandEmpty>
+                      <CommandGroup>
+                        {branchFilterItems.map((opt) => (
+                          <CommandItem
+                            key={opt.value}
+                            value={`${opt.label} ${opt.value}`}
+                            onSelect={() => {
+                              setBranchFilter(opt.value);
+                              setBranchPickerOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'size-4 shrink-0',
+                                branchFilter === opt.value ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                              <MapPinned className="size-4 shrink-0" />
+                              {opt.label}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {branchFilter !== STAFF_DIMENSION_FILTER_ALL ? (
                 <button
                   type="button"

@@ -21,6 +21,8 @@ export interface ReportCardUser {
   email: string;
   phone?: string | null;
   role?: string;
+  /** Workforce cohort from daily overview (e.g. general_worker). */
+  workforceType?: string | null;
   branch?: string;
   photoURL?: string | null;
   hoursThisMonth: number;

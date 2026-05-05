@@ -13,6 +13,7 @@ export interface UserResponse {
   role: string;
   status: string;
   accessLevel: string;
+  workforceType?: string | null;
   organisationRef?: string | null;
   branchUid?: number | null;
   branch?: { uid: number; name?: string } | null;
@@ -65,6 +66,7 @@ export interface PatchUserBody {
   role?: string;
   status?: string;
   accessLevel?: string;
+  workforceType?: string;
   departmentId?: number;
   organisationRef?: string | null;
   userref?: string | null;
@@ -100,6 +102,13 @@ export interface PatchUserBody {
   userTarget?: PatchUserTargetBody;
 }
 
+/** Matches server TargetWarningsState on user_targets.targetWarnings */
+export interface TargetWarningsPayload {
+  level: 1 | 2 | 3;
+  issuedAt?: string;
+  acknowledgedLevel?: number;
+}
+
 /** Partial update body for PATCH /user/:ref/target. Matches server UpdateUserTargetDto. */
 export interface PatchUserTargetBody {
   targetSalesAmount?: number;
@@ -133,10 +142,38 @@ export interface PatchUserTargetBody {
   cgicCosts?: number;
   totalCost?: number;
   erpSalesRepCode?: string;
+  targetWarnings?: TargetWarningsPayload | null;
+}
+
+export interface UserTargetPersonalTargets {
+  targetWarnings?: TargetWarningsPayload | null;
+  [key: string]: unknown;
+}
+
+export interface UserTargetDashboardShape {
+  personalTargets?: UserTargetPersonalTargets;
+  hasPersonalTargets?: boolean;
+  [key: string]: unknown;
+}
+
+export interface SubThresholdDailyCallUserRow {
+  uid: number;
+  clerkUserId: string | null;
+  fullName: string;
+  email: string;
+  callCount: number;
+  targetWarnings: TargetWarningsPayload | null;
+}
+
+export interface GetSubThresholdDailyCallsResponse {
+  message: string;
+  date: string;
+  minCalls: number;
+  users: SubThresholdDailyCallUserRow[];
 }
 
 export interface GetUserTargetResponse {
-  userTarget: Record<string, unknown> | null;
+  userTarget: UserTargetDashboardShape | Record<string, unknown> | null;
   message: string;
 }
 
@@ -255,6 +292,40 @@ export async function getUserTarget(
   ref: string
 ): Promise<GetUserTargetResponse> {
   const { data } = await client.get<GetUserTargetResponse>(`/user/${ref}/target`);
+  return data;
+}
+
+/**
+ * POST /user/:ref/target/performance-warning/acknowledge — self only.
+ */
+export async function postAcknowledgePerformanceWarning(
+  client: AxiosInstance,
+  ref: string
+): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>(
+    `/user/${ref}/target/performance-warning/acknowledge`,
+    {}
+  );
+  return data;
+}
+
+/**
+ * GET /user/performance/sub-threshold-daily-calls — managers; org from token.
+ */
+export async function getSubThresholdDailyCalls(
+  client: AxiosInstance,
+  params: { date: string; branchId?: number; minCalls?: number }
+): Promise<GetSubThresholdDailyCallsResponse> {
+  const { data } = await client.get<GetSubThresholdDailyCallsResponse>(
+    '/user/performance/sub-threshold-daily-calls',
+    {
+      params: {
+        date: params.date,
+        ...(params.branchId != null ? { branchId: params.branchId } : {}),
+        ...(params.minCalls != null ? { minCalls: params.minCalls } : {}),
+      },
+    }
+  );
   return data;
 }
 
