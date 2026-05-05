@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
 import {
   Area,
   AreaChart,
@@ -10,7 +9,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Building2, CalendarIcon, List, User } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { SyncProfile } from '@/api/types';
 import type { VisitListItem } from '@/api/types/visits';
@@ -23,8 +21,6 @@ import {
   getBranchDisplayLabel,
 } from '@/api/hooks';
 import { isReportsElevatedViewer } from '@/lib/access';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -40,19 +36,6 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
@@ -62,16 +45,15 @@ import {
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
 import { ReportsCurrentProgressSection } from '@/app/reports/components/reports-current-progress-section';
 import { OverviewDailySummaryDialog } from '@/app/reports/components/overview-daily-summary-dialog';
+import { ReportsOverviewFiltersBar } from '@/app/reports/components/reports-overview-filters-bar';
 import {
   buildOverviewDailySummaryRows,
   buildSelfOverviewDailySummaryRow,
   countVisitsByOwnerUid,
   getOverviewSummaryUtcDay,
   mapLeadsByUserFromReport,
+  type OverviewTimeframe,
 } from '@/app/reports/utils/overview-daily-summary';
-
-const selectTriggerClass =
-  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
 
 function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
@@ -106,8 +88,6 @@ function filterVisitListItemsByOwnerUids(
     return allowedUids.has(uid);
   });
 }
-
-type OverviewTimeframe = 'day' | 'month';
 
 function formatDailyXTick(key: string): string {
   const datePart = key.includes('T') ? key.slice(0, 10) : key.slice(0, 10);
@@ -458,6 +438,46 @@ export function ReportsOverviewTab({
     return { leadsA, leadsT, visA, visT };
   }, [progressData?.aggregateBuckets, checkInsForOverviewCharts]);
 
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    const buckets = progressData?.aggregateBuckets ?? [];
+    const bucketAchievedLeadsSum = buckets.reduce(
+      (s, b) => s + b.achievedLeads,
+      0
+    );
+    console.debug('[reports/overview]', {
+      broughtInLeadsTotal: totals.leadsA,
+      bucketAchievedLeadsSum,
+      mappedVisitsTotal: totals.visA,
+      range: rangeDescription,
+      timeframe,
+      reportsMode,
+      progressFromTo: { from: progressParams.from, to: progressParams.to },
+      checkInsRange: {
+        startDate: checkInsParams.startDate,
+        endDate: checkInsParams.endDate,
+      },
+      branchId: elevated ? selectedBranchId : undefined,
+      ownerUid: elevated ? selectedOwnerUid : undefined,
+      chartBucketCount: chartData.length,
+    });
+  }, [
+    totals.leadsA,
+    totals.visA,
+    rangeDescription,
+    timeframe,
+    reportsMode,
+    progressParams.from,
+    progressParams.to,
+    checkInsParams.startDate,
+    checkInsParams.endDate,
+    elevated,
+    selectedBranchId,
+    selectedOwnerUid,
+    chartData.length,
+    progressData?.aggregateBuckets,
+  ]);
+
   const trendAxis = React.useMemo(() => {
     const isMonth = timeframe === 'month';
     return {
@@ -678,197 +698,29 @@ export function ReportsOverviewTab({
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <div className="flex flex-col gap-3">
-        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
-            <Select
-              value={timeframe}
-              onValueChange={(v) => setTimeframe(v as OverviewTimeframe)}
-            >
-              <SelectTrigger
-                className={cn(
-                  selectTriggerClass,
-                  'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
-                )}
-              >
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Single day (hourly)</SelectItem>
-                <SelectItem value="month">Month (daily)</SelectItem>
-              </SelectContent>
-            </Select>
-
-          {timeframe === 'day' ? (
-            <Popover open={dayPopoverOpen} onOpenChange={setDayPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn(
-                    'h-9 w-[190px] shrink-0 justify-start text-left font-normal sm:w-[220px]',
-                    selectTriggerClass
-                  )}
-                >
-                  <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-                  {formatUtcYmd(selectedDay)}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[80vw] max-w-sm p-0 sm:w-auto"
-                align="center"
-              >
-                <Calendar
-                  mode="single"
-                  selected={selectedDay}
-                  onSelect={(d) => {
-                    if (d)
-                      setSelectedDay(
-                        new Date(
-                          Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
-                        )
-                      );
-                  }}
-                  initialFocus
-                />
-                <div className="flex flex-wrap justify-end gap-2 border-t p-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedDay(utcToday())}
-                  >
-                    Today (UTC)
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDayPopoverOpen(false)}
-                  >
-                    Done
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <Popover open={monthPopoverOpen} onOpenChange={setMonthPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn(
-                    'h-9 w-[210px] shrink-0 justify-start text-left font-normal sm:w-[240px]',
-                    selectTriggerClass
-                  )}
-                >
-                  <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-                  {format(monthAnchor, 'MMM yyyy')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[80vw] max-w-sm p-0 sm:w-auto"
-                align="center"
-              >
-                <Calendar
-                  mode="single"
-                  selected={monthAnchor}
-                  onSelect={(d) => {
-                    if (d)
-                      setMonthAnchor(
-                        new Date(
-                          Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
-                        )
-                      );
-                  }}
-                  initialFocus
-                />
-                <div className="flex flex-wrap justify-end gap-2 border-t p-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMonthAnchor(utcToday())}
-                  >
-                    This month (UTC)
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMonthPopoverOpen(false)}
-                  >
-                    Done
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-
-            {elevated ? (
-              <>
-                <Select
-                  value={selectedBranchId}
-                  onValueChange={(v) => {
-                    setSelectedBranchId(v);
-                    setSelectedOwnerUid('all');
-                  }}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      selectTriggerClass,
-                      'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
-                    )}
-                  >
-                    <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                    <SelectValue placeholder="Branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All branches</SelectItem>
-                    {branches.map((b) => (
-                      <SelectItem key={b.uid} value={String(b.uid)}>
-                        {getBranchDisplayLabel(b)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
-                  <SelectTrigger
-                    className={cn(
-                      selectTriggerClass,
-                      'w-[190px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
-                    )}
-                  >
-                    <User className="size-4 shrink-0 text-muted-foreground" />
-                    <SelectValue placeholder="User" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All users</SelectItem>
-                    {reportingUsers.map((u) => (
-                      <SelectItem key={u.uid} value={String(u.uid)}>
-                        {[u.name, u.surname].filter(Boolean).join(' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            ) : null}
-
-            <div className="flex w-[150px] shrink-0 sm:w-auto">
-              <Button
-                type="button"
-                variant="secondary"
-                className={cn(selectTriggerClass, 'h-9 w-full shrink-0 sm:w-auto')}
-                onClick={() => setSummaryDialogOpen(true)}
-              >
-                <List className="mr-2 size-4 shrink-0" aria-hidden />
-                Summary
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ReportsOverviewFiltersBar
+        timeframe={timeframe}
+        onTimeframeChange={setTimeframe}
+        dayPopoverOpen={dayPopoverOpen}
+        onDayPopoverOpenChange={setDayPopoverOpen}
+        monthPopoverOpen={monthPopoverOpen}
+        onMonthPopoverOpenChange={setMonthPopoverOpen}
+        selectedDay={selectedDay}
+        onSelectedDayChange={setSelectedDay}
+        monthAnchor={monthAnchor}
+        onMonthAnchorChange={setMonthAnchor}
+        elevated={elevated}
+        branches={branches}
+        reportingUsers={reportingUsers}
+        selectedBranchId={selectedBranchId}
+        onBranchChange={(v) => {
+          setSelectedBranchId(v);
+          setSelectedOwnerUid('all');
+        }}
+        selectedOwnerUid={selectedOwnerUid}
+        onOwnerChange={setSelectedOwnerUid}
+        onOpenSummary={() => setSummaryDialogOpen(true)}
+      />
 
       <OverviewDailySummaryDialog
         open={summaryDialogOpen}
