@@ -101,7 +101,7 @@ export function AppSidebar() {
           <span className="text-lg font-bold text-sidebar-foreground">LORO</span>
           <SidebarTrigger className="absolute right-3 md:static" />
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="justify-center md:justify-start">
           <SidebarGroup>
             <SidebarGroupContent className="w-full md:w-auto">
               <SidebarMenu className="items-center md:items-stretch">
