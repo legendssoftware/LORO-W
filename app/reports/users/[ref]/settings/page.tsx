@@ -157,6 +157,7 @@ const targetFormSchema = z.object({
   cgicCosts: z.number().optional().nullable(),
   totalCost: z.number().optional().nullable(),
   erpSalesRepCode: z.string().optional().nullable(),
+  performanceWarningLevel: z.enum(['none', '1', '2', '3']).optional().nullable(),
 });
 
 type TargetFormValues = z.infer<typeof targetFormSchema>;
@@ -378,7 +379,20 @@ function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormV
     v === null || v === undefined ? null : typeof v === 'string' ? v : null;
   const bool = (v: unknown): boolean | null =>
     v === null || v === undefined ? null : typeof v === 'boolean' ? v : null;
-  if (!ut) {
+
+  const src =
+    ut && typeof ut === 'object' && (ut as { personalTargets?: Record<string, unknown> }).personalTargets
+      ? ((ut as { personalTargets: Record<string, unknown> }).personalTargets as Record<string, unknown>)
+      : ut;
+
+  const tw =
+    (ut as { personalTargets?: { targetWarnings?: { level?: number } } })?.personalTargets?.targetWarnings ??
+    (ut as { targetWarnings?: { level?: number } })?.targetWarnings;
+  const lvl = tw?.level;
+  const performanceWarningLevel: 'none' | '1' | '2' | '3' =
+    lvl === 1 || lvl === 2 || lvl === 3 ? String(lvl) as '1' | '2' | '3' : 'none';
+
+  if (!src) {
     return {
       targetSalesAmount: null, targetQuotationsAmount: null, targetCurrency: null,
       targetHoursWorked: null, targetNewClients: null,
@@ -387,32 +401,34 @@ function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormV
       isRecurring: null, recurringInterval: null, carryForwardUnfulfilled: null,
       baseSalary: null, carInstalment: null, carInsurance: null, fuel: null, cellPhoneAllowance: null,
       carMaintenance: null, cgicCosts: null, totalCost: null, erpSalesRepCode: null,
+      performanceWarningLevel: 'none',
     };
   }
   return {
-    targetSalesAmount: num(ut.targetSalesAmount),
-    targetQuotationsAmount: num(ut.targetQuotationsAmount),
-    targetCurrency: str(ut.targetCurrency),
-    targetHoursWorked: num(ut.targetHoursWorked),
-    targetNewClients: num(ut.targetNewClients),
-    targetNewLeads: num(ut.targetNewLeads),
-    targetCheckIns: num(ut.targetCheckIns),
-    targetCalls: num(ut.targetCalls),
-    targetPeriod: str(ut.targetPeriod),
-    periodStartDate: parseFormDateInput(ut.periodStartDate),
-    periodEndDate: parseFormDateInput(ut.periodEndDate),
-    isRecurring: bool(ut.isRecurring),
-    recurringInterval: (ut.recurringInterval === 'daily' || ut.recurringInterval === 'weekly' || ut.recurringInterval === 'monthly') ? ut.recurringInterval : null,
-    carryForwardUnfulfilled: bool(ut.carryForwardUnfulfilled),
-    baseSalary: num(ut.baseSalary),
-    carInstalment: num(ut.carInstalment),
-    carInsurance: num(ut.carInsurance),
-    fuel: num(ut.fuel),
-    cellPhoneAllowance: num(ut.cellPhoneAllowance),
-    carMaintenance: num(ut.carMaintenance),
-    cgicCosts: num(ut.cgicCosts),
-    totalCost: num(ut.totalCost),
-    erpSalesRepCode: str(ut.erpSalesRepCode),
+    targetSalesAmount: num(src.targetSalesAmount),
+    targetQuotationsAmount: num(src.targetQuotationsAmount),
+    targetCurrency: str(src.targetCurrency),
+    targetHoursWorked: num(src.targetHoursWorked),
+    targetNewClients: num(src.targetNewClients),
+    targetNewLeads: num(src.targetNewLeads),
+    targetCheckIns: num(src.targetCheckIns),
+    targetCalls: num(src.targetCalls),
+    targetPeriod: str(src.targetPeriod),
+    periodStartDate: parseFormDateInput(src.periodStartDate),
+    periodEndDate: parseFormDateInput(src.periodEndDate),
+    isRecurring: bool(src.isRecurring),
+    recurringInterval: (src.recurringInterval === 'daily' || src.recurringInterval === 'weekly' || src.recurringInterval === 'monthly') ? src.recurringInterval : null,
+    carryForwardUnfulfilled: bool(src.carryForwardUnfulfilled),
+    baseSalary: num(src.baseSalary),
+    carInstalment: num(src.carInstalment),
+    carInsurance: num(src.carInsurance),
+    fuel: num(src.fuel),
+    cellPhoneAllowance: num(src.cellPhoneAllowance),
+    carMaintenance: num(src.carMaintenance),
+    cgicCosts: num(src.cgicCosts),
+    totalCost: num(src.totalCost),
+    erpSalesRepCode: str(src.erpSalesRepCode),
+    performanceWarningLevel,
   };
 }
 
@@ -549,6 +565,16 @@ export default function UserSettingsPage() {
         (body as Record<string, unknown>)[k] = v;
       }
     }
+    if (targetForm.formState.dirtyFields.performanceWarningLevel) {
+      if (values.performanceWarningLevel && values.performanceWarningLevel !== 'none') {
+        body.targetWarnings = {
+          level: Number(values.performanceWarningLevel) as 1 | 2 | 3,
+          issuedAt: new Date().toISOString(),
+        };
+      } else {
+        body.targetWarnings = null;
+      }
+    }
     if (Object.keys(body).length === 0) {
       toast.success('No target changes to save');
       return;
@@ -565,7 +591,19 @@ export default function UserSettingsPage() {
 
   const onSubmit = (values: FormValues) => {
     const body = buildPatchBody(user ?? undefined, values);
-    const targetPayload = buildUserTargetBody(targetForm.getValues());
+    let targetPayload = buildUserTargetBody(targetForm.getValues());
+    if (targetForm.formState.dirtyFields.performanceWarningLevel) {
+      const v = targetForm.getValues().performanceWarningLevel;
+      targetPayload = targetPayload ?? {};
+      if (v && v !== 'none') {
+        targetPayload.targetWarnings = {
+          level: Number(v) as 1 | 2 | 3,
+          issuedAt: new Date().toISOString(),
+        };
+      } else {
+        targetPayload.targetWarnings = null;
+      }
+    }
     if (targetPayload) {
       body.userTarget = targetPayload;
     }
@@ -1314,6 +1352,35 @@ export default function UserSettingsPage() {
               <CardContent>
                 <Form {...targetForm}>
                   <div className="space-y-4">
+                    <FormField
+                      control={targetForm.control}
+                      name="performanceWarningLevel"
+                      render={({ field }) => (
+                        <FormItem className="max-w-md">
+                          <FormLabel>Performance warning tier</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value ?? 'none'}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="None" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">None (cleared when saved)</SelectItem>
+                              <SelectItem value="1">Level 1 — first warning (green)</SelectItem>
+                              <SelectItem value="2">Level 2 — second warning (amber)</SelectItem>
+                              <SelectItem value="3">Level 3 — final warning (red)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Saves with targets or main Save when changed. Employee must acknowledge in-app before the benchmarks dialog.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <FormField
                         control={targetForm.control}

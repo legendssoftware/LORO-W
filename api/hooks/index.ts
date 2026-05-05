@@ -38,10 +38,13 @@ export { useUsers } from './use-users';
 export {
   useUser,
   useUserTarget,
+  USER_TARGET_QUERY_KEY_PREFIX,
   useDailyProductivity,
   useUserPreferences,
   usePatchUser,
   usePatchUserTarget,
+  useAcknowledgePerformanceWarning,
+  useSubThresholdDailyCalls,
   useDeleteUser,
   useRestoreUser,
   useDeleteUserPermanently,

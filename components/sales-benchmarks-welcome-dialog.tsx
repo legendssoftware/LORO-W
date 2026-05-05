@@ -33,7 +33,12 @@ function persistDismiss(sessionId: string) {
   }
 }
 
-export function SalesBenchmarksWelcomeDialog() {
+export function SalesBenchmarksWelcomeDialog({
+  deferForPendingWarning = false,
+}: {
+  /** When true, benchmarks modal stays closed until performance warning is cleared. */
+  deferForPendingWarning?: boolean;
+} = {}) {
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const [open, setOpen] = useState(false);
@@ -45,6 +50,10 @@ export function SalesBenchmarksWelcomeDialog() {
     if (!isLoaded || !isSignedIn || !inAppShell || !isDashboard || !sessionId) {
       return;
     }
+    if (deferForPendingWarning) {
+      setOpen(false);
+      return;
+    }
     if (typeof window === 'undefined') return;
     try {
       const dismissedFor = sessionStorage.getItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
@@ -53,7 +62,7 @@ export function SalesBenchmarksWelcomeDialog() {
       return;
     }
     setOpen(true);
-  }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname]);
+  }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname, deferForPendingWarning]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next && sessionId) {

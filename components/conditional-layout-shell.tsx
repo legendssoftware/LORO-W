@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { ConditionalAppHeader } from '@/components/conditional-app-header';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AccessGuard } from '@/components/access-guard';
-import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
+import { SalesWelcomeFlow } from '@/components/sales-welcome-flow';
 import { DashboardAttendanceTour } from '@/components/dashboard-attendance-tour';
 import { LeadsTour } from '@/components/leads-tour';
 import { VisitsTour } from '@/components/visits-tour';
@@ -34,7 +34,7 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
       <AppSidebar />
       <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar">
         <ConditionalAppHeader />
-        <SalesBenchmarksWelcomeDialog />
+        <SalesWelcomeFlow />
         <DashboardAttendanceTour />
         <LeadsTour />
         <VisitsTour />
