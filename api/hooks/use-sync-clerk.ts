@@ -31,7 +31,7 @@ export function useSyncClerk(options?: { enabled?: boolean }) {
       return syncClerk(client, token);
     },
     enabled: (options?.enabled !== false) && isTokenReady,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,

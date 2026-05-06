@@ -20,7 +20,7 @@ export function useLeaves(clerkUserId: string | null | undefined, options?: { en
       return res.leaves as LeaveRecord[];
     },
     enabled: (options?.enabled !== false) && !!clerkUserId,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });

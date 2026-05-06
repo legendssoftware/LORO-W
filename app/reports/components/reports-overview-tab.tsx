@@ -55,6 +55,9 @@ import {
   type OverviewTimeframe,
 } from '@/app/reports/utils/overview-daily-summary';
 
+/** Same switch as `NODE_ENV` in `.env.local` (e.g. `NODE_ENV=development`) — dev-only Overview trend logs. */
+const REPORTS_OVERVIEW_DEBUG_LOGS = process.env.NODE_ENV === 'development';
+
 function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -439,13 +442,28 @@ export function ReportsOverviewTab({
   }, [progressData?.aggregateBuckets, checkInsForOverviewCharts]);
 
   React.useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
+    if (!REPORTS_OVERVIEW_DEBUG_LOGS) return;
     const buckets = progressData?.aggregateBuckets ?? [];
     const bucketAchievedLeadsSum = buckets.reduce(
       (s, b) => s + b.achievedLeads,
       0
     );
+    const leadsTrend = chartData.map((row) => ({
+      xTick: row.xTick,
+      achievedLeads: row.achievedLeads,
+      targetLeads: row.targetLeads,
+    }));
+    const visitsTrend = chartData.map((row) => ({
+      xTick: row.xTick,
+      achievedVisits: row.achievedVisits,
+      targetVisits: row.targetVisits,
+    }));
+    console.debug('[reports/overview] trend charts', {
+      leadsTrend,
+      visitsTrend,
+    });
     console.debug('[reports/overview]', {
+      nodeEnv: process.env.NODE_ENV,
       broughtInLeadsTotal: totals.leadsA,
       bucketAchievedLeadsSum,
       mappedVisitsTotal: totals.visA,
@@ -457,6 +475,7 @@ export function ReportsOverviewTab({
         startDate: checkInsParams.startDate,
         endDate: checkInsParams.endDate,
       },
+      checkInsRowCountUsed: checkInsForOverviewCharts.length,
       branchId: elevated ? selectedBranchId : undefined,
       ownerUid: elevated ? selectedOwnerUid : undefined,
       chartBucketCount: chartData.length,
@@ -471,10 +490,11 @@ export function ReportsOverviewTab({
     progressParams.to,
     checkInsParams.startDate,
     checkInsParams.endDate,
+    checkInsForOverviewCharts.length,
     elevated,
     selectedBranchId,
     selectedOwnerUid,
-    chartData.length,
+    chartData,
     progressData?.aggregateBuckets,
   ]);
 

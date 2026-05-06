@@ -42,9 +42,6 @@ export function useCreateInteractionMutation() {
         queryClient.invalidateQueries({
           queryKey: [...INTERACTIONS_QUERY_KEY_PREFIX, 'lead', variables.leadUid],
         });
-        queryClient.refetchQueries({
-          queryKey: [...INTERACTIONS_QUERY_KEY_PREFIX, 'lead', variables.leadUid],
-        });
       }
     },
   });
