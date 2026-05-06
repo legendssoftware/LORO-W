@@ -64,6 +64,7 @@ export function fromDailyOverviewMergeMonthly(
       distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
       hrID: u.hrID ?? null,
       checkInNotes: present ? (u.checkInNotes ?? null) : null,
+      targetWarnings: u.targetWarnings ?? null,
       last7Days: monthly?.last7Days,
     };
   };
