@@ -16,6 +16,7 @@ import {
   House,
   MapPin,
   Car,
+  AlertTriangle,
 } from 'lucide-react';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
@@ -142,4 +143,7 @@ export const STAFF_STATUS_FILTER_OPTIONS: {
   { value: 'starting_from_home', label: OPTION_KEY_TO_LABEL.starting_from_home, icon: House },
   { value: 'offsite', label: OPTION_KEY_TO_LABEL.offsite, icon: MapPin },
   { value: 'driving', label: OPTION_KEY_TO_LABEL.driving, icon: Car },
+  { value: 'sales_warning_1', label: 'Sales warning: Level 1', icon: AlertTriangle },
+  { value: 'sales_warning_2', label: 'Sales warning: Level 2', icon: AlertTriangle },
+  { value: 'sales_warning_3', label: 'Sales warning: Level 3', icon: AlertTriangle },
 ];

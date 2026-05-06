@@ -172,6 +172,15 @@ export function StaffContent() {
         }
       });
     }
+    if (statusFilter === 'sales_warning_1') {
+      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 1);
+    }
+    if (statusFilter === 'sales_warning_2') {
+      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 2);
+    }
+    if (statusFilter === 'sales_warning_3') {
+      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 3);
+    }
     if (
       statusFilter === 'at_office' ||
       statusFilter === 'work_from_home' ||

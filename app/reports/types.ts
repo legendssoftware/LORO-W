@@ -1,3 +1,5 @@
+import type { TargetWarningsPayload } from '@/api/endpoints/user';
+
 /** Filter for attendance status in reports. */
 export type StatusFilter =
   | 'all'
@@ -11,7 +13,10 @@ export type StatusFilter =
   | 'work_from_home'
   | 'starting_from_home'
   | 'offsite'
-  | 'driving';
+  | 'driving'
+  | 'sales_warning_1'
+  | 'sales_warning_2'
+  | 'sales_warning_3';
 
 /** Unified card item: user identity + hours + present/absent for the period. */
 export interface ReportCardUser {
@@ -60,6 +65,8 @@ export interface ReportCardUser {
   hrID?: number | null;
   /** Clock-in note / mode label for today (present only). */
   checkInNotes?: string | null;
+  /** Sales target performance warning from daily overview (user_targets). */
+  targetWarnings?: TargetWarningsPayload | null;
   /** Last 7 days attendance status (attended/missed/future) from monthly metrics. */
   last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
   /** Payroll-period hours (when merged from Staff payroll API). */

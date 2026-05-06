@@ -40,6 +40,24 @@ const CLOCK_IN_MODE_BADGE: Record<
   driving: { Icon: Van, className: 'bg-purple-100 text-purple-700 border border-purple-200/80' },
 };
 
+const PERFORMANCE_WARNING_CHIP: Record<
+  1 | 2 | 3,
+  { className: string; shortLabel: string }
+> = {
+  1: {
+    className: 'bg-green-100 text-green-800 border border-green-200/80',
+    shortLabel: 'First warning (tier 1)',
+  },
+  2: {
+    className: 'bg-amber-100 text-amber-900 border border-amber-200/80',
+    shortLabel: 'Second warning (tier 2)',
+  },
+  3: {
+    className: 'bg-red-100 text-red-800 border border-red-200/80',
+    shortLabel: 'Final warning (tier 3)',
+  },
+};
+
 function LastSevenDaysDots({
   userRef,
   endDate,
@@ -232,6 +250,11 @@ export function ReportUserCard({
   const mapsQuery = user.shiftStartAddress
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`
     : null;
+  const salesWarningLevel = user.targetWarnings?.level;
+  const salesWarningChip =
+    salesWarningLevel === 1 || salesWarningLevel === 2 || salesWarningLevel === 3
+      ? PERFORMANCE_WARNING_CHIP[salesWarningLevel]
+      : null;
   return (
     <Card
       className={cn(
@@ -261,6 +284,35 @@ export function ReportUserCard({
             Behind on hours
           </Badge>
         )}
+        {salesWarningChip ? (
+          <HoverCard openDelay={200}>
+            <HoverCardTrigger asChild>
+              <span
+                className={cn(
+                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full cursor-default',
+                  salesWarningChip.className
+                )}
+                title={isMobile ? `Sales performance warning: Level ${salesWarningLevel}` : undefined}
+                aria-label={`Sales performance warning: Level ${salesWarningLevel}`}
+              >
+                <span className="text-[13px] leading-none select-none" aria-hidden>
+                  ⚠️
+                </span>
+              </span>
+            </HoverCardTrigger>
+            <HoverCardContent
+              side="bottom"
+              align="end"
+              className="w-72 space-y-2 p-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-sm font-medium leading-snug">
+                Sales performance warning: Level {salesWarningLevel}
+              </p>
+              <p className="text-xs text-muted-foreground">{salesWarningChip.shortLabel}</p>
+            </HoverCardContent>
+          </HoverCard>
+        ) : null}
         {showModeHover ? (
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
