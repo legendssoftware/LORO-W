@@ -3,6 +3,8 @@
  * Aligned with server GET /att/status response.
  */
 
+import type { TargetWarningsPayload } from '../endpoints/user';
+
 export type ClockInOptionKey =
     | 'at_office'
     | 'work_from_home'
@@ -296,6 +298,8 @@ export interface DailyOverviewUser {
     hrID?: number | null;
     /** Clock-in note / mode label for today’s shift (present users only). */
     checkInNotes?: string | null;
+    /** Sales target performance warning tier from user_targets (staff cards / filters). */
+    targetWarnings?: TargetWarningsPayload | null;
 }
 
 export interface DailyOverviewResponse {
