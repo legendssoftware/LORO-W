@@ -24,13 +24,60 @@ export function utcToday(): Date {
   return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
 }
 
-function getUtcMonthRange(ref: Date): { from: string; to: string } {
+export function getUtcMonthRange(ref: Date): { from: string; to: string } {
   const y = ref.getUTCFullYear();
   const m = ref.getUTCMonth();
   const start = new Date(Date.UTC(y, m, 1));
   const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   const end = new Date(Date.UTC(y, m, lastDay));
   return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
+}
+
+/**
+ * ISO bounds for GET /check-ins when `start`/`end` are UTC calendar dates stored like
+ * Overview / Visits pickers: `new Date(Date.UTC(y, m, d))` from wall-clock Y/M/D.
+ */
+export function utcRangeIsoFromUtcCalendarStoredRange(
+  start: Date,
+  end: Date
+): { startDate: string; endDate: string } {
+  const startMs = Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const endMs = Date.UTC(
+    end.getUTCFullYear(),
+    end.getUTCMonth(),
+    end.getUTCDate(),
+    23,
+    59,
+    59,
+    999
+  );
+  return {
+    startDate: new Date(startMs).toISOString(),
+    endDate: new Date(endMs).toISOString(),
+  };
+}
+
+/** Wall-calendar label in UTC (matches Overview day display intent). */
+export function formatUtcCalendarLabel(d: Date): string {
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/** Single day from date picker: same as Overview `ReportsOverviewFiltersBar`. */
+export function utcCalendarDateFromLocalPickerDate(d: Date): Date {
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 }
 
 /**

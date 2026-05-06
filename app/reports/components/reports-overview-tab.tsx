@@ -50,34 +50,17 @@ import {
   buildOverviewDailySummaryRows,
   buildSelfOverviewDailySummaryRow,
   countVisitsByOwnerUid,
+  formatUtcYmd,
   getOverviewSummaryUtcDay,
+  getUtcMonthRange,
   mapLeadsByUserFromReport,
   type OverviewTimeframe,
+  utcToday,
 } from '@/app/reports/utils/overview-daily-summary';
+import { countCheckInsInProgressBucket } from '@/app/reports/utils/targets-progress-bucket-utc';
 
 /** Same switch as `NODE_ENV` in `.env.local` (e.g. `NODE_ENV=development`) — dev-only Overview trend logs. */
 const REPORTS_OVERVIEW_DEBUG_LOGS = process.env.NODE_ENV === 'development';
-
-function formatUtcYmd(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function utcToday(): Date {
-  const n = new Date();
-  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
-}
-
-function getUtcMonthRange(ref: Date): { from: string; to: string } {
-  const y = ref.getUTCFullYear();
-  const m = ref.getUTCMonth();
-  const start = new Date(Date.UTC(y, m, 1));
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  const end = new Date(Date.UTC(y, m, lastDay));
-  return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
-}
 
 function filterVisitListItemsByOwnerUids(
   checkIns: VisitListItem[],
@@ -129,24 +112,6 @@ function bucketRowsToChartData(
   }));
 }
 
-/** Count check-ins whose checkInTime falls in [startDate, endDate] (inclusive), matching /check-ins list API (all contact methods). */
-function countCheckInsInBucketWindow(
-  checkIns: VisitListItem[],
-  startDate: string,
-  endDate: string
-): number {
-  const startMs = new Date(startDate).getTime();
-  const endMs = new Date(endDate).getTime();
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return 0;
-  let n = 0;
-  for (const c of checkIns) {
-    const t = new Date(c.checkInTime).getTime();
-    if (!Number.isFinite(t)) continue;
-    if (t >= startMs && t <= endMs) n += 1;
-  }
-  return n;
-}
-
 function mergeChartRowsWithCheckInVisits(
   rows: TargetsProgressBucketRow[],
   checkIns: VisitListItem[],
@@ -158,10 +123,10 @@ function mergeChartRowsWithCheckInVisits(
     if (!b) return row;
     return {
       ...row,
-      achievedVisits: countCheckInsInBucketWindow(
+      achievedVisits: countCheckInsInProgressBucket(
         checkIns,
-        b.startDate,
-        b.endDate
+        b.key,
+        timeframe
       ),
     };
   });
@@ -282,16 +247,44 @@ export function ReportsOverviewTab({
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
 
+  const { data: branches = [] } = useBranches();
+  const { data: usersList = [] } = useUsers({
+    enabled: elevated,
+    limit: 250,
+    ...(selectedBranchId !== 'all'
+      ? { branchId: Number(selectedBranchId) }
+      : {}),
+  });
+
+  const reportingUsers = React.useMemo(
+    () =>
+      elevated ? usersList.filter(userListItemInLeadsVisitsReportingCohort) : usersList,
+    [elevated, usersList]
+  );
+
+  const reportingUidSet = React.useMemo(
+    () => buildReportingUserUidSet(reportingUsers),
+    [reportingUsers]
+  );
+
+  /** Coerce invalid org user selection (e.g. after branch change) without setState in an effect. */
+  const resolvedOwnerUid = React.useMemo(() => {
+    if (!elevated || selectedOwnerUid === 'all') return selectedOwnerUid;
+    return reportingUsers.some((u) => String(u.uid) === selectedOwnerUid)
+      ? selectedOwnerUid
+      : 'all';
+  }, [elevated, reportingUsers, selectedOwnerUid]);
+
   const filterSuffix = React.useMemo(
     () => ({
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
-      ...(elevated && selectedOwnerUid !== 'all'
-        ? { userUid: Number(selectedOwnerUid) }
+      ...(elevated && resolvedOwnerUid !== 'all'
+        ? { userUid: Number(resolvedOwnerUid) }
         : {}),
     }),
-    [elevated, selectedBranchId, selectedOwnerUid]
+    [elevated, selectedBranchId, resolvedOwnerUid]
   );
 
   const progressParams = React.useMemo(() => {
@@ -325,8 +318,8 @@ export function ReportsOverviewTab({
       endDate: endIso,
       ...(reportsMode === 'self' && profile?.uid != null
         ? { userUid: String(profile.uid) }
-        : elevated && selectedOwnerUid !== 'all'
-          ? { userUid: selectedOwnerUid }
+        : elevated && resolvedOwnerUid !== 'all'
+          ? { userUid: resolvedOwnerUid }
           : {}),
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
@@ -339,7 +332,7 @@ export function ReportsOverviewTab({
     reportsMode,
     profile,
     elevated,
-    selectedOwnerUid,
+    resolvedOwnerUid,
     selectedBranchId,
   ]);
 
@@ -367,44 +360,18 @@ export function ReportsOverviewTab({
     enabled: checkInsEnabled,
   });
 
-  const { data: branches = [] } = useBranches();
-  const { data: usersList = [] } = useUsers({
-    enabled: elevated,
-    limit: 250,
-    ...(selectedBranchId !== 'all'
-      ? { branchId: Number(selectedBranchId) }
-      : {}),
-  });
-
-  const reportingUsers = React.useMemo(
-    () =>
-      elevated ? usersList.filter(userListItemInLeadsVisitsReportingCohort) : usersList,
-    [elevated, usersList]
-  );
-
-  const reportingUidSet = React.useMemo(
-    () => buildReportingUserUidSet(reportingUsers),
-    [reportingUsers]
-  );
-
-  React.useEffect(() => {
-    if (!elevated || selectedOwnerUid === 'all') return;
-    const ok = reportingUsers.some((u) => String(u.uid) === selectedOwnerUid);
-    if (!ok) setSelectedOwnerUid('all');
-  }, [elevated, reportingUsers, selectedOwnerUid]);
-
   const checkInsForOverviewCharts = React.useMemo(() => {
     const raw = checkInsData?.checkIns ?? [];
     return filterVisitListItemsByOwnerUids(
       raw,
       reportingUidSet,
-      elevated && selectedOwnerUid === 'all'
+      elevated && resolvedOwnerUid === 'all'
     );
   }, [
     checkInsData?.checkIns,
     reportingUidSet,
     elevated,
-    selectedOwnerUid,
+    resolvedOwnerUid,
   ]);
 
   const chartData = React.useMemo(
@@ -427,7 +394,7 @@ export function ReportsOverviewTab({
     const checkIns = checkInsForOverviewCharts;
     const visA = rows.reduce(
       (sum, b) =>
-        sum + countCheckInsInBucketWindow(checkIns, b.startDate, b.endDate),
+        sum + countCheckInsInProgressBucket(checkIns, b.key, timeframe),
       0
     );
     const { leadsA, leadsT, visT } = rows.reduce(
@@ -439,15 +406,41 @@ export function ReportsOverviewTab({
       { leadsA: 0, leadsT: 0, visT: 0 }
     );
     return { leadsA, leadsT, visA, visT };
-  }, [progressData?.aggregateBuckets, checkInsForOverviewCharts]);
+  }, [progressData?.aggregateBuckets, checkInsForOverviewCharts, timeframe]);
 
   React.useEffect(() => {
     if (!REPORTS_OVERVIEW_DEBUG_LOGS) return;
     const buckets = progressData?.aggregateBuckets ?? [];
+    const checkIns = checkInsForOverviewCharts;
     const bucketAchievedLeadsSum = buckets.reduce(
       (s, b) => s + b.achievedLeads,
       0
     );
+    const trendInputs = buckets.map((b) => ({
+      key: b.key,
+      label: b.label,
+      window: { startDate: b.startDate, endDate: b.endDate },
+      leadsTrendInput: { achievedLeads: b.achievedLeads, targetLeads: b.targetLeads },
+      visitsTrendInput: {
+        targetVisits: b.targetVisits,
+        achievedVisitsBucketBeforeMerge: b.achievedVisits,
+        achievedVisitsFromCheckIns: countCheckInsInProgressBucket(
+          checkIns,
+          b.key,
+          timeframe
+        ),
+      },
+    }));
+    console.debug('[reports/overview] trend mapping — source rows (targets API + check-ins per bucket)', {
+      trendInputs,
+      checkInsForVisitCounts: {
+        rowCount: checkIns.length,
+        sample: checkIns.slice(0, 5).map((c) => ({
+          checkInTime: c.checkInTime,
+          ownerUid: c.owner?.uid,
+        })),
+      },
+    });
     const leadsTrend = chartData.map((row) => ({
       xTick: row.xTick,
       achievedLeads: row.achievedLeads,
@@ -458,9 +451,10 @@ export function ReportsOverviewTab({
       achievedVisits: row.achievedVisits,
       targetVisits: row.targetVisits,
     }));
-    console.debug('[reports/overview] trend charts', {
+    console.debug('[reports/overview] trend charts — mapped series (Leads trend / Visits trend)', {
       leadsTrend,
       visitsTrend,
+      chartDataFull: chartData,
     });
     console.debug('[reports/overview]', {
       nodeEnv: process.env.NODE_ENV,
@@ -477,7 +471,7 @@ export function ReportsOverviewTab({
       },
       checkInsRowCountUsed: checkInsForOverviewCharts.length,
       branchId: elevated ? selectedBranchId : undefined,
-      ownerUid: elevated ? selectedOwnerUid : undefined,
+      ownerUid: elevated ? resolvedOwnerUid : undefined,
       chartBucketCount: chartData.length,
     });
   }, [
@@ -493,8 +487,9 @@ export function ReportsOverviewTab({
     checkInsForOverviewCharts.length,
     elevated,
     selectedBranchId,
-    selectedOwnerUid,
+    resolvedOwnerUid,
     chartData,
+    checkInsForOverviewCharts,
     progressData?.aggregateBuckets,
   ]);
 
@@ -538,8 +533,8 @@ export function ReportsOverviewTab({
       endDate: endIso,
       ...(reportsMode === 'self' && profile?.uid != null
         ? { userUid: String(profile.uid) }
-        : elevated && selectedOwnerUid !== 'all'
-          ? { userUid: selectedOwnerUid }
+        : elevated && resolvedOwnerUid !== 'all'
+          ? { userUid: resolvedOwnerUid }
           : {}),
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
@@ -548,9 +543,9 @@ export function ReportsOverviewTab({
   }, [
     summaryYmd,
     reportsMode,
-    profile?.uid,
+    profile,
     elevated,
-    selectedOwnerUid,
+    resolvedOwnerUid,
     selectedBranchId,
   ]);
 
@@ -576,11 +571,11 @@ export function ReportsOverviewTab({
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
-      ...(elevated && selectedOwnerUid !== 'all'
-        ? { ownerId: Number(selectedOwnerUid) }
+      ...(elevated && resolvedOwnerUid !== 'all'
+        ? { ownerId: Number(resolvedOwnerUid) }
         : {}),
     }),
-    [summaryYmd, elevated, selectedBranchId, selectedOwnerUid]
+    [summaryYmd, elevated, selectedBranchId, resolvedOwnerUid]
   );
 
   const {
@@ -600,11 +595,11 @@ export function ReportsOverviewTab({
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
         : {}),
-      ...(elevated && selectedOwnerUid !== 'all'
-        ? { userUid: Number(selectedOwnerUid) }
+      ...(elevated && resolvedOwnerUid !== 'all'
+        ? { userUid: Number(resolvedOwnerUid) }
         : {}),
     }),
-    [summaryYmd, elevated, selectedBranchId, selectedOwnerUid]
+    [summaryYmd, elevated, selectedBranchId, resolvedOwnerUid]
   );
 
   const { data: summaryProgressData } = useTargetsProgress(summaryProgressParams, {
@@ -613,11 +608,11 @@ export function ReportsOverviewTab({
 
   const summaryTableUsers = React.useMemo((): UserListItem[] => {
     if (!elevated) return [];
-    if (selectedOwnerUid !== 'all') {
-      return usersList.filter((u) => String(u.uid) === selectedOwnerUid);
+    if (resolvedOwnerUid !== 'all') {
+      return usersList.filter((u) => String(u.uid) === resolvedOwnerUid);
     }
     return reportingUsers;
-  }, [elevated, usersList, selectedOwnerUid, reportingUsers]);
+  }, [elevated, usersList, resolvedOwnerUid, reportingUsers]);
 
   const branchesByUid = React.useMemo(
     () => new Map(branches.map((b) => [b.uid, b])),
@@ -635,13 +630,13 @@ export function ReportsOverviewTab({
     return filterVisitListItemsByOwnerUids(
       raw,
       reportingUidSet,
-      elevated && selectedOwnerUid === 'all'
+      elevated && resolvedOwnerUid === 'all'
     );
   }, [
     summaryCheckInsData?.checkIns,
     reportingUidSet,
     elevated,
-    selectedOwnerUid,
+    resolvedOwnerUid,
   ]);
 
   const summaryRows = React.useMemo(() => {
@@ -668,7 +663,6 @@ export function ReportsOverviewTab({
   }, [
     summaryCheckInsForTable,
     summaryLeadsData?.byUser,
-    summaryProgressData?.users,
     elevated,
     profile,
     summaryTableUsers,
@@ -685,12 +679,12 @@ export function ReportsOverviewTab({
       const b = branches.find((x) => String(x.uid) === selectedBranchId);
       parts.push(b ? `Branch: ${getBranchDisplayLabel(b)}` : 'Branch filter');
     }
-    if (selectedOwnerUid === 'all') {
+    if (resolvedOwnerUid === 'all') {
       parts.push('All users');
     } else {
       const u =
-        usersList.find((x) => String(x.uid) === selectedOwnerUid) ??
-        reportingUsers.find((x) => String(x.uid) === selectedOwnerUid);
+        usersList.find((x) => String(x.uid) === resolvedOwnerUid) ??
+        reportingUsers.find((x) => String(x.uid) === resolvedOwnerUid);
       parts.push(
         u
           ? `User: ${[u.name, u.surname].filter(Boolean).join(' ')}`
@@ -701,7 +695,7 @@ export function ReportsOverviewTab({
   }, [
     elevated,
     selectedBranchId,
-    selectedOwnerUid,
+    resolvedOwnerUid,
     branches,
     reportingUsers,
     usersList,
@@ -737,7 +731,7 @@ export function ReportsOverviewTab({
           setSelectedBranchId(v);
           setSelectedOwnerUid('all');
         }}
-        selectedOwnerUid={selectedOwnerUid}
+        selectedOwnerUid={resolvedOwnerUid}
         onOwnerChange={setSelectedOwnerUid}
         onOpenSummary={() => setSummaryDialogOpen(true)}
       />

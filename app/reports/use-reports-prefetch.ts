@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { endOfDay, format, startOfDay } from 'date-fns';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { BRANCHES_QUERY_KEY } from '@/api/hooks/use-branches';
 import { getBranches } from '@/api/endpoints/branch';
@@ -18,29 +17,12 @@ import { getMapReport } from '@/api/endpoints/map';
 import { mapReportQueryKey } from '@/api/hooks/use-map-report';
 import type { SyncProfile } from '@/api/types';
 import { isReportsElevatedViewer } from '@/lib/access';
-
-function formatUtcYmd(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function utcToday(): Date {
-  const n = new Date();
-  return new Date(
-    Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate())
-  );
-}
-
-function getUtcMonthRange(ref: Date): { from: string; to: string } {
-  const y = ref.getUTCFullYear();
-  const m = ref.getUTCMonth();
-  const start = new Date(Date.UTC(y, m, 1));
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  const end = new Date(Date.UTC(y, m, lastDay));
-  return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
-}
+import {
+  formatUtcYmd,
+  getUtcMonthRange,
+  utcRangeIsoFromUtcCalendarStoredRange,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 
 function idleRun(fn: () => void): void {
   if (
@@ -78,9 +60,9 @@ export function useReportsPrefetch(options: {
 
     const run = async () => {
       const { from, to } = getUtcMonthRange(utcToday());
-      const todayLocal = format(startOfDay(new Date()), 'yyyy-MM-dd');
-      const startIso = startOfDay(new Date()).toISOString();
-      const endIso = endOfDay(new Date()).toISOString();
+      const todayYmd = formatUtcYmd(utcToday());
+      const { startDate: startIso, endDate: endIso } =
+        utcRangeIsoFromUtcCalendarStoredRange(utcToday(), utcToday());
 
       await new Promise<void>((resolve) => idleRun(resolve));
 
@@ -141,8 +123,8 @@ export function useReportsPrefetch(options: {
       await new Promise<void>((resolve) => idleRun(resolve));
 
       const leadsParams = {
-        from: todayLocal,
-        to: todayLocal,
+        from: todayYmd,
+        to: todayYmd,
         dateBasis: 'activity' as const,
       };
       await queryClient.prefetchQuery({
