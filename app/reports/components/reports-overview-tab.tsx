@@ -947,6 +947,7 @@ export function ReportsOverviewTab({
           <ReportsCurrentProgressSection
             elevated={elevated}
             filterSuffix={filterSuffix}
+            branches={branches}
           />
         </div>
       )}
