@@ -7,12 +7,6 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  format,
-  isSameDay,
-  startOfDay,
-  endOfDay,
-} from 'date-fns';
-import {
   Area,
   AreaChart,
   Bar,
@@ -84,6 +78,13 @@ import {
   filterVisitExportItemsByReportingUserUids,
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  utcCalendarDateFromLocalPickerDate,
+  utcRangeIsoFromUtcCalendarStoredRange,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 
 const PALETTE = [
   REPORT_CHART_HSL.c1,
@@ -239,10 +240,8 @@ export function ReportsVisitsTab({
   profile,
   reportsMode,
 }: ReportsVisitsTabProps) {
-  const today = startOfDay(new Date());
-
-  const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
-  const [endDate, setEndDate] = useState(() => startOfDay(new Date()));
+  const [startDate, setStartDate] = useState(() => utcToday());
+  const [endDate, setEndDate] = useState(() => utcToday());
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
   const [selectedBranchId, setSelectedBranchId] = useState('all');
@@ -253,8 +252,8 @@ export function ReportsVisitsTab({
   const [selectedMethod, setSelectedMethod] = useState('all');
   const [summaryOpen, setSummaryOpen] = useState(false);
 
-  const startIso = startOfDay(startDate).toISOString();
-  const endIso = endOfDay(endDate).toISOString();
+  const { startDate: startIso, endDate: endIso } =
+    utcRangeIsoFromUtcCalendarStoredRange(startDate, endDate);
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({
@@ -397,7 +396,7 @@ export function ReportsVisitsTab({
     for (const c of filteredVisits) {
       const d = new Date(c.checkInTime);
       if (Number.isNaN(d.getTime())) continue;
-      const h = d.getHours();
+      const h = d.getUTCHours();
       buckets[h].count += 1;
     }
     return buckets;
@@ -476,8 +475,12 @@ export function ReportsVisitsTab({
   } satisfies ChartConfig;
 
   const isDefaultRange =
-    isSameDay(startDate, today) && isSameDay(endDate, today);
-  const periodLabel = `${format(startDate, 'yyyy-MM-dd')} – ${format(endDate, 'yyyy-MM-dd')}`;
+    formatUtcYmd(startDate) === formatUtcYmd(utcToday()) &&
+    formatUtcYmd(endDate) === formatUtcYmd(utcToday());
+  const periodLabel =
+    formatUtcYmd(startDate) === formatUtcYmd(endDate)
+      ? formatUtcYmd(startDate)
+      : `${formatUtcYmd(startDate)} – ${formatUtcYmd(endDate)}`;
   const showVisitsSkeleton =
     checkInsQuery.isLoading && !checkInsQuery.data;
   const hasVisits = filteredVisits.length > 0;
@@ -530,8 +533,8 @@ export function ReportsVisitsTab({
                 >
                   <CalendarIcon className="size-4" />
                   {startDate.getTime() === endDate.getTime()
-                    ? format(startDate, 'MMM d, yyyy')
-                    : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                    ? formatUtcCalendarLabel(startDate)
+                    : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
@@ -543,7 +546,7 @@ export function ReportsVisitsTab({
                         mode="single"
                         selected={startDate}
                         onSelect={(d) => {
-                          if (d) setStartDate(d);
+                          if (d) setStartDate(utcCalendarDateFromLocalPickerDate(d));
                         }}
                       />
                     </div>
@@ -553,7 +556,7 @@ export function ReportsVisitsTab({
                         mode="single"
                         selected={endDate}
                         onSelect={(d) => {
-                          if (d) setEndDate(d);
+                          if (d) setEndDate(utcCalendarDateFromLocalPickerDate(d));
                         }}
                       />
                     </div>
@@ -565,7 +568,7 @@ export function ReportsVisitsTab({
               <button
                 type="button"
                 onClick={() => {
-                  const d = startOfDay(new Date());
+                  const d = utcToday();
                   setStartDate(d);
                   setEndDate(d);
                 }}
@@ -825,7 +828,7 @@ export function ReportsVisitsTab({
                 <CardHeader>
                   <CardTitle>Visits by hour</CardTitle>
                   <CardDescription>
-                    Check-in time in local timezone (0–23)
+                    Check-in time in UTC (0–23), aligned with Overview hourly trend
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
