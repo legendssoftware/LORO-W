@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format, isSameDay, startOfMonth } from 'date-fns';
 import {
   useLeadsInfinite,
@@ -60,6 +60,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+const SEARCH_DEBOUNCE_MS = 350;
+
 export function LeadsContent() {
   const {
     startDate,
@@ -69,7 +71,6 @@ export function LeadsContent() {
     selectedStatus,
     selectedSource,
     selectedUserId,
-    searchQuery,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
     setStartDate,
@@ -83,6 +84,22 @@ export function LeadsContent() {
     setSelectedUserId,
     setSearchQuery,
   } = useLeadsStore();
+
+  const [searchInput, setSearchInput] = useState(
+    () => useLeadsStore.getState().searchQuery
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(() =>
+    useLeadsStore.getState().searchQuery.trim()
+  );
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next = searchInput.trim();
+      setDebouncedSearch(next);
+      setSearchQuery(next);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchInput, setSearchQuery]);
 
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
@@ -140,7 +157,7 @@ export function LeadsContent() {
     !Number.isNaN(Number(selectedUserId))
       ? { ownerId: Number(selectedUserId) }
       : {}),
-    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
   const showUnassignedGroup =
@@ -158,7 +175,7 @@ export function LeadsContent() {
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
-    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
   const leadsQuery = useLeadsInfinite(leadsParams, { skipErrorToast: true });
@@ -419,17 +436,17 @@ export function LeadsContent() {
           <div className="relative w-56 min-w-0 shrink sm:w-64">
             <Input
               placeholder="Search leads…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className={cn(
                 'h-9 w-full border-gray-200 bg-white text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0',
-                searchQuery && 'pr-8'
+                searchInput && 'pr-8'
               )}
             />
-            {searchQuery ? (
+            {searchInput ? (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchInput('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Clear search"
               >

@@ -57,12 +57,42 @@ function getNextLeadsPageParam(lastPage: { meta?: { page?: number; totalPages?: 
   return m.page < m.totalPages ? m.page + 1 : undefined;
 }
 
-/** Invalidates list, unassigned, report, grouped keys, and optional detail ref. */
+/** Invalidation scopes for leads caches (aligned with queryKey segments in this module). */
+export type InvalidateLeadsScope = 'list' | 'unassigned' | 'report' | 'forUser' | 'all';
+
+const LEADS_LIST_KEY = [...QUERY_KEY_PREFIX, 'list'] as const;
+const LEADS_UNASSIGNED_KEY = [...QUERY_KEY_PREFIX, 'unassigned'] as const;
+const LEADS_REPORT_KEY = [...QUERY_KEY_PREFIX, 'report'] as const;
+const LEADS_FOR_USER_KEY = [...QUERY_KEY_PREFIX, 'for'] as const;
+
+/**
+ * Invalidates leads queries by scope. Defaults to list + unassigned when scopes omitted.
+ * Use scopes: ['all'] after bulk operations (import, dedupe, reassign).
+ * Pass scopes: [] with detailRef only to refresh a single detail without list fan-out.
+ */
 export function invalidateLeadQueries(
   queryClient: QueryClient,
-  opts?: { detailRef?: number }
+  opts?: { detailRef?: number; scopes?: InvalidateLeadsScope[] }
 ) {
-  queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+  const scopes = opts?.scopes ?? ['list', 'unassigned'];
+
+  if (scopes.includes('all')) {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+  } else {
+    if (scopes.includes('list')) {
+      queryClient.invalidateQueries({ queryKey: LEADS_LIST_KEY });
+    }
+    if (scopes.includes('unassigned')) {
+      queryClient.invalidateQueries({ queryKey: LEADS_UNASSIGNED_KEY });
+    }
+    if (scopes.includes('report')) {
+      queryClient.invalidateQueries({ queryKey: LEADS_REPORT_KEY });
+    }
+    if (scopes.includes('forUser')) {
+      queryClient.invalidateQueries({ queryKey: LEADS_FOR_USER_KEY });
+    }
+  }
+
   if (opts?.detailRef != null) {
     queryClient.invalidateQueries({
       queryKey: [...QUERY_KEY_PREFIX, 'detail', opts.detailRef],
@@ -235,7 +265,9 @@ export function useCreateLeadMutation() {
   return useMutation({
     mutationFn: async (payload: CreateLeadPayload) => createLead(client, payload),
     onSuccess: () => {
-      invalidateLeadQueries(queryClient);
+      invalidateLeadQueries(queryClient, {
+        scopes: ['list', 'unassigned', 'report'],
+      });
     },
   });
 }
@@ -253,7 +285,10 @@ export function useUpdateLeadMutation() {
     }: { ref: number; payload: UpdateLeadPayload }) =>
       updateLead(client, ref, payload),
     onSuccess: (_, { ref }) => {
-      invalidateLeadQueries(queryClient, { detailRef: ref });
+      invalidateLeadQueries(queryClient, {
+        detailRef: ref,
+        scopes: ['list', 'unassigned', 'report'],
+      });
     },
   });
 }
@@ -267,7 +302,10 @@ export function useDeleteLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => deleteLead(client, ref),
     onSuccess: (_, ref) => {
-      invalidateLeadQueries(queryClient, { detailRef: ref });
+      invalidateLeadQueries(queryClient, {
+        detailRef: ref,
+        scopes: ['list', 'unassigned', 'report'],
+      });
     },
   });
 }
@@ -281,7 +319,10 @@ export function useRestoreLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => restoreLead(client, ref),
     onSuccess: (_, ref) => {
-      invalidateLeadQueries(queryClient, { detailRef: ref });
+      invalidateLeadQueries(queryClient, {
+        detailRef: ref,
+        scopes: ['list', 'unassigned', 'report'],
+      });
     },
   });
 }
@@ -295,7 +336,10 @@ export function useReactivateLeadMutation() {
   return useMutation({
     mutationFn: async (ref: number) => reactivateLead(client, ref),
     onSuccess: (_, ref) => {
-      invalidateLeadQueries(queryClient, { detailRef: ref });
+      invalidateLeadQueries(queryClient, {
+        detailRef: ref,
+        scopes: ['list', 'unassigned', 'report'],
+      });
     },
   });
 }
@@ -309,11 +353,8 @@ export function useReassignLeadsMutation() {
   return useMutation({
     mutationFn: async (payload: ReassignLeadsPayload) =>
       reassignLeads(client, payload),
-    onSuccess: (_, payload) => {
-      const firstLead = payload.leadUids[0];
-      invalidateLeadQueries(queryClient, {
-        detailRef: firstLead,
-      });
+    onSuccess: () => {
+      invalidateLeadQueries(queryClient, { scopes: ['all'] });
     },
   });
 }
@@ -349,7 +390,7 @@ export function useSendLeadEngageMutation() {
       message: string;
     }) => sendLeadEngage(client, ref, { channel, message }),
     onSuccess: (_, { ref }) => {
-      invalidateLeadQueries(queryClient, { detailRef: ref });
+      invalidateLeadQueries(queryClient, { detailRef: ref, scopes: [] });
     },
   });
 }
@@ -374,7 +415,7 @@ export function useImportLeadsMutation() {
         longRunning: longRunning === true,
       }),
     onSuccess: () => {
-      invalidateLeadQueries(queryClient);
+      invalidateLeadQueries(queryClient, { scopes: ['all'] });
     },
   });
 }
@@ -386,7 +427,7 @@ export function useDedupeLeadsMutation() {
   return useMutation({
     mutationFn: async () => dedupeLeads(client),
     onSuccess: () => {
-      invalidateLeadQueries(queryClient);
+      invalidateLeadQueries(queryClient, { scopes: ['all'] });
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
+import { DAILY_OVERVIEW_QUERY_KEY_PREFIX } from '@/api/hooks/use-daily-overview';
 import { checkIn, checkOut, manageBreak } from '@/api/endpoints/attendance';
 import type { CheckInBody, CheckOutBody, BreakBody } from '@/api/types';
 
@@ -27,10 +28,7 @@ export function useAttCheckInMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
     },
   });
 }
@@ -52,10 +50,7 @@ export function useAttCheckOutMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
     },
   });
 }
@@ -77,10 +72,7 @@ export function useBreakMutation() {
       queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.refetchQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
     },
   });
 }
