@@ -28,7 +28,8 @@ export function invalidateClientQueries(
   queryClient: QueryClient,
   opts?: { detailRef?: number | null }
 ) {
-  queryClient.invalidateQueries({ queryKey: CLIENTS_QUERY_KEY_PREFIX });
+  queryClient.invalidateQueries({ queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'list'] });
+  queryClient.invalidateQueries({ queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'infinite'] });
   if (opts?.detailRef != null) {
     queryClient.invalidateQueries({
       queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'detail', opts.detailRef],

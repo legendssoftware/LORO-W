@@ -1,20 +1,26 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CalendarIcon, CalendarRange, Globe } from 'lucide-react';
+import { AlertTriangle, CalendarRange, Filter, Globe } from 'lucide-react';
 import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import type { BranchListItem } from '@/api/types/branch';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import { useTargetsProgress } from '@/api/hooks';
 import { exportToCsv } from '@/lib/utils/report-export';
-import { getCountryFlag } from '@/lib/utils/country-flags';
+import {
+  getCountryFlag,
+  normalizeBranchCountryCodeForGrouping,
+} from '@/lib/utils/country-flags';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -34,6 +40,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { cn } from '@/lib/utils';
+import { formatEnumLabel } from '@/lib/format-enum-label';
 
 const selectTriggerClass =
   'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
@@ -208,9 +215,8 @@ function countrySortKey(
 ): string {
   if (u.branchUid == null) return UNASSIGNED_GROUP_KEY;
   const b = branchByUid.get(u.branchUid);
-  const raw = b?.country?.trim();
-  if (!raw) return 'SA';
-  return raw.toUpperCase();
+  if (!b) return 'SA';
+  return normalizeBranchCountryCodeForGrouping(b);
 }
 
 function orderGroupKeys(keys: Set<string>): string[] {
@@ -231,6 +237,16 @@ function branchLabelForUser(
   const b = branchByUid.get(u.branchUid);
   if (!b) return `Branch #${u.branchUid}`;
   return getBranchDisplayLabel(b);
+}
+
+function branchSubtitleText(
+  u: TargetsProgressUserSummary,
+  branchByUid: Map<number, BranchListItem>
+): string {
+  const branch = branchLabelForUser(u, branchByUid);
+  const wt = u.workforceType?.trim();
+  if (!wt) return branch;
+  return `${branch} – ${formatEnumLabel(wt)}`;
 }
 
 function countryDisplayNameForUser(
@@ -316,7 +332,7 @@ export function ReportsCurrentProgressSection({
   const [selectedProgressDay, setSelectedProgressDay] = useState<Date>(() =>
     utcToday()
   );
-  const [dayPopoverOpen, setDayPopoverOpen] = useState(false);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   const shortfallRange = useMemo(() => {
     const now = new Date();
@@ -413,6 +429,7 @@ export function ReportsCurrentProgressSection({
       'Surname',
       'Branch',
       'Country',
+      'Workforce type',
       'Scope',
       `Target activity (${scopeLabel})`,
       'Achieved activity',
@@ -435,6 +452,7 @@ export function ReportsCurrentProgressSection({
         u.surname,
         branchLabelForUser(u, branchByUid),
         countryDisplayNameForUser(u, branchByUid),
+        u.workforceType?.trim() ? formatEnumLabel(u.workforceType.trim()) : '',
         scopeLabel,
         u.periodTargetVisits > 0 ? String(ta) : '',
         String(achievedAct),
@@ -459,76 +477,99 @@ export function ReportsCurrentProgressSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <AlertTriangle className="size-5 text-amber-600" aria-hidden />
-          Current Progress
+          Leads/Visits Summary
         </h2>
-        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:w-auto">
-          <div className="flex w-max min-w-full flex-nowrap items-center gap-2 sm:flex-wrap">
-          {elevated ? (
-            <>
-              <div className="flex shrink-0 items-center gap-2">
-                <Switch
-                  id="only-behind-overview"
-                  checked={onlyBehind}
-                  onCheckedChange={setOnlyBehind}
-                />
-                <Label htmlFor="only-behind-overview" className="text-sm cursor-pointer">
-                  Behind on Targets
-                </Label>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Switch
-                  id="group-by-country-overview"
-                  checked={groupByCountry}
-                  onCheckedChange={setGroupByCountry}
-                />
-                <Label
-                  htmlFor="group-by-country-overview"
-                  className="text-sm cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <Globe className="size-3.5 text-muted-foreground" aria-hidden />
-                  Group by country
-                </Label>
-              </div>
-            </>
-          ) : null}
-          <Select
-            value={shortfallScope}
-            onValueChange={(v) => setShortfallScope(v as ShortfallScope)}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 gap-2 border-gray-200 bg-white"
+            onClick={() => setFilterDialogOpen(true)}
           >
-            <SelectTrigger
-              className={cn(
-                selectTriggerClass,
-                'w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]'
-              )}
-            >
-              <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
-              <SelectValue placeholder="Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Single day (UTC)</SelectItem>
-              <SelectItem value="week">This week (UTC)</SelectItem>
-              <SelectItem value="month">This month (UTC)</SelectItem>
-            </SelectContent>
-          </Select>
-          {shortfallScope === 'day' ? (
-            <Popover open={dayPopoverOpen} onOpenChange={setDayPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn(
-                    'h-9 w-[190px] shrink-0 justify-start text-left font-normal sm:w-[220px]',
-                    selectTriggerClass
-                  )}
-                >
-                  <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-                  {formatUtcYmd(selectedProgressDay)}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[80vw] max-w-sm p-0 sm:w-auto"
-                align="center"
+            <Filter className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            Filter
+          </Button>
+          <Button
+            type="button"
+            className="h-9 shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:min-w-0 dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
+            disabled={!shortfallUsersWithTargets.length}
+            onClick={() => downloadShortfallCsv()}
+          >
+            Export CSV
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+        <DialogContent className="max-h-[min(90vh,640px)] gap-0 overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b px-6 py-4 text-left">
+            <DialogTitle>Filters</DialogTitle>
+            <DialogDescription>
+              Changes apply to the table immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[min(65vh,480px)] space-y-4 overflow-y-auto px-6 py-4">
+            {elevated ? (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <Label
+                    htmlFor="only-behind-overview"
+                    className="text-sm font-normal cursor-pointer leading-snug"
+                  >
+                    Behind on Targets
+                  </Label>
+                  <Switch
+                    id="only-behind-overview"
+                    checked={onlyBehind}
+                    onCheckedChange={setOnlyBehind}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label
+                    htmlFor="group-by-country-overview"
+                    className="text-sm font-normal cursor-pointer leading-snug inline-flex items-center gap-1.5"
+                  >
+                    <Globe className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    Group by country
+                  </Label>
+                  <Switch
+                    id="group-by-country-overview"
+                    checked={groupByCountry}
+                    onCheckedChange={setGroupByCountry}
+                  />
+                </div>
+              </>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="shortfall-period-select" className="text-sm text-foreground">
+                Period
+              </Label>
+              <Select
+                value={shortfallScope}
+                onValueChange={(v) => setShortfallScope(v as ShortfallScope)}
               >
+                <SelectTrigger
+                  id="shortfall-period-select"
+                  className={cn(selectTriggerClass, 'w-full')}
+                >
+                  <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Single day (UTC)</SelectItem>
+                  <SelectItem value="week">This week (UTC)</SelectItem>
+                  <SelectItem value="month">This month (UTC)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {shortfallScope === 'day' ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Day (UTC):{' '}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatUtcYmd(selectedProgressDay)}
+                  </span>
+                </p>
                 <Calendar
                   mode="single"
                   selected={selectedProgressDay}
@@ -540,9 +581,9 @@ export function ReportsCurrentProgressSection({
                         )
                       );
                   }}
-                  initialFocus
+                  className="mx-auto w-full rounded-md border p-2"
                 />
-                <div className="flex flex-wrap justify-end gap-2 border-t p-2">
+                <div className="flex flex-wrap justify-end gap-2 pt-1">
                   <Button
                     type="button"
                     variant="ghost"
@@ -551,33 +592,21 @@ export function ReportsCurrentProgressSection({
                   >
                     Today (UTC)
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDayPopoverOpen(false)}
-                  >
-                    Done
-                  </Button>
                 </div>
-              </PopoverContent>
-            </Popover>
-          ) : null}
-          <Button
-            type="button"
-            className="h-9 w-[130px] shrink-0 bg-violet-600 text-white hover:bg-violet-700 sm:w-auto dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
-            disabled={!shortfallUsersWithTargets.length}
-            onClick={() => downloadShortfallCsv()}
-          >
-            Export CSV
-          </Button>
+              </div>
+            ) : null}
           </div>
-        </div>
-      </div>
+          <DialogFooter className="gap-2 border-t px-6 py-4 sm:justify-end">
+            <Button type="button" onClick={() => setFilterDialogOpen(false)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {shortfallIsError ? (
         <p className="text-sm text-destructive">
-          {(shortfallError as Error)?.message ?? 'Failed to load current progress data'}
+          {(shortfallError as Error)?.message ?? 'Failed to load summary data'}
         </p>
       ) : null}
 
@@ -649,7 +678,7 @@ export function ReportsCurrentProgressSection({
                       shortfallEvalNow
                     );
                   const fullName = [u.name, u.surname].filter(Boolean).join(' ');
-                  const branchLine = branchLabelForUser(u, branchByUid);
+                  const branchSubtitle = branchSubtitleText(u, branchByUid);
                   return (
                     <TableRow
                       key={u.uid}
@@ -666,7 +695,7 @@ export function ReportsCurrentProgressSection({
                             <span className="leading-none" aria-hidden>
                               {flagForUserRow(u, branchByUid)}
                             </span>
-                            <span>{branchLine}</span>
+                            <span>{branchSubtitle}</span>
                           </span>
                         </div>
                       </TableCell>

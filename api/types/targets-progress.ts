@@ -28,6 +28,7 @@ export interface TargetsProgressUserSummary {
   surname: string;
   photoURL?: string | null;
   branchUid?: number | null;
+  workforceType?: string | null;
   hasTarget: boolean;
   periodTargetCalls: number;
   periodTargetVisits: number;
