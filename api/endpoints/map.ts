@@ -12,8 +12,8 @@ export interface GetMapReportParams {
   /** Wide historical window on the server */
   allTime?: boolean;
   /**
-   * When false, server skips reverse-geocoding attendance coords (faster).
-   * When both start/end omitted and not allTime, server defaults to **today**.
+   * Backwards compatible; server no longer reverse-geocodes map markers.
+   * When both start/end omitted and not allTime, check-in window defaults to **today** (org TZ).
    */
   resolveMarkerAddresses?: boolean;
 }
@@ -31,6 +31,7 @@ function isMapDataResponse(value: unknown): value is MapDataResponse {
 /**
  * GET /reports/map - map data for visualization (Leaflet-ready).
  * Auth: Bearer token; org defaults to user's org. Optional branchId/userId filter.
+ * Elevated users omit branchId for org-wide markers; when branchId is set, server includes rows with no branch.
  * If startDate/endDate are omitted and allTime is false, the server uses **today in the organisation timezone**.
  * Normalizes response: backend returns payload directly; accept that or a wrapped { data }.
  */
