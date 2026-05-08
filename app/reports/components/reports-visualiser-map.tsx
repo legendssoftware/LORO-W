@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
 import {
   MARKER_COLORS,
-  MARKER_TYPE_LABELS,
   influenceColorForKind,
 } from './map-report-constants';
 
@@ -23,11 +22,12 @@ const customMarkerStyles = `
   }
 
   .reports-viz-popup .leaflet-popup-content-wrapper {
-    border-radius: 18px;
+    border-radius: 8px;
   }
 
   .reports-viz-popup .leaflet-popup-content {
     margin: 0;
+    padding: 14px 16px;
   }
 
   .reports-viz-popup .leaflet-popup-close-button {
@@ -55,23 +55,6 @@ const customMarkerStyles = `
 
 const DEFAULT_CENTER: [number, number] = [-26.2041, 28.0473];
 const DEFAULT_ZOOM = 10;
-
-const LEGEND_ORDER = [
-  'branch',
-  'client',
-  'competitor',
-  'lead',
-  'check-in-visit',
-  'quotation',
-  'shift-start',
-  'shift-end',
-  'break-start',
-  'break-end',
-  'check-in',
-  'task',
-  'journal',
-  'claim',
-] as const;
 
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
 
@@ -325,33 +308,6 @@ function LocationButton() {
   );
 }
 
-function MapLegend() {
-  return (
-    <div className="absolute top-3 left-3 z-[1000] max-w-[200px] rounded-md border bg-background/95 px-3 py-2 text-xs shadow backdrop-blur-sm">
-      <p className="font-semibold text-foreground mb-1.5">Map key</p>
-      <ul className="space-y-1">
-        {LEGEND_ORDER.map((id) => {
-          const color = MARKER_COLORS[id];
-          const label = MARKER_TYPE_LABELS[id] ?? id;
-          if (!color) return null;
-          return (
-            <li key={id} className="flex items-center gap-2">
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/80 shadow"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-muted-foreground leading-tight">{label}</span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
-        Rings match marker type; shaded circles show influence radius.
-      </p>
-    </div>
-  );
-}
-
 export interface ReportsVisualiserMapProps {
   allMarkers: MapMarkerBase[];
   influenceCircles: InfluenceCircle[];
@@ -386,7 +342,7 @@ function ReportsVisualiserMapInner({
             role="status"
             aria-live="polite"
           >
-            Loading attendance and map layers…
+            Loading map layers…
           </div>
         ) : null}
         <MapContainer
@@ -427,7 +383,6 @@ function ReportsVisualiserMapInner({
               </Marker>
             );
           })}
-          <MapLegend />
           <LocationButton />
         </MapContainer>
       </div>

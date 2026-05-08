@@ -1,5 +1,7 @@
 /**
- * Map report types for GET /reports/map. Leaflet-ready: markers have position [lat, lng], markerType.
+ * Map report types for GET `/reports/map`.
+ * `allMarkers` and `checkIns`/`clients`/`competitors` contain only `check-in-visit`, `client`, and `competitor`.
+ * Other top-level marker arrays and `layers.activity` entries (except populated `checkIns`) are empty for backwards compatibility.
  */
 
 export interface MapConfigType {
@@ -27,7 +29,7 @@ export interface GeofenceMapDefaults {
   maxRadiusMeters: number;
 }
 
-/** Influence sphere on the map; kind matches marker types for styling (incl. branch + action markers). */
+/** Influence sphere; API currently returns `client` and `competitor` zones only. Legacy kinds remain for typing. */
 export type InfluenceCircleKind =
   | 'organisation'
   | 'organization'
@@ -70,6 +72,7 @@ export interface MapLayers {
   branches: MapMarkerBase[];
   competitors: MapMarkerBase[];
   clients: MapMarkerBase[];
+  /** Mirrors top-level arrays; only `checkIns` is populated besides empty slots. */
   activity: {
     leads: MapMarkerBase[];
     checkIns: MapMarkerBase[];

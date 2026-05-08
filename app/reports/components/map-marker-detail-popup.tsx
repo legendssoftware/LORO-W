@@ -7,11 +7,14 @@ import {
   Briefcase,
   ClipboardList,
   Clock,
+  Mail,
   MapPin,
+  Phone,
   Timer,
   User,
 } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { markerTypeLabel } from './map-report-constants';
 
 const SKIP_TOP_LEVEL = new Set([
@@ -136,7 +139,7 @@ function humanKey(k: string): string {
 
 function sectionShell(children: ReactNode) {
   return (
-    <div className="rounded-md border border-border/60 bg-muted/20 px-2.5 py-2">{children}</div>
+    <div className="rounded-md border border-border/60 bg-muted/20 px-4 py-3">{children}</div>
   );
 }
 
@@ -198,6 +201,158 @@ function branchDisplayLabel(branch: { alias?: unknown; name?: unknown } | null |
 function readBranchName(marker: MapMarkerBase): string | undefined {
   const ad = readAttendance(marker);
   return branchDisplayLabel(ad?.branch as { alias?: unknown; name?: unknown } | null | undefined);
+}
+
+function initialsForPopupTitle(name: string): string {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return '?';
+  return parts.map((p) => p[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function resolveOrgSiteLogoUrl(marker: MapMarkerBase): string | undefined {
+  const raw =
+    (marker.logoUrl as string | undefined)?.trim() ||
+    (marker.logo as string | undefined)?.trim();
+  return raw || undefined;
+}
+
+function formatMarkerAddress(address: unknown): string | undefined {
+  if (address == null) return undefined;
+  if (typeof address === 'string') {
+    const t = address.trim();
+    return t || undefined;
+  }
+  if (typeof address === 'object' && !Array.isArray(address)) {
+    const o = address as Record<string, unknown>;
+    const parts = ['street', 'suburb', 'city', 'state', 'postalCode', 'country']
+      .map((k) => o[k])
+      .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+      .map((s) => s.trim());
+    if (parts.length > 0) return parts.join(', ');
+  }
+  return undefined;
+}
+
+function buildTelHref(phone: string): string {
+  const trimmed = phone.trim();
+  const core = trimmed.replace(/[^\d+]/g, '');
+  return core ? `tel:${core}` : `tel:${encodeURIComponent(trimmed)}`;
+}
+
+function OrgSiteHeader({
+  marker,
+  title,
+  mt,
+}: {
+  marker: MapMarkerBase;
+  title: string;
+  mt: string;
+}) {
+  const logoUrl = resolveOrgSiteLogoUrl(marker);
+  const initials = initialsForPopupTitle(title);
+  return (
+    <div className="border-b border-border/60 pb-2 mb-3">
+      <div className="flex gap-3 pr-6">
+        <Avatar size="lg" className="shrink-0">
+          {logoUrl ? (
+            <AvatarImage src={logoUrl} alt="" referrerPolicy="no-referrer" />
+          ) : null}
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold leading-snug">{title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{markerTypeLabel(mt)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
+  const address = formatMarkerAddress(marker.address);
+  const contactPerson =
+    (typeof marker.contactPerson === 'string' && marker.contactPerson.trim()) ||
+    (typeof marker.contactName === 'string' && marker.contactName.trim()) ||
+    '';
+  const phonePrimary =
+    (typeof marker.phone === 'string' && marker.phone.trim()) ||
+    (typeof marker.contactPhone === 'string' && marker.contactPhone.trim()) ||
+    '';
+  const phoneAlt =
+    typeof marker.alternativePhone === 'string' ? marker.alternativePhone.trim() : '';
+  const email =
+    (typeof marker.email === 'string' && marker.email.trim()) ||
+    (typeof marker.contactEmail === 'string' && marker.contactEmail.trim()) ||
+    '';
+
+  const hasContactBlock =
+    Boolean(contactPerson) || Boolean(phonePrimary) || Boolean(phoneAlt) || Boolean(email);
+
+  return (
+    <div className="space-y-3">
+      {address ? (
+        <div className="flex gap-2 items-start">
+          <MapPin
+            className="size-3.5 shrink-0 text-muted-foreground mt-0.5"
+            strokeWidth={2}
+            aria-hidden
+            focusable={false}
+          />
+          <p className="text-xs text-foreground leading-snug">{address}</p>
+        </div>
+      ) : null}
+
+      {hasContactBlock ? (
+        <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+          {contactPerson ? (
+            <>
+              <DtIcon icon={User}>Contact</DtIcon>
+              <dd className="min-w-0 font-medium text-foreground leading-snug">{contactPerson}</dd>
+            </>
+          ) : null}
+          {phonePrimary ? (
+            <>
+              <DtIcon icon={Phone}>Phone</DtIcon>
+              <dd className="min-w-0">
+                <a
+                  href={buildTelHref(phonePrimary)}
+                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
+                >
+                  {phonePrimary}
+                </a>
+              </dd>
+            </>
+          ) : null}
+          {phoneAlt ? (
+            <>
+              <DtIcon icon={Phone}>Alt phone</DtIcon>
+              <dd className="min-w-0">
+                <a
+                  href={buildTelHref(phoneAlt)}
+                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
+                >
+                  {phoneAlt}
+                </a>
+              </dd>
+            </>
+          ) : null}
+          {email ? (
+            <>
+              <DtIcon icon={Mail}>Email</DtIcon>
+              <dd className="min-w-0">
+                <a
+                  href={`mailto:${email}`}
+                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
+                >
+                  {email}
+                </a>
+              </dd>
+            </>
+          ) : null}
+        </dl>
+      ) : null}
+    </div>
+  );
 }
 
 function CheckInVisitPopupBody({ marker }: { marker: MapMarkerBase }) {
@@ -342,7 +497,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
 
   if (mt === 'shift-end') {
     return (
-      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto pr-0.5">
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
         {header}
         <ShiftEndPopupBody marker={marker} />
       </div>
@@ -351,7 +506,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
 
   if (mt === 'check-in-visit') {
     return (
-      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto pr-0.5">
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
         {header}
         <CheckInVisitPopupBody marker={marker} />
       </div>
@@ -360,9 +515,18 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
 
   if (mt === 'shift-start') {
     return (
-      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto pr-0.5">
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,360px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
         {header}
         <ShiftStartPopupBody marker={marker} />
+      </div>
+    );
+  }
+
+  if (mt === 'branch' || mt === 'client' || mt === 'competitor') {
+    return (
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
+        <OrgSiteHeader marker={marker} title={title} mt={mt} />
+        <OrgSitePopupBody marker={marker} />
       </div>
     );
   }
@@ -400,7 +564,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
   }
 
   return (
-    <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto pr-0.5">
+    <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
       {header}
 
       {primitiveRows.length > 0 ? (
@@ -408,7 +572,7 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
           {sectionShell(
             <>
               {sectionHeading('Details', ClipboardList)}
-              <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1.5 text-xs">
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
                 {primitiveRows.map(({ key, value }) => (
                   <div key={key} className="contents">
                     <dt className="text-muted-foreground shrink-0">{humanKey(key)}</dt>
