@@ -4,3 +4,12 @@ import { WorkforceType } from '@/api/types/user';
 export function isGeneralWorkerWorkforce(workforceType: string | null | undefined): boolean {
   return workforceType === WorkforceType.GENERAL_WORKER;
 }
+
+export function isInternalOrExternalSalesRepWorkforce(
+  workforceType: string | null | undefined
+): boolean {
+  return (
+    workforceType === WorkforceType.INTERNAL_SALES_REP ||
+    workforceType === WorkforceType.EXTERNAL_SALES_REP
+  );
+}
