@@ -38,8 +38,10 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { cn } from '@/lib/utils';
+import { isInternalOrExternalSalesRepWorkforce } from '@/lib/workforce-guards';
 import { formatEnumLabel } from '@/lib/format-enum-label';
 
 const selectTriggerClass =
@@ -366,7 +368,10 @@ export function ReportsCurrentProgressSection({
   });
 
   const shortfallUsersWithTargets = useMemo(
-    () => (shortfallData?.users ?? []).filter((u) => u.hasTarget),
+    () =>
+      (shortfallData?.users ?? []).filter(
+        (u) => u.hasTarget && isInternalOrExternalSalesRepWorkforce(u.workforceType)
+      ),
     [shortfallData?.users]
   );
 
@@ -689,15 +694,23 @@ export function ReportsCurrentProgressSection({
                       )}
                     >
                       <TableCell className="font-medium align-top">
-                        <div className="flex flex-col gap-0.5">
-                          <span>{fullName}</span>
-                          <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">
-                            <span className="leading-none" aria-hidden>
-                              {flagForUserRow(u, branchByUid)}
+                        <span className="flex items-start gap-2 whitespace-normal">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={u.photoURL ?? undefined} alt={fullName} />
+                            <AvatarFallback className="text-xs">
+                              {fullName ? fullName.slice(0, 2).toUpperCase() : '—'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="flex min-w-0 flex-col gap-0.5">
+                            <span className="leading-tight">{fullName}</span>
+                            <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                              <span className="leading-none" aria-hidden>
+                                {flagForUserRow(u, branchByUid)}
+                              </span>
+                              <span>{branchSubtitle}</span>
                             </span>
-                            <span>{branchSubtitle}</span>
                           </span>
-                        </div>
+                        </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground align-top">
                         {u.periodTargetVisits > 0 ? ta : '—'}
