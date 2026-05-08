@@ -13,13 +13,6 @@ import { divIcon } from 'leaflet';
 import {
   Building2,
   MapPin,
-  Clock,
-  Square,
-  Handshake,
-  FileCheck,
-  ClipboardList,
-  DollarSign,
-  Coffee,
   type LucideIcon,
 } from 'lucide-react';
 import { useMapReport, useBranches, useUsers, getBranchDisplayLabel } from '@/api/hooks';
@@ -34,7 +27,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2Icon } from '@/lib/icons';
-import { cn } from '@/lib/utils';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -53,19 +45,9 @@ const MARKER_TYPE_CONFIG: Record<
   string,
   { color: string; label: string; icon: LucideIcon }
 > = {
-  'check-in': { color: '#2563eb', label: 'Attendance (current)', icon: Clock },
-  'shift-start': { color: '#16a34a', label: 'Shift start', icon: Clock },
-  'shift-end': { color: '#dc2626', label: 'Shift end', icon: Square },
-  lead: { color: '#16a34a', label: 'Lead', icon: Handshake },
   client: { color: '#7c3aed', label: 'Client', icon: Building2 },
   competitor: { color: '#dc2626', label: 'Competitor', icon: Building2 },
   'check-in-visit': { color: '#4f46e5', label: 'Visit', icon: MapPin },
-  quotation: { color: '#d97706', label: 'Quotation', icon: FileCheck },
-  journal: { color: '#64748b', label: 'Journal', icon: ClipboardList },
-  task: { color: '#0891b2', label: 'Task', icon: ClipboardList },
-  claim: { color: '#e11d48', label: 'Claim', icon: DollarSign },
-  'break-start': { color: '#65a30d', label: 'Break start', icon: Coffee },
-  'break-end': { color: '#ca8a04', label: 'Break end', icon: Coffee },
 };
 
 const MARKER_ICON_SIZE = 24;
@@ -120,12 +102,9 @@ function getMarkerConfig(markerType: string) {
 
 export const MAP_TYPE_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
-  { value: 'lead', label: 'Leads only' },
-  { value: 'shift-start', label: 'Shift starts' },
-  { value: 'shift-end', label: 'Shift ends' },
-  { value: 'client', label: 'Clients' },
-  { value: 'check-in-visit', label: 'Visits' },
-  { value: 'attendance', label: 'Attendance' },
+  { value: 'check-in-visit', label: 'Visits only' },
+  { value: 'client', label: 'Clients only' },
+  { value: 'competitor', label: 'Competitors only' },
 ] as const;
 
 function filterMarkersByType(
@@ -133,11 +112,6 @@ function filterMarkersByType(
   typeFilter: string
 ): MapMarkerBase[] {
   if (!typeFilter || typeFilter === 'all') return markers;
-  if (typeFilter === 'attendance') {
-    return markers.filter((m) =>
-      ['check-in', 'shift-start', 'shift-end'].includes(m.markerType)
-    );
-  }
   return markers.filter((m) => m.markerType === typeFilter);
 }
 
@@ -209,23 +183,14 @@ function LocationButton() {
   );
 }
 
-/** Build a single list of markers from response; prefer allMarkers, fallback to combined arrays. */
+/** Prefer `allMarkers`; fallback stitches the three live layers only. */
 function getAllMarkers(data: MapDataResponse): MapMarkerBase[] {
   if (data.allMarkers?.length) return data.allMarkers;
-  const parts: MapMarkerBase[] = [
-    ...(data.workers ?? []),
-    ...(data.shiftStarts ?? []),
-    ...(data.shiftEnds ?? []),
-    ...(data.leads ?? []),
+  return [
     ...(data.clients ?? []),
-    ...(data.checkIns ?? []),
     ...(data.competitors ?? []),
-    ...(data.quotations ?? []),
-    ...(data.journals ?? []),
-    ...(data.tasks ?? []),
-    ...(data.claims ?? []),
+    ...(data.checkIns ?? []),
   ];
-  return parts;
 }
 
 function MapContent({
@@ -239,13 +204,6 @@ function MapContent({
     const all = getAllMarkers(data);
     return filterMarkersByType(all, typeFilter);
   }, [data, typeFilter]);
-  const center: [number, number] = useMemo(() => {
-    const c = data.mapConfig?.defaultCenter;
-    if (c && typeof c.lat === 'number' && typeof c.lng === 'number') {
-      return [c.lat, c.lng];
-    }
-    return DEFAULT_CENTER;
-  }, [data.mapConfig]);
 
   return (
     <>

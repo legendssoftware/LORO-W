@@ -1,0 +1,14 @@
+le=admin, accessLevel=admin, organisationRef=org_3AYmqt08IZGVh0IDSEJEqH9fTu4, tokenOrgId=org_3AYmqt08IZGVh0IDSEJEqH9fTu4, clerkUserId=user_38ms1sS7wdxz1dbF5rCyfspyBdq, clientUid=none
+[Nest] 51241  - 2026/05/07, 13:59:12   DEBUG [RoleGuard] [RoleGuard] canActivate: path=GET /reports/map
+[Nest] 51241  - 2026/05/07, 13:59:12   DEBUG [RoleGuard] [RoleGuard] path=GET /reports/map, user=present, role=admin, user.role=admin, user.accessLevel=admin
+[Nest] 51241  - 2026/05/07, 13:59:12   DEBUG [RoleGuard] [RoleGuard] path=GET /reports/map, requiredRoles=[admin, manager, user, member, owner], normalizedRole=ADMIN, hasRequiredRole=true
+[Nest] 51241  - 2026/05/07, 13:59:12   DEBUG [RoleGuard] [RoleGuard] Allowed: path=GET /reports/map, role=ADMIN
+[Nest] 51241  - 2026/05/07, 13:59:12     LOG [ReportsController] Getting map data - Query params: orgId=undefined, branchId=undefined, userId=undefined, startDate=2026-04-30T22:00:00.000Z, endDate=2026-05-07T21:59:59.999Z, allTime=undefined, resolveMarkerAddresses=false
+[Nest] 51241  - 2026/05/07, 13:59:13   DEBUG [ReportsController] Resolved parameters - orgId: 1, elevated: true
+[Nest] 51241  - 2026/05/07, 13:59:13     LOG [ReportsController] Generating map data for organisation 1, branch 1
+[Nest] 51241  - 2026/05/07, 13:59:13     LOG [ReportsService] Generating map data for organization 1 and branch 1
+[Nest] 51241  - 2026/05/07, 13:59:13     LOG [MapDataReportGenerator] Starting map data generation for organisation 1, branch 1
+[Nest] 51241  - 2026/05/07, 13:59:14     LOG [MapDataReportGenerator] Fetched: clients=0, competitors=0, checkIns=2
+[Nest] 51241  - 2026/05/07, 13:59:14     LOG [MapDataReportGenerator] Map data OK in 801ms; composition={"check-in-visit":2} total=2
+[Nest] 51241  - 2026/05/07, 13:59:14     LOG [ReportsService] Map data generated successfully for organization 1
+[Nest] 51241  - 2026/05/07, 13:59:14     LOG [ReportsService] Map data cached successfully: reports:mapdata_org1_1_all_r_Africa/Johannesburg_2026-05-01_2026-05-07_na
