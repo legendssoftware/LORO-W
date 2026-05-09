@@ -81,7 +81,7 @@ describe('userListItemInLeadsVisitsReportingCohort', () => {
     expect(
       userListItemInLeadsVisitsReportingCohort({
         ...base,
-        workforceType: WorkforceType.INTERNAL_SALES_REP,
+        workforceType: WorkforceType.INTERNAL_SALES,
       })
     ).toBe(true);
   });

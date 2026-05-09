@@ -1,4 +1,4 @@
-/** Format enum-like strings for display (e.g. "event planner", "internal_sales_rep"). */
+/** Format enum-like strings for display (e.g. "event planner", "internal_sales"). */
 export function formatEnumLabel(value: string): string {
   return value
     .split(/[\s_-]+/)
