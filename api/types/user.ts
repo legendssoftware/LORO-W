@@ -48,8 +48,8 @@ export type AccessLevel = (typeof AccessLevel)[keyof typeof AccessLevel];
 export const WorkforceType = {
   INTERNAL_EMPLOYEE: 'internal_employee',
   FIELD_EMPLOYEE: 'field_employee',
-  INTERNAL_SALES_REP: 'internal_sales_rep',
-  EXTERNAL_SALES_REP: 'external_sales_rep',
+  INTERNAL_SALES: 'internal_sales',
+  EXTERNAL_SALES: 'external_sales',
   MANAGEMENT: 'management',
   SUPPORT_ADMIN: 'support_admin',
   SECURITY: 'security',

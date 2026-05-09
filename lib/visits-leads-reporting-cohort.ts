@@ -1,10 +1,10 @@
 /**
- * Visits/leads reporting cohort: Internal & External Sales Rep roles only (case-insensitive).
+ * Visits/leads reporting cohort: Internal Sales and External Sales roles only (case-insensitive).
  * Align with server `src/lib/visits-leads-reporting-cohort.util.ts`.
  */
 export const VISITS_LEADS_REPORTING_ROLE_LABELS = [
-  'Internal Sales Rep',
-  'External Sales Rep',
+  'Internal Sales',
+  'External Sales',
 ] as const;
 
 const NORMALIZED_REP_ROLES = new Set(
