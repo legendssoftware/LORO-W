@@ -628,13 +628,13 @@ export function ReportsCurrentProgressSection({
                 <TableHead className="text-right" colSpan={3}>
                   Activity
                   <span className="block text-xs font-normal text-muted-foreground">
-                    T / A / short · target from check-ins
+                    MCR / ACT / # · target from check-ins
                   </span>
                 </TableHead>
                 <TableHead className="text-right" colSpan={3}>
                   Leads
                   <span className="block text-xs font-normal text-muted-foreground">
-                    T / A / short
+                    MCR / ACT / #
                   </span>
                 </TableHead>
                 <TableHead className="text-right min-w-[72px]">Behind</TableHead>
