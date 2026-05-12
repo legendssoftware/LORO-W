@@ -1,7 +1,8 @@
 /**
  * Map report types for GET `/reports/map`.
- * `allMarkers` and `checkIns`/`clients`/`competitors` contain only `check-in-visit`, `client`, and `competitor`.
- * Other top-level marker arrays and `layers.activity` entries (except populated `checkIns`) are empty for backwards compatibility.
+ * Map markers intentionally exclude visit check-ins (`check-in-visit`), attendance GPS pins (`check-in`),
+ * shift/break endpoints, and attendance-derived `claim` pins; those top-level arrays remain empty for API compatibility.
+ * `allMarkers` is the merged set of allowed types (e.g. `client`, `competitor`, `branch`, `lead`, `quotation`, `journal`, `task`).
  */
 
 export interface MapConfigType {
@@ -72,7 +73,7 @@ export interface MapLayers {
   branches: MapMarkerBase[];
   competitors: MapMarkerBase[];
   clients: MapMarkerBase[];
-  /** Mirrors top-level arrays; only `checkIns` is populated besides empty slots. */
+  /** Mirrors top-level arrays; `checkIns`/shift/worker marker slots stay empty — check-in-related pins are omitted from maps. */
   activity: {
     leads: MapMarkerBase[];
     checkIns: MapMarkerBase[];

@@ -1,8 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
-import { format, isSameDay, differenceInCalendarDays } from 'date-fns';
-import { useTasks, useUsers } from '@/api/hooks';
+import {
+  format,
+  isSameDay,
+  differenceInCalendarDays,
+  startOfDay,
+  endOfDay,
+} from 'date-fns';
+import { useTasks, useTasksForUser, useUsers, useClients } from '@/api/hooks';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CalendarIcon, XIcon } from '@/lib/icons';
+import { CalendarIcon, StoreIcon, XIcon } from '@/lib/icons';
 import { PlanningTable } from '@/components/planning-table/planning-table';
 import { cn } from '@/lib/utils';
 import {
@@ -30,6 +37,23 @@ import {
 import type { Task } from '@/api/types/tasks';
 
 const today = new Date();
+const portalSelectContentClass = 'z-[10001]';
+
+function taskInDateRange(
+  t: Task,
+  useAllTime: boolean,
+  startDate: Date,
+  endDate: Date
+): boolean {
+  if (useAllTime) return true;
+  const start = startOfDay(startDate).getTime();
+  const end = endOfDay(endDate).getTime();
+  const times: number[] = [];
+  if (t.deadline) times.push(new Date(t.deadline).getTime());
+  if (t.createdAt) times.push(new Date(t.createdAt).getTime());
+  if (times.length === 0) return true;
+  return times.some((ts) => ts >= start && ts <= end);
+}
 
 export function PlanningContent() {
   const {
@@ -39,6 +63,9 @@ export function PlanningContent() {
     selectedStatus,
     selectedPriority,
     selectedAssigneeId,
+    selectedClientId,
+    filterOverdueOnly,
+    myTasksOnly,
     searchQuery,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
@@ -49,10 +76,21 @@ export function PlanningContent() {
     setSelectedStatus,
     setSelectedPriority,
     setSelectedAssigneeId,
+    setSelectedClientId,
+    setFilterOverdueOnly,
+    setMyTasksOnly,
     setSearchQuery,
   } = usePlanningStore();
 
-  const { data: users = [] } = useUsers({ limit: 100 });
+  const { backendUserData } = useSessionSync();
+  const myUserUid = backendUserData?.uid;
+  const canMyTasks = myUserUid != null && myUserUid > 0;
+
+  const { data: users = [] } = useUsers({ page: 1, limit: 100 });
+  const { data: clientsList = [] } = useClients({
+    page: 1,
+    limit: 200,
+  });
 
   const tasksParams = useMemo(
     () => ({
@@ -64,22 +102,86 @@ export function PlanningContent() {
             startDate: format(startDate, 'yyyy-MM-dd'),
             endDate: format(endDate, 'yyyy-MM-dd'),
           }),
-      ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus as Task['status'] } : {}),
-      ...(selectedPriority && selectedPriority !== 'all' ? { priority: selectedPriority as Task['priority'] } : {}),
-      ...(selectedAssigneeId && selectedAssigneeId !== 'all' && !Number.isNaN(Number(selectedAssigneeId))
+      ...(selectedStatus && selectedStatus !== 'all'
+        ? { status: selectedStatus as Task['status'] }
+        : {}),
+      ...(selectedPriority && selectedPriority !== 'all'
+        ? { priority: selectedPriority as Task['priority'] }
+        : {}),
+      ...(selectedAssigneeId &&
+      selectedAssigneeId !== 'all' &&
+      !Number.isNaN(Number(selectedAssigneeId))
         ? { assigneeId: Number(selectedAssigneeId) }
         : {}),
+      ...(selectedClientId &&
+      selectedClientId !== 'all' &&
+      !Number.isNaN(Number(selectedClientId))
+        ? { clientId: Number(selectedClientId) }
+        : {}),
+      ...(filterOverdueOnly ? { isOverdue: true as const } : {}),
     }),
-    [useAllTime, startDate, endDate, selectedStatus, selectedPriority, selectedAssigneeId]
+    [
+      useAllTime,
+      startDate,
+      endDate,
+      selectedStatus,
+      selectedPriority,
+      selectedAssigneeId,
+      selectedClientId,
+      filterOverdueOnly,
+    ]
   );
 
-  const tasksQuery = useTasks(tasksParams);
-  const tasks = tasksQuery.data?.data ?? [];
+  const tasksQuery = useTasks(tasksParams, { enabled: !myTasksOnly });
+  const tasksForUserQuery = useTasksForUser(myUserUid, {
+    enabled: myTasksOnly && canMyTasks,
+  });
+
+  const orgTasks = tasksQuery.data?.data ?? [];
+  const myTasksRaw = tasksForUserQuery.data?.tasks ?? [];
+  const baseTasks = myTasksOnly ? myTasksRaw : orgTasks;
+
+  const afterScopeFilters = useMemo(() => {
+    if (!myTasksOnly) return baseTasks;
+    return baseTasks.filter((t) => {
+      if (filterOverdueOnly && !t.isOverdue) return false;
+      if (selectedStatus && selectedStatus !== 'all' && t.status !== selectedStatus) {
+        return false;
+      }
+      if (
+        selectedPriority &&
+        selectedPriority !== 'all' &&
+        t.priority !== selectedPriority
+      ) {
+        return false;
+      }
+      if (selectedClientId && selectedClientId !== 'all') {
+        const cid = Number(selectedClientId);
+        if (
+          !Number.isFinite(cid) ||
+          !(t.clients ?? []).some((c) => c.uid === cid)
+        ) {
+          return false;
+        }
+      }
+      return taskInDateRange(t, useAllTime, startDate, endDate);
+    });
+  }, [
+    baseTasks,
+    myTasksOnly,
+    filterOverdueOnly,
+    selectedStatus,
+    selectedPriority,
+    selectedClientId,
+    useAllTime,
+    startDate,
+    endDate,
+  ]);
 
   const filteredTasks = useMemo(() => {
-    if (!searchQuery.trim()) return tasks;
+    if (!searchQuery.trim()) return afterScopeFilters;
     const q = searchQuery.trim().toLowerCase();
-    return tasks.filter((t) => {
+    return afterScopeFilters.filter((t) => {
       const assigneeNames = (t.assignees ?? [])
         .map((a) => [a.name, a.surname].filter(Boolean).join(' '))
         .join(' ');
@@ -87,6 +189,7 @@ export function PlanningContent() {
       const searchable = [
         t.title,
         t.description,
+        t.comment,
         t.status,
         t.priority,
         assigneeNames,
@@ -97,7 +200,18 @@ export function PlanningContent() {
         .toLowerCase();
       return searchable.includes(q);
     });
-  }, [tasks, searchQuery]);
+  }, [afterScopeFilters, searchQuery]);
+
+  const isLoading = myTasksOnly
+    ? myTasksOnly && canMyTasks
+      ? tasksForUserQuery.isLoading
+      : false
+    : tasksQuery.isLoading;
+
+  function refetchTasks() {
+    if (myTasksOnly && canMyTasks) void tasksForUserQuery.refetch();
+    else void tasksQuery.refetch();
+  }
 
   return (
     <section>
@@ -191,13 +305,28 @@ export function PlanningContent() {
             })()}
           </div>
           <Select
+            value={myTasksOnly ? 'mine' : 'org'}
+            onValueChange={(v) => setMyTasksOnly(v === 'mine')}
+            disabled={!canMyTasks}
+          >
+            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+              <SelectValue placeholder="Scope" />
+            </SelectTrigger>
+            <SelectContent className={portalSelectContentClass}>
+              <SelectItem value="org">All assignees</SelectItem>
+              <SelectItem value="mine" disabled={!canMyTasks}>
+                My tasks
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
             value={selectedStatus || 'all'}
             onValueChange={(v) => setSelectedStatus(v)}
           >
             <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={portalSelectContentClass}>
               {TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   <span className="flex items-center gap-2">
@@ -215,7 +344,7 @@ export function PlanningContent() {
             <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
               <SelectValue placeholder="All priorities" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={portalSelectContentClass}>
               {TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   <span className="flex items-center gap-2">
@@ -227,13 +356,50 @@ export function PlanningContent() {
             </SelectContent>
           </Select>
           <Select
-            value={selectedAssigneeId || 'all'}
-            onValueChange={(v) => setSelectedAssigneeId(v)}
+            value={filterOverdueOnly ? 'overdue' : 'all'}
+            onValueChange={(v) => setFilterOverdueOnly(v === 'overdue')}
           >
             <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+              <SelectValue placeholder="Deadline" />
+            </SelectTrigger>
+            <SelectContent className={portalSelectContentClass}>
+              <SelectItem value="all">All deadlines</SelectItem>
+              <SelectItem value="overdue">Overdue only</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedClientId || 'all'}
+            onValueChange={(v) => setSelectedClientId(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground">
+              <SelectValue placeholder="All clients" />
+            </SelectTrigger>
+            <SelectContent className={portalSelectContentClass}>
+              <SelectItem value="all">All clients</SelectItem>
+              {clientsList.map((c) => (
+                <SelectItem key={c.uid} value={String(c.uid)}>
+                  <span className="flex items-center gap-2">
+                    <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={myTasksOnly ? 'all' : selectedAssigneeId || 'all'}
+            onValueChange={(v) => setSelectedAssigneeId(v)}
+            disabled={myTasksOnly}
+          >
+            <SelectTrigger
+              className={cn(
+                'h-9 min-w-[140px] w-[200px] border-gray-200 bg-white text-foreground',
+                myTasksOnly && 'opacity-70'
+              )}
+            >
               <SelectValue placeholder="All users" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={portalSelectContentClass}>
               <SelectItem value="all">All users</SelectItem>
               {users.map((user) => {
                 const fullName =
@@ -250,7 +416,9 @@ export function PlanningContent() {
                       <Avatar className="size-6 shrink-0">
                         <AvatarImage src={imgSrc} alt={fullName} />
                         <AvatarFallback className="text-xs">
-                          {fullName !== `User ${user.uid}` ? fullName.slice(0, 2).toUpperCase() : String(user.uid).slice(-2)}
+                          {fullName !== `User ${user.uid}`
+                            ? fullName.slice(0, 2).toUpperCase()
+                            : String(user.uid).slice(-2)}
                         </AvatarFallback>
                       </Avatar>
                       {fullName}
@@ -260,6 +428,11 @@ export function PlanningContent() {
               })}
             </SelectContent>
           </Select>
+          {myTasksOnly ? (
+            <span className="text-xs text-muted-foreground max-w-[200px]">
+              Assignee filter is applied via <span className="font-medium text-foreground">My tasks</span>.
+            </span>
+          ) : null}
         </div>
         <div className="flex flex-nowrap items-center gap-2">
           <div className="relative w-56 min-w-0 shrink sm:w-64">
@@ -288,9 +461,15 @@ export function PlanningContent() {
       <div data-tour="planning-task-table">
         <PlanningTable
           tasks={filteredTasks}
-          isLoading={tasksQuery.isLoading}
-          emptyMessage={tasks.length === 0 ? 'No tasks match your filters.' : 'No tasks match your search.'}
-          onTaskUpdated={() => tasksQuery.refetch()}
+          isLoading={isLoading}
+          emptyMessage={
+            myTasksOnly && !canMyTasks
+              ? 'Sign in and sync your profile to load your tasks.'
+              : afterScopeFilters.length === 0
+                ? 'No tasks match your filters.'
+                : 'No tasks match your search.'
+          }
+          onTaskUpdated={refetchTasks}
         />
       </div>
     </section>

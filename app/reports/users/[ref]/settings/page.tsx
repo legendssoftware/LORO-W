@@ -10,7 +10,6 @@ import toast from 'react-hot-toast';
 import {
   useUser,
   usePatchUser,
-  usePatchUserTarget,
   useDeleteUser,
   useRestoreUser,
   useDeleteUserPermanently,
@@ -525,7 +524,6 @@ export default function UserSettingsPage() {
     includeAssignedClients: false, // Settings page loads clients via useClients
   });
   const patchUser = usePatchUser(ref);
-  const patchUserTargetMutation = usePatchUserTarget(ref);
   const deleteUserMutation = useDeleteUser(ref);
   const restoreUserMutation = useRestoreUser(ref);
   const deletePermanentMutation = useDeleteUserPermanently(ref);
@@ -661,45 +659,6 @@ export default function UserSettingsPage() {
     targetForm.reset(getDefaultTargetValues(ut));
   }, [user, targetForm]);
 
-  const onTargetSubmit = (values: TargetFormValues) => {
-    const body: PatchUserTargetBody = {};
-    const keys: (keyof PatchUserTargetBody)[] = [
-      'targetSalesAmount', 'targetQuotationsAmount',
-      'targetCurrency', 'targetHoursWorked', 'targetNewClients',
-      'targetNewLeads', 'targetCheckIns', 'targetCalls',
-      'targetPeriod', 'periodStartDate', 'periodEndDate', 'isRecurring', 'recurringInterval', 'carryForwardUnfulfilled',
-      'baseSalary', 'carInstalment', 'carInsurance', 'fuel', 'cellPhoneAllowance', 'carMaintenance', 'cgicCosts', 'totalCost', 'erpSalesRepCode',
-    ];
-    for (const k of keys) {
-      const v = values[k as keyof TargetFormValues];
-      if (v !== undefined && v !== null && v !== '') {
-        (body as Record<string, unknown>)[k] = v;
-      }
-    }
-    if (targetForm.formState.dirtyFields.performanceWarningLevel) {
-      if (values.performanceWarningLevel && values.performanceWarningLevel !== 'none') {
-        body.targetWarnings = {
-          level: Number(values.performanceWarningLevel) as 1 | 2 | 3,
-          issuedAt: new Date().toISOString(),
-        };
-      } else {
-        body.targetWarnings = null;
-      }
-    }
-    if (Object.keys(body).length === 0) {
-      toast.success('No target changes to save');
-      return;
-    }
-    patchUserTargetMutation.mutate(body, {
-      onSuccess: () => {
-        toast.success('Targets updated');
-      },
-      onError: (err: Error) => {
-        toast.error(err.message || 'Failed to update targets');
-      },
-    });
-  };
-
   const onSubmit = (values: FormValues) => {
     const body = buildPatchBody(user ?? undefined, values);
     let targetPayload = buildUserTargetBody(targetForm.getValues());
@@ -771,27 +730,27 @@ export default function UserSettingsPage() {
 
   return (
     <div className="h-full overflow-auto flex flex-col items-center">
-      <div className="max-w-4xl w-full mx-auto px-4 py-8">
+      <div className="max-w-4xl w-full mx-auto px-3 py-5 sm:px-4 sm:py-8">
         <Link
           href="/staff"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4 sm:mb-6 sm:text-sm"
         >
           <ChevronLeftIcon className="size-4" />
           Back to Staff
         </Link>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             {/* Basic details */}
             <Card>
               <CardHeader>
-                <CardTitle>Basic details</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Basic details</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Name, contact and email.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="name"
@@ -879,13 +838,13 @@ export default function UserSettingsPage() {
             {/* Identity & access */}
             <Card>
               <CardHeader>
-                <CardTitle>Identity & access</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Identity & access</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   User reference, HR ID, role, access level, workforce type and status.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="userref"
@@ -929,7 +888,7 @@ export default function UserSettingsPage() {
                     )}
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                   <FormField
                     control={form.control}
                     name="role"
@@ -941,7 +900,7 @@ export default function UserSettingsPage() {
                           value={field.value ?? ''}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full min-w-0">
                               <SelectValue placeholder="Role" />
                             </SelectTrigger>
                           </FormControl>
@@ -974,7 +933,7 @@ export default function UserSettingsPage() {
                           value={field.value ?? ''}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full min-w-0">
                               <SelectValue placeholder="Access level" />
                             </SelectTrigger>
                           </FormControl>
@@ -1007,7 +966,7 @@ export default function UserSettingsPage() {
                           value={field.value ?? 'active'}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full min-w-0">
                               <SelectValue placeholder="Status" />
                             </SelectTrigger>
                           </FormControl>
@@ -1041,7 +1000,7 @@ export default function UserSettingsPage() {
                           value={field.value ?? ''}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full min-w-0">
                               <SelectValue placeholder="Workforce type" />
                             </SelectTrigger>
                           </FormControl>
@@ -1091,8 +1050,8 @@ export default function UserSettingsPage() {
             {/* Primary branch */}
             <Card>
               <CardHeader>
-                <CardTitle>Primary branch</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Primary branch</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   The branch this user is assigned to.
                 </p>
               </CardHeader>
@@ -1211,13 +1170,13 @@ export default function UserSettingsPage() {
             {/* User profile */}
             <Card>
               <CardHeader>
-                <CardTitle>User profile</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">User profile</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Physical details and personal information.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="profile.height"
@@ -1310,7 +1269,7 @@ export default function UserSettingsPage() {
                     </FormItem>
                   )}
                 />
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="profile.city"
@@ -1344,13 +1303,13 @@ export default function UserSettingsPage() {
             {/* Employment profile */}
             <Card>
               <CardHeader>
-                <CardTitle>Employment profile</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Employment profile</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Position, department, and employment dates.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="employmentProfile.branchref"
@@ -1465,8 +1424,8 @@ export default function UserSettingsPage() {
             {/* Assigned clients */}
             <Card>
               <CardHeader>
-                <CardTitle>Assigned clients</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Assigned clients</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Clients this user has access to.
                 </p>
               </CardHeader>
@@ -1513,11 +1472,11 @@ export default function UserSettingsPage() {
                             <CommandList className="max-h-[200px]">
                               <CommandGroup className="p-2">
                                 {clients.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No clients available
                                   </p>
                                 ) : filteredClientsForPicker.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No clients found.
                                   </p>
                                 ) : (
@@ -1581,14 +1540,14 @@ export default function UserSettingsPage() {
             {/* User targets */}
             <Card>
               <CardHeader>
-                <CardTitle>User targets</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Performance targets and cost breakdown. The main &quot;Save&quot; button above also saves these targets (creates them if the user has none). You can also save only targets here.
+                <CardTitle className="text-sm sm:text-base">User targets</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Performance targets and cost breakdown. Use the &quot;Save&quot; button at the bottom of the page to persist these together with the rest of the user (creates targets if the user has none).
                 </p>
               </CardHeader>
               <CardContent>
                 <Form {...targetForm}>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <FormField
                       control={targetForm.control}
                       name="performanceWarningLevel"
@@ -1600,7 +1559,7 @@ export default function UserSettingsPage() {
                             value={field.value ?? 'none'}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full min-w-0">
                                 <SelectValue placeholder="None" />
                               </SelectTrigger>
                             </FormControl>
@@ -1612,13 +1571,13 @@ export default function UserSettingsPage() {
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            Saves with targets or main Save when changed. Employee must acknowledge in-app before the benchmarks dialog.
+                            Persisted with the bottom Save when changed. Employee must acknowledge in-app before the benchmarks dialog.
                           </p>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                       <FormField
                         control={targetForm.control}
                         name="targetSalesAmount"
@@ -1674,7 +1633,7 @@ export default function UserSettingsPage() {
                               }
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full min-w-0">
                                   <SelectValue placeholder="Select currency" />
                                 </SelectTrigger>
                               </FormControl>
@@ -1762,7 +1721,7 @@ export default function UserSettingsPage() {
                         )}
                       />
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                       <FormField
                         control={targetForm.control}
                         name="targetPeriod"
@@ -1780,7 +1739,7 @@ export default function UserSettingsPage() {
                               }
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full min-w-0">
                                   <SelectValue placeholder="Select period" />
                                 </SelectTrigger>
                               </FormControl>
@@ -1836,7 +1795,7 @@ export default function UserSettingsPage() {
                             <FormLabel>Recurring interval</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value ?? ''}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full min-w-0">
                                   <SelectValue placeholder="Interval" />
                                 </SelectTrigger>
                               </FormControl>
@@ -1879,7 +1838,7 @@ export default function UserSettingsPage() {
                     </div>
                     <div className="border-t pt-4">
                       <p className="text-sm font-medium text-muted-foreground mb-3">Cost breakdown (ZAR)</p>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                         <FormField
                           control={targetForm.control}
                           name="baseSalary"
@@ -1999,14 +1958,6 @@ export default function UserSettingsPage() {
                         />
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => targetForm.handleSubmit(onTargetSubmit)()}
-                      disabled={patchUserTargetMutation.isPending}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      {patchUserTargetMutation.isPending ? <Loader2Icon className="size-4 animate-spin" /> : 'Save targets'}
-                    </Button>
                   </div>
                 </Form>
               </CardContent>
@@ -2015,8 +1966,8 @@ export default function UserSettingsPage() {
             {/* Managed branches */}
             <Card>
               <CardHeader>
-                <CardTitle>Managed branches</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Managed branches</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Branches this user manages (managers/supervisors).
                 </p>
               </CardHeader>
@@ -2063,11 +2014,11 @@ export default function UserSettingsPage() {
                             <CommandList className="max-h-[200px]">
                               <CommandGroup className="p-2">
                                 {branches.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No branches available
                                   </p>
                                 ) : filteredBranchesForManagedPicker.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No branches found.
                                   </p>
                                 ) : (
@@ -2139,8 +2090,8 @@ export default function UserSettingsPage() {
             {/* Managed staff */}
             <Card>
               <CardHeader>
-                <CardTitle>Managed staff</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base">Managed staff</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Staff members this user manages.
                 </p>
               </CardHeader>
@@ -2188,11 +2139,11 @@ export default function UserSettingsPage() {
                               <CommandGroup className="p-2">
                                 {users.filter((u) => u.uid !== user?.uid).length ===
                                 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No users available
                                   </p>
                                 ) : filteredStaffForPicker.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground py-4 text-center">
+                                  <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No staff found.
                                   </p>
                                 ) : (
@@ -2263,8 +2214,8 @@ export default function UserSettingsPage() {
             {/* Danger zone: remove / restore / permanent delete */}
             <Card className="border-destructive/50">
               <CardHeader>
-                <CardTitle className="text-destructive">Danger zone</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardTitle className="text-sm sm:text-base text-destructive">Danger zone</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Remove user from the system or restore a removed user. Permanent delete cannot be undone.
                 </p>
               </CardHeader>
@@ -2300,7 +2251,7 @@ export default function UserSettingsPage() {
                         )}
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       This user is removed from the system. You can restore them or permanently delete their account.
                     </p>
                   </>
@@ -2318,7 +2269,7 @@ export default function UserSettingsPage() {
                         'Remove from system'
                       )}
                     </Button>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Deactivate this user. They can be restored later. For permanent removal, remove first then use
                       &quot;Permanently delete&quot; from this page.
                     </p>
@@ -2327,24 +2278,25 @@ export default function UserSettingsPage() {
               </CardContent>
             </Card>
 
-            <div className="flex gap-2">
+            <div className="flex flex-row gap-2">
+              <Button
+                type="button"
+                variant="cancel"
+                className="flex-1 sm:flex-none"
+                onClick={() => router.push('/staff')}
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 disabled={patchUser.isPending}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white"
               >
                 {patchUser.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
                   'Save'
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="cancel"
-                onClick={() => router.push('/staff')}
-              >
-                Cancel
               </Button>
             </div>
           </form>

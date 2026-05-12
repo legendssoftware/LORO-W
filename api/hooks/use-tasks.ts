@@ -5,6 +5,7 @@ import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   getTasks,
   getTask,
+  getTasksForUser,
   createTask,
   updateTask,
   deleteTask,
@@ -53,6 +54,26 @@ export function useTask(
     queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', ref ?? 'none'],
     queryFn: async () => getTask(client, ref!),
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * GET /tasks/for/:ref — tasks assigned to user (org-scoped on server).
+ */
+export function useTasksForUser(
+  userRef: number | null | undefined,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...TASKS_LIST_QUERY_KEY, 'for-user', userRef ?? 'none'],
+    queryFn: async () => getTasksForUser(client, userRef!),
+    enabled:
+      (options?.enabled !== false) &&
+      userRef != null &&
+      userRef > 0,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -118,11 +139,10 @@ export function useToggleJobStatusMutation() {
     mutationFn: (id: number) => toggleJobStatus(client, id),
     onSuccess: (data, id) => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
-      if (data?.task?.uid) {
-        queryClient.invalidateQueries({
-          queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', id],
-        });
-      }
+      const detailRef = data?.task?.uid ?? id;
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', detailRef],
+      });
     },
   });
 }

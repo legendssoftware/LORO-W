@@ -26,6 +26,7 @@ import {
   filterVisitExportItemsByReportingUserUids,
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
+import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -207,7 +208,8 @@ export function ReportsVisualiserTab({
   );
 
   const mapMarkers = useMemo(
-    () => mapReport.data?.allMarkers ?? [],
+    () =>
+      excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
     [mapReport.data?.allMarkers]
   );
 

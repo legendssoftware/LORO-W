@@ -2,6 +2,7 @@ import type { AxiosInstance } from 'axios';
 import type {
   PaginatedTasksResponse,
   TaskDetailResponse,
+  TasksForUserResponse,
   GetTasksParams,
   CreateTaskPayload,
   UpdateTaskPayload,
@@ -24,7 +25,8 @@ export async function getTasks(
   if (params.clientId != null) search.set('clientId', String(params.clientId));
   if (params.startDate) search.set('startDate', params.startDate);
   if (params.endDate) search.set('endDate', params.endDate);
-  if (params.isOverdue != null) search.set('isOverdue', String(params.isOverdue));
+  if (params.isOverdue === true) search.set('isOverdue', 'true');
+  if (params.isOverdue === false) search.set('isOverdue', 'false');
   const qs = search.toString();
   const { data } = await client.get<PaginatedTasksResponse>(`/tasks${qs ? `?${qs}` : ''}`);
   return data;
@@ -38,6 +40,19 @@ export async function getTask(
   ref: number
 ): Promise<TaskDetailResponse> {
   const { data } = await client.get<TaskDetailResponse>(`/tasks/${ref}`);
+  return data;
+}
+
+/**
+ * GET /tasks/for/:ref — all tasks for assignee user uid.
+ */
+export async function getTasksForUser(
+  client: AxiosInstance,
+  userRef: number
+): Promise<TasksForUserResponse> {
+  const { data } = await client.get<TasksForUserResponse>(
+    `/tasks/for/${userRef}`
+  );
   return data;
 }
 

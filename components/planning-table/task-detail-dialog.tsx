@@ -87,6 +87,7 @@ import {
   useToggleJobStatusMutation,
   useCompleteSubtaskMutation,
   useDeleteSubtaskMutation,
+  useUpdateSubtaskMutation,
   useUsers,
   useClients,
 } from '@/api/hooks';
@@ -105,10 +106,19 @@ import {
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+const MODAL_SELECT_TRIGGER =
+  'h-9 w-full bg-white border-gray-200 text-foreground';
+
+type EditSubtaskRow = SubtaskPayload & { uid?: number };
+
+type TaskEditForm = Partial<Omit<UpdateTaskPayload, 'subtasks'>> & {
+  subtasks?: EditSubtaskRow[];
+};
+
 function taskToEditForm(
   task: Task,
   users: Array<{ uid: number; clerkUserId?: string }>
-): Partial<UpdateTaskPayload> {
+): TaskEditForm {
   const assigneeUids = (task.assignees ?? [])
     .map((a) => {
       if (a.uid != null) return a.uid;
@@ -138,10 +148,13 @@ function taskToEditForm(
       : undefined,
     targetCategory: task.targetCategory ?? undefined,
     comment: task.comment ?? undefined,
-    subtasks: (task.subtasks ?? []).map((s) => ({
-      title: s.title,
-      description: s.description ?? '',
-    })),
+    subtasks: (task.subtasks ?? [])
+      .filter((s) => !s.isDeleted)
+      .map((s) => ({
+        uid: s.uid,
+        title: s.title,
+        description: s.description ?? '',
+      })),
     attachments: task.attachments ?? undefined,
   };
 }
@@ -160,7 +173,7 @@ export function TaskDetailDialog({
   onTaskUpdated,
 }: TaskDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<UpdateTaskPayload>>({});
+  const [editForm, setEditForm] = useState<TaskEditForm>({});
   const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
   const [repetitionDeadlinePickerOpen, setRepetitionDeadlinePickerOpen] =
     useState(false);
@@ -179,6 +192,7 @@ export function TaskDetailDialog({
   const toggleJobMutation = useToggleJobStatusMutation();
   const completeSubtaskMutation = useCompleteSubtaskMutation();
   const deleteSubtaskMutation = useDeleteSubtaskMutation();
+  const updateSubtaskMutation = useUpdateSubtaskMutation();
   const { data: users = [] } = useUsers({ page: 1, limit: 100, enabled: open });
   const { data: clientsList = [] } = useClients({
     page: 1,
@@ -199,15 +213,61 @@ export function TaskDetailDialog({
 
   const handleSaveEdit = async () => {
     if (!displayTask) return;
+    const editSubs = editForm.subtasks ?? [];
+    const originalSubs = (displayTask.subtasks ?? []).filter(
+      (s) => !s.isDeleted && s.uid != null
+    );
+
+    const editUids = new Set(
+      editSubs.map((s) => s.uid).filter((x): x is number => x != null)
+    );
+    const removed = originalSubs.filter((s) => s.uid != null && !editUids.has(s.uid));
+    const added = editSubs.filter((s) => !s.uid && s.title?.trim());
+
     const payload: UpdateTaskPayload = { ...editForm };
+    delete payload.subtasks;
+
     if (payload.repetitionType === 'NONE') {
       delete payload.repetitionDeadline;
     }
     if (payload.attachments?.length === 0) {
       delete payload.attachments;
     }
+
+    if (added.length > 0) {
+      payload.subtasks = editSubs
+        .filter((s) => s.title?.trim())
+        .map((s) => ({
+          title: s.title.trim(),
+          description: s.description?.trim() ?? '',
+        }));
+    }
+
     try {
       await updateMutation.mutateAsync({ ref: displayTask.uid, payload });
+
+      if (added.length === 0) {
+        for (const s of removed) {
+          if (s.uid != null) {
+            await deleteSubtaskMutation.mutateAsync(s.uid);
+          }
+        }
+        for (const row of editSubs) {
+          if (!row.uid || !row.title?.trim()) continue;
+          const orig = originalSubs.find((o) => o.uid === row.uid);
+          if (!orig) continue;
+          const nextTitle = row.title.trim();
+          const nextDesc = row.description?.trim() ?? '';
+          if (orig.title === nextTitle && (orig.description ?? '') === nextDesc) {
+            continue;
+          }
+          await updateSubtaskMutation.mutateAsync({
+            ref: row.uid,
+            payload: { title: nextTitle, description: nextDesc },
+          });
+        }
+      }
+
       toast.success('Task updated');
       setIsEditing(false);
       await taskQuery.refetch();
@@ -428,8 +488,8 @@ export function TaskDetailDialog({
             <DetailSectionHeading title="Details" icon={ClipboardList} />
             {isEditing ? (
               <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:col-span-2">
                     <Label>Title</Label>
                     <Input
                       value={editForm.title ?? ''}
@@ -438,7 +498,7 @@ export function TaskDetailDialog({
                       }
                     />
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="grid gap-2 sm:col-span-2">
                     <Label>Description</Label>
                     <Textarea
                       value={editForm.description ?? ''}
@@ -452,7 +512,22 @@ export function TaskDetailDialog({
                       className="resize-y"
                     />
                   </div>
-                  <div>
+                  <div className="grid gap-2 sm:col-span-2">
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={editForm.comment ?? ''}
+                      onChange={(e) =>
+                        setEditForm((f) => ({
+                          ...f,
+                          comment: e.target.value,
+                        }))
+                      }
+                      placeholder="Optional notes"
+                      rows={3}
+                      className="resize-none"
+                    />
+                  </div>
+                  <div className="grid gap-2">
                     <Label>Status</Label>
                     <Select
                       value={editForm.status ?? '_none'}
@@ -463,7 +538,7 @@ export function TaskDetailDialog({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={MODAL_SELECT_TRIGGER}>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="z-[10001]">
@@ -478,7 +553,7 @@ export function TaskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Priority</Label>
                     <Select
                       value={editForm.priority ?? '_none'}
@@ -489,7 +564,7 @@ export function TaskDetailDialog({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={MODAL_SELECT_TRIGGER}>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="z-[10001]">
@@ -504,7 +579,7 @@ export function TaskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Task type</Label>
                     <Select
                       value={editForm.taskType ?? '_none'}
@@ -515,7 +590,7 @@ export function TaskDetailDialog({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={MODAL_SELECT_TRIGGER}>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="z-[10001]">
@@ -530,7 +605,7 @@ export function TaskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Progress (%)</Label>
                     <Input
                       type="number"
@@ -545,7 +620,7 @@ export function TaskDetailDialog({
                       }
                     />
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Deadline</Label>
                     <Popover
                       open={deadlinePickerOpen}
@@ -555,7 +630,8 @@ export function TaskDetailDialog({
                         <Button
                           variant="outline"
                           className={cn(
-                            'w-full justify-start',
+                            MODAL_SELECT_TRIGGER,
+                            'justify-start',
                             !editForm.deadline && 'text-muted-foreground'
                           )}
                         >
@@ -588,7 +664,7 @@ export function TaskDetailDialog({
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Repetition</Label>
                     <Select
                       value={editForm.repetitionType ?? 'NONE'}
@@ -602,7 +678,7 @@ export function TaskDetailDialog({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={MODAL_SELECT_TRIGGER}>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="z-[10001]">
@@ -618,7 +694,7 @@ export function TaskDetailDialog({
                     </Select>
                   </div>
                   {(editForm.repetitionType ?? 'NONE') !== 'NONE' && (
-                    <div>
+                    <div className="grid gap-2">
                       <Label>Repetition end date</Label>
                       <Popover
                         open={repetitionDeadlinePickerOpen}
@@ -628,7 +704,8 @@ export function TaskDetailDialog({
                           <Button
                             variant="outline"
                             className={cn(
-                              'w-full justify-start',
+                              MODAL_SELECT_TRIGGER,
+                              'justify-start',
                               !editForm.repetitionDeadline &&
                                 'text-muted-foreground'
                             )}
@@ -667,7 +744,7 @@ export function TaskDetailDialog({
                       </Popover>
                     </div>
                   )}
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Assignees</Label>
                     <Popover
                       open={assigneesPopoverOpen}
@@ -676,7 +753,10 @@ export function TaskDetailDialog({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal"
+                          className={cn(
+                            MODAL_SELECT_TRIGGER,
+                            'justify-start text-left font-normal'
+                          )}
                         >
                           {assigneesLabel}
                         </Button>
@@ -718,7 +798,7 @@ export function TaskDetailDialog({
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div>
+                  <div className="grid gap-2">
                     <Label>Clients</Label>
                     <Popover
                       open={clientsPopoverOpen}
@@ -727,7 +807,10 @@ export function TaskDetailDialog({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal"
+                          className={cn(
+                            MODAL_SELECT_TRIGGER,
+                            'justify-start text-left font-normal'
+                          )}
                         >
                           {clientsLabel}
                         </Button>
@@ -754,7 +837,7 @@ export function TaskDetailDialog({
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="grid gap-2 sm:col-span-2">
                     <Label>Target category</Label>
                     <Input
                       value={editForm.targetCategory ?? ''}
@@ -767,7 +850,7 @@ export function TaskDetailDialog({
                       placeholder="e.g. enterprise"
                     />
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="grid gap-2 sm:col-span-2">
                     <Label>Attachments (comma-separated URLs)</Label>
                     <Input
                       value={(editForm.attachments ?? []).join(', ')}
@@ -781,21 +864,6 @@ export function TaskDetailDialog({
                         }))
                       }
                       placeholder="URLs"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Comment</Label>
-                    <Textarea
-                      value={editForm.comment ?? ''}
-                      onChange={(e) =>
-                        setEditForm((f) => ({
-                          ...f,
-                          comment: e.target.value,
-                        }))
-                      }
-                      rows={2}
-                      className="resize-y"
-                      placeholder="Optional comment"
                     />
                   </div>
                 </div>
@@ -816,7 +884,7 @@ export function TaskDetailDialog({
                   <div className="space-y-2">
                     {(editForm.subtasks ?? []).map((sub, idx) => (
                       <div
-                        key={idx}
+                        key={sub.uid ?? `new-${idx}`}
                         className="flex gap-2 items-start rounded border p-2 bg-muted/30"
                       >
                         <div className="flex-1 grid gap-2 sm:grid-cols-2">
@@ -952,15 +1020,15 @@ export function TaskDetailDialog({
                     <DetailFieldRow label="Creator" icon={User} value={creatorName} />
                   </dl>
                 </div>
-                {displayTask.comment && (
+                {displayTask.comment?.trim() ? (
                   <>
                     <Separator />
                     <div>
-                      <DetailSectionHeading title="Comment" icon={MessageSquare} />
+                      <DetailSectionHeading title="Notes" icon={MessageSquare} />
                       <p className="text-muted-foreground whitespace-pre-wrap">{displayTask.comment}</p>
                     </div>
                   </>
-                )}
+                ) : null}
                 {(displayTask.subtasks?.length ?? 0) > 0 && (
                   <>
                     <Separator />
@@ -1036,17 +1104,27 @@ export function TaskDetailDialog({
               variant="cancel"
               className="rounded-full"
               onClick={handleCancelEdit}
-              disabled={updateMutation.isPending}
+              disabled={
+                updateMutation.isPending ||
+                updateSubtaskMutation.isPending ||
+                deleteSubtaskMutation.isPending
+              }
             >
               Cancel
             </Button>
             <Button
               variant="success"
               className="rounded-full"
-              onClick={handleSaveEdit}
-              disabled={updateMutation.isPending}
+              onClick={() => void handleSaveEdit()}
+              disabled={
+                updateMutation.isPending ||
+                updateSubtaskMutation.isPending ||
+                deleteSubtaskMutation.isPending
+              }
             >
-              {updateMutation.isPending && (
+              {(updateMutation.isPending ||
+                updateSubtaskMutation.isPending ||
+                deleteSubtaskMutation.isPending) && (
                 <Loader2Icon className="size-4 animate-spin mr-2" />
               )}
               Save
