@@ -121,7 +121,7 @@ export function VisitHistoryToolbar({
 
   const heading =
     sectionHeading === undefined ? (
-      <h2 className="text-lg font-medium text-foreground mb-4">Visit history</h2>
+      <h2 className="mb-4 text-base font-medium text-foreground sm:text-lg">Visit history</h2>
     ) : (
       sectionHeading
     );

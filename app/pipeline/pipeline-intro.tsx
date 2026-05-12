@@ -13,8 +13,8 @@ export function PipelineIntro() {
 
   return (
     <div data-tour="pipeline-page-header">
-      <h1 className="text-2xl font-semibold text-foreground">Pipeline</h1>
-      <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
+      <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Pipeline</h1>
+      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
     </div>
   );
 }

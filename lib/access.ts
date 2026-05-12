@@ -10,6 +10,7 @@ export const STANDARD_USER_PATHS = [
     "/leads",
     "/pipeline",
     "/clients",
+    "/competitors",
     "/planning",
     "/reports",
 ] as const;
@@ -110,6 +111,24 @@ export function canAccessOrgSettings(accessLevel: string | undefined): boolean {
     return ORG_SETTINGS_ACCESS_LEVELS.has(level);
 }
 
+const COMPETITOR_MANAGE_LEVELS = new Set<string>(["admin", "manager"]);
+
+/**
+ * True when the user can POST/PATCH competitors per server CompetitorsController roles.
+ */
+export function canManageCompetitors(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return COMPETITOR_MANAGE_LEVELS.has(level);
+}
+
+/**
+ * True when the user can DELETE (soft) competitors (admin-only on server).
+ */
+export function canDeleteCompetitors(accessLevel: string | undefined): boolean {
+    return normalize(accessLevel) === "admin";
+}
+
 function isSettingsPath(pathNormalized: string): boolean {
     return (
         pathNormalized === "/settings" ||
@@ -172,6 +191,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/leads", label: "Leads" },
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
+    { path: "/competitors", label: "Competitors" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
 ];
@@ -206,6 +226,7 @@ export function getAllowedRoutes(
         { path: "/leads", label: "Leads" },
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },
+        { path: "/competitors", label: "Competitors" },
         { path: "/planning", label: "Planning" },
         { path: "/reports", label: "Reports" },
     ];
