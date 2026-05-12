@@ -17,10 +17,10 @@ export default async function LeadsPage() {
   if (!userId) redirect('/sign-in');
 
   return (
-    <div className="container mx-auto px-2 py-8 sm:px-6 flex flex-col gap-6 w-full">
+    <div className="container mx-auto flex w-full flex-col gap-4 px-3 py-5 sm:gap-6 sm:px-4 sm:py-8">
       <div data-tour="leads-page-header">
-        <h1 className="text-2xl font-semibold text-foreground">Leads</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Leads</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
           View, track, and manage your sales leads.
         </p>
       </div>

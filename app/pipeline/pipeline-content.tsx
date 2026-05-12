@@ -44,7 +44,14 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { CalendarIcon, XIcon, UsersIcon, BriefcaseIcon } from '@/lib/icons';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Filter } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
   isPipelineLeadsOrgWide,
@@ -425,11 +432,22 @@ export function PipelineContent() {
   const [erpSearch, setErpSearch] = useState('');
   const [expandedRepKey, setExpandedRepKey] = useState<string | null>(null);
   const [erpVisibleByGroup, setErpVisibleByGroup] = useState<Record<string, number>>({});
+  const [erpFiltersDialogOpen, setErpFiltersDialogOpen] = useState(false);
 
   useEffect(() => {
     setErpDateStart(period.from);
     setErpDateEnd(period.to);
   }, [period.from, period.to]);
+
+  useEffect(() => {
+    function onResize() {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setErpFiltersDialogOpen(false);
+      }
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     setAllowErpQueries(false);
@@ -539,7 +557,7 @@ export function PipelineContent() {
     <div className="flex flex-col gap-8">
       {personalTargets && (
         <section className="space-y-3" data-tour="pipeline-targets-section">
-          <h2 className="text-lg font-semibold text-foreground">Targets &amp; progress</h2>
+          <h2 className="text-base font-semibold text-foreground sm:text-lg">Targets &amp; progress</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {TARGET_ROW_KEYS.map((key) => {
               const m = parseMetric(personalTargets, key);
@@ -580,7 +598,7 @@ export function PipelineContent() {
       )}
 
       <section className="space-y-3" data-tour="pipeline-quotations-section">
-        <h2 className="text-lg font-semibold text-foreground">Quotations (ERP &amp; LORO)</h2>
+        <h2 className="text-base font-semibold text-foreground sm:text-lg">Quotations (ERP &amp; LORO)</h2>
         <p className="text-xs text-muted-foreground -mt-1">
           ERP: quotation documents for your profile period. LORO: app quotations with{' '}
           <span className="font-medium tabular-nums">
@@ -616,102 +634,219 @@ export function PipelineContent() {
                   ) : null
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-0">
-                          <Popover
-                            open={erpDateRangePopoverOpen}
-                            onOpenChange={setErpDateRangePopoverOpen}
+                    <div className="flex flex-col gap-3 md:hidden">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 w-full justify-center gap-2 border-gray-200 bg-white text-foreground"
+                        onClick={() => setErpFiltersDialogOpen(true)}
+                      >
+                        <Filter className="size-4 shrink-0" aria-hidden />
+                        Filter
+                      </Button>
+                      <div className="relative w-full min-w-0">
+                        <Input
+                          placeholder="Search quotations..."
+                          value={erpSearch}
+                          onChange={(e) => setErpSearch(e.target.value)}
+                          className={cn(
+                            'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 h-9',
+                            erpSearch && 'pr-8'
+                          )}
+                        />
+                        {erpSearch ? (
+                          <button
+                            type="button"
+                            onClick={() => setErpSearch('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 text-red-600"
+                            aria-label="Clear search"
                           >
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 min-w-[180px] bg-white border-gray-200 text-foreground justify-center gap-2"
-                              >
-                                <CalendarIcon className="size-4" />
-                                {erpDateStart === erpDateEnd
-                                  ? format(ymdToDate(erpDateStart) ?? new Date(), 'MMM d, yyyy')
-                                  : `${format(ymdToDate(erpDateStart) ?? new Date(), 'MMM d, yyyy')} – ${format(ymdToDate(erpDateEnd) ?? new Date(), 'MMM d, yyyy')}`}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto min-w-[480px] p-0 z-[10001]" align="start">
-                              <div className="p-2 flex flex-col gap-3">
-                                <div className="flex flex-row gap-6">
-                                  <div>
-                                    <p className="text-sm font-medium">Start date</p>
-                                    <Calendar
-                                      mode="single"
-                                      selected={ymdToDate(erpDateStart)}
-                                      onSelect={(d) => {
-                                        if (!d) return;
-                                        setErpDateStart(format(d, 'yyyy-MM-dd'));
-                                      }}
-                                    />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium">End date</p>
-                                    <Calendar
-                                      mode="single"
-                                      selected={ymdToDate(erpDateEnd)}
-                                      onSelect={(d) => {
-                                        if (!d) return;
-                                        setErpDateEnd(format(d, 'yyyy-MM-dd'));
-                                        setErpDateRangePopoverOpen(false);
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                            <XIcon className="size-4 text-red-600" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <Dialog open={erpFiltersDialogOpen} onOpenChange={setErpFiltersDialogOpen}>
+                      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>ERP quotation filters</DialogTitle>
+                          <DialogDescription>
+                            Narrow ERP quotations by sale date range, store, and sales rep.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+                            <div>
+                              <p className="text-sm font-medium">Start date</p>
+                              <Calendar
+                                mode="single"
+                                selected={ymdToDate(erpDateStart)}
+                                onSelect={(d) => {
+                                  if (!d) return;
+                                  setErpDateStart(format(d, 'yyyy-MM-dd'));
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">End date</p>
+                              <Calendar
+                                mode="single"
+                                selected={ymdToDate(erpDateEnd)}
+                                onSelect={(d) => {
+                                  if (!d) return;
+                                  setErpDateEnd(format(d, 'yyyy-MM-dd'));
+                                }}
+                              />
+                            </div>
+                          </div>
                           {(erpDateStart !== period.from || erpDateEnd !== period.to) ? (
-                            <button
+                            <Button
                               type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-full sm:w-auto"
                               onClick={() => {
                                 setErpDateStart(period.from);
                                 setErpDateEnd(period.to);
                               }}
-                              className="shrink-0 rounded p-0.5 hover:bg-red-50 text-red-600 ml-0.5"
-                              aria-label="Reset ERP date range"
                             >
-                              <XIcon className="size-4 text-red-600" />
-                            </button>
+                              Reset to profile period
+                            </Button>
                           ) : null}
+                          <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
+                            <SelectTrigger className="h-9 w-full min-w-0 bg-white border-gray-200 text-foreground gap-2">
+                              <BriefcaseIcon className="size-4 shrink-0" />
+                              <SelectValue placeholder="All stores" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[10001]">
+                              <SelectItem value="all">All stores</SelectItem>
+                              {erpStoreOptions.map((store) => (
+                                <SelectItem key={store} value={store}>
+                                  {store}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
+                            <SelectTrigger className="h-9 w-full min-w-0 bg-white border-gray-200 text-foreground gap-2">
+                              <UsersIcon className="size-4 shrink-0" />
+                              <SelectValue placeholder="All users" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[10001]">
+                              <SelectItem value="all">All users</SelectItem>
+                              {erpUserOptions.map((user) => (
+                                <SelectItem key={user} value={user}>
+                                  {user}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
+                      </DialogContent>
+                    </Dialog>
 
-                        <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
-                          <SelectTrigger className="h-9 min-w-[150px] w-[200px] bg-white border-gray-200 text-foreground gap-2">
-                            <BriefcaseIcon className="size-4 shrink-0" />
-                            <SelectValue placeholder="All stores" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[10001]">
-                            <SelectItem value="all">All stores</SelectItem>
-                            {erpStoreOptions.map((store) => (
-                              <SelectItem key={store} value={store}>
-                                {store}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="hidden md:flex w-full min-w-0 items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
+                          <div className="flex items-center gap-0 shrink-0">
+                            <Popover
+                              open={erpDateRangePopoverOpen}
+                              onOpenChange={setErpDateRangePopoverOpen}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-9 min-w-[180px] shrink-0 border-gray-200 bg-white text-foreground justify-center gap-2"
+                                >
+                                  <CalendarIcon className="size-4" />
+                                  {erpDateStart === erpDateEnd
+                                    ? format(ymdToDate(erpDateStart) ?? new Date(), 'MMM d, yyyy')
+                                    : `${format(ymdToDate(erpDateStart) ?? new Date(), 'MMM d, yyyy')} – ${format(ymdToDate(erpDateEnd) ?? new Date(), 'MMM d, yyyy')}`}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="z-[10001] w-[80vw] max-w-[34rem] p-0"
+                                align="center"
+                              >
+                                <div className="flex flex-col gap-3 p-2">
+                                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+                                    <div>
+                                      <p className="text-sm font-medium">Start date</p>
+                                      <Calendar
+                                        mode="single"
+                                        selected={ymdToDate(erpDateStart)}
+                                        onSelect={(d) => {
+                                          if (!d) return;
+                                          setErpDateStart(format(d, 'yyyy-MM-dd'));
+                                        }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium">End date</p>
+                                      <Calendar
+                                        mode="single"
+                                        selected={ymdToDate(erpDateEnd)}
+                                        onSelect={(d) => {
+                                          if (!d) return;
+                                          setErpDateEnd(format(d, 'yyyy-MM-dd'));
+                                          setErpDateRangePopoverOpen(false);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                            {(erpDateStart !== period.from || erpDateEnd !== period.to) ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setErpDateStart(period.from);
+                                  setErpDateEnd(period.to);
+                                }}
+                                className="ml-0.5 shrink-0 rounded p-0.5 hover:bg-red-50 text-red-600"
+                                aria-label="Reset ERP date range"
+                              >
+                                <XIcon className="size-4 text-red-600" />
+                              </button>
+                            ) : null}
+                          </div>
 
-                        <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
-                          <SelectTrigger className="h-9 min-w-[150px] w-[220px] bg-white border-gray-200 text-foreground gap-2">
-                            <UsersIcon className="size-4 shrink-0" />
-                            <SelectValue placeholder="All users" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[10001]">
-                            <SelectItem value="all">All users</SelectItem>
-                            {erpUserOptions.map((user) => (
-                              <SelectItem key={user} value={user}>
-                                {user}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
+                            <SelectTrigger className="h-9 min-w-[150px] w-[200px] shrink-0 border-gray-200 bg-white text-foreground gap-2">
+                              <BriefcaseIcon className="size-4 shrink-0" />
+                              <SelectValue placeholder="All stores" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[10001]">
+                              <SelectItem value="all">All stores</SelectItem>
+                              {erpStoreOptions.map((store) => (
+                                <SelectItem key={store} value={store}>
+                                  {store}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
+                            <SelectTrigger className="h-9 min-w-[150px] w-[220px] shrink-0 border-gray-200 bg-white text-foreground gap-2">
+                              <UsersIcon className="size-4 shrink-0" />
+                              <SelectValue placeholder="All users" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[10001]">
+                              <SelectItem value="all">All users</SelectItem>
+                              {erpUserOptions.map((user) => (
+                                <SelectItem key={user} value={user}>
+                                  {user}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
-                      <div className="relative w-56 min-w-0 shrink sm:w-64">
+                      <div className="relative w-56 min-w-0 shrink-0 md:max-w-[16rem]">
                         <Input
                           placeholder="Search quotations..."
                           value={erpSearch}

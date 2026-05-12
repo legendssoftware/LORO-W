@@ -39,6 +39,16 @@ export const PAGE_COPY = {
     description:
       'Keep every client relationship, note and context in one place. Grow share of wallet—fewer dropped renewals, faster responses.',
   },
+  competitors: {
+    title: 'Competitors — Landscape intel without spreadsheet chaos',
+    description:
+      'Track rival accounts, threat levels and locations beside your clients. Spot who matters in-market—sharper debriefs, fewer blind spots.',
+  },
+  competitorDetail: {
+    title: 'Competitor workspace — Full profile & map-ready context',
+    description:
+      'Drill into one rival with contacts, positioning and geo context in one view. Brief the team fast—one source of truth before the next call.',
+  },
   clientDetail: {
     title: 'Client workspace - Full context for every account',
     description:

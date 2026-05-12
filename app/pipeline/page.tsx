@@ -17,7 +17,7 @@ export default async function PipelinePage() {
   if (!userId) redirect('/sign-in');
 
   return (
-    <div className="container mx-auto px-2 py-8 sm:px-6 flex flex-col gap-6 w-full">
+    <div className="container mx-auto flex w-full flex-col gap-4 px-3 py-5 sm:gap-6 sm:px-4 sm:py-8">
       <PipelineIntro />
 
       <PipelineContent />
