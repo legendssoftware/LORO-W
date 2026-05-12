@@ -10,6 +10,7 @@ import {
   readPipelineTourState,
   writePipelineTourState,
 } from '@/lib/pipeline-tour-storage';
+import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
@@ -109,6 +110,7 @@ export function PipelineTour() {
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
+  const programmaticDestroyRef = useRef(false);
 
   const shouldRun = useMemo(
     () => Boolean(isLoaded && isSignedIn && userId && pathname === '/pipeline'),
@@ -119,13 +121,23 @@ export function PipelineTour() {
     if (!shouldRun || !userId) {
       hasAttemptedStartRef.current = false;
       wasCompletedRef.current = false;
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       return;
     }
     if (blockTours) {
       hasAttemptedStartRef.current = false;
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       return;
     }
@@ -142,6 +154,7 @@ export function PipelineTour() {
 
     if (currentState.period !== period) {
       currentState.period = period;
+      currentState.resumeIndex = 0;
       currentState.completedThisMonth = false;
     }
 
@@ -207,14 +220,13 @@ export function PipelineTour() {
           activeDriver.destroy();
         },
         onDestroyed: (_element, _step, { driver: activeDriver }) => {
-          const activeIndex = activeDriver.getActiveIndex() ?? boundedStartIndex;
-          const didComplete = wasCompletedRef.current;
-          wasCompletedRef.current = false;
-
-          writePipelineTourState(userId, {
-            period: getCurrentYearMonth(),
-            resumeIndex: didComplete ? 0 : activeIndex,
-            completedThisMonth: didComplete,
+          persistAfterDriverDestroyed({
+            userId,
+            write: writePipelineTourState,
+            boundedStartIndex,
+            getActiveIndex: () => activeDriver.getActiveIndex(),
+            wasCompletedRef,
+            programmaticDestroyRef,
           });
         },
       });
@@ -226,7 +238,12 @@ export function PipelineTour() {
     tryStartTour();
 
     return () => {
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       wasCompletedRef.current = false;
     };

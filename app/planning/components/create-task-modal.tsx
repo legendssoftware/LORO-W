@@ -34,6 +34,8 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCreateTaskMutation, useUsers, useClients } from '@/api/hooks';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
+import { usePlanningStore } from '@/store/planning-store';
 import {
   TASK_PRIORITY_OPTIONS,
   TASK_TYPE_OPTIONS,
@@ -53,6 +55,10 @@ import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type { CreateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
 import { format } from 'date-fns';
+
+const MODAL_SELECT_TRIGGER =
+  'h-9 w-full bg-white border-gray-200 text-foreground';
+const MODAL_SELECT_CONTENT = 'z-[10001]';
 
 export interface CreateTaskModalProps {
   open: boolean;
@@ -94,17 +100,64 @@ export function CreateTaskModal({
   const [attachmentsInput, setAttachmentsInput] = useState('');
 
   const createMutation = useCreateTaskMutation();
-  const { data: users = [] } = useUsers({ limit: 100, enabled: open });
-  const { data: clientsList = [] } = useClients({ limit: 100, enabled: open });
+  const { backendUserData } = useSessionSync();
+  const {
+    selectedAssigneeId,
+    selectedPriority,
+    useAllTime,
+    endDate,
+  } = usePlanningStore();
+
+  const { data: users = [] } = useUsers({
+    page: 1,
+    limit: 100,
+    enabled: open,
+  });
+  const { data: clientsList = [] } = useClients({
+    page: 1,
+    limit: 100,
+    enabled: open,
+  });
 
   useEffect(() => {
-    if (open) {
-      setForm(defaultForm);
-      setSelectedAssigneeUids([]);
-      setSelectedClientUids([]);
-      setAttachmentsInput('');
+    if (!open) return;
+
+    const next: Partial<CreateTaskPayload> = { ...defaultForm };
+    const assigneeIds: number[] = [];
+
+    const filterAssignee = (() => {
+      const raw = selectedAssigneeId?.trim();
+      if (!raw || raw === 'all') return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
+
+    if (filterAssignee != null) assigneeIds.push(filterAssignee);
+
+    if (assigneeIds.length === 0 && backendUserData?.uid) {
+      assigneeIds.push(backendUserData.uid);
     }
-  }, [open]);
+
+    if (selectedPriority && selectedPriority !== 'all') {
+      next.priority = selectedPriority as CreateTaskPayload['priority'];
+    }
+
+    if (!useAllTime && endDate) {
+      next.deadline = format(endDate, 'yyyy-MM-dd');
+    }
+
+    setForm(next);
+    setSelectedAssigneeUids(assigneeIds);
+    setSelectedClientUids([]);
+    setAttachmentsInput('');
+  }, [
+    open,
+    selectedAssigneeId,
+    selectedPriority,
+    useAllTime,
+    endDate,
+    backendUserData?.uid,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,336 +284,344 @@ export function CreateTaskModal({
         <DialogHeader className="pr-24">
           <DialogTitle>Create task</DialogTitle>
           <DialogDescription>
-            Add a new task with title, description, assignees, clients, subtasks,
+            Add a new task with title, description, notes, assignees, clients, subtasks,
             and optional repetition or attachments.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <DetailSectionHeading title="Basic info" icon={ClipboardList} />
-            <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label htmlFor="create-task-title">Title *</Label>
-              <Input
-                id="create-task-title"
-                value={form.title ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="Task title"
-                required
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="create-task-description">Description *</Label>
-              <Textarea
-                id="create-task-description"
-                value={form.description ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-                placeholder="Task description"
-                rows={4}
-                className="resize-y"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="create-task-title">Title *</Label>
+                <Input
+                  id="create-task-title"
+                  value={form.title ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Task title"
+                  required
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="create-task-description">Description *</Label>
+                <Textarea
+                  id="create-task-description"
+                  value={form.description ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  placeholder="Task description"
+                  rows={4}
+                  className="resize-y"
+                  required
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="create-task-notes">Notes</Label>
+                <Textarea
+                  id="create-task-notes"
+                  value={form.comment ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, comment: e.target.value }))
+                  }
+                  placeholder="Optional notes"
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
             </div>
           </div>
           <Separator />
           <div>
             <DetailSectionHeading title="Schedule" icon={CalendarClock} />
-            <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Task type</Label>
-              <Select
-                value={form.taskType ?? 'OTHER'}
-                onValueChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    taskType: v as CreateTaskPayload['taskType'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      <span className="flex items-center gap-2">
-                        <o.icon className="size-4 shrink-0" />
-                        {o.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Priority</Label>
-              <Select
-                value={form.priority ?? 'MEDIUM'}
-                onValueChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    priority: v as CreateTaskPayload['priority'],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_PRIORITY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      <span className="flex items-center gap-2">
-                        <o.icon className="size-4 shrink-0" />
-                        {o.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Deadline</Label>
-              <Popover
-                open={deadlinePickerOpen}
-                onOpenChange={setDeadlinePickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start',
-                      !form.deadline && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 size-4" />
-                    {form.deadline
-                      ? format(new Date(form.deadline), 'MMM d, yyyy')
-                      : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Calendar
-                    mode="single"
-                    selected={
-                      form.deadline ? new Date(form.deadline) : undefined
-                    }
-                    onSelect={(d) => {
-                      setForm((f) => ({
-                        ...f,
-                        deadline: d ? format(d, 'yyyy-MM-dd') : undefined,
-                      }));
-                      setDeadlinePickerOpen(false);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>Repetition</Label>
-              <Select
-                value={form.repetitionType ?? 'NONE'}
-                onValueChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    repetitionType: v,
-                    ...(v === 'NONE' && { repetitionDeadline: undefined }),
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select repetition" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REPETITION_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      <span className="flex items-center gap-2">
-                        <o.icon className="size-4 shrink-0" />
-                        {o.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {(form.repetitionType ?? 'NONE') !== 'NONE' && (
-              <div>
-                <Label>Repetition end date</Label>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>Task type</Label>
+                <Select
+                  value={form.taskType ?? 'OTHER'}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      taskType: v as CreateTaskPayload['taskType'],
+                    }))
+                  }
+                >
+                  <SelectTrigger className={MODAL_SELECT_TRIGGER}>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className={MODAL_SELECT_CONTENT}>
+                    {TASK_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        <span className="flex items-center gap-2">
+                          <o.icon className="size-4 shrink-0" />
+                          {o.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Priority</Label>
+                <Select
+                  value={form.priority ?? 'MEDIUM'}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      priority: v as CreateTaskPayload['priority'],
+                    }))
+                  }
+                >
+                  <SelectTrigger className={MODAL_SELECT_TRIGGER}>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent className={MODAL_SELECT_CONTENT}>
+                    {TASK_PRIORITY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        <span className="flex items-center gap-2">
+                          <o.icon className="size-4 shrink-0" />
+                          {o.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Deadline</Label>
                 <Popover
-                  open={repetitionDeadlinePickerOpen}
-                  onOpenChange={setRepetitionDeadlinePickerOpen}
+                  open={deadlinePickerOpen}
+                  onOpenChange={setDeadlinePickerOpen}
                 >
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
                       variant="outline"
                       className={cn(
-                        'w-full justify-start',
-                        !form.repetitionDeadline && 'text-muted-foreground'
+                        MODAL_SELECT_TRIGGER,
+                        'justify-start',
+                        !form.deadline && 'text-muted-foreground'
                       )}
                     >
                       <CalendarIcon className="mr-2 size-4" />
-                      {form.repetitionDeadline
-                        ? format(
-                            new Date(form.repetitionDeadline),
-                            'MMM d, yyyy'
-                          )
+                      {form.deadline
+                        ? format(new Date(form.deadline), 'MMM d, yyyy')
                         : 'Pick date'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent>
+                  <PopoverContent className={MODAL_SELECT_CONTENT}>
                     <Calendar
                       mode="single"
                       selected={
-                        form.repetitionDeadline
-                          ? new Date(form.repetitionDeadline)
-                          : undefined
+                        form.deadline ? new Date(form.deadline) : undefined
                       }
                       onSelect={(d) => {
                         setForm((f) => ({
                           ...f,
-                          repetitionDeadline: d
-                            ? format(d, 'yyyy-MM-dd')
-                            : undefined,
+                          deadline: d ? format(d, 'yyyy-MM-dd') : undefined,
                         }));
-                        setRepetitionDeadlinePickerOpen(false);
+                        setDeadlinePickerOpen(false);
                       }}
                     />
-                </PopoverContent>
-              </Popover>
-            </div>
-            )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label>Repetition</Label>
+                <Select
+                  value={form.repetitionType ?? 'NONE'}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      repetitionType: v,
+                      ...(v === 'NONE' && { repetitionDeadline: undefined }),
+                    }))
+                  }
+                >
+                  <SelectTrigger className={MODAL_SELECT_TRIGGER}>
+                    <SelectValue placeholder="Select repetition" />
+                  </SelectTrigger>
+                  <SelectContent className={MODAL_SELECT_CONTENT}>
+                    {REPETITION_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        <span className="flex items-center gap-2">
+                          <o.icon className="size-4 shrink-0" />
+                          {o.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(form.repetitionType ?? 'NONE') !== 'NONE' && (
+                <div className="grid gap-2">
+                  <Label>Repetition end date</Label>
+                  <Popover
+                    open={repetitionDeadlinePickerOpen}
+                    onOpenChange={setRepetitionDeadlinePickerOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          MODAL_SELECT_TRIGGER,
+                          'justify-start',
+                          !form.repetitionDeadline && 'text-muted-foreground'
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 size-4" />
+                        {form.repetitionDeadline
+                          ? format(
+                              new Date(form.repetitionDeadline),
+                              'MMM d, yyyy'
+                            )
+                          : 'Pick date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className={MODAL_SELECT_CONTENT}>
+                      <Calendar
+                        mode="single"
+                        selected={
+                          form.repetitionDeadline
+                            ? new Date(form.repetitionDeadline)
+                            : undefined
+                        }
+                        onSelect={(d) => {
+                          setForm((f) => ({
+                            ...f,
+                            repetitionDeadline: d
+                              ? format(d, 'yyyy-MM-dd')
+                              : undefined,
+                          }));
+                          setRepetitionDeadlinePickerOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
             </div>
           </div>
           <Separator />
           <div>
             <DetailSectionHeading title="People & clients" icon={Users} />
-            <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Assignees</Label>
-              <Popover
-                open={assigneesPopoverOpen}
-                onOpenChange={setAssigneesPopoverOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    {assigneesLabel}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-0" align="start">
-                  <div className="max-h-[240px] overflow-y-auto p-2">
-                    {users.map((u) => {
-                      const fullName =
-                        [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                        u.email ||
-                        `User ${u.uid}`;
-                      const imgSrc =
-                        (u as { photoURL?: string | null; avatar?: string | null }).photoURL ??
-                        (u as { photoURL?: string | null; avatar?: string | null }).avatar ??
-                        undefined;
-                      return (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>Assignees</Label>
+                <Popover
+                  open={assigneesPopoverOpen}
+                  onOpenChange={setAssigneesPopoverOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        MODAL_SELECT_TRIGGER,
+                        'justify-start text-left font-normal'
+                      )}
+                    >
+                      {assigneesLabel}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0 z-[10001]" align="start">
+                    <div className="max-h-[240px] overflow-y-auto p-2">
+                      {users.map((u) => {
+                        const fullName =
+                          [u.name, u.surname].filter(Boolean).join(' ').trim() ||
+                          u.email ||
+                          `User ${u.uid}`;
+                        const imgSrc =
+                          (u as { photoURL?: string | null; avatar?: string | null }).photoURL ??
+                          (u as { photoURL?: string | null; avatar?: string | null }).avatar ??
+                          undefined;
+                        return (
+                          <label
+                            key={u.uid}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                          >
+                            <Checkbox
+                              checked={selectedAssigneeUids.includes(u.uid)}
+                              onCheckedChange={() => toggleAssignee(u.uid)}
+                            />
+                            <Avatar className="size-6 shrink-0">
+                              <AvatarImage src={imgSrc} alt={fullName} />
+                              <AvatarFallback className="text-xs">
+                                {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{fullName}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label>Clients</Label>
+                <Popover
+                  open={clientsPopoverOpen}
+                  onOpenChange={setClientsPopoverOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        MODAL_SELECT_TRIGGER,
+                        'justify-start text-left font-normal'
+                      )}
+                    >
+                      {clientsLabel}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0 z-[10001]" align="start">
+                    <div className="max-h-[240px] overflow-y-auto p-2">
+                      {clientsList.map((c) => (
                         <label
-                          key={u.uid}
+                          key={c.uid}
                           className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
                         >
                           <Checkbox
-                            checked={selectedAssigneeUids.includes(u.uid)}
-                            onCheckedChange={() => toggleAssignee(u.uid)}
+                            checked={selectedClientUids.includes(c.uid)}
+                            onCheckedChange={() => toggleClient(c.uid)}
                           />
-                          <Avatar className="size-6 shrink-0">
-                            <AvatarImage src={imgSrc} alt={fullName} />
-                            <AvatarFallback className="text-xs">
-                              {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{fullName}</span>
+                          <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
+                          <span className="text-sm">{c.name}</span>
                         </label>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>Clients</Label>
-              <Popover
-                open={clientsPopoverOpen}
-                onOpenChange={setClientsPopoverOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    {clientsLabel}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-0" align="start">
-                  <div className="max-h-[240px] overflow-y-auto p-2">
-                    {clientsList.map((c) => (
-                      <label
-                        key={c.uid}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                      >
-                        <Checkbox
-                          checked={selectedClientUids.includes(c.uid)}
-                          onCheckedChange={() => toggleClient(c.uid)}
-                        />
-                        <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="text-sm">{c.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
           <Separator />
           <div>
             <DetailSectionHeading title="Other" icon={FolderOpen} />
-            <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label htmlFor="create-task-target">Target category</Label>
-              <Input
-                id="create-task-target"
-                value={form.targetCategory ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, targetCategory: e.target.value }))
-                }
-                placeholder="e.g. enterprise"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="create-task-attachments">Attachments (URLs)</Label>
-              <Input
-                id="create-task-attachments"
-                value={attachmentsInput}
-                onChange={(e) => setAttachmentsInput(e.target.value)}
-                placeholder="Comma-separated URLs"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="create-task-comment">Comment</Label>
-              <Textarea
-                id="create-task-comment"
-                value={form.comment ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, comment: e.target.value }))
-                }
-                placeholder="Optional comment"
-                rows={2}
-                className="resize-y"
-              />
-            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="create-task-target">Target category</Label>
+                <Input
+                  id="create-task-target"
+                  value={form.targetCategory ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, targetCategory: e.target.value }))
+                  }
+                  placeholder="e.g. enterprise"
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="create-task-attachments">Attachments (URLs)</Label>
+                <Input
+                  id="create-task-attachments"
+                  value={attachmentsInput}
+                  onChange={(e) => setAttachmentsInput(e.target.value)}
+                  placeholder="Comma-separated URLs"
+                />
+              </div>
             </div>
           </div>
           <Separator />
