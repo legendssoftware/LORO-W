@@ -11,31 +11,8 @@ import {
 } from '@/api/hooks';
 import type { MonthlyMetricsUserItem } from '@/api/types';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { StaffFiltersBar } from '@/app/staff/components/staff-filters-bar';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { XIcon } from '@/lib/icons';
-import {
-  STAFF_STATUS_FILTER_OPTIONS,
   STAFF_DIMENSION_FILTER_ALL,
   buildStaffRoleFilterItems,
   buildStaffBranchFilterItems,
@@ -58,8 +35,6 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import { PayrollSummaryDialog } from '@/app/reports/components/payroll-summary-dialog';
-import { BarChart3, Briefcase, Check, ChevronsUpDown, MapPinned, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function StaffContent() {
   const { isTokenReady } = useTokenReady();
@@ -281,197 +256,33 @@ export function StaffContent() {
     <div className="flex flex-col h-full min-h-0">
       <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
         <div className="shrink-0 mb-6" data-tour="staff-page-header">
-          <h1 className="text-2xl font-semibold text-foreground">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
             Staff
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1 sm:text-sm">
             View and manage staff attendance and activity.
           </p>
         </div>
 
-        <div
-          className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 shrink-0 mb-4"
-          data-tour="staff-toolbar"
-        >
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1 min-w-0">
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[140px] sm:w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAFF_STATUS_FILTER_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <opt.icon className="size-4 shrink-0" />
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {statusFilter !== 'all' ? (
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('all')}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear status filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1 min-w-0">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[140px] sm:w-[140px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleFilterItems.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <Briefcase className="size-4 shrink-0" />
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {roleFilter !== STAFF_DIMENSION_FILTER_ALL ? (
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter(STAFF_DIMENSION_FILTER_ALL)}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear role filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1 min-w-0">
-              <Select value={workforceFilter} onValueChange={setWorkforceFilter}>
-                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Workforce type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workforceFilterItems.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <Users className="size-4 shrink-0" />
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {workforceFilter !== STAFF_DIMENSION_FILTER_ALL ? (
-                <button
-                  type="button"
-                  onClick={() => setWorkforceFilter(STAFF_DIMENSION_FILTER_ALL)}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear workforce type filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1 min-w-0">
-              <Popover open={branchPickerOpen} onOpenChange={setBranchPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={branchPickerOpen}
-                    className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] justify-between bg-white border-gray-200 text-foreground font-normal [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0"
-                  >
-                    <span className="truncate">{branchFilterTriggerLabel}</span>
-                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] min-w-[200px] max-w-[min(100vw-2rem,24rem)] p-0"
-                  align="start"
-                >
-                  <Command>
-                    <CommandInput placeholder="Search branches…" />
-                    <CommandList>
-                      <CommandEmpty>No branch found.</CommandEmpty>
-                      <CommandGroup>
-                        {branchFilterItems.map((opt) => (
-                          <CommandItem
-                            key={opt.value}
-                            value={`${opt.label} ${opt.value}`}
-                            onSelect={() => {
-                              setBranchFilter(opt.value);
-                              setBranchPickerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'size-4 shrink-0',
-                                branchFilter === opt.value ? 'opacity-100' : 'opacity-0'
-                              )}
-                            />
-                            <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                              <MapPinned className="size-4 shrink-0" />
-                              {opt.label}
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {branchFilter !== STAFF_DIMENSION_FILTER_ALL ? (
-                <button
-                  type="button"
-                  onClick={() => setBranchFilter(STAFF_DIMENSION_FILTER_ALL)}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear branch filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 min-w-0 w-full sm:w-auto">
-            <div className="relative w-full min-w-0 flex-1 sm:flex-initial sm:w-56 sm:max-w-[16rem]">
-              <Input
-                placeholder="Search by name or email"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={cn(
-                  'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
-                  search && 'pr-8'
-                )}
-              />
-              {search ? (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                  aria-label="Clear search"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              ) : null}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 bg-white border-gray-200 text-foreground"
-              onClick={() => setSummaryOpen(true)}
-            >
-              <BarChart3 className="size-4 shrink-0" />
-              Summary
-            </Button>
-          </div>
-        </div>
+        <StaffFiltersBar
+          search={search}
+          onSearchChange={setSearch}
+          onOpenSummary={() => setSummaryOpen(true)}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          roleFilter={roleFilter}
+          onRoleFilterChange={setRoleFilter}
+          roleFilterItems={roleFilterItems}
+          workforceFilter={workforceFilter}
+          onWorkforceFilterChange={setWorkforceFilter}
+          workforceFilterItems={workforceFilterItems}
+          branchFilter={branchFilter}
+          onBranchFilterChange={setBranchFilter}
+          branchFilterItems={branchFilterItems}
+          branchFilterTriggerLabel={branchFilterTriggerLabel}
+          branchPickerOpen={branchPickerOpen}
+          onBranchPickerOpenChange={setBranchPickerOpen}
+        />
 
         <div className="flex-1 min-h-0 overflow-y-auto" data-tour="staff-grid">
           {isLoading ? (

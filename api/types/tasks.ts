@@ -127,6 +127,12 @@ export interface TaskDetailResponse {
   message: string;
 }
 
+/** GET /tasks/for/:ref — tasks assigned to a user (no pagination). */
+export interface TasksForUserResponse {
+  tasks: Task[];
+  message: string;
+}
+
 export interface GetTasksParams {
   page?: number;
   limit?: number;

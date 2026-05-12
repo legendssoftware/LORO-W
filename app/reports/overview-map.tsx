@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useMapReport, useBranches, useUsers, getBranchDisplayLabel } from '@/api/hooks';
 import type { MapMarkerBase, MapDataResponse } from '@/api/types/map';
+import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +48,6 @@ const MARKER_TYPE_CONFIG: Record<
 > = {
   client: { color: '#7c3aed', label: 'Client', icon: Building2 },
   competitor: { color: '#dc2626', label: 'Competitor', icon: Building2 },
-  'check-in-visit': { color: '#4f46e5', label: 'Visit', icon: MapPin },
 };
 
 const MARKER_ICON_SIZE = 24;
@@ -102,7 +102,6 @@ function getMarkerConfig(markerType: string) {
 
 export const MAP_TYPE_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
-  { value: 'check-in-visit', label: 'Visits only' },
   { value: 'client', label: 'Clients only' },
   { value: 'competitor', label: 'Competitors only' },
 ] as const;
@@ -183,14 +182,12 @@ function LocationButton() {
   );
 }
 
-/** Prefer `allMarkers`; fallback stitches the three live layers only. */
+/** Prefer `allMarkers`; fallback stitches layers (visit check-in layer is always empty on the server). */
 function getAllMarkers(data: MapDataResponse): MapMarkerBase[] {
-  if (data.allMarkers?.length) return data.allMarkers;
-  return [
-    ...(data.clients ?? []),
-    ...(data.competitors ?? []),
-    ...(data.checkIns ?? []),
-  ];
+  const raw = data.allMarkers?.length
+    ? data.allMarkers
+    : [...(data.clients ?? []), ...(data.competitors ?? []), ...(data.checkIns ?? [])];
+  return excludeCheckInRelatedMapMarkers(raw);
 }
 
 function MapContent({

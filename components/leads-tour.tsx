@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { readLeadsTourState, writeLeadsTourState, getCurrentYearMonth } from '@/lib/leads-tour-storage';
+import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
@@ -190,6 +191,7 @@ export function LeadsTour() {
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
   const didAutoOpenFirstLeadRef = useRef(false);
+  const programmaticDestroyRef = useRef(false);
 
   const shouldRun = useMemo(
     () => Boolean(isLoaded && isSignedIn && userId && pathname === '/leads'),
@@ -201,7 +203,12 @@ export function LeadsTour() {
       hasAttemptedStartRef.current = false;
       wasCompletedRef.current = false;
       didAutoOpenFirstLeadRef.current = false;
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       return;
     }
@@ -209,7 +216,12 @@ export function LeadsTour() {
       hasAttemptedStartRef.current = false;
       wasCompletedRef.current = false;
       didAutoOpenFirstLeadRef.current = false;
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       return;
     }
@@ -226,6 +238,7 @@ export function LeadsTour() {
 
     if (currentState.period !== period) {
       currentState.period = period;
+      currentState.resumeIndex = 0;
       currentState.completedThisMonth = false;
     }
 
@@ -338,15 +351,14 @@ export function LeadsTour() {
           activeDriver.destroy();
         },
         onDestroyed: (_element, _step, { driver: activeDriver }) => {
-          const activeIndex = activeDriver.getActiveIndex() ?? boundedStartIndex;
-          const didComplete = wasCompletedRef.current;
-          wasCompletedRef.current = false;
           didAutoOpenFirstLeadRef.current = false;
-
-          writeLeadsTourState(userId, {
-            period: getCurrentYearMonth(),
-            resumeIndex: didComplete ? 0 : activeIndex,
-            completedThisMonth: didComplete,
+          persistAfterDriverDestroyed({
+            userId,
+            write: writeLeadsTourState,
+            boundedStartIndex,
+            getActiveIndex: () => activeDriver.getActiveIndex(),
+            wasCompletedRef,
+            programmaticDestroyRef,
           });
         },
       });
@@ -358,7 +370,12 @@ export function LeadsTour() {
     tryStartTour();
 
     return () => {
-      driverRef.current?.destroy();
+      programmaticDestroyRef.current = true;
+      try {
+        driverRef.current?.destroy();
+      } finally {
+        programmaticDestroyRef.current = false;
+      }
       driverRef.current = null;
       wasCompletedRef.current = false;
       didAutoOpenFirstLeadRef.current = false;
