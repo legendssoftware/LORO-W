@@ -14,3 +14,4 @@ export * from './reports';
 export * from './branch';
 export * from './map';
 export * from './targets-progress';
+export * from './competitors';

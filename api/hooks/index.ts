@@ -34,6 +34,15 @@ export {
   useDeleteClientMutation,
   useRestoreClientMutation,
 } from './use-clients';
+export {
+  COMPETITORS_QUERY_KEY_PREFIX,
+  invalidateCompetitorQueries,
+  useCompetitorsInfinite,
+  useCompetitor,
+  useCreateCompetitorMutation,
+  useUpdateCompetitorMutation,
+  useDeleteCompetitorMutation,
+} from './use-competitors';
 export { useUsers } from './use-users';
 export {
   useUser,

@@ -5,25 +5,11 @@ import { useTokenReady, useClientsInfinite } from '@/api/hooks';
 import type { ClientListItem } from '@/api/types/clients';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { XIcon } from '@/lib/icons';
-import {
-  CLIENT_CATEGORY_PRESETS,
-  CLIENT_STATUS_FILTER_OPTIONS,
-  type ClientCategoryFilterValue,
-  type ClientStatusFilterValue,
-} from '@/lib/client-filter-utils';
+import type { ClientCategoryFilterValue, ClientStatusFilterValue } from '@/lib/client-filter-utils';
 import { ClientCard, ClientCardSkeleton } from './components/client-card';
 import { ClientDetailDialog } from './components/client-detail-dialog';
 import { ClientFormDialog } from './components/client-form-dialog';
-import { cn } from '@/lib/utils';
+import { ClientsFiltersBar } from './components/clients-filters-bar';
 import { Plus } from 'lucide-react';
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -82,14 +68,14 @@ export function ClientsContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
+      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
         <div
-          className="shrink-0 mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="clients-page-header"
         >
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Clients</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Clients</h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               Create, search, and manage organisation clients.
             </p>
           </div>
@@ -102,92 +88,14 @@ export function ClientsContent() {
           </Button>
         </div>
 
-        <div
-          className="flex flex-col lg:flex-row lg:flex-wrap items-stretch lg:items-center justify-between gap-3 shrink-0 mb-4"
-          data-tour="clients-toolbar"
-        >
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1 min-w-0">
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as ClientStatusFilterValue)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[160px] sm:w-[160px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLIENT_STATUS_FILTER_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <opt.icon className="size-4 shrink-0" />
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {statusFilter !== 'all' ? (
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('all')}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear status filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1 min-w-0">
-              <Select
-                value={categoryFilter}
-                onValueChange={(v) => setCategoryFilter(v as ClientCategoryFilterValue)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full sm:min-w-[150px] sm:w-[150px] bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLIENT_CATEGORY_PRESETS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {categoryFilter !== 'all' ? (
-                <button
-                  type="button"
-                  onClick={() => setCategoryFilter('all')}
-                  className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-                  aria-label="Clear category filter"
-                >
-                  <XIcon className="size-4 text-muted-foreground" />
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="relative w-full min-w-0 lg:flex-initial lg:w-56 lg:max-w-[16rem]">
-            <Input
-              placeholder="Search name, email, or phone"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className={cn(
-                'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
-                searchInput && 'pr-8'
-              )}
-            />
-            {searchInput ? (
-              <button
-                type="button"
-                onClick={() => setSearchInput('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                aria-label="Clear search"
-              >
-                <XIcon className="size-4" />
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <ClientsFiltersBar
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          categoryFilter={categoryFilter}
+          onCategoryFilterChange={setCategoryFilter}
+          searchInput={searchInput}
+          onSearchChange={setSearchInput}
+        />
 
         <div className="flex-1 min-h-0 overflow-y-auto" data-tour="clients-grid">
           {isLoading ? (
