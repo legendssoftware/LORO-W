@@ -38,7 +38,10 @@ function persistDismiss(sessionId: string) {
 export function SalesBenchmarksWelcomeDialog({
   deferForPendingWarning = false,
 }: {
-  /** When true, benchmarks modal stays closed until performance warning is cleared. */
+  /**
+   * When true, benchmarks modal stays closed until user target has settled (no fetch error) and any
+   * blocking performance warning is cleared.
+   */
   deferForPendingWarning?: boolean;
 } = {}) {
   const pathname = usePathname() ?? '';

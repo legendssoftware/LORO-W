@@ -9,7 +9,7 @@ import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 export function SalesWelcomeFlow() {
   const profile = useSessionStore((s) => s.profileData);
   const isGeneralWorker = isGeneralWorkerWorkforce(profile?.workforceType);
-  const { pendingBlockingWarning, targetWarnings, userRef, employeeName } =
+  const { pendingBlockingWarning, deferToursAndSalesBenchmarks, targetWarnings, userRef, employeeName } =
     usePerformanceWarningPendingSafe();
 
   return (
@@ -21,7 +21,7 @@ export function SalesWelcomeFlow() {
         targetWarnings={targetWarnings}
       />
       {!isGeneralWorker && (
-        <SalesBenchmarksWelcomeDialog deferForPendingWarning={pendingBlockingWarning} />
+        <SalesBenchmarksWelcomeDialog deferForPendingWarning={deferToursAndSalesBenchmarks} />
       )}
     </>
   );

@@ -58,3 +58,30 @@ export async function patchBranch(
   return data;
 }
 
+/** POST /branch — body matches server CreateBranchDto (organisation omitted; server assigns). */
+export interface CreateBranchBody {
+  name: string;
+  email: string;
+  phone: string;
+  website: string;
+  contactPerson: string;
+  ref: string;
+  alias?: string;
+  address: {
+    street: string;
+    suburb: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
+}
+
+export async function postCreateBranch(
+  client: AxiosInstance,
+  body: CreateBranchBody
+): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>('/branch', body);
+  return data;
+}
+
