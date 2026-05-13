@@ -17,10 +17,19 @@ import {
   getOrganisationHoursDefault,
   patchOrganisationHoursDefault,
 } from '@/api/endpoints/organisation';
-import { getBranches, getBranchByRef, patchBranch } from '@/api/endpoints/branch';
+import {
+  getBranches,
+  getBranchByRef,
+  patchBranch,
+  postCreateBranch,
+} from '@/api/endpoints/branch';
 import type {
+  GetOrganisationSettingsResponse,
+  OrganisationAppearanceRecord,
   OrganisationHoursRecord,
   OrganisationHoursWeeklySchedule,
+  OrganisationSettingsRecord,
+  PatchOrganisationSettingsBody,
 } from '@/api/types/organisation';
 import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
 import type { WeekdayKey } from './settings-types';
@@ -45,6 +54,13 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Popover,
   PopoverContent,
@@ -134,6 +150,96 @@ function mergeHoursSchedule(
     friday: { ...d.friday, ...s.friday },
     saturday: { ...d.saturday, ...s.saturday },
     sunday: { ...d.sunday, ...s.sunday },
+  };
+}
+
+function stripUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
+function mergeSettingObjects<T extends Record<string, unknown>>(
+  base: T | null | undefined,
+  patch: Partial<T>
+): T {
+  return { ...(base ?? {}), ...stripUndefined(patch as Record<string, unknown>) } as T;
+}
+
+function regionalFormStateFromSettings(s: OrganisationSettingsRecord) {
+  const r = s.regional;
+  const n = s.notifications;
+  const p = s.preferences;
+  const c = s.contact;
+  const ph = c?.phone;
+  const ca = c?.address;
+  const b = s.branding as Record<string, string | undefined> | null | undefined;
+  const bus = s.business as Record<string, string | undefined> | null | undefined;
+  const soc = s.socialLinks as Record<string, string | undefined> | null | undefined;
+  const perf = s.performance as Record<string, number | string | undefined> | null | undefined;
+  return {
+    language: r?.language ?? '',
+    timezone: r?.timezone ?? '',
+    currency: r?.currency ?? '',
+    dateFormat: r?.dateFormat ?? '',
+    timeFormat: r?.timeFormat ?? '',
+    notifEmail: n?.email ?? true,
+    notifSms: n?.sms ?? false,
+    notifPush: n?.push ?? true,
+    notifWhatsapp: n?.whatsapp ?? false,
+    theme: p?.theme ?? 'system',
+    defaultView: p?.defaultView ?? '',
+    itemsPerPage: p?.itemsPerPage ?? 25,
+    menuCollapsed: p?.menuCollapsed ?? false,
+    sendTaskNotifications: s.sendTaskNotifications ?? false,
+    feedbackTokenExpiryDays: s.feedbackTokenExpiryDays ?? 30,
+    geofenceDefaultRadius: s.geofenceDefaultRadius ?? 500,
+    geofenceEnabledByDefault: s.geofenceEnabledByDefault ?? false,
+    geofenceDefaultNotificationType: s.geofenceDefaultNotificationType ?? 'NOTIFY',
+    geofenceMaxRadius: s.geofenceMaxRadius ?? 5000,
+    geofenceMinRadius: s.geofenceMinRadius ?? 100,
+    contactEmail: c?.email ?? '',
+    contactWebsite: c?.website ?? '',
+    contactPhoneCode: ph?.code ?? '',
+    contactPhoneNumber: ph?.number ?? '',
+    contactAddrStreet: ca?.street ?? '',
+    contactAddrSuburb: ca?.suburb ?? '',
+    contactAddrCity: ca?.city ?? '',
+    contactAddrState: ca?.state ?? '',
+    contactAddrCountry: ca?.country ?? '',
+    contactAddrPostal: ca?.postalCode ?? '',
+    brandingLogo: b?.logo ?? '',
+    brandingLogoAlt: b?.logoAltText ?? '',
+    brandingFavicon: b?.favicon ?? '',
+    brandingPrimary: b?.primaryColor ?? '',
+    brandingSecondary: b?.secondaryColor ?? '',
+    brandingAccent: b?.accentColor ?? '',
+    businessName: bus?.name ?? '',
+    businessReg: bus?.registrationNumber ?? '',
+    businessTaxId: bus?.taxId ?? '',
+    businessIndustry: bus?.industry ?? '',
+    businessSize: (bus?.size &&
+    ['small', 'medium', 'large', 'enterprise'].includes(String(bus.size))
+      ? bus.size
+      : '') as '' | 'small' | 'medium' | 'large' | 'enterprise',
+    socialFacebook: soc?.facebook ?? '',
+    socialTwitter: soc?.twitter ?? '',
+    socialInstagram: soc?.instagram ?? '',
+    socialLinkedin: soc?.linkedin ?? '',
+    socialYoutube: soc?.youtube ?? '',
+    socialWebsite: soc?.website ?? '',
+    perfDaily: perf?.dailyRevenueTarget != null ? String(perf.dailyRevenueTarget) : '',
+    perfWeekly: perf?.weeklyRevenueTarget != null ? String(perf.weeklyRevenueTarget) : '',
+    perfMonthly: perf?.monthlyRevenueTarget != null ? String(perf.monthlyRevenueTarget) : '',
+    perfYearly: perf?.yearlyRevenueTarget != null ? String(perf.yearlyRevenueTarget) : '',
+    perfCalcMethod: (perf?.targetCalculationMethod &&
+    ['fixed', 'dynamic', 'historical'].includes(String(perf.targetCalculationMethod))
+      ? perf.targetCalculationMethod
+      : '') as '' | 'fixed' | 'dynamic' | 'historical',
+    perfHistDays:
+      perf?.historicalPeriodDays != null ? String(perf.historicalPeriodDays) : '',
+    perfGrowthPct:
+      perf?.growthTargetPercentage != null ? String(perf.growthTargetPercentage) : '',
   };
 }
 
@@ -282,6 +388,22 @@ export function SettingsContent() {
   const enabled = Boolean(orgRef) && isTokenReady;
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
+  const [addBranchOpen, setAddBranchOpen] = useState(false);
+  const [createBranchForm, setCreateBranchForm] = useState({
+    name: '',
+    alias: '',
+    email: '',
+    phone: '',
+    contactPerson: '',
+    website: 'https://',
+    ref: '',
+    street: '',
+    suburb: '',
+    city: '',
+    state: '',
+    country: '',
+    postalCode: '',
+  });
 
   const profileQuery = useQuery({
     queryKey: settingsOrgProfileKey(orgRef),
@@ -312,6 +434,75 @@ export function SettingsContent() {
     queryFn: async () => getBranches(client),
     enabled,
   });
+
+  /** When /organisations/* 404 or returns empty but GET /org included relations (Clerk id vs ref). */
+  useEffect(() => {
+    if (!enabled || !orgRef) return;
+    const org = profileQuery.data?.organisation;
+    if (!org || !profileQuery.isSuccess) return;
+
+    if (
+      org.settings &&
+      settingsQuery.isFetched &&
+      !settingsQuery.data?.settings
+    ) {
+      queryClient.setQueryData<GetOrganisationSettingsResponse>(
+        settingsOrgSettingsKey(orgRef),
+        {
+          settings: org.settings,
+          message: 'Settings retrieved successfully',
+        }
+      );
+    }
+
+    if (
+      org.appearance &&
+      appearanceQuery.isFetched &&
+      appearanceQuery.data == null
+    ) {
+      queryClient.setQueryData<OrganisationAppearanceRecord>(
+        settingsOrgAppearanceKey(orgRef),
+        org.appearance
+      );
+    }
+
+    const hourRows = org.hours;
+    if (
+      Array.isArray(hourRows) &&
+      hourRows.length > 0 &&
+      hoursQuery.isFetched &&
+      hoursQuery.data == null
+    ) {
+      const row = [...hourRows].sort((a, b) => (a.uid ?? 0) - (b.uid ?? 0))[0];
+      if (row?.ref) {
+        const weekly: OrganisationHoursWeeklySchedule = {
+          ...defaultWeekly,
+          ...row.weeklySchedule,
+        };
+        queryClient.setQueryData<OrganisationHoursRecord | null>(
+          settingsOrgHoursKey(orgRef),
+          {
+            ...row,
+            weeklySchedule: weekly,
+            holidayMode: row.holidayMode ?? false,
+            organisationUid: row.organisationUid ?? orgRef,
+          }
+        );
+      }
+    }
+  }, [
+    enabled,
+    orgRef,
+    queryClient,
+    profileQuery.data,
+    profileQuery.isSuccess,
+    settingsQuery.data,
+    settingsQuery.isFetched,
+    appearanceQuery.data,
+    appearanceQuery.isFetched,
+    hoursQuery.data,
+    hoursQuery.isFetched,
+  ]);
 
   const invalidateProfile = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: settingsOrgProfileKey(orgRef) });
@@ -454,59 +645,157 @@ export function SettingsContent() {
     geofenceDefaultNotificationType: 'NOTIFY',
     geofenceMaxRadius: 5000,
     geofenceMinRadius: 100,
+    contactEmail: '',
+    contactWebsite: '',
+    contactPhoneCode: '',
+    contactPhoneNumber: '',
+    contactAddrStreet: '',
+    contactAddrSuburb: '',
+    contactAddrCity: '',
+    contactAddrState: '',
+    contactAddrCountry: '',
+    contactAddrPostal: '',
+    brandingLogo: '',
+    brandingLogoAlt: '',
+    brandingFavicon: '',
+    brandingPrimary: '',
+    brandingSecondary: '',
+    brandingAccent: '',
+    businessName: '',
+    businessReg: '',
+    businessTaxId: '',
+    businessIndustry: '',
+    businessSize: '' as '' | 'small' | 'medium' | 'large' | 'enterprise',
+    socialFacebook: '',
+    socialTwitter: '',
+    socialInstagram: '',
+    socialLinkedin: '',
+    socialYoutube: '',
+    socialWebsite: '',
+    perfDaily: '',
+    perfWeekly: '',
+    perfMonthly: '',
+    perfYearly: '',
+    perfCalcMethod: '' as '' | 'fixed' | 'dynamic' | 'historical',
+    perfHistDays: '',
+    perfGrowthPct: '',
   });
 
   useEffect(() => {
     const s = settingsQuery.data?.settings;
     if (!s) return;
-    const r = s.regional;
-    const n = s.notifications;
-    const p = s.preferences;
-    setRegionalForm({
-      language: r?.language ?? '',
-      timezone: r?.timezone ?? '',
-      currency: r?.currency ?? '',
-      dateFormat: r?.dateFormat ?? '',
-      timeFormat: r?.timeFormat ?? '',
-      notifEmail: n?.email ?? true,
-      notifSms: n?.sms ?? false,
-      notifPush: n?.push ?? true,
-      notifWhatsapp: n?.whatsapp ?? false,
-      theme: p?.theme ?? 'system',
-      defaultView: p?.defaultView ?? '',
-      itemsPerPage: p?.itemsPerPage ?? 25,
-      menuCollapsed: p?.menuCollapsed ?? false,
-      sendTaskNotifications: s.sendTaskNotifications ?? false,
-      feedbackTokenExpiryDays: s.feedbackTokenExpiryDays ?? 30,
-      geofenceDefaultRadius: s.geofenceDefaultRadius ?? 500,
-      geofenceEnabledByDefault: s.geofenceEnabledByDefault ?? false,
-      geofenceDefaultNotificationType: s.geofenceDefaultNotificationType ?? 'NOTIFY',
-      geofenceMaxRadius: s.geofenceMaxRadius ?? 5000,
-      geofenceMinRadius: s.geofenceMinRadius ?? 100,
-    });
+    setRegionalForm(regionalFormStateFromSettings(s));
   }, [settingsQuery.data?.settings]);
 
-  const buildSettingsPayload = useCallback(
-    () => ({
-      regional: {
-        language: regionalForm.language || undefined,
-        timezone: regionalForm.timezone || undefined,
-        currency: regionalForm.currency || undefined,
-        dateFormat: regionalForm.dateFormat || undefined,
-        timeFormat: regionalForm.timeFormat || undefined,
-      },
-      notifications: {
+  const buildSettingsPayload = useCallback((): PatchOrganisationSettingsBody => {
+    const ex = settingsQuery.data?.settings;
+    const regional = mergeSettingObjects(ex?.regional as Record<string, unknown>, {
+      language: regionalForm.language.trim() || undefined,
+      timezone: regionalForm.timezone.trim() || undefined,
+      currency: regionalForm.currency.trim() || undefined,
+      dateFormat: regionalForm.dateFormat.trim() || undefined,
+      timeFormat: regionalForm.timeFormat.trim() || undefined,
+    } as Record<string, unknown>);
+    const notifications = mergeSettingObjects(
+      ex?.notifications as Record<string, unknown>,
+      {
         email: regionalForm.notifEmail,
         sms: regionalForm.notifSms,
         push: regionalForm.notifPush,
         whatsapp: regionalForm.notifWhatsapp,
-      },
-      preferences: {
+      }
+    );
+    const preferences = mergeSettingObjects(
+      ex?.preferences as Record<string, unknown>,
+      {
         theme: regionalForm.theme,
-        defaultView: regionalForm.defaultView || undefined,
+        defaultView: regionalForm.defaultView.trim() || undefined,
         itemsPerPage: regionalForm.itemsPerPage,
         menuCollapsed: regionalForm.menuCollapsed,
-      },
+      }
+    );
+
+    const addr = mergeSettingObjects(ex?.contact?.address as Record<string, unknown>, {
+      street: regionalForm.contactAddrStreet.trim() || undefined,
+      suburb: regionalForm.contactAddrSuburb.trim() || undefined,
+      city: regionalForm.contactAddrCity.trim() || undefined,
+      state: regionalForm.contactAddrState.trim() || undefined,
+      country: regionalForm.contactAddrCountry.trim() || undefined,
+      postalCode: regionalForm.contactAddrPostal.trim() || undefined,
+    });
+    const phone =
+      regionalForm.contactPhoneCode.trim() || regionalForm.contactPhoneNumber.trim()
+        ? {
+            code: regionalForm.contactPhoneCode.trim(),
+            number: regionalForm.contactPhoneNumber.trim(),
+          }
+        : undefined;
+    const contact = mergeSettingObjects(ex?.contact as Record<string, unknown>, {
+      email: regionalForm.contactEmail.trim() || undefined,
+      website: regionalForm.contactWebsite.trim() || undefined,
+      ...(phone ? { phone } : {}),
+      address: addr,
+    });
+
+    const branding = mergeSettingObjects(ex?.branding as Record<string, unknown>, {
+      logo: regionalForm.brandingLogo.trim() || undefined,
+      logoAltText: regionalForm.brandingLogoAlt.trim() || undefined,
+      favicon: regionalForm.brandingFavicon.trim() || undefined,
+      primaryColor: regionalForm.brandingPrimary.trim() || undefined,
+      secondaryColor: regionalForm.brandingSecondary.trim() || undefined,
+      accentColor: regionalForm.brandingAccent.trim() || undefined,
+    });
+
+    const business = mergeSettingObjects(ex?.business as Record<string, unknown>, {
+      name: regionalForm.businessName.trim() || undefined,
+      registrationNumber: regionalForm.businessReg.trim() || undefined,
+      taxId: regionalForm.businessTaxId.trim() || undefined,
+      industry: regionalForm.businessIndustry.trim() || undefined,
+      ...(regionalForm.businessSize ? { size: regionalForm.businessSize } : {}),
+    });
+
+    const socialLinks = mergeSettingObjects(
+      ex?.socialLinks as Record<string, unknown>,
+      stripUndefined({
+        facebook: regionalForm.socialFacebook.trim() || undefined,
+        twitter: regionalForm.socialTwitter.trim() || undefined,
+        instagram: regionalForm.socialInstagram.trim() || undefined,
+        linkedin: regionalForm.socialLinkedin.trim() || undefined,
+        youtube: regionalForm.socialYoutube.trim() || undefined,
+        website: regionalForm.socialWebsite.trim() || undefined,
+      })
+    );
+
+    const perfPatch: Record<string, unknown> = {};
+    if (regionalForm.perfDaily.trim() !== '')
+      perfPatch.dailyRevenueTarget = Number(regionalForm.perfDaily);
+    if (regionalForm.perfWeekly.trim() !== '')
+      perfPatch.weeklyRevenueTarget = Number(regionalForm.perfWeekly);
+    if (regionalForm.perfMonthly.trim() !== '')
+      perfPatch.monthlyRevenueTarget = Number(regionalForm.perfMonthly);
+    if (regionalForm.perfYearly.trim() !== '')
+      perfPatch.yearlyRevenueTarget = Number(regionalForm.perfYearly);
+    if (regionalForm.perfCalcMethod)
+      perfPatch.targetCalculationMethod = regionalForm.perfCalcMethod;
+    if (regionalForm.perfHistDays.trim() !== '')
+      perfPatch.historicalPeriodDays = Number(regionalForm.perfHistDays);
+    if (regionalForm.perfGrowthPct.trim() !== '')
+      perfPatch.growthTargetPercentage = Number(regionalForm.perfGrowthPct);
+
+    const performance = mergeSettingObjects(
+      ex?.performance as Record<string, unknown>,
+      perfPatch
+    );
+
+    return {
+      regional,
+      notifications,
+      preferences,
+      contact: contact as PatchOrganisationSettingsBody['contact'],
+      branding,
+      business,
+      socialLinks,
+      performance,
       sendTaskNotifications: regionalForm.sendTaskNotifications,
       feedbackTokenExpiryDays: regionalForm.feedbackTokenExpiryDays,
       geofenceDefaultRadius: regionalForm.geofenceDefaultRadius,
@@ -514,9 +803,8 @@ export function SettingsContent() {
       geofenceDefaultNotificationType: regionalForm.geofenceDefaultNotificationType,
       geofenceMaxRadius: regionalForm.geofenceMaxRadius,
       geofenceMinRadius: regionalForm.geofenceMinRadius,
-    }),
-    [regionalForm]
-  );
+    };
+  }, [regionalForm, settingsQuery.data?.settings]);
 
   const saveSettingsMut = useMutation({
     mutationFn: async () => {
@@ -734,6 +1022,79 @@ export function SettingsContent() {
     onError: (e: Error) => toast.error(e.message || 'Failed to save'),
   });
 
+  const createBranchMut = useMutation({
+    mutationFn: async () => {
+      const ref =
+        createBranchForm.ref.trim() ||
+        (typeof crypto !== 'undefined' ? crypto.randomUUID() : '');
+      if (!ref) throw new Error('Branch reference is required');
+      const address = normalizeBranchAddressForSave({
+        street: createBranchForm.street,
+        suburb: createBranchForm.suburb,
+        city: createBranchForm.city,
+        state: createBranchForm.state,
+        country: createBranchForm.country,
+        postalCode: createBranchForm.postalCode,
+      });
+      const res = await postCreateBranch(client, {
+        name: createBranchForm.name.trim(),
+        email: createBranchForm.email.trim(),
+        phone: createBranchForm.phone.trim(),
+        website: createBranchForm.website.trim(),
+        contactPerson: createBranchForm.contactPerson.trim(),
+        ref,
+        ...(createBranchForm.alias.trim()
+          ? { alias: createBranchForm.alias.trim() }
+          : {}),
+        address,
+      });
+      return { ...res, ref };
+    },
+    onSuccess: (data) => {
+      const m = (data?.message ?? '').toLowerCase();
+      if (
+        m &&
+        (m.includes('not found') ||
+          m.includes('access denied') ||
+          m.includes('organization id is required') ||
+          m.includes('exception') ||
+          m.includes('validation') ||
+          m.includes('must be') ||
+          m.includes('postal code') ||
+          m.includes('already exists') ||
+          m.includes('unique'))
+      ) {
+        toast.error(data?.message || 'Could not create branch');
+        return;
+      }
+      toast.success('Branch created');
+      setAddBranchOpen(false);
+      setBranchRef(data.ref);
+      queryClient.invalidateQueries({ queryKey: settingsOrgBranchesKey(orgRef) });
+      queryClient.invalidateQueries({ queryKey: BRANCHES_LIST_QUERY_KEY });
+    },
+    onError: (e: Error) => toast.error(e.message || 'Failed to create branch'),
+  });
+
+  const openAddBranchDialog = useCallback(() => {
+    setCreateBranchForm({
+      name: '',
+      alias: '',
+      email: '',
+      phone: '',
+      contactPerson: '',
+      website: 'https://',
+      ref: typeof crypto !== 'undefined' ? crypto.randomUUID() : '',
+      street: '',
+      suburb: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+    });
+    setAddBranchOpen(true);
+  }, []);
+
   const resetProfile = useCallback(() => {
     const o = profileQuery.data?.organisation;
     if (!o) return;
@@ -772,31 +1133,7 @@ export function SettingsContent() {
   const resetRegional = useCallback(() => {
     const s = settingsQuery.data?.settings;
     if (!s) return;
-    const r = s.regional;
-    const n = s.notifications;
-    const p = s.preferences;
-    setRegionalForm({
-      language: r?.language ?? '',
-      timezone: r?.timezone ?? '',
-      currency: r?.currency ?? '',
-      dateFormat: r?.dateFormat ?? '',
-      timeFormat: r?.timeFormat ?? '',
-      notifEmail: n?.email ?? true,
-      notifSms: n?.sms ?? false,
-      notifPush: n?.push ?? true,
-      notifWhatsapp: n?.whatsapp ?? false,
-      theme: p?.theme ?? 'system',
-      defaultView: p?.defaultView ?? '',
-      itemsPerPage: p?.itemsPerPage ?? 25,
-      menuCollapsed: p?.menuCollapsed ?? false,
-      sendTaskNotifications: s.sendTaskNotifications ?? false,
-      feedbackTokenExpiryDays: s.feedbackTokenExpiryDays ?? 30,
-      geofenceDefaultRadius: s.geofenceDefaultRadius ?? 500,
-      geofenceEnabledByDefault: s.geofenceEnabledByDefault ?? false,
-      geofenceDefaultNotificationType: s.geofenceDefaultNotificationType ?? 'NOTIFY',
-      geofenceMaxRadius: s.geofenceMaxRadius ?? 5000,
-      geofenceMinRadius: s.geofenceMinRadius ?? 100,
-    });
+    setRegionalForm(regionalFormStateFromSettings(s));
   }, [settingsQuery.data?.settings]);
 
   const resetHours = useCallback(() => {
@@ -1527,6 +1864,353 @@ export function SettingsContent() {
                     </label>
                   </div>
                 </Row>
+                <Separator />
+                <Collapsible className="rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
+                    <span>Contact &amp; address (settings JSON)</span>
+                    <ChevronDown className="size-4 shrink-0 opacity-70" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="s-contact-email">Contact email</Label>
+                        <Input
+                          id="s-contact-email"
+                          type="email"
+                          value={regionalForm.contactEmail}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              contactEmail: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-phone-code">Phone country code</Label>
+                        <Input
+                          id="s-phone-code"
+                          value={regionalForm.contactPhoneCode}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              contactPhoneCode: e.target.value,
+                            }))
+                          }
+                          placeholder="+27"
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-phone-num">Phone number</Label>
+                        <Input
+                          id="s-phone-num"
+                          value={regionalForm.contactPhoneNumber}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              contactPhoneNumber: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="s-contact-web">Website</Label>
+                        <Input
+                          id="s-contact-web"
+                          value={regionalForm.contactWebsite}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              contactWebsite: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      {(
+                        [
+                          ['contactAddrStreet', 'Street'],
+                          ['contactAddrSuburb', 'Suburb'],
+                          ['contactAddrCity', 'City'],
+                          ['contactAddrState', 'State'],
+                          ['contactAddrCountry', 'Country'],
+                          ['contactAddrPostal', 'Postal code'],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={`s-${key}`}>{label}</Label>
+                          <Input
+                            id={`s-${key}`}
+                            value={regionalForm[key]}
+                            onChange={(e) =>
+                              setRegionalForm((s) => ({
+                                ...s,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            className="border-gray-200 bg-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
+                    <span>Branding (settings JSON, separate from Appearance tab)</span>
+                    <ChevronDown className="size-4 shrink-0 opacity-70" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-4">
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Distinct from the Appearance entity: used when products read{' '}
+                      <code className="rounded bg-gray-100 px-1">settings.branding</code>.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(
+                        [
+                          ['brandingLogo', 'Logo URL'],
+                          ['brandingLogoAlt', 'Logo alt text'],
+                          ['brandingFavicon', 'Favicon URL'],
+                          ['brandingPrimary', 'Primary colour (hex)'],
+                          ['brandingSecondary', 'Secondary colour (hex)'],
+                          ['brandingAccent', 'Accent colour (hex)'],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <div key={key} className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`s-${key}`}>{label}</Label>
+                          <Input
+                            id={`s-${key}`}
+                            value={regionalForm[key]}
+                            onChange={(e) =>
+                              setRegionalForm((s) => ({
+                                ...s,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            className="border-gray-200 bg-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
+                    <span>Business profile</span>
+                    <ChevronDown className="size-4 shrink-0 opacity-70" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="s-bus-name">Legal name</Label>
+                        <Input
+                          id="s-bus-name"
+                          value={regionalForm.businessName}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              businessName: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-bus-reg">Registration number</Label>
+                        <Input
+                          id="s-bus-reg"
+                          value={regionalForm.businessReg}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              businessReg: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-bus-tax">Tax / VAT ID</Label>
+                        <Input
+                          id="s-bus-tax"
+                          value={regionalForm.businessTaxId}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              businessTaxId: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="s-bus-ind">Industry</Label>
+                        <Input
+                          id="s-bus-ind"
+                          value={regionalForm.businessIndustry}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              businessIndustry: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Organisation size</Label>
+                        <Select
+                          value={regionalForm.businessSize || '__none__'}
+                          onValueChange={(v) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              businessSize:
+                                v === '__none__'
+                                  ? ''
+                                  : (v as typeof s.businessSize),
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full border-gray-200 bg-white">
+                            <SelectValue placeholder="Not set" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Not set</SelectItem>
+                            <SelectItem value="small">Small</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="large">Large</SelectItem>
+                            <SelectItem value="enterprise">Enterprise</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
+                    <span>Social links &amp; performance targets</span>
+                    <ChevronDown className="size-4 shrink-0 opacity-70" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(
+                        [
+                          ['socialFacebook', 'Facebook URL'],
+                          ['socialTwitter', 'Twitter / X URL'],
+                          ['socialInstagram', 'Instagram URL'],
+                          ['socialLinkedin', 'LinkedIn URL'],
+                          ['socialYoutube', 'YouTube URL'],
+                          ['socialWebsite', 'Website URL'],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <div key={key} className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`s-${key}`}>{label}</Label>
+                          <Input
+                            id={`s-${key}`}
+                            value={regionalForm[key]}
+                            onChange={(e) =>
+                              setRegionalForm((s) => ({
+                                ...s,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            className="border-gray-200 bg-white"
+                          />
+                        </div>
+                      ))}
+                      <div className="space-y-2 sm:col-span-2 border-t border-gray-200 pt-3">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Revenue targets (optional numbers)
+                        </p>
+                      </div>
+                      {(
+                        [
+                          ['perfDaily', 'Daily target'],
+                          ['perfWeekly', 'Weekly target'],
+                          ['perfMonthly', 'Monthly target'],
+                          ['perfYearly', 'Yearly target'],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={`s-${key}`}>{label}</Label>
+                          <Input
+                            id={`s-${key}`}
+                            type="number"
+                            value={regionalForm[key]}
+                            onChange={(e) =>
+                              setRegionalForm((s) => ({
+                                ...s,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            className="border-gray-200 bg-white"
+                          />
+                        </div>
+                      ))}
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Target calculation</Label>
+                        <Select
+                          value={regionalForm.perfCalcMethod || '__none__'}
+                          onValueChange={(v) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              perfCalcMethod:
+                                v === '__none__'
+                                  ? ''
+                                  : (v as typeof s.perfCalcMethod),
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full border-gray-200 bg-white">
+                            <SelectValue placeholder="Not set" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Not set</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="dynamic">Dynamic</SelectItem>
+                            <SelectItem value="historical">Historical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-perf-hist">Historical period (days)</Label>
+                        <Input
+                          id="s-perf-hist"
+                          type="number"
+                          value={regionalForm.perfHistDays}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              perfHistDays: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="s-perf-gr">Growth target (%)</Label>
+                        <Input
+                          id="s-perf-gr"
+                          type="number"
+                          value={regionalForm.perfGrowthPct}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              perfGrowthPct: e.target.value,
+                            }))
+                          }
+                          className="border-gray-200 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               <div
                 className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
@@ -1852,12 +2536,24 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'branches' && (
+            <>
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
-              <div className="px-6 pt-6">
-                <h2 className="text-lg font-medium">Branches</h2>
-                <p className="text-sm text-muted-foreground">
-                  Select a branch to edit contact details and address.
-                </p>
+              <div className="flex flex-col gap-3 px-6 pt-6 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-medium">Branches</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Select a branch to edit contact details and address.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="shrink-0 gap-2"
+                  onClick={openAddBranchDialog}
+                >
+                  <Plus className="size-4" />
+                  Add branch
+                </Button>
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
@@ -2100,6 +2796,144 @@ export function SettingsContent() {
                 </Button>
               </div>
             </div>
+
+            <Dialog open={addBranchOpen} onOpenChange={setAddBranchOpen}>
+              <DialogContent className="max-h-[min(90vh,640px)] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add branch</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-3 py-2 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="new-br-ref">Reference (unique)</Label>
+                    <Input
+                      id="new-br-ref"
+                      value={createBranchForm.ref}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, ref: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white font-mono text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="new-br-name">Name</Label>
+                    <Input
+                      id="new-br-name"
+                      value={createBranchForm.name}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, name: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-br-alias">Alias (optional)</Label>
+                    <Input
+                      id="new-br-alias"
+                      value={createBranchForm.alias}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, alias: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-br-email">Email</Label>
+                    <Input
+                      id="new-br-email"
+                      type="email"
+                      value={createBranchForm.email}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, email: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-br-phone">Phone</Label>
+                    <Input
+                      id="new-br-phone"
+                      value={createBranchForm.phone}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, phone: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="new-br-cp">Contact person</Label>
+                    <Input
+                      id="new-br-cp"
+                      value={createBranchForm.contactPerson}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({
+                          ...s,
+                          contactPerson: e.target.value,
+                        }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="new-br-web">Website</Label>
+                    <Input
+                      id="new-br-web"
+                      value={createBranchForm.website}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({ ...s, website: e.target.value }))
+                      }
+                      className="border-gray-200 bg-white"
+                    />
+                  </div>
+                  {(
+                    [
+                      ['street', 'Street', createBranchForm.street],
+                      ['suburb', 'Suburb', createBranchForm.suburb],
+                      ['city', 'City', createBranchForm.city],
+                      ['state', 'State', createBranchForm.state],
+                      ['country', 'Country', createBranchForm.country],
+                      [
+                        'postalCode',
+                        'Postal code (4 digits, ZA)',
+                        createBranchForm.postalCode,
+                      ],
+                    ] as const
+                  ).map(([key, label, val]) => (
+                    <div key={key} className="space-y-2">
+                      <Label htmlFor={`new-br-${key}`}>{label}</Label>
+                      <Input
+                        id={`new-br-${key}`}
+                        value={val}
+                        onChange={(e) =>
+                          setCreateBranchForm((s) => ({
+                            ...s,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="border-gray-200 bg-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setAddBranchOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="success"
+                    onClick={() => createBranchMut.mutate()}
+                    disabled={createBranchMut.isPending}
+                  >
+                    Create branch
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            </>
           )}
         </>
       )}

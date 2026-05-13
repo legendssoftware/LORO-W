@@ -108,6 +108,15 @@ export interface TargetWarningsPayload {
   level: 1 | 2 | 3;
   issuedAt?: string;
   acknowledgedLevel?: number;
+  acknowledgedAt?: string;
+  lastShiftEvalOrgYmd?: string;
+}
+
+/** POST /user/:ref/target/performance-warning/acknowledge */
+export interface AcknowledgePerformanceWarningResponse {
+  message: string;
+  /** Present when API returns persisted JSON (omit on legacy proxies). */
+  targetWarnings?: TargetWarningsPayload;
 }
 
 /** Partial update body for PATCH /user/:ref/target. Matches server UpdateUserTargetDto. */
@@ -302,8 +311,8 @@ export async function getUserTarget(
 export async function postAcknowledgePerformanceWarning(
   client: AxiosInstance,
   ref: string
-): Promise<{ message: string }> {
-  const { data } = await client.post<{ message: string }>(
+): Promise<AcknowledgePerformanceWarningResponse> {
+  const { data } = await client.post<AcknowledgePerformanceWarningResponse>(
     `/user/${ref}/target/performance-warning/acknowledge`,
     {}
   );

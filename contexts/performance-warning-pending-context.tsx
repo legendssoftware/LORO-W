@@ -21,6 +21,11 @@ import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 export type PerformanceWarningPendingContextValue = {
   /** User must acknowledge server-side warning before using the app chrome. */
   pendingBlockingWarning: boolean;
+  /**
+   * True while a blocking warning is active or GET /user/:ref/target has not yet resolved successfully.
+   * Keeps driver.js tours and the sales benchmarks welcome dialog from racing ahead of warning state.
+   */
+  deferToursAndSalesBenchmarks: boolean;
   targetWarnings: TargetWarningsPayload | null | undefined;
   userRef: string | null;
   employeeName: string;
@@ -120,6 +125,19 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     blockingDataReady &&
     hasUnackedWarning;
 
+  const targetQueryEnabled = !!userRef && !!isSignedIn;
+  const deferUntilTargetSettled =
+    inAppShell &&
+    !!userRef &&
+    !!isSignedIn &&
+    sessionOk &&
+    targetQueryEnabled &&
+    !targetQuery.isError &&
+    !targetResolved;
+
+  const deferToursAndSalesBenchmarks =
+    pendingBlockingWarning || deferUntilTargetSettled;
+
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
 
@@ -176,6 +194,8 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       pathname,
       inAppShell,
       pendingBlockingWarning,
+      deferToursAndSalesBenchmarks,
+      deferUntilTargetSettled,
       showBlockingDialog: pendingBlockingWarning,
       /** Tier that drives copy when the blocking modal is active. */
       warningTierToShow: pendingBlockingWarning ? (tw?.level ?? null) : null,
@@ -213,7 +233,7 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       },
       suppressReasons: pendingBlockingWarning ? [] : suppressReasons,
       note:
-        'Tours and Sales Benchmarks defer until pendingBlockingWarning is false; general workers skip benchmarks only.',
+        'Tours and Sales Benchmarks defer until user target has settled successfully (no fetch error) or pendingBlockingWarning clears; general workers skip benchmarks only.',
     };
 
     console.log('[performance-warning]', payload);
@@ -224,6 +244,8 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     blockingDataReady,
     profileCarriesPendingWarning,
     pendingBlockingWarning,
+    deferToursAndSalesBenchmarks,
+    deferUntilTargetSettled,
     targetResolved,
     userRef,
     pathname,
@@ -245,11 +267,12 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
   const value = useMemo(
     (): PerformanceWarningPendingContextValue => ({
       pendingBlockingWarning,
+      deferToursAndSalesBenchmarks,
       targetWarnings: tw,
       userRef,
       employeeName: employeeName || 'there',
     }),
-    [pendingBlockingWarning, tw, userRef, employeeName]
+    [pendingBlockingWarning, deferToursAndSalesBenchmarks, tw, userRef, employeeName]
   );
 
   return (
@@ -273,6 +296,7 @@ export function usePerformanceWarningPendingSafe(): PerformanceWarningPendingCon
   return (
     ctx ?? {
       pendingBlockingWarning: false,
+      deferToursAndSalesBenchmarks: false,
       targetWarnings: undefined,
       userRef: null,
       employeeName: 'there',

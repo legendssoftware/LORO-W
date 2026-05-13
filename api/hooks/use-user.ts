@@ -232,19 +232,35 @@ export function useAcknowledgePerformanceWarning(ref: string | null) {
       if (!ref) throw new Error('User ref required');
       return postAcknowledgePerformanceWarning(client, ref);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       if (ref) {
         queryClient.invalidateQueries({ queryKey: [...USER_TARGET_QUERY_KEY_PREFIX, ref] });
+        queryClient.invalidateQueries({ queryKey: ['user', ref] });
+        queryClient.invalidateQueries({ queryKey: ['user', 'sub-threshold-calls'] });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
       }
       const { profileData, startSession } = useSessionStore.getState();
       const tw = profileData?.targetWarnings;
       if (profileData != null && tw != null && typeof tw.level === 'number') {
-        startSession({
-          profileData: {
-            ...profileData,
-            targetWarnings: { ...tw, acknowledgedLevel: tw.level },
-          },
-        });
+        if (data.targetWarnings != null) {
+          startSession({
+            profileData: {
+              ...profileData,
+              targetWarnings: data.targetWarnings,
+            },
+          });
+        } else {
+          startSession({
+            profileData: {
+              ...profileData,
+              targetWarnings: {
+                ...tw,
+                acknowledgedLevel: tw.level,
+                acknowledgedAt: new Date().toISOString(),
+              },
+            },
+          });
+        }
       }
     },
   });

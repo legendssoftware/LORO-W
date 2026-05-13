@@ -106,7 +106,7 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
 export function PipelineTour() {
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const blockTours = usePerformanceWarningPendingSafe().pendingBlockingWarning;
+  const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
