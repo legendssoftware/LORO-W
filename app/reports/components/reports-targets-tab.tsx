@@ -3,8 +3,14 @@
 import { useMemo, useState } from 'react';
 import { Settings } from 'lucide-react';
 import Link from 'next/link';
-import type { UserListItem } from '@/api/endpoints/user';
 import type { SyncProfile } from '@/api/types';
+import type { TargetWarningsPayload, UserListItem } from '@/api/endpoints/user';
+import type { BranchListItem } from '@/api/types/branch';
+import { getBranchDisplayLabel } from '@/api/types/branch';
+import {
+  getCountryFlag,
+  normalizeBranchCountryCodeForGrouping,
+} from '@/lib/utils/country-flags';
 import type { VisitListItem } from '@/api/types/visits';
 import {
   useBranches,
@@ -74,6 +80,82 @@ function leadsCountForListUser(
   );
 }
 
+function branchUidFromListUser(u: UserListItem | undefined): number | null {
+  if (!u) return null;
+  const raw = u as { branchUid?: number | null; branch?: { uid?: number } | null };
+  if (typeof raw.branchUid === 'number' && raw.branchUid > 0) return raw.branchUid;
+  const bu = raw.branch?.uid;
+  if (typeof bu === 'number' && bu > 0) return bu;
+  return null;
+}
+
+function branchFlagAndLabel(
+  listUser: UserListItem | undefined,
+  branchByUid: Map<number, BranchListItem>
+): { flag: string; label: string } {
+  const uid = branchUidFromListUser(listUser);
+  if (uid == null) {
+    return { flag: getCountryFlag('UNLISTED').flag, label: 'Unassigned' };
+  }
+  const b = branchByUid.get(uid);
+  if (!b) {
+    return { flag: getCountryFlag('SA').flag, label: `Branch #${uid}` };
+  }
+  return {
+    flag: getCountryFlag(normalizeBranchCountryCodeForGrouping(b)).flag,
+    label: getBranchDisplayLabel(b),
+  };
+}
+
+const utcShortDateTime = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'short',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+});
+
+function formatAcknowledgedAt(iso: string | undefined): string | null {
+  if (!iso?.trim()) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return utcShortDateTime.format(d);
+}
+
+/** UTC yyyy-MM-dd for issuedAt, or fallback when missing (aligns pending colour with overview day). */
+function issuedUtcYmdForAck(tw: TargetWarningsPayload | null | undefined, thresholdYmd: string): string {
+  const raw = tw?.issuedAt?.trim();
+  if (!raw) return thresholdYmd;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return thresholdYmd;
+  return formatUtcYmd(d);
+}
+
+function isTierAcknowledged(tw: TargetWarningsPayload): boolean {
+  return tw.level <= (tw.acknowledgedLevel ?? 0);
+}
+
+function acknowledgedBadgeTone(
+  tw: TargetWarningsPayload | null | undefined,
+  thresholdYmd: string
+):
+  | { kind: 'none' }
+  | { kind: 'ok'; tier: number; atLabel: string | null }
+  | { kind: 'pending'; urgency: 'amber' | 'red'; issuedDay: string } {
+  if (tw == null) return { kind: 'none' };
+  const level = tw.level;
+  if (level !== 1 && level !== 2 && level !== 3) return { kind: 'none' };
+
+  if (isTierAcknowledged(tw)) {
+    return { kind: 'ok', tier: level, atLabel: formatAcknowledgedAt(tw.acknowledgedAt) };
+  }
+
+  const issuedDay = issuedUtcYmdForAck(tw, thresholdYmd);
+  return {
+    kind: 'pending',
+    urgency: issuedDay < thresholdYmd ? 'red' : 'amber',
+    issuedDay,
+  };
+}
+
 function warningLevelBadgeClass(level: 1 | 2 | 3): string {
   switch (level) {
     case 1:
@@ -83,6 +165,57 @@ function warningLevelBadgeClass(level: 1 | 2 | 3): string {
     case 3:
       return 'bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-200';
   }
+}
+
+function acknowledgedPendingBadgeClass(urgency: 'amber' | 'red'): string {
+  return urgency === 'red'
+    ? 'bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-200'
+    : 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200';
+}
+
+function TargetWarningStatusIndicator({
+  tw,
+  thresholdYmd,
+}: {
+  tw: TargetWarningsPayload | null | undefined;
+  thresholdYmd: string;
+}) {
+  const tone = acknowledgedBadgeTone(tw ?? null, thresholdYmd);
+  if (tone.kind === 'none') {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  if (tone.kind === 'ok') {
+    return (
+      <Badge
+        variant="secondary"
+        className={cn(
+          'h-auto flex-col gap-0.5 rounded-full px-3 py-1.5 text-start',
+          'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200'
+        )}
+      >
+        <span className="font-semibold">{`Ack L${tone.tier}`}</span>
+        <span className="text-muted-foreground text-xs font-normal tabular-nums">
+          {tone.atLabel
+            ? `Acknowledged at ${tone.atLabel}`
+            : 'Acknowledged (no timestamp)'}
+        </span>
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        'h-auto flex-col gap-0.5 rounded-full px-3 py-1.5 text-start',
+        acknowledgedPendingBadgeClass(tone.urgency)
+      )}
+    >
+      <span className="font-medium">Awaiting acknowledgement</span>
+      <span className="font-mono text-xs font-normal opacity-95 tabular-nums">
+        Issued {tone.issuedDay}
+      </span>
+    </Badge>
+  );
 }
 
 export interface ReportsTargetsTabProps {
@@ -104,6 +237,12 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
   const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
 
   const { data: branches = [] } = useBranches();
+
+  const branchByUid = useMemo(
+    () => new Map<number, BranchListItem>(branches.map((b) => [b.uid, b])),
+    [branches]
+  );
+
   const { data: usersList = [] } = useUsers({
     enabled: elevated,
     limit: 250,
@@ -288,6 +427,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                     <TableHead className="tabular-nums">Visits</TableHead>
                     <TableHead className="tabular-nums">Leads</TableHead>
                     <TableHead>Warnings</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="w-10 p-2" />
                   </TableRow>
                 </TableHeader>
@@ -307,6 +447,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                     const visits = visitsByUid.get(u.uid) ?? 0;
                     const leads = leadsCountForListUser(listUser, leadByDisplayName);
                     const level = u.targetWarnings?.level;
+                    const { flag: branchFlag, label: branchLabel } = branchFlagAndLabel(
+                      listUser,
+                      branchByUid
+                    );
                     return (
                       <TableRow
                         key={u.uid}
@@ -324,6 +468,10 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                             <span className="block min-w-0 space-y-0.5">
                               <span className="block font-medium leading-tight">{displayName}</span>
                               <span className="text-muted-foreground block text-xs">{u.email}</span>
+                              <span className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
+                                <span aria-hidden>{branchFlag}</span>
+                                <span className="min-w-0 leading-tight">{branchLabel}</span>
+                              </span>
                             </span>
                           </span>
                         </TableCell>
@@ -343,6 +491,9 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <TargetWarningStatusIndicator tw={u.targetWarnings} thresholdYmd={thresholdYmd} />
                         </TableCell>
                         <TableCell className="w-10 p-2 text-right align-middle">
                           <Link

@@ -26,6 +26,10 @@ export interface OrganisationProfile {
   clerkOrgId?: string | null;
   /** GeneralStatus enum value (e.g. active, inactive) */
   status?: string;
+  /** Relations returned by GET /org (join) — used to hydrate when /organisations/* misses Clerk vs ref. */
+  settings?: OrganisationSettingsRecord | null;
+  appearance?: OrganisationAppearanceRecord | null;
+  hours?: OrganisationHoursRecord[] | null;
 }
 
 export interface GetOrganisationResponse {
