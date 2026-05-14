@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pdf:sales-onboarding": "node scripts/generate-salesperson-onboarding-pdf.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.4",

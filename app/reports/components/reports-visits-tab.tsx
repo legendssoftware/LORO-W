@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  useCallback,
   useMemo,
   useState,
   type ComponentType,
   type ReactNode,
 } from 'react';
+import type { DateRange } from 'react-day-picker';
 import {
   Area,
   AreaChart,
@@ -17,10 +19,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { BarChart3, Clock, Contact, Timer, Users } from 'lucide-react';
+import { Briefcase, Clock, Contact, MapPinned, Timer, Users } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
 import type { BranchListItem } from '@/api/types/branch';
-import { useBranches, useCheckIns, useUsers, getBranchDisplayLabel } from '@/api/hooks';
+import { useBranches, useCheckIns, useUsers } from '@/api/hooks';
 import type { VisitExportItem } from '@/api/types/reports';
 import {
   Card,
@@ -45,19 +47,18 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarIcon, XIcon } from '@/lib/icons';
+import { CalendarIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
-import { VisitsSummaryDialog } from '@/app/reports/components/visits-summary-dialog';
+import {
+  SearchableBranchPicker,
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import {
   filterVisitCheckIns,
   getSortedUniqueBusinessTypes,
@@ -81,7 +82,11 @@ import {
 import {
   formatUtcCalendarLabel,
   formatUtcYmd,
+  getUtcMonthRange,
+  orderUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
+  utcDateFromYmd,
+  utcMonthStartThroughToday,
   utcRangeIsoFromUtcCalendarStoredRange,
   utcToday,
 } from '@/app/reports/utils/overview-daily-summary';
@@ -240,8 +245,14 @@ export function ReportsVisitsTab({
   profile,
   reportsMode,
 }: ReportsVisitsTabProps) {
-  const [startDate, setStartDate] = useState(() => utcToday());
-  const [endDate, setEndDate] = useState(() => utcToday());
+  const [startDate, setStartDate] = useState(() => {
+    const { start } = utcMonthStartThroughToday();
+    return start;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const { end } = utcMonthStartThroughToday();
+    return end;
+  });
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
   const [selectedBranchId, setSelectedBranchId] = useState('all');
@@ -250,7 +261,11 @@ export function ReportsVisitsTab({
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('all');
-  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  const [draft, setDraft] = useState<DateRange | undefined>(() => {
+    const r = utcMonthStartThroughToday();
+    return { from: r.start, to: r.end };
+  });
 
   const { startDate: startIso, endDate: endIso } =
     utcRangeIsoFromUtcCalendarStoredRange(startDate, endDate);
@@ -319,6 +334,57 @@ export function ReportsVisitsTab({
   const uniqueBusinessTypes = useMemo(
     () => getSortedUniqueBusinessTypes(mappedRaw),
     [mappedRaw]
+  );
+
+  const regionPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueRegions.map((r) => ({
+        value: r,
+        label: r,
+        icon: <MapPinned className="size-4 shrink-0" />,
+      })),
+    [uniqueRegions]
+  );
+
+  const businessTypePickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueBusinessTypes.map((bt) => ({
+        value: bt,
+        label: bt,
+        icon: <Briefcase className="size-4 shrink-0" />,
+      })),
+    [uniqueBusinessTypes]
+  );
+
+  const methodPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      METHOD_OPTIONS.map((o) => {
+        const Icon = o.icon;
+        return {
+          value: o.value,
+          label: o.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+          searchExtra: o.value.toLowerCase(),
+        };
+      }),
+    []
+  );
+
+  const finalizeDraftRange = useCallback(() => {
+    const from = draft?.from ?? startDate;
+    const toRaw = draft?.to ?? draft?.from ?? endDate;
+    const ordered = orderUtcCalendarRange(from, toRaw);
+    setStartDate(ordered.start);
+    setEndDate(ordered.end);
+  }, [draft, startDate, endDate]);
+
+  const handleDateRangePopoverOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) setDraft({ from: startDate, to: endDate });
+      else finalizeDraftRange();
+      setDateRangePopoverOpen(open);
+    },
+    [startDate, endDate, finalizeDraftRange]
   );
 
   const filteredVisits = useMemo(() => {
@@ -474,13 +540,6 @@ export function ReportsVisitsTab({
     value: { label: 'Quotation value', color: REPORT_CHART_HSL.c3 },
   } satisfies ChartConfig;
 
-  const isDefaultRange =
-    formatUtcYmd(startDate) === formatUtcYmd(utcToday()) &&
-    formatUtcYmd(endDate) === formatUtcYmd(utcToday());
-  const periodLabel =
-    formatUtcYmd(startDate) === formatUtcYmd(endDate)
-      ? formatUtcYmd(startDate)
-      : `${formatUtcYmd(startDate)} – ${formatUtcYmd(endDate)}`;
   const showVisitsSkeleton =
     checkInsQuery.isLoading && !checkInsQuery.data;
   const hasVisits = filteredVisits.length > 0;
@@ -519,187 +578,162 @@ export function ReportsVisitsTab({
     <div className="space-y-8 py-4">
       <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
-          <div className="flex items-center gap-0">
-            <Popover
-              open={dateRangePopoverOpen}
-              onOpenChange={setDateRangePopoverOpen}
+          <Popover
+            open={dateRangePopoverOpen}
+            onOpenChange={handleDateRangePopoverOpenChange}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  reportsFilterSelectTriggerClass,
+                  'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px] gap-2'
+                )}
+              >
+                <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                {formatUtcYmd(startDate) === formatUtcYmd(endDate)
+                  ? formatUtcCalendarLabel(startDate)
+                  : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className={cn(
+                'w-[95vw] max-w-lg p-0 sm:w-auto',
+                reportsFilterPortalHighZ
+              )}
+              align="center"
             >
-              <PopoverTrigger asChild>
+              <Calendar
+                mode="range"
+                selected={draft}
+                onSelect={(r) => {
+                  if (!r) {
+                    setDraft(undefined);
+                    return;
+                  }
+                  setDraft({
+                    from: r.from
+                      ? utcCalendarDateFromLocalPickerDate(r.from)
+                      : undefined,
+                    to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
+                  });
+                }}
+                initialFocus
+                numberOfMonths={2}
+              />
+              <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const t = utcToday();
+                      setStartDate(t);
+                      setEndDate(t);
+                      setDateRangePopoverOpen(false);
+                    }}
+                  >
+                    Today (UTC)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const { start, end } = utcMonthStartThroughToday();
+                      setStartDate(start);
+                      setEndDate(end);
+                      setDateRangePopoverOpen(false);
+                    }}
+                  >
+                    This month (UTC)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const { from, to } = getUtcMonthRange(utcToday());
+                      setStartDate(utcDateFromYmd(from));
+                      setEndDate(utcDateFromYmd(to));
+                      setDateRangePopoverOpen(false);
+                    }}
+                  >
+                    Whole month (UTC)
+                  </Button>
+                </div>
                 <Button
                   type="button"
-                  variant="outline"
                   size="sm"
-                  className="h-9 w-[185px] shrink-0 bg-white border-gray-200 text-foreground justify-center gap-2 sm:w-auto"
+                  className={cn(
+                    'bg-violet-600 text-white shadow-sm border-transparent',
+                    'hover:bg-violet-700 hover:text-white',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2'
+                  )}
+                  onClick={() => handleDateRangePopoverOpenChange(false)}
                 >
-                  <CalendarIcon className="size-4" />
-                  {startDate.getTime() === endDate.getTime()
-                    ? formatUtcCalendarLabel(startDate)
-                    : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}
+                  Done
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
-                <div className="p-2 flex flex-col gap-3">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                    <div>
-                      <p className="text-sm font-medium">Start date</p>
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={(d) => {
-                          if (d) setStartDate(utcCalendarDateFromLocalPickerDate(d));
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">End date</p>
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(d) => {
-                          if (d) setEndDate(utcCalendarDateFromLocalPickerDate(d));
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {!isDefaultRange ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const d = utcToday();
-                  setStartDate(d);
-                  setEndDate(d);
-                }}
-                className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
-                aria-label="Reset date range"
-              >
-                <XIcon className="size-4 text-red-600" />
-              </button>
-            ) : null}
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          <Select
-            value={selectedBranchId}
-            onValueChange={(v) => {
+          <SearchableBranchPicker
+            branches={branches as BranchListItem[]}
+            selectedBranchId={selectedBranchId}
+            onBranchChange={(v) => {
               setSelectedBranchId(v);
               setSelectedUserUid('all');
             }}
-          >
-            <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All branches" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All branches</SelectItem>
-              {branches.map((b) => (
-                <SelectItem key={b.uid} value={String(b.uid)}>
-                  {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]"
+          />
 
           {reportsMode === 'org' ? (
-            <Select value={effectiveOwnerUid} onValueChange={setSelectedUserUid}>
-              <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                <SelectValue placeholder="All users" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All users</SelectItem>
-                {reportingUsers.map((u) => {
-                  const fullName =
-                    [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                    u.email ||
-                    `User ${u.uid}`;
-                  return (
-                    <SelectItem key={u.uid} value={String(u.uid)}>
-                      <span className="flex items-center gap-2">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={undefined} alt="" />
-                          <AvatarFallback className="text-xs">
-                            {fullName.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        {fullName}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <SearchableUserPicker
+              users={reportingUsers}
+              branches={branches as BranchListItem[]}
+              selectedUid={effectiveOwnerUid}
+              onUidChange={setSelectedUserUid}
+              triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[220px] sm:w-[220px]"
+            />
           ) : null}
 
-          <Select
-            value={selectedRegion || 'all'}
+          <SearchableOptionListPicker
+            selectedValue={selectedRegion || 'all'}
             onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
-          >
-            <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All regions" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All regions</SelectItem>
-              {uniqueRegions.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {r}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={regionPickerOptions}
+            placeholderLabelWhenAll="All regions"
+            searchPlaceholder="Search regions…"
+            emptyMessage="No region found."
+            triggerIcon={<MapPinned className="size-4 shrink-0" />}
+            triggerClassName="h-9 w-[180px] shrink-0 sm:w-[200px]"
+          />
 
-          <Select
-            value={selectedBusinessType || 'all'}
+          <SearchableOptionListPicker
+            selectedValue={selectedBusinessType || 'all'}
             onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
-          >
-            <SelectTrigger className="h-9 w-[190px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All business types" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All business types</SelectItem>
-              {uniqueBusinessTypes.map((bt) => (
-                <SelectItem key={bt} value={bt}>
-                  {bt}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={businessTypePickerOptions}
+            placeholderLabelWhenAll="All business types"
+            searchPlaceholder="Search business types…"
+            emptyMessage="No business type found."
+            triggerIcon={<Briefcase className="size-4 shrink-0" />}
+            triggerClassName="h-9 w-[190px] shrink-0 sm:w-[200px]"
+          />
 
-          <Select value={selectedMethod} onValueChange={setSelectedMethod}>
-            <SelectTrigger className="h-9 w-[170px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All methods" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All methods</SelectItem>
-              {METHOD_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex w-[150px] shrink-0 min-w-0 flex-nowrap items-center gap-2 sm:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 w-full bg-white border-gray-200 text-foreground gap-2 shrink-0 sm:w-auto"
-              onClick={() => setSummaryOpen(true)}
-            >
-              <BarChart3 className="size-4" />
-              Summary
-            </Button>
-          </div>
+          <SearchableOptionListPicker
+            selectedValue={selectedMethod}
+            onValueChange={setSelectedMethod}
+            options={methodPickerOptions}
+            placeholderLabelWhenAll="All methods"
+            searchPlaceholder="Search methods…"
+            emptyMessage="No method found."
+            triggerClassName="h-9 w-[170px] shrink-0 sm:w-[200px]"
+          />
         </div>
       </div>
-
-      <VisitsSummaryDialog
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        visits={filteredVisits}
-        isLoading={false}
-        periodLabel={periodLabel}
-      />
 
       {showVisitsSkeleton ? (
         <div className="space-y-8 py-2" aria-busy aria-label="Loading visit analytics">

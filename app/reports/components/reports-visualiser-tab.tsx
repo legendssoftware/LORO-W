@@ -230,10 +230,12 @@ export function ReportsVisualiserTab({
         businessTypeLabelMap={businessTypeLabelMap}
         businessTypeIconMap={businessTypeIconMap}
         usersList={reportingUsers}
+        branches={branchesQuery.data ?? []}
         visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
         onOpenVisitsSummary={handleOpenVisitsSummary}
         showMapTableToggle={false}
         showUserFilter={reportsMode === 'org'}
+        sectionHeading={null}
       />
       <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col relative">
         {mapReport.isError ? (
