@@ -1,16 +1,6 @@
-import type { UserListItem } from '@/api/endpoints/user';
-import type { SyncProfile } from '@/api/types/auth';
-import type { BranchListItem } from '@/api/types/branch';
-import { getBranchDisplayLabel } from '@/api/types/branch';
-import type { TargetsProgressUserSummary } from '@/api/types/targets-progress';
 import type { VisitListItem } from '@/api/types/visits';
 
 export type OverviewTimeframe = 'day' | 'month';
-
-function parseUtcYmd(s: string): Date {
-  const [y, m, d] = s.split('-').map((x) => parseInt(x, 10));
-  return new Date(Date.UTC(y, m - 1, d));
-}
 
 export function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
@@ -24,6 +14,21 @@ export function utcToday(): Date {
   return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
 }
 
+/** UTC midnight date from `yyyy-MM-dd`. */
+export function utcDateFromYmd(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map((x) => parseInt(x, 10));
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+export function orderUtcCalendarRange(
+  start: Date,
+  end: Date
+): { start: Date; end: Date } {
+  const a = formatUtcYmd(start);
+  const b = formatUtcYmd(end);
+  return a <= b ? { start, end } : { start: end, end: start };
+}
+
 export function getUtcMonthRange(ref: Date): { from: string; to: string } {
   const y = ref.getUTCFullYear();
   const m = ref.getUTCMonth();
@@ -31,6 +36,18 @@ export function getUtcMonthRange(ref: Date): { from: string; to: string } {
   const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   const end = new Date(Date.UTC(y, m, lastDay));
   return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
+}
+
+/** UTC calendar: first day of the month through today (UTC), inclusive. */
+export function utcMonthStartThroughToday(reference?: Date): {
+  start: Date;
+  end: Date;
+} {
+  const ref = reference ?? utcToday();
+  const y = ref.getUTCFullYear();
+  const m = ref.getUTCMonth();
+  const monthStart = new Date(Date.UTC(y, m, 1));
+  return orderUtcCalendarRange(monthStart, utcToday());
 }
 
 /**
@@ -81,22 +98,18 @@ export function utcCalendarDateFromLocalPickerDate(d: Date): Date {
 }
 
 /**
- * Summary date for Overview dialog: selected day in day mode; in month mode, today (UTC) if inside the visible month, else first day of that month.
+ * Reference day for Targets “below threshold” table: today (UTC) if it lies in the
+ * selected inclusive range, otherwise the range start.
  */
-export function getOverviewSummaryUtcDay(
-  timeframe: OverviewTimeframe,
-  selectedDay: Date,
-  monthAnchor: Date
+export function getThresholdReferenceUtcDay(
+  rangeStart: Date,
+  rangeEnd: Date
 ): Date {
-  if (timeframe === 'day') return selectedDay;
-  const { from, to } = getUtcMonthRange(monthAnchor);
-  const start = parseUtcYmd(from);
-  const end = parseUtcYmd(to);
-  const today = utcToday();
-  if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
-    return today;
-  }
-  return start;
+  const fromYmd = formatUtcYmd(rangeStart);
+  const toYmd = formatUtcYmd(rangeEnd);
+  const ty = formatUtcYmd(utcToday());
+  if (ty >= fromYmd && ty <= toYmd) return utcToday();
+  return rangeStart;
 }
 
 /** Matches server `leadOwnerDisplayName` join for merging GET /leads/report `byUser` keys. */
@@ -129,119 +142,4 @@ export function mapLeadsByUserFromReport(
     m.set(row.name.trim(), row.value);
   }
   return m;
-}
-
-export interface OverviewDailySummaryRow {
-  uid: number;
-  fullName: string;
-  branchLabel: string;
-  contacts: string;
-  visits: number;
-  visitsTarget: number;
-  leads: number;
-  leadsTarget: number;
-}
-
-function branchLabelForUser(
-  u: UserListItem,
-  branchesByUid: Map<number, BranchListItem>
-): string {
-  const raw = u as { branchUid?: number; branch?: { uid?: number; name?: string; alias?: string | null } };
-  const embedded = raw.branch;
-  if (embedded?.uid != null) {
-    const full = branchesByUid.get(embedded.uid);
-    return getBranchDisplayLabel(full ?? (embedded as BranchListItem));
-  }
-  if (typeof raw.branchUid === 'number') {
-    const b = branchesByUid.get(raw.branchUid);
-    return b ? getBranchDisplayLabel(b) : '—';
-  }
-  return '—';
-}
-
-function contactsLine(u: UserListItem): string {
-  const phone = typeof (u as { phone?: string | null }).phone === 'string'
-    ? (u as { phone?: string }).phone?.trim()
-    : '';
-  const email = typeof u.email === 'string' ? u.email.trim() : '';
-  const parts = [
-    phone ? `Phone: ${phone}` : null,
-    email ? `Email: ${email}` : null,
-  ].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '—';
-}
-
-function compareUserSort(a: UserListItem, b: UserListItem): number {
-  const s = a.surname.localeCompare(b.surname);
-  if (s !== 0) return s;
-  return a.name.localeCompare(b.name);
-}
-
-export function buildOverviewDailySummaryRows(
-  users: UserListItem[],
-  visitsByUid: Map<number, number>,
-  leadByDisplayName: Map<string, number>,
-  branchesByUid: Map<number, BranchListItem>,
-  targetsByUid: Map<number, TargetsProgressUserSummary>
-): OverviewDailySummaryRow[] {
-  const sorted = [...users].sort(compareUserSort);
-  return sorted.map((u) => {
-    const nameKey = normalizeOwnerDisplayLabel(u.name, u.surname);
-    const fullName = nameKey || u.email || `User ${u.uid}`;
-    const leads =
-      (nameKey ? leadByDisplayName.get(nameKey) : undefined) ??
-      (u.email ? leadByDisplayName.get(u.email.trim()) ?? 0 : 0);
-    return {
-      uid: u.uid,
-      fullName,
-      branchLabel: branchLabelForUser(u, branchesByUid),
-      contacts: contactsLine(u),
-      visits: visitsByUid.get(u.uid) ?? 0,
-      visitsTarget: targetsByUid.get(u.uid)?.cumulativeTargetVisitsEnd ?? 0,
-      leads,
-      leadsTarget: targetsByUid.get(u.uid)?.cumulativeTargetLeadsEnd ?? 0,
-    };
-  });
-}
-
-export function buildSelfOverviewDailySummaryRow(
-  profile: SyncProfile,
-  visitsByUid: Map<number, number>,
-  leadByDisplayName: Map<string, number>,
-  branchesByUid: Map<number, BranchListItem>,
-  targetsByUid: Map<number, TargetsProgressUserSummary>
-): OverviewDailySummaryRow {
-  const fullName = normalizeOwnerDisplayLabel(
-    profile.name ?? '',
-    profile.surname ?? ''
-  );
-  const display = fullName || profile.email || `User ${profile.uid}`;
-  const branch =
-    profile.branchUid != null ? branchesByUid.get(profile.branchUid) : undefined;
-  const branchLabel = profile.branch
-    ? getBranchDisplayLabel(profile.branch as BranchListItem)
-    : branch
-      ? getBranchDisplayLabel(branch)
-      : '—';
-  const phone = profile.phone?.trim();
-  const email = profile.email?.trim();
-  const contacts = [
-    phone ? `Phone: ${phone}` : null,
-    email ? `Email: ${email}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-  const leads =
-    (fullName ? leadByDisplayName.get(fullName) : undefined) ??
-    (profile.email ? leadByDisplayName.get(profile.email) ?? 0 : 0);
-  return {
-    uid: profile.uid,
-    fullName: display,
-    branchLabel,
-    contacts: contacts || '—',
-    visits: visitsByUid.get(profile.uid) ?? 0,
-    visitsTarget: targetsByUid.get(profile.uid)?.cumulativeTargetVisitsEnd ?? 0,
-    leads,
-    leadsTarget: targetsByUid.get(profile.uid)?.cumulativeTargetLeadsEnd ?? 0,
-  };
 }

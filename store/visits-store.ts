@@ -2,15 +2,18 @@
  * Zustand store for visits page state.
  * Centralizes date range, filters, and UI state (mirrors leads-store pattern).
  */
-
-import { startOfMonth } from 'date-fns';
 import { create } from 'zustand';
 import type { MethodOfContact } from '@/api/types/visits';
 import type { ClientListItem } from '@/api/endpoints/clients';
+import { utcMonthStartThroughToday } from '@/app/reports/utils/overview-daily-summary';
 
-const now = new Date();
-const defaultStart = startOfMonth(now);
-const defaultEnd = now;
+function defaultUtcMtdDates(): { start: Date; end: Date } {
+  return utcMonthStartThroughToday();
+}
+
+const mtd = defaultUtcMtdDates();
+const defaultStart = mtd.start;
+const defaultEnd = mtd.end;
 
 export interface VisitsFiltersState {
   startDate: Date;
@@ -90,9 +93,12 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
     set({ endDate: date, useAllTime: false, dateRangePopoverOpen: false }),
 
   resetDateRangeToDefault: () =>
-    set({
-      startDate: startOfMonth(new Date()),
-      endDate: new Date(),
-      useAllTime: false,
+    set(() => {
+      const r = defaultUtcMtdDates();
+      return {
+        startDate: r.start,
+        endDate: r.end,
+        useAllTime: false,
+      };
     }),
 }));
