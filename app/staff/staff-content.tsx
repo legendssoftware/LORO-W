@@ -34,7 +34,6 @@ import {
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
-import { PayrollSummaryDialog } from '@/app/reports/components/payroll-summary-dialog';
 
 export function StaffContent() {
   const { isTokenReady } = useTokenReady();
@@ -51,8 +50,6 @@ export function StaffContent() {
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<ReportCardUser | null>(null);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-
   const singleDateStr = format(today, 'yyyy-MM-dd');
   const monthForSingle = today.getMonth() + 1;
   const yearForSingle = today.getFullYear();
@@ -267,7 +264,6 @@ export function StaffContent() {
         <StaffFiltersBar
           search={search}
           onSearchChange={setSearch}
-          onOpenSummary={() => setSummaryOpen(true)}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           roleFilter={roleFilter}
@@ -332,17 +328,6 @@ export function StaffContent() {
         onClose={() => setAttendanceModalUser(null)}
       />
 
-      <PayrollSummaryDialog
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        payrollData={payrollQuery.data}
-        payrollIsLoading={payrollQuery.isLoading}
-        monthlyByUserId={monthlyByUserId}
-        presentUsers={dailyQuery.data?.data?.presentUsers ?? []}
-        absentUsers={dailyQuery.data?.data?.absentUsers ?? []}
-        yearForMetrics={yearForSingle}
-        monthForMetrics={monthForSingle}
-      />
     </div>
   );
 }
