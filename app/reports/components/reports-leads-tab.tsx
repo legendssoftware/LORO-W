@@ -437,10 +437,10 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                   size="sm"
                   className={cn(
                     reportsFilterSelectTriggerClass,
-                    'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px] gap-2'
+                    'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
                   )}
                 >
-                  <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
                   {formatUtcYmd(startDate) === formatUtcYmd(endDate)
                     ? formatUtcCalendarLabel(startDate)
                     : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}

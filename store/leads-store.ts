@@ -3,14 +3,12 @@
  * Centralizes date range, filters, and UI state (mirrors visits-store pattern).
  */
 
-import { startOfMonth } from 'date-fns';
 import { create } from 'zustand';
 
 import type { LeadsReportDateBasis } from '@/api/types/leads';
+import { utcMonthStartThroughToday } from '@/app/reports/utils/overview-daily-summary';
 
-const now = new Date();
-const defaultStart = startOfMonth(now);
-const defaultEnd = now;
+const mtd = utcMonthStartThroughToday();
 
 export interface LeadsFiltersState {
   startDate: Date;
@@ -45,12 +43,12 @@ interface LeadsStore extends LeadsFiltersState, LeadsUIState {
 }
 
 export const useLeadsStore = create<LeadsStore>((set) => ({
-  startDate: defaultStart,
-  endDate: defaultEnd,
+  startDate: mtd.start,
+  endDate: mtd.end,
   useAllTime: false,
   dateBasis: 'created',
-  selectedStatus: '',
-  selectedSource: '',
+  selectedStatus: 'all',
+  selectedSource: 'all',
   selectedPriority: '',
   selectedUserId: '',
   searchQuery: '',
@@ -71,10 +69,13 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
     set({ endDate: date, useAllTime: false, dateRangePopoverOpen: false }),
 
   resetDateRangeToDefault: () =>
-    set({
-      startDate: startOfMonth(new Date()),
-      endDate: new Date(),
-      useAllTime: false,
-      dateBasis: 'created',
+    set(() => {
+      const r = utcMonthStartThroughToday();
+      return {
+        startDate: r.start,
+        endDate: r.end,
+        useAllTime: false,
+        dateBasis: 'created',
+      };
     }),
 }));

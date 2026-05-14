@@ -47,7 +47,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import {
   Pencil,
@@ -78,8 +77,7 @@ import {
   ListTodo,
   Paperclip,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2Icon, XIcon, CalendarIcon, StoreIcon } from '@/lib/icons';
+import { Loader2Icon, XIcon, CalendarIcon } from '@/lib/icons';
 import {
   useTask,
   useUpdateTaskMutation,
@@ -90,6 +88,7 @@ import {
   useUpdateSubtaskMutation,
   useUsers,
   useClients,
+  useBranches,
 } from '@/api/hooks';
 import {
   TASK_STATUS_OPTIONS,
@@ -105,6 +104,10 @@ import {
 } from './planning-table-utils';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import {
+  PlanningAssigneesMultiSelectPanel,
+  PlanningClientsMultiSelectPanel,
+} from '@/app/planning/components/planning-task-multi-select-panels';
 
 const MODAL_SELECT_TRIGGER =
   'h-9 w-full bg-white border-gray-200 text-foreground';
@@ -199,6 +202,7 @@ export function TaskDetailDialog({
     limit: 100,
     enabled: open,
   });
+  const { data: branches = [] } = useBranches({ enabled: open });
 
   useEffect(() => {
     if (!displayTask || !open) return;
@@ -213,6 +217,30 @@ export function TaskDetailDialog({
 
   const handleSaveEdit = async () => {
     if (!displayTask) return;
+    const title = editForm.title?.trim() ?? '';
+    const description = editForm.description?.trim() ?? '';
+    if (!title) {
+      toast.error('Title is required');
+      return;
+    }
+    if (!description) {
+      toast.error('Description is required');
+      return;
+    }
+    const deadline =
+      typeof editForm.deadline === 'string' ? editForm.deadline.trim() : '';
+    if (!deadline) {
+      toast.error('Deadline is required');
+      return;
+    }
+    const repType = editForm.repetitionType ?? 'NONE';
+    if (repType !== 'NONE') {
+      const repEnd = editForm.repetitionDeadline?.trim() ?? '';
+      if (!repEnd) {
+        toast.error('Repetition end date is required');
+        return;
+      }
+    }
     const editSubs = editForm.subtasks ?? [];
     const originalSubs = (displayTask.subtasks ?? []).filter(
       (s) => !s.isDeleted && s.uid != null
@@ -224,7 +252,12 @@ export function TaskDetailDialog({
     const removed = originalSubs.filter((s) => s.uid != null && !editUids.has(s.uid));
     const added = editSubs.filter((s) => !s.uid && s.title?.trim());
 
-    const payload: UpdateTaskPayload = { ...editForm };
+    const payload: UpdateTaskPayload = {
+      ...editForm,
+      title,
+      description,
+      deadline,
+    };
     delete payload.subtasks;
 
     if (payload.repetitionType === 'NONE') {
@@ -483,7 +516,7 @@ export function TaskDetailDialog({
               : '-'}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 text-sm">
+        <div className="space-y-6 text-sm">
           <div>
             <DetailSectionHeading title="Details" icon={ClipboardList} />
             {isEditing ? (
@@ -621,7 +654,7 @@ export function TaskDetailDialog({
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Deadline</Label>
+                    <Label>Deadline *</Label>
                     <Popover
                       open={deadlinePickerOpen}
                       onOpenChange={setDeadlinePickerOpen}
@@ -695,7 +728,7 @@ export function TaskDetailDialog({
                   </div>
                   {(editForm.repetitionType ?? 'NONE') !== 'NONE' && (
                     <div className="grid gap-2">
-                      <Label>Repetition end date</Label>
+                      <Label>Repetition end date *</Label>
                       <Popover
                         open={repetitionDeadlinePickerOpen}
                         onOpenChange={setRepetitionDeadlinePickerOpen}
@@ -762,39 +795,15 @@ export function TaskDetailDialog({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[280px] p-0 z-[10001]"
+                        className="w-[min(100vw-2rem,22rem)] p-0 z-[10001]"
                         align="start"
                       >
-                        <div className="max-h-[240px] overflow-y-auto p-2">
-                          {users.map((u) => {
-                            const fullName =
-                              [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                              u.email ||
-                              `User ${u.uid}`;
-                            const imgSrc =
-                              (u as { photoURL?: string | null; avatar?: string | null }).photoURL ??
-                              (u as { photoURL?: string | null; avatar?: string | null }).avatar ??
-                              undefined;
-                            return (
-                              <label
-                                key={u.uid}
-                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                              >
-                                <Checkbox
-                                  checked={selectedAssigneeUids.includes(u.uid)}
-                                  onCheckedChange={() => toggleAssignee(u.uid)}
-                                />
-                                <Avatar className="size-6 shrink-0">
-                                  <AvatarImage src={imgSrc} alt={fullName} />
-                                  <AvatarFallback className="text-xs">
-                                    {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm">{fullName}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
+                        <PlanningAssigneesMultiSelectPanel
+                          users={users}
+                          branches={branches}
+                          selectedUids={selectedAssigneeUids}
+                          onToggleUid={toggleAssignee}
+                        />
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -816,24 +825,14 @@ export function TaskDetailDialog({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[280px] p-0 z-[10001]"
+                        className="w-[min(100vw-2rem,22rem)] p-0 z-[10001]"
                         align="start"
                       >
-                        <div className="max-h-[240px] overflow-y-auto p-2">
-                          {clientsList.map((c) => (
-                            <label
-                              key={c.uid}
-                              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                            >
-                              <Checkbox
-                                checked={selectedClientUids.includes(c.uid)}
-                                onCheckedChange={() => toggleClient(c.uid)}
-                              />
-                              <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-                              <span className="text-sm">{c.name}</span>
-                            </label>
-                          ))}
-                        </div>
+                        <PlanningClientsMultiSelectPanel
+                          clients={clientsList}
+                          selectedUids={selectedClientUids}
+                          onToggleUid={toggleClient}
+                        />
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -919,9 +918,9 @@ export function TaskDetailDialog({
                 </div>
               </div>
             ) : (
-              <>
+              <div className="space-y-6">
                 <div>
-                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                  <dl className={cn(DETAIL_FIELD_GRID_CLASS, 'gap-y-4')}>
                     <DetailFieldRow label="Title" icon={FileText} value={displayTask.title} />
                     <DetailFieldRow
                       label="Status"
@@ -994,26 +993,26 @@ export function TaskDetailDialog({
                     <p className="mt-2 text-amber-600 font-medium">Overdue</p>
                   )}
                 </div>
-                <Separator />
+                <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Description" icon={AlignLeft} />
                   <p className="text-muted-foreground">{displayTask.description || '-'}</p>
                 </div>
-                <Separator />
+                <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Assignees" icon={Users} />
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
                     <DetailFieldRow label="Assignees" icon={Users} value={formatAssignees(displayTask)} />
                   </dl>
                 </div>
-                <Separator />
+                <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Clients" icon={Building2} />
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
                     <DetailFieldRow label="Clients" icon={Building2} value={formatClients(displayTask)} />
                   </dl>
                 </div>
-                <Separator />
+                <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Creator" icon={User} />
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
@@ -1022,7 +1021,7 @@ export function TaskDetailDialog({
                 </div>
                 {displayTask.comment?.trim() ? (
                   <>
-                    <Separator />
+                    <Separator className="my-2" />
                     <div>
                       <DetailSectionHeading title="Notes" icon={MessageSquare} />
                       <p className="text-muted-foreground whitespace-pre-wrap">{displayTask.comment}</p>
@@ -1031,7 +1030,7 @@ export function TaskDetailDialog({
                 ) : null}
                 {(displayTask.subtasks?.length ?? 0) > 0 && (
                   <>
-                    <Separator />
+                    <Separator className="my-2" />
                     <div>
                       <DetailSectionHeading title="Subtasks" icon={ListTodo} />
                       <ul className="list-none space-y-1.5">
@@ -1087,48 +1086,50 @@ export function TaskDetailDialog({
                 )}
                 {(displayTask.attachments?.length ?? 0) > 0 && (
                   <>
-                    <Separator />
+                    <Separator className="my-2" />
                     <div>
                       <DetailSectionHeading title="Attachments" icon={Paperclip} />
                       <p className="text-muted-foreground">{displayTask.attachments!.join(', ')}</p>
                     </div>
                   </>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
         {isEditing && (
-          <DialogFooter className="gap-3">
-            <Button
-              variant="cancel"
-              className="rounded-full"
-              onClick={handleCancelEdit}
-              disabled={
-                updateMutation.isPending ||
-                updateSubtaskMutation.isPending ||
-                deleteSubtaskMutation.isPending
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="success"
-              className="rounded-full"
-              onClick={() => void handleSaveEdit()}
-              disabled={
-                updateMutation.isPending ||
-                updateSubtaskMutation.isPending ||
-                deleteSubtaskMutation.isPending
-              }
-            >
-              {(updateMutation.isPending ||
-                updateSubtaskMutation.isPending ||
-                deleteSubtaskMutation.isPending) && (
-                <Loader2Icon className="size-4 animate-spin mr-2" />
-              )}
-              Save
-            </Button>
+          <DialogFooter className="gap-3 sm:flex-row sm:justify-end">
+            <div className="flex w-full gap-3 sm:ml-auto sm:max-w-md">
+              <Button
+                variant="cancel"
+                className="flex-1 rounded-md"
+                onClick={handleCancelEdit}
+                disabled={
+                  updateMutation.isPending ||
+                  updateSubtaskMutation.isPending ||
+                  deleteSubtaskMutation.isPending
+                }
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="success"
+                className="flex-[2] rounded-md"
+                onClick={() => void handleSaveEdit()}
+                disabled={
+                  updateMutation.isPending ||
+                  updateSubtaskMutation.isPending ||
+                  deleteSubtaskMutation.isPending
+                }
+              >
+                {(updateMutation.isPending ||
+                  updateSubtaskMutation.isPending ||
+                  deleteSubtaskMutation.isPending) && (
+                  <Loader2Icon className="size-4 animate-spin shrink-0" />
+                )}
+                Save
+              </Button>
+            </div>
           </DialogFooter>
         )}
             </>

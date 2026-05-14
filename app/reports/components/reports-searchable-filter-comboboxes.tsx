@@ -349,6 +349,11 @@ export interface SearchableOptionListPickerProps {
   emptyMessage?: string;
   /** Prefix icon on trigger when value is "all" / empty display */
   triggerIcon?: React.ReactNode;
+  disabled?: boolean;
+  /** When false, omits the leading "All" row (pickers that must always have a concrete value). Default true. */
+  includeAllOption?: boolean;
+  /** Value emitted when the synthetic "All" row is chosen. Default `'all'`. */
+  allOptionValue?: string;
 }
 
 export function SearchableOptionListPicker({
@@ -360,6 +365,9 @@ export function SearchableOptionListPicker({
   searchPlaceholder = 'Search…',
   emptyMessage = 'No results.',
   triggerIcon,
+  disabled = false,
+  includeAllOption = true,
+  allOptionValue = 'all',
 }: SearchableOptionListPickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -369,23 +377,29 @@ export function SearchableOptionListPicker({
   );
 
   const triggerLabel =
-    selectedValue === 'all' || !selectedRow
+    selectedValue === allOptionValue || !selectedRow
       ? (placeholderLabelWhenAll ?? 'All')
       : selectedRow.label;
 
   const leftIcon =
-    selectedValue !== 'all' && selectedRow?.icon != null
+    selectedValue !== allOptionValue && selectedRow?.icon != null
       ? selectedRow.icon
       : triggerIcon;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={disabled ? false : open}
+      onOpenChange={(next) => {
+        if (!disabled) setOpen(next);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
           variant="outline"
           role="combobox"
-          aria-expanded={open}
+          aria-expanded={disabled ? false : open}
+          disabled={disabled}
           className={cn(
             reportsFilterSelectTriggerClass,
             'justify-between font-normal gap-2',
@@ -413,17 +427,18 @@ export function SearchableOptionListPicker({
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
+              {includeAllOption ? (
               <CommandItem
-                value={`all ${placeholderLabelWhenAll ?? ''}`}
+                value={`${allOptionValue} ${placeholderLabelWhenAll ?? ''}`}
                 onSelect={() => {
-                  onValueChange('all');
+                  onValueChange(allOptionValue);
                   setOpen(false);
                 }}
               >
                 <Check
                   className={cn(
                     'size-4 shrink-0',
-                    selectedValue === 'all' ? 'opacity-100' : 'opacity-0'
+                    selectedValue === allOptionValue ? 'opacity-100' : 'opacity-0'
                   )}
                 />
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -435,6 +450,7 @@ export function SearchableOptionListPicker({
                   {placeholderLabelWhenAll ?? 'All'}
                 </span>
               </CommandItem>
+              ) : null}
               {options.map((row) => {
                 const cmdValue = `${row.label} ${row.value} ${row.searchExtra ?? ''}`;
                 return (

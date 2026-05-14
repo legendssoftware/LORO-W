@@ -1,9 +1,33 @@
 'use client';
 
 import * as React from 'react';
-import { format, isSameDay, startOfMonth } from 'date-fns';
-import { CopyMinus, Filter, Upload as UploadIcon } from 'lucide-react';
+import type { DateRange } from 'react-day-picker';
+import {
+  CalendarIcon,
+  CopyMinus,
+  Filter,
+  LayoutGrid,
+  Upload as UploadIcon,
+} from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
+import type { BranchListItem } from '@/api/types/branch';
+import {
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  getUtcMonthRange,
+  orderUtcCalendarRange,
+  utcCalendarDateFromLocalPickerDate,
+  utcDateFromYmd,
+  utcMonthStartThroughToday,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,22 +36,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { CalendarIcon, XIcon } from '@/lib/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { XIcon } from '@/lib/icons';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
@@ -42,27 +58,22 @@ import {
 const selectTriggerClass =
   'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
 
-const portalHighZ = 'z-[10001]';
-
 export interface LeadsFilterControlsProps {
   layout: 'row' | 'stack';
   listScope: 'me' | 'all';
   users: UserListItem[];
+  branches: BranchListItem[];
   startDate: Date;
   endDate: Date;
   useAllTime: boolean;
-  dateBasis: 'created' | 'activity';
   selectedStatus: string;
   selectedSource: string;
   selectedUserId: string;
   dateRangePopoverOpen: boolean;
   onDateRangePopoverOpenChange: (open: boolean) => void;
-  onStartDateChange: (d: Date) => void;
-  onEndDateSelectAndClose: (d: Date) => void;
+  onRangeChange: (range: { start: Date; end: Date }) => void;
   onSetUseAllTime: (v: boolean) => void;
-  onDateBasisChange: (v: 'created' | 'activity') => void;
   onResetDateRange: () => void;
-  onSetTodayActivity: () => void;
   onSelectedStatusChange: (v: string) => void;
   onSelectedSourceChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
@@ -72,67 +83,157 @@ export function LeadsFilterControls({
   layout,
   listScope,
   users,
+  branches,
   startDate,
   endDate,
   useAllTime,
-  dateBasis,
   selectedStatus,
   selectedSource,
   selectedUserId,
   dateRangePopoverOpen,
   onDateRangePopoverOpenChange,
-  onStartDateChange,
-  onEndDateSelectAndClose,
+  onRangeChange,
   onSetUseAllTime,
-  onDateBasisChange,
   onResetDateRange,
-  onSetTodayActivity,
   onSelectedStatusChange,
   onSelectedSourceChange,
   onSelectedUserIdChange,
 }: LeadsFilterControlsProps) {
   const row = layout === 'row';
-  const dateBtn = row
-    ? 'h-9 min-w-[140px] shrink-0 justify-center gap-2 border-gray-200 bg-white text-foreground'
-    : 'h-9 w-full min-w-[140px] justify-center gap-2 border-gray-200 bg-white text-foreground sm:w-auto';
-  const basisTrigger = row
-    ? 'h-9 min-w-[200px] w-[240px] shrink-0 border-gray-200 bg-white text-foreground disabled:opacity-60'
-    : 'h-9 w-full min-w-0 border-gray-200 bg-white text-foreground disabled:opacity-60';
-  const smallSelect = row
-    ? 'h-9 min-w-[100px] w-[128px] shrink-0 border-gray-200 bg-white text-foreground'
-    : 'h-9 w-full min-w-0 border-gray-200 bg-white text-foreground';
-  const ownerSelect = row
-    ? 'h-9 min-w-[140px] w-[200px] shrink-0 border-gray-200 bg-white text-foreground'
-    : 'h-9 w-full min-w-0 border-gray-200 bg-white text-foreground';
+
+  const statusVal = selectedStatus === '' ? 'all' : selectedStatus;
+  const sourceVal = selectedSource === '' ? 'all' : selectedSource;
+
+  const SourceAllIconOption = LEAD_SOURCE_OPTIONS_WITH_ALL[0]?.icon;
+
+  const smallTrigger = row
+    ? 'h-9 min-w-[100px] w-[128px] shrink-0'
+    : 'h-9 w-full min-w-0';
+  const ownerTrigger = row
+    ? 'h-9 min-w-[140px] w-[200px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
+    : 'h-9 w-full min-w-0';
+
+  const rangeBtnBase = row
+    ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
+    : 'h-9 w-full shrink-0 justify-start text-left font-normal';
+
   const wrapClass = row
     ? 'flex flex-nowrap items-center gap-2'
     : 'flex w-full flex-col gap-4';
 
-  const now = new Date();
+  const [draft, setDraft] = React.useState<DateRange | undefined>({
+    from: startDate,
+    to: endDate,
+  });
+
+  const skipApplyOnCloseRef = React.useRef(false);
+
+  const mtd = utcMonthStartThroughToday();
   const isDefaultRange =
     !useAllTime &&
-    isSameDay(startDate, startOfMonth(now)) &&
-    isSameDay(endDate, now);
+    formatUtcYmd(startDate) === formatUtcYmd(mtd.start) &&
+    formatUtcYmd(endDate) === formatUtcYmd(mtd.end);
+
+  function handleDatePopoverOpenChange(open: boolean) {
+    if (open) {
+      skipApplyOnCloseRef.current = false;
+      setDraft({ from: startDate, to: endDate });
+      onDateRangePopoverOpenChange(true);
+      return;
+    }
+    if (!skipApplyOnCloseRef.current && !useAllTime) {
+      const from = draft?.from ?? startDate;
+      const to = draft?.to ?? draft?.from ?? endDate;
+      onRangeChange(orderUtcCalendarRange(from, to));
+    }
+    skipApplyOnCloseRef.current = false;
+    onDateRangePopoverOpenChange(false);
+  }
+
+  const statusPickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      LEAD_STATUS_OPTIONS_WITH_ALL.filter((o) => o.value !== 'all').map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+        };
+      }),
+    []
+  );
+
+  const sourcePickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      LEAD_SOURCE_OPTIONS_WITH_ALL.filter((o) => o.value !== 'all').map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+        };
+      }),
+    []
+  );
+
+  const rangeLabel = useAllTime
+    ? 'All time'
+    : formatUtcYmd(startDate) === formatUtcYmd(endDate)
+      ? formatUtcCalendarLabel(startDate)
+      : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
+
+  const handleShortcutToday = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const t = utcToday();
+    onSetUseAllTime(false);
+    onRangeChange({ start: t, end: t });
+    onDateRangePopoverOpenChange(false);
+  }, [onSetUseAllTime, onRangeChange, onDateRangePopoverOpenChange]);
+
+  const handleShortcutThisMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { start, end } = utcMonthStartThroughToday();
+    onSetUseAllTime(false);
+    onRangeChange({ start, end });
+    onDateRangePopoverOpenChange(false);
+  }, [onSetUseAllTime, onRangeChange, onDateRangePopoverOpenChange]);
+
+  const handleShortcutWholeMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { from, to } = getUtcMonthRange(utcToday());
+    onSetUseAllTime(false);
+    onRangeChange({
+      start: utcDateFromYmd(from),
+      end: utcDateFromYmd(to),
+    });
+    onDateRangePopoverOpenChange(false);
+  }, [onSetUseAllTime, onRangeChange, onDateRangePopoverOpenChange]);
 
   return (
     <div className={wrapClass}>
       <div className={cn('flex items-center gap-0', !row && 'w-full min-w-0')}>
-        <Popover open={dateRangePopoverOpen} onOpenChange={onDateRangePopoverOpenChange}>
+        <Popover
+          open={dateRangePopoverOpen}
+          onOpenChange={handleDatePopoverOpenChange}
+        >
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={dateBtn}>
-              <CalendarIcon className="size-4" />
-              {useAllTime
-                ? 'All time'
-                : startDate.getTime() === endDate.getTime()
-                  ? format(startDate, 'MMM d, yyyy')
-                  : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(reportsFilterSelectTriggerClass, rangeBtnBase)}
+            >
+              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+              {rangeLabel}
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="z-[10001] w-[80vw] max-w-[34rem] p-0"
+            className={cn(
+              'w-[95vw] max-w-lg p-0 sm:w-auto',
+              reportsFilterPortalHighZ
+            )}
             align="center"
           >
-            <div className="flex flex-col gap-3 p-2">
+            <div className="flex flex-col gap-3 border-b p-2">
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -143,31 +244,77 @@ export function LeadsFilterControls({
                   All time
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  or pick a date range below
+                  or pick a UTC range below
                 </span>
               </div>
-              <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                <div>
-                  <p className="text-sm font-medium">Start date</p>
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(d) => {
-                      if (d) onStartDateChange(d);
-                    }}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">End date</p>
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(d) => {
-                      if (d) onEndDateSelectAndClose(d);
-                    }}
-                  />
-                </div>
+            </div>
+            <Calendar
+              mode="range"
+              selected={draft}
+              disabled={useAllTime}
+              onSelect={(r) => {
+                if (useAllTime) return;
+                if (!r) {
+                  setDraft(undefined);
+                  return;
+                }
+                onSetUseAllTime(false);
+                setDraft({
+                  from: r.from
+                    ? utcCalendarDateFromLocalPickerDate(r.from)
+                    : undefined,
+                  to: r.to
+                    ? utcCalendarDateFromLocalPickerDate(r.to)
+                    : undefined,
+                });
+              }}
+              initialFocus
+              numberOfMonths={layout === 'stack' ? 1 : 2}
+            />
+            <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutToday}
+                >
+                  Today (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutThisMonth}
+                >
+                  This month (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutWholeMonth}
+                >
+                  Whole month (UTC)
+                </Button>
               </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={useAllTime}
+                className={cn(
+                  'bg-violet-600 text-white shadow-sm border-transparent',
+                  'hover:bg-violet-700 hover:text-white',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+                  useAllTime && 'pointer-events-none opacity-50'
+                )}
+                onClick={() => handleDatePopoverOpenChange(false)}
+              >
+                Done
+              </Button>
             </div>
           </PopoverContent>
         </Popover>
@@ -186,119 +333,50 @@ export function LeadsFilterControls({
               }
             }}
             className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset to this month"
+            aria-label="Reset to default range"
           >
             <XIcon className="size-4 text-red-600" />
           </span>
         ) : null}
       </div>
 
-      <Select
-        value={useAllTime ? 'created' : dateBasis}
-        onValueChange={(v) => onDateBasisChange(v as 'created' | 'activity')}
-        disabled={useAllTime}
-      >
-        <SelectTrigger
-          className={basisTrigger}
-          title={
-            useAllTime
-              ? 'Choose a date range to filter by created date or last activity'
-              : 'Created: lead created in range. Last activity: updated in range (excludes never edited).'
-          }
-        >
-          <SelectValue placeholder="Range applies to" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          <SelectItem value="created">Created in range</SelectItem>
-          <SelectItem value="activity">
-            <span className="flex flex-col items-start gap-0.5 text-left">
-              <span>Last activity in range</span>
-              <span className="text-[10px] font-normal text-muted-foreground">
-                Excludes leads never edited after creation
-              </span>
-            </span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <SearchableOptionListPicker
+        selectedValue={statusVal}
+        onValueChange={onSelectedStatusChange}
+        options={statusPickerOptions}
+        placeholderLabelWhenAll="All statuses"
+        searchPlaceholder="Search statuses…"
+        emptyMessage="No status found."
+        triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
+        triggerClassName={smallTrigger}
+      />
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className={cn(
-          'h-9 shrink-0 border-gray-200 bg-white text-foreground',
-          !row && 'w-full sm:w-auto'
-        )}
-        title="Sets range to today and filters by last activity (server: updated in range, edited after creation)."
-        onClick={onSetTodayActivity}
-      >
-        Today&apos;s activity
-      </Button>
-
-      <Select value={selectedStatus || 'all'} onValueChange={onSelectedStatusChange}>
-        <SelectTrigger className={smallSelect}>
-          <SelectValue placeholder="All statuses" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          {LEAD_STATUS_OPTIONS_WITH_ALL.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              <span className="flex items-center gap-2">
-                <opt.icon className="size-4 shrink-0" />
-                {opt.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={selectedSource || 'all'} onValueChange={onSelectedSourceChange}>
-        <SelectTrigger className={smallSelect}>
-          <SelectValue placeholder="All sources" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          {LEAD_SOURCE_OPTIONS_WITH_ALL.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              <span className="flex items-center gap-2">
-                <opt.icon className="size-4 shrink-0" />
-                {opt.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableOptionListPicker
+        selectedValue={sourceVal}
+        onValueChange={onSelectedSourceChange}
+        options={sourcePickerOptions}
+        placeholderLabelWhenAll="All sources"
+        searchPlaceholder="Search sources…"
+        emptyMessage="No source found."
+        triggerIcon={
+          SourceAllIconOption ? (
+            <SourceAllIconOption
+              className="size-4 shrink-0"
+              size={16}
+            />
+          ) : null
+        }
+        triggerClassName={smallTrigger}
+      />
 
       {listScope === 'all' ? (
-        <Select value={selectedUserId || 'all'} onValueChange={onSelectedUserIdChange}>
-          <SelectTrigger className={ownerSelect}>
-            <SelectValue placeholder="All users" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            <SelectItem value="all">All users</SelectItem>
-            {users.map((user) => {
-              const fullName =
-                [user.name, user.surname].filter(Boolean).join(' ') ||
-                user.email ||
-                `User ${user.uid}`;
-              const imgSrc =
-                user.photoURL ?? user.avatar ?? undefined;
-              return (
-                <SelectItem key={user.uid} value={String(user.uid)}>
-                  <span className="flex items-center gap-2">
-                    <Avatar className="size-6 shrink-0">
-                      <AvatarImage src={imgSrc} alt={fullName} />
-                      <AvatarFallback className="text-xs">
-                        {fullName !== `User ${user.uid}`
-                          ? fullName.slice(0, 2).toUpperCase()
-                          : String(user.uid).slice(-2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {fullName}
-                  </span>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <SearchableUserPicker
+          users={users}
+          branches={branches}
+          selectedUid={selectedUserId === '' ? 'all' : selectedUserId}
+          onUidChange={onSelectedUserIdChange}
+          triggerClassName={ownerTrigger}
+        />
       ) : null}
     </div>
   );
@@ -347,7 +425,7 @@ export function LeadsFiltersBar({
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(
-            'h-9 w-full border-gray-200 bg-white text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0',
+            filterToolbarSearchInputClassName,
             searchInput && 'pr-8'
           )}
         />
@@ -406,49 +484,49 @@ export function LeadsFiltersBar({
   );
 
   return (
-      <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="leads-toolbar">
-        <div className="flex md:hidden flex-col gap-2">
-          <div className="flex w-full min-w-0 flex-row items-stretch gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className={cn(
-                selectTriggerClass,
-                'h-9 min-w-0 flex-1 justify-center gap-2'
-              )}
-              onClick={() => setFiltersDialogOpen(true)}
-            >
-              <Filter className="size-4 shrink-0" aria-hidden />
-              Filter
-            </Button>
-            <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
-          </div>
-          {renderSearchField('w-full')}
+    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="leads-toolbar">
+      <div className="flex md:hidden flex-col gap-2">
+        <div className="flex w-full min-w-0 flex-row items-stretch gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              selectTriggerClass,
+              'h-9 min-w-0 flex-1 justify-center gap-2'
+            )}
+            onClick={() => setFiltersDialogOpen(true)}
+          >
+            <Filter className="size-4 shrink-0" aria-hidden />
+            Filter
+          </Button>
+          <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
         </div>
+        {renderSearchField('w-full')}
+      </div>
 
-        <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Filters</DialogTitle>
-              <DialogDescription>
-                Date range, status, source, and owner for the leads list.
-              </DialogDescription>
-            </DialogHeader>
-            <LeadsFilterControls {...filterProps} layout="stack" />
-          </DialogContent>
-        </Dialog>
+      <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+            <DialogDescription>
+              Date range, status, source, and owner for the leads list.
+            </DialogDescription>
+          </DialogHeader>
+          <LeadsFilterControls {...filterProps} layout="stack" />
+        </DialogContent>
+      </Dialog>
 
-        <div className="hidden md:flex w-full min-w-0 items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
-              <LeadsFilterControls {...filterProps} layout="row" />
-            </div>
+      <div className="hidden md:flex w-full min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
+            <LeadsFilterControls {...filterProps} layout="row" />
           </div>
-          <div className="flex shrink-0 flex-nowrap items-center gap-2">
-            {renderSearchField()}
-            {actionButtons}
-          </div>
+        </div>
+        <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {renderSearchField()}
+          {actionButtons}
         </div>
       </div>
+    </div>
   );
 }
