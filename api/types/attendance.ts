@@ -162,14 +162,67 @@ export interface AttendanceReportUserInfo {
     phone?: string | null;
 }
 
+/** GET /att/report — buckets under `metrics.totalHours` / `metrics.totalShifts`. */
+export interface AttendanceReportHoursBuckets {
+    reportPeriod?: number;
+    thisWeek?: number;
+    thisMonth?: number;
+    dailyAverage?: number;
+}
+
+export interface AttendanceReportShiftsBuckets extends AttendanceReportHoursBuckets {
+    completed?: number;
+    incomplete?: number;
+}
+
+/** Known fields returned on each `userMetrics[].metrics`; index signature preserves forward compatibility. */
+export type AttendanceReportUserMetricMetrics = {
+    totalHours?: number | AttendanceReportHoursBuckets;
+    totalShifts?: number | AttendanceReportShiftsBuckets;
+    /** Total break time in the report period (minutes). */
+    breakTimeTotal?: number;
+    firstAttendance?: { date: string | null; checkInTime: string | null };
+} & Record<string, unknown>;
+
 export interface AttendanceReportUserMetric {
     userId: number;
     userInfo: AttendanceReportUserInfo;
-    metrics: Record<string, unknown> & {
-        totalHours?: number;
-        totalShifts?: number;
-        firstAttendance?: { date: string | null; checkInTime: string | null };
-    };
+    metrics: AttendanceReportUserMetricMetrics;
+}
+
+/** Hours worked in selected report period (`reportPeriod`), with legacy fallbacks. */
+export function resolveAttendanceReportPeriodHoursDisplay(
+    metrics: AttendanceReportUserMetricMetrics | undefined
+): string {
+    const th = metrics?.totalHours;
+    if (typeof th === 'number' && Number.isFinite(th)) return `${th}h`;
+    if (th != null && typeof th === 'object') {
+        const o = th as AttendanceReportHoursBuckets;
+        if (typeof o.reportPeriod === 'number' && Number.isFinite(o.reportPeriod)) {
+            return `${o.reportPeriod}h`;
+        }
+        if (typeof o.thisMonth === 'number' && Number.isFinite(o.thisMonth)) {
+            return `${o.thisMonth}h`;
+        }
+        if (typeof o.thisWeek === 'number' && Number.isFinite(o.thisWeek)) {
+            return `${o.thisWeek}h`;
+        }
+    }
+    return '—';
+}
+
+/** Formats GET /att/report `metrics.breakTimeTotal` (minutes). */
+export function resolveAttendanceReportBreakTakenDisplay(
+    metrics: AttendanceReportUserMetricMetrics | undefined
+): string {
+    const m = metrics?.breakTimeTotal;
+    if (typeof m !== 'number' || !Number.isFinite(m) || m < 0) return '—';
+    if (m === 0) return '0m';
+    if (m < 60) return `${Math.round(m)}m`;
+    const h = Math.floor(m / 60);
+    const rem = Math.round(m % 60);
+    if (rem <= 0) return `${h}h`;
+    return `${h}h ${rem}m`;
 }
 
 /** GET /att/report — `averageTimes` from server `calculateAverageTimes` (org period). */

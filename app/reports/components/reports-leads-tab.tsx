@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useCallback, useMemo, useState, type ComponentType } from 'react';
+import type { DateRange } from 'react-day-picker';
 import {
-  eachDayOfInterval,
   format,
-  isSameDay,
+  eachDayOfInterval,
   parseISO,
-  startOfDay,
 } from 'date-fns';
 import {
   Area,
@@ -20,21 +19,21 @@ import {
   YAxis,
 } from 'recharts';
 import {
-  BarChart3,
   Building2,
+  CalendarIcon,
   CircleDollarSign,
+  Layers,
   MapPin,
   Tag,
   TrendingUp,
   Users,
 } from 'lucide-react';
+import type { BranchListItem } from '@/api/types/branch';
 import type { SyncProfile } from '@/api/types';
 import {
   useBranches,
-  useLeads,
   useLeadsReport,
   useUsers,
-  getBranchDisplayLabel,
 } from '@/api/hooks';
 import {
   Card,
@@ -59,27 +58,36 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { CalendarIcon, XIcon } from '@/lib/icons';
+import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
   formatOwnerChartName,
   humanizeReportLabel,
 } from '@/lib/utils/report-labels';
-import { LeadsSummaryDialog } from '@/app/reports/components/leads-summary-dialog';
+import {
+  SearchableBranchPicker,
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import type { SearchableOptionRow } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-attendance-tab';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import {
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  getUtcMonthRange,
+  orderUtcCalendarRange,
+  utcCalendarDateFromLocalPickerDate,
+  utcDateFromYmd,
+  utcMonthStartThroughToday,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 import {
   buildPipelineValueAxis,
   formatAxisTickThousands,
@@ -88,11 +96,6 @@ import {
 
 /** Max categories per chart (rest grouped as Other where applicable). */
 const CHART_TOP_N = 10;
-
-function getDefaultLeadsReportDateRange(): { start: Date; end: Date } {
-  const today = startOfDay(new Date());
-  return { start: today, end: today };
-}
 
 const LEAD_STATUS_OPTIONS = [
   'PENDING',
@@ -121,8 +124,23 @@ const LEAD_SOURCE_OPTIONS = [
   'OTHER',
 ] as const;
 
+const LEAD_STATUS_PICKER_OPTIONS: SearchableOptionRow[] =
+  LEAD_STATUS_OPTIONS.map((s) => ({
+    value: s,
+    label: humanizeReportLabel(s),
+    icon: <Tag className="size-4 shrink-0" />,
+    searchExtra: s,
+  }));
+
+const LEAD_SOURCE_PICKER_OPTIONS: SearchableOptionRow[] =
+  LEAD_SOURCE_OPTIONS.map((s) => ({
+    value: s,
+    label: humanizeReportLabel(s),
+    icon: <Layers className="size-4 shrink-0" />,
+    searchExtra: s.replace(/_/g, ' '),
+  }));
+
 const BAR_PALETTE = [
-  ATT_CHART_HSL.c1,
   ATT_CHART_HSL.c2,
   ATT_CHART_HSL.c3,
   ATT_CHART_HSL.c4,
@@ -174,106 +192,42 @@ export interface ReportsLeadsTabProps {
 }
 
 export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) {
-  const [startDate, setStartDate] = useState(
-    () => getDefaultLeadsReportDateRange().start
-  );
-  const [endDate, setEndDate] = useState(
-    () => getDefaultLeadsReportDateRange().end
-  );
+  const [startDate, setStartDate] = useState(() => utcMonthStartThroughToday().start);
+  const [endDate, setEndDate] = useState(() => utcMonthStartThroughToday().end);
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
-  const [summaryOpen, setSummaryOpen] = useState(false);
 
-  const dateFrom = format(startDate, 'yyyy-MM-dd');
-  const dateTo = format(endDate, 'yyyy-MM-dd');
+  const [draft, setDraft] = useState<DateRange | undefined>(() => {
+    const r = utcMonthStartThroughToday();
+    return { from: r.start, to: r.end };
+  });
+
+  const dateFrom = formatUtcYmd(startDate);
+  const dateTo = formatUtcYmd(endDate);
   const elevated = isElevatedAccess(profile);
 
-  const defaultReportRange = useMemo(
-    () => getDefaultLeadsReportDateRange(),
-    // Recompute when the local calendar day changes so “default” stays today.
-    [format(startOfDay(new Date()), 'yyyy-MM-dd')]
+  const defaultReportRange = utcMonthStartThroughToday();
+
+  const finalizeDraftRange = useCallback(() => {
+    const from = draft?.from ?? startDate;
+    const toRaw = draft?.to ?? draft?.from ?? endDate;
+    const ordered = orderUtcCalendarRange(from, toRaw);
+    setStartDate(ordered.start);
+    setEndDate(ordered.end);
+  }, [draft, startDate, endDate]);
+
+  const handleDateRangePopoverOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) setDraft({ from: startDate, to: endDate });
+      else finalizeDraftRange();
+      setDateRangePopoverOpen(open);
+    },
+    [startDate, endDate, finalizeDraftRange]
   );
-
-  const reportParams = useMemo(
-    () => ({
-      from: dateFrom,
-      to: dateTo,
-      dateBasis: 'activity' as const,
-      ...(reportsMode === 'org' &&
-      elevated &&
-      selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-      ...(reportsMode === 'org' &&
-      elevated &&
-      selectedOwnerUid !== 'all'
-        ? { ownerId: Number(selectedOwnerUid) }
-        : {}),
-      ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
-      ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
-    }),
-    [
-      dateFrom,
-      dateTo,
-      elevated,
-      reportsMode,
-      selectedBranchId,
-      selectedOwnerUid,
-      selectedStatus,
-      selectedSource,
-    ]
-  );
-
-  const reportQuery = useLeadsReport(reportParams, {
-    enabled: Boolean(dateFrom && dateTo),
-  });
-
-  const listParams = useMemo(
-    () => ({
-      page: 1,
-      limit: 500,
-      startDate: dateFrom,
-      endDate: dateTo,
-      /** Align list scope with GET /leads/report (activity in range), not createdAt-only. */
-      dateBasis: 'activity' as const,
-      scope: (reportsMode === 'org' && elevated ? 'all' : 'me') as
-        | 'all'
-        | 'me',
-      ...(reportsMode === 'org' &&
-      elevated &&
-      selectedOwnerUid !== 'all'
-        ? { ownerId: Number(selectedOwnerUid) }
-        : {}),
-      ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
-      ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
-    }),
-    [
-      dateFrom,
-      dateTo,
-      elevated,
-      reportsMode,
-      selectedOwnerUid,
-      selectedStatus,
-      selectedSource,
-    ]
-  );
-
-  const listQuery = useLeads(listParams, {
-    enabled: Boolean(dateFrom && dateTo) && summaryOpen,
-  });
-
-  const summaryDialogLeads = useMemo(() => {
-    const rows = listQuery.data?.data ?? [];
-    if (!elevated || selectedBranchId === 'all') return rows;
-    const bid = Number(selectedBranchId);
-    return rows.filter(
-      (l) => (l as { branch?: { uid?: number } }).branch?.uid === bid
-    );
-  }, [listQuery.data?.data, elevated, selectedBranchId]);
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({
@@ -292,13 +246,48 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
     [elevated, reportsMode, usersList]
   );
 
-  useEffect(() => {
+  const effectiveOwnerUid = useMemo(() => {
     if (!(reportsMode === 'org' && elevated) || selectedOwnerUid === 'all') {
-      return;
+      return selectedOwnerUid;
     }
-    const ok = reportingUsers.some((u) => String(u.uid) === selectedOwnerUid);
-    if (!ok) setSelectedOwnerUid('all');
+    return reportingUsers.some((u) => String(u.uid) === selectedOwnerUid)
+      ? selectedOwnerUid
+      : 'all';
   }, [elevated, reportsMode, reportingUsers, selectedOwnerUid]);
+
+  const reportParams = useMemo(
+    () => ({
+      from: dateFrom,
+      to: dateTo,
+      dateBasis: 'activity' as const,
+      ...(reportsMode === 'org' &&
+      elevated &&
+      selectedBranchId !== 'all'
+        ? { branchId: Number(selectedBranchId) }
+        : {}),
+      ...(reportsMode === 'org' &&
+      elevated &&
+      effectiveOwnerUid !== 'all'
+        ? { ownerId: Number(effectiveOwnerUid) }
+        : {}),
+      ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
+      ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
+    }),
+    [
+      dateFrom,
+      dateTo,
+      elevated,
+      reportsMode,
+      selectedBranchId,
+      effectiveOwnerUid,
+      selectedStatus,
+      selectedSource,
+    ]
+  );
+
+  const reportQuery = useLeadsReport(reportParams, {
+    enabled: Boolean(dateFrom && dateTo),
+  });
 
   const report = reportQuery.data;
 
@@ -425,9 +414,8 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
 
   const isActivityReport = reportParams.dateBasis === 'activity';
   const isDefaultRange =
-    isSameDay(startDate, defaultReportRange.start) &&
-    isSameDay(endDate, defaultReportRange.end);
-  const periodLabel = `${dateFrom} – ${dateTo}`;
+    formatUtcYmd(startDate) === formatUtcYmd(defaultReportRange.start) &&
+    formatUtcYmd(endDate) === formatUtcYmd(defaultReportRange.end);
   const isLoading = reportQuery.isLoading;
   const total = report?.total ?? 0;
   const totalValue = report?.totalEstimatedValue ?? 0;
@@ -440,45 +428,102 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
           <div className="flex items-center gap-0">
             <Popover
               open={dateRangePopoverOpen}
-              onOpenChange={setDateRangePopoverOpen}
+              onOpenChange={handleDateRangePopoverOpenChange}
             >
               <PopoverTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 w-[185px] shrink-0 bg-white border-gray-200 text-foreground justify-center gap-2 sm:w-auto"
+                  className={cn(
+                    reportsFilterSelectTriggerClass,
+                    'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px] gap-2'
+                  )}
                 >
-                  <CalendarIcon className="size-4" />
-                  {startDate.getTime() === endDate.getTime()
-                    ? format(startDate, 'MMM d, yyyy')
-                    : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                  <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                  {formatUtcYmd(startDate) === formatUtcYmd(endDate)
+                    ? formatUtcCalendarLabel(startDate)
+                    : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
-                <div className="p-2 flex flex-col gap-3">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                    <div>
-                      <p className="text-sm font-medium">Start date</p>
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={(d) => {
-                          if (d) setStartDate(d);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">End date</p>
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(d) => {
-                          if (d) setEndDate(d);
-                        }}
-                      />
-                    </div>
+              <PopoverContent
+                className={cn('w-[95vw] max-w-lg p-0 sm:w-auto', reportsFilterPortalHighZ)}
+                align="center"
+              >
+                <Calendar
+                  mode="range"
+                  selected={draft}
+                  onSelect={(r) => {
+                    if (!r) {
+                      setDraft(undefined);
+                      return;
+                    }
+                    setDraft({
+                      from: r.from
+                        ? utcCalendarDateFromLocalPickerDate(r.from)
+                        : undefined,
+                      to: r.to
+                        ? utcCalendarDateFromLocalPickerDate(r.to)
+                        : undefined,
+                    });
+                  }}
+                  initialFocus
+                  numberOfMonths={2}
+                />
+                <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const t = utcToday();
+                        setStartDate(t);
+                        setEndDate(t);
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      Today (UTC)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const { start, end } = utcMonthStartThroughToday();
+                        setStartDate(start);
+                        setEndDate(end);
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      This month (UTC)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const { from, to } = getUtcMonthRange(utcToday());
+                        setStartDate(utcDateFromYmd(from));
+                        setEndDate(utcDateFromYmd(to));
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      Whole month (UTC)
+                    </Button>
                   </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className={cn(
+                      'bg-violet-600 text-white shadow-sm border-transparent',
+                      'hover:bg-violet-700 hover:text-white',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2'
+                    )}
+                    onClick={() => handleDateRangePopoverOpenChange(false)}
+                  >
+                    Done
+                  </Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -486,7 +531,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               <button
                 type="button"
                 onClick={() => {
-                  const r = getDefaultLeadsReportDateRange();
+                  const r = utcMonthStartThroughToday();
                   setStartDate(r.start);
                   setEndDate(r.end);
                 }}
@@ -499,106 +544,52 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
           </div>
 
           {reportsMode === 'org' && elevated ? (
-            <Select
-              value={selectedBranchId}
-              onValueChange={(v) => {
+            <SearchableBranchPicker
+              branches={branches as BranchListItem[]}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={(v) => {
                 setSelectedBranchId(v);
                 setSelectedOwnerUid('all');
               }}
-            >
-              <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                <SelectValue placeholder="All branches" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All branches</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.uid} value={String(b.uid)}>
-                    {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]"
+            />
           ) : null}
 
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="h-9 w-[170px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All statuses</SelectItem>
-              {LEAD_STATUS_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableOptionListPicker
+            selectedValue={selectedStatus}
+            onValueChange={setSelectedStatus}
+            options={LEAD_STATUS_PICKER_OPTIONS}
+            placeholderLabelWhenAll="All statuses"
+            searchPlaceholder="Search statuses…"
+            emptyMessage="No status found."
+            triggerIcon={<Tag className="size-4 shrink-0" />}
+            triggerClassName="h-9 w-[170px] shrink-0 sm:w-[200px]"
+          />
 
-          <Select value={selectedSource} onValueChange={setSelectedSource}>
-            <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-              <SelectValue placeholder="All sources" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All sources</SelectItem>
-              {LEAD_SOURCE_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableOptionListPicker
+            selectedValue={selectedSource}
+            onValueChange={setSelectedSource}
+            options={LEAD_SOURCE_PICKER_OPTIONS}
+            placeholderLabelWhenAll="All sources"
+            searchPlaceholder="Search sources…"
+            emptyMessage="No source found."
+            triggerIcon={<Layers className="size-4 shrink-0" />}
+            triggerClassName="h-9 w-[180px] shrink-0 sm:w-[200px]"
+          />
 
           {reportsMode === 'org' && elevated ? (
-            <Select value={selectedOwnerUid} onValueChange={setSelectedOwnerUid}>
-              <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                <SelectValue placeholder="All owners" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All owners</SelectItem>
-                {reportingUsers.map((u) => {
-                  const fullName =
-                    [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                    u.email ||
-                    `User ${u.uid}`;
-                  return (
-                    <SelectItem key={u.uid} value={String(u.uid)}>
-                      <span className="flex items-center gap-2">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={undefined} alt="" />
-                          <AvatarFallback className="text-xs">
-                            {fullName.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        {fullName}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <SearchableUserPicker
+              users={reportingUsers}
+              branches={branches as BranchListItem[]}
+              selectedUid={effectiveOwnerUid}
+              onUidChange={setSelectedOwnerUid}
+              allOptionLabel="All owners"
+              triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[220px] sm:w-[220px]"
+              searchPlaceholder="Search owners…"
+            />
           ) : null}
-          <div className="flex w-[150px] shrink-0 min-w-0 flex-nowrap items-center gap-2 sm:w-auto">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 w-full bg-white border-gray-200 text-foreground gap-2 shrink-0 sm:w-auto"
-            onClick={() => setSummaryOpen(true)}
-          >
-            <BarChart3 className="size-4" />
-            Summary
-          </Button>
-          </div>
         </div>
       </div>
-
-      <LeadsSummaryDialog
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        leads={summaryDialogLeads}
-        isLoading={listQuery.isLoading}
-        periodLabel={periodLabel}
-      />
 
       {isLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />

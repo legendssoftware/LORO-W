@@ -52,14 +52,12 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Smartphone, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon, UsersIcon } from '@/lib/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 const VisitsMap = dynamic(
   () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
   { ssr: false }
 );
-import type { VisitExportItem } from '@/api/types/reports';
 import {
   filterVisitCheckIns,
   getSortedUniqueBusinessTypes,
@@ -1367,6 +1365,7 @@ export function VisitsContent({
             businessTypeLabelMap={businessTypeLabelMap}
             businessTypeIconMap={businessTypeIconMap}
             usersList={usersList}
+            branches={branchesQuery.data ?? []}
             visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
             onOpenVisitsSummary={handleOpenVisitsSummary}
           />

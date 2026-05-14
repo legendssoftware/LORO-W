@@ -1,25 +1,25 @@
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
+import { useMemo } from 'react';
 import { format, isSameDay, startOfMonth } from 'date-fns';
 import { Map as MapIcon, List, Table2, MoreHorizontal } from 'lucide-react';
+import type { BranchListItem } from '@/api/types/branch';
+import type { ReportsFilterUserPickable } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import {
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, XIcon, UsersIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CalendarIcon, XIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
 import {
   Tooltip,
   TooltipContent,
@@ -48,6 +48,8 @@ export interface VisitHistoryToolbarProps {
   usersList: VisitHistoryUserRow[];
   visitsSummaryDisabled: boolean;
   onOpenVisitsSummary: () => void;
+  /** Enables branch labels in the user combobox when organization branches are available. */
+  branches?: BranchListItem[];
   /** When false, hides the visits summary (grid) button — e.g. if parent has no modal. */
   showVisitsSummaryButton?: boolean;
   /** When false, hides the table/map toggle (e.g. Reports Visualiser is map-only). Default true. */
@@ -83,6 +85,17 @@ function VisitMapTableToggleButton() {
   );
 }
 
+function userRowToPickable(u: VisitHistoryUserRow): ReportsFilterUserPickable {
+  return {
+    uid: u.uid,
+    name: u.name ?? '',
+    surname: u.surname ?? '',
+    email: u.email ?? '',
+    photoURL: u.photoURL,
+    avatar: u.avatar,
+  };
+}
+
 /**
  * Shared filter bar for Visit History: date range, region, business type, user, search, table/map toggle.
  */
@@ -94,6 +107,7 @@ export function VisitHistoryToolbar({
   usersList,
   visitsSummaryDisabled,
   onOpenVisitsSummary,
+  branches = [],
   showVisitsSummaryButton = true,
   showMapTableToggle = true,
   sectionHeading,
@@ -119,12 +133,46 @@ export function VisitHistoryToolbar({
     setSearchQuery,
   } = useVisitsStore();
 
+  const pickerUsers = useMemo(
+    () => usersList.map(userRowToPickable),
+    [usersList]
+  );
+
+  const regionPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueRegions.map((region) => ({
+        value: region,
+        label: region,
+        icon: <MapPinIcon className="size-4 shrink-0" />,
+      })),
+    [uniqueRegions]
+  );
+
+  const businessPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueBusinessTypes.map((bt) => {
+        const label =
+          bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt;
+        const IconComponent = businessTypeIconMap.get(bt) ?? MoreHorizontal;
+        return {
+          value: bt,
+          label,
+          icon: <IconComponent className="size-4 shrink-0" size={16} />,
+          searchExtra: bt,
+        };
+      }),
+    [uniqueBusinessTypes, businessTypeLabelMap, businessTypeIconMap]
+  );
+
   const heading =
     sectionHeading === undefined ? (
       <h2 className="mb-4 text-base font-medium text-foreground sm:text-lg">Visit history</h2>
     ) : (
       sectionHeading
     );
+
+  const pickerTriggerClass =
+    'h-9 w-full min-w-[140px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]';
 
   return (
     <>
@@ -216,81 +264,39 @@ export function VisitHistoryToolbar({
               ) : null;
             })()}
           </div>
-          <Select
-            value={selectedRegion || 'all'}
+
+          <SearchableOptionListPicker
+            selectedValue={selectedRegion || 'all'}
             onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
-          >
-            <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
-              <MapPinIcon className="size-4 shrink-0" />
-              <SelectValue placeholder="All regions" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All regions</SelectItem>
-              {uniqueRegions.map((region) => (
-                <SelectItem key={region} value={region}>
-                  <span className="flex items-center gap-2">
-                    <MapPinIcon className="size-4 shrink-0" />
-                    {region}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedBusinessType || 'all'}
+            options={regionPickerOptions}
+            placeholderLabelWhenAll="All regions"
+            searchPlaceholder="Search regions…"
+            emptyMessage="No region found."
+            triggerIcon={<MapPinIcon className="size-4 shrink-0" />}
+            triggerClassName={pickerTriggerClass}
+          />
+
+          <SearchableOptionListPicker
+            selectedValue={selectedBusinessType || 'all'}
             onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
-          >
-            <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
-              <BriefcaseIcon className="size-4 shrink-0" />
-              <SelectValue placeholder="All business types" />
-            </SelectTrigger>
-            <SelectContent className="z-[10001]">
-              <SelectItem value="all">All business types</SelectItem>
-              {uniqueBusinessTypes.map((bt) => {
-                const label = bt === 'Not set' ? 'Not set' : businessTypeLabelMap.get(bt) ?? bt;
-                const IconComponent = businessTypeIconMap.get(bt) ?? MoreHorizontal;
-                return (
-                  <SelectItem key={bt} value={bt}>
-                    <span className="flex items-center gap-2">
-                      <IconComponent className="size-4 shrink-0" />
-                      {label}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+            options={businessPickerOptions}
+            placeholderLabelWhenAll="All business types"
+            searchPlaceholder="Search business types…"
+            emptyMessage="No business type found."
+            triggerIcon={<BriefcaseIcon className="size-4 shrink-0" />}
+            triggerClassName={pickerTriggerClass}
+          />
+
           {showUserFilter ? (
-            <Select
-              value={selectedUserUid || 'all'}
-              onValueChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-            >
-              <SelectTrigger className="h-9 w-full min-w-[140px] bg-white border-gray-200 text-foreground gap-2 sm:w-[200px]">
-                <UsersIcon className="size-4 shrink-0" />
-                <SelectValue placeholder="All users" />
-              </SelectTrigger>
-              <SelectContent className="z-[10001]">
-                <SelectItem value="all">All users</SelectItem>
-                {usersList.map((u) => {
-                  const fullName =
-                    [u.name, u.surname].filter(Boolean).join(' ').trim() || u.email || `User ${u.uid}`;
-                  const imgSrc = u.photoURL ?? u.avatar ?? undefined;
-                  return (
-                    <SelectItem key={u.uid} value={String(u.uid)}>
-                      <span className="flex items-center gap-2">
-                        <Avatar className="size-6 shrink-0">
-                          <AvatarImage src={imgSrc} alt={fullName} />
-                          <AvatarFallback className="text-xs">
-                            {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {fullName}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <SearchableUserPicker
+              users={pickerUsers}
+              branches={branches}
+              selectedUid={selectedUserUid || 'all'}
+              onUidChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+              showBranchSubtitle={branches.length > 0}
+              triggerClassName={`${pickerTriggerClass} justify-between gap-2`}
+              searchPlaceholder="Search users…"
+            />
           ) : null}
         </div>
         <div className="flex w-full flex-nowrap items-center gap-2 sm:w-auto">

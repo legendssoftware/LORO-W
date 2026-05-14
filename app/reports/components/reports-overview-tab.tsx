@@ -9,16 +9,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { UserListItem } from '@/api/endpoints/user';
 import type { SyncProfile } from '@/api/types';
 import type { VisitListItem } from '@/api/types/visits';
 import {
   useBranches,
   useCheckIns,
-  useLeadsReport,
   useTargetsProgress,
   useUsers,
-  getBranchDisplayLabel,
 } from '@/api/hooks';
 import { isReportsElevatedViewer } from '@/lib/access';
 import {
@@ -43,19 +40,11 @@ import {
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
-import { ReportsCurrentProgressSection } from '@/app/reports/components/reports-current-progress-section';
-import { OverviewDailySummaryDialog } from '@/app/reports/components/overview-daily-summary-dialog';
 import { ReportsOverviewFiltersBar } from '@/app/reports/components/reports-overview-filters-bar';
 import {
-  buildOverviewDailySummaryRows,
-  buildSelfOverviewDailySummaryRow,
-  countVisitsByOwnerUid,
   formatUtcYmd,
-  getOverviewSummaryUtcDay,
-  getUtcMonthRange,
-  mapLeadsByUserFromReport,
+  utcMonthStartThroughToday,
   type OverviewTimeframe,
-  utcToday,
 } from '@/app/reports/utils/overview-daily-summary';
 import { countCheckInsInProgressBucket } from '@/app/reports/utils/targets-progress-bucket-utc';
 
@@ -232,16 +221,24 @@ export function ReportsOverviewTab({
   profile,
   reportsMode,
 }: ReportsOverviewTabProps) {
-  const [timeframe, setTimeframe] = React.useState<OverviewTimeframe>('month');
-  const [dayPopoverOpen, setDayPopoverOpen] = React.useState(false);
-  const [monthPopoverOpen, setMonthPopoverOpen] = React.useState(false);
-  const [selectedDay, setSelectedDay] = React.useState<Date>(() => utcToday());
-  const [monthAnchor, setMonthAnchor] = React.useState<Date>(() => utcToday());
+  const [rangeStart, setRangeStart] = React.useState<Date>(() => {
+    const { start } = utcMonthStartThroughToday();
+    return start;
+  });
+  const [rangeEnd, setRangeEnd] = React.useState<Date>(() => {
+    const { end } = utcMonthStartThroughToday();
+    return end;
+  });
+  const [rangePopoverOpen, setRangePopoverOpen] = React.useState(false);
   const [selectedBranchId, setSelectedBranchId] =
     React.useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] =
     React.useState<string>('all');
-  const [summaryDialogOpen, setSummaryDialogOpen] = React.useState(false);
+
+  const fromYmd = formatUtcYmd(rangeStart);
+  const toYmd = formatUtcYmd(rangeEnd);
+  const timeframe: OverviewTimeframe =
+    fromYmd === toYmd ? 'day' : 'month';
 
   const elevated =
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
@@ -288,31 +285,19 @@ export function ReportsOverviewTab({
   );
 
   const progressParams = React.useMemo(() => {
-    if (timeframe === 'day') {
-      const d = formatUtcYmd(selectedDay);
-      return {
-        from: d,
-        to: d,
-        bucket: 'hour' as const,
-        ...filterSuffix,
-      };
-    }
-    const { from, to } = getUtcMonthRange(monthAnchor);
+    const bucket =
+      fromYmd === toYmd ? ('hour' as const) : ('day' as const);
     return {
-      from,
-      to,
-      bucket: 'day' as const,
+      from: fromYmd,
+      to: toYmd,
+      bucket,
       ...filterSuffix,
     };
-  }, [timeframe, selectedDay, monthAnchor, filterSuffix]);
+  }, [fromYmd, toYmd, filterSuffix]);
 
   const checkInsParams = React.useMemo(() => {
-    const { from, to } =
-      timeframe === 'day'
-        ? { from: formatUtcYmd(selectedDay), to: formatUtcYmd(selectedDay) }
-        : getUtcMonthRange(monthAnchor);
-    const startIso = `${from}T00:00:00.000Z`;
-    const endIso = `${to}T23:59:59.999Z`;
+    const startIso = `${fromYmd}T00:00:00.000Z`;
+    const endIso = `${toYmd}T23:59:59.999Z`;
     return {
       startDate: startIso,
       endDate: endIso,
@@ -326,9 +311,8 @@ export function ReportsOverviewTab({
         : {}),
     };
   }, [
-    timeframe,
-    selectedDay,
-    monthAnchor,
+    fromYmd,
+    toYmd,
     reportsMode,
     profile,
     elevated,
@@ -386,8 +370,8 @@ export function ReportsOverviewTab({
 
   const rangeDescription =
     timeframe === 'day'
-      ? `${formatUtcYmd(selectedDay)} (UTC, hourly)`
-      : `${getUtcMonthRange(monthAnchor).from} – ${getUtcMonthRange(monthAnchor).to} (UTC, daily)`;
+      ? `${fromYmd} (UTC, hourly)`
+      : `${fromYmd} – ${toYmd} (UTC, daily)`;
 
   const totals = React.useMemo(() => {
     const rows = progressData?.aggregateBuckets ?? [];
@@ -519,210 +503,17 @@ export function ReportsOverviewTab({
     (checkInsError as Error | undefined)?.message ??
     'Failed to load trend data';
 
-  const summaryUtcDay = React.useMemo(
-    () => getOverviewSummaryUtcDay(timeframe, selectedDay, monthAnchor),
-    [timeframe, selectedDay, monthAnchor]
-  );
-  const summaryYmd = formatUtcYmd(summaryUtcDay);
-
-  const summaryCheckInsParams = React.useMemo(() => {
-    const startIso = `${summaryYmd}T00:00:00.000Z`;
-    const endIso = `${summaryYmd}T23:59:59.999Z`;
-    return {
-      startDate: startIso,
-      endDate: endIso,
-      ...(reportsMode === 'self' && profile?.uid != null
-        ? { userUid: String(profile.uid) }
-        : elevated && resolvedOwnerUid !== 'all'
-          ? { userUid: resolvedOwnerUid }
-          : {}),
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-    };
-  }, [
-    summaryYmd,
-    reportsMode,
-    profile,
-    elevated,
-    resolvedOwnerUid,
-    selectedBranchId,
-  ]);
-
-  const summaryCheckInsEnabled =
-    summaryDialogOpen &&
-    Boolean(summaryCheckInsParams.startDate && summaryCheckInsParams.endDate) &&
-    (reportsMode !== 'self' || profile?.uid != null);
-
-  const {
-    data: summaryCheckInsData,
-    isLoading: summaryCheckInsLoading,
-    isError: summaryCheckInsIsError,
-    error: summaryCheckInsError,
-  } = useCheckIns(summaryCheckInsParams, {
-    enabled: summaryCheckInsEnabled,
-  });
-
-  const summaryLeadsParams = React.useMemo(
-    () => ({
-      from: summaryYmd,
-      to: summaryYmd,
-      dateBasis: 'activity' as const,
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-      ...(elevated && resolvedOwnerUid !== 'all'
-        ? { ownerId: Number(resolvedOwnerUid) }
-        : {}),
-    }),
-    [summaryYmd, elevated, selectedBranchId, resolvedOwnerUid]
-  );
-
-  const {
-    data: summaryLeadsData,
-    isLoading: summaryLeadsLoading,
-    isError: summaryLeadsIsError,
-    error: summaryLeadsError,
-  } = useLeadsReport(summaryLeadsParams, {
-    enabled: summaryDialogOpen && Boolean(summaryYmd),
-  });
-
-  const summaryProgressParams = React.useMemo(
-    () => ({
-      from: summaryYmd,
-      to: summaryYmd,
-      bucket: 'day' as const,
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-      ...(elevated && resolvedOwnerUid !== 'all'
-        ? { userUid: Number(resolvedOwnerUid) }
-        : {}),
-    }),
-    [summaryYmd, elevated, selectedBranchId, resolvedOwnerUid]
-  );
-
-  const { data: summaryProgressData } = useTargetsProgress(summaryProgressParams, {
-    enabled: summaryDialogOpen && Boolean(summaryYmd),
-  });
-
-  const summaryTableUsers = React.useMemo((): UserListItem[] => {
-    if (!elevated) return [];
-    if (resolvedOwnerUid !== 'all') {
-      return usersList.filter((u) => String(u.uid) === resolvedOwnerUid);
-    }
-    return reportingUsers;
-  }, [elevated, usersList, resolvedOwnerUid, reportingUsers]);
-
-  const branchesByUid = React.useMemo(
-    () => new Map(branches.map((b) => [b.uid, b])),
-    [branches]
-  );
-
-  const summaryTargetsByUid = React.useMemo(
-    () =>
-      new Map((summaryProgressData?.users ?? []).map((u) => [u.uid, u] as const)),
-    [summaryProgressData?.users]
-  );
-
-  const summaryCheckInsForTable = React.useMemo(() => {
-    const raw = summaryCheckInsData?.checkIns ?? [];
-    return filterVisitListItemsByOwnerUids(
-      raw,
-      reportingUidSet,
-      elevated && resolvedOwnerUid === 'all'
-    );
-  }, [
-    summaryCheckInsData?.checkIns,
-    reportingUidSet,
-    elevated,
-    resolvedOwnerUid,
-  ]);
-
-  const summaryRows = React.useMemo(() => {
-    const visitsByUid = countVisitsByOwnerUid(summaryCheckInsForTable);
-    const leadMap = mapLeadsByUserFromReport(summaryLeadsData?.byUser);
-    if (!elevated && profile) {
-      return [
-        buildSelfOverviewDailySummaryRow(
-          profile,
-          visitsByUid,
-          leadMap,
-          branchesByUid,
-          summaryTargetsByUid
-        ),
-      ];
-    }
-    return buildOverviewDailySummaryRows(
-      summaryTableUsers,
-      visitsByUid,
-      leadMap,
-      branchesByUid,
-      summaryTargetsByUid
-    );
-  }, [
-    summaryCheckInsForTable,
-    summaryLeadsData?.byUser,
-    elevated,
-    profile,
-    summaryTableUsers,
-    branchesByUid,
-    summaryTargetsByUid,
-  ]);
-
-  const summaryScopeDescription = React.useMemo(() => {
-    if (!elevated) return 'Your activity';
-    const parts: string[] = [];
-    if (selectedBranchId === 'all') {
-      parts.push('All branches');
-    } else {
-      const b = branches.find((x) => String(x.uid) === selectedBranchId);
-      parts.push(b ? `Branch: ${getBranchDisplayLabel(b)}` : 'Branch filter');
-    }
-    if (resolvedOwnerUid === 'all') {
-      parts.push('All users');
-    } else {
-      const u =
-        usersList.find((x) => String(x.uid) === resolvedOwnerUid) ??
-        reportingUsers.find((x) => String(x.uid) === resolvedOwnerUid);
-      parts.push(
-        u
-          ? `User: ${[u.name, u.surname].filter(Boolean).join(' ')}`
-          : 'One user'
-      );
-    }
-    return parts.join(' · ');
-  }, [
-    elevated,
-    selectedBranchId,
-    resolvedOwnerUid,
-    branches,
-    reportingUsers,
-    usersList,
-  ]);
-
-  const summaryLoading =
-    summaryDialogOpen && (summaryCheckInsLoading || summaryLeadsLoading);
-  const summaryErrorMessage =
-    summaryDialogOpen && (summaryCheckInsIsError || summaryLeadsIsError)
-      ? (summaryCheckInsError as Error | undefined)?.message ??
-        (summaryLeadsError as Error | undefined)?.message ??
-        'Failed to load summary'
-      : null;
-
   return (
     <div className="flex flex-col gap-6 pb-8">
       <ReportsOverviewFiltersBar
-        timeframe={timeframe}
-        onTimeframeChange={setTimeframe}
-        dayPopoverOpen={dayPopoverOpen}
-        onDayPopoverOpenChange={setDayPopoverOpen}
-        monthPopoverOpen={monthPopoverOpen}
-        onMonthPopoverOpenChange={setMonthPopoverOpen}
-        selectedDay={selectedDay}
-        onSelectedDayChange={setSelectedDay}
-        monthAnchor={monthAnchor}
-        onMonthAnchorChange={setMonthAnchor}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        rangePopoverOpen={rangePopoverOpen}
+        onRangePopoverOpenChange={setRangePopoverOpen}
+        onRangeChange={({ start, end }) => {
+          setRangeStart(start);
+          setRangeEnd(end);
+        }}
         elevated={elevated}
         branches={branches}
         reportingUsers={reportingUsers}
@@ -733,17 +524,6 @@ export function ReportsOverviewTab({
         }}
         selectedOwnerUid={resolvedOwnerUid}
         onOwnerChange={setSelectedOwnerUid}
-        onOpenSummary={() => setSummaryDialogOpen(true)}
-      />
-
-      <OverviewDailySummaryDialog
-        open={summaryDialogOpen}
-        onOpenChange={setSummaryDialogOpen}
-        summaryDateYmd={summaryYmd}
-        scopeDescription={summaryScopeDescription}
-        rows={summaryRows}
-        isLoading={summaryLoading}
-        errorMessage={summaryErrorMessage}
       />
 
       {chartsLoading ? (
@@ -958,11 +738,6 @@ export function ReportsOverviewTab({
           </Card>
             </div>
           )}
-          <ReportsCurrentProgressSection
-            elevated={elevated}
-            filterSuffix={filterSuffix}
-            branches={branches}
-          />
         </div>
       )}
     </div>

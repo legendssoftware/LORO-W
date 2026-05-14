@@ -4,17 +4,18 @@ import { useMemo, useState } from 'react';
 import { Settings } from 'lucide-react';
 import Link from 'next/link';
 import type { SyncProfile } from '@/api/types';
-import type { TargetWarningsPayload, UserListItem } from '@/api/endpoints/user';
+import type {
+  SubThresholdDailyCallUserRow,
+  TargetWarningsPayload,
+  UserListItem,
+  UserResponse,
+} from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
-import { getBranchDisplayLabel } from '@/api/types/branch';
-import {
-  getCountryFlag,
-  normalizeBranchCountryCodeForGrouping,
-} from '@/lib/utils/country-flags';
 import type { VisitListItem } from '@/api/types/visits';
 import {
   useBranches,
   useUsers,
+  useUser,
   useSubThresholdDailyCalls,
   useCheckIns,
   useLeadsReport,
@@ -44,15 +45,15 @@ import {
   buildReportingUserUidSet,
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
+import { branchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
 import { OverviewFilterControls } from '@/app/reports/components/reports-overview-filters-bar';
 import {
   countVisitsByOwnerUid,
   formatUtcYmd,
-  getOverviewSummaryUtcDay,
+  getThresholdReferenceUtcDay,
   mapLeadsByUserFromReport,
   normalizeOwnerDisplayLabel,
-  utcToday,
-  type OverviewTimeframe,
+  utcMonthStartThroughToday,
 } from '@/app/reports/utils/overview-daily-summary';
 
 function filterVisitListItemsByOwnerUids(
@@ -78,33 +79,6 @@ function leadsCountForListUser(
     (nameKey ? leadByDisplayName.get(nameKey) : undefined) ??
     (u.email ? leadByDisplayName.get(u.email.trim()) ?? 0 : 0)
   );
-}
-
-function branchUidFromListUser(u: UserListItem | undefined): number | null {
-  if (!u) return null;
-  const raw = u as { branchUid?: number | null; branch?: { uid?: number } | null };
-  if (typeof raw.branchUid === 'number' && raw.branchUid > 0) return raw.branchUid;
-  const bu = raw.branch?.uid;
-  if (typeof bu === 'number' && bu > 0) return bu;
-  return null;
-}
-
-function branchFlagAndLabel(
-  listUser: UserListItem | undefined,
-  branchByUid: Map<number, BranchListItem>
-): { flag: string; label: string } {
-  const uid = branchUidFromListUser(listUser);
-  if (uid == null) {
-    return { flag: getCountryFlag('UNLISTED').flag, label: 'Unassigned' };
-  }
-  const b = branchByUid.get(uid);
-  if (!b) {
-    return { flag: getCountryFlag('SA').flag, label: `Branch #${uid}` };
-  }
-  return {
-    flag: getCountryFlag(normalizeBranchCountryCodeForGrouping(b)).flag,
-    label: getBranchDisplayLabel(b),
-  };
 }
 
 const utcShortDateTime = new Intl.DateTimeFormat(undefined, {
@@ -173,6 +147,58 @@ function acknowledgedPendingBadgeClass(urgency: 'amber' | 'red'): string {
     : 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200';
 }
 
+function targetWarningsFromUserResponse(
+  u: UserResponse | null | undefined
+): TargetWarningsPayload | null | undefined {
+  if (u?.userTarget == null || typeof u.userTarget !== 'object') return undefined;
+  const pt = (
+    u.userTarget as { personalTargets?: { targetWarnings?: TargetWarningsPayload | null } }
+  ).personalTargets;
+  return pt?.targetWarnings ?? undefined;
+}
+
+function buildSelfSubThresholdRow(
+  profile: SyncProfile,
+  detail: UserResponse | null | undefined
+): SubThresholdDailyCallUserRow {
+  const tw =
+    profile.targetWarnings ?? targetWarningsFromUserResponse(detail) ?? null;
+  const fullName =
+    [detail?.name ?? profile.name, detail?.surname ?? profile.surname]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || 'You';
+  return {
+    uid: profile.uid,
+    clerkUserId: profile.clerkUserId ?? null,
+    fullName,
+    email: detail?.email ?? profile.email ?? '',
+    callCount: 0,
+    targetWarnings: tw,
+  };
+}
+
+function listUserFromProfileAndDetail(
+  profile: SyncProfile,
+  detail: UserResponse | null | undefined
+): UserListItem {
+  return {
+    uid: profile.uid,
+    name: detail?.name ?? profile.name ?? '',
+    surname: detail?.surname ?? profile.surname ?? '',
+    email: detail?.email ?? profile.email ?? '',
+    photoURL: detail?.photoURL ?? profile.photoURL ?? null,
+    avatar: detail?.avatar ?? profile.avatar ?? null,
+    clerkUserId: profile.clerkUserId,
+    branchUid: detail?.branchUid ?? profile.branchUid,
+    branch:
+      detail?.branch ??
+      (profile.branch?.uid != null
+        ? { uid: profile.branch.uid, name: profile.branch.name }
+        : undefined),
+  };
+}
+
 function TargetWarningStatusIndicator({
   tw,
   thresholdYmd,
@@ -228,11 +254,27 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
 
-  const [timeframe, setTimeframe] = useState<OverviewTimeframe>('month');
-  const [dayPopoverOpen, setDayPopoverOpen] = useState(false);
-  const [monthPopoverOpen, setMonthPopoverOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date>(() => utcToday());
-  const [monthAnchor, setMonthAnchor] = useState<Date>(() => utcToday());
+  const selfUid = profile?.uid;
+  const selfScoped =
+    !elevated &&
+    selfUid != null &&
+    Number.isFinite(Number(selfUid));
+  const showOverviewTable = elevated || selfScoped;
+
+  const { data: userDetail } = useUser(
+    selfScoped && selfUid != null ? String(selfUid) : null,
+    { enabled: Boolean(selfScoped && selfUid != null) }
+  );
+
+  const [rangeStart, setRangeStart] = useState(() => {
+    const { start } = utcMonthStartThroughToday();
+    return start;
+  });
+  const [rangeEnd, setRangeEnd] = useState(() => {
+    const { end } = utcMonthStartThroughToday();
+    return end;
+  });
+  const [rangePopoverOpen, setRangePopoverOpen] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
 
@@ -264,14 +306,14 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       : 'all';
   }, [elevated, selectedOwnerUid, reportingUsers]);
 
-  const reportingUidSet = useMemo(
-    () => buildReportingUserUidSet(reportingUsers),
-    [reportingUsers]
-  );
+  const reportingUidSet = useMemo(() => {
+    if (selfScoped && selfUid != null) return new Set<number>([selfUid]);
+    return buildReportingUserUidSet(reportingUsers);
+  }, [selfScoped, selfUid, reportingUsers]);
 
   const thresholdUtcDay = useMemo(
-    () => getOverviewSummaryUtcDay(timeframe, selectedDay, monthAnchor),
-    [timeframe, selectedDay, monthAnchor]
+    () => getThresholdReferenceUtcDay(rangeStart, rangeEnd),
+    [rangeStart, rangeEnd]
   );
   const thresholdYmd = formatUtcYmd(thresholdUtcDay);
 
@@ -288,6 +330,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     return {
       startDate: startIso,
       endDate: endIso,
+      ...(selfScoped && selfUid != null ? { userUid: String(selfUid) } : {}),
       ...(elevated && resolvedOwnerUid !== 'all'
         ? { userUid: resolvedOwnerUid }
         : {}),
@@ -295,11 +338,18 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         ? { branchId: Number(selectedBranchId) }
         : {}),
     };
-  }, [thresholdYmd, elevated, resolvedOwnerUid, selectedBranchId]);
+  }, [
+    thresholdYmd,
+    elevated,
+    selfScoped,
+    selfUid,
+    resolvedOwnerUid,
+    selectedBranchId,
+  ]);
 
   const thresholdCheckInsEnabled =
-    elevated &&
-    Boolean(thresholdCheckInsParams.startDate && thresholdCheckInsParams.endDate);
+    Boolean(thresholdCheckInsParams.startDate && thresholdCheckInsParams.endDate) &&
+    (elevated || selfScoped);
 
   const {
     data: thresholdCheckInsData,
@@ -319,14 +369,22 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
       ...(elevated && resolvedOwnerUid !== 'all'
         ? { ownerId: Number(resolvedOwnerUid) }
         : {}),
+      ...(selfScoped && selfUid != null ? { ownerId: selfUid } : {}),
     }),
-    [thresholdYmd, elevated, selectedBranchId, resolvedOwnerUid]
+    [
+      thresholdYmd,
+      elevated,
+      selfScoped,
+      selfUid,
+      selectedBranchId,
+      resolvedOwnerUid,
+    ]
   );
 
   const { data: thresholdLeadsData, isLoading: thresholdLeadsLoading } = useLeadsReport(
     thresholdLeadsParams,
     {
-      enabled: elevated && Boolean(thresholdYmd),
+      enabled: (elevated || selfScoped) && Boolean(thresholdYmd),
     }
   );
 
@@ -363,8 +421,17 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     });
   }, [callsBelowData?.users, reportingUidSet, resolvedOwnerUid]);
 
-  const isThresholdTableLoading =
-    callsBelowLoading || thresholdCheckInsLoading || thresholdLeadsLoading;
+  const tableRows = useMemo(() => {
+    if (elevated) return filteredThresholdUsers;
+    if (selfScoped && profile != null) {
+      return [buildSelfSubThresholdRow(profile, userDetail ?? undefined)];
+    }
+    return [];
+  }, [elevated, selfScoped, profile, userDetail, filteredThresholdUsers]);
+
+  const isThresholdTableLoading = selfScoped
+    ? thresholdCheckInsLoading || thresholdLeadsLoading
+    : callsBelowLoading || thresholdCheckInsLoading || thresholdLeadsLoading;
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -372,16 +439,14 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
           <OverviewFilterControls
             layout="row"
-            timeframe={timeframe}
-            onTimeframeChange={setTimeframe}
-            dayPopoverOpen={dayPopoverOpen}
-            onDayPopoverOpenChange={setDayPopoverOpen}
-            monthPopoverOpen={monthPopoverOpen}
-            onMonthPopoverOpenChange={setMonthPopoverOpen}
-            selectedDay={selectedDay}
-            onSelectedDayChange={setSelectedDay}
-            monthAnchor={monthAnchor}
-            onMonthAnchorChange={setMonthAnchor}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            rangePopoverOpen={rangePopoverOpen}
+            onRangePopoverOpenChange={setRangePopoverOpen}
+            onRangeChange={({ start, end }) => {
+              setRangeStart(start);
+              setRangeEnd(end);
+            }}
             elevated={elevated}
             branches={branches}
             reportingUsers={reportingUsers}
@@ -396,18 +461,31 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         </div>
       </div>
 
-      {elevated ? (
+      {showOverviewTable ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Overview</CardTitle>
             <CardDescription>
-              Sales reps under {callsBelowData?.minCalls ?? 60} calls on{' '}
-              <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC). Branch
-              filter applies.{' '}
-              <Link href="/staff" className="text-violet-600 underline-offset-2 hover:underline">
-                Staff list
-              </Link>{' '}
-              for warning tiers.
+              {elevated ? (
+                <>
+                  Sales reps under {callsBelowData?.minCalls ?? 60} calls on{' '}
+                  <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC).
+                  Branch filter applies.{' '}
+                  <Link
+                    href="/staff"
+                    className="text-violet-600 underline-offset-2 hover:underline"
+                  >
+                    Staff list
+                  </Link>{' '}
+                  for warning tiers.
+                </>
+              ) : (
+                <>
+                  Your visits, leads, and performance warnings for{' '}
+                  <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC), derived
+                  from the selected date range.
+                </>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -415,7 +493,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
               <div className="flex justify-center py-6">
                 <LoadingSpinner className="min-h-0" wrapperClassName="py-0" />
               </div>
-            ) : filteredThresholdUsers.length === 0 ? (
+            ) : elevated && tableRows.length === 0 ? (
               <p className="text-muted-foreground text-center py-6 text-sm">
                 No sales reps below threshold for this day.
               </p>
@@ -432,8 +510,12 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                   </TableRow>
                 </TableHeader>
                 <TableBody className="[&_tr]:border-0">
-                  {filteredThresholdUsers.map((u, index) => {
-                    const listUser = usersList.find((x) => x.uid === u.uid);
+                  {tableRows.map((u, index) => {
+                    const listUser = elevated
+                      ? usersList.find((x) => x.uid === u.uid)
+                      : profile != null
+                        ? listUserFromProfileAndDetail(profile, userDetail ?? undefined)
+                        : undefined;
                     const imgSrc = listUser?.photoURL ?? listUser?.avatar ?? undefined;
                     const displayName =
                       listUser != null
@@ -514,7 +596,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
         </Card>
       ) : (
         <p className="text-muted-foreground text-sm">
-          Overview table is available for org reports viewers.
+          Unable to load your overview without a signed-in profile.
         </p>
       )}
     </div>

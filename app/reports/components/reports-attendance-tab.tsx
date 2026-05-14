@@ -1,12 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
-import {
-  format,
-  isSameDay,
-  parseISO,
-  startOfDay,
-} from 'date-fns';
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { format, parseISO } from 'date-fns';
 import {
   Area,
   AreaChart,
@@ -24,12 +20,15 @@ import {
 } from 'recharts';
 import {
   BarChart3,
+  CalendarIcon,
   Coffee,
+  Shield,
   Sunrise,
   Sunset,
   Timer,
 } from 'lucide-react';
 import type { SyncProfile } from '@/api/types';
+import type { BranchListItem } from '@/api/types/branch';
 import { AccessLevel } from '@/api/types/user';
 import type { AttendanceReportUserMetric } from '@/api/types';
 import type { ClockInOptionKey } from '@/api/types/attendance';
@@ -39,7 +38,6 @@ import {
   useBranches,
   useDailyOverview,
   useUsers,
-  getBranchDisplayLabel,
 } from '@/api/hooks';
 import {
   Card,
@@ -64,24 +62,35 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { CalendarIcon, XIcon } from '@/lib/icons';
+import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { AttendanceHoursSummaryDialog } from '@/app/reports/components/attendance-hours-summary-dialog';
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
+import {
+  SearchableBranchPicker,
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import type { SearchableOptionRow } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import type { ReportsMode } from '@/app/reports/reports-content';
+import type { AttendanceRangeCheckIn } from '@/app/reports/types/attendance-range-check-in';
 import {
   userListItemHasPerformanceTarget,
 } from '@/app/reports/utils/user-has-performance-target';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  getUtcMonthRange,
+  orderUtcCalendarRange,
+  utcCalendarDateFromLocalPickerDate,
+  utcDateFromYmd,
+  utcMonthStartThroughToday,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 
 export { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 
@@ -120,27 +129,16 @@ const ROLE_OPTIONS = Object.values(AccessLevel).filter(
   (r) => r !== AccessLevel.CLIENT
 );
 
-type RangeOwner = {
-  uid?: number;
-  clerkUserId?: string;
-  name?: string;
-  surname?: string;
-  email?: string;
-  accessLevel?: string;
-  branch?: { uid?: number; name?: string } | null;
-};
-
-type RangeCheckIn = {
-  checkIn: string;
-  lateMinutes?: number | null;
-  checkInNotes?: string | null;
-  ownerClerkUserId?: string | null;
-  owner?: RangeOwner | null;
-};
+const ROLE_PICKER_OPTIONS: SearchableOptionRow[] = ROLE_OPTIONS.map((r) => ({
+  value: r,
+  label: r,
+  icon: <Shield className="size-4 shrink-0" />,
+  searchExtra: r.replace(/_/g, ' '),
+}));
 
 /** Accepts `checkIn` or legacy/alternate `checkInTime` from API payloads. */
-function parseCheckIns(rows: unknown[]): RangeCheckIn[] {
-  const out: RangeCheckIn[] = [];
+function parseCheckIns(rows: unknown[]): AttendanceRangeCheckIn[] {
+  const out: AttendanceRangeCheckIn[] = [];
   for (const row of rows) {
     if (typeof row !== 'object' || row === null) continue;
     const r = row as Record<string, unknown>;
@@ -151,13 +149,13 @@ function parseCheckIns(rows: unknown[]): RangeCheckIn[] {
           ? r.checkInTime
           : null;
     if (checkIn == null) continue;
-    out.push({ ...r, checkIn } as RangeCheckIn);
+    out.push({ ...r, checkIn } as AttendanceRangeCheckIn);
   }
   return out;
 }
 
 function filterCheckIns(
-  rows: RangeCheckIn[],
+  rows: AttendanceRangeCheckIn[],
   filters: {
     branchUid: string;
     role: string;
@@ -166,7 +164,7 @@ function filterCheckIns(
     /** When set, rows are restricted to these owner uids (unused for org-wide “all users”). */
     reportingUserUids?: Set<number> | null;
   }
-): RangeCheckIn[] {
+): AttendanceRangeCheckIn[] {
   const q = filters.search.trim().toLowerCase();
   return rows.filter((row) => {
     const o = row.owner;
@@ -258,27 +256,52 @@ export function ReportsAttendanceTab({
   profile,
   reportsMode,
 }: ReportsAttendanceTabProps) {
-  const today = startOfDay(new Date());
-  const todayStr = format(today, 'yyyy-MM-dd');
+  const todayStr = formatUtcYmd(utcToday());
 
-  const [startDate, setStartDate] = useState(() => startOfDay(new Date()));
-  const [endDate, setEndDate] = useState(() => startOfDay(new Date()));
+  const [startDate, setStartDate] = useState(() => utcMonthStartThroughToday().start);
+  const [endDate, setEndDate] = useState(() => utcMonthStartThroughToday().end);
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
+
+  const [draft, setDraft] = useState<DateRange | undefined>(() => {
+    const r = utcMonthStartThroughToday();
+    return { from: r.start, to: r.end };
+  });
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedUserUid, setSelectedUserUid] = useState<string>('all');
   const [summaryOpen, setSummaryOpen] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sync filter defaults when entering self mode */
   useEffect(() => {
     if (reportsMode !== 'self' || profile?.uid == null) return;
     setSelectedUserUid(String(profile.uid));
     setSelectedBranchId('all');
     setSelectedRole('all');
   }, [reportsMode, profile?.uid]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const dateFrom = format(startDate, 'yyyy-MM-dd');
-  const dateTo = format(endDate, 'yyyy-MM-dd');
+  const defaultReportRange = utcMonthStartThroughToday();
+
+  const finalizeDraftRange = useCallback(() => {
+    const from = draft?.from ?? startDate;
+    const toRaw = draft?.to ?? draft?.from ?? endDate;
+    const ordered = orderUtcCalendarRange(from, toRaw);
+    setStartDate(ordered.start);
+    setEndDate(ordered.end);
+  }, [draft, startDate, endDate]);
+
+  const handleDateRangePopoverOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) setDraft({ from: startDate, to: endDate });
+      else finalizeDraftRange();
+      setDateRangePopoverOpen(open);
+    },
+    [startDate, endDate, finalizeDraftRange]
+  );
+
+  const dateFrom = formatUtcYmd(startDate);
+  const dateTo = formatUtcYmd(endDate);
 
   const orgId = profile?.organisationRef ?? undefined;
 
@@ -341,10 +364,11 @@ export function ReportsAttendanceTab({
     [reportsMode, usersList]
   );
 
-  useEffect(() => {
-    if (reportsMode !== 'org' || selectedUserUid === 'all') return;
-    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
-    if (!ok) setSelectedUserUid('all');
+  const effectiveUserUid = useMemo(() => {
+    if (reportsMode !== 'org' || selectedUserUid === 'all') return selectedUserUid;
+    return reportingUsers.some((u) => String(u.uid) === selectedUserUid)
+      ? selectedUserUid
+      : 'all';
   }, [reportsMode, reportingUsers, selectedUserUid]);
 
   const rawCheckIns = useMemo(
@@ -356,11 +380,11 @@ export function ReportsAttendanceTab({
     () => ({
       branchUid: selectedBranchId,
       role: selectedRole,
-      userUid: selectedUserUid,
+      userUid: effectiveUserUid,
       search: '',
       reportingUserUids: null,
     }),
-    [selectedBranchId, selectedRole, selectedUserUid]
+    [selectedBranchId, selectedRole, effectiveUserUid]
   );
 
   const checkIns = useMemo(
@@ -371,10 +395,10 @@ export function ReportsAttendanceTab({
   const summaryUserMetrics = useMemo(() => {
     const rows = reportDetailQuery.data?.report.userMetrics ?? [];
     return filterUserMetricsForSummary(rows, {
-      userUid: selectedUserUid,
+      userUid: effectiveUserUid,
       search: '',
     });
-  }, [reportDetailQuery.data?.report.userMetrics, selectedUserUid]);
+  }, [reportDetailQuery.data?.report.userMetrics, effectiveUserUid]);
 
   const pieConfig = {
     late: { label: 'Late', color: ATT_CHART_HSL.c1 },
@@ -503,7 +527,8 @@ export function ReportsAttendanceTab({
 
   const periodLabel = `${dateFrom} – ${dateTo}`;
   const isDefaultRange =
-    isSameDay(startDate, today) && isSameDay(endDate, today);
+    formatUtcYmd(startDate) === formatUtcYmd(defaultReportRange.start) &&
+    formatUtcYmd(endDate) === formatUtcYmd(defaultReportRange.end);
 
   return (
     <div className="space-y-8 py-4">
@@ -512,45 +537,102 @@ export function ReportsAttendanceTab({
           <div className="flex items-center gap-0">
             <Popover
               open={dateRangePopoverOpen}
-              onOpenChange={setDateRangePopoverOpen}
+              onOpenChange={handleDateRangePopoverOpenChange}
             >
               <PopoverTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 w-[185px] shrink-0 bg-white border-gray-200 text-foreground justify-center gap-2 sm:w-auto"
+                  className={cn(
+                    reportsFilterSelectTriggerClass,
+                    'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px] gap-2'
+                  )}
                 >
-                  <CalendarIcon className="size-4" />
-                  {startDate.getTime() === endDate.getTime()
-                    ? format(startDate, 'MMM d, yyyy')
-                    : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+                  <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                  {formatUtcYmd(startDate) === formatUtcYmd(endDate)
+                    ? formatUtcCalendarLabel(startDate)
+                    : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="z-[10001] w-[80vw] max-w-[34rem] p-0" align="center">
-                <div className="p-2 flex flex-col gap-3">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                    <div>
-                      <p className="text-sm font-medium">Start date</p>
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={(d) => {
-                          if (d) setStartDate(d);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">End date</p>
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(d) => {
-                          if (d) setEndDate(d);
-                        }}
-                      />
-                    </div>
+              <PopoverContent
+                className={cn('w-[95vw] max-w-lg p-0 sm:w-auto', reportsFilterPortalHighZ)}
+                align="center"
+              >
+                <Calendar
+                  mode="range"
+                  selected={draft}
+                  onSelect={(r) => {
+                    if (!r) {
+                      setDraft(undefined);
+                      return;
+                    }
+                    setDraft({
+                      from: r.from
+                        ? utcCalendarDateFromLocalPickerDate(r.from)
+                        : undefined,
+                      to: r.to
+                        ? utcCalendarDateFromLocalPickerDate(r.to)
+                        : undefined,
+                    });
+                  }}
+                  initialFocus
+                  numberOfMonths={2}
+                />
+                <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const t = utcToday();
+                        setStartDate(t);
+                        setEndDate(t);
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      Today (UTC)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const { start, end } = utcMonthStartThroughToday();
+                        setStartDate(start);
+                        setEndDate(end);
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      This month (UTC)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const { from, to } = getUtcMonthRange(utcToday());
+                        setStartDate(utcDateFromYmd(from));
+                        setEndDate(utcDateFromYmd(to));
+                        setDateRangePopoverOpen(false);
+                      }}
+                    >
+                      Whole month (UTC)
+                    </Button>
                   </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className={cn(
+                      'bg-violet-600 text-white shadow-sm border-transparent',
+                      'hover:bg-violet-700 hover:text-white',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2'
+                    )}
+                    onClick={() => handleDateRangePopoverOpenChange(false)}
+                  >
+                    Done
+                  </Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -558,9 +640,9 @@ export function ReportsAttendanceTab({
               <button
                 type="button"
                 onClick={() => {
-                  const d = startOfDay(new Date());
-                  setStartDate(d);
-                  setEndDate(d);
+                  const r = utcMonthStartThroughToday();
+                  setStartDate(r.start);
+                  setEndDate(r.end);
                 }}
                 className="shrink-0 rounded p-0.5 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-red-600 cursor-pointer ml-0.5"
                 aria-label="Reset date range"
@@ -572,67 +654,34 @@ export function ReportsAttendanceTab({
 
           {reportsMode === 'org' ? (
             <>
-              <Select
-                value={selectedBranchId}
-                onValueChange={(v) => {
+              <SearchableBranchPicker
+                branches={branches as BranchListItem[]}
+                selectedBranchId={selectedBranchId}
+                onBranchChange={(v) => {
                   setSelectedBranchId(v);
                   setSelectedUserUid('all');
                 }}
-              >
-                <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                  <SelectValue placeholder="All branches" />
-                </SelectTrigger>
-                <SelectContent className="z-[10001]">
-                  <SelectItem value="all">All branches</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b.uid} value={String(b.uid)}>
-                      {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[200px] sm:w-[200px]"
+              />
 
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="h-9 w-[170px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                  <SelectValue placeholder="All roles" />
-                </SelectTrigger>
-                <SelectContent className="z-[10001]">
-                  <SelectItem value="all">All roles</SelectItem>
-                  {ROLE_OPTIONS.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableOptionListPicker
+                selectedValue={selectedRole}
+                onValueChange={setSelectedRole}
+                options={ROLE_PICKER_OPTIONS}
+                placeholderLabelWhenAll="All roles"
+                searchPlaceholder="Search roles…"
+                emptyMessage="No role found."
+                triggerIcon={<Shield className="size-4 shrink-0" />}
+                triggerClassName="h-9 w-[170px] shrink-0 sm:w-[200px]"
+              />
 
-              <Select value={selectedUserUid} onValueChange={setSelectedUserUid}>
-                <SelectTrigger className="h-9 w-[180px] shrink-0 bg-white border-gray-200 text-foreground sm:w-[200px]">
-                  <SelectValue placeholder="All users" />
-                </SelectTrigger>
-                <SelectContent className="z-[10001]">
-                  <SelectItem value="all">All users</SelectItem>
-                  {reportingUsers.map((u) => {
-                    const fullName =
-                      [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                      u.email ||
-                      `User ${u.uid}`;
-                    return (
-                      <SelectItem key={u.uid} value={String(u.uid)}>
-                        <span className="flex items-center gap-2">
-                          <Avatar className="size-6 shrink-0">
-                            <AvatarImage src={undefined} alt="" />
-                            <AvatarFallback className="text-xs">
-                              {fullName.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {fullName}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <SearchableUserPicker
+                users={reportingUsers}
+                branches={branches as BranchListItem[]}
+                selectedUid={effectiveUserUid}
+                onUidChange={setSelectedUserUid}
+                triggerClassName="h-9 w-[180px] shrink-0 sm:min-w-[220px] sm:w-[220px]"
+              />
             </>
           ) : null}
         <div className="flex w-[150px] shrink-0 min-w-0 flex-nowrap items-center gap-2 sm:w-auto">
@@ -656,6 +705,12 @@ export function ReportsAttendanceTab({
         userMetrics={summaryUserMetrics}
         isLoading={reportDetailQuery.isLoading}
         periodLabel={periodLabel}
+        usersList={usersList}
+        branches={branches}
+        filteredCheckIns={checkIns}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        isRangeLoading={rangeQuery.isLoading || rangeQuery.isFetching}
       />
 
       {isLoadingMain ? (
