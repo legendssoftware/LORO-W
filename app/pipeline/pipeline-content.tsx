@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -58,6 +58,10 @@ import {
   isPipelineVisitsOrgWide,
 } from '@/lib/pipeline-scope';
 import { PipelineCharts } from './pipeline-charts';
+import {
+  formatUtcYmd,
+  utcMonthStartThroughToday,
+} from '@/app/reports/utils/overview-daily-summary';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object' && !Array.isArray(v);
@@ -70,15 +74,10 @@ function toYmd(v: unknown): string | undefined {
   return undefined;
 }
 
-function defaultCalendarMonthRange(): { from: string; to: string } {
-  const n = new Date();
-  const y = n.getFullYear();
-  const mo = n.getMonth();
-  const pad = (x: number) => String(x).padStart(2, '0');
-  const from = `${y}-${pad(mo + 1)}-01`;
-  const lastDay = new Date(y, mo + 1, 0).getDate();
-  const to = `${y}-${pad(mo + 1)}-${pad(lastDay)}`;
-  return { from, to };
+/** Fallback when targets/envelope omit period: Reports-style UTC MTD (1st UTC → today UTC). */
+function defaultUtcMonthToDateStrings(): { from: string; to: string } {
+  const { start, end } = utcMonthStartThroughToday();
+  return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
 }
 
 function normalizeRange(from: string, to: string): { from: string; to: string } {
@@ -89,33 +88,28 @@ function resolvePeriod(
   envelope: Record<string, unknown> | null
 ): { from: string; to: string; fromTargets: boolean } {
   if (!envelope) {
-    const d = defaultCalendarMonthRange();
+    const d = defaultUtcMonthToDateStrings();
     return { ...d, fromTargets: false };
   }
   const pt = envelope.personalTargets;
   if (!isRecord(pt)) {
-    const d = defaultCalendarMonthRange();
+    const d = defaultUtcMonthToDateStrings();
     return { ...d, fromTargets: false };
   }
   const start = toYmd(pt.periodStartDate);
   const end = toYmd(pt.periodEndDate);
   if (!start || !end) {
-    const d = defaultCalendarMonthRange();
+    const d = defaultUtcMonthToDateStrings();
     return { ...d, fromTargets: false };
   }
   return { ...normalizeRange(start, end), fromTargets: true };
 }
 
-/** Inclusive local calendar range for ISO-like createdAt strings. */
-function isCreatedAtInPeriod(createdAt: string | undefined, fromYmd: string, toYmd: string): boolean {
-  if (!createdAt) return false;
-  const t = new Date(createdAt).getTime();
-  if (!Number.isFinite(t)) return false;
-  const [fy, fm, fd] = fromYmd.split('-').map(Number);
-  const [ty, tm, td] = toYmd.split('-').map(Number);
-  const start = new Date(fy, fm - 1, fd, 0, 0, 0, 0).getTime();
-  const end = new Date(ty, tm - 1, td, 23, 59, 59, 999).getTime();
-  return t >= start && t <= end;
+/** Inclusive UTC calendar-day range: compare ISO date prefix against `yyyy-MM-dd` bounds. */
+function isCreatedAtInPeriod(createdAt: string | undefined, fromYmd: string, toYmdUpper: string): boolean {
+  const createdYmd = toYmd(createdAt);
+  if (!createdYmd || !/^\d{4}-\d{2}-\d{2}$/.test(fromYmd) || !/^\d{4}-\d{2}-\d{2}$/.test(toYmdUpper)) return false;
+  return createdYmd >= fromYmd && createdYmd <= toYmdUpper;
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -649,10 +643,7 @@ export function PipelineContent() {
                           placeholder="Search quotations..."
                           value={erpSearch}
                           onChange={(e) => setErpSearch(e.target.value)}
-                          className={cn(
-                            'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 h-9',
-                            erpSearch && 'pr-8'
-                          )}
+                          className={cn(filterToolbarSearchInputClassName, erpSearch && 'pr-8')}
                         />
                         {erpSearch ? (
                           <button
@@ -851,10 +842,7 @@ export function PipelineContent() {
                           placeholder="Search quotations..."
                           value={erpSearch}
                           onChange={(e) => setErpSearch(e.target.value)}
-                          className={cn(
-                            'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 h-9',
-                            erpSearch && 'pr-8'
-                          )}
+                          className={cn(filterToolbarSearchInputClassName, erpSearch && 'pr-8')}
                         />
                         {erpSearch ? (
                           <button

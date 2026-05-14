@@ -1,14 +1,15 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   useLeadsInfinite,
   useUnassignedLeadsInfinite,
   LEADS_LIST_PAGE_SIZE,
   useUsers,
+  useBranches,
   useDedupeLeadsMutation,
 } from '@/api/hooks';
+import type { BranchListItem } from '@/api/types/branch';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import {
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { LeadsFiltersBar } from './components/leads-filters-bar';
+import { formatUtcYmd } from '@/app/reports/utils/overview-daily-summary';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { useSessionStore } from '@/store/session-store';
@@ -41,7 +43,6 @@ export function LeadsContent() {
     startDate,
     endDate,
     useAllTime,
-    dateBasis,
     selectedStatus,
     selectedSource,
     selectedUserId,
@@ -50,8 +51,6 @@ export function LeadsContent() {
     setStartDate,
     setEndDate,
     setUseAllTime,
-    setDateBasis,
-    selectEndDateAndClose,
     resetDateRangeToDefault,
     setSelectedStatus,
     setSelectedSource,
@@ -81,6 +80,16 @@ export function LeadsContent() {
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
   const { data: users = [] } = useUsers({ limit: 100 });
+  const { data: branches = [] } = useBranches();
+
+  const onLeadsRangeChange = useCallback(
+    (range: { start: Date; end: Date }) => {
+      setStartDate(range.start);
+      setEndDate(range.end);
+      setUseAllTime(false);
+    },
+    [setStartDate, setEndDate, setUseAllTime]
+  );
 
   const activityActorLookup = useMemo<LeadActivityActorLookup>(() => {
     const byUid = new Map<number, LeadActivityActorProfile>();
@@ -119,9 +128,8 @@ export function LeadsContent() {
     ...(useAllTime
       ? {}
       : {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd'),
-          ...(dateBasis === 'activity' ? { dateBasis: 'activity' as const } : {}),
+          startDate: formatUtcYmd(startDate),
+          endDate: formatUtcYmd(endDate),
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
@@ -143,9 +151,8 @@ export function LeadsContent() {
     ...(useAllTime
       ? {}
       : {
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd'),
-          ...(dateBasis === 'activity' ? { dateBasis: 'activity' as const } : {}),
+          startDate: formatUtcYmd(startDate),
+          endDate: formatUtcYmd(endDate),
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
@@ -206,27 +213,18 @@ export function LeadsContent() {
       <LeadsFiltersBar
         listScope={listScope}
         users={users}
+        branches={branches as BranchListItem[]}
         startDate={startDate}
         endDate={endDate}
         useAllTime={useAllTime}
-        dateBasis={dateBasis}
         selectedStatus={selectedStatus}
         selectedSource={selectedSource}
         selectedUserId={selectedUserId}
         dateRangePopoverOpen={dateRangePopoverOpen}
         onDateRangePopoverOpenChange={setDateRangePopoverOpen}
-        onStartDateChange={setStartDate}
-        onEndDateSelectAndClose={selectEndDateAndClose}
+        onRangeChange={onLeadsRangeChange}
         onSetUseAllTime={setUseAllTime}
-        onDateBasisChange={setDateBasis}
         onResetDateRange={resetDateRangeToDefault}
-        onSetTodayActivity={() => {
-          const now = new Date();
-          setStartDate(now);
-          setEndDate(now);
-          setUseAllTime(false);
-          setDateBasis('activity');
-        }}
         onSelectedStatusChange={setSelectedStatus}
         onSelectedSourceChange={setSelectedSource}
         onSelectedUserIdChange={setSelectedUserId}

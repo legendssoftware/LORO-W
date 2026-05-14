@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { XIcon } from '@/lib/icons';
 import {
   SearchableBranchPicker,
   SearchableUserPicker,
@@ -87,6 +88,14 @@ export function OverviewFilterControls({
     ? 'w-[190px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
     : 'w-full shrink-0';
 
+  const isDefaultRange = React.useMemo(() => {
+    const { start, end } = utcMonthStartThroughToday();
+    return (
+      formatUtcYmd(rangeStart) === formatUtcYmd(start) &&
+      formatUtcYmd(rangeEnd) === formatUtcYmd(end)
+    );
+  }, [rangeStart, rangeEnd]);
+
   const [draft, setDraft] = React.useState<DateRange | undefined>({
     from: rangeStart,
     to: rangeEnd,
@@ -136,81 +145,96 @@ export function OverviewFilterControls({
           : 'flex w-full flex-col gap-4'
       )}
     >
-      <Popover open={rangePopoverOpen} onOpenChange={handlePopoverOpenChange}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(rangeBtnWidth, selectTriggerClass)}
-          >
-            <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-            {formatRangeButtonLabel(rangeStart, rangeEnd)}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-[95vw] max-w-lg p-0 sm:w-auto"
-          align="center"
-        >
-          <Calendar
-            mode="range"
-            selected={draft}
-            onSelect={(r) => {
-              if (!r) {
-                setDraft(undefined);
-                return;
-              }
-              setDraft({
-                from: r.from
-                  ? utcCalendarDateFromLocalPickerDate(r.from)
-                  : undefined,
-                to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
-              });
-            }}
-            initialFocus
-            numberOfMonths={layout === 'stack' ? 1 : 2}
-          />
-          <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleShortcutToday}
-              >
-                Today (UTC)
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleShortcutThisMonth}
-              >
-                This month (UTC)
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleShortcutWholeMonth}
-              >
-                Whole month (UTC)
-              </Button>
-            </div>
+      <div className={cn('flex items-center gap-0', !row && 'w-full min-w-0')}>
+        <Popover open={rangePopoverOpen} onOpenChange={handlePopoverOpenChange}>
+          <PopoverTrigger asChild>
             <Button
               type="button"
-              size="sm"
-              className={cn(
-                'bg-violet-600 text-white shadow-sm border-transparent',
-                'hover:bg-violet-700 hover:text-white',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2'
-              )}
-              onClick={() => handlePopoverOpenChange(false)}
+              variant="outline"
+              className={cn(rangeBtnWidth, selectTriggerClass)}
             >
-              Done
+              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+              {formatRangeButtonLabel(rangeStart, rangeEnd)}
             </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[95vw] max-w-lg p-0 sm:w-auto"
+            align="center"
+          >
+            <Calendar
+              mode="range"
+              selected={draft}
+              onSelect={(r) => {
+                if (!r) {
+                  setDraft(undefined);
+                  return;
+                }
+                setDraft({
+                  from: r.from
+                    ? utcCalendarDateFromLocalPickerDate(r.from)
+                    : undefined,
+                  to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
+                });
+              }}
+              initialFocus
+              numberOfMonths={layout === 'stack' ? 1 : 2}
+            />
+            <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShortcutToday}
+                >
+                  Today (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShortcutThisMonth}
+                >
+                  This month (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShortcutWholeMonth}
+                >
+                  Whole month (UTC)
+                </Button>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                className={cn(
+                  'bg-violet-600 text-white shadow-sm border-transparent',
+                  'hover:bg-violet-700 hover:text-white',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2'
+                )}
+                onClick={() => handlePopoverOpenChange(false)}
+              >
+                Done
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {!isDefaultRange ? (
+          <button
+            type="button"
+            onClick={() => {
+              const r = utcMonthStartThroughToday();
+              onRangeChange({ start: r.start, end: r.end });
+            }}
+            className="ml-0.5 shrink-0 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Reset date range"
+          >
+            <XIcon className="size-4 text-red-600" />
+          </button>
+        ) : null}
+      </div>
 
       {elevated ? (
         <>

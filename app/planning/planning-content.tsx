@@ -1,29 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { format, startOfDay, endOfDay } from 'date-fns';
-import { useTasks, useTasksForUser, useUsers, useClients } from '@/api/hooks';
-import { useSessionSync } from '@/api/hooks/use-session-sync';
+import { formatUtcYmd } from '@/app/reports/utils/overview-daily-summary';
+import { useTasks, useUsers, useClients, useBranches } from '@/api/hooks';
 import { usePlanningStore } from '@/store/planning-store';
 import { PlanningTable } from '@/components/planning-table/planning-table';
 import { PlanningFiltersBar } from './components/planning-filters-bar';
 import type { Task } from '@/api/types/tasks';
-
-function taskInDateRange(
-  t: Task,
-  useAllTime: boolean,
-  startDate: Date,
-  endDate: Date
-): boolean {
-  if (useAllTime) return true;
-  const start = startOfDay(startDate).getTime();
-  const end = endOfDay(endDate).getTime();
-  const times: number[] = [];
-  if (t.deadline) times.push(new Date(t.deadline).getTime());
-  if (t.createdAt) times.push(new Date(t.createdAt).getTime());
-  if (times.length === 0) return true;
-  return times.some((ts) => ts >= start && ts <= end);
-}
 
 export function PlanningContent() {
   const {
@@ -35,28 +18,22 @@ export function PlanningContent() {
     selectedAssigneeId,
     selectedClientId,
     filterOverdueOnly,
-    myTasksOnly,
     searchQuery,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
-    setStartDate,
     setUseAllTime,
-    selectEndDateAndClose,
     resetDateRangeToDefault,
     setSelectedStatus,
     setSelectedPriority,
     setSelectedAssigneeId,
     setSelectedClientId,
     setFilterOverdueOnly,
-    setMyTasksOnly,
     setSearchQuery,
+    setDateRange,
   } = usePlanningStore();
 
-  const { backendUserData } = useSessionSync();
-  const myUserUid = backendUserData?.uid;
-  const canMyTasks = myUserUid != null && myUserUid > 0;
-
   const { data: users = [] } = useUsers({ page: 1, limit: 100 });
+  const { data: branches = [] } = useBranches();
   const { data: clientsList = [] } = useClients({
     page: 1,
     limit: 200,
@@ -69,8 +46,8 @@ export function PlanningContent() {
       ...(useAllTime
         ? {}
         : {
-            startDate: format(startDate, 'yyyy-MM-dd'),
-            endDate: format(endDate, 'yyyy-MM-dd'),
+            startDate: formatUtcYmd(startDate),
+            endDate: formatUtcYmd(endDate),
           }),
       ...(selectedStatus && selectedStatus !== 'all'
         ? { status: selectedStatus as Task['status'] }
@@ -102,56 +79,13 @@ export function PlanningContent() {
     ]
   );
 
-  const tasksQuery = useTasks(tasksParams, { enabled: !myTasksOnly });
-  const tasksForUserQuery = useTasksForUser(myUserUid, {
-    enabled: myTasksOnly && canMyTasks,
-  });
-
+  const tasksQuery = useTasks(tasksParams);
   const orgTasks = tasksQuery.data?.data ?? [];
-  const myTasksRaw = tasksForUserQuery.data?.tasks ?? [];
-  const baseTasks = myTasksOnly ? myTasksRaw : orgTasks;
-
-  const afterScopeFilters = useMemo(() => {
-    if (!myTasksOnly) return baseTasks;
-    return baseTasks.filter((t) => {
-      if (filterOverdueOnly && !t.isOverdue) return false;
-      if (selectedStatus && selectedStatus !== 'all' && t.status !== selectedStatus) {
-        return false;
-      }
-      if (
-        selectedPriority &&
-        selectedPriority !== 'all' &&
-        t.priority !== selectedPriority
-      ) {
-        return false;
-      }
-      if (selectedClientId && selectedClientId !== 'all') {
-        const cid = Number(selectedClientId);
-        if (
-          !Number.isFinite(cid) ||
-          !(t.clients ?? []).some((c) => c.uid === cid)
-        ) {
-          return false;
-        }
-      }
-      return taskInDateRange(t, useAllTime, startDate, endDate);
-    });
-  }, [
-    baseTasks,
-    myTasksOnly,
-    filterOverdueOnly,
-    selectedStatus,
-    selectedPriority,
-    selectedClientId,
-    useAllTime,
-    startDate,
-    endDate,
-  ]);
 
   const filteredTasks = useMemo(() => {
-    if (!searchQuery.trim()) return afterScopeFilters;
+    if (!searchQuery.trim()) return orgTasks;
     const q = searchQuery.trim().toLowerCase();
-    return afterScopeFilters.filter((t) => {
+    return orgTasks.filter((t) => {
       const assigneeNames = (t.assignees ?? [])
         .map((a) => [a.name, a.surname].filter(Boolean).join(' '))
         .join(' ');
@@ -170,18 +104,7 @@ export function PlanningContent() {
         .toLowerCase();
       return searchable.includes(q);
     });
-  }, [afterScopeFilters, searchQuery]);
-
-  const isLoading = myTasksOnly
-    ? myTasksOnly && canMyTasks
-      ? tasksForUserQuery.isLoading
-      : false
-    : tasksQuery.isLoading;
-
-  function refetchTasks() {
-    if (myTasksOnly && canMyTasks) void tasksForUserQuery.refetch();
-    else void tasksQuery.refetch();
-  }
+  }, [orgTasks, searchQuery]);
 
   return (
     <section>
@@ -189,13 +112,12 @@ export function PlanningContent() {
         Task history
       </h2>
       <PlanningFiltersBar
-        canMyTasks={canMyTasks}
         users={users}
+        branches={branches}
         clientsList={clientsList}
         startDate={startDate}
         endDate={endDate}
         useAllTime={useAllTime}
-        myTasksOnly={myTasksOnly}
         selectedStatus={selectedStatus}
         selectedPriority={selectedPriority}
         selectedAssigneeId={selectedAssigneeId}
@@ -203,11 +125,9 @@ export function PlanningContent() {
         filterOverdueOnly={filterOverdueOnly}
         dateRangePopoverOpen={dateRangePopoverOpen}
         onDateRangePopoverOpenChange={setDateRangePopoverOpen}
-        onStartDateChange={setStartDate}
-        onEndDateSelectAndClose={selectEndDateAndClose}
         onSetUseAllTime={setUseAllTime}
+        onRangeChange={setDateRange}
         onResetDateRange={resetDateRangeToDefault}
-        onMyTasksOnlyChange={setMyTasksOnly}
         onSelectedStatusChange={setSelectedStatus}
         onSelectedPriorityChange={setSelectedPriority}
         onFilterOverdueChange={setFilterOverdueOnly}
@@ -219,15 +139,13 @@ export function PlanningContent() {
       <div data-tour="planning-task-table">
         <PlanningTable
           tasks={filteredTasks}
-          isLoading={isLoading}
+          isLoading={tasksQuery.isLoading}
           emptyMessage={
-            myTasksOnly && !canMyTasks
-              ? 'Sign in and sync your profile to load your tasks.'
-              : afterScopeFilters.length === 0
-                ? 'No tasks match your filters.'
-                : 'No tasks match your search.'
+            orgTasks.length === 0
+              ? 'No tasks match your filters.'
+              : 'No tasks match your search.'
           }
-          onTaskUpdated={refetchTasks}
+          onTaskUpdated={() => void tasksQuery.refetch()}
         />
       </div>
     </section>

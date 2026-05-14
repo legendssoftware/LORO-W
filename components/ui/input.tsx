@@ -2,6 +2,10 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/** Filter-row / toolbar search inputs: muted italic placeholder, shared chrome. */
+export const filterToolbarSearchInputClassName =
+  "h-9 w-full min-w-0 border-gray-200 bg-white text-foreground placeholder:text-xs placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus-visible:ring-0"
+
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
