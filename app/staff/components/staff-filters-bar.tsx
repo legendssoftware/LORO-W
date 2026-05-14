@@ -6,7 +6,6 @@ import {
   Check,
   ChevronsUpDown,
   Filter,
-  List,
   MapPinned,
   Users,
 } from 'lucide-react';
@@ -270,13 +269,11 @@ export interface StaffFiltersBarProps
   extends Omit<StaffFilterControlsProps, 'layout'> {
   search: string;
   onSearchChange: (value: string) => void;
-  onOpenSummary: () => void;
 }
 
 export function StaffFiltersBar({
   search,
   onSearchChange,
-  onOpenSummary,
   ...filterProps
 }: StaffFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
@@ -317,51 +314,18 @@ export function StaffFiltersBar({
     );
   }
 
-  const summaryButtonDesktop = (
-    <div className="flex shrink-0">
-      <Button
-        type="button"
-        variant="outline"
-        className={cn(selectTriggerClass, 'h-9 shrink-0 gap-2')}
-        onClick={onOpenSummary}
-      >
-        <List className="size-4 shrink-0" aria-hidden />
-        Summary
-      </Button>
-    </div>
-  );
-
   return (
     <div className="flex flex-col gap-3 shrink-0 mb-4" data-tour="staff-toolbar">
       <div className="flex md:hidden flex-col gap-2">
-        <div className="flex w-full min-w-0 flex-row items-stretch justify-between gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              selectTriggerClass,
-              'h-9 flex-1 basis-0 justify-center min-w-0'
-            )}
-            onClick={() => setFiltersDialogOpen(true)}
-          >
-            <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-            Filter
-          </Button>
-          <div className="flex min-w-0 flex-1 basis-0">
-            <Button
-              type="button"
-              variant="outline"
-              className={cn(
-                selectTriggerClass,
-                'h-9 w-full justify-center min-w-0 gap-2'
-              )}
-              onClick={onOpenSummary}
-            >
-              <List className="mr-2 size-4 shrink-0" aria-hidden />
-              Summary
-            </Button>
-          </div>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(selectTriggerClass, 'h-9 w-full justify-center min-w-0')}
+          onClick={() => setFiltersDialogOpen(true)}
+        >
+          <Filter className="mr-2 size-4 shrink-0" aria-hidden />
+          Filter
+        </Button>
         {renderSearchField()}
       </div>
 
@@ -377,16 +341,13 @@ export function StaffFiltersBar({
         </DialogContent>
       </Dialog>
 
-      <div className="hidden md:flex w-full min-w-0 items-center justify-between gap-3">
-        <div
-          className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
+      <div className="hidden md:flex w-full min-w-0 items-center gap-3">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
             <StaffFilterControls {...filterProps} layout="row" />
             {renderSearchField()}
           </div>
         </div>
-        {summaryButtonDesktop}
       </div>
     </div>
   );

@@ -37,6 +37,7 @@ import {
   useAttendanceReport,
   useBranches,
   useDailyOverview,
+  usePayrollHoursAll,
   useUsers,
 } from '@/api/hooks';
 import {
@@ -335,6 +336,16 @@ export function ReportsAttendanceTab({
     }
   );
 
+  const payrollQuery = usePayrollHoursAll(
+    {
+      branchId:
+        reportsMode === 'org' && selectedBranchId !== 'all'
+          ? selectedBranchId
+          : undefined,
+    },
+    { enabled: summaryOpen }
+  );
+
   const rangeQuery = useAttendanceByDateRange(
     dateFrom && dateTo
       ? { startDate: dateFrom, endDate: dateTo, orgId }
@@ -532,8 +543,9 @@ export function ReportsAttendanceTab({
 
   return (
     <div className="space-y-8 py-4">
-      <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
+      <div className="flex w-full min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max flex-nowrap items-center gap-2">
           <div className="flex items-center gap-0">
             <Popover
               open={dateRangePopoverOpen}
@@ -684,19 +696,19 @@ export function ReportsAttendanceTab({
               />
             </>
           ) : null}
-        <div className="flex w-[150px] shrink-0 min-w-0 flex-nowrap items-center gap-2 sm:w-auto">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 w-full bg-white border-gray-200 text-foreground gap-2 shrink-0 sm:w-auto"
-            onClick={() => setSummaryOpen(true)}
-          >
-            <BarChart3 className="size-4" />
-            Summary
-          </Button>
+          </div>
         </div>
-        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 shrink-0 bg-white border-gray-200 text-foreground gap-2"
+          onClick={() => setSummaryOpen(true)}
+        >
+          <BarChart3 className="size-4 shrink-0" />
+          Summary
+        </Button>
       </div>
 
       <AttendanceHoursSummaryDialog
@@ -711,6 +723,8 @@ export function ReportsAttendanceTab({
         dateFrom={dateFrom}
         dateTo={dateTo}
         isRangeLoading={rangeQuery.isLoading || rangeQuery.isFetching}
+        payrollData={payrollQuery.data}
+        payrollIsLoading={payrollQuery.isLoading}
       />
 
       {isLoadingMain ? (
