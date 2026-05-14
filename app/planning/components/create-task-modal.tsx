@@ -32,8 +32,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useCreateTaskMutation, useUsers, useClients } from '@/api/hooks';
+import { useCreateTaskMutation, useUsers, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
 import {
@@ -49,10 +48,13 @@ import {
   FolderOpen,
   ListTodo,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CalendarIcon, Loader2Icon, XIcon, StoreIcon } from '@/lib/icons';
+import { CalendarIcon, Loader2Icon, XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import {
+  PlanningAssigneesMultiSelectPanel,
+  PlanningClientsMultiSelectPanel,
+} from '@/app/planning/components/planning-task-multi-select-panels';
 import type { CreateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
 import { format } from 'date-fns';
 
@@ -118,6 +120,9 @@ export function CreateTaskModal({
     limit: 100,
     enabled: open,
   });
+  const { data: branches = [] } = useBranches({
+    enabled: open,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -144,6 +149,8 @@ export function CreateTaskModal({
 
     if (!useAllTime && endDate) {
       next.deadline = format(endDate, 'yyyy-MM-dd');
+    } else if (!next.deadline) {
+      next.deadline = format(new Date(), 'yyyy-MM-dd');
     }
 
     setForm(next);
@@ -169,12 +176,24 @@ export function CreateTaskModal({
       toast.error('Description is required');
       return;
     }
+    if (!form.deadline?.trim()) {
+      toast.error('Deadline is required');
+      return;
+    }
+    if (
+      form.repetitionType &&
+      form.repetitionType !== 'NONE' &&
+      !form.repetitionDeadline?.trim()
+    ) {
+      toast.error('Repetition end date is required');
+      return;
+    }
     const payload: CreateTaskPayload = {
       title: form.title.trim(),
       description: form.description.trim(),
       taskType: form.taskType ?? 'OTHER',
       priority: form.priority ?? 'MEDIUM',
-      ...(form.deadline && { deadline: form.deadline }),
+      deadline: form.deadline.trim(),
       ...(form.repetitionType &&
         form.repetitionType !== 'NONE' && { repetitionType: form.repetitionType }),
       ...(form.repetitionDeadline &&
@@ -288,7 +307,7 @@ export function CreateTaskModal({
             and optional repetition or attachments.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div>
             <DetailSectionHeading title="Basic info" icon={ClipboardList} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -299,7 +318,6 @@ export function CreateTaskModal({
                   value={form.title ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="Task title"
-                  required
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
@@ -313,7 +331,6 @@ export function CreateTaskModal({
                   placeholder="Task description"
                   rows={4}
                   className="resize-y"
-                  required
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
@@ -388,7 +405,7 @@ export function CreateTaskModal({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Deadline</Label>
+                <Label>Deadline *</Label>
                 <Popover
                   open={deadlinePickerOpen}
                   onOpenChange={setDeadlinePickerOpen}
@@ -455,7 +472,7 @@ export function CreateTaskModal({
               </div>
               {(form.repetitionType ?? 'NONE') !== 'NONE' && (
                 <div className="grid gap-2">
-                  <Label>Repetition end date</Label>
+                  <Label>Repetition end date *</Label>
                   <Popover
                     open={repetitionDeadlinePickerOpen}
                     onOpenChange={setRepetitionDeadlinePickerOpen}
@@ -525,37 +542,13 @@ export function CreateTaskModal({
                       {assigneesLabel}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0 z-[10001]" align="start">
-                    <div className="max-h-[240px] overflow-y-auto p-2">
-                      {users.map((u) => {
-                        const fullName =
-                          [u.name, u.surname].filter(Boolean).join(' ').trim() ||
-                          u.email ||
-                          `User ${u.uid}`;
-                        const imgSrc =
-                          (u as { photoURL?: string | null; avatar?: string | null }).photoURL ??
-                          (u as { photoURL?: string | null; avatar?: string | null }).avatar ??
-                          undefined;
-                        return (
-                          <label
-                            key={u.uid}
-                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                          >
-                            <Checkbox
-                              checked={selectedAssigneeUids.includes(u.uid)}
-                              onCheckedChange={() => toggleAssignee(u.uid)}
-                            />
-                            <Avatar className="size-6 shrink-0">
-                              <AvatarImage src={imgSrc} alt={fullName} />
-                              <AvatarFallback className="text-xs">
-                                {fullName !== `User ${u.uid}` ? fullName.slice(0, 2).toUpperCase() : String(u.uid).slice(-2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{fullName}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                  <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0 z-[10001]" align="start">
+                    <PlanningAssigneesMultiSelectPanel
+                      users={users}
+                      branches={branches}
+                      selectedUids={selectedAssigneeUids}
+                      onToggleUid={toggleAssignee}
+                    />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -577,22 +570,12 @@ export function CreateTaskModal({
                       {clientsLabel}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0 z-[10001]" align="start">
-                    <div className="max-h-[240px] overflow-y-auto p-2">
-                      {clientsList.map((c) => (
-                        <label
-                          key={c.uid}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
-                        >
-                          <Checkbox
-                            checked={selectedClientUids.includes(c.uid)}
-                            onCheckedChange={() => toggleClient(c.uid)}
-                          />
-                          <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="text-sm">{c.name}</span>
-                        </label>
-                      ))}
-                    </div>
+                  <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0 z-[10001]" align="start">
+                    <PlanningClientsMultiSelectPanel
+                      clients={clientsList}
+                      selectedUids={selectedClientUids}
+                      onToggleUid={toggleClient}
+                    />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -676,29 +659,31 @@ export function CreateTaskModal({
             </div>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button
-              type="button"
-              variant="cancel"
-              className="rounded-full"
-              onClick={() => onOpenChange(false)}
-              disabled={createMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="success"
-              disabled={createMutation.isPending}
-              className="gap-2 rounded-full"
-            >
-              {createMutation.isPending ? (
-                <Loader2Icon className="size-4 animate-spin shrink-0" />
-              ) : (
-                <Plus className="size-4 shrink-0" />
-              )}
-              Create task
-            </Button>
+          <DialogFooter className="gap-3 sm:flex-row sm:justify-end">
+            <div className="flex w-full gap-3 sm:ml-auto sm:max-w-md">
+              <Button
+                type="button"
+                variant="cancel"
+                className="flex-1 rounded-md"
+                onClick={() => onOpenChange(false)}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="success"
+                disabled={createMutation.isPending}
+                className="flex-[2] gap-2 rounded-md"
+              >
+                {createMutation.isPending ? (
+                  <Loader2Icon className="size-4 animate-spin shrink-0" />
+                ) : (
+                  <Plus className="size-4 shrink-0" />
+                )}
+                Create task
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

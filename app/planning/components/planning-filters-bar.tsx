@@ -1,14 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import {
-  format,
-  isSameDay,
-  differenceInCalendarDays,
-} from 'date-fns';
-import { Filter } from 'lucide-react';
+import type { DateRange } from 'react-day-picker';
+import { CalendarDays, CalendarIcon, Clock, Filter, LayoutGrid } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { ClientListItem } from '@/api/types/clients';
+import type { BranchListItem } from '@/api/types/branch';
+import {
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  reportsFilterSelectTriggerClass,
+  reportsFilterPortalHighZ,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,22 +20,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { StoreIcon, XIcon } from '@/lib/icons';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { CalendarIcon, StoreIcon, XIcon } from '@/lib/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  getUtcMonthRange,
+  orderUtcCalendarRange,
+  utcCalendarDateFromLocalPickerDate,
+  utcDateFromYmd,
+  utcMonthStartThroughToday,
+  utcToday,
+} from '@/app/reports/utils/overview-daily-summary';
 import {
   TASK_STATUS_OPTIONS_WITH_ALL,
   TASK_PRIORITY_OPTIONS_WITH_ALL,
@@ -42,17 +47,14 @@ import { cn } from '@/lib/utils';
 const selectTriggerClass =
   'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
 
-const portalHighZ = 'z-[10001]';
-
 export interface PlanningFilterControlsProps {
   layout: 'row' | 'stack';
-  canMyTasks: boolean;
   users: UserListItem[];
+  branches: BranchListItem[];
   clientsList: ClientListItem[];
   startDate: Date;
   endDate: Date;
   useAllTime: boolean;
-  myTasksOnly: boolean;
   selectedStatus: string;
   selectedPriority: string;
   selectedAssigneeId: string;
@@ -60,11 +62,10 @@ export interface PlanningFilterControlsProps {
   filterOverdueOnly: boolean;
   dateRangePopoverOpen: boolean;
   onDateRangePopoverOpenChange: (open: boolean) => void;
-  onStartDateChange: (d: Date) => void;
-  onEndDateSelectAndClose: (d: Date) => void;
   onSetUseAllTime: (v: boolean) => void;
+  /** Commit ordered UTC calendar-day range; caller should clear All time. */
+  onRangeChange: (start: Date, end: Date) => void;
   onResetDateRange: () => void;
-  onMyTasksOnlyChange: (v: boolean) => void;
   onSelectedStatusChange: (v: string) => void;
   onSelectedPriorityChange: (v: string) => void;
   onFilterOverdueChange: (overdue: boolean) => void;
@@ -74,13 +75,12 @@ export interface PlanningFilterControlsProps {
 
 export function PlanningFilterControls({
   layout,
-  canMyTasks,
   users,
+  branches,
   clientsList,
   startDate,
   endDate,
   useAllTime,
-  myTasksOnly,
   selectedStatus,
   selectedPriority,
   selectedAssigneeId,
@@ -88,11 +88,9 @@ export function PlanningFilterControls({
   filterOverdueOnly,
   dateRangePopoverOpen,
   onDateRangePopoverOpenChange,
-  onStartDateChange,
-  onEndDateSelectAndClose,
   onSetUseAllTime,
+  onRangeChange,
   onResetDateRange,
-  onMyTasksOnlyChange,
   onSelectedStatusChange,
   onSelectedPriorityChange,
   onFilterOverdueChange,
@@ -100,75 +98,232 @@ export function PlanningFilterControls({
   onSelectedAssigneeIdChange,
 }: PlanningFilterControlsProps) {
   const row = layout === 'row';
-  const todayCheck = new Date();
+  const rangeBtnWidth = row
+    ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
+    : 'h-9 w-full shrink-0 justify-start text-left font-normal';
+
+  const mtd = utcMonthStartThroughToday();
   const isDefaultRange =
     !useAllTime &&
-    isSameDay(endDate, todayCheck) &&
-    differenceInCalendarDays(endDate, startDate) === 30;
-  const dateBtn = row
-    ? 'h-9 min-w-[140px] shrink-0 justify-center gap-2 border-gray-200 bg-white text-foreground'
-    : 'h-9 w-full min-w-[140px] justify-center gap-2 border-gray-200 bg-white text-foreground sm:w-auto';
-  const stdSelect = row
-    ? 'h-9 min-w-[140px] w-[200px] shrink-0 border-gray-200 bg-white text-foreground'
-    : 'h-9 w-full min-w-0 border-gray-200 bg-white text-foreground';
+    formatUtcYmd(startDate) === formatUtcYmd(mtd.start) &&
+    formatUtcYmd(endDate) === formatUtcYmd(mtd.end);
+
+  const categoricalWidth = row
+    ? cn(reportsFilterSelectTriggerClass, 'min-w-[150px] w-[176px] shrink-0')
+    : cn(reportsFilterSelectTriggerClass, 'w-full');
+  const userWidth = row
+    ? cn(reportsFilterSelectTriggerClass, 'min-w-[180px] w-[210px] shrink-0 sm:min-w-[200px] sm:w-[220px]')
+    : cn(reportsFilterSelectTriggerClass, 'w-full');
   const wrapClass = row
     ? 'flex flex-nowrap items-center gap-2'
     : 'flex w-full flex-col gap-4';
 
+  const [draft, setDraft] = React.useState<DateRange | undefined>({
+    from: startDate,
+    to: endDate,
+  });
+
+  const skipApplyOnCloseRef = React.useRef(false);
+
+  function handlePopoverOpenChange(open: boolean) {
+    if (open) {
+      skipApplyOnCloseRef.current = false;
+      setDraft({ from: startDate, to: endDate });
+      onDateRangePopoverOpenChange(true);
+      return;
+    }
+    if (!skipApplyOnCloseRef.current && !useAllTime) {
+      const from = draft?.from ?? startDate;
+      const to = draft?.to ?? draft?.from ?? endDate;
+      const { start, end } = orderUtcCalendarRange(from, to);
+      onRangeChange(start, end);
+    }
+    skipApplyOnCloseRef.current = false;
+    onDateRangePopoverOpenChange(false);
+  }
+
+  const rangeLabel = useAllTime
+    ? 'All time'
+    : formatUtcYmd(startDate) === formatUtcYmd(endDate)
+      ? formatUtcCalendarLabel(startDate)
+      : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
+
+  const handleShortcutToday = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const t = utcToday();
+    onSetUseAllTime(false);
+    onRangeChange(t, t);
+    onDateRangePopoverOpenChange(false);
+  }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
+
+  const handleShortcutThisMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { start, end } = utcMonthStartThroughToday();
+    onSetUseAllTime(false);
+    onRangeChange(start, end);
+    onDateRangePopoverOpenChange(false);
+  }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
+
+  const handleShortcutWholeMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { from, to } = getUtcMonthRange(utcToday());
+    onSetUseAllTime(false);
+    onRangeChange(utcDateFromYmd(from), utcDateFromYmd(to));
+    onDateRangePopoverOpenChange(false);
+  }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
+
+  const statusOptions = TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    icon: <opt.icon className="size-4 shrink-0" />,
+    searchExtra: opt.label,
+  }));
+
+  const priorityOptions = TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    icon: <opt.icon className="size-4 shrink-0" />,
+    searchExtra: opt.label,
+  }));
+
+  const deadlineOptions = React.useMemo(
+    () => [
+      {
+        value: 'all',
+        label: 'All deadlines',
+        icon: (
+          <Clock className="size-4 shrink-0 text-muted-foreground" />
+        ),
+        searchExtra: 'deadline due',
+      },
+      {
+        value: 'overdue',
+        label: 'Overdue only',
+        icon: (
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
+        ),
+        searchExtra: 'overdue late',
+      },
+    ],
+    []
+  );
+
+  const clientOptions = React.useMemo(
+    () =>
+      clientsList.map((c) => ({
+        value: String(c.uid),
+        label: c.name,
+        icon: (
+          <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
+        ),
+        searchExtra: `${c.name} ${c.uid}`,
+      })),
+    [clientsList]
+  );
+
   return (
     <div className={wrapClass}>
       <div className={cn('flex items-center gap-0', !row && 'w-full min-w-0')}>
-        <Popover open={dateRangePopoverOpen} onOpenChange={onDateRangePopoverOpenChange}>
+        <Popover open={dateRangePopoverOpen} onOpenChange={handlePopoverOpenChange}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={dateBtn}>
-              <CalendarIcon className="size-4" />
-              {useAllTime
-                ? 'All time'
-                : startDate.getTime() === endDate.getTime()
-                  ? format(startDate, 'MMM d, yyyy')
-                  : `${format(startDate, 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`}
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(rangeBtnWidth, reportsFilterSelectTriggerClass)}
+            >
+              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+              {rangeLabel}
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="z-[10001] w-[80vw] max-w-[34rem] p-0"
+            className={cn('w-[95vw] max-w-lg p-0 sm:w-auto', reportsFilterPortalHighZ)}
             align="center"
           >
-            <div className="flex flex-col gap-3 p-2">
+            <div className="flex flex-col gap-3 border-b p-2">
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant={useAllTime ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => onSetUseAllTime(true)}
+                  onClick={() => {
+                    onSetUseAllTime(true);
+                    onDateRangePopoverOpenChange(false);
+                  }}
                 >
                   All time
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  or pick a date range below
+                  or pick a UTC range below
                 </span>
               </div>
-              <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                <div>
-                  <p className="text-sm font-medium">Start date</p>
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(d) => {
-                      if (d) onStartDateChange(d);
-                    }}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">End date</p>
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(d) => {
-                      if (d) onEndDateSelectAndClose(d);
-                    }}
-                  />
-                </div>
+            </div>
+            <Calendar
+              mode="range"
+              selected={draft}
+              disabled={useAllTime}
+              onSelect={(r) => {
+                if (useAllTime) return;
+                if (!r) {
+                  setDraft(undefined);
+                  return;
+                }
+                onSetUseAllTime(false);
+                setDraft({
+                  from: r.from
+                    ? utcCalendarDateFromLocalPickerDate(r.from)
+                    : undefined,
+                  to: r.to
+                    ? utcCalendarDateFromLocalPickerDate(r.to)
+                    : undefined,
+                });
+              }}
+              initialFocus
+              numberOfMonths={layout === 'stack' ? 1 : 2}
+            />
+            <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutToday}
+                >
+                  Today (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutThisMonth}
+                >
+                  This month (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutWholeMonth}
+                >
+                  Whole month (UTC)
+                </Button>
               </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={useAllTime}
+                className={cn(
+                  'bg-violet-600 text-white shadow-sm border-transparent',
+                  'hover:bg-violet-700 hover:text-white',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+                  useAllTime && 'pointer-events-none opacity-50'
+                )}
+                onClick={() => handlePopoverOpenChange(false)}
+              >
+                Done
+              </Button>
             </div>
           </PopoverContent>
         </Popover>
@@ -187,142 +342,68 @@ export function PlanningFilterControls({
               }
             }}
             className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset to last 30 days"
+            aria-label="Reset to default range"
           >
             <XIcon className="size-4 text-red-600" />
           </span>
         ) : null}
       </div>
 
-      <Select
-        value={myTasksOnly ? 'mine' : 'org'}
-        onValueChange={(v) => onMyTasksOnlyChange(v === 'mine')}
-        disabled={!canMyTasks}
-      >
-        <SelectTrigger className={stdSelect}>
-          <SelectValue placeholder="Scope" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          <SelectItem value="org">All assignees</SelectItem>
-          <SelectItem value="mine" disabled={!canMyTasks}>
-            My tasks
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <SearchableOptionListPicker
+        selectedValue={selectedStatus === '' ? 'all' : selectedStatus}
+        onValueChange={onSelectedStatusChange}
+        options={statusOptions}
+        triggerClassName={categoricalWidth}
+        placeholderLabelWhenAll="All statuses"
+        searchPlaceholder="Search statuses…"
+        emptyMessage="No status found."
+        triggerIcon={<LayoutGrid className="size-4 shrink-0 text-muted-foreground" />}
+      />
 
-      <Select value={selectedStatus || 'all'} onValueChange={onSelectedStatusChange}>
-        <SelectTrigger className={stdSelect}>
-          <SelectValue placeholder="All statuses" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          {TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              <span className="flex items-center gap-2">
-                <opt.icon className="size-4 shrink-0" />
-                {opt.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableOptionListPicker
+        selectedValue={selectedPriority === '' ? 'all' : selectedPriority}
+        onValueChange={onSelectedPriorityChange}
+        options={priorityOptions}
+        triggerClassName={categoricalWidth}
+        placeholderLabelWhenAll="All priorities"
+        searchPlaceholder="Search priorities…"
+        emptyMessage="No priority found."
+        triggerIcon={<LayoutGrid className="size-4 shrink-0 text-muted-foreground" />}
+      />
 
-      <Select value={selectedPriority || 'all'} onValueChange={onSelectedPriorityChange}>
-        <SelectTrigger className={stdSelect}>
-          <SelectValue placeholder="All priorities" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          {TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              <span className="flex items-center gap-2">
-                <opt.icon className="size-4 shrink-0" />
-                {opt.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filterOverdueOnly ? 'overdue' : 'all'}
+      <SearchableOptionListPicker
+        selectedValue={filterOverdueOnly ? 'overdue' : 'all'}
         onValueChange={(v) => onFilterOverdueChange(v === 'overdue')}
-      >
-        <SelectTrigger className={stdSelect}>
-          <SelectValue placeholder="Deadline" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          <SelectItem value="all">All deadlines</SelectItem>
-          <SelectItem value="overdue">Overdue only</SelectItem>
-        </SelectContent>
-      </Select>
+        options={deadlineOptions}
+        triggerClassName={categoricalWidth}
+        placeholderLabelWhenAll="All deadlines"
+        searchPlaceholder="Search deadlines…"
+        emptyMessage="No option found."
+        triggerIcon={<CalendarDays className="size-4 shrink-0 text-muted-foreground" />}
+      />
 
-      <Select
-        value={selectedClientId || 'all'}
+      <SearchableOptionListPicker
+        selectedValue={selectedClientId === '' ? 'all' : selectedClientId}
         onValueChange={(v) => onSelectedClientIdChange(v === 'all' ? '' : v)}
-      >
-        <SelectTrigger className={stdSelect}>
-          <SelectValue placeholder="All clients" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          <SelectItem value="all">All clients</SelectItem>
-          {clientsList.map((c) => (
-            <SelectItem key={c.uid} value={String(c.uid)}>
-              <span className="flex items-center gap-2">
-                <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{c.name}</span>
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        options={clientOptions}
+        triggerClassName={categoricalWidth}
+        placeholderLabelWhenAll="All clients"
+        searchPlaceholder="Search clients…"
+        emptyMessage="No client found."
+        triggerIcon={<StoreIcon className="size-4 shrink-0 text-muted-foreground" />}
+      />
 
-      <Select
-        value={myTasksOnly ? 'all' : selectedAssigneeId || 'all'}
-        onValueChange={onSelectedAssigneeIdChange}
-        disabled={myTasksOnly}
-      >
-        <SelectTrigger
-          className={cn(stdSelect, myTasksOnly && 'opacity-70')}
-        >
-          <SelectValue placeholder="All users" />
-        </SelectTrigger>
-        <SelectContent className={portalHighZ}>
-          <SelectItem value="all">All users</SelectItem>
-          {users.map((user) => {
-            const fullName =
-              [user.name, user.surname].filter(Boolean).join(' ').trim() ||
-              user.email ||
-              `User ${user.uid}`;
-            const imgSrc = user.photoURL ?? user.avatar ?? undefined;
-            return (
-              <SelectItem key={user.uid} value={String(user.uid)}>
-                <span className="flex items-center gap-2">
-                  <Avatar className="size-6 shrink-0">
-                    <AvatarImage src={imgSrc} alt={fullName} />
-                    <AvatarFallback className="text-xs">
-                      {fullName !== `User ${user.uid}`
-                        ? fullName.slice(0, 2).toUpperCase()
-                        : String(user.uid).slice(-2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {fullName}
-                </span>
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
-
-      {myTasksOnly ? (
-        <span
-          className={cn(
-            'text-xs text-muted-foreground',
-            row ? 'max-w-[200px]' : 'w-full'
-          )}
-        >
-          Assignee filter is applied via{' '}
-          <span className="font-medium text-foreground">My tasks</span>.
-        </span>
-      ) : null}
+      <SearchableUserPicker
+        users={users}
+        branches={branches}
+        selectedUid={selectedAssigneeId === '' ? 'all' : selectedAssigneeId}
+        onUidChange={(uid) =>
+          onSelectedAssigneeIdChange(uid === 'all' ? '' : uid)
+        }
+        triggerClassName={userWidth}
+        searchPlaceholder="Search users…"
+        allOptionLabel="All users"
+      />
     </div>
   );
 }
@@ -362,10 +443,7 @@ export function PlanningFiltersBar({
           placeholder="Search tasks…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={cn(
-            'h-9 w-full border-gray-200 bg-white text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0',
-            searchQuery && 'pr-8'
-          )}
+          className={cn(filterToolbarSearchInputClassName, searchQuery && 'pr-8')}
         />
         {searchQuery ? (
           <button
@@ -401,7 +479,7 @@ export function PlanningFiltersBar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Date range, scope, status, priority, client, and assignee.
+              Date range, status, priority, deadlines, clients, and users.
             </DialogDescription>
           </DialogHeader>
           <PlanningFilterControls {...filterProps} layout="stack" />

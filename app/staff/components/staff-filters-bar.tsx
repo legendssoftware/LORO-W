@@ -3,12 +3,20 @@
 import * as React from 'react';
 import {
   Briefcase,
+  Building2,
   Check,
   ChevronsUpDown,
   Filter,
+  LayoutGrid,
   MapPinned,
   Users,
 } from 'lucide-react';
+import {
+  SearchableOptionListPicker,
+  reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -25,19 +33,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { XIcon } from '@/lib/icons';
 import {
   STAFF_STATUS_FILTER_OPTIONS,
@@ -91,45 +92,72 @@ export function StaffFilterControls({
 }: StaffFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
-    ? 'h-9 min-w-0 w-[140px] shrink-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 min-w-0 w-full bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[140px] shrink-0'
+    : 'h-9 w-full min-w-0';
   const roleTrigger = row
-    ? 'h-9 min-w-0 w-[140px] shrink-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 min-w-0 w-full bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[140px] shrink-0'
+    : 'h-9 w-full min-w-0';
   const workforceTrigger = row
-    ? 'h-9 min-w-0 w-[160px] shrink-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 min-w-0 w-full bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[160px] shrink-0'
+    : 'h-9 w-full min-w-0';
   const branchBtn = row
-    ? 'h-9 min-w-0 w-[160px] shrink-0 justify-between bg-white border-gray-200 text-foreground font-normal [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 min-w-0 w-full justify-between bg-white border-gray-200 text-foreground font-normal [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[160px] shrink-0'
+    : 'h-9 min-w-0 w-full';
+
+  const statusPickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      STAFF_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+        };
+      }),
+    []
+  );
+
+  const rolePickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      roleFilterItems
+        .filter((i) => i.value !== STAFF_DIMENSION_FILTER_ALL)
+        .map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          icon: <Briefcase className="size-4 shrink-0" />,
+        })),
+    [roleFilterItems]
+  );
+
+  const workforcePickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      workforceFilterItems
+        .filter((i) => i.value !== STAFF_DIMENSION_FILTER_ALL)
+        .map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          icon: <Users className="size-4 shrink-0" />,
+        })),
+    [workforceFilterItems]
+  );
 
   const wrapClass = row
     ? 'flex flex-nowrap items-center gap-2'
     : 'flex w-full flex-col gap-4';
 
-  const portalHighZ = 'z-[10001]';
-
   return (
     <div className={wrapClass}>
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
-        <Select
-          value={statusFilter}
+        <SearchableOptionListPicker
+          selectedValue={statusFilter}
           onValueChange={(v) => onStatusFilterChange(v as StatusFilter)}
-        >
-          <SelectTrigger className={statusTrigger}>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            {STAFF_STATUS_FILTER_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                <span className="flex items-center gap-2">
-                  <opt.icon className="size-4 shrink-0" />
-                  {opt.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={statusPickerOptions}
+          placeholderLabelWhenAll="All"
+          searchPlaceholder="Search status…"
+          emptyMessage="No status found."
+          triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
+          triggerClassName={statusTrigger}
+        />
         {statusFilter !== 'all' ? (
           <button
             type="button"
@@ -143,21 +171,17 @@ export function StaffFilterControls({
       </div>
 
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
-        <Select value={roleFilter} onValueChange={onRoleFilterChange}>
-          <SelectTrigger className={roleTrigger}>
-            <SelectValue placeholder="Role" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            {roleFilterItems.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                <span className="flex items-center gap-2">
-                  <Briefcase className="size-4 shrink-0" />
-                  {opt.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableOptionListPicker
+          selectedValue={roleFilter}
+          onValueChange={onRoleFilterChange}
+          options={rolePickerOptions}
+          allOptionValue={STAFF_DIMENSION_FILTER_ALL}
+          placeholderLabelWhenAll="All roles"
+          searchPlaceholder="Search roles…"
+          emptyMessage="No role found."
+          triggerIcon={<Briefcase className="size-4 shrink-0" />}
+          triggerClassName={roleTrigger}
+        />
         {roleFilter !== STAFF_DIMENSION_FILTER_ALL ? (
           <button
             type="button"
@@ -171,21 +195,17 @@ export function StaffFilterControls({
       </div>
 
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
-        <Select value={workforceFilter} onValueChange={onWorkforceFilterChange}>
-          <SelectTrigger className={workforceTrigger}>
-            <SelectValue placeholder="Workforce type" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            {workforceFilterItems.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                <span className="flex items-center gap-2">
-                  <Users className="size-4 shrink-0" />
-                  {opt.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableOptionListPicker
+          selectedValue={workforceFilter}
+          onValueChange={onWorkforceFilterChange}
+          options={workforcePickerOptions}
+          allOptionValue={STAFF_DIMENSION_FILTER_ALL}
+          placeholderLabelWhenAll="All workforce types"
+          searchPlaceholder="Search workforce types…"
+          emptyMessage="No type found."
+          triggerIcon={<Users className="size-4 shrink-0" />}
+          triggerClassName={workforceTrigger}
+        />
         {workforceFilter !== STAFF_DIMENSION_FILTER_ALL ? (
           <button
             type="button"
@@ -206,16 +226,23 @@ export function StaffFilterControls({
               variant="outline"
               role="combobox"
               aria-expanded={branchPickerOpen}
-              className={branchBtn}
+              className={cn(
+                reportsFilterSelectTriggerClass,
+                'justify-between font-normal',
+                branchBtn
+              )}
             >
-              <span className="truncate">{branchFilterTriggerLabel}</span>
-              <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{branchFilterTriggerLabel}</span>
+              </span>
+              <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
             className={cn(
               'w-[var(--radix-popover-trigger-width)] min-w-[200px] max-w-[min(100vw-2rem,24rem)] p-0',
-              portalHighZ
+              reportsFilterPortalHighZ
             )}
             align="start"
           >
@@ -295,10 +322,7 @@ export function StaffFiltersBar({
           placeholder="Search by name or email"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={cn(
-            'w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0 h-9',
-            search && 'pr-8'
-          )}
+          className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
         />
         {search ? (
           <button

@@ -1,22 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useTokenReady,
   useCompetitorsInfinite,
   useSessionSync,
 } from '@/api/hooks';
 import type { CompetitorListItem } from '@/api/types/competitors';
+import {
+  SearchableOptionListPicker,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { XIcon } from '@/lib/icons';
 import {
   COMPETITOR_STATUS_FILTER_OPTIONS,
@@ -31,7 +28,7 @@ import { CompetitorCard, CompetitorCardSkeleton } from './components/competitor-
 import { CompetitorDetailDialog } from './components/competitor-detail-dialog';
 import { CompetitorFormDialog } from './components/competitor-form-dialog';
 import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
+import { Link2, ListFilter, Plus, ShieldAlert } from 'lucide-react';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -51,12 +48,6 @@ export function CompetitorsContent() {
   const [statusFilter, setStatusFilter] = useState<CompetitorStatusFilterValue>('all');
   const [directFilter, setDirectFilter] = useState<CompetitorDirectFilterValue>('all');
   const [threatFilter, setThreatFilter] = useState<CompetitorThreatFilterValue>('all');
-  const [industryInput, setIndustryInput] = useState('');
-  const [debouncedIndustry, setDebouncedIndustry] = useState('');
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedIndustry(industryInput.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
-  }, [industryInput]);
 
   const [detailItem, setDetailItem] = useState<CompetitorListItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -66,12 +57,10 @@ export function CompetitorsContent() {
   const statusParam = statusFilter === 'all' ? undefined : statusFilter;
   const isDirectParam = competitorDirectFilterToBool(directFilter);
   const minThreat = competitorThreatFilterToNumber(threatFilter);
-  const industryParam = debouncedIndustry || undefined;
 
   const competitorsQuery = useCompetitorsInfinite({
     name: debouncedSearch || undefined,
     status: statusParam,
-    industry: industryParam,
     isDirect: isDirectParam,
     minThreatLevel: minThreat,
     enabled: isTokenReady,
@@ -80,6 +69,45 @@ export function CompetitorsContent() {
   const rows = competitorsQuery.data ?? [];
   const isLoading = competitorsQuery.isLoading;
   const isFetchingNext = competitorsQuery.isFetchingNextPage;
+
+  const statusPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      COMPETITOR_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((o) => ({
+        value: o.value,
+        label: o.label,
+        icon: <ListFilter className="size-4 shrink-0" />,
+      })),
+    []
+  );
+
+  const directPickerOptions = useMemo<SearchableOptionRow[]>(
+    () => [
+      {
+        value: 'direct',
+        label: 'Direct only',
+        icon: <Link2 className="size-4 shrink-0" />,
+      },
+      {
+        value: 'indirect',
+        label: 'Indirect only',
+        icon: <Link2 className="size-4 shrink-0" />,
+      },
+    ],
+    []
+  );
+
+  const threatPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      (['1', '2', '3', '4', '5'] as const).map((v) => ({
+        value: v,
+        label:
+          v === '5'
+            ? 'Threat 5 only'
+            : `Threat ≥ ${v}`,
+        icon: <ShieldAlert className="size-4 shrink-0" />,
+      })),
+    []
+  );
 
   if (!isTokenReady) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -122,21 +150,16 @@ export function CompetitorsContent() {
         <div className="mb-4 flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <div className="flex min-w-0 items-center gap-1">
-              <Select
-                value={statusFilter}
+              <SearchableOptionListPicker
+                selectedValue={statusFilter}
                 onValueChange={(v) => setStatusFilter(v as CompetitorStatusFilterValue)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full border-gray-200 bg-white text-foreground sm:w-[170px] [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMPETITOR_STATUS_FILTER_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={statusPickerOptions}
+                placeholderLabelWhenAll="All statuses"
+                searchPlaceholder="Search statuses…"
+                emptyMessage="No status found."
+                triggerIcon={<ListFilter className="size-4 shrink-0" />}
+                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[170px]"
+              />
               {statusFilter !== 'all' ? (
                 <button
                   type="button"
@@ -149,19 +172,16 @@ export function CompetitorsContent() {
               ) : null}
             </div>
             <div className="flex min-w-0 items-center gap-1">
-              <Select
-                value={directFilter}
+              <SearchableOptionListPicker
+                selectedValue={directFilter}
                 onValueChange={(v) => setDirectFilter(v as CompetitorDirectFilterValue)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full border-gray-200 bg-white text-foreground sm:w-[150px] [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  <SelectItem value="direct">Direct only</SelectItem>
-                  <SelectItem value="indirect">Indirect only</SelectItem>
-                </SelectContent>
-              </Select>
+                options={directPickerOptions}
+                placeholderLabelWhenAll="All types"
+                searchPlaceholder="Search types…"
+                emptyMessage="No type found."
+                triggerIcon={<Link2 className="size-4 shrink-0" />}
+                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[150px]"
+              />
               {directFilter !== 'all' ? (
                 <button
                   type="button"
@@ -174,22 +194,16 @@ export function CompetitorsContent() {
               ) : null}
             </div>
             <div className="flex min-w-0 items-center gap-1">
-              <Select
-                value={threatFilter}
+              <SearchableOptionListPicker
+                selectedValue={threatFilter}
                 onValueChange={(v) => setThreatFilter(v as CompetitorThreatFilterValue)}
-              >
-                <SelectTrigger className="h-9 min-w-0 w-full border-gray-200 bg-white text-foreground sm:w-[160px] [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
-                  <SelectValue placeholder="Min threat" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any threat level</SelectItem>
-                  <SelectItem value="1">Threat ≥ 1</SelectItem>
-                  <SelectItem value="2">Threat ≥ 2</SelectItem>
-                  <SelectItem value="3">Threat ≥ 3</SelectItem>
-                  <SelectItem value="4">Threat ≥ 4</SelectItem>
-                  <SelectItem value="5">Threat 5 only</SelectItem>
-                </SelectContent>
-              </Select>
+                options={threatPickerOptions}
+                placeholderLabelWhenAll="Any threat level"
+                searchPlaceholder="Search threat levels…"
+                emptyMessage="No option found."
+                triggerIcon={<ShieldAlert className="size-4 shrink-0" />}
+                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[160px]"
+              />
               {threatFilter !== 'all' ? (
                 <button
                   type="button"
@@ -202,26 +216,13 @@ export function CompetitorsContent() {
               ) : null}
             </div>
           </div>
-          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 lg:w-auto">
+          <div className="flex w-full min-w-0 items-center lg:w-auto">
             <Input
               placeholder="Search by name…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className={cn(
-                'h-9 border-gray-200 bg-white text-foreground',
-                'w-full min-w-0 sm:max-w-[240px]'
-              )}
+              className={cn(filterToolbarSearchInputClassName, 'sm:max-w-[240px]')}
               aria-label="Search competitors by name"
-            />
-            <Input
-              placeholder="Industry (optional)"
-              value={industryInput}
-              onChange={(e) => setIndustryInput(e.target.value)}
-              className={cn(
-                'h-9 border-gray-200 bg-white text-foreground',
-                'w-full min-w-0 sm:max-w-[200px]'
-              )}
-              aria-label="Filter by industry"
             />
           </div>
         </div>

@@ -1,7 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { Filter } from 'lucide-react';
+import { CircleDot, Filter, Layers } from 'lucide-react';
+import {
+  SearchableOptionListPicker,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,14 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { XIcon } from '@/lib/icons';
 import {
   CLIENT_CATEGORY_PRESETS,
@@ -29,8 +26,6 @@ import { cn } from '@/lib/utils';
 
 const selectTriggerClass =
   'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
-
-const portalHighZ = 'z-[10001]';
 
 export interface ClientsFilterControlsProps {
   layout: 'row' | 'stack';
@@ -49,11 +44,35 @@ export function ClientsFilterControls({
 }: ClientsFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
-    ? 'h-9 min-w-0 w-[160px] shrink-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 w-full min-w-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[160px] shrink-0'
+    : 'h-9 w-full min-w-0';
   const categoryTrigger = row
-    ? 'h-9 min-w-0 w-[150px] shrink-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0'
-    : 'h-9 w-full min-w-0 bg-white border-gray-200 text-foreground [&>*:first-child]:flex-1 [&>*:first-child]:min-w-0';
+    ? 'h-9 min-w-0 w-[150px] shrink-0'
+    : 'h-9 w-full min-w-0';
+
+  const statusPickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      CLIENT_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" />,
+        };
+      }),
+    []
+  );
+
+  const categoryPickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      CLIENT_CATEGORY_PRESETS.filter((o) => o.value !== 'all').map((opt) => ({
+        value: opt.value,
+        label: opt.label,
+        icon: <Layers className="size-4 shrink-0" />,
+      })),
+    []
+  );
+
   const wrapClass = row
     ? 'flex flex-nowrap items-center gap-2'
     : 'flex w-full flex-col gap-4';
@@ -61,24 +80,16 @@ export function ClientsFilterControls({
   return (
     <div className={wrapClass}>
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
-        <Select
-          value={statusFilter}
+        <SearchableOptionListPicker
+          selectedValue={statusFilter}
           onValueChange={(v) => onStatusFilterChange(v as ClientStatusFilterValue)}
-        >
-          <SelectTrigger className={statusTrigger}>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            {CLIENT_STATUS_FILTER_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                <span className="flex items-center gap-2">
-                  <opt.icon className="size-4 shrink-0" />
-                  {opt.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={statusPickerOptions}
+          placeholderLabelWhenAll="All statuses"
+          searchPlaceholder="Search statuses…"
+          emptyMessage="No status found."
+          triggerIcon={<CircleDot className="size-4 shrink-0" />}
+          triggerClassName={statusTrigger}
+        />
         {statusFilter !== 'all' ? (
           <button
             type="button"
@@ -92,21 +103,16 @@ export function ClientsFilterControls({
       </div>
 
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
-        <Select
-          value={categoryFilter}
+        <SearchableOptionListPicker
+          selectedValue={categoryFilter}
           onValueChange={(v) => onCategoryFilterChange(v as ClientCategoryFilterValue)}
-        >
-          <SelectTrigger className={categoryTrigger}>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent className={portalHighZ}>
-            {CLIENT_CATEGORY_PRESETS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={categoryPickerOptions}
+          placeholderLabelWhenAll="All categories"
+          searchPlaceholder="Search categories…"
+          emptyMessage="No category found."
+          triggerIcon={<Layers className="size-4 shrink-0" />}
+          triggerClassName={categoryTrigger}
+        />
         {categoryFilter !== 'all' ? (
           <button
             type="button"
@@ -157,10 +163,7 @@ export function ClientsFiltersBar({
           placeholder="Search name, email, or phone"
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={cn(
-            'h-9 w-full bg-white border-gray-200 text-foreground placeholder:text-gray-700 focus:outline-none focus:ring-0 focus-visible:ring-0',
-            searchInput && 'pr-8'
-          )}
+          className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
         />
         {searchInput ? (
           <button
