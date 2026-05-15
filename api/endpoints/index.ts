@@ -17,3 +17,4 @@ export * from './products';
 export * from './resellers';
 export * from './map';
 export * from './competitors';
+export * from './iot';

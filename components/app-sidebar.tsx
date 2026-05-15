@@ -16,6 +16,7 @@ import {
 import {
   BarChart3Icon,
   CheckSquareIcon,
+  CpuIcon,
   HandshakeIcon,
   KnowledgeIcon,
   LayoutDashboardIcon,
@@ -56,6 +57,7 @@ const ROUTE_ICONS: Record<
   "/competitors": Swords,
   "/planning": CheckSquareIcon,
   "/staff": UsersIcon,
+  "/iot": CpuIcon,
   "/settings": SettingsIcon,
 };
 

@@ -53,6 +53,10 @@ export interface SearchableBranchPickerProps {
   onBranchChange: (branchId: string) => void;
   triggerClassName?: string;
   searchPlaceholder?: string;
+  /** When false, omit “All branches” (e.g. device form requires one branch). Default true. */
+  withAllOption?: boolean;
+  /** When `withAllOption` is false and no branch matches `selectedBranchId`. */
+  emptySelectionLabel?: string;
 }
 
 export function SearchableBranchPicker({
@@ -61,14 +65,22 @@ export function SearchableBranchPicker({
   onBranchChange,
   triggerClassName,
   searchPlaceholder = 'Search branches…',
+  withAllOption = true,
+  emptySelectionLabel = 'Select branch',
 }: SearchableBranchPickerProps) {
   const [open, setOpen] = React.useState(false);
 
   const triggerLabel = React.useMemo(() => {
-    if (selectedBranchId === 'all') return 'All branches';
+    if (withAllOption && selectedBranchId === 'all') return 'All branches';
     const b = branches.find((x) => String(x.uid) === selectedBranchId);
-    return b ? getBranchDisplayLabel(b) : 'All branches';
-  }, [selectedBranchId, branches]);
+    if (b) return getBranchDisplayLabel(b);
+    return withAllOption ? 'All branches' : emptySelectionLabel;
+  }, [
+    selectedBranchId,
+    branches,
+    withAllOption,
+    emptySelectionLabel,
+  ]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -103,24 +115,26 @@ export function SearchableBranchPicker({
           <CommandList>
             <CommandEmpty>No branch found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem
-                value="all branches"
-                onSelect={() => {
-                  onBranchChange('all');
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    'size-4 shrink-0',
-                    selectedBranchId === 'all' ? 'opacity-100' : 'opacity-0'
-                  )}
-                />
-                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                  <MapPinned className="size-4 shrink-0 text-muted-foreground" />
-                  All branches
-                </span>
-              </CommandItem>
+              {withAllOption ? (
+                <CommandItem
+                  value="all branches"
+                  onSelect={() => {
+                    onBranchChange('all');
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      'size-4 shrink-0',
+                      selectedBranchId === 'all' ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                    <MapPinned className="size-4 shrink-0 text-muted-foreground" />
+                    All branches
+                  </span>
+                </CommandItem>
+              ) : null}
               {branches.map((b) => {
                 const label = getBranchDisplayLabel(b);
                 return (
