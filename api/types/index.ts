@@ -15,3 +15,4 @@ export * from './branch';
 export * from './map';
 export * from './targets-progress';
 export * from './competitors';
+export * from './iot';

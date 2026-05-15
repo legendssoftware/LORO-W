@@ -112,3 +112,13 @@ export {
   useInteractionsByLead,
   useCreateInteractionMutation,
 } from './use-interactions';
+export {
+  IOT_DEVICES_QUERY_KEY_PREFIX,
+  invalidateIotDeviceQueries,
+  useCreateIotDeviceMutation,
+  useDeleteIotDeviceMutation,
+  useIotDevice,
+  useIotDevices,
+  useUpdateIotDeviceMutation,
+  useUpdateIotDeviceStatusMutation,
+} from './use-iot-devices';
