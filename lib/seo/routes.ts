@@ -59,6 +59,11 @@ export const PAGE_COPY = {
     description:
       'Manage people, branches and responsibility in one view. Leaders see who does what; HR spends less time chasing updates.',
   },
+  iot: {
+    title: 'IoT — Devices, access hardware & branch connections',
+    description:
+      'Register door sensors and IoT hardware per branch, track status, and keep field attendance integrations trustworthy.',
+  },
   reports: {
     title: 'Reports - Leadership visibility & exports that save time',
     description:

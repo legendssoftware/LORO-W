@@ -32,7 +32,6 @@ import {
   EXPECTED_MONTHLY_HOURS,
 } from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
-import { ReportUserDetailModal } from '@/app/reports/components/report-user-detail-modal';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 
 export function StaffContent() {
@@ -48,7 +47,6 @@ export function StaffContent() {
   const [workforceFilter, setWorkforceFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchFilter, setBranchFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
-  const [detailUser, setDetailUser] = useState<ReportCardUser | null>(null);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const singleDateStr = format(today, 'yyyy-MM-dd');
   const monthForSingle = today.getMonth() + 1;
@@ -297,10 +295,6 @@ export function StaffContent() {
                   branchLocationRadiusMeters={
                     dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50
                   }
-                  onClick={() => setDetailUser(user)}
-                  onSettingsClick={(e) => {
-                    e.stopPropagation();
-                  }}
                   onClockClick={(e) => {
                     e.stopPropagation();
                     setAttendanceModalUser(user);
@@ -316,12 +310,6 @@ export function StaffContent() {
           )}
         </div>
       </main>
-
-      <ReportUserDetailModal
-        user={detailUser}
-        endDate={today}
-        onClose={() => setDetailUser(null)}
-      />
 
       <UserAttendanceRecordsModal
         user={attendanceModalUser}

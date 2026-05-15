@@ -199,8 +199,8 @@ export function ReportUserCard({
   endDate: Date;
   /** Server BRANCH_LOCATION_RADIUS_METERS (daily overview); defaults to 50 if omitted. */
   branchLocationRadiusMeters?: number;
-  onClick: () => void;
-  onSettingsClick: (e: React.MouseEvent) => void;
+  onClick?: () => void;
+  onSettingsClick?: (e: React.MouseEvent) => void;
   onClockClick?: (e: React.MouseEvent) => void;
 }) {
   const isMobile = useIsMobile();
@@ -278,10 +278,11 @@ export function ReportUserCard({
     return (
       <Card
         className={cn(
-          'relative cursor-pointer gap-0 py-0 transition-colors hover:opacity-90 bg-white border rounded-lg',
-          user.isPresent ? 'border-green-500' : 'border-red-500'
+          'relative gap-0 py-0 bg-white border rounded-lg',
+          user.isPresent ? 'border-green-500' : 'border-red-500',
+          onClick && 'cursor-pointer transition-colors hover:opacity-90'
         )}
-        onClick={onClick}
+        {...(onClick ? { onClick } : {})}
       >
         <CardContent className="flex items-start gap-2 p-2">
           <Avatar className="size-9 shrink-0">
@@ -432,7 +433,7 @@ export function ReportUserCard({
               )}
               <Link
                 href={`/reports/users/${user.ref}/settings`}
-                onClick={onSettingsClick}
+                {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
                 className="rounded-md border border-gray-200 bg-white p-1 text-foreground hover:bg-gray-50"
                 aria-label="User settings"
               >
@@ -448,10 +449,11 @@ export function ReportUserCard({
   return (
     <Card
       className={cn(
-        'relative cursor-pointer transition-colors hover:opacity-90 bg-white border rounded-lg',
-        user.isPresent ? 'border-green-500' : 'border-red-500'
+        'relative bg-white border rounded-lg',
+        user.isPresent ? 'border-green-500' : 'border-red-500',
+        onClick && 'cursor-pointer transition-colors hover:opacity-90'
       )}
-      onClick={onClick}
+      {...(onClick ? { onClick } : {})}
     >
       <div className="absolute top-2 right-2 z-10 flex flex-wrap items-center gap-1 justify-end max-w-[60%]">
         <Badge
@@ -632,7 +634,7 @@ export function ReportUserCard({
               )}
               <Link
                 href={`/reports/users/${user.ref}/settings`}
-                onClick={onSettingsClick}
+                {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
                 className="rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
                 aria-label="User settings"
               >

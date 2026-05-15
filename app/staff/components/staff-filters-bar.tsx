@@ -365,13 +365,13 @@ export function StaffFiltersBar({
         </DialogContent>
       </Dialog>
 
-      <div className="hidden md:flex w-full min-w-0 items-center gap-3">
+      <div className="hidden md:flex w-full min-w-0 items-center justify-between gap-3">
         <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
             <StaffFilterControls {...filterProps} layout="row" />
-            {renderSearchField()}
           </div>
         </div>
+        <div className="shrink-0">{renderSearchField()}</div>
       </div>
     </div>
   );
