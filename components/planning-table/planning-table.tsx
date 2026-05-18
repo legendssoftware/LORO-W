@@ -252,7 +252,11 @@ export function PlanningTable({
             {sortedTasks.map((t) => (
               <TableRow
                 key={t.uid}
-                className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"
+                className={cn(
+                  'cursor-pointer hover:bg-muted/50 transition-colors border-b-0',
+                  t.jobStatus === 'RUNNING' && t.jobStartTime &&
+                    'ring-1 ring-inset ring-red-200/60 bg-red-50/30'
+                )}
                 onClick={() => {
                   setSelectedTask(t);
                   setDetailOpen(true);

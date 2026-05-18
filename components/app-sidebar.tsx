@@ -25,7 +25,7 @@ import {
   UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
-import { Building2, GitBranch, Swords } from "lucide-react";
+import { Building2, GitBranch, Receipt, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
 import { useVapiDemoCall } from "@/hooks/use-vapi-demo-call";
@@ -56,6 +56,7 @@ const ROUTE_ICONS: Record<
   "/clients": Building2,
   "/competitors": Swords,
   "/planning": CheckSquareIcon,
+  "/claims": Receipt,
   "/staff": UsersIcon,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,
@@ -106,7 +107,7 @@ export function AppSidebar() {
         </SidebarHeader>
         <SidebarContent className="justify-center md:justify-start">
           <SidebarGroup>
-            <SidebarGroupContent className="w-full md:w-auto">
+            <SidebarGroupContent className="w-full">
               <SidebarMenu className="items-center md:items-stretch">
                 {routes.map((route) => {
                   const Icon = routeIcons[route.path];

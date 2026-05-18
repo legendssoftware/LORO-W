@@ -109,6 +109,18 @@ export interface Task {
   jobStartTime?: string | null;
   jobEndTime?: string | null;
   jobDuration?: number | null;
+  repetitionSeriesId?: string | null;
+  repetitionSequence?: number | null;
+  jobSegments?: TaskJobSegmentDto[];
+}
+
+export interface TaskJobSegmentDto {
+  uid: number;
+  startedAt: string;
+  endedAt: string | null;
+  durationMinutes: number | null;
+  clerkUserId: string;
+  checkInUid: number | null;
 }
 
 export interface PaginatedTasksResponse {
