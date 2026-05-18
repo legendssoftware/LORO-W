@@ -31,20 +31,7 @@ export interface LeadsReportResponse extends Omit<DomainReportResponse, 'meta'> 
   byEngagement?: { name: string; value: number }[];
 }
 
-export interface ClaimsListResponse {
-  data?: Array<{
-    uid: number;
-    title?: string;
-    amount?: number;
-    status: string;
-    claimRef?: string;
-    category?: string;
-    createdAt?: string;
-    claimGroupUid?: number | null;
-    claimGroup?: { uid: number; title: string; kind?: string } | null;
-  }>;
-  meta?: { total: number };
-}
+export type { ClaimsListResponse } from './claims';
 
 export interface LeadsListResponse {
   data?: Array<{

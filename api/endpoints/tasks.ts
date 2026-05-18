@@ -104,6 +104,30 @@ export async function toggleJobStatus(
 }
 
 /**
+ * PATCH /tasks/cancel-job/:id - stop RUNNING job, close segment, reset to QUEUED.
+ */
+export async function cancelJob(
+  client: AxiosInstance,
+  id: number
+): Promise<{ message: string; task?: { uid: number; title: string; status: string; jobStatus: string; jobStartTime?: string | null; jobEndTime?: string | null; jobDuration?: number | null } }> {
+  const { data } = await client.patch<{ message: string; task?: unknown }>(
+    `/tasks/cancel-job/${id}`
+  );
+  return data as {
+    message: string;
+    task?: {
+      uid: number;
+      title: string;
+      status: string;
+      jobStatus: string;
+      jobStartTime?: string | null;
+      jobEndTime?: string | null;
+      jobDuration?: number | null;
+    };
+  };
+}
+
+/**
  * PATCH /tasks/sub-task/complete/:ref - mark a subtask as completed.
  */
 export async function completeSubtask(

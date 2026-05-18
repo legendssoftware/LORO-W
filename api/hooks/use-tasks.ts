@@ -10,6 +10,7 @@ import {
   updateTask,
   deleteTask,
   toggleJobStatus,
+  cancelJob,
   completeSubtask,
   updateSubtask,
   deleteSubtask,
@@ -137,6 +138,24 @@ export function useToggleJobStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => toggleJobStatus(client, id),
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
+      const detailRef = data?.task?.uid ?? id;
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', detailRef],
+      });
+    },
+  });
+}
+
+/**
+ * Mutation to cancel an active job (RUNNING → QUEUED, segment closed).
+ */
+export function useCancelJobMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => cancelJob(client, id),
     onSuccess: (data, id) => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       const detailRef = data?.task?.uid ?? id;
