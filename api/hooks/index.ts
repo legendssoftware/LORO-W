@@ -99,12 +99,26 @@ export {
   useUpdateTaskMutation,
   useDeleteTaskMutation,
   useToggleJobStatusMutation,
+  useCancelJobMutation,
   useCompleteSubtaskMutation,
   useUpdateSubtaskMutation,
   useDeleteSubtaskMutation,
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
-export { useClaims } from './use-claims';
+export {
+  CLAIMS_QUERY_KEY_PREFIX,
+  invalidateClaimsQueries,
+  useClaims,
+  useClaimsInfinite,
+  useClaim,
+  useClaimGroups,
+  useCreateClaimMutation,
+  useCreateClaimGroupMutation,
+  useDeleteClaimMutation,
+  useDeleteClaimGroupMutation,
+  useGenerateShareTokenMutation,
+  useUpdateClaimMutation,
+} from './use-claims';
 export { useProfileSales } from './use-profile-sales';
 export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
 export { useShopQuotations } from './use-shop-quotations';

@@ -16,3 +16,4 @@ export * from './map';
 export * from './targets-progress';
 export * from './competitors';
 export * from './iot';
+export * from './claims';

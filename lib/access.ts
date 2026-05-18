@@ -12,6 +12,7 @@ export const STANDARD_USER_PATHS = [
     "/clients",
     "/competitors",
     "/planning",
+    "/claims",
     "/reports",
 ] as const;
 
@@ -129,6 +130,24 @@ export function canDeleteCompetitors(accessLevel: string | undefined): boolean {
     return normalize(accessLevel) === "admin";
 }
 
+const CLAIMS_MANAGE_LEVELS = new Set<string>(["admin", "manager"]);
+
+/** Approve / decline / mark paid on claims (aligned with mobile manager actions). */
+export function canManageClaims(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return CLAIMS_MANAGE_LEVELS.has(level);
+}
+
+/**
+ * Paginated GET /claims (org-wide list). Matches APK claims index: admin | owner only.
+ * Other roles use GET /claims/me on the client.
+ */
+export function canViewOrgClaimsList(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    return level === "admin" || level === "owner";
+}
+
 function isSettingsPath(pathNormalized: string): boolean {
     return (
         pathNormalized === "/settings" ||
@@ -192,6 +211,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/leads", label: "Leads" },
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
+    { path: "/claims", label: "Claims" },
     { path: "/competitors", label: "Competitors" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
@@ -227,6 +247,7 @@ export function getAllowedRoutes(
         { path: "/leads", label: "Leads" },
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },
+        { path: "/claims", label: "Claims" },
         { path: "/competitors", label: "Competitors" },
         { path: "/planning", label: "Planning" },
         { path: "/reports", label: "Reports" },

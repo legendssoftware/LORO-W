@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -76,6 +77,7 @@ import {
   MessageSquare,
   ListTodo,
   Paperclip,
+  Ban,
 } from 'lucide-react';
 import { Loader2Icon, XIcon, CalendarIcon } from '@/lib/icons';
 import {
@@ -83,6 +85,7 @@ import {
   useUpdateTaskMutation,
   useDeleteTaskMutation,
   useToggleJobStatusMutation,
+  useCancelJobMutation,
   useCompleteSubtaskMutation,
   useDeleteSubtaskMutation,
   useUpdateSubtaskMutation,
@@ -98,9 +101,11 @@ import {
 } from '@/lib/task-form-utils';
 import {
   formatDeadline,
-  formatAssignees,
   formatClients,
   formatCompletionDate,
+  formatJobDurationDisplay,
+  resolveAssigneeProfile,
+  resolveCreatorProfile,
 } from './planning-table-utils';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -183,7 +188,9 @@ export function TaskDetailDialog({
   const [assigneesPopoverOpen, setAssigneesPopoverOpen] = useState(false);
   const [clientsPopoverOpen, setClientsPopoverOpen] = useState(false);
   const [deleteTaskConfirmOpen, setDeleteTaskConfirmOpen] = useState(false);
+  const [cancelJobConfirmOpen, setCancelJobConfirmOpen] = useState(false);
   const [deleteSubtaskRef, setDeleteSubtaskRef] = useState<number | null>(null);
+  const [jobDurationTick, setJobDurationTick] = useState(0);
 
   const taskRef = task?.uid ?? null;
   const taskQuery = useTask(taskRef, { enabled: open && !!taskRef });
@@ -193,6 +200,7 @@ export function TaskDetailDialog({
   const updateMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
   const toggleJobMutation = useToggleJobStatusMutation();
+  const cancelJobMutation = useCancelJobMutation();
   const completeSubtaskMutation = useCompleteSubtaskMutation();
   const deleteSubtaskMutation = useDeleteSubtaskMutation();
   const updateSubtaskMutation = useUpdateSubtaskMutation();
@@ -209,6 +217,16 @@ export function TaskDetailDialog({
     setEditForm(taskToEditForm(displayTask, users));
     setIsEditing(false);
   }, [displayTask?.uid, open, users]);
+
+  useEffect(() => {
+    if (!open || displayTask?.jobStatus !== 'RUNNING' || !displayTask?.jobStartTime) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      setJobDurationTick((n) => n + 1);
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [open, displayTask?.uid, displayTask?.jobStatus, displayTask?.jobStartTime]);
 
   const handleCancelEdit = () => {
     if (displayTask) setEditForm(taskToEditForm(displayTask, users));
@@ -319,6 +337,19 @@ export function TaskDetailDialog({
       onTaskUpdated?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update job status');
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (!displayTask) return;
+    try {
+      await cancelJobMutation.mutateAsync(displayTask.uid);
+      toast.success('Job cancelled');
+      setCancelJobConfirmOpen(false);
+      await taskQuery.refetch();
+      onTaskUpdated?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to cancel job');
     }
   };
 
@@ -468,7 +499,7 @@ export function TaskDetailDialog({
                     e.stopPropagation();
                     void handleToggleJobStatus();
                   }}
-                  disabled={toggleJobMutation.isPending}
+                  disabled={toggleJobMutation.isPending || cancelJobMutation.isPending}
                 >
                   {toggleJobMutation.isPending ? (
                     <Loader2Icon className="size-4 animate-spin" />
@@ -478,6 +509,21 @@ export function TaskDetailDialog({
                     <Square className="size-4" />
                   )}
                   {displayTask.jobStatus === 'QUEUED' ? 'Start job' : 'Complete job'}
+                </Button>
+              )}
+              {displayTask.jobStatus === 'RUNNING' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 rounded-full border-amber-600/50 text-amber-800 hover:bg-amber-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCancelJobConfirmOpen(true);
+                  }}
+                  disabled={cancelJobMutation.isPending || toggleJobMutation.isPending}
+                >
+                  <Ban className="size-4" />
+                  Cancel job
                 </Button>
               )}
               <Button
@@ -983,7 +1029,9 @@ export function TaskDetailDialog({
                           label="Job duration"
                           icon={Timer}
                           value={
-                            displayTask.jobDuration != null ? `${displayTask.jobDuration} min` : '-'
+                            jobDurationTick >= 0
+                              ? formatJobDurationDisplay(displayTask)
+                              : '-'
                           }
                         />
                       </>
@@ -1001,23 +1049,64 @@ export function TaskDetailDialog({
                 <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Assignees" icon={Users} />
-                  <dl className={DETAIL_FIELD_GRID_CLASS}>
-                    <DetailFieldRow label="Assignees" icon={Users} value={formatAssignees(displayTask)} />
-                  </dl>
+                  {(displayTask.assignees ?? []).length === 0 ? (
+                    <p className="text-muted-foreground">-</p>
+                  ) : (
+                    <ul className="mt-1 flex flex-col gap-2">
+                      {(displayTask.assignees ?? []).map((assignee, idx) => {
+                        const { fullName, imageSrc } = resolveAssigneeProfile(
+                          assignee,
+                          users
+                        );
+                        return (
+                          <li
+                            key={assignee.uid ?? assignee.clerkUserId ?? idx}
+                            className="flex items-center gap-2 min-w-0"
+                          >
+                            <Avatar className="size-8 shrink-0 border border-border">
+                              <AvatarImage src={imageSrc} alt={fullName} />
+                              <AvatarFallback className="text-xs">
+                                {fullName !== '-'
+                                  ? fullName.slice(0, 2).toUpperCase()
+                                  : '-'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{fullName}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
                 <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Clients" icon={Building2} />
-                  <dl className={DETAIL_FIELD_GRID_CLASS}>
-                    <DetailFieldRow label="Clients" icon={Building2} value={formatClients(displayTask)} />
-                  </dl>
+                  <p className="text-muted-foreground mt-1">
+                    {formatClients(displayTask)}
+                  </p>
                 </div>
                 <Separator className="my-2" />
                 <div>
                   <DetailSectionHeading title="Creator" icon={User} />
-                  <dl className={DETAIL_FIELD_GRID_CLASS}>
-                    <DetailFieldRow label="Creator" icon={User} value={creatorName} />
-                  </dl>
+                  {(() => {
+                    const { fullName, imageSrc } = resolveCreatorProfile(
+                      displayTask.creator,
+                      users
+                    );
+                    return (
+                      <div className="mt-1 flex items-center gap-2 min-w-0">
+                        <Avatar className="size-8 shrink-0 border border-border">
+                          <AvatarImage src={imageSrc} alt={fullName} />
+                          <AvatarFallback className="text-xs">
+                            {fullName !== '-'
+                              ? fullName.slice(0, 2).toUpperCase()
+                              : '-'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{fullName}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {displayTask.comment?.trim() ? (
                   <>
@@ -1159,6 +1248,35 @@ export function TaskDetailDialog({
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
                 'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelJobConfirmOpen} onOpenChange={setCancelJobConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel active job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This stops the running job, closes the current time segment, and returns the task job to
+              queued. The task itself is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-700 text-white hover:bg-amber-800"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleCancelJob();
+              }}
+              disabled={cancelJobMutation.isPending}
+            >
+              {cancelJobMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                'Cancel job'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -64,6 +64,11 @@ export const PAGE_COPY = {
     description:
       'Register door sensors and IoT hardware per branch, track status, and keep field attendance integrations trustworthy.',
   },
+  claims: {
+    title: 'Claims — Submit and track expense reimbursements',
+    description:
+      'Create expense claims with receipts, organise trips and folders, and follow approval status from submission to payment.',
+  },
   reports: {
     title: 'Reports - Leadership visibility & exports that save time',
     description:
