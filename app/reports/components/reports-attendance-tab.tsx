@@ -360,7 +360,7 @@ export function ReportsAttendanceTab({
 
   const { data: branches = [] } = useBranches();
   const { data: usersList = [] } = useUsers({
-    limit: 200,
+    limit: 250,
     enabled: reportsMode === 'org',
     ...(selectedBranchId !== 'all'
       ? { branchId: Number(selectedBranchId) }

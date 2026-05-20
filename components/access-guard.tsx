@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useSessionSync } from '@/api/hooks';
 import { canAccess } from '@/lib/access';
+import { getDefaultRoute } from '@/lib/user-mode';
 
 /**
  * Client-side route guard: redirects to /dashboard when the current path
@@ -24,7 +25,7 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     const accessLevel = backendUserData?.accessLevel;
     const allowed = canAccess(pathname ?? '', accessLevel);
     if (!allowed) {
-      router.replace('/dashboard');
+      router.replace(getDefaultRoute(backendUserData ?? undefined));
     }
   }, [isSignedIn, pathname, router, isSyncing, backendUserData?.accessLevel]);
 

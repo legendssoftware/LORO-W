@@ -26,6 +26,9 @@ import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attend
 import type { ReportCardUser } from '@/app/reports/types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 import { buildClockInNotes } from '@/lib/clock-in-options';
+import { isClientMode } from '@/lib/user-mode';
+import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
+import { ClientDashboardHome } from '@/app/client-portal/components/client-dashboard-home';
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
@@ -107,7 +110,7 @@ export function DashboardContent() {
   const attLoading =
     attCheckInMutation.isPending || attCheckOutMutation.isPending || breakMutation.isPending;
 
-  const isClient = profile?.accessLevel === 'client';
+  const isClient = isClientMode(profile);
 
   /** When not checked in, fetch status with device location for server-driven clock-in options. */
   useEffect(() => {
@@ -269,9 +272,9 @@ export function DashboardContent() {
     <div className="h-full overflow-auto">
       <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
         {!isSignedIn ? null : profile && isClient ? (
-          <p className="text-center text-muted-foreground">
-            Attendance tracking is for employees only.
-          </p>
+          <ClientPortalLoading>
+            {(client) => <ClientDashboardHome client={client} />}
+          </ClientPortalLoading>
         ) : (
           <div className="space-y-4">
             <AttendanceStatusButton
