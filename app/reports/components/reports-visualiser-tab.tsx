@@ -74,7 +74,7 @@ export function ReportsVisualiserTab({
   const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
 
   const usersQuery = useUsers({
-    limit: 200,
+    limit: 250,
     enabled: mounted && reportsMode === 'org',
   });
   const usersList = usersQuery.data ?? [];

@@ -4,8 +4,8 @@ import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState, useCallback } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Map as MapIcon, List, Table2, MoreHorizontal, CalendarIcon } from 'lucide-react';
+import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
-import type { ReportsFilterUserPickable } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import {
   SearchableOptionListPicker,
   SearchableUserPicker,
@@ -40,15 +40,6 @@ import {
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 
-export interface VisitHistoryUserRow {
-  uid: number;
-  name?: string | null;
-  surname?: string | null;
-  email?: string | null;
-  photoURL?: string | null;
-  avatar?: string | null;
-}
-
 /** Matches icons used in `TYPE_OF_BUSINESS_OPTIONS` (lucide + class components). */
 export type VisitHistoryBusinessIcon = ComponentType<{ className?: string; size?: number }>;
 
@@ -57,7 +48,8 @@ export interface VisitHistoryToolbarProps {
   uniqueBusinessTypes: string[];
   businessTypeLabelMap: Map<string, string>;
   businessTypeIconMap: Map<string, VisitHistoryBusinessIcon>;
-  usersList: VisitHistoryUserRow[];
+  /** Org users from GET /user (must include branchUid/branch for picker subtitles). */
+  usersList: UserListItem[];
   visitsSummaryDisabled: boolean;
   onOpenVisitsSummary: () => void;
   /** Enables branch labels in the user combobox when organization branches are available. */
@@ -95,17 +87,6 @@ function VisitMapTableToggleButton() {
       )}
     </Button>
   );
-}
-
-function userRowToPickable(u: VisitHistoryUserRow): ReportsFilterUserPickable {
-  return {
-    uid: u.uid,
-    name: u.name ?? '',
-    surname: u.surname ?? '',
-    email: u.email ?? '',
-    photoURL: u.photoURL,
-    avatar: u.avatar,
-  };
 }
 
 /**
@@ -180,11 +161,6 @@ export function VisitHistoryToolbar({
       setUseAllTime,
       setDateRangePopoverOpen,
     ]
-  );
-
-  const pickerUsers = useMemo(
-    () => usersList.map(userRowToPickable),
-    [usersList]
   );
 
   const regionPickerOptions = useMemo<SearchableOptionRow[]>(
@@ -420,11 +396,10 @@ export function VisitHistoryToolbar({
 
           {showUserFilter ? (
             <SearchableUserPicker
-              users={pickerUsers}
+              users={usersList}
               branches={branches}
               selectedUid={selectedUserUid || 'all'}
               onUidChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
-              showBranchSubtitle={branches.length > 0}
               triggerClassName={`${pickerTriggerClass} justify-between gap-2`}
               searchPlaceholder="Search users…"
             />

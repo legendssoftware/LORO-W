@@ -6,6 +6,18 @@ const isProtectedRoute = createRouteMatcher([
     "/visits(.*)",
     "/leads(.*)",
     "/reports(.*)",
+    "/store(.*)",
+    "/orders(.*)",
+    "/projects(.*)",
+    "/account(.*)",
+    "/staff(.*)",
+    "/iot(.*)",
+    "/pipeline(.*)",
+    "/clients(.*)",
+    "/claims(.*)",
+    "/competitors(.*)",
+    "/planning(.*)",
+    "/settings(.*)",
 ]);
 const isAuthRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 

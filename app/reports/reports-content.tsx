@@ -11,9 +11,14 @@ import {
   Target,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useApiClient } from '@/api/hooks/use-api-client';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isReportsElevatedViewer } from '@/lib/access';
+import { isClientMode } from '@/lib/user-mode';
+import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
+import { ClientReportsTabs } from '@/app/client-portal/components/client-reports-tabs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
 import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
@@ -21,7 +26,7 @@ import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualise
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import { ReportsTargetsTab } from '@/app/reports/components/reports-targets-tab';
 import { ReportsOverviewTab } from '@/app/reports/components/reports-overview-tab';
-import { useReportsPrefetch } from '@/app/reports/use-reports-prefetch';
+import { useReportsPrefetch, prefetchReportsSecondaryTabs } from '@/app/reports/use-reports-prefetch';
 import type { SyncProfile } from '@/api/types';
 
 export type ReportsMode = 'org' | 'self';
@@ -44,6 +49,8 @@ function getValidReportsTab(value: string | null) {
     : 'overview';
 }
 
+const SECONDARY_PREFETCH_TABS = new Set(['leads', 'visualiser']);
+
 function ReportsTabsEqualWidth({
   profile,
   reportsMode,
@@ -52,6 +59,9 @@ function ReportsTabsEqualWidth({
   reportsMode: ReportsMode;
 }) {
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const apiClient = useApiClient();
+  const secondaryPrefetchRef = useRef(false);
   const initialTab = getValidReportsTab(searchParams.get('tab'));
   const listRef = useRef<HTMLDivElement>(null);
   const [tabWidthPx, setTabWidthPx] = useState<number | null>(null);
@@ -98,6 +108,24 @@ function ReportsTabsEqualWidth({
     });
   }, [activeTab]);
 
+  const prefetchSecondaryTabs = useCallback(() => {
+    if (secondaryPrefetchRef.current) return;
+    secondaryPrefetchRef.current = true;
+    prefetchReportsSecondaryTabs(queryClient, apiClient, {
+      reportsMode,
+      profile,
+    });
+  }, [apiClient, profile, queryClient, reportsMode]);
+
+  const handleTabIntent = useCallback(
+    (tabValue: (typeof REPORT_TABS)[number]['value']) => {
+      if (SECONDARY_PREFETCH_TABS.has(tabValue)) {
+        prefetchSecondaryTabs();
+      }
+    },
+    [prefetchSecondaryTabs]
+  );
+
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as (typeof REPORT_TABS)[number]['value'])} className="w-full">
       <TabsList
@@ -111,6 +139,8 @@ function ReportsTabsEqualWidth({
               key={value}
               value={value}
               className={tabTriggerClassName}
+              onMouseEnter={() => handleTabIntent(value)}
+              onFocus={() => handleTabIntent(value)}
               style={
                 tabWidthPx != null
                   ? { minWidth: tabWidthPx, width: tabWidthPx }
@@ -169,6 +199,10 @@ export function ReportsContent() {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {!isSignedIn || !isTokenReady ? (
             <LoadingSpinner wrapperClassName="py-12" />
+          ) : profile && isClientMode(profile) ? (
+            <ClientPortalLoading>
+              {(client) => <ClientReportsTabs client={client} />}
+            </ClientPortalLoading>
           ) : profile ? (
             <ReportsTabsEqualWidth profile={profile} reportsMode={reportsMode} />
           ) : (

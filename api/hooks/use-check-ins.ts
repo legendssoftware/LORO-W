@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type {
   UseCheckInsParams,
   UseCheckInsResult,
@@ -47,6 +47,20 @@ async function fetchCheckIns(
   return res.json();
 }
 
+/** Longer stale time when the range ends before today (immutable historical data). */
+function checkInsStaleTimeMs(params?: UseCheckInsParams): number {
+  if (!params?.endDate) return 60 * 1000;
+  const endMs = new Date(params.endDate).getTime();
+  if (!Number.isFinite(endMs)) return 60 * 1000;
+  const now = new Date();
+  const todayStartMs = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  );
+  return endMs < todayStartMs ? 5 * 60 * 1000 : 60 * 1000;
+}
+
 /**
  * Warms the same cache entry as useCheckIns (e.g. Reports idle prefetch).
  */
@@ -62,6 +76,7 @@ export function prefetchCheckInsList(
       const token = await getToken();
       return fetchCheckIns(token ?? null, params);
     },
+    staleTime: checkInsStaleTimeMs(params),
   });
 }
 
@@ -77,6 +92,9 @@ export function useCheckIns(
       return fetchCheckIns(token, params);
     },
     enabled: options?.enabled !== false && !!DEFAULT_API_URL,
+    staleTime: checkInsStaleTimeMs(params),
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
   return {
     data: query.data,
