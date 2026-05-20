@@ -11,6 +11,8 @@ export interface TargetsProgressBucketRow {
   achievedVisits: number;
   targetLeads: number;
   achievedLeads: number;
+  /** All check-ins in bucket (any method) for reporting cohort — from targets-progress API. */
+  achievedCheckInsAllTypes: number;
   cumulativeTargetCalls: number;
   cumulativeAchievedCalls: number;
   cumulativeTargetVisits: number;

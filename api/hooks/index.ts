@@ -123,6 +123,11 @@ export { useProfileSales } from './use-profile-sales';
 export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
 export { useShopQuotations } from './use-shop-quotations';
 export {
+  useLinkedClientProfile,
+  LINKED_CLIENT_FULL_PROFILE_QUERY_KEY,
+} from './use-linked-client-profile';
+export { useUpdateClientProfile } from './use-update-client-profile';
+export {
   useInteractionsByLead,
   useCreateInteractionMutation,
 } from './use-interactions';

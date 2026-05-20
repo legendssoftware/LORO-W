@@ -49,6 +49,28 @@ export const PUBLIC_OR_AUTH_PATHS = [
     "/onboarding",
 ] as const;
 
+/** Client portal routes (linked-client users with accessLevel client). */
+export const CLIENT_PORTAL_PATHS = [
+    "/dashboard",
+    "/store",
+    "/reports",
+    "/orders",
+    "/projects",
+    "/account",
+] as const;
+
+export type ClientPortalPath = (typeof CLIENT_PORTAL_PATHS)[number];
+
+/** Sidebar nav for client portal users. */
+export const CLIENT_SIDEBAR_ROUTES: { path: string; label: string }[] = [
+    { path: "/dashboard", label: "Home" },
+    { path: "/store", label: "Store" },
+    { path: "/reports", label: "Reports" },
+    { path: "/orders", label: "Orders" },
+    { path: "/projects", label: "Projects" },
+    { path: "/account", label: "Account" },
+];
+
 /**
  * Access levels that are restricted to STANDARD_USER_PATHS only.
  * All other roles (e.g. owner, admin, manager) can access any route.
@@ -155,6 +177,17 @@ function isSettingsPath(pathNormalized: string): boolean {
     );
 }
 
+/** True when the user is a linked-client portal user (not staff CRM "clients" page). */
+export function isClientPortalUser(accessLevel: string | undefined): boolean {
+    return normalize(accessLevel) === "client";
+}
+
+function isClientPortalPath(pathNormalized: string): boolean {
+    return CLIENT_PORTAL_PATHS.some(
+        (p) => pathNormalized === p || pathNormalized.startsWith(p + "/")
+    );
+}
+
 /**
  * Returns whether the given path is allowed for the given access level.
  * - Public/auth paths are always allowed.
@@ -179,6 +212,10 @@ export function canAccess(
 
     if (isSettingsPath(pathNormalized)) {
         return canAccessOrgSettings(accessLevel);
+    }
+
+    if (isClientPortalUser(accessLevel)) {
+        return isClientPortalPath(pathNormalized);
     }
 
     if (!level) {
@@ -229,7 +266,15 @@ export function isStaffDashboardVisible(
 ): boolean {
     const level = normalize(accessLevel);
     if (!level) return false;
+    if (isClientPortalUser(accessLevel)) return false;
     return !RESTRICTED_ACCESS_LEVELS.has(level);
+}
+
+/**
+ * Returns nav items for client portal users.
+ */
+export function getClientSidebarRoutes(): AllowedRoute[] {
+    return [...CLIENT_SIDEBAR_ROUTES];
 }
 
 /**
@@ -240,6 +285,10 @@ export function getAllowedRoutes(
     accessLevel: string | undefined
 ): AllowedRoute[] {
     const level = normalize(accessLevel);
+
+    if (isClientPortalUser(accessLevel)) {
+        return getClientSidebarRoutes();
+    }
 
     const fullNav: AllowedRoute[] = [
         { path: "/dashboard", label: "Home" },

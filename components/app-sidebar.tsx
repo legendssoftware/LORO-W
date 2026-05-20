@@ -9,6 +9,8 @@ import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard"
 import {
   canAccessOrgSettings,
   getAllowedRoutes,
+  getClientSidebarRoutes,
+  isClientPortalUser,
   isStaffDashboardVisible,
   STAFF_SETTINGS_ROUTE,
   STAFF_SIDEBAR_ROUTES,
@@ -25,7 +27,16 @@ import {
   UsersIcon,
   VapiSupportCallIcon,
 } from "@/lib/icons";
-import { Building2, GitBranch, Receipt, Swords } from "lucide-react";
+import {
+  Building2,
+  FolderKanban,
+  GitBranch,
+  Package,
+  Receipt,
+  ShoppingBag,
+  Swords,
+  UserCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
 import { useVapiDemoCall } from "@/hooks/use-vapi-demo-call";
@@ -60,6 +71,10 @@ const ROUTE_ICONS: Record<
   "/staff": UsersIcon,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,
+  "/store": ShoppingBag,
+  "/orders": Package,
+  "/projects": FolderKanban,
+  "/account": UserCircle,
 };
 
 export function AppSidebar() {
@@ -87,15 +102,18 @@ export function AppSidebar() {
 
   if (!isSignedIn) return null;
 
+  const isClient = isClientPortalUser(profile?.accessLevel);
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
-  const routes = isStaff
-    ? [
-        ...STAFF_SIDEBAR_ROUTES,
-        ...(canAccessOrgSettings(profile?.accessLevel)
-          ? [STAFF_SETTINGS_ROUTE]
-          : []),
-      ]
-    : getAllowedRoutes(profile?.accessLevel);
+  const routes = isClient
+    ? getClientSidebarRoutes()
+    : isStaff
+      ? [
+          ...STAFF_SIDEBAR_ROUTES,
+          ...(canAccessOrgSettings(profile?.accessLevel)
+            ? [STAFF_SETTINGS_ROUTE]
+            : []),
+        ]
+      : getAllowedRoutes(profile?.accessLevel);
   const routeIcons = ROUTE_ICONS;
 
   return (

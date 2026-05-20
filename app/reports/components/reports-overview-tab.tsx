@@ -10,13 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { SyncProfile } from '@/api/types';
-import type { VisitListItem } from '@/api/types/visits';
-import {
-  useBranches,
-  useCheckIns,
-  useTargetsProgress,
-  useUsers,
-} from '@/api/hooks';
+import { useBranches, useTargetsProgress, useUsers } from '@/api/hooks';
 import { isReportsElevatedViewer } from '@/lib/access';
 import {
   Card,
@@ -36,7 +30,6 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import type { ReportsMode } from '@/app/reports/reports-content';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
-  buildReportingUserUidSet,
   userListItemInLeadsVisitsReportingCohort,
 } from '@/app/reports/utils/user-has-performance-target';
 import type { TargetsProgressBucketRow } from '@/api/types/targets-progress';
@@ -46,22 +39,15 @@ import {
   utcMonthStartThroughToday,
   type OverviewTimeframe,
 } from '@/app/reports/utils/overview-daily-summary';
-import { countCheckInsInProgressBucket } from '@/app/reports/utils/targets-progress-bucket-utc';
 
 /** Same switch as `NODE_ENV` in `.env.local` (e.g. `NODE_ENV=development`) — dev-only Overview trend logs. */
 const REPORTS_OVERVIEW_DEBUG_LOGS = process.env.NODE_ENV === 'development';
 
-function filterVisitListItemsByOwnerUids(
-  checkIns: VisitListItem[],
-  allowedUids: Set<number>,
-  apply: boolean
-): VisitListItem[] {
-  if (!apply) return checkIns;
-  return checkIns.filter((c) => {
-    const uid = c.owner?.uid;
-    if (uid == null) return false;
-    return allowedUids.has(uid);
-  });
+function achievedVisitsFromProgressBucket(b: TargetsProgressBucketRow): number {
+  if (typeof b.achievedCheckInsAllTypes === 'number') {
+    return b.achievedCheckInsAllTypes;
+  }
+  return (b.achievedCalls ?? 0) + (b.achievedVisits ?? 0);
 }
 
 function formatDailyXTick(key: string): string {
@@ -94,31 +80,11 @@ function bucketRowsToChartData(
     fullLabel: b.label,
     achievedLeads: b.achievedLeads,
     targetLeads: b.targetLeads,
-    achievedVisits: b.achievedVisits,
+    achievedVisits: achievedVisitsFromProgressBucket(b),
     targetVisits: b.targetVisits,
     achievedCalls: b.achievedCalls,
     targetCalls: b.targetCalls,
   }));
-}
-
-function mergeChartRowsWithCheckInVisits(
-  rows: TargetsProgressBucketRow[],
-  checkIns: VisitListItem[],
-  timeframe: OverviewTimeframe
-) {
-  const base = bucketRowsToChartData(rows, timeframe);
-  return base.map((row, i) => {
-    const b = rows[i];
-    if (!b) return row;
-    return {
-      ...row,
-      achievedVisits: countCheckInsInProgressBucket(
-        checkIns,
-        b.key,
-        timeframe
-      ),
-    };
-  });
 }
 
 function variationLine(
@@ -259,11 +225,6 @@ export function ReportsOverviewTab({
     [elevated, usersList]
   );
 
-  const reportingUidSet = React.useMemo(
-    () => buildReportingUserUidSet(reportingUsers),
-    [reportingUsers]
-  );
-
   /** Coerce invalid org user selection (e.g. after branch change) without setState in an effect. */
   const resolvedOwnerUid = React.useMemo(() => {
     if (!elevated || selectedOwnerUid === 'all') return selectedOwnerUid;
@@ -295,37 +256,6 @@ export function ReportsOverviewTab({
     };
   }, [fromYmd, toYmd, filterSuffix]);
 
-  const checkInsParams = React.useMemo(() => {
-    const startIso = `${fromYmd}T00:00:00.000Z`;
-    const endIso = `${toYmd}T23:59:59.999Z`;
-    return {
-      startDate: startIso,
-      endDate: endIso,
-      ...(reportsMode === 'self' && profile?.uid != null
-        ? { userUid: String(profile.uid) }
-        : elevated && resolvedOwnerUid !== 'all'
-          ? { userUid: resolvedOwnerUid }
-          : {}),
-      ...(elevated && selectedBranchId !== 'all'
-        ? { branchId: Number(selectedBranchId) }
-        : {}),
-    };
-  }, [
-    fromYmd,
-    toYmd,
-    reportsMode,
-    profile,
-    elevated,
-    resolvedOwnerUid,
-    selectedBranchId,
-  ]);
-
-  const checkInsEnabled = Boolean(
-    checkInsParams.startDate &&
-      checkInsParams.endDate &&
-      (reportsMode !== 'self' || profile?.uid != null)
-  );
-
   const {
     data: progressData,
     isLoading,
@@ -335,37 +265,9 @@ export function ReportsOverviewTab({
     enabled: Boolean(progressParams.from && progressParams.to),
   });
 
-  const {
-    data: checkInsData,
-    isLoading: checkInsLoading,
-    isError: checkInsIsError,
-    error: checkInsError,
-  } = useCheckIns(checkInsParams, {
-    enabled: checkInsEnabled,
-  });
-
-  const checkInsForOverviewCharts = React.useMemo(() => {
-    const raw = checkInsData?.checkIns ?? [];
-    return filterVisitListItemsByOwnerUids(
-      raw,
-      reportingUidSet,
-      elevated && resolvedOwnerUid === 'all'
-    );
-  }, [
-    checkInsData?.checkIns,
-    reportingUidSet,
-    elevated,
-    resolvedOwnerUid,
-  ]);
-
   const chartData = React.useMemo(
-    () =>
-      mergeChartRowsWithCheckInVisits(
-        progressData?.aggregateBuckets ?? [],
-        checkInsForOverviewCharts,
-        timeframe
-      ),
-    [progressData?.aggregateBuckets, checkInsForOverviewCharts, timeframe]
+    () => bucketRowsToChartData(progressData?.aggregateBuckets ?? [], timeframe),
+    [progressData?.aggregateBuckets, timeframe]
   );
 
   const rangeDescription =
@@ -375,27 +277,21 @@ export function ReportsOverviewTab({
 
   const totals = React.useMemo(() => {
     const rows = progressData?.aggregateBuckets ?? [];
-    const checkIns = checkInsForOverviewCharts;
-    const visA = rows.reduce(
-      (sum, b) =>
-        sum + countCheckInsInProgressBucket(checkIns, b.key, timeframe),
-      0
-    );
-    const { leadsA, leadsT, visT } = rows.reduce(
+    const { leadsA, leadsT, visA, visT } = rows.reduce(
       (acc, b) => ({
         leadsA: acc.leadsA + b.achievedLeads,
         leadsT: acc.leadsT + b.targetLeads,
+        visA: acc.visA + achievedVisitsFromProgressBucket(b),
         visT: acc.visT + b.targetVisits,
       }),
-      { leadsA: 0, leadsT: 0, visT: 0 }
+      { leadsA: 0, leadsT: 0, visA: 0, visT: 0 }
     );
     return { leadsA, leadsT, visA, visT };
-  }, [progressData?.aggregateBuckets, checkInsForOverviewCharts, timeframe]);
+  }, [progressData?.aggregateBuckets]);
 
   React.useEffect(() => {
     if (!REPORTS_OVERVIEW_DEBUG_LOGS) return;
     const buckets = progressData?.aggregateBuckets ?? [];
-    const checkIns = checkInsForOverviewCharts;
     const bucketAchievedLeadsSum = buckets.reduce(
       (s, b) => s + b.achievedLeads,
       0
@@ -407,23 +303,11 @@ export function ReportsOverviewTab({
       leadsTrendInput: { achievedLeads: b.achievedLeads, targetLeads: b.targetLeads },
       visitsTrendInput: {
         targetVisits: b.targetVisits,
-        achievedVisitsBucketBeforeMerge: b.achievedVisits,
-        achievedVisitsFromCheckIns: countCheckInsInProgressBucket(
-          checkIns,
-          b.key,
-          timeframe
-        ),
+        achievedCheckInsAllTypes: achievedVisitsFromProgressBucket(b),
       },
     }));
-    console.debug('[reports/overview] trend mapping — source rows (targets API + check-ins per bucket)', {
+    console.debug('[reports/overview] trend mapping — source rows (targets-progress API)', {
       trendInputs,
-      checkInsForVisitCounts: {
-        rowCount: checkIns.length,
-        sample: checkIns.slice(0, 5).map((c) => ({
-          checkInTime: c.checkInTime,
-          ownerUid: c.owner?.uid,
-        })),
-      },
     });
     const leadsTrend = chartData.map((row) => ({
       xTick: row.xTick,
@@ -449,11 +333,6 @@ export function ReportsOverviewTab({
       timeframe,
       reportsMode,
       progressFromTo: { from: progressParams.from, to: progressParams.to },
-      checkInsRange: {
-        startDate: checkInsParams.startDate,
-        endDate: checkInsParams.endDate,
-      },
-      checkInsRowCountUsed: checkInsForOverviewCharts.length,
       branchId: elevated ? selectedBranchId : undefined,
       ownerUid: elevated ? resolvedOwnerUid : undefined,
       chartBucketCount: chartData.length,
@@ -466,14 +345,10 @@ export function ReportsOverviewTab({
     reportsMode,
     progressParams.from,
     progressParams.to,
-    checkInsParams.startDate,
-    checkInsParams.endDate,
-    checkInsForOverviewCharts.length,
     elevated,
     selectedBranchId,
     resolvedOwnerUid,
     chartData,
-    checkInsForOverviewCharts,
     progressData?.aggregateBuckets,
   ]);
 
@@ -496,12 +371,10 @@ export function ReportsOverviewTab({
     };
   }, [timeframe]);
 
-  const chartsLoading = isLoading || (checkInsEnabled && checkInsLoading);
-  const chartsError = isError || (checkInsEnabled && checkInsIsError);
+  const chartsLoading = isLoading;
+  const chartsError = isError;
   const chartsErrorMessage =
-    (error as Error | undefined)?.message ??
-    (checkInsError as Error | undefined)?.message ??
-    'Failed to load trend data';
+    (error as Error | undefined)?.message ?? 'Failed to load trend data';
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -641,7 +514,7 @@ export function ReportsOverviewTab({
             <CardHeader>
               <CardTitle>Visits trend</CardTitle>
               <CardDescription>
-                Achieved visits (all types, same as Visits tab / check-ins API) vs
+                Achieved visits (all contact types, from targets-progress) vs
                 prorated target — {rangeDescription}. Range totals:{' '}
                 {totals.visA.toLocaleString()} achieved /{' '}
                 {totals.visT.toLocaleString()} target.

@@ -37,6 +37,8 @@ export interface SyncProfile {
   organisation?: OrganisationRef | null;
   branch?: BranchRef | null;
   clerkUserId?: string;
+  /** Client portal: linked CRM client uid when accessLevel is client. */
+  linkedClientUid?: number | null;
   /** Staff sync: mirrors `user_targets.targetWarnings` for early UI before GET /user/:ref/target settles. */
   targetWarnings?: TargetWarningsPayload | null;
 }
