@@ -111,7 +111,6 @@ export function StoreCartSheet({
       </SheetTrigger>
       <SheetContent
         side="right"
-        overlayClassName="bg-white/20 backdrop-blur-sm"
         className={cn(
           'flex w-full flex-col gap-0 p-0 sm:max-w-md',
           '!top-4 !bottom-4 !right-4 !left-auto !h-auto max-h-[calc(100vh-2rem)]',

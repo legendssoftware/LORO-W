@@ -13,7 +13,7 @@ import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
 const SEL_HEADER = '[data-tour="leads-page-header"]';
-const SEL_CREATE = '[data-tour="leads-create-banner"]';
+const SEL_CREATE = '[data-tour="leads-create-button"]';
 const SEL_TOOLBAR = '[data-tour="leads-toolbar"]';
 const SEL_TABLE = '[data-tour="leads-table"]';
 const SEL_FIRST_GROUP = '[data-tour="leads-first-group-row"]';
@@ -59,7 +59,7 @@ function buildEmptyTourSteps(): DriveStep[] {
       element: SEL_CREATE,
       popover: {
         title: 'Create lead',
-        description: 'Use this quick action area to add new leads immediately.',
+        description: 'Use this button in the page header to add new leads immediately.',
         side: 'bottom',
         align: 'center',
       },
@@ -114,7 +114,7 @@ function buildDataTourSteps(): DriveStep[] {
       element: SEL_CREATE,
       popover: {
         title: 'Create lead',
-        description: 'Use this quick action area to add new leads immediately.',
+        description: 'Use this button in the page header to add new leads immediately.',
         side: 'bottom',
         align: 'center',
       },

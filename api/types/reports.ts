@@ -196,7 +196,12 @@ export interface ProductsListResponse {
     isOnPromotion?: boolean;
     imageUrl?: string;
   }>;
-  meta?: { total: number };
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface ResellersListResponse {

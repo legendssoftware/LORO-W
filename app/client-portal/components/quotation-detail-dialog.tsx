@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from 'react';
 import { format } from 'date-fns';
-import { XIcon } from '@/lib/icons';
 import type { ClientProfileData, ClientQuotation } from '@/api/types/client-portal';
 import {
   formatQuotationStatusLabel,
@@ -16,13 +15,12 @@ import {
 } from '@/lib/quotation-line-item';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DialogCloseButton } from '@/components/dialog-close-button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 function formatDate(value?: string): string | null {
   if (!value) return null;
@@ -118,19 +116,10 @@ export function QuotationDetailDialog({
       <DialogContent
         showCloseButton={false}
         className="max-w-3xl max-h-[85vh] overflow-y-auto rounded shadow-none sm:max-w-3xl"
-        overlayClassName="bg-background/40 backdrop-blur-[5.6px]"
       >
         <DialogHeader className="flex flex-row items-start justify-between gap-4 space-y-0 text-left">
           <DialogTitle className="pr-2">{title}</DialogTitle>
-          <DialogClose
-            className={cn(
-              'flex size-8 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600',
-              'transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2'
-            )}
-          >
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
+          <DialogCloseButton />
         </DialogHeader>
 
         <div className="space-y-5 text-sm">

@@ -20,13 +20,18 @@ export function StorePageContent() {
   return (
     <div className={appPageScrollWrapClass}>
       <main className={`${appPageMainClass} lg:max-w-[88rem]`}>
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Store
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Browse products, add to your cart, and submit a quotation.
-          </p>
+        <div
+          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+          data-tour="store-page-header"
+        >
+          <div>
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+              Store
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Browse products, add to your cart, and submit a quotation.
+            </p>
+          </div>
         </div>
         <ClientPortalLoading>
           {(client) => <StoreContent client={client} />}

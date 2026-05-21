@@ -119,6 +119,11 @@ export {
   useGenerateShareTokenMutation,
   useUpdateClaimMutation,
 } from './use-claims';
+export {
+  STORE_PRODUCTS_QUERY_KEY_PREFIX,
+  mapStoreProduct,
+  useProductsInfinite,
+} from './use-products';
 export { useProfileSales } from './use-profile-sales';
 export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
 export { useShopQuotations } from './use-shop-quotations';

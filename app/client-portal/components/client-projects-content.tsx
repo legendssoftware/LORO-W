@@ -1,225 +1,111 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { FolderKanban, Plus } from 'lucide-react';
-import type {
-  ClientProfileData,
-  ClientProject,
-  CreateClientProjectPayload,
-} from '@/api/types/client-portal';
-import { createClientProject } from '@/api/endpoints/client-portal';
-import { useApiClient } from '@/api/hooks/use-api-client';
-import { LINKED_CLIENT_FULL_PROFILE_QUERY_KEY } from '@/api/hooks/use-linked-client-profile';
-import { formatZar } from '@/lib/client-portal-utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
+import type { ClientProfileData, ClientProject } from '@/api/types/client-portal';
+import { ProjectsFiltersBar } from '@/app/projects/components/projects-filters-bar';
+import { ProjectCard } from '@/app/projects/components/project-card';
+import { CreateProjectDialog } from '@/app/projects/components/create-project-dialog';
 import { ProjectDetailDialog } from './project-detail-dialog';
-import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-const PROJECT_STATUSES = [
-  'planning',
-  'in_progress',
-  'on_hold',
-  'completed',
-  'cancelled',
-] as const;
+function filterProjects(
+  projects: ClientProject[],
+  searchInput: string,
+  statusFilter: string
+): ClientProject[] {
+  const q = searchInput.trim().toLowerCase();
+  return projects.filter((p) => {
+    if (statusFilter !== 'all' && (p.status ?? '') !== statusFilter) {
+      return false;
+    }
+    if (!q) return true;
+    const name = (p.name ?? '').toLowerCase();
+    const desc = (p.description ?? '').toLowerCase();
+    return name.includes(q) || desc.includes(q);
+  });
+}
 
 export function ClientProjectsContent({ client }: { client: ClientProfileData }) {
-  const apiClient = useApiClient();
-  const queryClient = useQueryClient();
-  const projects = ([...(client.projects ?? [])] as ClientProject[]).sort(
-    (a, b) => (b.budget ?? 0) - (a.budget ?? 0)
-  );
+  const [searchInput, setSearchInput] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState<ClientProject | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState<CreateClientProjectPayload>({
-    name: '',
-    description: '',
-    status: 'planning',
-    priority: 'medium',
-    type: 'general',
-  });
 
-  const createMutation = useMutation({
-    mutationFn: (payload: CreateClientProjectPayload) =>
-      createClientProject(apiClient, { ...payload, clientUid: client.uid }),
-    onSuccess: () => {
-      toast.success('Project created');
-      queryClient.invalidateQueries({ queryKey: LINKED_CLIENT_FULL_PROFILE_QUERY_KEY });
-      setCreateOpen(false);
-      setForm({
-        name: '',
-        description: '',
-        status: 'planning',
-        priority: 'medium',
-        type: 'general',
-      });
-    },
-    onError: () => toast.error('Failed to create project'),
-  });
+  const allProjects = useMemo(
+    () =>
+      ([...(client.projects ?? [])] as ClientProject[]).sort(
+        (a, b) => (b.budget ?? 0) - (a.budget ?? 0)
+      ),
+    [client.projects]
+  );
 
-  const totalBudget = projects.reduce((s, p) => s + (p.budget ?? 0), 0);
+  const filteredProjects = useMemo(
+    () => filterProjects(allProjects, searchInput, statusFilter),
+    [allProjects, searchInput, statusFilter]
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Card className="flex-1 min-w-[200px]">
-          <CardContent className="pt-6 flex items-center gap-3">
-            <FolderKanban className="size-8 text-violet-600" />
-            <div>
-              <p className="text-xs uppercase text-muted-foreground">Projects</p>
-              <p className="text-xl font-semibold">{projects.length}</p>
-              <p className="text-sm text-muted-foreground">
-                Total budget {formatZar(totalBudget)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4 mr-2" />
-          New project
+      <div
+        className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        data-tour="projects-page-header"
+      >
+        <div>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Projects</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Manage your projects, create new ones, and track their progress.
+          </p>
+        </div>
+        <Button
+          type="button"
+          className={cn(
+            'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+            'bg-violet-600 text-white hover:bg-violet-700',
+            'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+            '[&_svg]:text-white focus-visible:ring-violet-500/40'
+          )}
+          onClick={() => setCreateOpen(true)}
+        >
+          <Plus className="size-4" />
+          Create project
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your projects</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {projects.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8 text-sm">
-              No projects yet. Create one to get started.
-            </p>
-          ) : (
-            projects.map((p) => (
-              <button
-                key={p.uid}
-                type="button"
-                className="w-full flex items-center justify-between rounded-lg border p-4 text-left hover:bg-muted/50"
-                onClick={() => setSelected(p)}
-              >
-                <div>
-                  <p className="font-medium">{p.name ?? `Project #${p.uid}`}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {p.budget != null ? formatZar(p.budget) : '—'}
-                    {p.createdAt &&
-                      ` · ${format(new Date(p.createdAt), 'dd MMM yyyy')}`}
-                  </p>
-                </div>
-                <Badge variant="secondary">
-                  {(p.status ?? 'unknown').replace(/_/g, ' ')}
-                </Badge>
-              </button>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <ProjectsFiltersBar
+        searchInput={searchInput}
+        onSearchChange={setSearchInput}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+      />
+
+      {filteredProjects.length === 0 ? (
+        <p className="text-center text-muted-foreground py-16 text-sm">
+          {allProjects.length === 0
+            ? 'No projects yet. Create one to get started.'
+            : 'No projects match your filters.'}
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {filteredProjects.map((p) => (
+            <ProjectCard
+              key={p.uid}
+              project={p}
+              onClick={() => setSelected(p)}
+            />
+          ))}
+        </div>
+      )}
 
       <ProjectDetailDialog
         project={selected}
+        client={client}
         open={selected != null}
         onOpenChange={(open) => !open && setSelected(null)}
       />
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create project</DialogTitle>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!form.name.trim()) {
-                toast.error('Project name is required');
-                return;
-              }
-              createMutation.mutate(form);
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="pname">Name</Label>
-              <Input
-                id="pname"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pdesc">Description</Label>
-              <Textarea
-                id="pdesc"
-                value={form.description ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s.replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pbudget">Budget (ZAR)</Label>
-              <Input
-                id="pbudget"
-                type="number"
-                min={0}
-                value={form.budget ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    budget: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Creating…' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }

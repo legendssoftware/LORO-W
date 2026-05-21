@@ -13,12 +13,15 @@ import type { BranchListItem } from '@/api/types/branch';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 import {
   LeadsTable,
   type LeadActivityActorLookup,
   type LeadActivityActorProfile,
 } from '@/components/leads-table/leads-table';
+import { CreateLeadModal } from './components/create-lead-modal';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { LeadsFiltersBar } from './components/leads-filters-bar';
@@ -74,6 +77,7 @@ export function LeadsContent() {
     return () => window.clearTimeout(t);
   }, [searchInput, setSearchQuery]);
 
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
@@ -198,19 +202,44 @@ export function LeadsContent() {
         : null;
 
   return (
-    <section>
-      <h2 className="mb-4 text-base font-medium text-foreground sm:text-lg">Lead history</h2>
-      {listError != null ? (
-        <QueryErrorBanner
-          className="mb-4"
-          message={getQueryErrorMessage(
-            listError,
-            'Could not load leads. Try again.'
-          )}
-          onRetry={refetchLeads}
-        />
-      ) : null}
-      <LeadsFiltersBar
+    <div className="flex min-h-0 flex-1 flex-col">
+      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+        <div
+          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+          data-tour="leads-page-header"
+        >
+          <div>
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Leads</h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              View, track, and manage your sales leads.
+            </p>
+          </div>
+          <Button
+            className={cn(
+              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+              'bg-violet-600 text-white hover:bg-violet-700',
+              'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+              '[&_svg]:text-white focus-visible:ring-violet-500/40'
+            )}
+            data-tour="leads-create-button"
+            onClick={() => setCreateModalOpen(true)}
+          >
+            <Plus className="size-4" />
+            Create lead
+          </Button>
+        </div>
+
+        {listError != null ? (
+          <QueryErrorBanner
+            className="mb-4"
+            message={getQueryErrorMessage(
+              listError,
+              'Could not load leads. Try again.'
+            )}
+            onRetry={refetchLeads}
+          />
+        ) : null}
+        <LeadsFiltersBar
         listScope={listScope}
         users={users}
         branches={branches as BranchListItem[]}
@@ -342,11 +371,16 @@ export function LeadsContent() {
         lead={selectedLead}
         onActionSuccess={() => refetchLeads()}
       />
-      <ImportLeadsModal
-        open={importModalOpen}
-        onOpenChange={setImportModalOpen}
-        onSuccess={() => refetchLeads()}
-      />
-    </section>
+        <ImportLeadsModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+          onSuccess={() => refetchLeads()}
+        />
+        <CreateLeadModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+        />
+      </main>
+    </div>
   );
 }

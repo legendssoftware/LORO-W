@@ -89,15 +89,6 @@ function hasAddress(addr?: ClientAddress): boolean {
   );
 }
 
-function getVisitStatusLabel(method: string | null | undefined): string {
-  if (!method) return 'On a visit – end when done.';
-  const lower = method.toLowerCase();
-  if (lower === 'telephone') return 'On a telephone visit – end when done.';
-  if (lower === 'whatsapp') return 'On a WhatsApp visit – end when done.';
-  if (lower === 'email') return 'On an email visit – end when done.';
-  return 'On a physical visit – end when done.';
-}
-
 function getVisitMethodIcon(method: string | null | undefined) {
   if (!method) return MapPin;
   const m = method.toLowerCase();
@@ -112,34 +103,6 @@ function getDefaultLocation(): string {
     return ''; // will be filled by geolocation
   }
   return '-34.6037,150.7794'; // fallback
-}
-
-function formatElapsed(ms: number): string {
-  if (!ms || ms < 0 || !Number.isFinite(ms)) return '00:00:00';
-  const seconds = Math.floor(ms / 1000) % 60;
-  const minutes = Math.floor(ms / (1000 * 60)) % 60;
-  const hours = Math.floor(ms / (1000 * 60 * 60));
-  return [
-    hours.toString().padStart(2, '0'),
-    minutes.toString().padStart(2, '0'),
-    seconds.toString().padStart(2, '0'),
-  ].join(':');
-}
-
-/** Isolated timer so only this component re-renders every second, not the whole page. */
-function VisitElapsedTimer({ visitStartTime }: { visitStartTime: string }) {
-  const [elapsedTimer, setElapsedTimer] = useState('00:00:00');
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTimer(formatElapsed(Date.now() - new Date(visitStartTime).getTime()));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [visitStartTime]);
-  return (
-    <span className="text-4xl font-semibold tabular-nums text-foreground">
-      {elapsedTimer}
-    </span>
-  );
 }
 
 export function VisitsContent({
@@ -283,13 +246,6 @@ export function VisitsContent({
     typeof document !== 'undefined'
       ? document.getElementById('end-visit-dialog-content')
       : null;
-
-  const visitStartTime = useMemo(() => {
-    if (!activeVisit?.checkInTime) return null;
-    const raw = activeVisit.checkInTime;
-    const d = new Date(raw);
-    return Number.isNaN(d.getTime()) ? null : raw;
-  }, [activeVisit]);
 
   const openMethodModal = () => setMethodModalOpen(true);
   const closeMethodModal = () => {
@@ -546,62 +502,49 @@ export function VisitsContent({
   };
 
   return (
-    <div className="container mx-auto flex w-full flex-col gap-4 px-3 py-5 sm:gap-6 sm:px-4 sm:py-8">
-      <div data-tour="visits-page-header">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-          Start or end a visit and view your visit history.
-        </p>
-      </div>
-
-      {/* Start or End visit: prominent status block (green when ready, red when on visit) */}
-      <div className="flex w-full flex-col items-center gap-4" data-tour="visits-visit-card">
-        {checkedIn && visitStartTime && (
-          <div className="flex w-full max-w-md flex-col items-center gap-1">
-            <VisitElapsedTimer visitStartTime={visitStartTime} />
-          </div>
-        )}
-        <div
-          className={cn(
-            'w-full rounded-xl border-2 p-4 sm:p-6',
-            checkedIn
-              ? 'border-red-600 bg-red-600/10'
-              : 'border-green-600 bg-green-600/10'
-          )}
-        >
-          {checkedIn ? (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <p className="text-base font-medium text-foreground sm:text-lg">
-                {getVisitStatusLabel(activeVisit?.methodOfContact)}
-              </p>
-              <Button
-                onClick={openEndVisit}
-                className="gap-2 min-h-14 w-full border-0 bg-red-600 px-6 text-lg text-white hover:bg-red-700 sm:w-auto"
-                size="lg"
-              >
-                {(() => {
-                  const Icon = getVisitMethodIcon(activeVisit?.methodOfContact);
-                  return <Icon className="size-4" />;
-                })()}
-                End visit
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <p className="text-base font-medium text-foreground sm:text-lg">
-                Ready to start a visit.
-              </p>
-              <Button
-                onClick={openMethodModal}
-                className="gap-2 min-h-14 w-full border-0 bg-green-600 px-6 text-lg text-white hover:bg-green-700 sm:w-auto"
-                size="lg"
-              >
-                <MapPin className="size-4" />
-                Start visit
-              </Button>
-            </div>
-          )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+      <div
+        className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        data-tour="visits-page-header"
+      >
+        <div>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Start or end a visit and view your visit history.
+          </p>
         </div>
+        {checkedIn ? (
+          <Button
+            className={cn(
+              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+              'bg-red-600 text-white hover:bg-red-700',
+              '[&_svg]:text-white focus-visible:ring-red-500/40'
+            )}
+            data-tour="visits-visit-action"
+            onClick={openEndVisit}
+          >
+            {(() => {
+              const Icon = getVisitMethodIcon(activeVisit?.methodOfContact);
+              return <Icon className="size-4" />;
+            })()}
+            End visit
+          </Button>
+        ) : (
+          <Button
+            className={cn(
+              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+              'bg-violet-600 text-white hover:bg-violet-700',
+              'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+              '[&_svg]:text-white focus-visible:ring-violet-500/40'
+            )}
+            data-tour="visits-visit-action"
+            onClick={openMethodModal}
+          >
+            <MapPin className="size-4" />
+            Start visit
+          </Button>
+        )}
       </div>
 
       {/* Method-of-visit modal: open directly when user clicks Start visit */}
@@ -631,8 +574,8 @@ export function VisitsContent({
                     onClick={() => setSelectedMethod(opt.value)}
                     className={
                       selectedMethod === opt.value
-                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2 rounded-full'
-                        : 'gap-2 rounded-full'
+                        ? 'border-purple-600 bg-purple-600 text-white hover:bg-purple-700 hover:text-white gap-2 rounded-md'
+                        : 'gap-2 rounded-md'
                     }
                   >
                     <Icon className="size-4 shrink-0" />
@@ -1357,20 +1300,18 @@ export function VisitsContent({
       </Dialog>
 
       {/* Visit history: date range, region, business type, user, search, export */}
-      <section>
-        <div data-tour="visits-toolbar">
-          <VisitHistoryToolbar
-            uniqueRegions={uniqueRegions}
-            uniqueBusinessTypes={uniqueBusinessTypes}
-            businessTypeLabelMap={businessTypeLabelMap}
-            businessTypeIconMap={businessTypeIconMap}
-            usersList={usersList}
-            branches={branchesQuery.data ?? []}
-            visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
-            onOpenVisitsSummary={handleOpenVisitsSummary}
-          />
-        </div>
-        <div data-tour="visits-history-content">
+      <VisitHistoryToolbar
+        uniqueRegions={uniqueRegions}
+        uniqueBusinessTypes={uniqueBusinessTypes}
+        businessTypeLabelMap={businessTypeLabelMap}
+        businessTypeIconMap={businessTypeIconMap}
+        usersList={usersList}
+        branches={branchesQuery.data ?? []}
+        visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
+        onOpenVisitsSummary={handleOpenVisitsSummary}
+        sectionHeading={null}
+      />
+      <div data-tour="visits-history-content">
           {viewMode === 'table' ? (
             <VisitsTable
               checkIns={filteredCheckIns}
@@ -1384,7 +1325,7 @@ export function VisitsContent({
             </div>
           )}
         </div>
-      </section>
+      </main>
     </div>
   );
 }

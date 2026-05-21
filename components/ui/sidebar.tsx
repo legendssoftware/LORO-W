@@ -7,6 +7,7 @@ import { PanelLeft, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { MODAL_OVERLAY_CLASS } from "@/lib/modal-overlay";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -199,7 +200,7 @@ function Sidebar({
             type="button"
             aria-label="Close sidebar"
             onClick={closeSidebar}
-            className="fixed inset-0 z-[55] cursor-pointer bg-black/50 md:block"
+            className={cn("fixed inset-0 z-[55] cursor-pointer md:block", MODAL_OVERLAY_CLASS)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

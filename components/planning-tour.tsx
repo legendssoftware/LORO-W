@@ -37,11 +37,11 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="planning-create-section"]',
+    element: '[data-tour="planning-create-button"]',
     popover: {
       title: 'Create tasks quickly',
       description:
-        'Use Create task from this highlighted card to add a new task and assign it to the right people.',
+        'Use Create task in the page header to add a new task and assign it to the right people.',
       side: 'bottom',
       align: 'center',
     },
