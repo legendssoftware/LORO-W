@@ -31,8 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { XIcon } from '@/lib/icons';
+import { DialogCloseButton } from '@/components/dialog-close-button';
 import { cn } from '@/lib/utils';
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
@@ -407,8 +406,11 @@ export function UserAttendanceRecordsModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex flex-col w-full w-[80vw] max-w-[80vw] sm:max-w-[80vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
+        className="flex flex-col w-full w-[80vw] max-w-[80vw] sm:max-w-[80vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6 pt-12 pr-14"
       >
+        <div className="absolute top-4 right-4 z-10">
+          <DialogCloseButton />
+        </div>
         <div className="flex items-start justify-between gap-2 shrink-0">
           <DialogHeader className="!text-left min-w-0 flex-1 flex flex-col items-start">
             <DialogTitle className="text-base sm:text-lg leading-tight pr-8 text-left w-full">
@@ -421,15 +423,6 @@ export function UserAttendanceRecordsModal({
               </span>
             </p>
           </DialogHeader>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="shrink-0 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 shadow-none focus:ring-0"
-            aria-label="Close"
-          >
-            <XIcon className="size-4 text-red-600" />
-          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[60vh]">

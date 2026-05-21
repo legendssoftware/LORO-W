@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 import { useClientCartStore, type StoreProduct } from '@/store/client-cart-store';
 import { CartQuantityControl } from '@/app/store/components/cart-quantity-control';
 import { formatZar } from '@/lib/client-portal-utils';
@@ -40,7 +39,6 @@ export function ProductCard({ product }: { product: StoreProduct }) {
 
   function handleAdd() {
     addItem(product);
-    toast.success('Added to cart');
   }
 
   function handleQuantityChange(quantity: number) {

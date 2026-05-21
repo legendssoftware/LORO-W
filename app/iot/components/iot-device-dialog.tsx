@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DialogCloseButton } from '@/components/dialog-close-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -186,7 +187,13 @@ export function IotDeviceDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent
+          showCloseButton={false}
+          className="max-h-[90vh] overflow-y-auto sm:max-w-lg pt-12 pr-14"
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <DialogCloseButton />
+          </div>
           <DialogHeader>
             <DialogTitle>{isCreate ? 'Register device' : device?.deviceID}</DialogTitle>
             <DialogDescription>

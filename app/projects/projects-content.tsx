@@ -19,8 +19,7 @@ export function ProjectsContent() {
 
   return (
     <div className={appPageScrollWrapClass}>
-      <main className={appPageMainClass}>
-        <h1 className="text-2xl font-semibold mb-6">Projects</h1>
+      <main className={`${appPageMainClass} lg:max-w-[88rem]`}>
         <ClientPortalLoading>
           {(client) => <ClientProjectsContent client={client} />}
         </ClientPortalLoading>

@@ -7,7 +7,7 @@ import { useUser, useUserTarget, useUserPreferences } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
 import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
 import type { ReportCardUser } from '@/app/reports/types';
-import { Button } from '@/components/ui/button';
+import { DialogCloseButton } from '@/components/dialog-close-button';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { SettingsIcon, XIcon } from '@/lib/icons';
+import { SettingsIcon } from '@/lib/icons';
 import { Smartphone, Laptop } from 'lucide-react';
 import { formatLastSeen } from '@/app/reports/format-last-seen';
 import { cn } from '@/lib/utils';
@@ -83,23 +83,17 @@ export function ReportUserDetailModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex flex-col w-full max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6"
+        className="flex flex-col w-full max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6 pt-12 pr-14"
       >
+        <div className="absolute top-4 right-4 z-10">
+          <DialogCloseButton />
+        </div>
         <div className="flex items-start justify-between gap-2 shrink-0">
           <DialogHeader>
             <DialogTitle>
               {user ? user.name : 'User details'}
             </DialogTitle>
           </DialogHeader>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="shrink-0 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 shadow-none focus:ring-0"
-            aria-label="Close"
-          >
-            <XIcon className="size-4 text-red-600" />
-          </Button>
         </div>
         {user && (
           <div className="overflow-y-auto flex-1 min-h-0 pt-2 -mx-1 px-1 space-y-4">

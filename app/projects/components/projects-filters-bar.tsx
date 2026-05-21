@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Filter, LayoutGrid } from 'lucide-react';
+import { Filter, ListFilter } from 'lucide-react';
 import {
   SearchableOptionListPicker,
   type SearchableOptionRow,
@@ -21,21 +21,29 @@ import { cn } from '@/lib/utils';
 const selectTriggerClass =
   'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
 
-export interface StoreFilterControlsProps {
+export const PROJECT_STATUS_FILTER_OPTIONS: SearchableOptionRow[] = [
+  { value: 'planning', label: 'Planning', icon: null },
+  { value: 'in_progress', label: 'In progress', icon: null },
+  { value: 'on_hold', label: 'On hold', icon: null },
+  { value: 'completed', label: 'Completed', icon: null },
+  { value: 'cancelled', label: 'Cancelled', icon: null },
+];
+
+export interface ProjectsFilterControlsProps {
   layout: 'row' | 'stack';
-  categoryFilter: string;
-  onCategoryChange: (v: string) => void;
-  categoryOptions: SearchableOptionRow[];
+  statusFilter: string;
+  onStatusChange: (v: string) => void;
+  statusOptions: SearchableOptionRow[];
 }
 
-export function StoreFilterControls({
+export function ProjectsFilterControls({
   layout,
-  categoryFilter,
-  onCategoryChange,
-  categoryOptions,
-}: StoreFilterControlsProps) {
+  statusFilter,
+  onStatusChange,
+  statusOptions,
+}: ProjectsFilterControlsProps) {
   const row = layout === 'row';
-  const categoryTrigger = row
+  const statusTrigger = row
     ? 'h-9 min-w-0 w-[170px] shrink-0'
     : 'h-9 w-full min-w-0';
 
@@ -47,22 +55,22 @@ export function StoreFilterControls({
     <div className={wrapClass}>
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
         <SearchableOptionListPicker
-          selectedValue={categoryFilter}
-          onValueChange={onCategoryChange}
-          options={categoryOptions}
+          selectedValue={statusFilter}
+          onValueChange={onStatusChange}
+          options={statusOptions}
           allOptionValue="all"
-          placeholderLabelWhenAll="All categories"
-          searchPlaceholder="Search categories…"
-          emptyMessage="No category found."
-          triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
-          triggerClassName={categoryTrigger}
+          placeholderLabelWhenAll="All statuses"
+          searchPlaceholder="Search statuses…"
+          emptyMessage="No status found."
+          triggerIcon={<ListFilter className="size-4 shrink-0" />}
+          triggerClassName={statusTrigger}
         />
-        {categoryFilter !== 'all' ? (
+        {statusFilter !== 'all' ? (
           <button
             type="button"
-            onClick={() => onCategoryChange('all')}
+            onClick={() => onStatusChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear category filter"
+            aria-label="Clear status filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -72,20 +80,18 @@ export function StoreFilterControls({
   );
 }
 
-export function StoreFiltersBar({
+export function ProjectsFiltersBar({
   searchInput,
   onSearchChange,
-  categoryFilter,
-  onCategoryChange,
-  categoryOptions,
-  cartSlot,
+  statusFilter,
+  onStatusChange,
+  statusOptions = PROJECT_STATUS_FILTER_OPTIONS,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
-  categoryFilter: string;
-  onCategoryChange: (v: string) => void;
-  categoryOptions: SearchableOptionRow[];
-  cartSlot?: React.ReactNode;
+  statusFilter: string;
+  onStatusChange: (v: string) => void;
+  statusOptions?: SearchableOptionRow[];
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -101,14 +107,14 @@ export function StoreFiltersBar({
 
   function resetAll() {
     onSearchChange('');
-    onCategoryChange('all');
+    onStatusChange('all');
   }
 
-  function renderSearchField() {
+  function renderSearchField(className?: string) {
     return (
-      <div className="relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]">
+      <div className={cn('relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]', className)}>
         <Input
-          placeholder="Search products…"
+          placeholder="Search projects…"
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
@@ -127,15 +133,15 @@ export function StoreFiltersBar({
     );
   }
 
-  const filterProps: StoreFilterControlsProps = {
+  const filterProps: ProjectsFilterControlsProps = {
     layout: 'row',
-    categoryFilter,
-    onCategoryChange,
-    categoryOptions,
+    statusFilter,
+    onStatusChange,
+    statusOptions,
   };
 
   return (
-    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="store-toolbar">
+    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="projects-toolbar">
       <div className="flex flex-col gap-2 md:hidden">
         <Button
           type="button"
@@ -149,10 +155,7 @@ export function StoreFiltersBar({
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
           Filter
         </Button>
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="min-w-0 flex-1">{renderSearchField()}</div>
-          {cartSlot ? <div className="shrink-0">{cartSlot}</div> : null}
-        </div>
+        {renderSearchField('w-full')}
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
@@ -160,10 +163,10 @@ export function StoreFiltersBar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Narrow products by category.
+              Narrow projects by status.
             </DialogDescription>
           </DialogHeader>
-          <StoreFilterControls {...filterProps} layout="stack" />
+          <ProjectsFilterControls {...filterProps} layout="stack" />
           <div className="pt-2">
             <Button
               type="button"
@@ -183,7 +186,7 @@ export function StoreFiltersBar({
       <div className="hidden min-w-0 items-center justify-between gap-3 md:flex">
         <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
-            <StoreFilterControls {...filterProps} layout="row" />
+            <ProjectsFilterControls {...filterProps} layout="row" />
             <Button
               type="button"
               variant="outline"
@@ -195,10 +198,7 @@ export function StoreFiltersBar({
             </Button>
           </div>
         </div>
-        <div className="shrink-0 flex items-center gap-2">
-          {renderSearchField()}
-          {cartSlot}
-        </div>
+        <div className="shrink-0">{renderSearchField()}</div>
       </div>
     </div>
   );
