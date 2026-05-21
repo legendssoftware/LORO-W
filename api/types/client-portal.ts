@@ -93,6 +93,27 @@ export interface UpdateClientProfilePayload {
   customFields?: Record<string, unknown>;
 }
 
+export interface ClientQuotationProduct {
+  uid?: number;
+  name?: string;
+  sku?: string;
+  imageUrl?: string;
+  image_url?: string;
+  brand?: string;
+  category?: string;
+}
+
+export interface ClientQuotationItem {
+  uid?: number;
+  quantity?: number;
+  unitPrice?: number;
+  totalPrice?: number;
+  purchaseMode?: string;
+  itemsPerUnit?: number;
+  notes?: string;
+  product?: ClientQuotationProduct;
+}
+
 export interface ClientQuotation {
   uid: number;
   quotationNumber?: string;
@@ -104,9 +125,23 @@ export interface ClientQuotation {
   isConverted?: boolean;
   isClientPlaced?: boolean;
   title?: string;
+  description?: string;
+  currency?: string;
+  validUntil?: string;
+  convertedAt?: string;
+  shippingMethod?: string;
+  shippingInstructions?: string;
+  packagingRequirements?: string;
+  priceListType?: string;
+  promoCode?: string;
+  notes?: string;
+  pdfURL?: string;
   client?: { name?: string; email?: string; phone?: string; uid?: number };
+  placedBy?: { name?: string; surname?: string; email?: string; uid?: number };
+  branch?: { uid?: number; name?: string };
+  organisation?: { uid?: number; name?: string };
   orders?: unknown[];
-  quotationItems?: unknown[];
+  quotationItems?: ClientQuotationItem[];
   totalItems?: number;
   [key: string]: unknown;
 }

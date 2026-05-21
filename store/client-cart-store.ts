@@ -13,6 +13,7 @@ export interface StoreProduct {
   salePrice?: number;
   isOnPromotion?: boolean;
   imageUrl?: string;
+  brand?: string;
   category?: string;
   palletAvailable?: boolean;
   palletPrice?: number;
@@ -35,6 +36,7 @@ interface ClientCartState {
   addItem: (product: StoreProduct, quantity?: number, mode?: PurchaseMode) => void;
   updateQuantity: (uid: number, mode: PurchaseMode, quantity: number) => void;
   removeItem: (uid: number, mode: PurchaseMode) => void;
+  findCartItem: (uid: number, mode?: PurchaseMode) => CartLine | undefined;
   clear: () => void;
   cartTotal: () => number;
   itemCount: () => number;
@@ -117,6 +119,10 @@ export const useClientCartStore = create<ClientCartState>()(
           ),
         }));
       },
+      findCartItem: (uid, mode = 'item') =>
+        get().items.find(
+          (i) => i.uid === uid && i.purchaseMode === mode
+        ),
       clear: () => set({ items: [] }),
       cartTotal: () =>
         Number(
@@ -130,11 +136,18 @@ export const useClientCartStore = create<ClientCartState>()(
   )
 );
 
+export interface CheckoutOptions {
+  promoCode?: string;
+  deliveryMethod?: 'collect' | 'deliver';
+  deliveryAddress?: string;
+}
+
 export function buildCheckoutPayload(
   items: CartLine[],
   clientUid: number,
-  promoCode?: string
+  options?: CheckoutOptions
 ) {
+  const { promoCode, deliveryMethod, deliveryAddress } = options ?? {};
   const processedItems = items.map((item) => ({
     uid: item.uid,
     quantity: item.quantity,
@@ -155,5 +168,9 @@ export function buildCheckoutPayload(
     totalAmount: totalAmount.toFixed(2),
     totalItems: String(totalItems),
     promoCode,
+    deliveryMethod,
+    ...(deliveryMethod === 'deliver' && deliveryAddress?.trim()
+      ? { deliveryAddress: deliveryAddress.trim() }
+      : {}),
   };
 }

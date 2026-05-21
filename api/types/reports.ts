@@ -190,6 +190,11 @@ export interface ProductsListResponse {
     name?: string;
     sku?: string;
     category?: string;
+    brand?: string;
+    price?: number;
+    salePrice?: number;
+    isOnPromotion?: boolean;
+    imageUrl?: string;
   }>;
   meta?: { total: number };
 }
