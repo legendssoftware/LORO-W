@@ -1,31 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Building2, ChevronDown, Mail, Phone, User } from 'lucide-react';
+import {
+  Building2,
+  CreditCard,
+  DollarSign,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Receipt,
+  TrendingUp,
+  User,
+} from 'lucide-react';
 import type { ClientProfileData } from '@/api/types/client-portal';
 import {
   formatAddress,
+  formatZar,
   getCustomField,
   getSalesRepName,
 } from '@/lib/client-portal-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
-export function ClientAccountInfoCard({
-  client,
-  showQuickLinks = false,
-}: {
-  client: ClientProfileData;
-  showQuickLinks?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
+export function ClientAccountInfoCard({ client }: { client: ClientProfileData }) {
   const address = formatAddress(client.address);
   const rep = client.assignedSalesRep;
+  const creditLimit = client.creditLimit ?? 0;
+  const outstanding = client.outstandingBalance ?? 0;
+  const availableCredit = Math.max(0, creditLimit - outstanding);
 
   return (
-    <Card className="border-t-4 border-t-amber-400">
+    <Card className="border-t-4 border-t-amber-400 shadow-none">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Building2 className="size-5 text-violet-600" />
@@ -36,12 +40,12 @@ export function ClientAccountInfoCard({
       <CardContent className="space-y-2">
         <div className="grid gap-1 text-sm sm:grid-cols-2">
           <div className="flex items-center gap-2">
-            <User className="size-4 text-muted-foreground" />
+            <User className="size-4 text-muted-foreground shrink-0" />
             <span>Sales rep: {getSalesRepName(client)}</span>
           </div>
           {client.email && (
             <div className="flex items-center gap-2">
-              <Mail className="size-4 text-muted-foreground" />
+              <Mail className="size-4 text-muted-foreground shrink-0" />
               <a href={`mailto:${client.email}`} className="text-primary underline">
                 {client.email}
               </a>
@@ -49,7 +53,7 @@ export function ClientAccountInfoCard({
           )}
           {client.phone && (
             <div className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
+              <Phone className="size-4 text-muted-foreground shrink-0" />
               <a
                 href={`tel:${client.phone.replace(/\s/g, '')}`}
                 className="text-primary underline"
@@ -60,30 +64,38 @@ export function ClientAccountInfoCard({
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full"
-          onClick={() => setExpanded((e) => !e)}
-        >
-          {expanded ? 'Show less' : 'View more'}
-          <ChevronDown
-            className={cn('ml-2 size-4 transition-transform', expanded && 'rotate-180')}
-          />
-        </Button>
+        <div className="grid gap-1 text-sm sm:grid-cols-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <FileText className="size-4 text-muted-foreground shrink-0" />
+            <span>Reg: {getCustomField(client, 'registrationNumber')}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Receipt className="size-4 text-muted-foreground shrink-0" />
+            <span>Tax: {getCustomField(client, 'taxNumber')}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CreditCard className="size-4 text-muted-foreground shrink-0" />
+            <span>Credit limit: {formatZar(creditLimit)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DollarSign className="size-4 text-muted-foreground shrink-0" />
+            <span>Outstanding: {formatZar(outstanding)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="size-4 text-muted-foreground shrink-0" />
+            <span>Available: {formatZar(availableCredit)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FileText className="size-4 text-muted-foreground shrink-0" />
+            <span>Payment terms: {client.paymentTerms ?? '—'}</span>
+          </div>
+        </div>
 
-        {expanded && (
-          <div className="pt-2 border-t space-y-1 text-sm">
-            <p>
-              <span className="text-muted-foreground">Tax: </span>
-              {getCustomField(client, 'taxNumber')}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Reg: </span>
-              {getCustomField(client, 'registrationNumber')}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Address: </span>
+        <div className="grid gap-1 text-sm sm:grid-cols-2 pt-2 border-t">
+          <div className="flex items-start gap-2 sm:col-span-2">
+            <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+            <span>
+              Address:{' '}
               {address !== '—' ? (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
@@ -96,42 +108,31 @@ export function ClientAccountInfoCard({
               ) : (
                 '—'
               )}
-            </p>
-            {rep?.email && (
-              <p>
-                <span className="text-muted-foreground">Rep email: </span>
+            </span>
+          </div>
+          {rep?.email && (
+            <div className="flex items-center gap-2">
+              <Mail className="size-4 text-muted-foreground shrink-0" />
+              <span>
+                Rep email:{' '}
                 <a href={`mailto:${rep.email}`} className="text-primary underline">
                   {rep.email}
                 </a>
-              </p>
-            )}
-            {rep?.phone && (
-              <p>
-                <span className="text-muted-foreground">Rep phone: </span>
+              </span>
+            </div>
+          )}
+          {rep?.phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="size-4 text-muted-foreground shrink-0" />
+              <span>
+                Rep phone:{' '}
                 <a href={`tel:${rep.phone}`} className="text-primary underline">
                   {rep.phone}
                 </a>
-              </p>
-            )}
-          </div>
-        )}
-
-        {showQuickLinks && (
-          <div className="grid grid-cols-2 gap-2 pt-4 sm:grid-cols-4">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/store">Store</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/reports?tab=credit">Reports</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/orders">Orders</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/projects">Projects</Link>
-            </Button>
-          </div>
-        )}
+              </span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

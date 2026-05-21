@@ -53,7 +53,6 @@ export const PUBLIC_OR_AUTH_PATHS = [
 export const CLIENT_PORTAL_PATHS = [
     "/dashboard",
     "/store",
-    "/reports",
     "/orders",
     "/projects",
     "/account",
@@ -65,7 +64,6 @@ export type ClientPortalPath = (typeof CLIENT_PORTAL_PATHS)[number];
 export const CLIENT_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
     { path: "/store", label: "Store" },
-    { path: "/reports", label: "Reports" },
     { path: "/orders", label: "Orders" },
     { path: "/projects", label: "Projects" },
     { path: "/account", label: "Account" },

@@ -16,6 +16,8 @@ export interface CreateQuotationPayload {
   totalAmount: string;
   totalItems: string;
   promoCode?: string;
+  deliveryMethod?: 'collect' | 'deliver';
+  deliveryAddress?: string;
 }
 
 export interface CreateQuotationResponse {

@@ -144,7 +144,9 @@ export function AppSidebar() {
                           href={route.path}
                           onClick={closeSidebar}
                           onPointerEnter={() => {
-                            if (route.path === "/dashboard") prefetchDashboard();
+                            if (route.path === "/dashboard" && !isClient) {
+                              prefetchDashboard();
+                            }
                           }}
                           className="w-full justify-center md:justify-start"
                         >

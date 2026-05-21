@@ -1,4 +1,5 @@
 import type { ClientAddress, ClientProfileData } from '@/api/types/client-portal';
+import { getQuotationStatusLabel } from '@/lib/order-kanban-utils';
 
 export function formatZar(amount?: number | null): string {
   if (amount == null || Number.isNaN(amount)) return '—';
@@ -43,6 +44,10 @@ export function parseQuotationAmount(value?: number | string): number {
     return Number.isNaN(n) ? 0 : n;
   }
   return 0;
+}
+
+export function formatQuotationStatusLabel(status?: string): string {
+  return getQuotationStatusLabel(status ?? 'pending');
 }
 
 export function canEditQuotationStatus(status?: string): boolean {

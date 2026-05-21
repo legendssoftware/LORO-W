@@ -16,9 +16,6 @@ import { useApiClient } from '@/api/hooks/use-api-client';
 import { useTokenReady, useSessionSync } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { isReportsElevatedViewer } from '@/lib/access';
-import { isClientMode } from '@/lib/user-mode';
-import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
-import { ClientReportsTabs } from '@/app/client-portal/components/client-reports-tabs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
 import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
@@ -199,10 +196,6 @@ export function ReportsContent() {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {!isSignedIn || !isTokenReady ? (
             <LoadingSpinner wrapperClassName="py-12" />
-          ) : profile && isClientMode(profile) ? (
-            <ClientPortalLoading>
-              {(client) => <ClientReportsTabs client={client} />}
-            </ClientPortalLoading>
           ) : profile ? (
             <ReportsTabsEqualWidth profile={profile} reportsMode={reportsMode} />
           ) : (

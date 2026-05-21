@@ -17,6 +17,7 @@ import type {
   UserTargetDashboardShape,
 } from '@/api/endpoints/user';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
+import { isClientMode } from '@/lib/user-mode';
 
 export type PerformanceWarningPendingContextValue = {
   /** User must acknowledge server-side warning before using the app chrome. */
@@ -84,10 +85,13 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const clerkSessionIdFromStore = useSessionStore((s) => s.clerkSessionId);
   const profile = useSessionStore((s) => s.profileData);
-  const userRef = profile?.uid != null ? String(profile.uid) : null;
+  const isClient = isClientMode(profile ?? undefined);
+  /** Staff user uid only — client portal uses client uid in profile.uid, not users table. */
+  const staffUserRef =
+    !isClient && profile?.uid != null ? String(profile.uid) : null;
 
-  const targetQuery = useUserTarget(userRef, {
-    enabled: !!userRef && !!isSignedIn,
+  const targetQuery = useUserTarget(staffUserRef, {
+    enabled: !!staffUserRef && !!isSignedIn,
   });
 
   const userTargetPayload = targetQuery.data?.userTarget;
@@ -96,7 +100,11 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
   const inAppShell = !isFullDocumentRoute(pathname);
 
   const targetResolved =
-    !!userRef && targetQuery.isFetched && !targetQuery.isLoading && targetQuery.isSuccess;
+    isClient ||
+    (!!staffUserRef &&
+      targetQuery.isFetched &&
+      !targetQuery.isLoading &&
+      targetQuery.isSuccess);
 
   const tw = pickEffectiveWarnings(targetResolved, userTargetPayload, twFromProfile);
 
@@ -112,23 +120,30 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
 
   /** Let sync profile unblock the modal before GET /target returns (warnings must lead). */
   const blockingDataReady =
-    targetResolved || (!targetQuery.isError && profileCarriesPendingWarning && !!userRef && !!isSignedIn);
+    isClient ||
+    targetResolved ||
+    (!targetQuery.isError &&
+      profileCarriesPendingWarning &&
+      !!staffUserRef &&
+      !!isSignedIn);
 
   const sessionOk = !!(sessionId ?? clerkSessionIdFromStore);
 
   const pendingBlockingWarning =
+    !isClient &&
     isLoaded &&
     !!isSignedIn &&
     sessionOk &&
     inAppShell &&
-    !!userRef &&
+    !!staffUserRef &&
     blockingDataReady &&
     hasUnackedWarning;
 
-  const targetQueryEnabled = !!userRef && !!isSignedIn;
+  const targetQueryEnabled = !!staffUserRef && !!isSignedIn;
   const deferUntilTargetSettled =
+    !isClient &&
     inAppShell &&
-    !!userRef &&
+    !!staffUserRef &&
     !!isSignedIn &&
     sessionOk &&
     targetQueryEnabled &&
@@ -153,10 +168,16 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     if (!isSignedIn) suppressReasons.push('not_signed_in');
     if (!sessionOk) suppressReasons.push('no_session_id');
     if (!inAppShell) suppressReasons.push('full_document_route');
-    if (!userRef) suppressReasons.push('no_session_user_ref');
+    if (isClient) suppressReasons.push('client_portal_user');
+    if (!staffUserRef) suppressReasons.push('no_session_user_ref');
 
     const canEvaluateTarget =
-      isLoaded && !!isSignedIn && sessionOk && inAppShell && !!userRef;
+      !isClient &&
+      isLoaded &&
+      !!isSignedIn &&
+      sessionOk &&
+      inAppShell &&
+      !!staffUserRef;
 
     if (canEvaluateTarget) {
       if (!blockingDataReady) {
@@ -213,14 +234,15 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
         isLoaded,
         isSignedIn,
         hasSessionId: sessionOk,
-        userRef,
+        isClient,
+        staffUserRef,
         targetResolved,
         blockingDataReady,
         profileCarriesPendingWarning,
         hasUnackedWarning,
       },
       targetFetch: {
-        queryEnabled: !!userRef && !!isSignedIn,
+        queryEnabled: !!staffUserRef && !!isSignedIn,
         isFetched: targetQuery.isFetched,
         isLoading: targetQuery.isLoading,
         isSuccess: targetQuery.isSuccess,
@@ -247,7 +269,8 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     deferToursAndSalesBenchmarks,
     deferUntilTargetSettled,
     targetResolved,
-    userRef,
+    staffUserRef,
+    isClient,
     pathname,
     inAppShell,
     isLoaded,
@@ -269,10 +292,16 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       pendingBlockingWarning,
       deferToursAndSalesBenchmarks,
       targetWarnings: tw,
-      userRef,
+      userRef: staffUserRef,
       employeeName: employeeName || 'there',
     }),
-    [pendingBlockingWarning, deferToursAndSalesBenchmarks, tw, userRef, employeeName]
+    [
+      pendingBlockingWarning,
+      deferToursAndSalesBenchmarks,
+      tw,
+      staffUserRef,
+      employeeName,
+    ]
   );
 
   return (
