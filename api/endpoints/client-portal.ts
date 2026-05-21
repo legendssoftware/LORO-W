@@ -50,24 +50,34 @@ export async function postCreditLimitExtension(
   return data;
 }
 
-/** GET /projects/client/:clientId */
-export async function getClientProjects(
-  client: AxiosInstance,
-  clientId: number
+/** GET /shop/projects/me — projects for the authenticated linked client */
+export async function getMyClientProjects(
+  client: AxiosInstance
 ): Promise<ClientProject[]> {
   const { data } = await client.get<{ projects?: ClientProject[] }>(
-    `/projects/client/${clientId}`
+    '/shop/projects/me'
   );
   return data?.projects ?? [];
 }
 
-/** POST /projects — create project for linked client */
+/** GET /shop/projects/me/:id — single project with linked quotations */
+export async function getMyClientProject(
+  client: AxiosInstance,
+  projectId: number
+): Promise<ClientProject | null> {
+  const { data } = await client.get<{ project?: ClientProject }>(
+    `/shop/projects/me/${projectId}`
+  );
+  return data?.project ?? null;
+}
+
+/** POST /shop/projects/me — create project for the authenticated linked client */
 export async function createClientProject(
   client: AxiosInstance,
-  payload: CreateClientProjectPayload & { clientUid?: number }
+  payload: CreateClientProjectPayload
 ): Promise<{ project?: ClientProject; message?: string }> {
   const { data } = await client.post<{ project?: ClientProject; message?: string }>(
-    '/projects',
+    '/shop/projects/me',
     payload
   );
   return data;

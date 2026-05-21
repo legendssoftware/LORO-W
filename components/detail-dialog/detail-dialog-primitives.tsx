@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { DialogClose } from '@/components/ui/dialog';
-import { XIcon } from '@/lib/icons';
+import { DialogCloseButton } from '@/components/dialog-close-button';
 
 /** Standard `DialogContent` class for detail modals (padding, scroll, width). */
 export const DETAIL_DIALOG_CONTENT_CLASS =
@@ -51,19 +50,6 @@ export function DetailFieldRow({
   );
 }
 
-const closeButtonClassName =
-  'inline-flex size-8 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
-
 export function DetailDialogCloseButton() {
-  return (
-    <DialogClose asChild>
-      <button
-        type="button"
-        className={closeButtonClassName}
-        aria-label="Close"
-      >
-        <XIcon className="size-5" />
-      </button>
-    </DialogClose>
-  );
+  return <DialogCloseButton />;
 }

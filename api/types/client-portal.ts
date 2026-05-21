@@ -116,6 +116,8 @@ export interface ClientQuotationItem {
 
 export interface ClientQuotation {
   uid: number;
+  projectUid?: number;
+  project?: { uid?: number; name?: string };
   quotationNumber?: string;
   orderNumber?: string;
   status?: string;
@@ -146,6 +148,21 @@ export interface ClientQuotation {
   [key: string]: unknown;
 }
 
+export interface ClientProjectAddress {
+  street?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+}
+
+export interface ClientProjectLinkedMedia {
+  url: string;
+  type?: 'image' | 'video' | 'document' | 'other';
+  label?: string;
+}
+
 export interface ClientProject {
   uid: number;
   name?: string;
@@ -154,11 +171,35 @@ export interface ClientProject {
   priority?: string;
   type?: string;
   budget?: number;
+  currentSpent?: number;
+  value?: number;
+  totalCost?: number;
+  progressPercentage?: number;
+  currency?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   startDate?: string;
   endDate?: string;
+  expectedCompletionDate?: string;
+  address?: ClientProjectAddress;
+  latitude?: number;
+  longitude?: number;
+  requirements?: string[];
+  tags?: string[];
+  notes?: string;
+  linkedInvoices?: string[];
+  linkedMedia?: ClientProjectLinkedMedia[];
   createdAt?: string;
   updatedAt?: string;
   images?: string[];
+  assignedUser?: {
+    uid?: number;
+    name?: string;
+    surname?: string;
+    email?: string;
+  };
+  quotations?: ClientQuotation[];
   [key: string]: unknown;
 }
 
@@ -169,9 +210,24 @@ export interface CreateClientProjectPayload {
   priority?: string;
   type?: string;
   budget?: number;
+  currentSpent?: number;
+  value?: number;
+  totalCost?: number;
+  linkedInvoices?: string[];
+  linkedMedia?: ClientProjectLinkedMedia[];
+  contactEmail?: string;
+  contactPhone?: string;
   startDate?: string;
   endDate?: string;
-  images?: string[];
+  expectedCompletionDate?: string;
+  address?: ClientProjectAddress;
+  latitude?: number;
+  longitude?: number;
+  requirements?: string[];
+  tags?: string[];
+  notes?: string;
+  currency?: string;
+  progressPercentage?: number;
 }
 
 export interface CreditLimitExtensionPayload {

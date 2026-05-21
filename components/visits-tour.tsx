@@ -17,7 +17,7 @@ import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
 const TOUR_INTRO_DESCRIPTION =
-  'This is the Visits page: start or end a field visit, log how it went, and review your history in one place. The next steps walk through the status card, filters, and your visit list or map.';
+  'This is the Visits page: start or end a field visit, log how it went, and review your history in one place. The next steps walk through the header action, filters, and your visit list or map.';
 
 const TOUR_STEPS: DriveStep[] = [
   {
@@ -37,13 +37,13 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="visits-visit-card"]',
+    element: '[data-tour="visits-visit-action"]',
     popover: {
       title: 'Start or end a visit',
       description:
-        'When you are free, use Start visit and pick how you are connecting (in person, phone, and so on). While a visit is running, the timer shows here; use End visit to close it and capture notes and outcomes.',
+        'Use Start visit in the page header to pick how you are connecting (in person, phone, and so on). While a visit is running, End visit appears here in red so you can close it and capture notes and outcomes.',
       side: 'bottom',
-      align: 'center',
+      align: 'end',
     },
   },
   {
