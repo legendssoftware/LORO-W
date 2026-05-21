@@ -27,7 +27,7 @@ import type { ReportCardUser } from '@/app/reports/types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 import { buildClockInNotes } from '@/lib/clock-in-options';
 import { isClientMode } from '@/lib/user-mode';
-import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
+import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientDashboardHome } from '@/app/client-portal/components/client-dashboard-home';
 
 export function DashboardContent() {
@@ -62,11 +62,15 @@ export function DashboardContent() {
     [profile?.uid, clerkUser?.id]
   );
 
+  const isClient = isClientMode(profile);
+  const staffAttendanceEnabled =
+    isTokenReady && profile != null && !isClient;
+
   const attQuery = useAttStatus({
-    enabled: isTokenReady,
+    enabled: staffAttendanceEnabled,
   });
   const metricsQuery = useAttMetrics({
-    enabled: isTokenReady,
+    enabled: staffAttendanceEnabled,
   });
 
   useEffect(() => {
@@ -110,11 +114,9 @@ export function DashboardContent() {
   const attLoading =
     attCheckInMutation.isPending || attCheckOutMutation.isPending || breakMutation.isPending;
 
-  const isClient = isClientMode(profile);
-
   /** When not checked in, fetch status with device location for server-driven clock-in options. */
   useEffect(() => {
-    if (!isTokenReady || checkedIn) {
+    if (!staffAttendanceEnabled || checkedIn) {
       setClockInContext(null);
       setClockInContextLoading(false);
       return;
@@ -160,7 +162,7 @@ export function DashboardContent() {
     return () => {
       cancelled = true;
     };
-  }, [isTokenReady, checkedIn, apiClient]);
+  }, [staffAttendanceEnabled, checkedIn, apiClient]);
 
   const handleClockInWithNote = async (modeLabel: string, additionalNote?: string) => {
     const combined = buildClockInNotes(modeLabel, additionalNote);
@@ -249,8 +251,8 @@ export function DashboardContent() {
   // server and initial client render both show the same loading placeholder.
   if (!mounted) {
     return (
-      <div className="h-full overflow-auto">
-        <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
+      <div className={appPageScrollWrapClass}>
+        <main className={appPageMainClass}>
           <LoadingSpinner wrapperClassName="py-12" />
         </main>
       </div>
@@ -260,8 +262,8 @@ export function DashboardContent() {
   // Show loading until Clerk token is ready (avoids firing requests before token is available).
   if (isSignedIn && !isTokenReady) {
     return (
-      <div className="h-full overflow-auto">
-        <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
+      <div className={appPageScrollWrapClass}>
+        <main className={appPageMainClass}>
           <LoadingSpinner wrapperClassName="py-12" />
         </main>
       </div>
@@ -269,12 +271,10 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="h-full overflow-auto">
-      <main className="container mx-auto max-w-6xl lg:max-w-7xl px-4 py-8 sm:px-6">
+    <div className={appPageScrollWrapClass}>
+      <main className={appPageMainClass}>
         {!isSignedIn ? null : profile && isClient ? (
-          <ClientPortalLoading>
-            {(client) => <ClientDashboardHome client={client} />}
-          </ClientPortalLoading>
+          <ClientDashboardHome />
         ) : (
           <div className="space-y-4">
             <AttendanceStatusButton

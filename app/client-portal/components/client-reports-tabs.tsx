@@ -1,7 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CreditCard, TrendingUp } from 'lucide-react';
 import type { ClientProfileData } from '@/api/types/client-portal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,29 +14,15 @@ const CLIENT_REPORT_TABS = [
 
 type ClientTab = (typeof CLIENT_REPORT_TABS)[number]['value'];
 
-function getValidTab(value: string | null): ClientTab {
-  return CLIENT_REPORT_TABS.some((t) => t.value === value) ? (value as ClientTab) : 'credit';
-}
-
 export function ClientReportsTabs({ client }: { client: ClientProfileData }) {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<ClientTab>(() =>
-    getValidTab(searchParams.get('tab'))
-  );
-
-  useEffect(() => {
-    setActiveTab(getValidTab(searchParams.get('tab')));
-  }, [searchParams]);
-
-  const onTabChange = useCallback((value: string) => {
-    setActiveTab(value as ClientTab);
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', value);
-    window.history.replaceState({}, '', url.pathname + url.search);
-  }, []);
+  const [activeTab, setActiveTab] = useState<ClientTab>('credit');
 
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as ClientTab)}
+      className="w-full"
+    >
       <TabsList className="mb-6">
         {CLIENT_REPORT_TABS.map(({ value, label, Icon }) => (
           <TabsTrigger key={value} value={value} className="gap-2">
