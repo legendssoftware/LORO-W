@@ -44,15 +44,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const optionalNumber = z
-  .string()
-  .optional()
-  .or(z.literal(''))
-  .transform((v) => {
-    if (v == null || v.trim() === '') return undefined;
-    const n = Number(v);
-    return Number.isNaN(n) ? undefined : n;
-  });
+const optionalNumber = z.string().optional().or(z.literal(''));
+
+function parseOptionalNumber(value?: string): number | undefined {
+  if (value == null || value.trim() === '') return undefined;
+  const n = Number(value);
+  return Number.isNaN(n) ? undefined : n;
+}
 
 const addressSchema = z.object({
   street: z.string().optional().or(z.literal('')),
@@ -92,8 +90,8 @@ const projectFormSchema = z
     linkedInvoices: z.string().optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
-    const budget = data.budget;
-    const spent = data.currentSpent;
+    const budget = parseOptionalNumber(data.budget);
+    const spent = parseOptionalNumber(data.currentSpent);
     if (budget != null && spent != null && spent > budget) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -112,11 +110,11 @@ function defaultFormValues(): ProjectFormValues {
     status: 'planning',
     type: 'other',
     priority: 'medium',
-    progressPercentage: undefined,
-    budget: undefined,
-    currentSpent: undefined,
-    value: undefined,
-    totalCost: undefined,
+    progressPercentage: '',
+    budget: '',
+    currentSpent: '',
+    value: '',
+    totalCost: '',
     currency: 'ZAR',
     startDate: '',
     endDate: '',
@@ -131,8 +129,8 @@ function defaultFormValues(): ProjectFormValues {
       country: '',
       postalCode: '',
     },
-    latitude: undefined,
-    longitude: undefined,
+    latitude: '',
+    longitude: '',
     requirements: '',
     tags: '',
     notes: '',
@@ -182,16 +180,24 @@ function valuesToPayload(values: ProjectFormValues): CreateClientProjectPayload 
   payload.type = values.type;
   payload.priority = values.priority;
 
-  if (values.budget != null) payload.budget = values.budget;
-  if (values.currentSpent != null) payload.currentSpent = values.currentSpent;
-  if (values.value != null) payload.value = values.value;
-  if (values.totalCost != null) payload.totalCost = values.totalCost;
+  const budget = parseOptionalNumber(values.budget);
+  if (budget != null) payload.budget = budget;
+
+  const currentSpent = parseOptionalNumber(values.currentSpent);
+  if (currentSpent != null) payload.currentSpent = currentSpent;
+
+  const value = parseOptionalNumber(values.value);
+  if (value != null) payload.value = value;
+
+  const totalCost = parseOptionalNumber(values.totalCost);
+  if (totalCost != null) payload.totalCost = totalCost;
 
   const currency = values.currency?.trim();
   if (currency) payload.currency = currency;
 
-  if (values.progressPercentage != null) {
-    payload.progressPercentage = values.progressPercentage;
+  const progressPercentage = parseOptionalNumber(values.progressPercentage);
+  if (progressPercentage != null) {
+    payload.progressPercentage = progressPercentage;
   }
 
   const startDate = toIsoDate(values.startDate);
@@ -212,8 +218,11 @@ function valuesToPayload(values: ProjectFormValues): CreateClientProjectPayload 
   const address = buildAddress(values.address);
   if (address) payload.address = address;
 
-  if (values.latitude != null) payload.latitude = values.latitude;
-  if (values.longitude != null) payload.longitude = values.longitude;
+  const latitude = parseOptionalNumber(values.latitude);
+  if (latitude != null) payload.latitude = latitude;
+
+  const longitude = parseOptionalNumber(values.longitude);
+  if (longitude != null) payload.longitude = longitude;
 
   const requirements = splitList(values.requirements);
   if (requirements) payload.requirements = requirements;
@@ -243,10 +252,6 @@ function FormSection({
       <div className="space-y-3">{children}</div>
     </section>
   );
-}
-
-function numberFieldProps(value: number | undefined) {
-  return value != null ? String(value) : '';
 }
 
 export function CreateProjectDialog({
@@ -404,8 +409,7 @@ export function CreateProjectDialog({
                           type="number"
                           min={0}
                           max={100}
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -427,8 +431,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -445,8 +448,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -463,8 +465,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -481,8 +482,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -670,8 +670,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           step="any"
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -688,8 +687,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           step="any"
-                          value={numberFieldProps(field.value as number | undefined)}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
