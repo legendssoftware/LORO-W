@@ -21,13 +21,15 @@ import {
 } from '@/api/hooks/use-claims';
 import { uploadFile } from '@/api/endpoints/upload';
 import { CLAIM_CATEGORY_OPTIONS } from '@/api/types/claims';
-import { Coins, FolderOpen, Loader2, Plus, Tag } from 'lucide-react';
+import { ClaimCurrencyField } from '@/app/claims/components/claim-currency-picker-dialog';
+import { FolderOpen, Loader2, Plus, Tag } from 'lucide-react';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
-
-const CURRENCIES = ['ZAR', 'USD', 'EUR', 'GBP'] as const;
 
 const primaryRedClass =
   'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/40 [&_svg]:text-white';
+
+const primaryVioletClass =
+  'bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white';
 
 export function ClaimCreateDialog({
   open,
@@ -65,16 +67,6 @@ export function ClaimCreateDialog({
   }, [open]);
 
   const groups = groupsQuery.data?.groups ?? [];
-
-  const currencyOptions = useMemo(
-    () =>
-      CURRENCIES.map((c) => ({
-        value: c,
-        label: c,
-        icon: <Coins className="size-4 shrink-0" />,
-      })),
-    []
-  );
 
   const categoryOptions = useMemo(
     () =>
@@ -131,7 +123,18 @@ export function ClaimCreateDialog({
           : {}),
       },
       {
-        onSuccess: () => onOpenChange(false),
+        onSuccess: () => {
+          void groupsQuery.refetch();
+          const inFolder = folderUid !== 'none';
+          if (inFolder) {
+            setAmount('');
+            setComment('');
+            setFile(null);
+            setSubmitError(null);
+            return;
+          }
+          onOpenChange(false);
+        },
       }
     );
   }
@@ -174,16 +177,7 @@ export function ClaimCreateDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Currency</Label>
-              <SearchableOptionListPicker
-                selectedValue={currency}
-                onValueChange={setCurrency}
-                options={currencyOptions}
-                includeAllOption={false}
-                searchPlaceholder="Search currency…"
-                emptyMessage="No currency found."
-                triggerIcon={<Coins className="size-4 shrink-0" />}
-                triggerClassName="h-9 w-full"
-              />
+              <ClaimCurrencyField value={currency} onChange={setCurrency} />
             </div>
           </div>
           <div className="space-y-1.5">
@@ -234,7 +228,10 @@ export function ClaimCreateDialog({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={createGroupMutation.isPending}
+                  className={primaryVioletClass}
+                  disabled={
+                    createGroupMutation.isPending || !newFolderTitle.trim()
+                  }
                   onClick={handleCreateFolder}
                 >
                   {createGroupMutation.isPending ? (
@@ -266,13 +263,20 @@ export function ClaimCreateDialog({
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </div>
+          {folderUid !== 'none' ? (
+            <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+              Claims added to a folder stay in draft until you submit the folder
+              from the Claims page. No emails are sent while you keep adding
+              receipts.
+            </p>
+          ) : null}
           {submitError ? (
             <p className="text-sm text-destructive">{submitError}</p>
           ) : null}
           <DialogFooter className="flex flex-wrap items-center justify-end gap-4 sm:gap-4">
             <Button
               type="button"
-              variant="outline"
+              variant="cancel"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -287,6 +291,8 @@ export function ClaimCreateDialog({
                   <Loader2 className="mr-2 size-4 animate-spin" />
                   Submitting…
                 </>
+              ) : folderUid !== 'none' ? (
+                'Add to folder'
               ) : (
                 'Submit claim'
               )}

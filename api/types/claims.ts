@@ -153,6 +153,9 @@ export interface ClaimGroup {
   kind?: string;
   createdAt?: string;
   updatedAt?: string;
+  submittedAt?: string | null;
+  claimCount?: number;
+  isDraft?: boolean;
 }
 
 export interface ClaimGroupsListResponse {

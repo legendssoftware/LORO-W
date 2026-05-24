@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useClaimsInfinite, useClaimGroups } from '@/api/hooks/use-claims';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { ClaimsFiltersBar } from '@/app/claims/components/claims-filters-bar';
 import { ClaimRowCard, ClaimRowCardSkeleton } from '@/app/claims/components/claim-row-card';
 import { ClaimCreateDialog } from '@/app/claims/components/claim-create-dialog';
+import { ClaimFoldersPanel } from '@/app/claims/components/claim-folders-panel';
 import { Plus } from 'lucide-react';
 import type { Claim } from '@/api/types/claims';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
@@ -35,6 +37,7 @@ function matchesSearch(claim: Claim, q: string): boolean {
 
 export function ClaimsContent() {
   const { isTokenReady } = useTokenReady();
+  const { isSyncing: sessionSyncLoading } = useSessionSync();
   const [createOpen, setCreateOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -50,11 +53,11 @@ export function ClaimsContent() {
   });
   const [groupFilter, setGroupFilter] = useState('all');
 
-  const groupsQuery = useClaimGroups({ enabled: isTokenReady });
+  const groupsQuery = useClaimGroups({ enabled: isTokenReady && !sessionSyncLoading });
   const groups = groupsQuery.data?.groups ?? [];
 
   const claimsQuery = useClaimsInfinite({
-    enabled: isTokenReady,
+    enabled: isTokenReady && !sessionSyncLoading,
     status: statusFilter === 'all' ? undefined : statusFilter,
     createdFrom: createdRange.from || undefined,
     createdTo: createdRange.to || undefined,
@@ -74,7 +77,7 @@ export function ClaimsContent() {
   const statusCode = err ? getErrorStatus(err) : undefined;
   const errMsg = err ? getQueryErrorMessage(err, 'Could not load claims') : '';
 
-  if (!isTokenReady) {
+  if (!isTokenReady || sessionSyncLoading) {
     return <LoadingSpinner wrapperClassName="py-12" />;
   }
 
@@ -124,6 +127,13 @@ export function ClaimsContent() {
           groups={groups}
           claimGroupUid={groupFilter}
           onClaimGroupChange={setGroupFilter}
+        />
+
+        <ClaimFoldersPanel
+          groups={groups}
+          isLoading={groupsQuery.isLoading}
+          activeGroupUid={groupFilter}
+          onSelectGroup={setGroupFilter}
         />
 
         {statusCode === 403 ? (

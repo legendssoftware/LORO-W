@@ -24,6 +24,9 @@ import { XIcon } from '@/lib/icons';
 import {
   SearchableBranchPicker,
   SearchableUserPicker,
+  reportsDateRangeCalendarProps,
+  reportsDateRangePopoverContentClass,
+  reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
 } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import {
@@ -158,11 +161,15 @@ export function OverviewFilterControls({
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[95vw] max-w-lg p-0 sm:w-auto"
+            className={cn(
+              reportsDateRangePopoverContentClass,
+              reportsFilterPortalHighZ
+            )}
             align="center"
           >
             <Calendar
               mode="range"
+              {...reportsDateRangeCalendarProps}
               selected={draft}
               onSelect={(r) => {
                 if (!r) {
@@ -177,7 +184,6 @@ export function OverviewFilterControls({
                 });
               }}
               initialFocus
-              numberOfMonths={layout === 'stack' ? 1 : 2}
             />
             <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
               <div className="flex flex-wrap gap-2">
@@ -293,7 +299,7 @@ export function ReportsOverviewFiltersBar(filterProps: ReportsOverviewFiltersBar
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="max-h-[85vh] max-w-[95vw] overflow-y-auto sm:max-w-fit">
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>

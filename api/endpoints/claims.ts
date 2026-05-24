@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
   ClaimDetailResponse,
+  ClaimGroup,
   ClaimGroupsListResponse,
   ClaimsListResponse,
   ClaimsMeResponse,
@@ -153,5 +154,17 @@ export async function deleteClaimGroup(
   const { data } = await client.delete<MessageResponse>(
     `/claims/groups/${uid}`
   );
+  return data;
+}
+
+export async function submitClaimGroup(
+  client: AxiosInstance,
+  uid: number
+): Promise<{ message: string; group?: ClaimGroup; claimCount?: number }> {
+  const { data } = await client.post<{
+    message: string;
+    group?: ClaimGroup;
+    claimCount?: number;
+  }>(`/claims/groups/${uid}/submit`, {});
   return data;
 }
