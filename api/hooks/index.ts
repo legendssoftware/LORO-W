@@ -116,6 +116,7 @@ export {
   useCreateClaimGroupMutation,
   useDeleteClaimMutation,
   useDeleteClaimGroupMutation,
+  useSubmitClaimGroupMutation,
   useGenerateShareTokenMutation,
   useUpdateClaimMutation,
 } from './use-claims';

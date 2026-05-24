@@ -34,6 +34,16 @@ export const reportsFilterSelectTriggerClass =
 
 export const reportsFilterPortalHighZ = 'z-[10001]';
 
+export const reportsDateRangePopoverContentClass =
+  'w-[95vw] max-w-fit p-0 sm:w-auto';
+
+export const reportsDateRangeCalendarProps = {
+  numberOfMonths: 2,
+  classNames: {
+    months: 'flex flex-row gap-4 relative',
+  },
+} as const;
+
 export type ReportsFilterUserPickable = Pick<
   UserListItem,
   'uid' | 'name' | 'surname' | 'email' | 'photoURL' | 'avatar'

@@ -14,6 +14,7 @@ import {
   createClaimGroup,
   deleteClaim,
   deleteClaimGroup,
+  submitClaimGroup,
   generateShareToken,
   getClaim,
   getClaims,
@@ -132,20 +133,24 @@ function filterClaimsClientSide(
  */
 export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
   const client = useApiClient();
-  const { backendUserData } = useSessionSync();
+  const { backendUserData, isSyncing: sessionSyncLoading } = useSessionSync();
   const profileAccessLevel = useSessionStore((s) => s.profileData?.accessLevel);
   const accessLevelForList =
     (typeof backendUserData?.accessLevel === 'string'
       ? backendUserData.accessLevel
       : undefined) ??
     (typeof profileAccessLevel === 'string' ? profileAccessLevel : undefined);
+  const accessLevelKnown =
+    !sessionSyncLoading &&
+    typeof accessLevelForList === 'string' &&
+    accessLevelForList.length > 0;
   const pagedList = canViewOrgClaimsList(accessLevelForList);
 
   const status = filters?.status?.trim() || undefined;
   const createdFrom = filters?.createdFrom?.trim() || undefined;
   const createdTo = filters?.createdTo?.trim() || undefined;
   const claimGroupUid = filters?.claimGroupUid;
-  const enabled = filters?.enabled !== false;
+  const enabled = filters?.enabled !== false && accessLevelKnown;
 
   const pagedEnabled = enabled && pagedList;
   const meEnabled = enabled && !pagedList;
@@ -160,15 +165,28 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       createdTo ?? '',
       claimGroupUid ?? '',
     ],
-    queryFn: async ({ pageParam }) =>
-      getClaims(client, {
+    queryFn: async ({ pageParam }) => {
+      const result = await getClaims(client, {
         page: pageParam,
         limit: LIST_PAGE_SIZE,
         status,
         createdFrom,
         createdTo,
         claimGroupUid,
-      }),
+      });
+      if (typeof console !== 'undefined') {
+        console.debug('[Claims] GET /claims', {
+          page: pageParam,
+          total: result?.meta?.total,
+          count: result?.data?.length ?? 0,
+          status,
+          createdFrom,
+          createdTo,
+          claimGroupUid,
+        });
+      }
+      return result;
+    },
     getNextPageParam: (lastPage) => {
       const page = lastPage.meta?.page ?? 1;
       const totalPages = lastPage.meta?.totalPages ?? 0;
@@ -182,8 +200,25 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
   });
 
   const meResult = useInfiniteQuery({
-    queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'infinite', 'me'],
-    queryFn: async () => getClaimsMe(client),
+    queryKey: [
+      ...CLAIMS_QUERY_KEY_PREFIX,
+      'infinite',
+      'me',
+      status ?? '',
+      createdFrom ?? '',
+      createdTo ?? '',
+      claimGroupUid ?? '',
+    ],
+    queryFn: async () => {
+      const result = await getClaimsMe(client);
+      if (typeof console !== 'undefined') {
+        console.debug('[Claims] GET /claims/me', {
+          count: result?.data?.length ?? 0,
+          total: result?.meta?.total,
+        });
+      }
+      return result;
+    },
     getNextPageParam: () => undefined,
     initialPageParam: 1,
     enabled: meEnabled,
@@ -226,7 +261,15 @@ export function useClaimGroups(options?: { enabled?: boolean }) {
   const client = useApiClient();
   return useQuery({
     queryKey: CLAIM_GROUPS_KEY,
-    queryFn: async () => listClaimGroups(client),
+    queryFn: async () => {
+      const result = await listClaimGroups(client);
+      if (typeof console !== 'undefined') {
+        console.debug('[Claims] GET /claims/groups', {
+          count: result?.groups?.length ?? 0,
+        });
+      }
+      return result;
+    },
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
   });
@@ -312,5 +355,20 @@ export function useDeleteClaimGroupMutation() {
       queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'list'] });
     },
     onError: (err) => mutationToastError(err, 'Could not delete folder'),
+  });
+}
+
+export function useSubmitClaimGroupMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (uid: number) => submitClaimGroup(client, uid),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Folder submitted for approval');
+      queryClient.invalidateQueries({ queryKey: CLAIM_GROUPS_KEY });
+      invalidateClaimsQueries(queryClient);
+    },
+    onError: (err) => mutationToastError(err, 'Could not submit folder'),
   });
 }
