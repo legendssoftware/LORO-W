@@ -69,6 +69,8 @@ import {
   SearchableBranchPicker,
   SearchableOptionListPicker,
   SearchableUserPicker,
+  reportsDateRangeCalendarProps,
+  reportsDateRangePopoverContentClass,
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
 } from '@/app/reports/components/reports-searchable-filter-comboboxes';
@@ -447,11 +449,15 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className={cn('w-[95vw] max-w-lg p-0 sm:w-auto', reportsFilterPortalHighZ)}
+                className={cn(
+                  reportsDateRangePopoverContentClass,
+                  reportsFilterPortalHighZ
+                )}
                 align="center"
               >
                 <Calendar
                   mode="range"
+                  {...reportsDateRangeCalendarProps}
                   selected={draft}
                   onSelect={(r) => {
                     if (!r) {
@@ -468,7 +474,6 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                     });
                   }}
                   initialFocus
-                  numberOfMonths={2}
                 />
                 <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
                   <div className="flex flex-wrap gap-2">

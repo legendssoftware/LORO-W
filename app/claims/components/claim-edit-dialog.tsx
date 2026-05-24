@@ -24,10 +24,9 @@ import {
   type Claim,
   type UpdateClaimPayload,
 } from '@/api/types/claims';
-import { Coins, FolderOpen, Loader2, Tag } from 'lucide-react';
+import { ClaimCurrencyField } from '@/app/claims/components/claim-currency-picker-dialog';
+import { FolderOpen, Loader2, Tag } from 'lucide-react';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
-
-const CURRENCIES = ['ZAR', 'USD', 'EUR', 'GBP'] as const;
 
 const primaryRedClass =
   'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/40 [&_svg]:text-white';
@@ -90,16 +89,6 @@ export function ClaimEditDialog({
   }, [open, claim]);
 
   const groups = groupsQuery.data?.groups ?? [];
-
-  const currencyOptions = useMemo(
-    () =>
-      CURRENCIES.map((c) => ({
-        value: c,
-        label: c,
-        icon: <Coins className="size-4 shrink-0" />,
-      })),
-    []
-  );
 
   const categoryOptions = useMemo(
     () =>
@@ -182,16 +171,7 @@ export function ClaimEditDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Currency</Label>
-              <SearchableOptionListPicker
-                selectedValue={currency}
-                onValueChange={setCurrency}
-                options={currencyOptions}
-                includeAllOption={false}
-                searchPlaceholder="Search currency…"
-                emptyMessage="No currency found."
-                triggerIcon={<Coins className="size-4 shrink-0" />}
-                triggerClassName="h-9 w-full"
-              />
+              <ClaimCurrencyField value={currency} onChange={setCurrency} />
             </div>
           </div>
           <div className="space-y-1.5">
@@ -247,7 +227,7 @@ export function ClaimEditDialog({
           <DialogFooter className="flex flex-wrap items-center justify-end gap-4 sm:gap-4">
             <Button
               type="button"
-              variant="outline"
+              variant="cancel"
               onClick={() => onOpenChange(false)}
             >
               Cancel
