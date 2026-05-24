@@ -479,14 +479,15 @@ export function SettingsContent() {
           ...defaultWeekly,
           ...row.weeklySchedule,
         };
+        const hydrated: OrganisationHoursRecord = {
+          ...row,
+          weeklySchedule: weekly,
+          holidayMode: row.holidayMode ?? false,
+          organisationUid: row.organisationUid ?? orgRef,
+        };
         queryClient.setQueryData<OrganisationHoursRecord | null>(
           settingsOrgHoursKey(orgRef),
-          {
-            ...row,
-            weeklySchedule: weekly,
-            holidayMode: row.holidayMode ?? false,
-            organisationUid: row.organisationUid ?? orgRef,
-          }
+          hydrated
         );
       }
     }
