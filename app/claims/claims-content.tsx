@@ -2,8 +2,10 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useClaimsInfinite, useClaimGroups } from '@/api/hooks/use-claims';
+import { useBranches } from '@/api/hooks/use-branches';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
+import type { BranchListItem } from '@/api/types/branch';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { ClaimsFiltersBar } from '@/app/claims/components/claims-filters-bar';
@@ -55,6 +57,17 @@ export function ClaimsContent() {
 
   const groupsQuery = useClaimGroups({ enabled: isTokenReady && !sessionSyncLoading });
   const groups = groupsQuery.data?.groups ?? [];
+
+  const branchesQuery = useBranches({
+    enabled: isTokenReady && !sessionSyncLoading,
+  });
+  const branchByUid = useMemo(() => {
+    const map = new Map<number, BranchListItem>();
+    for (const b of branchesQuery.data ?? []) {
+      if (b.uid != null) map.set(b.uid, b);
+    }
+    return map;
+  }, [branchesQuery.data]);
 
   const claimsQuery = useClaimsInfinite({
     enabled: isTokenReady && !sessionSyncLoading,
@@ -146,15 +159,19 @@ export function ClaimsContent() {
 
         <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
           {isLoading ? (
-            <div className="flex flex-col gap-3">
+            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ClaimRowCardSkeleton key={i} />
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {filteredRows.map((claim) => (
-                <ClaimRowCard key={claim.uid} claim={claim} />
+                <ClaimRowCard
+                  key={claim.uid}
+                  claim={claim}
+                  branchByUid={branchByUid}
+                />
               ))}
             </div>
           )}

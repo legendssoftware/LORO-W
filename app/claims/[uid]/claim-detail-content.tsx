@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -10,8 +10,10 @@ import {
   useGenerateShareTokenMutation,
   useUpdateClaimMutation,
 } from '@/api/hooks/use-claims';
+import { useBranches } from '@/api/hooks/use-branches';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
+import type { BranchListItem } from '@/api/types/branch';
 import { canManageClaims } from '@/lib/access';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ClaimEditDialog } from '@/app/claims/components/claim-edit-dialog';
+import { ClaimPersonRow } from '@/app/claims/components/claim-person-row';
+import { claimBranchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
 import {
   ArrowLeft,
   Share2,
@@ -79,9 +83,20 @@ export function ClaimDetailContent() {
   const claimQuery = useClaim(Number.isFinite(uid) && uid > 0 ? uid : null, {
     enabled: isTokenReady && Number.isFinite(uid) && uid > 0,
   });
+  const branchesQuery = useBranches({
+    enabled: isTokenReady && Number.isFinite(uid) && uid > 0,
+  });
   const updateMutation = useUpdateClaimMutation();
   const deleteMutation = useDeleteClaimMutation();
   const shareMutation = useGenerateShareTokenMutation();
+
+  const branchByUid = useMemo(() => {
+    const map = new Map<number, BranchListItem>();
+    for (const b of branchesQuery.data ?? []) {
+      if (b.uid != null) map.set(b.uid, b);
+    }
+    return map;
+  }, [branchesQuery.data]);
 
   const claim = claimQuery.data?.claim ?? null;
   const manage = canManageClaims(profile?.accessLevel);
@@ -91,6 +106,7 @@ export function ClaimDetailContent() {
     !!myClerkId &&
     claim.owner.clerkUserId === myClerkId;
   const st = (claim?.status ?? '').toLowerCase();
+  const isDeclined = ['declined', 'rejected', 'cancelled'].includes(st);
   const canEdit =
     isOwner &&
     !['paid', 'deleted', 'declined', 'rejected', 'cancelled'].includes(st);
@@ -166,12 +182,10 @@ export function ClaimDetailContent() {
     );
   }
 
-  const branch = claim.branch;
-  const org = claim.organisation;
-  const ownerName =
-    claim.owner?.name || claim.owner?.surname
-      ? `${claim.owner?.name ?? ''} ${claim.owner?.surname ?? ''}`.trim()
-      : (claim.owner?.email ?? '—');
+  const branchInfo = claimBranchFlagAndLabel(claim.branch, branchByUid);
+  const showApprover =
+    !!claim.verifiedBy &&
+    ['approved', 'declined', 'rejected', 'paid', 'cancelled'].includes(st);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -185,9 +199,8 @@ export function ClaimDetailContent() {
           </Button>
           <div className="ml-auto flex flex-wrap gap-2">
             <Button
-              variant="outline"
               size="sm"
-              className="gap-1"
+              className="gap-1 bg-green-600 text-white hover:bg-green-700"
               disabled={shareMutation.isPending}
               onClick={() => handleShare(claim.uid)}
             >
@@ -200,9 +213,8 @@ export function ClaimDetailContent() {
             </Button>
             {canEdit ? (
               <Button
-                variant="outline"
                 size="sm"
-                className="gap-1"
+                className="gap-1 bg-violet-600 text-white hover:bg-violet-700"
                 onClick={() => setEditOpen(true)}
               >
                 <Pencil className="size-4" />
@@ -246,7 +258,13 @@ export function ClaimDetailContent() {
               <div>
                 <p className="text-xs text-muted-foreground">Notes</p>
                 <p className="min-h-[4.5rem] whitespace-pre-wrap text-foreground">
-                  {claim.comments?.trim() ? claim.comments : '—'}
+                  {claim.comments?.trim() ? (
+                    claim.comments
+                  ) : (
+                    <span className="italic text-muted-foreground">
+                      No notes saved
+                    </span>
+                  )}
                 </p>
               </div>
               {claim.documentUrl ? (
@@ -287,46 +305,37 @@ export function ClaimDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              <p className="text-xs text-muted-foreground">Created by</p>
-              <p>{ownerName}</p>
+              <ClaimPersonRow label="Created by" person={claim.owner} />
+              {showApprover ? (
+                <ClaimPersonRow
+                  label="Approved by"
+                  person={claim.verifiedBy}
+                  className="mt-4"
+                />
+              ) : null}
             </CardContent>
           </Card>
 
-          {(org?.name || branch?.name) && (
+          {branchInfo ? (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Building2 className="size-4" />
-                  Organisation
+                  Branch
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {org?.name ? <p>{org.name}</p> : null}
-                {org?.email ? (
-                  <p className="text-muted-foreground">{org.email}</p>
-                ) : null}
-                {branch?.name ? (
-                  <p>
-                    <span className="text-xs text-muted-foreground">
-                      Branch ·{' '}
-                    </span>
-                    {branch.name}
-                  </p>
-                ) : null}
+              <CardContent className="text-sm">
+                <p className="flex items-center gap-2">
+                  <span aria-hidden>{branchInfo.flag}</span>
+                  <span>{branchInfo.label}</span>
+                </p>
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </div>
 
         {manage && st === 'pending' ? (
-          <div className="mt-8 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
-              onClick={() => setConfirm('approve')}
-            >
-              Approve
-            </Button>
+          <div className="mt-8 flex flex-wrap justify-end gap-2">
             <Button
               size="sm"
               variant="secondary"
@@ -334,14 +343,21 @@ export function ClaimDetailContent() {
             >
               Decline
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => setConfirm('delete')}>
-              Delete
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => setConfirm('approve')}
+            >
+              Approve
             </Button>
           </div>
         ) : null}
 
         {manage && st === 'approved' ? (
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="mt-8 flex flex-wrap justify-end gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setConfirm('decline')}>
+              Decline
+            </Button>
             <Button
               size="sm"
               className="bg-emerald-600 text-white hover:bg-emerald-700"
@@ -349,17 +365,11 @@ export function ClaimDetailContent() {
             >
               Mark paid
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setConfirm('decline')}>
-              Decline
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => setConfirm('delete')}>
-              Delete
-            </Button>
           </div>
         ) : null}
 
-        {manage && st === 'cancelled' ? (
-          <div className="mt-8">
+        {manage && isDeclined ? (
+          <div className="mt-8 flex justify-end">
             <Button size="sm" variant="destructive" onClick={() => setConfirm('delete')}>
               Delete
             </Button>
