@@ -23,6 +23,8 @@ export interface BranchListItem {
   status?: string;
   country?: string;
   address?: BranchAddress;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /** Response shape for GET /branch (findAll). */

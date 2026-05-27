@@ -12,8 +12,6 @@ import { getUsers } from '@/api/endpoints/user';
 import { usersListQueryKey } from '@/api/hooks/use-users';
 import { getLeadsReport } from '@/api/endpoints/leads';
 import { leadsReportQueryKey } from '@/api/hooks/use-leads';
-import { getMapReport } from '@/api/endpoints/map';
-import { mapReportQueryKey } from '@/api/hooks/use-map-report';
 import type { SyncProfile } from '@/api/types';
 import { isReportsElevatedViewer } from '@/lib/access';
 import {
@@ -56,17 +54,16 @@ export function getReportsOverviewPrefetchParams() {
 }
 
 /**
- * Warms cache for non-Overview tabs (map, leads). Call on tab hover/focus.
+ * Warms cache for the Leads tab. Call on tab hover/focus.
  */
 export function prefetchReportsSecondaryTabs(
   queryClient: QueryClient,
   client: AxiosInstance,
-  options: {
+  _options: {
     reportsMode: 'org' | 'self';
     profile: SyncProfile | null | undefined;
   }
 ): void {
-  const { reportsMode, profile } = options;
   const { todayYmd } = getReportsOverviewPrefetchParams();
 
   void queryClient.prefetchQuery({
@@ -82,22 +79,6 @@ export function prefetchReportsSecondaryTabs(
         dateBasis: 'activity',
       }),
     staleTime: 5 * 60 * 1000,
-  });
-
-  const mapParams =
-    reportsMode === 'self' && profile?.uid != null
-      ? {
-          resolveMarkerAddresses: false as const,
-          userId: profile.uid,
-        }
-      : {
-          resolveMarkerAddresses: false as const,
-        };
-
-  void queryClient.prefetchQuery({
-    queryKey: mapReportQueryKey(mapParams),
-    queryFn: () => getMapReport(client, mapParams),
-    staleTime: 60 * 1000,
   });
 }
 

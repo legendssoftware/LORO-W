@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams, isClerkOrganizationId } from '@/lib/clerk-session-token';
+import {
+  clerkTokenCacheKey,
+  clearClerkTokenCache,
+  seedClerkTokenCache,
+} from '@/lib/clerk-token-cache';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 /**
@@ -17,13 +22,17 @@ export function useTokenReady() {
   const orgId = useOrgId();
   const activeClerkOrganizationId = useActiveClerkOrganizationId();
   const [isTokenReady, setIsTokenReady] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const cacheKey = clerkTokenCacheKey(orgId, activeClerkOrganizationId);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
       if (isApiDebugEnabled()) {
         debugApi('useTokenReady', { isLoaded, isSignedIn, reset: true });
       }
+      clearClerkTokenCache();
       setIsTokenReady(false);
+      setSessionToken(null);
       return;
     }
 
@@ -41,7 +50,11 @@ export function useTokenReady() {
     getToken(tokenParams)
       .then((token) => {
         if (!cancelled) {
+          if (token) {
+            seedClerkTokenCache(token, cacheKey);
+          }
           setIsTokenReady(!!token);
+          setSessionToken(token);
         }
         if (isApiDebugEnabled()) {
           debugApi('useTokenReady result', {
@@ -52,7 +65,9 @@ export function useTokenReady() {
       })
       .catch((err) => {
         if (!cancelled) {
+          clearClerkTokenCache();
           setIsTokenReady(false);
+          setSessionToken(null);
         }
         if (isApiDebugEnabled()) {
           debugApi('useTokenReady getToken rejected', {
@@ -64,8 +79,8 @@ export function useTokenReady() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, orgId, activeClerkOrganizationId, getToken]);
+  }, [isLoaded, isSignedIn, orgId, activeClerkOrganizationId, getToken, cacheKey]);
 
   const isTokenLoading = isSignedIn && !isTokenReady;
-  return { isTokenReady, isTokenLoading };
+  return { isTokenReady, isTokenLoading, sessionToken };
 }

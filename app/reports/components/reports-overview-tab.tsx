@@ -27,7 +27,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import type { ReportsMode } from '@/app/reports/reports-content';
+import type { ReportsMode } from '@/app/reports/reports-mode';
 import { REPORT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
 import {
   userListItemInLeadsVisitsReportingCohort,

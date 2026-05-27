@@ -66,9 +66,9 @@ export interface VisitHistoryToolbarProps {
   businessTypeLabelMap: Map<string, string>;
   businessTypeIconMap: Map<string, VisitHistoryBusinessIcon>;
   /** Org users from GET /user (must include branchUid/branch for picker subtitles). */
-  usersList: UserListItem[];
-  visitsSummaryDisabled: boolean;
-  onOpenVisitsSummary: () => void;
+  usersList?: UserListItem[];
+  visitsSummaryDisabled?: boolean;
+  onOpenVisitsSummary?: () => void;
   /** Enables branch labels in the user combobox when organization branches are available. */
   branches?: BranchListItem[];
   /** When false, hides the visits summary (grid) button — e.g. if parent has no modal. */
@@ -79,6 +79,10 @@ export interface VisitHistoryToolbarProps {
   sectionHeading?: ReactNode | null;
   /** When false, hides the user filter (e.g. self-scoped Reports visualiser). Default true. */
   showUserFilter?: boolean;
+  /** When false, hides the date range picker (e.g. Visualiser uses all-time map data). Default true. */
+  showDateRange?: boolean;
+  /** When false, hides the visit search field. Default true. */
+  showSearch?: boolean;
 }
 
 function VisitMapTableToggleButton() {
@@ -326,6 +330,7 @@ interface VisitFilterControlsProps {
   usersList: UserListItem[];
   branches: BranchListItem[];
   showUserFilter: boolean;
+  showDateRange: boolean;
 }
 
 function VisitFilterControls({
@@ -337,6 +342,7 @@ function VisitFilterControls({
   usersList,
   branches,
   showUserFilter,
+  showDateRange,
 }: VisitFilterControlsProps) {
   const { selectedRegion, selectedBusinessType, selectedUserUid, setSelectedRegion, setSelectedBusinessType, setSelectedUserUid } =
     useVisitsStore();
@@ -377,7 +383,7 @@ function VisitFilterControls({
 
   return (
     <div className={wrapClass}>
-      <VisitDateRangePicker layout={layout} />
+      {showDateRange ? <VisitDateRangePicker layout={layout} /> : null}
       <SearchableOptionListPicker
         selectedValue={selectedRegion || 'all'}
         onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
@@ -420,14 +426,16 @@ export function VisitHistoryToolbar({
   uniqueBusinessTypes,
   businessTypeLabelMap,
   businessTypeIconMap,
-  usersList,
-  visitsSummaryDisabled,
+  usersList = [],
+  visitsSummaryDisabled = false,
   onOpenVisitsSummary,
   branches = [],
   showVisitsSummaryButton = true,
   showMapTableToggle = true,
   sectionHeading = null,
   showUserFilter = true,
+  showDateRange = true,
+  showSearch = true,
 }: VisitHistoryToolbarProps) {
   const {
     searchQuery,
@@ -451,11 +459,11 @@ export function VisitHistoryToolbar({
   }, []);
 
   function resetAll() {
-    resetDateRangeToDefault();
+    if (showDateRange) resetDateRangeToDefault();
     setSelectedRegion('');
     setSelectedBusinessType('');
-    setSelectedUserUid('');
-    setSearchQuery('');
+    if (showUserFilter) setSelectedUserUid('');
+    if (showSearch) setSearchQuery('');
   }
 
   function renderSearchField(className?: string) {
@@ -484,7 +492,7 @@ export function VisitHistoryToolbar({
   const actionButtons = (
     <>
       {showMapTableToggle ? <VisitMapTableToggleButton /> : null}
-      {showVisitsSummaryButton ? (
+      {showVisitsSummaryButton && onOpenVisitsSummary ? (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -513,7 +521,12 @@ export function VisitHistoryToolbar({
     usersList,
     branches,
     showUserFilter,
+    showDateRange,
   };
+
+  const mobileFilterDescription = showDateRange
+    ? 'Date range, region, business type, and user for visit history.'
+    : 'Region and business type for the map.';
 
   return (
     <>
@@ -532,16 +545,14 @@ export function VisitHistoryToolbar({
             </Button>
             <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
           </div>
-          {renderSearchField('w-full')}
+          {showSearch ? renderSearchField('w-full') : null}
         </div>
 
         <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
           <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Filters</DialogTitle>
-              <DialogDescription>
-                Date range, region, business type, and user for visit history.
-              </DialogDescription>
+              <DialogDescription>{mobileFilterDescription}</DialogDescription>
             </DialogHeader>
             <VisitFilterControls {...filterProps} layout="stack" />
             <div className="pt-2">
@@ -567,7 +578,7 @@ export function VisitHistoryToolbar({
             </div>
           </div>
           <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
-            {renderSearchField()}
+            {showSearch ? renderSearchField() : null}
             {actionButtons}
           </div>
         </div>

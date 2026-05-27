@@ -1,18 +1,12 @@
 import type { MapMarkerBase } from '@/api/types/map';
 
-const EXCLUDED_MAP_MARKER_TYPES = new Set([
-  'check-in',
-  'check-in-visit',
-  'shift-start',
-  'shift-end',
-  'break-start',
-  'break-end',
-  'claim',
-]);
+const ALLOWED_MAP_MARKER_TYPES = new Set(['client', 'competitor', 'branch', 'org']);
 
-/** Strips visit check-ins, attendance GPS pins, and attendance-derived claim markers (defense vs stale cache). */
+/** Keeps only org-scoped static map layers (clients, competitors, branches, org). */
 export function excludeCheckInRelatedMapMarkers<T extends MapMarkerBase>(
   markers: T[]
 ): T[] {
-  return markers.filter((m) => !EXCLUDED_MAP_MARKER_TYPES.has(String(m.markerType ?? '')));
+  return markers.filter((m) =>
+    ALLOWED_MAP_MARKER_TYPES.has(String(m.markerType ?? ''))
+  );
 }

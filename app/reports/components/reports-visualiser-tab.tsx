@@ -1,44 +1,32 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { endOfDay, startOfDay } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
-import { useBranches, useCheckIns, useReportsMapData, useTokenReady, useUsers } from '@/api/hooks';
+import { useReportsMapData, useTokenReady } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { SyncProfile } from '@/api/types';
-import { VisitsSummaryModal } from '@/app/reports/visits-summary-modal';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 import {
-  filterVisitCheckIns,
-  getSortedUniqueBusinessTypes,
-  getSortedUniqueRegions,
-} from '@/lib/utils/visit-history-filters';
-import { mapCheckInsFromApi } from '@/lib/utils/visits-export';
-import { useOrgName } from '@/lib/org-id-context';
+  filterMapMarkers,
+  getSortedUniqueBusinessTypesFromMarkers,
+  getSortedUniqueRegionsFromMarkers,
+} from '@/lib/utils/map-marker-filters';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
-import type { ReportsMode } from '@/app/reports/reports-content';
-import {
-  buildReportingUserUidSet,
-  filterVisitExportItemsByReportingUserUids,
-  userListItemInLeadsVisitsReportingCohort,
-} from '@/app/reports/utils/user-has-performance-target';
+import type { ReportsMode } from '@/app/reports/reports-mode';
 import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
+import {
+  filterInfluenceCirclesForMarkers,
+  mergeInfluenceCircles,
+} from '@/app/reports/utils/merge-influence-circles';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
   { ssr: false }
 );
-const ALLOWED_INFLUENCE_KINDS = new Set([
-  'organisation',
-  'organization',
-  'org',
-  'client',
-  'competitor',
-]);
 
 export interface ReportsVisualiserTabProps {
   profile: SyncProfile | null | undefined;
@@ -51,94 +39,31 @@ export function ReportsVisualiserTab({
 }: ReportsVisualiserTabProps) {
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
-  const orgName = useOrgName();
   const mounted = authLoaded && isTokenReady;
 
-  const {
-    startDate,
-    endDate,
-    useAllTime,
-    selectedRegion,
-    selectedBusinessType,
-    selectedUserUid,
-    searchQuery,
-  } = useVisitsStore();
-  const setStoreUserUid = useVisitsStore((s) => s.setSelectedUserUid);
+  const { selectedRegion, selectedBusinessType } = useVisitsStore();
 
-  useEffect(() => {
-    if (reportsMode !== 'self' || profile?.uid == null) return;
-    setStoreUserUid(String(profile.uid));
-  }, [reportsMode, profile?.uid, setStoreUserUid]);
+  const mapReportParams = useMemo((): GetMapReportParams => {
+    const base: GetMapReportParams = {
+      resolveMarkerAddresses: false,
+      allTime: true,
+    };
+    if (reportsMode === 'self' && profile?.uid != null) {
+      base.userId = profile.uid;
+    }
+    return base;
+  }, [profile?.uid, reportsMode]);
 
-  const [visitsSummaryOpen, setVisitsSummaryOpen] = useState(false);
-  const [visitsSummaryRunAt, setVisitsSummaryRunAt] = useState<Date | null>(null);
+  const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
 
-  const usersQuery = useUsers({
-    limit: 250,
-    enabled: mounted && reportsMode === 'org',
-  });
-  const usersList = usersQuery.data ?? [];
-
-  const reportingUsers = useMemo(
-    () =>
-      reportsMode === 'org'
-        ? usersList.filter(userListItemInLeadsVisitsReportingCohort)
-        : usersList,
-    [reportsMode, usersList]
+  const baseMarkers = useMemo(
+    () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
+    [mapReport.data?.allMarkers]
   );
-
-  const reportingUidSet = useMemo(
-    () => buildReportingUserUidSet(reportingUsers),
-    [reportingUsers]
-  );
-
-  useEffect(() => {
-    if (reportsMode !== 'org' || !selectedUserUid) return;
-    const ok = reportingUsers.some((u) => String(u.uid) === selectedUserUid);
-    if (!ok) setStoreUserUid('');
-  }, [reportsMode, reportingUsers, selectedUserUid, setStoreUserUid]);
-  const branchesQuery = useBranches({ enabled: mounted });
-
-  const checkInUserUid =
-    reportsMode === 'self' && profile?.uid != null
-      ? String(profile.uid)
-      : selectedUserUid || undefined;
-
-  const checkInsQuery = useCheckIns(
-    {
-      ...(useAllTime
-        ? {}
-        : {
-            startDate: startOfDay(startDate).toISOString(),
-            endDate: endOfDay(endDate).toISOString(),
-          }),
-      ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
-    },
-    { enabled: mounted }
-  );
-
-  const checkIns = useMemo(
-    () =>
-      mapCheckInsFromApi(
-        checkInsQuery.data?.checkIns ?? [],
-        usersList,
-        branchesQuery.data ?? []
-      ),
-    [branchesQuery.data, checkInsQuery.data, usersList]
-  );
-
-  const checkInsForOrgReporting = useMemo(() => {
-    if (reportsMode !== 'org' || checkInUserUid) return checkIns;
-    return filterVisitExportItemsByReportingUserUids(
-      checkIns,
-      reportingUidSet,
-      true
-    );
-  }, [checkIns, reportsMode, checkInUserUid, reportingUidSet]);
 
   const uniqueRegions = useMemo(
-    () => getSortedUniqueRegions(checkInsForOrgReporting),
-    [checkInsForOrgReporting]
+    () => getSortedUniqueRegionsFromMarkers(baseMarkers),
+    [baseMarkers]
   );
 
   const businessTypeLabelMap = useMemo(
@@ -152,71 +77,34 @@ export function ReportsVisualiserTab({
   }, []);
 
   const uniqueBusinessTypes = useMemo(
-    () => getSortedUniqueBusinessTypes(checkInsForOrgReporting),
-    [checkInsForOrgReporting]
+    () => getSortedUniqueBusinessTypesFromMarkers(baseMarkers),
+    [baseMarkers]
   );
 
-  const filteredCheckIns = useMemo(
+  const filteredMarkers = useMemo(
     () =>
-      filterVisitCheckIns(checkInsForOrgReporting, {
+      filterMapMarkers(baseMarkers, {
         selectedRegion,
         selectedBusinessType,
-        searchQuery,
       }),
-    [
-      checkInsForOrgReporting,
-      searchQuery,
-      selectedRegion,
-      selectedBusinessType,
-    ]
+    [baseMarkers, selectedRegion, selectedBusinessType]
   );
 
-  /** Align map window with visits toolbar dates; skip reverse-geocode (no attendance layer). */
-  const mapReportParams = useMemo((): GetMapReportParams => {
-    const base: GetMapReportParams = { resolveMarkerAddresses: false };
-    const uidStr =
-      reportsMode === 'self' && profile?.uid != null ? String(profile.uid) : selectedUserUid;
-    if (uidStr) {
-      const uid = parseInt(uidStr, 10);
-      if (!Number.isNaN(uid)) base.userId = uid;
-    }
-    if (useAllTime) base.allTime = true;
-    else {
-      base.startDate = startOfDay(startDate).toISOString();
-      base.endDate = endOfDay(endDate).toISOString();
-    }
-    return base;
+  const influenceCircles = useMemo(() => {
+    const apiCircles = filterInfluenceCirclesForMarkers(
+      mapReport.data?.influenceCircles ?? [],
+      filteredMarkers
+    );
+    return mergeInfluenceCircles(
+      apiCircles,
+      filteredMarkers,
+      mapReport.data?.geofenceMapDefaults
+    );
   }, [
-    useAllTime,
-    startDate,
-    endDate,
-    selectedUserUid,
-    reportsMode,
-    profile,
+    mapReport.data?.influenceCircles,
+    mapReport.data?.geofenceMapDefaults,
+    filteredMarkers,
   ]);
-
-  const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-  const influenceCircles = mapReport.data?.influenceCircles ?? [];
-  const filteredInfluenceCircles = useMemo(
-    () =>
-      influenceCircles.filter((circle) =>
-        ALLOWED_INFLUENCE_KINDS.has(
-          String(circle.kind ?? circle.markerType ?? '').toLowerCase()
-        )
-      ),
-    [influenceCircles]
-  );
-
-  const mapMarkers = useMemo(
-    () =>
-      excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
-    [mapReport.data?.allMarkers]
-  );
-
-  const handleOpenVisitsSummary = () => {
-    setVisitsSummaryRunAt(new Date());
-    setVisitsSummaryOpen(true);
-  };
 
   if (!mounted) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -229,12 +117,11 @@ export function ReportsVisualiserTab({
         uniqueBusinessTypes={uniqueBusinessTypes}
         businessTypeLabelMap={businessTypeLabelMap}
         businessTypeIconMap={businessTypeIconMap}
-        usersList={reportingUsers}
-        branches={branchesQuery.data ?? []}
-        visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
-        onOpenVisitsSummary={handleOpenVisitsSummary}
+        showDateRange={false}
+        showSearch={false}
+        showUserFilter={false}
+        showVisitsSummaryButton={false}
         showMapTableToggle={false}
-        showUserFilter={reportsMode === 'org'}
         sectionHeading={null}
       />
       <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col relative">
@@ -247,23 +134,12 @@ export function ReportsVisualiserTab({
           </p>
         ) : null}
         <ReportsVisualiserMap
-          allMarkers={mapMarkers}
-          influenceCircles={filteredInfluenceCircles}
+          allMarkers={filteredMarkers}
+          influenceCircles={influenceCircles}
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
           className="flex-1 min-h-0"
         />
       </div>
-
-      <VisitsSummaryModal
-        open={visitsSummaryOpen}
-        onOpenChange={setVisitsSummaryOpen}
-        checkIns={filteredCheckIns}
-        startDate={startDate}
-        endDate={endDate}
-        runAt={visitsSummaryRunAt}
-        companyName={orgName ?? 'Organisation'}
-        useAllTime={useAllTime}
-      />
     </section>
   );
 }
