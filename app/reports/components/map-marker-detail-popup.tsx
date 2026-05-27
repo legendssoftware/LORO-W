@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDisplayName, orgSiteInitials } from '@/lib/client-display';
 import { markerTypeLabel } from './map-report-constants';
 
 const SKIP_TOP_LEVEL = new Set([
@@ -203,12 +204,6 @@ function readBranchName(marker: MapMarkerBase): string | undefined {
   return branchDisplayLabel(ad?.branch as { alias?: unknown; name?: unknown } | null | undefined);
 }
 
-function initialsForPopupTitle(name: string): string {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  if (parts.length === 0) return '?';
-  return parts.map((p) => p[0]).join('').toUpperCase().slice(0, 2);
-}
-
 function resolveOrgSiteLogoUrl(marker: MapMarkerBase): string | undefined {
   const raw =
     (marker.logoUrl as string | undefined)?.trim() ||
@@ -248,8 +243,11 @@ function OrgSiteHeader({
   title: string;
   mt: string;
 }) {
-  const logoUrl = resolveOrgSiteLogoUrl(marker);
-  const initials = initialsForPopupTitle(title);
+  const isClient = mt === 'client';
+  const logoUrl = isClient ? undefined : resolveOrgSiteLogoUrl(marker);
+  const initials = orgSiteInitials(title);
+  const displayTitle = formatDisplayName(title) || title;
+
   return (
     <div className="border-b border-border/60 pb-2 mb-3">
       <div className="flex gap-3 pr-6">
@@ -257,10 +255,18 @@ function OrgSiteHeader({
           {logoUrl ? (
             <AvatarImage src={logoUrl} alt="" referrerPolicy="no-referrer" />
           ) : null}
-          <AvatarFallback>{initials}</AvatarFallback>
+          <AvatarFallback
+            className={
+              isClient
+                ? 'bg-[#16a34a] text-white text-xs font-semibold'
+                : undefined
+            }
+          >
+            {initials}
+          </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{title}</p>
+          <p className="font-semibold leading-snug">{displayTitle}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{markerTypeLabel(mt)}</p>
         </div>
       </div>
@@ -291,14 +297,14 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
   return (
     <div className="space-y-3">
       {address ? (
-        <div className="flex gap-2 items-start">
+        <div className="flex items-center gap-2">
           <MapPin
-            className="size-3.5 shrink-0 text-muted-foreground mt-0.5"
+            className="size-3.5 shrink-0 text-muted-foreground"
             strokeWidth={2}
             aria-hidden
             focusable={false}
           />
-          <p className="text-xs text-foreground leading-snug">{address}</p>
+          <p className="text-xs text-foreground leading-snug min-w-0 flex-1">{address}</p>
         </div>
       ) : null}
 

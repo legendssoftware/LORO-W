@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams } from '@/lib/clerk-session-token';
+import { clerkTokenCacheKey } from '@/lib/clerk-token-cache';
 import { createApiClient } from '@/api/client';
 
 /**
@@ -16,9 +17,14 @@ export function useApiClient() {
   const orgId = useOrgId();
   const activeClerkOrganizationId = useActiveClerkOrganizationId();
 
+  const tokenCacheKey = clerkTokenCacheKey(orgId, activeClerkOrganizationId);
+
   const getTokenWithOrg = useCallback(async () => {
     return getToken(getClerkTokenParams(orgId, activeClerkOrganizationId));
   }, [getToken, orgId, activeClerkOrganizationId]);
 
-  return useMemo(() => createApiClient(getTokenWithOrg), [getTokenWithOrg]);
+  return useMemo(
+    () => createApiClient({ getToken: getTokenWithOrg, tokenCacheKey }),
+    [getTokenWithOrg, tokenCacheKey]
+  );
 }

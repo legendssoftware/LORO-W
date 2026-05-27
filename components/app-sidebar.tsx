@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useSessionSync } from "@/api/hooks";
 import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard";
+import { usePrefetchStaffQueries } from "@/api/hooks/use-prefetch-staff";
 import {
   canAccessOrgSettings,
   getAllowedRoutes,
@@ -31,6 +32,7 @@ import {
   Building2,
   FolderKanban,
   GitBranch,
+  Map,
   Package,
   Receipt,
   ShoppingBag,
@@ -61,6 +63,7 @@ const ROUTE_ICONS: Record<
 > = {
   "/dashboard": LayoutDashboardIcon,
   "/reports": BarChart3Icon,
+  "/visualiser": Map,
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,
   "/pipeline": GitBranch,
@@ -84,6 +87,7 @@ export function AppSidebar() {
   const [faqOpen, setFaqOpen] = useState(false);
   const { backendUserData: profile } = useSessionSync();
   const prefetchDashboard = usePrefetchDashboardQueries();
+  const prefetchStaff = usePrefetchStaffQueries();
   const {
     startDemoCall,
     endDemoCall,
@@ -146,6 +150,9 @@ export function AppSidebar() {
                           onPointerEnter={() => {
                             if (route.path === "/dashboard" && !isClient) {
                               prefetchDashboard();
+                            }
+                            if (route.path === "/staff" && !isClient) {
+                              prefetchStaff();
                             }
                           }}
                           className="w-full justify-center md:justify-start"

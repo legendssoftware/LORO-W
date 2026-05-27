@@ -1,8 +1,17 @@
 'use client';
 
-import { useMemo, useEffect, useRef, memo, createElement } from 'react';
+import { useMemo, useEffect, useRef, useState, memo, createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Circle,
+  ScaleControl,
+  useMap,
+} from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { divIcon } from 'leaflet';
 import L from 'leaflet';
 import type { InfluenceCircle, MapMarkerBase } from '@/api/types/map';
@@ -10,10 +19,14 @@ import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
 import {
   MARKER_COLORS,
+  ORG_SITE_MAP_MARKER,
+  ORG_SITE_MARKER_SIZE,
   influenceColorForKind,
 } from './map-report-constants';
 
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 const customMarkerStyles = `
   .reports-viz-marker.leaflet-div-icon {
@@ -35,28 +48,54 @@ const customMarkerStyles = `
     right: 10px !important;
     width: 32px !important;
     height: 32px !important;
+    padding: 0 !important;
     border-radius: 9999px;
-    border: 2px solid #f43f5e;
-    background: #ffe4e6;
-    color: #f43f5e !important;
-    font-size: 26px !important;
-    font-weight: 700;
-    line-height: 26px !important;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #dc2626 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
     text-align: center;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    box-shadow: none;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .reports-viz-popup .leaflet-popup-close-button::after {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 16px 16px;
   }
 
   .reports-viz-popup .leaflet-popup-close-button:hover {
-    background: #ffe4e6;
-    color: #f43f5e !important;
-    opacity: 0.95;
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #b91c1c !important;
+    opacity: 1;
+  }
+
+  .reports-viz-popup .leaflet-popup-close-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #fca5a5;
   }
 `;
 
 const DEFAULT_CENTER: [number, number] = [-26.2041, 28.0473];
 const DEFAULT_ZOOM = 10;
+const MARKER_SIZE = 36;
+const MARKER_ANCHOR = MARKER_SIZE / 2;
 
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
+const orgSiteIconCache = new Map<'client' | 'competitor', ReturnType<typeof divIcon>>();
+
+const CLUSTER_MARKER_TYPES = new Set(['client', 'competitor']);
 
 function getInitials(name: string): string {
   const parts = String(name).trim().split(/\s+/).filter(Boolean).slice(0, 2);
@@ -89,8 +128,6 @@ function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
     const owner = marker.owner as { photoURL?: string; avatar?: string } | undefined;
     return img || owner?.photoURL || owner?.avatar;
   }
-  if (mt === 'client') return (marker.logoUrl as string) || (marker.logo as string) || undefined;
-  if (mt === 'competitor') return marker.logoUrl as string | undefined;
   if (mt === 'branch') return marker.logoUrl as string | undefined;
   if (mt === 'lead') {
     const img = marker.image as string | undefined;
@@ -121,19 +158,56 @@ function genericPlaceholderChar(markerType: string): string {
     task: 'T',
     journal: 'J',
     'check-in-visit': 'V',
-    competitor: 'R',
-    client: 'C',
     lead: 'L',
     claim: 'K',
   };
   return m[markerType] ?? markerType.slice(0, 1).toUpperCase();
 }
 
+function createOrgSiteMarkerIcon(
+  markerType: 'client' | 'competitor'
+): ReturnType<typeof divIcon> {
+  const cached = orgSiteIconCache.get(markerType);
+  if (cached) return cached;
+
+  const { bg, Icon } = ORG_SITE_MAP_MARKER[markerType];
+  const size = ORG_SITE_MARKER_SIZE;
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      {
+        style: {
+          backgroundColor: bg,
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
+        },
+      },
+      createElement(Icon, {
+        size: 16,
+        color: 'white',
+        strokeWidth: 2.5,
+      })
+    )
+  );
+  const icon = divIcon({
+    html,
+    className: 'reports-viz-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+  orgSiteIconCache.set(markerType, icon);
+  return icon;
+}
+
 function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
   const mt = String(marker.markerType ?? 'unknown');
   const ring = MARKER_COLORS[mt] ?? '#64748b';
   const ringWidth = mt === 'check-in' ? 4 : 3;
-  const size = 36;
   const imgUrl = resolveMarkerImageUrl(marker);
   const name = String(marker.name ?? marker.id ?? mt);
   const initialsLabel =
@@ -193,8 +267,8 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
     'div',
     {
       style: {
-        width: size,
-        height: size,
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
         borderRadius: '50%',
         border: `${ringWidth}px solid ${ring}`,
         boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
@@ -209,6 +283,10 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
 
 function getMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
   const mt = String(marker.markerType ?? 'unknown');
+  if (mt === 'client' || mt === 'competitor') {
+    return createOrgSiteMarkerIcon(mt);
+  }
+
   const img = resolveMarkerImageUrl(marker) ?? '';
   const key = `${marker.id}-${mt}-${img}`;
   const cached = iconCache.get(key);
@@ -218,11 +296,18 @@ function getMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
   const icon = divIcon({
     html,
     className: 'reports-viz-marker',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [MARKER_SIZE, MARKER_SIZE],
+    iconAnchor: [MARKER_ANCHOR, MARKER_ANCHOR],
   });
   iconCache.set(key, icon);
   return icon;
+}
+
+function markerPosition(marker: MapMarkerBase): [number, number] | null {
+  const lat = Number(marker.latitude);
+  const lng = Number(marker.longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  return [lat, lng];
 }
 
 function circlePathOptions(kind: string) {
@@ -308,6 +393,106 @@ function LocationButton() {
   );
 }
 
+const popupAnchorIcon = divIcon({
+  className: 'reports-viz-marker',
+  iconSize: [0, 0],
+  iconAnchor: [0, 0],
+});
+
+function SelectedMarkerPopup({
+  selectedMarker,
+  onClose,
+}: {
+  selectedMarker: MapMarkerBase | null;
+  onClose: () => void;
+}) {
+  const map = useMap();
+  const markerRef = useRef<L.Marker | null>(null);
+  const position = selectedMarker ? markerPosition(selectedMarker) : null;
+
+  useEffect(() => {
+    if (!position) return;
+    map.panTo(position, { animate: true, duration: 0.25 });
+  }, [map, position]);
+
+  useEffect(() => {
+    if (!position) return;
+    const id = window.setTimeout(() => markerRef.current?.openPopup(), 0);
+    return () => window.clearTimeout(id);
+  }, [position, selectedMarker?.id]);
+
+  if (!selectedMarker || !position) return null;
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={position}
+      icon={popupAnchorIcon}
+      zIndexOffset={1000}
+      eventHandlers={{
+        popupclose: onClose,
+      }}
+    >
+      <Popup className="reports-viz-popup">
+        <MapMarkerDetailPopup marker={selectedMarker} />
+      </Popup>
+    </Marker>
+  );
+}
+
+function MapMarkerLayers({
+  allMarkers,
+  onSelectMarker,
+}: {
+  allMarkers: MapMarkerBase[];
+  onSelectMarker: (marker: MapMarkerBase) => void;
+}) {
+  const { clusterMarkers, otherMarkers } = useMemo(() => {
+    const cluster: MapMarkerBase[] = [];
+    const other: MapMarkerBase[] = [];
+    for (const m of allMarkers) {
+      const mt = String(m.markerType ?? '');
+      if (CLUSTER_MARKER_TYPES.has(mt)) cluster.push(m);
+      else other.push(m);
+    }
+    return { clusterMarkers: cluster, otherMarkers: other };
+  }, [allMarkers]);
+
+  const renderClickableMarker = (m: MapMarkerBase, key: string) => {
+    const position = markerPosition(m);
+    if (!position) return null;
+    return (
+      <Marker
+        key={key}
+        position={position}
+        icon={getMarkerIcon(m)}
+        eventHandlers={{
+          click: () => onSelectMarker(m),
+        }}
+      />
+    );
+  };
+
+  return (
+    <>
+      {clusterMarkers.length > 0 ? (
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={50}
+          disableClusteringAtZoom={16}
+          spiderfyOnMaxZoom
+          showCoverageOnHover={false}
+        >
+          {clusterMarkers.map((m, idx) =>
+            renderClickableMarker(m, `cluster-${String(m.id)}-${idx}`)
+          )}
+        </MarkerClusterGroup>
+      ) : null}
+      {otherMarkers.map((m, idx) => renderClickableMarker(m, `other-${String(m.id)}-${idx}`))}
+    </>
+  );
+}
+
 export interface ReportsVisualiserMapProps {
   allMarkers: MapMarkerBase[];
   influenceCircles: InfluenceCircle[];
@@ -322,6 +507,15 @@ function ReportsVisualiserMapInner({
   className,
   mapLayerBusy = false,
 }: ReportsVisualiserMapProps) {
+  const [selectedMarker, setSelectedMarker] = useState<MapMarkerBase | null>(null);
+
+  const visibleSelectedMarker = useMemo(() => {
+    if (!selectedMarker) return null;
+    return (
+      allMarkers.find((m) => String(m.id) === String(selectedMarker.id)) ?? null
+    );
+  }, [allMarkers, selectedMarker]);
+
   const center = useMemo((): [number, number] => {
     if (allMarkers.length === 0 && influenceCircles.length === 0) return DEFAULT_CENTER;
     const first =
@@ -350,11 +544,13 @@ function ReportsVisualiserMapInner({
           zoom={DEFAULT_ZOOM}
           className="h-full w-full"
           scrollWheelZoom
+          preferCanvas
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <ScaleControl position="bottomright" imperial={false} />
           <FitReportBounds markers={allMarkers} circles={influenceCircles} />
           {influenceCircles.map((c) => {
             const k = String(c.kind ?? c.markerType ?? 'client');
@@ -367,22 +563,14 @@ function ReportsVisualiserMapInner({
               />
             );
           })}
-          {allMarkers.map((m, idx) => {
-            const lat = Number(m.latitude);
-            const lng = Number(m.longitude);
-            if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
-            return (
-              <Marker
-                key={`${String(m.id)}-${idx}`}
-                position={[lat, lng]}
-                icon={getMarkerIcon(m)}
-              >
-                <Popup className="reports-viz-popup">
-                  <MapMarkerDetailPopup marker={m} />
-                </Popup>
-              </Marker>
-            );
-          })}
+          <MapMarkerLayers
+            allMarkers={allMarkers}
+            onSelectMarker={setSelectedMarker}
+          />
+          <SelectedMarkerPopup
+            selectedMarker={visibleSelectedMarker}
+            onClose={() => setSelectedMarker(null)}
+          />
           <LocationButton />
         </MapContainer>
       </div>

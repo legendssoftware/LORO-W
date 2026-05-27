@@ -75,7 +75,7 @@ import {
 } from '@/lib/utils/visits-export';
 import { METHOD_OPTIONS } from '@/lib/visit-form-utils';
 import { formatOwnerChartName } from '@/lib/utils/report-labels';
-import type { ReportsMode } from '@/app/reports/reports-content';
+import type { ReportsMode } from '@/app/reports/reports-mode';
 import {
   buildReportingUserUidSet,
   filterVisitExportItemsByReportingUserUids,

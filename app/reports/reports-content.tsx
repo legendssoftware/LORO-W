@@ -1,12 +1,11 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Clock,
   Contact,
   LayoutDashboard,
-  Map,
   MapPin,
   Target,
 } from 'lucide-react';
@@ -19,14 +18,12 @@ import { isReportsElevatedViewer } from '@/lib/access';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportsAttendanceTab } from '@/app/reports/components/reports-attendance-tab';
 import { ReportsLeadsTab } from '@/app/reports/components/reports-leads-tab';
-import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
 import { ReportsVisitsTab } from '@/app/reports/components/reports-visits-tab';
 import { ReportsTargetsTab } from '@/app/reports/components/reports-targets-tab';
 import { ReportsOverviewTab } from '@/app/reports/components/reports-overview-tab';
 import { useReportsPrefetch, prefetchReportsSecondaryTabs } from '@/app/reports/use-reports-prefetch';
+import type { ReportsMode } from '@/app/reports/reports-mode';
 import type { SyncProfile } from '@/api/types';
-
-export type ReportsMode = 'org' | 'self';
 
 const REPORT_TABS = [
   { value: 'overview', label: 'Overview', Icon: LayoutDashboard },
@@ -34,7 +31,6 @@ const REPORT_TABS = [
   { value: 'attendance', label: 'Attendance', Icon: Clock },
   { value: 'leads', label: 'Leads', Icon: Contact },
   { value: 'targets', label: 'Targets', Icon: Target },
-  { value: 'visualiser', label: 'Visualiser', Icon: Map },
 ] as const;
 
 const tabTriggerClassName =
@@ -46,7 +42,7 @@ function getValidReportsTab(value: string | null) {
     : 'overview';
 }
 
-const SECONDARY_PREFETCH_TABS = new Set(['leads', 'visualiser']);
+const SECONDARY_PREFETCH_TABS = new Set(['leads']);
 
 function ReportsTabsEqualWidth({
   profile,
@@ -55,6 +51,7 @@ function ReportsTabsEqualWidth({
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const apiClient = useApiClient();
@@ -162,8 +159,6 @@ function ReportsTabsEqualWidth({
             <ReportsLeadsTab profile={profile} reportsMode={reportsMode} />
           ) : value === 'targets' ? (
             <ReportsTargetsTab profile={profile} reportsMode={reportsMode} />
-          ) : value === 'visualiser' ? (
-            <ReportsVisualiserTab profile={profile} reportsMode={reportsMode} />
           ) : null}
         </TabsContent>
       ))}

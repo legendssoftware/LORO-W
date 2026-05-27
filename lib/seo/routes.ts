@@ -74,6 +74,11 @@ export const PAGE_COPY = {
     description:
       'Attendance, leads, visits and payroll signals in charts you can share. Export when finance asks—stop rebuilding slides every Friday.',
   },
+  visualiser: {
+    title: 'Visualiser — Map visits, clients & competitors in one view',
+    description:
+      'Explore field activity on a live map with date filters and influence layers. See where your team went and what surrounds each account.',
+  },
   visits: {
     title: 'Visits - Prove field work, sync quotes & outcomes',
     description:

@@ -13,7 +13,7 @@ const QUERY_KEY_PREFIX = ['att', 'metrics', 'monthly'] as const;
 /**
  * Stable query key from body so the same (year, month, options) share one cache entry.
  */
-function getMonthlyMetricsQueryKey(body: MonthlyMetricsBody) {
+export function getMonthlyMetricsQueryKey(body: MonthlyMetricsBody) {
     return [
         ...QUERY_KEY_PREFIX,
         body.year,

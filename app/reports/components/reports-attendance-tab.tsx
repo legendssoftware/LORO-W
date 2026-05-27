@@ -79,7 +79,7 @@ import {
 } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import type { SearchableOptionRow } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
-import type { ReportsMode } from '@/app/reports/reports-content';
+import type { ReportsMode } from '@/app/reports/reports-mode';
 import type { AttendanceRangeCheckIn } from '@/app/reports/types/attendance-range-check-in';
 import {
   userListItemHasPerformanceTarget,

@@ -23,6 +23,20 @@ export function branchDisplayName(b: BranchListItem): string {
   return alias || legal || `Branch ${b.uid}`;
 }
 
+function hasStoredCoordinates(b: BranchListItem): boolean {
+  const lat = Number(b.latitude);
+  const lng = Number(b.longitude);
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !(lat === 0 && lng === 0)
+  );
+}
+
 /**
  * Forward geocode via OpenStreetMap Nominatim (respect ~1 req/s usage policy).
  */
@@ -60,6 +74,24 @@ export async function buildBranchMarkersFromList(
   let first = true;
   for (const b of branches) {
     const line = formatBranchAddressLine(b);
+
+    if (hasStoredCoordinates(b)) {
+      const lat = Number(b.latitude);
+      const lng = Number(b.longitude);
+      out.push({
+        id: `branch-list-${b.uid}`,
+        name: branchDisplayName(b),
+        position: [lat, lng],
+        latitude: lat,
+        longitude: lng,
+        markerType: 'branch',
+        address: line ?? '',
+        branchUid: b.uid,
+        logoUrl,
+      });
+      continue;
+    }
+
     if (!line) continue;
     if (!first) await sleep(NOMINATIM_DELAY_MS);
     first = false;

@@ -1,8 +1,8 @@
 /**
  * Map report types for GET `/reports/map`.
- * Map markers intentionally exclude visit check-ins (`check-in-visit`), attendance GPS pins (`check-in`),
- * shift/break endpoints, and attendance-derived `claim` pins; those top-level arrays remain empty for API compatibility.
- * `allMarkers` is the merged set of allowed types (e.g. `client`, `competitor`, `branch`, `lead`, `quotation`, `journal`, `task`).
+ * `allMarkers` includes only `client`, `competitor`, and `branch` (plus optional `org`).
+ * Clients/competitors are loaded by Clerk `organisationUid` string — not by branch.
+ * Legacy activity arrays remain empty for API compatibility.
  */
 
 export interface MapConfigType {
@@ -63,6 +63,8 @@ export interface InfluenceCircle {
 
 export interface MapOrganisationSummary {
   uid: number;
+  /** Clerk organisation id — clients/competitors are filtered by this string on the server. */
+  organisationUid?: string;
   name: string;
   status: string;
   logo: string | null;
@@ -128,6 +130,39 @@ export interface MapDataResponse {
     details?: string;
   }>;
   mapConfig: MapConfigType;
+  /** Forward-geocoding stats when clients/competitors/branches lacked stored coordinates. */
+  geocodingSummary?: {
+    clients: {
+      total: number;
+      alreadyHadCoords: number;
+      alreadyExhausted?: number;
+      resolvedViaGps: number;
+      resolvedViaGeocode: number;
+      skippedUngeocodable?: number;
+      failed: number;
+      cappedPending: number;
+    };
+    competitors: {
+      total: number;
+      alreadyHadCoords: number;
+      alreadyExhausted?: number;
+      resolvedViaGps: number;
+      resolvedViaGeocode: number;
+      skippedUngeocodable?: number;
+      failed: number;
+      cappedPending: number;
+    };
+    branches: {
+      total: number;
+      alreadyHadCoords: number;
+      alreadyExhausted?: number;
+      resolvedViaGps: number;
+      resolvedViaGeocode: number;
+      skippedUngeocodable?: number;
+      failed: number;
+      cappedPending: number;
+    };
+  };
   analytics?: {
     totalMarkers: number;
     markerBreakdown?: Record<string, MapMarkerBase[]>;
