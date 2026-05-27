@@ -1,9 +1,11 @@
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
+import type { ClaimBranch } from '@/api/types/claims';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
   getCountryFlag,
   normalizeBranchCountryCodeForGrouping,
+  normalizeCountryToken,
 } from '@/lib/utils/country-flags';
 
 export function branchUidFromListUser(u: UserListItem | undefined): number | null {
@@ -30,5 +32,36 @@ export function branchFlagAndLabel(
   return {
     flag: getCountryFlag(normalizeBranchCountryCodeForGrouping(b)).flag,
     label: getBranchDisplayLabel(b),
+  };
+}
+
+export function claimBranchFlagAndLabel(
+  claimBranch: ClaimBranch | null | undefined,
+  branchByUid: Map<number, BranchListItem>
+): { flag: string; label: string } | null {
+  if (!claimBranch?.uid && !claimBranch?.name) return null;
+
+  const uid = claimBranch.uid;
+  if (typeof uid === 'number' && uid > 0) {
+    const b = branchByUid.get(uid);
+    if (b) {
+      return {
+        flag: getCountryFlag(normalizeBranchCountryCodeForGrouping(b)).flag,
+        label: getBranchDisplayLabel(b),
+      };
+    }
+  }
+
+  const country =
+    normalizeCountryToken(claimBranch.address?.country) ??
+    claimBranch.address?.country ??
+    'SA';
+  const label =
+    claimBranch.name ??
+    (typeof uid === 'number' && uid > 0 ? `Branch #${uid}` : 'Unassigned');
+
+  return {
+    flag: getCountryFlag(country).flag,
+    label,
   };
 }

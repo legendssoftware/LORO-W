@@ -36,7 +36,7 @@ export function DashboardContent() {
 
   const { isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
-  const { isTokenReady } = useTokenReady();
+  const { isTokenReady, sessionToken } = useTokenReady();
   const apiClient = useApiClient();
   const { backendUserData: profile } = useSessionSync();
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
@@ -62,9 +62,9 @@ export function DashboardContent() {
     [profile?.uid, clerkUser?.id]
   );
 
-  const isClient = isClientMode(profile);
-  const staffAttendanceEnabled =
-    isTokenReady && profile != null && !isClient;
+  const isClient = isClientMode(profile, sessionToken);
+  /** Start attendance APIs as soon as the token is ready; do not wait for sync-clerk. */
+  const staffAttendanceEnabled = isTokenReady && !isClient;
 
   const attQuery = useAttStatus({
     enabled: staffAttendanceEnabled,
@@ -273,7 +273,7 @@ export function DashboardContent() {
   return (
     <div className={appPageScrollWrapClass}>
       <main className={appPageMainClass}>
-        {!isSignedIn ? null : profile && isClient ? (
+        {!isSignedIn ? null : isClient ? (
           <ClientDashboardHome />
         ) : (
           <div className="space-y-4">

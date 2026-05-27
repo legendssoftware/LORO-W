@@ -10,6 +10,7 @@ import type { SyncResult, SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams } from '@/lib/clerk-session-token';
+import { resolveClerkToken, clerkTokenCacheKey } from '@/lib/clerk-token-cache';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 import {
   defaultQueryRetry,
@@ -46,6 +47,8 @@ export function useSessionSync() {
   const startSession = useSessionStore((s) => s.startSession);
   const { performSignOut } = useSignOut();
   const signOutAfterSyncHandledRef = useRef(false);
+
+  const tokenCacheKey = clerkTokenCacheKey(orgId, activeClerkOrganizationId);
 
   const queryKey = useMemo(
     () => [...SESSION_SYNC_QUERY_KEY, isSignedIn, sessionId ?? '', orgId ?? ''],
@@ -86,8 +89,9 @@ export function useSessionSync() {
     queryKey,
     enabled: syncQueryEnabled,
     queryFn: async (): Promise<SyncResult> => {
-      const token = await getToken(
-        getClerkTokenParams(orgId, activeClerkOrganizationId)
+      const token = await resolveClerkToken(
+        () => getToken(getClerkTokenParams(orgId, activeClerkOrganizationId)),
+        tokenCacheKey
       );
       if (!token) throw new Error('No token available');
       return syncClerk(client, token);
@@ -103,8 +107,9 @@ export function useSessionSync() {
 
   const forceSyncMutation = useMutation({
     mutationFn: async (): Promise<SyncResult> => {
-      const token = await getToken(
-        getClerkTokenParams(orgId, activeClerkOrganizationId)
+      const token = await resolveClerkToken(
+        () => getToken(getClerkTokenParams(orgId, activeClerkOrganizationId)),
+        tokenCacheKey
       );
       if (!token) throw new Error('No token available');
       return syncClerk(client, token, { forceSync: true });

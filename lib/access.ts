@@ -14,6 +14,7 @@ export const STANDARD_USER_PATHS = [
     "/planning",
     "/claims",
     "/reports",
+    "/visualiser",
 ] as const;
 
 /** Matches server ReportsController.getAccessScope `isElevated` (org-wide reports / map). */
@@ -250,6 +251,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/competitors", label: "Competitors" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
+    { path: "/visualiser", label: "Visualiser" },
 ];
 
 /** Sidebar item for org settings (admin / owner / manager only). */
@@ -298,6 +300,7 @@ export function getAllowedRoutes(
         { path: "/competitors", label: "Competitors" },
         { path: "/planning", label: "Planning" },
         { path: "/reports", label: "Reports" },
+        { path: "/visualiser", label: "Visualiser" },
     ];
 
     if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {

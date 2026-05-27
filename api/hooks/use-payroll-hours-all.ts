@@ -7,7 +7,7 @@ import { getPayrollHoursAll, type PayrollHoursAllParams } from '@/api/endpoints/
 
 const QUERY_KEY_PREFIX = ['att', 'payroll-hours', 'all'] as const;
 
-function getPayrollHoursAllQueryKey(params: PayrollHoursAllParams) {
+export function getPayrollHoursAllQueryKey(params: PayrollHoursAllParams) {
     return [...QUERY_KEY_PREFIX, params.branchId ?? null] as const;
 }
 

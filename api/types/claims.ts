@@ -73,6 +73,7 @@ export interface Claim {
   claimGroupUid?: number | null;
   claimGroup?: ClaimGroupRef | null;
   owner?: ClaimOwner | null;
+  verifiedBy?: ClaimOwner | null;
   branch?: ClaimBranch | null;
   organisation?: ClaimOrganisation | null;
   createdAt?: string;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useClerk } from '@clerk/nextjs';
+import { clearClerkTokenCache } from '@/lib/clerk-token-cache';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSessionSyncQueryKey } from '@/api/hooks';
 import {
@@ -22,6 +23,7 @@ export function useSignOut() {
   const queryClient = useQueryClient();
 
   async function performSignOut() {
+    clearClerkTokenCache();
     queryClient.removeQueries({ queryKey: getSessionSyncQueryKey() });
     useSessionStore.getState().endSession();
     if (typeof window !== 'undefined') {

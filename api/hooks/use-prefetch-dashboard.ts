@@ -45,7 +45,7 @@ export function usePrefetchDashboardQueries() {
     void queryClient.prefetchQuery({
       queryKey: ['att', 'metrics'],
       queryFn: async () => {
-        const response = await getAttMetrics(client);
+        const response = await getAttMetrics(client, { scope: 'dashboard' });
         return response.metrics as AttendanceMetrics;
       },
       staleTime: 60 * 1000,

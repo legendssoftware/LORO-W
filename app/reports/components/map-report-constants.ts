@@ -1,3 +1,5 @@
+import { Flame, ShoppingBag, type LucideIcon } from 'lucide-react';
+
 /** Palette for map marker rings, influence spheres, and legend (aligned with reports visualiser). */
 export const MARKER_COLORS: Record<string, string> = {
   'check-in': '#2563eb',
@@ -15,6 +17,16 @@ export const MARKER_COLORS: Record<string, string> = {
   quotation: '#db2777',
   claim: '#b45309',
 };
+
+export const ORG_SITE_MAP_MARKER: Record<
+  'client' | 'competitor',
+  { bg: string; Icon: LucideIcon }
+> = {
+  client: { bg: MARKER_COLORS.client, Icon: ShoppingBag },
+  competitor: { bg: MARKER_COLORS.competitor, Icon: Flame },
+};
+
+export const ORG_SITE_MARKER_SIZE = 30;
 
 export const MARKER_TYPE_LABELS: Record<string, string> = {
   'check-in': 'Active check-in',
