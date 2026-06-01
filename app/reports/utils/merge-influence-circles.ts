@@ -2,33 +2,44 @@ import type { GeofenceMapDefaults, InfluenceCircle, MapMarkerBase } from '@/api/
 
 const COORD_EPS = 1e-5;
 
+function coordKey(lat: number, lng: number): string {
+  return `${lat.toFixed(5)},${lng.toFixed(5)}`;
+}
+
+function buildMarkerCoordSet(markers: MapMarkerBase[]): Set<string> {
+  const keys = new Set<string>();
+  for (const m of markers) {
+    const lat = Number(m.latitude);
+    const lng = Number(m.longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
+    keys.add(coordKey(lat, lng));
+  }
+  return keys;
+}
+
+function circleMatchesCoordSet(
+  circle: InfluenceCircle,
+  markerCoords: Set<string>
+): boolean {
+  return markerCoords.has(coordKey(circle.latitude, circle.longitude));
+}
+
 /** Keep only influence zones that belong to markers still visible after toolbar filters. */
 export function filterInfluenceCirclesForMarkers(
   circles: InfluenceCircle[],
   markers: MapMarkerBase[]
 ): InfluenceCircle[] {
   if (markers.length === 0) return [];
-  return circles.filter((c) =>
-    markers.some((m) => {
-      const lat = Number(m.latitude);
-      const lng = Number(m.longitude);
-      if (Number.isNaN(lat) || Number.isNaN(lng)) return false;
-      return (
-        Math.abs(c.latitude - lat) < COORD_EPS && Math.abs(c.longitude - lng) < COORD_EPS
-      );
-    })
-  );
+  const markerCoords = buildMarkerCoordSet(markers);
+  return circles.filter((c) => circleMatchesCoordSet(c, markerCoords));
 }
 
-function markerHasNearbyCircle(
-  lat: number,
-  lng: number,
-  circles: InfluenceCircle[]
-): boolean {
-  return circles.some(
-    (c) =>
-      Math.abs(c.latitude - lat) < COORD_EPS && Math.abs(c.longitude - lng) < COORD_EPS
-  );
+function buildCircleCoordSet(circles: InfluenceCircle[]): Set<string> {
+  const keys = new Set<string>();
+  for (const c of circles) {
+    keys.add(coordKey(c.latitude, c.longitude));
+  }
+  return keys;
 }
 
 function clampRadius(
@@ -67,12 +78,14 @@ export function mergeInfluenceCircles(
 ): InfluenceCircle[] {
   const defaultMeters = geofenceMapDefaults?.defaultRadiusMeters ?? 500;
   const merged = [...apiCircles];
+  const circleCoords = buildCircleCoordSet(merged);
 
   for (const m of markers) {
     const lat = Number(m.latitude);
     const lng = Number(m.longitude);
     if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
-    if (markerHasNearbyCircle(lat, lng, merged)) continue;
+    const key = coordKey(lat, lng);
+    if (circleCoords.has(key)) continue;
 
     const mt = String(m.markerType ?? 'unknown');
     merged.push({
@@ -83,6 +96,7 @@ export function mergeInfluenceCircles(
       longitude: lng,
       radiusMeters: resolveRadiusForMarker(m, defaultMeters, geofenceMapDefaults),
     });
+    circleCoords.add(key);
   }
 
   return merged;
