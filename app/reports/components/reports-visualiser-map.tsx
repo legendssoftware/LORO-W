@@ -1,22 +1,43 @@
 'use client';
 
-import { useMemo, useEffect, useRef, useState, memo, createElement } from 'react';
+import {
+  useMemo,
+  useEffect,
+  useRef,
+  useState,
+  memo,
+  createElement,
+  useCallback,
+} from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   Circle,
   ScaleControl,
   useMap,
 } from 'react-leaflet';
+import { LeafletMapControls } from '@/lib/leaflet/map-plugin-controls';
+import {
+  INFLUENCE_CIRCLES_MIN_ZOOM,
+  useMapZoom,
+} from '@/lib/leaflet/use-map-zoom';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { divIcon } from 'leaflet';
 import L from 'leaflet';
 import type { InfluenceCircle, MapMarkerBase } from '@/api/types/map';
+import type {
+  BranchCatchmentOpportunity,
+  GreenfieldOpportunityZone,
+  SiteOpportunityZone,
+} from '@/lib/site-opportunity';
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
+import {
+  PanToSelectedZone,
+  SiteOpportunityMapOverlays,
+} from './site-opportunity-map-overlays';
 import {
   MARKER_COLORS,
   ORG_SITE_MAP_MARKER,
@@ -84,6 +105,32 @@ const customMarkerStyles = `
   .reports-viz-popup .leaflet-popup-close-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px #fff, 0 0 0 4px #fca5a5;
+  }
+
+  .reports-viz-search-hidden.leaflet-div-icon {
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .reports-viz-easybtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .leaflet-container .easy-button-button {
+    background: hsl(var(--background));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+
+  .leaflet-container .easy-button-button:hover {
+    background: hsl(var(--muted));
   }
 `;
 
@@ -365,32 +412,10 @@ function FitReportBounds({
       return;
     }
     const b = L.latLngBounds(latLngs);
-    map.fitBounds(b, { padding: [32, 32], maxZoom: 14 });
+    map.fitBounds(b, { padding: [32, 32], maxZoom: 14, animate: false });
   }, [map, boundsKey, markers, circles]);
 
   return null;
-}
-
-function LocationButton() {
-  const map = useMap();
-  return (
-    <button
-      type="button"
-      className="absolute bottom-4 left-4 z-[1000] rounded-md border bg-background px-3 py-1.5 text-sm shadow"
-      onClick={() => {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            map.setView([pos.coords.latitude, pos.coords.longitude], map.getZoom());
-          },
-          () => {},
-          { enableHighAccuracy: true }
-        );
-      }}
-    >
-      Use my location
-    </button>
-  );
 }
 
 const popupAnchorIcon = divIcon({
@@ -440,6 +465,26 @@ function SelectedMarkerPopup({
   );
 }
 
+const ReportMapMarker = memo(function ReportMapMarker({
+  marker,
+  onSelectMarker,
+}: {
+  marker: MapMarkerBase;
+  onSelectMarker: (marker: MapMarkerBase) => void;
+}) {
+  const position = markerPosition(marker);
+  if (!position) return null;
+  return (
+    <Marker
+      position={position}
+      icon={getMarkerIcon(marker)}
+      eventHandlers={{
+        click: () => onSelectMarker(marker),
+      }}
+    />
+  );
+});
+
 function MapMarkerLayers({
   allMarkers,
   onSelectMarker,
@@ -458,39 +503,72 @@ function MapMarkerLayers({
     return { clusterMarkers: cluster, otherMarkers: other };
   }, [allMarkers]);
 
-  const renderClickableMarker = (m: MapMarkerBase, key: string) => {
-    const position = markerPosition(m);
-    if (!position) return null;
-    return (
-      <Marker
-        key={key}
-        position={position}
-        icon={getMarkerIcon(m)}
-        eventHandlers={{
-          click: () => onSelectMarker(m),
-        }}
-      />
-    );
-  };
-
   return (
     <>
       {clusterMarkers.length > 0 ? (
         <MarkerClusterGroup
           chunkedLoading
-          maxClusterRadius={50}
+          maxClusterRadius={70}
           disableClusteringAtZoom={16}
           spiderfyOnMaxZoom
           showCoverageOnHover={false}
         >
-          {clusterMarkers.map((m, idx) =>
-            renderClickableMarker(m, `cluster-${String(m.id)}-${idx}`)
-          )}
+          {clusterMarkers.map((m, idx) => (
+            <ReportMapMarker
+              key={`cluster-${String(m.id)}-${idx}`}
+              marker={m}
+              onSelectMarker={onSelectMarker}
+            />
+          ))}
         </MarkerClusterGroup>
       ) : null}
-      {otherMarkers.map((m, idx) => renderClickableMarker(m, `other-${String(m.id)}-${idx}`))}
+      {otherMarkers.map((m, idx) => (
+        <ReportMapMarker
+          key={`other-${String(m.id)}-${idx}`}
+          marker={m}
+          onSelectMarker={onSelectMarker}
+        />
+      ))}
     </>
   );
+}
+
+function InfluenceCirclesLayer({
+  influenceCircles,
+}: {
+  influenceCircles: InfluenceCircle[];
+}) {
+  const zoom = useMapZoom();
+  if (zoom < INFLUENCE_CIRCLES_MIN_ZOOM) return null;
+
+  return (
+    <>
+      {influenceCircles.map((c) => {
+        const k = String(c.kind ?? c.markerType ?? 'client');
+        return (
+          <Circle
+            key={c.id}
+            center={[c.latitude, c.longitude]}
+            radius={c.radiusMeters}
+            pathOptions={circlePathOptions(k)}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function MapZoomBoundsSync({
+  markers,
+  influenceCircles,
+}: {
+  markers: MapMarkerBase[];
+  influenceCircles: InfluenceCircle[];
+}) {
+  const zoom = useMapZoom();
+  const circlesForBounds =
+    zoom >= INFLUENCE_CIRCLES_MIN_ZOOM ? influenceCircles : [];
+  return <FitReportBounds markers={markers} circles={circlesForBounds} />;
 }
 
 export interface ReportsVisualiserMapProps {
@@ -499,6 +577,11 @@ export interface ReportsVisualiserMapProps {
   className?: string;
   /** Non-blocking banner while /reports/map is loading or refetching */
   mapLayerBusy?: boolean;
+  showOpportunities?: boolean;
+  opportunityCatchments?: BranchCatchmentOpportunity[];
+  opportunityGreenfield?: GreenfieldOpportunityZone[];
+  selectedOpportunityId?: string | null;
+  onSelectOpportunity?: (zone: SiteOpportunityZone) => void;
 }
 
 function ReportsVisualiserMapInner({
@@ -506,8 +589,16 @@ function ReportsVisualiserMapInner({
   influenceCircles,
   className,
   mapLayerBusy = false,
+  showOpportunities = false,
+  opportunityCatchments = [],
+  opportunityGreenfield = [],
+  selectedOpportunityId = null,
+  onSelectOpportunity,
 }: ReportsVisualiserMapProps) {
   const [selectedMarker, setSelectedMarker] = useState<MapMarkerBase | null>(null);
+  const handleSelectMarker = useCallback((marker: MapMarkerBase) => {
+    setSelectedMarker(marker);
+  }, []);
 
   const visibleSelectedMarker = useMemo(() => {
     if (!selectedMarker) return null;
@@ -515,6 +606,19 @@ function ReportsVisualiserMapInner({
       allMarkers.find((m) => String(m.id) === String(selectedMarker.id)) ?? null
     );
   }, [allMarkers, selectedMarker]);
+
+  const selectedOpportunity = useMemo((): SiteOpportunityZone | null => {
+    if (!selectedOpportunityId) return null;
+    return (
+      [...opportunityCatchments, ...opportunityGreenfield].find(
+        (z) => z.id === selectedOpportunityId
+      ) ?? null
+    );
+  }, [
+    selectedOpportunityId,
+    opportunityCatchments,
+    opportunityGreenfield,
+  ]);
 
   const center = useMemo((): [number, number] => {
     if (allMarkers.length === 0 && influenceCircles.length === 0) return DEFAULT_CENTER;
@@ -543,35 +647,37 @@ function ReportsVisualiserMapInner({
           center={center}
           zoom={DEFAULT_ZOOM}
           className="h-full w-full"
-          scrollWheelZoom
+          scrollWheelZoom={false}
+          gestureHandling
           preferCanvas
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
           <ScaleControl position="bottomright" imperial={false} />
-          <FitReportBounds markers={allMarkers} circles={influenceCircles} />
-          {influenceCircles.map((c) => {
-            const k = String(c.kind ?? c.markerType ?? 'client');
-            return (
-              <Circle
-                key={c.id}
-                center={[c.latitude, c.longitude]}
-                radius={c.radiusMeters}
-                pathOptions={circlePathOptions(k)}
-              />
-            );
-          })}
+          <LeafletMapControls
+            markers={allMarkers}
+            onSelectMarker={handleSelectMarker}
+          />
+          <MapZoomBoundsSync
+            markers={allMarkers}
+            influenceCircles={influenceCircles}
+          />
+          <InfluenceCirclesLayer influenceCircles={influenceCircles} />
+          {showOpportunities ? (
+            <SiteOpportunityMapOverlays
+              catchments={opportunityCatchments}
+              greenfield={opportunityGreenfield}
+              selectedZoneId={selectedOpportunityId}
+              onSelectZone={(z) => onSelectOpportunity?.(z)}
+            />
+          ) : null}
+          <PanToSelectedZone zone={selectedOpportunity} />
           <MapMarkerLayers
             allMarkers={allMarkers}
-            onSelectMarker={setSelectedMarker}
+            onSelectMarker={handleSelectMarker}
           />
           <SelectedMarkerPopup
             selectedMarker={visibleSelectedMarker}
             onClose={() => setSelectedMarker(null)}
           />
-          <LocationButton />
         </MapContainer>
       </div>
     </div>

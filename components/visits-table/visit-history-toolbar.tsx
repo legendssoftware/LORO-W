@@ -83,6 +83,8 @@ export interface VisitHistoryToolbarProps {
   showDateRange?: boolean;
   /** When false, hides the visit search field. Default true. */
   showSearch?: boolean;
+  /** Extra controls rendered inline with region/business filters (e.g. Visualiser suggested areas). */
+  extraFilters?: ReactNode;
 }
 
 function VisitMapTableToggleButton() {
@@ -436,6 +438,7 @@ export function VisitHistoryToolbar({
   showUserFilter = true,
   showDateRange = true,
   showSearch = true,
+  extraFilters = null,
 }: VisitHistoryToolbarProps) {
   const {
     searchQuery,
@@ -555,6 +558,7 @@ export function VisitHistoryToolbar({
               <DialogDescription>{mobileFilterDescription}</DialogDescription>
             </DialogHeader>
             <VisitFilterControls {...filterProps} layout="stack" />
+            {extraFilters ? <div className="flex flex-wrap items-center gap-2">{extraFilters}</div> : null}
             <div className="pt-2">
               <Button
                 type="button"
@@ -575,6 +579,7 @@ export function VisitHistoryToolbar({
           <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
               <VisitFilterControls {...filterProps} layout="row" />
+              {extraFilters}
             </div>
           </div>
           <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
