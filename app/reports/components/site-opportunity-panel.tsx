@@ -1,0 +1,399 @@
+'use client';
+
+import { useMutation } from '@tanstack/react-query';
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { Download, Loader2, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  buildCaptureTimeline,
+  downloadOpportunitiesCsv,
+  type BranchCatchmentOpportunity,
+  type DataQualitySummary,
+  type GreenfieldOpportunityZone,
+  type SiteOpportunityZone,
+} from '@/lib/site-opportunity';
+import { cn } from '@/lib/utils';
+
+function formatZar(n: number): string {
+  if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(2)}m`;
+  if (n >= 1_000) return `R ${(n / 1_000).toFixed(0)}k`;
+  return `R ${Math.round(n).toLocaleString()}`;
+}
+
+function CaptureTimelineChart({
+  potentialLowZAR,
+  potentialHighZAR,
+}: {
+  potentialLowZAR: number;
+  potentialHighZAR: number;
+}) {
+  const data = buildCaptureTimeline(potentialLowZAR, potentialHighZAR);
+  return (
+    <div className="h-[140px] w-full mt-3">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 10 }}
+            tickFormatter={(m) => `${m}m`}
+          />
+          <YAxis
+            tick={{ fontSize: 10 }}
+            tickFormatter={(v) => `${Math.round(v / 1_000_000)}m`}
+            width={32}
+          />
+          <Tooltip
+            formatter={(v: number) => formatZar(v)}
+            labelFormatter={(m) => `Month ${m}`}
+          />
+          <Line
+            type="monotone"
+            dataKey="revenueMidZAR"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ZoneDetail({
+  zone,
+  onExplain,
+  explainLoading,
+  brief,
+}: {
+  zone: SiteOpportunityZone;
+  onExplain: () => void;
+  explainLoading: boolean;
+  brief: SiteOpportunityBrief | null;
+}) {
+  const title =
+    zone.kind === 'catchment' ? zone.branchName : zone.label;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">
+            #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
+          </p>
+          <h3 className="font-semibold text-foreground">{title}</h3>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onExplain}
+          disabled={explainLoading}
+        >
+          {explainLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Sparkles className="size-4" />
+          )}
+          <span className="ml-1.5">Explain with AI</span>
+        </Button>
+      </div>
+
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+        <div>
+          <dt className="text-muted-foreground">Clients in radius</dt>
+          <dd className="font-medium">{zone.clientCount}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Competitors</dt>
+          <dd className="font-medium">{zone.competitorCount}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Addressable pool</dt>
+          <dd className="font-medium">{formatZar(zone.addressablePoolZAR)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Potential (15–30%)</dt>
+          <dd className="font-medium">
+            {formatZar(zone.potentialLowZAR)} – {formatZar(zone.potentialHighZAR)}
+          </dd>
+        </div>
+        {zone.kind === 'catchment' && zone.actualRevenueZAR != null ? (
+          <>
+            <div>
+              <dt className="text-muted-foreground">Actual ERP revenue</dt>
+              <dd className="font-medium">{formatZar(zone.actualRevenueZAR)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Gap to high potential</dt>
+              <dd
+                className={cn(
+                  'font-medium',
+                  (zone.revenueGapZAR ?? 0) > 0 ? 'text-amber-700' : 'text-green-700'
+                )}
+              >
+                {zone.revenueGapZAR != null ? formatZar(zone.revenueGapZAR) : '—'}
+              </dd>
+            </div>
+          </>
+        ) : null}
+        {zone.kind === 'greenfield' && zone.nearestBranchKm != null ? (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Nearest BitDrywall branch</dt>
+            <dd className="font-medium">{zone.nearestBranchKm.toFixed(1)} km</dd>
+          </div>
+        ) : null}
+      </dl>
+
+      {zone.byBrand.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {zone.byBrand.map((b) => (
+            <Badge key={b.brand} variant="secondary" className="text-xs">
+              {b.brand} ×{b.count}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1">
+          Market capture ramp (mid estimate)
+        </p>
+        <CaptureTimelineChart
+          potentialLowZAR={zone.potentialLowZAR}
+          potentialHighZAR={zone.potentialHighZAR}
+        />
+      </div>
+
+      {brief ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sparkles className="size-4" />
+              AI brief
+              <Badge variant="outline" className="ml-auto capitalize">
+                {brief.recommendation}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0 text-sm space-y-2">
+            <p>{brief.summary}</p>
+            {brief.strengths.length > 0 ? (
+              <ul className="list-disc pl-4 text-muted-foreground">
+                {brief.strengths.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            ) : null}
+            {brief.risks.length > 0 ? (
+              <ul className="list-disc pl-4 text-amber-800">
+                {brief.risks.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function ZoneListItem({
+  zone,
+  selected,
+  onSelect,
+}: {
+  zone: SiteOpportunityZone;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        'w-full text-left rounded-lg border px-3 py-2.5 transition-colors',
+        selected
+          ? 'border-primary bg-primary/5'
+          : 'border-border hover:bg-muted/50'
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-sm truncate">{title}</span>
+        <Badge variant="outline">#{zone.rank}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mt-1">
+        {zone.competitorCount} competitors · {formatZar(zone.potentialHighZAR)} high
+      </p>
+    </button>
+  );
+}
+
+export interface SiteOpportunityBrief {
+  summary: string;
+  strengths: string[];
+  risks: string[];
+  recommendation: 'strong' | 'moderate' | 'weak';
+  suggestedNextSteps: string[];
+  estimatedRampMonths: number;
+}
+
+async function fetchSiteBrief(payload: unknown): Promise<SiteOpportunityBrief> {
+  const res = await fetch('/api/site-opportunities/brief', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof err.error === 'string' ? err.error : 'Could not generate AI brief'
+    );
+  }
+  return res.json();
+}
+
+export function SiteOpportunityPanel({
+  catchments,
+  greenfield,
+  dataQuality,
+  selectedZoneId,
+  onSelectZone,
+  className,
+}: {
+  catchments: BranchCatchmentOpportunity[];
+  greenfield: GreenfieldOpportunityZone[];
+  dataQuality: DataQualitySummary;
+  selectedZoneId: string | null;
+  onSelectZone: (zone: SiteOpportunityZone) => void;
+  className?: string;
+}) {
+  const selectedZone =
+    [...catchments, ...greenfield].find((z) => z.id === selectedZoneId) ?? null;
+
+  const explainMutation = useMutation({
+    mutationFn: fetchSiteBrief,
+  });
+
+  const lowConfidence = dataQuality.competitorCoveragePct < 70;
+
+  return (
+    <aside
+      className={cn(
+        'flex flex-col min-h-0 border-l bg-background w-full lg:w-[360px] shrink-0',
+        className
+      )}
+    >
+      <div className="p-3 border-b space-y-2 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold text-sm">Suggested areas</h2>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => downloadOpportunitiesCsv(catchments, greenfield)}
+          >
+            <Download className="size-4" />
+            <span className="sr-only">Export CSV</span>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Based on {dataQuality.competitorsWithCoords}/{dataQuality.totalCompetitors}{' '}
+          competitors with map coordinates (
+          {dataQuality.competitorCoveragePct}%).
+        </p>
+        {lowConfidence ? (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            Low competitor geocode coverage — scores are directional until BUCO/P&L
+            coords are filled.
+          </p>
+        ) : null}
+        <p className="text-[11px] text-muted-foreground">
+          5 km radius · not drive time · overlapping catchments double-count at
+          national level.
+        </p>
+      </div>
+
+      <Tabs defaultValue="all" className="flex flex-col flex-1 min-h-0">
+        <TabsList className="mx-3 mt-2 grid grid-cols-3 shrink-0">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="catchment">Branches</TabsTrigger>
+          <TabsTrigger value="greenfield">New</TabsTrigger>
+        </TabsList>
+
+        {(['all', 'catchment', 'greenfield'] as const).map((tab) => {
+          const list =
+            tab === 'all'
+              ? [...catchments, ...greenfield].sort((a, b) => a.rank - b.rank)
+              : tab === 'catchment'
+                ? catchments
+                : greenfield;
+
+          return (
+            <TabsContent
+              key={tab}
+              value={tab}
+              className="flex flex-col flex-1 min-h-0 mt-0 data-[state=inactive]:hidden"
+            >
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="p-3 space-y-2">
+                  {list.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      No opportunities in this view.
+                    </p>
+                  ) : (
+                    list.map((zone) => (
+                      <ZoneListItem
+                        key={zone.id}
+                        zone={zone}
+                        selected={zone.id === selectedZoneId}
+                        onSelect={() => onSelectZone(zone)}
+                      />
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          );
+        })}
+      </Tabs>
+
+      {selectedZone ? (
+        <div className="border-t p-3 shrink-0 max-h-[45%] overflow-y-auto">
+          <ZoneDetail
+            zone={selectedZone}
+            explainLoading={explainMutation.isPending}
+            brief={
+              explainMutation.data &&
+              explainMutation.variables &&
+              (explainMutation.variables as { zoneId?: string }).zoneId ===
+                selectedZone.id
+                ? explainMutation.data
+                : null
+            }
+            onExplain={() =>
+              explainMutation.mutate({
+                zoneId: selectedZone.id,
+                mode: selectedZone.kind,
+                zone: selectedZone,
+                dataQuality,
+              })
+            }
+          />
+        </div>
+      ) : null}
+    </aside>
+  );
+}
