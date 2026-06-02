@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Settings2 } from 'lucide-react';
+import { MapPin, Settings2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -10,7 +10,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { SiteOpportunityMode, SiteOpportunitySettings } from '@/lib/site-opportunity';
+import type { SiteOpportunityMode, SiteOpportunitySettings } from '@/api/types/site-opportunity';
 
 export function SiteOpportunityToolbar({
   showOpportunities,
@@ -20,6 +20,7 @@ export function SiteOpportunityToolbar({
   settings,
   onSettingsChange,
   className,
+  isLoading = false,
 }: {
   showOpportunities: boolean;
   onToggleShow: () => void;
@@ -28,6 +29,7 @@ export function SiteOpportunityToolbar({
   settings: SiteOpportunitySettings;
   onSettingsChange: (patch: Partial<SiteOpportunitySettings>) => void;
   className?: string;
+  isLoading?: boolean;
 }) {
   return (
     <div
@@ -41,8 +43,13 @@ export function SiteOpportunityToolbar({
         size="sm"
         variant={showOpportunities ? 'default' : 'outline'}
         onClick={onToggleShow}
+        disabled={isLoading && showOpportunities}
       >
-        <MapPin className="size-4 mr-1.5" />
+        {isLoading && showOpportunities ? (
+          <Loader2 className="size-4 mr-1.5 animate-spin" />
+        ) : (
+          <MapPin className="size-4 mr-1.5" />
+        )}
         Suggested areas
       </Button>
 

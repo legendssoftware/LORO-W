@@ -13,6 +13,7 @@ export * from './leave';
 export * from './reports';
 export * from './branch';
 export * from './map';
+export * from './site-opportunity';
 export * from './targets-progress';
 export * from './competitors';
 export * from './iot';

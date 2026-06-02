@@ -31,7 +31,7 @@ import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
-} from '@/lib/site-opportunity';
+} from '@/api/types/site-opportunity';
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
 import {

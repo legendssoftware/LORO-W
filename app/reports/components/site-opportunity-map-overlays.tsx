@@ -8,7 +8,7 @@ import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
-} from '@/lib/site-opportunity';
+} from '@/api/types/site-opportunity';
 
 function scoreColor(score: number, maxScore: number): string {
   if (maxScore <= 0) return '#22c55e';
