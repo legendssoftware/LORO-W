@@ -49,10 +49,17 @@ declare module 'leaflet' {
     function measure(options?: Record<string, unknown>): Control.Measure;
   }
 
+  interface ProviderTileLayerOptions extends TileLayerOptions {
+    /** Mapbox access token — required for MapBox provider only */
+    accessToken?: string;
+    /** Mapbox style id, e.g. mapbox/streets-v12 */
+    id?: string;
+  }
+
   namespace tileLayer {
     function provider(
       provider: string,
-      options?: TileLayerOptions
+      options?: ProviderTileLayerOptions
     ): TileLayer;
   }
 
