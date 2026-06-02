@@ -1,4 +1,4 @@
-import type { TileLayerOptions } from 'leaflet';
+import type { ProviderTileLayerOptions } from 'leaflet';
 import type { MapMarkerBase } from '@/api/types/map';
 
 export interface MapTileProvider {
@@ -6,7 +6,7 @@ export interface MapTileProvider {
   label: string;
   /** leaflet-providers id, e.g. OpenStreetMap.Mapnik */
   providerKey: string;
-  options?: TileLayerOptions;
+  options?: ProviderTileLayerOptions;
 }
 
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim();
