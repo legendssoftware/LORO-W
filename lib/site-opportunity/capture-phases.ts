@@ -1,4 +1,4 @@
-import type { CapturePhasePoint, CaptureTimelinePoint } from './types';
+import type { CapturePhasePoint, CaptureTimelinePoint } from '@/api/types/site-opportunity';
 
 export const MARKET_CAPTURE_PHASES: CapturePhasePoint[] = [
   {

@@ -2,7 +2,7 @@ import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
-} from './types';
+} from '@/api/types/site-opportunity';
 
 function formatZar(n: number): string {
   if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(2)}m`;

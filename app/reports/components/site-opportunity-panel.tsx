@@ -18,11 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   buildCaptureTimeline,
   downloadOpportunitiesCsv,
-  type BranchCatchmentOpportunity,
-  type DataQualitySummary,
-  type GreenfieldOpportunityZone,
-  type SiteOpportunityZone,
 } from '@/lib/site-opportunity';
+import type {
+  BranchCatchmentOpportunity,
+  DataQualitySummary,
+  GreenfieldOpportunityZone,
+  SiteOpportunityZone,
+} from '@/api/types/site-opportunity';
 import { cn } from '@/lib/utils';
 
 function formatZar(n: number): string {
@@ -272,6 +274,7 @@ export function SiteOpportunityPanel({
   selectedZoneId,
   onSelectZone,
   className,
+  isLoading = false,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
@@ -279,6 +282,7 @@ export function SiteOpportunityPanel({
   selectedZoneId: string | null;
   onSelectZone: (zone: SiteOpportunityZone) => void;
   className?: string;
+  isLoading?: boolean;
 }) {
   const selectedZone =
     [...catchments, ...greenfield].find((z) => z.id === selectedZoneId) ?? null;
@@ -349,7 +353,12 @@ export function SiteOpportunityPanel({
             >
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-3 space-y-2">
-                  {list.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8 text-muted-foreground">
+                      <Loader2 className="size-5 animate-spin mr-2" />
+                      <span className="text-sm">Loading suggested areas…</span>
+                    </div>
+                  ) : list.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
                       No opportunities in this view.
                     </p>
