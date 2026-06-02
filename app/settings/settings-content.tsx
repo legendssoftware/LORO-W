@@ -379,6 +379,10 @@ function normalizeBranchAddressForSave(f: {
 
 const PANEL_CLASS = 'rounded border border-gray-200 bg-white';
 
+/** Add-branch dialog: smaller gray placeholders; keep input text at text-sm on md+ */
+const CREATE_BRANCH_INPUT_CLASS =
+  'border-gray-200 bg-white text-sm md:text-sm placeholder:text-xs placeholder:text-gray-500';
+
 export function SettingsContent() {
   const client = useApiClient();
   const queryClient = useQueryClient();
@@ -1063,7 +1067,9 @@ export function SettingsContent() {
           m.includes('must be') ||
           m.includes('postal code') ||
           m.includes('already exists') ||
-          m.includes('unique'))
+          m.includes('unique') ||
+          m.includes('update values are not defined') ||
+          m.includes('updatevaluesmissing'))
       ) {
         toast.error(data?.message || 'Could not create branch');
         return;
@@ -2549,7 +2555,7 @@ export function SettingsContent() {
                 <Button
                   type="button"
                   variant="default"
-                  className="shrink-0 gap-2"
+                  className="shrink-0 gap-2 bg-purple-600 text-white hover:bg-purple-700 [&_svg]:text-white"
                   onClick={openAddBranchDialog}
                 >
                   <Plus className="size-4" />
@@ -2812,7 +2818,8 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, ref: e.target.value }))
                       }
-                      className="border-gray-200 bg-white font-mono text-xs"
+                      placeholder="Auto-generated if unchanged"
+                      className={cn(CREATE_BRANCH_INPUT_CLASS, 'font-mono')}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -2823,7 +2830,8 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, name: e.target.value }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="e.g. Sandton Branch"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2834,7 +2842,8 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, alias: e.target.value }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="Short name (optional)"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2846,7 +2855,8 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, email: e.target.value }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="branch@company.co.za"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2857,7 +2867,8 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, phone: e.target.value }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="0712345678"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -2871,7 +2882,8 @@ export function SettingsContent() {
                           contactPerson: e.target.value,
                         }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="Full name"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -2882,23 +2894,25 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, website: e.target.value }))
                       }
-                      className="border-gray-200 bg-white"
+                      placeholder="https://www.company.co.za"
+                      className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   {(
                     [
-                      ['street', 'Street', createBranchForm.street],
-                      ['suburb', 'Suburb', createBranchForm.suburb],
-                      ['city', 'City', createBranchForm.city],
-                      ['state', 'State', createBranchForm.state],
-                      ['country', 'Country', createBranchForm.country],
+                      ['street', 'Street', createBranchForm.street, 'e.g. 123 Main Street'],
+                      ['suburb', 'Suburb', createBranchForm.suburb, 'e.g. Sandton'],
+                      ['city', 'City', createBranchForm.city, 'e.g. Johannesburg'],
+                      ['state', 'State', createBranchForm.state, 'e.g. Gauteng'],
+                      ['country', 'Country', createBranchForm.country, 'e.g. South Africa'],
                       [
                         'postalCode',
                         'Postal code (4 digits, ZA)',
                         createBranchForm.postalCode,
+                        'e.g. 2196',
                       ],
                     ] as const
-                  ).map(([key, label, val]) => (
+                  ).map(([key, label, val, placeholder]) => (
                     <div key={key} className="space-y-2">
                       <Label htmlFor={`new-br-${key}`}>{label}</Label>
                       <Input
@@ -2910,7 +2924,8 @@ export function SettingsContent() {
                             [key]: e.target.value,
                           }))
                         }
-                        className="border-gray-200 bg-white"
+                        placeholder={placeholder}
+                        className={CREATE_BRANCH_INPUT_CLASS}
                       />
                     </div>
                   ))}
@@ -2925,7 +2940,7 @@ export function SettingsContent() {
                   </Button>
                   <Button
                     type="button"
-                    variant="success"
+                    className="bg-purple-600 text-white hover:bg-purple-700"
                     onClick={() => createBranchMut.mutate()}
                     disabled={createBranchMut.isPending}
                   >

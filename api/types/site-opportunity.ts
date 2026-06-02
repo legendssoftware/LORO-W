@@ -1,5 +1,3 @@
-import type { MapMarkerBase } from '@/api/types/map';
-
 export type HardwareBrandKey =
   | 'BUCO'
   | 'CASHBUILD'
@@ -10,11 +8,6 @@ export type HardwareBrandKey =
   | 'OTHER';
 
 export type SiteOpportunityMode = 'greenfield' | 'catchment' | 'both';
-
-export interface GeoPoint {
-  lat: number;
-  lng: number;
-}
 
 export interface SiteOpportunitySettings {
   radiusMeters: number;
@@ -66,7 +59,6 @@ export interface BranchCatchmentOpportunity {
   potentialLowZAR: number;
   potentialHighZAR: number;
   opportunityScore: number;
-  /** When ERP branch revenue is available */
   actualRevenueZAR?: number | null;
   revenueGapZAR?: number | null;
 }
@@ -101,12 +93,6 @@ export interface SiteOpportunityResult {
   greenfield: GreenfieldOpportunityZone[];
   dataQuality: DataQualitySummary;
   settings: SiteOpportunitySettings;
-}
-
-export interface MapMarkerBuckets {
-  branches: MapMarkerBase[];
-  competitors: MapMarkerBase[];
-  clients: MapMarkerBase[];
 }
 
 export interface CapturePhasePoint {

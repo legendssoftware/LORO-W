@@ -4,10 +4,15 @@ import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { MoreHorizontal } from 'lucide-react';
-import { useReportsMapData, useTokenReady } from '@/api/hooks';
-import { usePerformanceDashboard } from '@/api/hooks/use-performance-dashboard';
+import { useReportsMapData, useSiteOpportunities, useTokenReady } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { SyncProfile } from '@/api/types';
+import {
+  DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  type SiteOpportunityMode,
+  type SiteOpportunitySettings,
+  type SiteOpportunityZone,
+} from '@/api/types/site-opportunity';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 import {
@@ -25,16 +30,6 @@ import {
 } from '@/app/reports/utils/merge-influence-circles';
 import { SiteOpportunityPanel } from '@/app/reports/components/site-opportunity-panel';
 import { SiteOpportunityToolbar } from '@/app/reports/components/site-opportunity-toolbar';
-import {
-  buildBranchRevenueMap,
-  computeSiteOpportunities,
-  dedupeNearbyGreenfield,
-  DEFAULT_SITE_OPPORTUNITY_SETTINGS,
-  splitMapMarkers,
-  type SiteOpportunityMode,
-  type SiteOpportunitySettings,
-  type SiteOpportunityZone,
-} from '@/lib/site-opportunity';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -77,9 +72,17 @@ export function ReportsVisualiserTab({
   }, [profile?.uid, reportsMode]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-  const performanceQuery = usePerformanceDashboard({
-    enabled: mounted && showOpportunities,
-  });
+
+  const siteOpportunitiesQuery = useSiteOpportunities(
+    {
+      ...mapReportParams,
+      region: selectedRegion || undefined,
+      businessType: selectedBusinessType || undefined,
+      mode: opportunityMode,
+      settings: opportunitySettings,
+    },
+    { enabled: mounted && showOpportunities }
+  );
 
   const baseMarkers = useMemo(
     () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
@@ -131,40 +134,21 @@ export function ReportsVisualiserTab({
     filteredMarkers,
   ]);
 
-  const branchRevenueById = useMemo(() => {
-    const rows =
-      performanceQuery.data?.charts?.branchPerformance?.data ?? [];
-    const { branches } = splitMapMarkers(filteredMarkers);
-    return buildBranchRevenueMap(branches, rows);
-  }, [performanceQuery.data, filteredMarkers]);
-
-  const siteOpportunities = useMemo(() => {
-    if (!showOpportunities) {
-      return {
-        catchments: [],
-        greenfield: [],
-        dataQuality: computeSiteOpportunities([], { mode: 'both' }).dataQuality,
-        settings: opportunitySettings,
-      };
-    }
-    const result = computeSiteOpportunities(filteredMarkers, {
-      mode: opportunityMode,
-      settings: opportunitySettings,
-      mapConfig: mapReport.data?.mapConfig,
-      branchRevenueById,
-    });
-    return {
-      ...result,
-      greenfield: dedupeNearbyGreenfield(result.greenfield),
-    };
-  }, [
-    showOpportunities,
-    filteredMarkers,
-    opportunityMode,
-    opportunitySettings,
-    mapReport.data?.mapConfig,
-    branchRevenueById,
-  ]);
+  const siteOpportunities = siteOpportunitiesQuery.data ?? {
+    catchments: [],
+    greenfield: [],
+    dataQuality: {
+      totalCompetitors: 0,
+      competitorsWithCoords: 0,
+      totalClients: 0,
+      clientsWithCoords: 0,
+      totalBranches: 0,
+      branchesWithCoords: 0,
+      competitorCoveragePct: 100,
+      clientCoveragePct: 100,
+    },
+    settings: opportunitySettings,
+  };
 
   function handleSelectOpportunity(zone: SiteOpportunityZone) {
     setSelectedOpportunityId(zone.id);
@@ -206,6 +190,7 @@ export function ReportsVisualiserTab({
             onSettingsChange={(patch) =>
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
+            isLoading={showOpportunities && siteOpportunitiesQuery.isFetching}
           />
         }
       />
@@ -216,6 +201,15 @@ export function ReportsVisualiserTab({
             role="alert"
           >
             {mapReport.error?.message ?? 'Could not load map data.'}
+          </p>
+        ) : null}
+        {showOpportunities && siteOpportunitiesQuery.isError ? (
+          <p
+            className="absolute left-0 right-0 top-10 z-[2001] mx-auto max-w-lg rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+            role="alert"
+          >
+            {siteOpportunitiesQuery.error?.message ??
+              'Could not load suggested areas.'}
           </p>
         ) : null}
         <ReportsVisualiserMap
@@ -236,6 +230,7 @@ export function ReportsVisualiserTab({
             dataQuality={siteOpportunities.dataQuality}
             selectedZoneId={selectedOpportunityId}
             onSelectZone={handleSelectOpportunity}
+            isLoading={siteOpportunitiesQuery.isFetching}
             className="hidden lg:flex"
           />
         ) : null}
@@ -248,6 +243,7 @@ export function ReportsVisualiserTab({
             dataQuality={siteOpportunities.dataQuality}
             selectedZoneId={selectedOpportunityId}
             onSelectZone={handleSelectOpportunity}
+            isLoading={siteOpportunitiesQuery.isFetching}
             className="border-l-0 w-full max-h-[40vh]"
           />
         </div>

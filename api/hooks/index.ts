@@ -20,6 +20,7 @@ export {
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport, useReportsMapData } from './use-map-report';
+export { useSiteOpportunities } from './use-site-opportunities';
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
