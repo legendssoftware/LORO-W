@@ -24,7 +24,8 @@ function isSiteOpportunityResult(value: unknown): value is SiteOpportunityResult
     value != null &&
     'catchments' in value &&
     'greenfield' in value &&
-    'dataQuality' in value
+    'dataQuality' in value &&
+    'warnings' in value
   );
 }
 

@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     mode?: string;
     zone?: Record<string, unknown>;
     dataQuality?: Record<string, unknown>;
+    warnings?: string[];
   };
 
   if (!payload.zone) {
@@ -60,7 +61,7 @@ Analyze this site opportunity using ONLY the structured data below. Do not inven
 
 Rules:
 - Cite specific numbers from the data (client count, competitor count, addressable pool, potential low/high).
-- Flag low geocode coverage if competitorCoveragePct is under 70.
+- Flag low geocode coverage if competitorCoveragePct is under 95 or warnings array is non-empty.
 - Note that 5km radius is not drive time and overlapping catchments double-count nationally.
 - Use the market capture phases for estimatedRampMonths (when high potential might be partially realised).
 - recommendation: strong = high pool + demand with manageable competition; weak = thin pool or heavy cannibalization risk; moderate otherwise.
@@ -72,6 +73,9 @@ ${JSON.stringify(payload.zone, null, 2)}
 
 Data quality:
 ${JSON.stringify(payload.dataQuality ?? {}, null, 2)}
+
+Warnings:
+${JSON.stringify(payload.warnings ?? [], null, 2)}
 
 Market capture phases:
 ${JSON.stringify(MARKET_CAPTURE_PHASES, null, 2)}`,

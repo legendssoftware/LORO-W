@@ -9,23 +9,40 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Download, Loader2, Sparkles } from 'lucide-react';
+import {
+  Building2,
+  Download,
+  LayoutGrid,
+  Loader2,
+  MapPin,
+  Sparkles,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
 import {
-  buildCaptureTimeline,
-  downloadOpportunitiesCsv,
-} from '@/lib/site-opportunity';
-import type {
-  BranchCatchmentOpportunity,
-  DataQualitySummary,
-  GreenfieldOpportunityZone,
-  SiteOpportunityZone,
+  DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  type BranchCatchmentOpportunity,
+  type CaptureTimelinePoint,
+  type DataQualitySummary,
+  type GreenfieldOpportunityZone,
+  type SiteOpportunitySettings,
+  type SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
+import {
+  reportsTabTriggerClassName,
+  reportsTabsListCompactClassName,
+} from '@/app/reports/reports-tab-styles';
 import { cn } from '@/lib/utils';
+
+const PANEL_TABS = [
+  { value: 'all', label: 'All', Icon: LayoutGrid },
+  { value: 'catchment', label: 'Branches', Icon: Building2 },
+  { value: 'greenfield', label: 'New', Icon: MapPin },
+] as const;
 
 function formatZar(n: number): string {
   if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(2)}m`;
@@ -33,14 +50,7 @@ function formatZar(n: number): string {
   return `R ${Math.round(n).toLocaleString()}`;
 }
 
-function CaptureTimelineChart({
-  potentialLowZAR,
-  potentialHighZAR,
-}: {
-  potentialLowZAR: number;
-  potentialHighZAR: number;
-}) {
-  const data = buildCaptureTimeline(potentialLowZAR, potentialHighZAR);
+function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
   return (
     <div className="h-[140px] w-full mt-3">
       <ResponsiveContainer width="100%" height="100%">
@@ -74,15 +84,19 @@ function CaptureTimelineChart({
 
 function ZoneDetail({
   zone,
+  captureSettings,
   onExplain,
   explainLoading,
   brief,
 }: {
   zone: SiteOpportunityZone;
+  captureSettings: SiteOpportunitySettings;
   onExplain: () => void;
   explainLoading: boolean;
   brief: SiteOpportunityBrief | null;
 }) {
+  const lowPct = Math.round(captureSettings.captureLowPct * 100);
+  const highPct = Math.round(captureSettings.captureHighPct * 100);
   const title =
     zone.kind === 'catchment' ? zone.branchName : zone.label;
 
@@ -120,12 +134,19 @@ function ZoneDetail({
           <dt className="text-muted-foreground">Competitors</dt>
           <dd className="font-medium">{zone.competitorCount}</dd>
         </div>
-        <div>
+        <div className="col-span-2">
           <dt className="text-muted-foreground">Addressable pool</dt>
-          <dd className="font-medium">{formatZar(zone.addressablePoolZAR)}</dd>
+          <dd className="font-medium">
+            {formatZar(zone.addressablePoolZAR)}
+            <span className="block text-xs font-normal text-muted-foreground">
+              Σ hardware in {captureSettings.radiusMeters / 1000} km × brand turnover
+            </span>
+          </dd>
         </div>
-        <div>
-          <dt className="text-muted-foreground">Potential (15–30%)</dt>
+        <div className="col-span-2">
+          <dt className="text-muted-foreground">
+            BitDrywall potential ({lowPct}–{highPct}%)
+          </dt>
           <dd className="font-medium">
             {formatZar(zone.potentialLowZAR)} – {formatZar(zone.potentialHighZAR)}
           </dd>
@@ -167,14 +188,18 @@ function ZoneDetail({
         </div>
       ) : null}
 
+      {zone.monthsToTargetMid != null ? (
+        <p className="text-xs text-muted-foreground">
+          Mid-scenario ramp reaches ~55% of full potential by month{' '}
+          {zone.monthsToTargetMid}.
+        </p>
+      ) : null}
+
       <div>
         <p className="text-xs font-medium text-muted-foreground mb-1">
           Market capture ramp (mid estimate)
         </p>
-        <CaptureTimelineChart
-          potentialLowZAR={zone.potentialLowZAR}
-          potentialHighZAR={zone.potentialHighZAR}
-        />
+        <CaptureTimelineChart data={zone.captureTimeline} />
       </div>
 
       {brief ? (
@@ -271,6 +296,8 @@ export function SiteOpportunityPanel({
   catchments,
   greenfield,
   dataQuality,
+  warnings = [],
+  captureSettings = DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   selectedZoneId,
   onSelectZone,
   className,
@@ -279,6 +306,8 @@ export function SiteOpportunityPanel({
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
   dataQuality: DataQualitySummary;
+  warnings?: string[];
+  captureSettings?: SiteOpportunitySettings;
   selectedZoneId: string | null;
   onSelectZone: (zone: SiteOpportunityZone) => void;
   className?: string;
@@ -291,7 +320,7 @@ export function SiteOpportunityPanel({
     mutationFn: fetchSiteBrief,
   });
 
-  const lowConfidence = dataQuality.competitorCoveragePct < 70;
+  const lowConfidence = dataQuality.competitorCoveragePct < 95;
 
   return (
     <aside
@@ -318,11 +347,12 @@ export function SiteOpportunityPanel({
           competitors with map coordinates (
           {dataQuality.competitorCoveragePct}%).
         </p>
-        {lowConfidence ? (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-            Low competitor geocode coverage — scores are directional until BUCO/P&L
-            coords are filled.
-          </p>
+        {lowConfidence && warnings.length > 0 ? (
+          <ul className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 space-y-1 list-disc pl-4">
+            {warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
         ) : null}
         <p className="text-[11px] text-muted-foreground">
           5 km radius · not drive time · overlapping catchments double-count at
@@ -331,10 +361,17 @@ export function SiteOpportunityPanel({
       </div>
 
       <Tabs defaultValue="all" className="flex flex-col flex-1 min-h-0">
-        <TabsList className="mx-3 mt-2 grid grid-cols-3 shrink-0">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="catchment">Branches</TabsTrigger>
-          <TabsTrigger value="greenfield">New</TabsTrigger>
+        <TabsList className={reportsTabsListCompactClassName}>
+          {PANEL_TABS.map(({ value, label, Icon }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className={reportsTabTriggerClassName}
+            >
+              <Icon className="size-4 shrink-0" aria-hidden />
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {(['all', 'catchment', 'greenfield'] as const).map((tab) => {
@@ -383,6 +420,7 @@ export function SiteOpportunityPanel({
         <div className="border-t p-3 shrink-0 max-h-[45%] overflow-y-auto">
           <ZoneDetail
             zone={selectedZone}
+            captureSettings={captureSettings}
             explainLoading={explainMutation.isPending}
             brief={
               explainMutation.data &&
@@ -398,6 +436,7 @@ export function SiteOpportunityPanel({
                 mode: selectedZone.kind,
                 zone: selectedZone,
                 dataQuality,
+                warnings,
               })
             }
           />

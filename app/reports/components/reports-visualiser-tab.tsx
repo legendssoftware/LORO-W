@@ -53,7 +53,7 @@ export function ReportsVisualiserTab({
 
   const [showOpportunities, setShowOpportunities] = useState(false);
   const [opportunityMode, setOpportunityMode] =
-    useState<SiteOpportunityMode>('both');
+    useState<SiteOpportunityMode>('greenfield');
   const [opportunitySettings, setOpportunitySettings] =
     useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<
@@ -148,6 +148,8 @@ export function ReportsVisualiserTab({
       clientCoveragePct: 100,
     },
     settings: opportunitySettings,
+    warnings: [],
+    geocodingSummary: null,
   };
 
   function handleSelectOpportunity(zone: SiteOpportunityZone) {
@@ -191,6 +193,8 @@ export function ReportsVisualiserTab({
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
             isLoading={showOpportunities && siteOpportunitiesQuery.isFetching}
+            warnings={siteOpportunities.warnings}
+            dataQuality={siteOpportunities.dataQuality}
           />
         }
       />
@@ -228,6 +232,8 @@ export function ReportsVisualiserTab({
             catchments={siteOpportunities.catchments}
             greenfield={siteOpportunities.greenfield}
             dataQuality={siteOpportunities.dataQuality}
+            warnings={siteOpportunities.warnings}
+            captureSettings={siteOpportunities.settings}
             selectedZoneId={selectedOpportunityId}
             onSelectZone={handleSelectOpportunity}
             isLoading={siteOpportunitiesQuery.isFetching}
@@ -241,6 +247,8 @@ export function ReportsVisualiserTab({
             catchments={siteOpportunities.catchments}
             greenfield={siteOpportunities.greenfield}
             dataQuality={siteOpportunities.dataQuality}
+            warnings={siteOpportunities.warnings}
+            captureSettings={siteOpportunities.settings}
             selectedZoneId={selectedOpportunityId}
             onSelectZone={handleSelectOpportunity}
             isLoading={siteOpportunitiesQuery.isFetching}
