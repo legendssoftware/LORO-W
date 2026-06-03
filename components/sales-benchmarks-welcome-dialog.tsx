@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -102,14 +102,14 @@ export function SalesBenchmarksWelcomeDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        className="!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="shrink-0 bg-violet-50 px-6 pt-8 pb-4 text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-violet-100">
-            <AlertCircle className="size-7 text-violet-600" aria-hidden />
+        <div className="shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100">
+            <AlertTriangle className="size-7 text-red-700" aria-hidden />
           </div>
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
             <DialogTitle className="text-lg font-semibold">{NOTICE_TITLE}</DialogTitle>
