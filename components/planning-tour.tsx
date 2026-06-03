@@ -47,6 +47,26 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
+    element: '[data-tour="planning-tabs"]',
+    popover: {
+      title: 'All tasks, My day, Routes',
+      description:
+        'Switch between the full task list, today’s work, and optimized field routes on the map.',
+      side: 'bottom',
+      align: 'start',
+    },
+  },
+  {
+    element: '[data-tour="planning-reminders"]',
+    popover: {
+      title: 'Reminders inbox',
+      description:
+        'See due today, overdue, and upcoming tasks without waiting for push notifications.',
+      side: 'left',
+      align: 'start',
+    },
+  },
+  {
     element: '[data-tour="planning-toolbar"]',
     popover: {
       title: 'Filter and search tasks',

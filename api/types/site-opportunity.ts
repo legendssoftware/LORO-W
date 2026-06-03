@@ -61,6 +61,8 @@ export interface BranchCatchmentOpportunity {
   opportunityScore: number;
   actualRevenueZAR?: number | null;
   revenueGapZAR?: number | null;
+  captureTimeline: CaptureTimelinePoint[];
+  monthsToTargetMid: number | null;
 }
 
 export interface GreenfieldOpportunityZone {
@@ -82,6 +84,14 @@ export interface GreenfieldOpportunityZone {
   opportunityScore: number;
   clientDemandScore: number;
   whiteSpaceScore: number;
+  captureTimeline: CaptureTimelinePoint[];
+  monthsToTargetMid: number | null;
+}
+
+export interface MapGeocodingSummary {
+  clients?: Record<string, number>;
+  competitors?: Record<string, number>;
+  branches?: Record<string, number>;
 }
 
 export type SiteOpportunityZone =
@@ -93,6 +103,8 @@ export interface SiteOpportunityResult {
   greenfield: GreenfieldOpportunityZone[];
   dataQuality: DataQualitySummary;
   settings: SiteOpportunitySettings;
+  warnings: string[];
+  geocodingSummary?: MapGeocodingSummary | null;
 }
 
 export interface CapturePhasePoint {

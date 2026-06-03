@@ -189,6 +189,86 @@ export interface CreateTaskPayload {
   comment?: string;
 }
 
+export interface OptimizedRouteStop {
+  taskId: number;
+  clientId: number;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+}
+
+export interface OptimizedRoute {
+  userId: number;
+  stops: OptimizedRouteStop[];
+  totalDistance: number;
+  estimatedDuration: number;
+}
+
+export type TaskFlagStatusValue =
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'RESOLVED'
+  | 'CLOSED';
+
+export type TaskFlagItemStatusValue = 'PENDING' | 'COMPLETED' | 'SKIPPED';
+
+export interface TaskFlagItem {
+  uid: number;
+  title: string;
+  description?: string;
+  status: TaskFlagItemStatusValue;
+}
+
+export interface TaskFlag {
+  uid: number;
+  title: string;
+  description: string;
+  status: TaskFlagStatusValue;
+  deadline?: string | null;
+  createdAt?: string;
+  items?: TaskFlagItem[];
+  comments?: Array<{
+    content: string;
+    createdAt: string;
+    createdBy?: { name?: string };
+  }>;
+}
+
+export interface TaskFlagsResponse {
+  data: TaskFlag[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface CreateTaskFlagPayload {
+  taskId: number;
+  title: string;
+  description: string;
+  deadline?: string;
+  comment?: string;
+  items?: Array<{ title: string; description?: string }>;
+}
+
+export interface UpdateTaskFlagPayload {
+  title?: string;
+  description?: string;
+  status?: TaskFlagStatusValue;
+  deadline?: string;
+}
+
+export interface UpdateTaskFlagItemPayload {
+  title?: string;
+  description?: string;
+  status?: TaskFlagItemStatusValue;
+}
+
 export interface UpdateTaskPayload {
   title?: string;
   description?: string;

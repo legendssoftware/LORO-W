@@ -41,11 +41,12 @@ export function useSiteOpportunities(
 
   return useQuery({
     queryKey: siteOpportunitiesQueryKey(params),
-    queryFn: async (): Promise<SiteOpportunityResult> => {
-      return getSiteOpportunities(client, params);
-    },
+    queryFn: ({ signal }): Promise<SiteOpportunityResult> =>
+      getSiteOpportunities(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 }

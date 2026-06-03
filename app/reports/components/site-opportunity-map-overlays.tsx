@@ -1,14 +1,27 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { Circle, Marker, Popup, useMap } from 'react-leaflet';
 import { divIcon } from 'leaflet';
-import { useEffect } from 'react';
 import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
+
+function formatZarShort(n: number): string {
+  if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(1)}m`;
+  if (n >= 1_000) return `R ${Math.round(n / 1_000)}k`;
+  return `R ${Math.round(n).toLocaleString()}`;
+}
+
+function brandSummary(byBrand: SiteOpportunityZone['byBrand'] | undefined): string {
+  if (!byBrand?.length) return 'No hardware in radius';
+  return byBrand
+    .slice(0, 4)
+    .map((b) => `${b.brand} ×${b.count}`)
+    .join(' · ');
+}
 
 function scoreColor(score: number, maxScore: number): string {
   if (maxScore <= 0) return '#22c55e';
@@ -70,7 +83,22 @@ export function SiteOpportunityMapOverlays({
             eventHandlers={{
               click: () => onSelectZone(c),
             }}
-          />
+          >
+            <Popup>
+              <div className="text-sm space-y-1 p-1 min-w-[180px]">
+                <p className="font-semibold">#{c.rank} {c.branchName}</p>
+                <p>Pool: {formatZarShort(c.addressablePoolZAR)}</p>
+                <p>
+                  Potential: {formatZarShort(c.potentialLowZAR)} –{' '}
+                  {formatZarShort(c.potentialHighZAR)}
+                </p>
+                <p>
+                  {c.competitorCount} competitors · {c.clientCount} clients
+                </p>
+                <p className="text-xs text-muted-foreground">{brandSummary(c.byBrand)}</p>
+              </div>
+            </Popup>
+          </Circle>
         );
       })}
       {greenfield.map((g) => {
@@ -99,9 +127,17 @@ export function SiteOpportunityMapOverlays({
               }}
             >
               <Popup>
-                <div className="text-sm space-y-1 p-1">
+                <div className="text-sm space-y-1 p-1 min-w-[180px]">
                   <p className="font-semibold">#{g.rank} {g.label}</p>
-                  <p>{g.competitorCount} competitors · {g.clientCount} clients</p>
+                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}</p>
+                  <p>
+                    Potential: {formatZarShort(g.potentialLowZAR)} –{' '}
+                    {formatZarShort(g.potentialHighZAR)}
+                  </p>
+                  <p>
+                    {g.competitorCount} competitors · {g.clientCount} clients
+                  </p>
+                  <p className="text-xs text-muted-foreground">{brandSummary(g.byBrand)}</p>
                 </div>
               </Popup>
             </Marker>

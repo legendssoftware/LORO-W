@@ -198,6 +198,8 @@ export interface PlanningTableProps {
   isLoading?: boolean;
   emptyMessage?: string;
   onTaskUpdated?: () => void;
+  /** When set, row clicks delegate here instead of opening the built-in detail dialog. */
+  onTaskClick?: (task: Task) => void;
 }
 
 export function PlanningTable({
@@ -205,6 +207,7 @@ export function PlanningTable({
   isLoading = false,
   emptyMessage = 'No tasks yet. Create a task to see it here.',
   onTaskUpdated,
+  onTaskClick,
 }: PlanningTableProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -258,6 +261,10 @@ export function PlanningTable({
                     'ring-1 ring-inset ring-red-200/60 bg-red-50/30'
                 )}
                 onClick={() => {
+                  if (onTaskClick) {
+                    onTaskClick(t);
+                    return;
+                  }
                   setSelectedTask(t);
                   setDetailOpen(true);
                 }}
@@ -275,15 +282,17 @@ export function PlanningTable({
           </TableBody>
         </Table>
       </div>
-      <TaskDetailDialog
-        task={selectedTask}
-        open={detailOpen}
-        onOpenChange={(open) => {
-          setDetailOpen(open);
-          if (!open) setSelectedTask(null);
-        }}
-        onTaskUpdated={onTaskUpdated}
-      />
+      {!onTaskClick && (
+        <TaskDetailDialog
+          task={selectedTask}
+          open={detailOpen}
+          onOpenChange={(open) => {
+            setDetailOpen(open);
+            if (!open) setSelectedTask(null);
+          }}
+          onTaskUpdated={onTaskUpdated}
+        />
+      )}
     </>
   );
 }

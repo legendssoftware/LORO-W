@@ -75,6 +75,8 @@ import {
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { Loader2Icon } from '@/lib/icons';
+import { CreateTaskModal } from '@/app/planning/components/create-task-modal';
+import type { CreateTaskPayload } from '@/api/types/tasks';
 import {
   Activity,
   ArrowRightLeft,
@@ -190,6 +192,7 @@ export function LeadDetailDialog({
   onActionSuccess,
 }: LeadDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
+  const [scheduleTaskOpen, setScheduleTaskOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [statusChangeOpen, setStatusChangeOpen] = useState(false);
@@ -654,6 +657,23 @@ export function LeadDetailDialog({
     );
   };
 
+  const scheduleTaskInitial = useMemo((): Partial<CreateTaskPayload> | undefined => {
+    if (!lead) return undefined;
+    const deadline = lead.nextFollowUpDate
+      ? format(new Date(lead.nextFollowUpDate), 'yyyy-MM-dd')
+      : format(new Date(), 'yyyy-MM-dd');
+    const assignees = lead.owner?.uid ? [{ uid: lead.owner.uid }] : [];
+    return {
+      title: `Follow up: ${lead.name || lead.companyName || `Lead #${lead.uid}`}`,
+      description: `Follow up with ${lead.name || 'lead'}${lead.companyName ? ` (${lead.companyName})` : ''}.`,
+      taskType: 'FOLLOW_UP',
+      priority: 'MEDIUM',
+      deadline,
+      assignees,
+      targetCategory: 'lead_follow_up',
+    };
+  }, [lead]);
+
   if (!lead) return null;
 
   const ownerFullName = lead.owner
@@ -709,6 +729,19 @@ export function LeadDetailDialog({
             >
               <Send className="size-4" />
               Engage lead
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full gap-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setScheduleTaskOpen(true);
+              }}
+              disabled={!leadUid}
+            >
+              <CalendarClock className="size-4" />
+              Schedule follow-up
             </Button>
             <Button
               size="sm"
@@ -1537,6 +1570,13 @@ export function LeadDetailDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateTaskModal
+        open={scheduleTaskOpen}
+        onOpenChange={setScheduleTaskOpen}
+        initialValues={scheduleTaskInitial}
+        onSuccess={() => onActionSuccess?.()}
+      />
     </>
   );
 }
