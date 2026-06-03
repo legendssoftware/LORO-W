@@ -90,7 +90,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
 
   return (
     <div
-      className="rounded border border-gray-200 bg-card p-4"
+      className="rounded border border-border bg-card p-4"
       data-tour="attendance-section"
     >
       {isLoading ? (
@@ -98,9 +98,9 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
           <div className="mb-4 flex flex-col gap-3">
             <Skeleton className="h-6 w-28 rounded-md" />
             <div className="flex w-full gap-2">
-              <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-[140px] md:flex-none" />
+              <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-border md:w-[140px] md:flex-none" />
               {headerTrailing != null ? (
-                <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-gray-200 md:w-24 md:flex-none" />
+                <Skeleton className="h-9 min-w-0 flex-1 basis-0 rounded border border-border md:w-24 md:flex-none" />
               ) : null}
             </div>
           </div>
@@ -115,7 +115,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
                 <Skeleton key={i} className="aspect-square rounded-full" />
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-border pt-4">
               {[1, 2, 3].map((i) => (
                 <span key={i} className="flex items-center gap-1.5">
                   <Skeleton className="size-4 shrink-0 rounded-full" />
@@ -145,7 +145,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
                     setSelectedMonth(m);
                   }}
                 >
-                  <SelectTrigger className="h-9 w-full rounded border border-gray-200 bg-background">
+                  <SelectTrigger className="h-9 w-full rounded border border-border bg-background">
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
                   <SelectContent>
@@ -216,7 +216,7 @@ export function AttendanceStreakCalendar({ userRef, headerTrailing }: Attendance
                   return cells;
                 })()}
               </div>
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-200 pt-4 text-xs text-muted-foreground">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="size-4 rounded-full bg-emerald-500" />
                   Attended

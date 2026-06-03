@@ -91,7 +91,7 @@ export function LogoField({ client, value, onChange, urlInputId, className }: Lo
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-muted/40">
+        <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40">
           {showImage ? (
             <img
               src={displaySrc}
@@ -119,7 +119,7 @@ export function LogoField({ client, value, onChange, urlInputId, className }: Lo
             type="button"
             variant="outline"
             size="sm"
-            className="w-fit gap-2 bg-white border-gray-200"
+            className="w-fit gap-2 bg-background border-border"
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
           >
@@ -138,7 +138,7 @@ export function LogoField({ client, value, onChange, urlInputId, className }: Lo
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="https://…"
-          className="bg-white border-gray-200"
+          className="bg-background border-border"
         />
       </div>
     </div>

@@ -1,0 +1,19 @@
+# LORO
+
+> Field sales software for South Africa — visits, route planning, pipeline, ERP integrations, and mobile app for B2B reps.
+
+## Primary pages
+
+- https://loro.co.za/ — Homepage
+- https://loro.co.za/solutions/field-sales — Field sales software
+- https://loro.co.za/solutions/visit-tracking — Visit tracking
+- https://loro.co.za/solutions/route-planning — Route planning
+- https://loro.co.za/solutions/pipeline — Sales pipeline
+- https://loro.co.za/integrations — ERP integrations
+- https://loro.co.za/pricing — Pricing
+- https://loro.co.za/blog — Field sales blog
+- https://loro.co.za/compare/skynamo — LORO vs Skynamo
+
+## Product
+
+LORO helps manufacturers, wholesalers, and distributors run field sales with visit proof, maps, competitor intelligence, and optional workforce modules. Built for South African teams.

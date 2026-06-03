@@ -74,7 +74,7 @@ export function StoreContent({ client }: { client: ClientProfileData }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-white border-gray-200"
+                className="bg-background border-border"
                 disabled={productsQuery.isFetchingNextPage}
                 onClick={() => productsQuery.fetchNextPage()}
               >

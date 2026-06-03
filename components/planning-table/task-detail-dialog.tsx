@@ -116,7 +116,7 @@ import {
 } from '@/app/planning/components/planning-task-multi-select-panels';
 
 const MODAL_SELECT_TRIGGER =
-  'h-9 w-full bg-white border-gray-200 text-foreground';
+  'h-9 w-full border-border bg-background text-foreground';
 
 type EditSubtaskRow = SubtaskPayload & { uid?: number };
 

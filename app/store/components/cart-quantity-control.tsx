@@ -73,7 +73,7 @@ export function CartQuantityControl({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
-          'h-8 shrink-0 rounded-md border border-gray-200 bg-white px-1 text-center text-sm font-semibold shadow-none focus-visible:border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-200',
+          'h-8 shrink-0 rounded-md border border-border bg-background px-1 text-center text-sm font-semibold shadow-none focus-visible:border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-200',
           inputWidth
         )}
         aria-label="Quantity"

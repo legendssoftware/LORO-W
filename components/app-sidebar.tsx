@@ -40,6 +40,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { FaqModal } from "@/components/faq-modal";
 import { useVapiDemoCall } from "@/hooks/use-vapi-demo-call";
 import {
@@ -169,6 +170,9 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <div className="flex w-full justify-center px-3 py-1 md:justify-start">
+            <ModeToggle />
+          </div>
           <Button
             variant="ghost"
             className="w-full justify-center gap-3 px-3 py-2 text-center text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:justify-start md:text-left"

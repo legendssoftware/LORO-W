@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const selectTriggerClass =
-  'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 border-border bg-background text-foreground sm:w-auto';
 
 export interface ClientsFilterControlsProps {
   layout: 'row' | 'stack';
@@ -94,7 +94,7 @@ export function ClientsFilterControls({
           <button
             type="button"
             onClick={() => onStatusFilterChange('all')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
             aria-label="Clear status filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -117,7 +117,7 @@ export function ClientsFilterControls({
           <button
             type="button"
             onClick={() => onCategoryFilterChange('all')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
             aria-label="Clear category filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -169,7 +169,7 @@ export function ClientsFiltersBar({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
             aria-label="Clear search"
           >
             <XIcon className="size-4" />

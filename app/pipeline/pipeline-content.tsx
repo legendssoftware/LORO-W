@@ -632,7 +632,7 @@ export function PipelineContent() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-9 w-full justify-center gap-2 border-gray-200 bg-white text-foreground"
+                        className="h-9 w-full justify-center gap-2 border-border bg-background text-foreground"
                         onClick={() => setErpFiltersDialogOpen(true)}
                       >
                         <Filter className="size-4 shrink-0" aria-hidden />
@@ -706,7 +706,7 @@ export function PipelineContent() {
                             </Button>
                           ) : null}
                           <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
-                            <SelectTrigger className="h-9 w-full min-w-0 bg-white border-gray-200 text-foreground gap-2">
+                            <SelectTrigger className="h-9 w-full min-w-0 bg-background border-border text-foreground gap-2">
                               <BriefcaseIcon className="size-4 shrink-0" />
                               <SelectValue placeholder="All stores" />
                             </SelectTrigger>
@@ -720,7 +720,7 @@ export function PipelineContent() {
                             </SelectContent>
                           </Select>
                           <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
-                            <SelectTrigger className="h-9 w-full min-w-0 bg-white border-gray-200 text-foreground gap-2">
+                            <SelectTrigger className="h-9 w-full min-w-0 bg-background border-border text-foreground gap-2">
                               <UsersIcon className="size-4 shrink-0" />
                               <SelectValue placeholder="All users" />
                             </SelectTrigger>
@@ -749,7 +749,7 @@ export function PipelineContent() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-9 min-w-[180px] shrink-0 border-gray-200 bg-white text-foreground justify-center gap-2"
+                                  className="h-9 min-w-[180px] shrink-0 border-border bg-background text-foreground justify-center gap-2"
                                 >
                                   <CalendarIcon className="size-4" />
                                   {erpDateStart === erpDateEnd
@@ -806,7 +806,7 @@ export function PipelineContent() {
                           </div>
 
                           <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
-                            <SelectTrigger className="h-9 min-w-[150px] w-[200px] shrink-0 border-gray-200 bg-white text-foreground gap-2">
+                            <SelectTrigger className="h-9 min-w-[150px] w-[200px] shrink-0 border-border bg-background text-foreground gap-2">
                               <BriefcaseIcon className="size-4 shrink-0" />
                               <SelectValue placeholder="All stores" />
                             </SelectTrigger>
@@ -821,7 +821,7 @@ export function PipelineContent() {
                           </Select>
 
                           <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
-                            <SelectTrigger className="h-9 min-w-[150px] w-[220px] shrink-0 border-gray-200 bg-white text-foreground gap-2">
+                            <SelectTrigger className="h-9 min-w-[150px] w-[220px] shrink-0 border-border bg-background text-foreground gap-2">
                               <UsersIcon className="size-4 shrink-0" />
                               <SelectValue placeholder="All users" />
                             </SelectTrigger>
@@ -862,7 +862,7 @@ export function PipelineContent() {
                         No ERP quotations match the selected filters.
                       </p>
                     ) : (
-                      <div className="rounded border overflow-x-auto bg-white">
+                      <div className="rounded border border-border overflow-x-auto bg-card">
                         <div className="divide-y divide-border">
                           {groupedErpRows.map((group, index) => {
                             const isExpanded = expandedRepKey === group.key;
@@ -896,7 +896,6 @@ export function PipelineContent() {
                                     <div
                                       className={cn(
                                         'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                                        index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
                                         isExpanded && 'bg-muted/30'
                                       )}
                                     >
@@ -919,7 +918,7 @@ export function PipelineContent() {
 
                                   <CollapsibleContent id={contentId} className="overflow-hidden">
                                     <div className="bg-muted/20 border-t border-border overflow-x-auto">
-                                      <Table className="min-w-max">
+                                      <Table className="min-w-max border-separate border-spacing-y-1">
                                         <TableHeader>
                                           <TableRow>
                                             <TableHead>Document</TableHead>
@@ -928,9 +927,12 @@ export function PipelineContent() {
                                             <TableHead className="text-right">Total (incl.)</TableHead>
                                           </TableRow>
                                         </TableHeader>
-                                        <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                                        <TableBody>
                                           {visibleRows.map((row) => (
-                                            <TableRow key={row.key}>
+                                            <TableRow
+                                              key={row.key}
+                                              className="bg-transparent hover:bg-muted/50"
+                                            >
                                               <TableCell className="font-medium tabular-nums">
                                                 {row.docNumber}
                                               </TableCell>

@@ -32,6 +32,12 @@ Work from this directory (`web/`) so dependencies and the Next.js dev server res
 - `/sign-up` - Clerk sign-up
 - `/dashboard` - ATT button (employees only)
 
+### Public SEO / marketing
+
+- `/solutions/*`, `/integrations/*`, `/compare/*`, `/blog`, `/about`, `/pricing`, `/customers`
+- Set `NEXT_PUBLIC_SITE_URL` in production for canonical URLs, sitemap, and Open Graph
+- Optional: `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION`
+
 ## Session
 
 Session expiration is configured in the Clerk Dashboard (Inactivity timeout, Max lifetime).

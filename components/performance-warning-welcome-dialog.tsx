@@ -24,24 +24,24 @@ const tierAccent: Record<
   { header: string; iconWrap: string; icon: string; border: string; buttonClass: string }
 > = {
   1: {
-    header: 'bg-emerald-50',
-    iconWrap: 'bg-emerald-100',
-    icon: 'text-emerald-700',
-    border: 'border-emerald-200/80',
+    header: 'bg-emerald-50 dark:bg-emerald-950/40',
+    iconWrap: 'bg-emerald-100 dark:bg-emerald-900/50',
+    icon: 'text-emerald-700 dark:text-emerald-400',
+    border: 'border-emerald-200/80 dark:border-emerald-800/80',
     buttonClass: '',
   },
   2: {
-    header: 'bg-amber-50',
-    iconWrap: 'bg-amber-100',
-    icon: 'text-amber-800',
-    border: 'border-amber-300',
+    header: 'bg-amber-50 dark:bg-amber-950/40',
+    iconWrap: 'bg-amber-100 dark:bg-amber-900/50',
+    icon: 'text-amber-800 dark:text-amber-400',
+    border: 'border-amber-300 dark:border-amber-800',
     buttonClass: 'bg-amber-600 hover:bg-amber-600/90 text-white',
   },
   3: {
-    header: 'bg-red-50',
-    iconWrap: 'bg-red-100',
-    icon: 'text-red-700',
-    border: 'border-red-300',
+    header: 'bg-red-50 dark:bg-red-950/40',
+    iconWrap: 'bg-red-100 dark:bg-red-900/50',
+    icon: 'text-red-700 dark:text-red-400',
+    border: 'border-red-300 dark:border-red-800',
     buttonClass: 'bg-destructive hover:bg-destructive/90 text-white',
   },
 };

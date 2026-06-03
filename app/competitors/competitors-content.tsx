@@ -128,7 +128,7 @@ export function CompetitorsContent() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
         <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Competitors</h1>
@@ -164,7 +164,7 @@ export function CompetitorsContent() {
                 <button
                   type="button"
                   onClick={() => setStatusFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
                   aria-label="Clear status filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
@@ -186,7 +186,7 @@ export function CompetitorsContent() {
                 <button
                   type="button"
                   onClick={() => setDirectFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
                   aria-label="Clear type filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
@@ -208,7 +208,7 @@ export function CompetitorsContent() {
                 <button
                   type="button"
                   onClick={() => setThreatFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
                   aria-label="Clear threat filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
@@ -253,7 +253,7 @@ export function CompetitorsContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-200 bg-white"
+                className="border-border bg-background"
                 disabled={isFetchingNext}
                 onClick={() => competitorsQuery.fetchNextPage()}
               >

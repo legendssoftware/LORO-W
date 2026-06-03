@@ -240,7 +240,7 @@ export function PlanningTable({
 
   return (
     <>
-      <div className="rounded border overflow-x-auto bg-white">
+      <div className="rounded border border-border overflow-x-auto bg-card">
         <Table className="min-w-max">
           <TableHeader>
             <TableRow>
@@ -251,7 +251,7 @@ export function PlanningTable({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50">
+          <TableBody className="[&>tr:nth-child(odd)]:bg-muted/50">
             {sortedTasks.map((t) => (
               <TableRow
                 key={t.uid}

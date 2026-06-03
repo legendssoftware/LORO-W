@@ -411,7 +411,7 @@ export function ReportsOverviewTab({
             </p>
           ) : (
             <div className="grid gap-6 lg:grid-cols-1">
-          <Card className="border border-gray-200 bg-white shadow-sm min-w-0">
+          <Card className="border border-border bg-background shadow-sm min-w-0">
             <CardHeader>
               <CardTitle>Leads trend</CardTitle>
               <CardDescription>
@@ -510,7 +510,7 @@ export function ReportsOverviewTab({
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-200 bg-white shadow-sm min-w-0">
+          <Card className="border border-border bg-background shadow-sm min-w-0">
             <CardHeader>
               <CardTitle>Visits trend</CardTitle>
               <CardDescription>

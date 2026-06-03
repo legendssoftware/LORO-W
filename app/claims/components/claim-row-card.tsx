@@ -48,7 +48,7 @@ export function ClaimRowCardSkeleton() {
   return (
     <Card
       className={cn(
-        'rounded-lg border border-gray-200 bg-white',
+        'rounded-lg border border-border bg-background',
         isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
       )}
     >
@@ -88,7 +88,7 @@ export function ClaimRowCard({
     <Link href={`/claims/${claim.uid}`} className="block h-full">
       <Card
         className={cn(
-          'h-full rounded-lg border border-gray-200 bg-white transition-shadow',
+          'h-full rounded-lg border border-border bg-background transition-shadow',
           'hover:border-violet-200 hover:shadow-md',
           isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
         )}
@@ -100,7 +100,7 @@ export function ClaimRowCard({
           )}
         >
           <div className="flex items-start gap-3 min-w-0">
-            <Avatar className="size-10 shrink-0 border border-gray-200">
+            <Avatar className="size-10 shrink-0 border border-border">
               <AvatarImage src={claim.owner?.photoURL ?? undefined} alt="" />
               <AvatarFallback className="bg-muted text-xs font-medium text-foreground">
                 {ownerInitials(claim)}

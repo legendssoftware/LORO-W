@@ -124,7 +124,7 @@ export function ReportUserCardSkeleton() {
   const isMobile = useIsMobile();
   if (isMobile) {
     return (
-      <Card className="gap-0 py-0 rounded-lg border border-gray-200 bg-white">
+      <Card className="gap-0 py-0 rounded-lg border border-border bg-background">
         <CardContent className="flex items-start gap-2 p-2">
           <Skeleton className="size-9 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -146,7 +146,7 @@ export function ReportUserCardSkeleton() {
     );
   }
   return (
-    <Card className="rounded-lg border border-gray-200 bg-white min-h-[220px]">
+    <Card className="rounded-lg border border-border bg-background min-h-[220px]">
       <CardContent className="flex flex-col flex-1 justify-between p-4 min-h-[220px]">
         <div className="flex flex-col gap-3 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -278,7 +278,7 @@ export function ReportUserCard({
     return (
       <Card
         className={cn(
-          'relative gap-0 py-0 bg-white border rounded-lg',
+          'relative gap-0 py-0 rounded-lg min-h-[220px]',
           user.isPresent ? 'border-green-500' : 'border-red-500',
           onClick && 'cursor-pointer transition-colors hover:opacity-90'
         )}
@@ -425,7 +425,7 @@ export function ReportUserCard({
                     e.stopPropagation();
                     onClockClick(e);
                   }}
-                  className="rounded-md border border-gray-200 bg-white p-1 text-foreground hover:bg-gray-50"
+                  className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
                   aria-label="View attendance records"
                 >
                   <Clock className="size-3.5" />
@@ -434,7 +434,7 @@ export function ReportUserCard({
               <Link
                 href={`/reports/users/${user.ref}/settings`}
                 {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
-                className="rounded-md border border-gray-200 bg-white p-1 text-foreground hover:bg-gray-50"
+                className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
                 aria-label="User settings"
               >
                 <SettingsIcon className="size-3.5" />
@@ -449,7 +449,7 @@ export function ReportUserCard({
   return (
     <Card
       className={cn(
-        'relative bg-white border rounded-lg',
+        'relative rounded-lg min-h-[220px]',
         user.isPresent ? 'border-green-500' : 'border-red-500',
         onClick && 'cursor-pointer transition-colors hover:opacity-90'
       )}
@@ -626,7 +626,7 @@ export function ReportUserCard({
                     e.stopPropagation();
                     onClockClick(e);
                   }}
-                  className="rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
+                  className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
                   aria-label="View attendance records"
                 >
                   <Clock className={isMobile ? 'size-3.5' : 'size-4'} />
@@ -635,7 +635,7 @@ export function ReportUserCard({
               <Link
                 href={`/reports/users/${user.ref}/settings`}
                 {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
-                className="rounded-md p-1 sm:p-1.5 bg-white border border-gray-200 text-foreground hover:bg-gray-50"
+                className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
                 aria-label="User settings"
               >
                 <SettingsIcon className={isMobile ? 'size-3.5' : 'size-4'} />

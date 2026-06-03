@@ -58,7 +58,7 @@ import {
 } from '@/components/ui/tooltip';
 
 const selectTriggerClass =
-  'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 border-border bg-background text-foreground sm:w-auto';
 
 export interface LeadsFilterControlsProps {
   layout: 'row' | 'stack';
@@ -484,7 +484,7 @@ export function LeadsFiltersBar({
             type="button"
             variant="outline"
             size="icon"
-            className="size-9 shrink-0 border-neutral-300 bg-white text-neutral-950 hover:bg-neutral-50 hover:text-neutral-950"
+            className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
             onClick={onImportClick}
             aria-label="Import leads"
           >
@@ -500,7 +500,7 @@ export function LeadsFiltersBar({
               type="button"
               variant="outline"
               size="icon"
-              className="size-9 shrink-0 border-red-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+              className="size-9 shrink-0 border-red-200 bg-background text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40"
               onClick={onDedupeClick}
               disabled={dedupePending}
               aria-label="Dedupe leads"

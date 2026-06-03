@@ -112,14 +112,14 @@ export function SalesBenchmarksWelcomeDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center">
+        <div className="relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center dark:bg-red-950/40">
           <div className="absolute top-4 right-4 z-10">
             <Select
               value={locale}
               onValueChange={(value) => setLocale(value as SalesBenchmarksLocale)}
             >
               <SelectTrigger
-                className="h-8 w-[140px] border-red-200 bg-white text-xs"
+                className="h-8 w-[140px] border-red-200 bg-background text-xs"
                 aria-label="Notice language"
               >
                 <SelectValue />
@@ -133,8 +133,8 @@ export function SalesBenchmarksWelcomeDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100">
-            <AlertTriangle className="size-7 text-red-700" aria-hidden />
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+            <AlertTriangle className="size-7 text-red-700 dark:text-red-400" aria-hidden />
           </div>
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
             <DialogTitle className="text-lg font-semibold">{content.noticeTitle}</DialogTitle>

@@ -15,7 +15,7 @@ export function ConditionalLayoutShell({ children }: { children: React.ReactNode
   const useFullDocument = isFullDocumentRoute(pathname ?? '');
 
   if (useFullDocument) {
-    return <>{children}</>;
+    return <div className="w-full min-w-0 flex-1">{children}</div>;
   }
 
   return (
