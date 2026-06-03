@@ -390,7 +390,7 @@ const PANEL_CLASS = 'rounded border border-border bg-card';
 
 /** Add-branch dialog: smaller gray placeholders; keep input text at text-sm on md+ */
 const CREATE_BRANCH_INPUT_CLASS =
-  'border-border bg-background text-sm md:text-sm placeholder:text-xs placeholder:text-muted-foreground';
+  'border-border bg-background text-sm md:text-sm placeholder:text-xs placeholder:italic placeholder:text-muted-foreground';
 
 export function SettingsContent() {
   const client = useApiClient();

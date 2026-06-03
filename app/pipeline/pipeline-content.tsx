@@ -896,7 +896,6 @@ export function PipelineContent() {
                                     <div
                                       className={cn(
                                         'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                                        index % 2 === 1 ? 'bg-muted/50' : 'bg-card',
                                         isExpanded && 'bg-muted/30'
                                       )}
                                     >
@@ -919,7 +918,7 @@ export function PipelineContent() {
 
                                   <CollapsibleContent id={contentId} className="overflow-hidden">
                                     <div className="bg-muted/20 border-t border-border overflow-x-auto">
-                                      <Table className="min-w-max">
+                                      <Table className="min-w-max border-separate border-spacing-y-1">
                                         <TableHeader>
                                           <TableRow>
                                             <TableHead>Document</TableHead>
@@ -928,9 +927,12 @@ export function PipelineContent() {
                                             <TableHead className="text-right">Total (incl.)</TableHead>
                                           </TableRow>
                                         </TableHeader>
-                                        <TableBody className="[&>tr:nth-child(odd)]:bg-muted/50">
+                                        <TableBody>
                                           {visibleRows.map((row) => (
-                                            <TableRow key={row.key}>
+                                            <TableRow
+                                              key={row.key}
+                                              className="bg-transparent hover:bg-muted/50"
+                                            >
                                               <TableCell className="font-medium tabular-nums">
                                                 {row.docNumber}
                                               </TableCell>

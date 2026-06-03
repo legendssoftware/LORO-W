@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import {
   Form,
   FormControl,
@@ -1249,7 +1250,10 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Date of birth</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1356,7 +1360,10 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Start date</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1369,7 +1376,10 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>End date</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1768,7 +1778,10 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Period start</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                              <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1781,7 +1794,10 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Period end</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                              <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

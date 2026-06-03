@@ -127,7 +127,6 @@ export function VisitsSummaryModal({
                           <div
                             className={cn(
                               'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                              index % 2 === 1 ? 'bg-muted/50' : 'bg-card',
                               isExpanded && 'bg-muted/30'
                             )}
                           >
@@ -158,14 +157,14 @@ export function VisitsSummaryModal({
                           className="overflow-hidden"
                         >
                           <div className="bg-muted/20 border-t border-border overflow-x-auto">
-                            <Table className="min-w-max">
+                            <Table className="min-w-max border-separate border-spacing-y-1">
                               <TableHeader>
                                 <TableRow>
                                   {VISITS_TABLE_COLUMNS.map((col) => (
                                     <TableHead
                                       key={col.key}
                                       className={cn(
-                                        'whitespace-nowrap text-black font-medium',
+                                        'whitespace-nowrap font-medium text-foreground',
                                         visitsColumnWidthClass(col.width)
                                       )}
                                     >
@@ -174,17 +173,17 @@ export function VisitsSummaryModal({
                                   ))}
                                 </TableRow>
                               </TableHeader>
-                              <TableBody className="[&>tr:nth-child(odd)]:bg-muted/50">
+                              <TableBody>
                                 {group.visits.map((c) => (
                                   <TableRow
                                     key={c.uid}
-                                    className="border-b-0"
+                                    className="border-b-0 bg-transparent"
                                   >
                                     {VISITS_TABLE_COLUMNS.map((col) => (
                                       <TableCell
                                         key={col.key}
                                         className={cn(
-                                          'text-black text-sm whitespace-normal align-top min-w-0',
+                                          'text-sm whitespace-normal align-top min-w-0 text-foreground',
                                           visitsColumnWidthClass(col.width)
                                         )}
                                       >
