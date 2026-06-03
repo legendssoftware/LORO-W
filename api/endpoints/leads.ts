@@ -47,6 +47,7 @@ export async function getLeads(
   if (params.maxScore != null) search.set('maxScore', String(params.maxScore));
   if (params.priority) search.set('priority', params.priority);
   if (params.source) search.set('source', params.source);
+  if (params.entryType) search.set('entryType', params.entryType);
   if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
   if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
@@ -77,6 +78,7 @@ export async function getUnassignedLeads(
   if (params.minScore != null) search.set('minScore', String(params.minScore));
   if (params.maxScore != null) search.set('maxScore', String(params.maxScore));
   if (params.source) search.set('source', params.source);
+  if (params.entryType) search.set('entryType', params.entryType);
   if (params.scope) search.set('scope', params.scope);
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(
@@ -130,6 +132,7 @@ export async function getLeadsReport(
   if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
   if (params.status) search.set('status', params.status);
   if (params.source) search.set('source', params.source);
+  if (params.entryType) search.set('entryType', params.entryType);
   if (params.search) search.set('search', params.search);
   if (params.dateBasis) search.set('dateBasis', params.dateBasis);
   const { data } = await client.get<LeadsReportResponse>(

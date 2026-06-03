@@ -218,6 +218,7 @@ export function leadsReportQueryKey(params: GetLeadsReportParams) {
     params.ownerId ?? null,
     params.status ?? null,
     params.source ?? null,
+    params.entryType ?? null,
     params.search ?? null,
   ] as const;
 }

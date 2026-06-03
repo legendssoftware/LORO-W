@@ -18,6 +18,7 @@ export interface LeadsFiltersState {
   dateBasis: LeadsReportDateBasis;
   selectedStatus: string;
   selectedSource: string;
+  selectedEntryType: string;
   selectedPriority: string;
   selectedUserId: string;
   searchQuery: string;
@@ -34,6 +35,7 @@ interface LeadsStore extends LeadsFiltersState, LeadsUIState {
   setDateBasis: (basis: LeadsReportDateBasis) => void;
   setSelectedStatus: (status: string) => void;
   setSelectedSource: (source: string) => void;
+  setSelectedEntryType: (entryType: string) => void;
   setSelectedPriority: (priority: string) => void;
   setSelectedUserId: (userId: string) => void;
   setSearchQuery: (query: string) => void;
@@ -49,6 +51,7 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   dateBasis: 'created',
   selectedStatus: 'all',
   selectedSource: 'all',
+  selectedEntryType: 'all',
   selectedPriority: '',
   selectedUserId: '',
   searchQuery: '',
@@ -60,6 +63,7 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   setDateBasis: (basis) => set({ dateBasis: basis }),
   setSelectedStatus: (status) => set({ selectedStatus: status }),
   setSelectedSource: (source) => set({ selectedSource: source }),
+  setSelectedEntryType: (entryType) => set({ selectedEntryType: entryType }),
   setSelectedPriority: (priority) => set({ selectedPriority: priority }),
   setSelectedUserId: (userId) => set({ selectedUserId: userId }),
   setSearchQuery: (query) => set({ searchQuery: query }),
