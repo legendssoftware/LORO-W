@@ -14,12 +14,21 @@ import {
   completeSubtask,
   updateSubtask,
   deleteSubtask,
+  getOptimizedRoutes,
+  calculateOptimizedRoutes,
+  getTaskFlags,
+  createTaskFlag,
+  updateTaskFlag,
+  updateTaskFlagItem,
 } from '@/api/endpoints/tasks';
 import type {
   GetTasksParams,
   CreateTaskPayload,
   UpdateTaskPayload,
   UpdateSubtaskPayload,
+  CreateTaskFlagPayload,
+  UpdateTaskFlagPayload,
+  UpdateTaskFlagItemPayload,
 } from '@/api/types/tasks';
 
 /** Query key prefix for tasks list. Use for invalidateQueries after create/update. */
@@ -211,6 +220,104 @@ export function useDeleteSubtaskMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_LIST_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'detail'] });
+    },
+  });
+}
+
+export function useOptimizedRoutes(
+  date: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...TASKS_LIST_QUERY_KEY, 'routes', date ?? 'today'],
+    queryFn: async () => getOptimizedRoutes(client, date),
+    enabled: options?.enabled !== false,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useCalculateRoutesMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (date?: string) => calculateOptimizedRoutes(client, date),
+    onSuccess: (_, date) => {
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'routes', date ?? 'today'],
+      });
+    },
+  });
+}
+
+export function useTaskFlags(
+  taskId: number | null | undefined,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId ?? 'none'],
+    queryFn: async () => getTaskFlags(client, taskId!, { limit: 50 }),
+    enabled:
+      (options?.enabled !== false) && taskId != null && taskId > 0,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateTaskFlagMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateTaskFlagPayload) => createTaskFlag(client, payload),
+    onSuccess: (_, payload) => {
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', payload.taskId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', payload.taskId],
+      });
+    },
+  });
+}
+
+export function useUpdateTaskFlagMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      flagId,
+      taskId,
+      payload,
+    }: {
+      flagId: number;
+      taskId: number;
+      payload: UpdateTaskFlagPayload;
+    }) => updateTaskFlag(client, flagId, payload),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId],
+      });
+    },
+  });
+}
+
+export function useUpdateTaskFlagItemMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      taskId,
+      payload,
+    }: {
+      itemId: number;
+      taskId: number;
+      payload: UpdateTaskFlagItemPayload;
+    }) => updateTaskFlagItem(client, itemId, payload),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId],
+      });
     },
   });
 }

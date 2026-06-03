@@ -43,6 +43,7 @@ import {
   ORG_SITE_MAP_MARKER,
   ORG_SITE_MARKER_SIZE,
   influenceColorForKind,
+  resolveCompetitorMarkerColor,
 } from './map-report-constants';
 
 import 'leaflet/dist/leaflet.css';
@@ -140,7 +141,7 @@ const MARKER_SIZE = 36;
 const MARKER_ANCHOR = MARKER_SIZE / 2;
 
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
-const orgSiteIconCache = new Map<'client' | 'competitor', ReturnType<typeof divIcon>>();
+const orgSiteIconCache = new Map<string, ReturnType<typeof divIcon>>();
 
 const CLUSTER_MARKER_TYPES = new Set(['client', 'competitor']);
 
@@ -212,12 +213,14 @@ function genericPlaceholderChar(markerType: string): string {
 }
 
 function createOrgSiteMarkerIcon(
-  markerType: 'client' | 'competitor'
+  markerType: 'client' | 'competitor',
+  bg: string
 ): ReturnType<typeof divIcon> {
-  const cached = orgSiteIconCache.get(markerType);
+  const cacheKey = `${markerType}:${bg}`;
+  const cached = orgSiteIconCache.get(cacheKey);
   if (cached) return cached;
 
-  const { bg, Icon } = ORG_SITE_MAP_MARKER[markerType];
+  const { Icon } = ORG_SITE_MAP_MARKER[markerType];
   const size = ORG_SITE_MARKER_SIZE;
   const html = renderToStaticMarkup(
     createElement(
@@ -247,7 +250,7 @@ function createOrgSiteMarkerIcon(
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
-  orgSiteIconCache.set(markerType, icon);
+  orgSiteIconCache.set(cacheKey, icon);
   return icon;
 }
 
@@ -330,8 +333,11 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
 
 function getMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
   const mt = String(marker.markerType ?? 'unknown');
-  if (mt === 'client' || mt === 'competitor') {
-    return createOrgSiteMarkerIcon(mt);
+  if (mt === 'client') {
+    return createOrgSiteMarkerIcon('client', ORG_SITE_MAP_MARKER.client.bg);
+  }
+  if (mt === 'competitor') {
+    return createOrgSiteMarkerIcon('competitor', resolveCompetitorMarkerColor(marker));
   }
 
   const img = resolveMarkerImageUrl(marker) ?? '';
@@ -357,8 +363,11 @@ function markerPosition(marker: MapMarkerBase): [number, number] | null {
   return [lat, lng];
 }
 
-function circlePathOptions(kind: string) {
-  const fill = influenceColorForKind(kind);
+function circlePathOptions(kind: string, markerColor?: unknown) {
+  const fill =
+    typeof markerColor === 'string' && markerColor.trim()
+      ? markerColor.trim()
+      : influenceColorForKind(kind);
   return {
     color: fill,
     fillColor: fill,
@@ -550,7 +559,7 @@ function InfluenceCirclesLayer({
             key={c.id}
             center={[c.latitude, c.longitude]}
             radius={c.radiusMeters}
-            pathOptions={circlePathOptions(k)}
+            pathOptions={circlePathOptions(k, c.markerColor)}
           />
         );
       })}
@@ -582,6 +591,8 @@ export interface ReportsVisualiserMapProps {
   opportunityGreenfield?: GreenfieldOpportunityZone[];
   selectedOpportunityId?: string | null;
   onSelectOpportunity?: (zone: SiteOpportunityZone) => void;
+  /** Map ★ control — toggles suggested areas (same as toolbar). */
+  onSuggestedAreas?: () => void;
 }
 
 function ReportsVisualiserMapInner({
@@ -594,6 +605,7 @@ function ReportsVisualiserMapInner({
   opportunityGreenfield = [],
   selectedOpportunityId = null,
   onSelectOpportunity,
+  onSuggestedAreas,
 }: ReportsVisualiserMapProps) {
   const [selectedMarker, setSelectedMarker] = useState<MapMarkerBase | null>(null);
   const handleSelectMarker = useCallback((marker: MapMarkerBase) => {
@@ -655,6 +667,7 @@ function ReportsVisualiserMapInner({
           <LeafletMapControls
             markers={allMarkers}
             onSelectMarker={handleSelectMarker}
+            onSuggestedAreas={onSuggestedAreas}
           />
           <MapZoomBoundsSync
             markers={allMarkers}

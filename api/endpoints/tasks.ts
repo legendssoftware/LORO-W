@@ -7,6 +7,11 @@ import type {
   CreateTaskPayload,
   UpdateTaskPayload,
   UpdateSubtaskPayload,
+  OptimizedRoute,
+  TaskFlagsResponse,
+  CreateTaskFlagPayload,
+  UpdateTaskFlagPayload,
+  UpdateTaskFlagItemPayload,
 } from '@/api/types/tasks';
 
 /**
@@ -164,6 +169,73 @@ export async function deleteSubtask(
 ): Promise<{ message: string }> {
   const { data } = await client.delete<{ message: string }>(
     `/tasks/sub-task/${ref}`
+  );
+  return data;
+}
+
+export async function getOptimizedRoutes(
+  client: AxiosInstance,
+  date?: string
+): Promise<OptimizedRoute[]> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const { data } = await client.get<OptimizedRoute[]>(`/tasks/routes/optimized${qs}`);
+  return data;
+}
+
+export async function calculateOptimizedRoutes(
+  client: AxiosInstance,
+  date?: string
+): Promise<{ message: string }> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const { data } = await client.post<{ message: string }>(
+    `/tasks/routes/calculate${qs}`
+  );
+  return data;
+}
+
+export async function getTaskFlags(
+  client: AxiosInstance,
+  taskId: number,
+  params?: { page?: number; limit?: number }
+): Promise<TaskFlagsResponse> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set('page', String(params.page));
+  if (params?.limit != null) search.set('limit', String(params.limit));
+  const qs = search.toString();
+  const { data } = await client.get<TaskFlagsResponse>(
+    `/tasks/${taskId}/flags${qs ? `?${qs}` : ''}`
+  );
+  return data;
+}
+
+export async function createTaskFlag(
+  client: AxiosInstance,
+  payload: CreateTaskFlagPayload
+): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>('/tasks/flags', payload);
+  return data;
+}
+
+export async function updateTaskFlag(
+  client: AxiosInstance,
+  flagId: number,
+  payload: UpdateTaskFlagPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    `/tasks/flags/${flagId}`,
+    payload
+  );
+  return data;
+}
+
+export async function updateTaskFlagItem(
+  client: AxiosInstance,
+  itemId: number,
+  payload: UpdateTaskFlagItemPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    `/tasks/flag-items/${itemId}`,
+    payload
   );
   return data;
 }

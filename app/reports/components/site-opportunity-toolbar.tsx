@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Settings2, Loader2 } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -10,7 +10,18 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { SiteOpportunityMode, SiteOpportunitySettings } from '@/api/types/site-opportunity';
+import { reportsFilterPortalHighZ } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import type {
+  DataQualitySummary,
+  SiteOpportunityMode,
+  SiteOpportunitySettings,
+} from '@/api/types/site-opportunity';
+
+const MODE_OPTIONS = [
+  ['greenfield', 'New sites'],
+  ['catchment', 'Branch catchments'],
+  ['both', 'Both'],
+] as const satisfies ReadonlyArray<readonly [SiteOpportunityMode, string]>;
 
 export function SiteOpportunityToolbar({
   showOpportunities,
@@ -21,6 +32,8 @@ export function SiteOpportunityToolbar({
   onSettingsChange,
   className,
   isLoading = false,
+  warnings = [],
+  dataQuality,
 }: {
   showOpportunities: boolean;
   onToggleShow: () => void;
@@ -30,7 +43,13 @@ export function SiteOpportunityToolbar({
   onSettingsChange: (patch: Partial<SiteOpportunitySettings>) => void;
   className?: string;
   isLoading?: boolean;
+  warnings?: string[];
+  dataQuality?: DataQualitySummary;
 }) {
+  const showDataBanner =
+    showOpportunities &&
+    dataQuality != null &&
+    dataQuality.competitorCoveragePct < 95;
   return (
     <div
       className={cn(
@@ -53,39 +72,43 @@ export function SiteOpportunityToolbar({
         Suggested areas
       </Button>
 
+      {showDataBanner ? (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 max-w-md">
+          {warnings[0] ??
+            `Hardware map coverage is ${dataQuality!.competitorCoveragePct}%. Import and geocode competitors (BUCO, CASHBUILD, BUILD IT, POWERBUILD, EST) for accurate pool totals.`}
+        </p>
+      ) : null}
+
       {showOpportunities ? (
         <>
-          <div className="flex rounded-md border overflow-hidden text-sm">
-            {(
-              [
-                ['greenfield', 'New sites'],
-                ['catchment', 'Branch catchments'],
-                ['both', 'Both'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onModeChange(value)}
-                className={cn(
-                  'px-3 py-1.5 transition-colors',
-                  mode === value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background hover:bg-muted'
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {MODE_OPTIONS.map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={mode === value ? 'default' : 'outline'}
+              onClick={() => onModeChange(value)}
+            >
+              {label}
+            </Button>
+          ))}
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button type="button" size="sm" variant="ghost">
-                <Settings2 className="size-4" />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label="Opportunity settings"
+              >
+                <SlidersHorizontal className="size-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72" align="start">
+            <PopoverContent
+              className={cn('w-72', reportsFilterPortalHighZ)}
+              align="end"
+              side="bottom"
+            >
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="opp-radius">Radius (km)</Label>
@@ -126,6 +149,38 @@ export function SiteOpportunityToolbar({
                     onChange={(e) =>
                       onSettingsChange({
                         minBranchSeparationKm: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="opp-capture-low">Low capture %</Label>
+                  <Input
+                    id="opp-capture-low"
+                    type="number"
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={Math.round(settings.captureLowPct * 100)}
+                    onChange={(e) =>
+                      onSettingsChange({
+                        captureLowPct: Number(e.target.value) / 100,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="opp-capture-high">High capture %</Label>
+                  <Input
+                    id="opp-capture-high"
+                    type="number"
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={Math.round(settings.captureHighPct * 100)}
+                    onChange={(e) =>
+                      onSettingsChange({
+                        captureHighPct: Number(e.target.value) / 100,
                       })
                     }
                   />

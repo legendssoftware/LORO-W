@@ -10,6 +10,12 @@ function formatZar(n: number): string {
   return `R ${Math.round(n)}`;
 }
 
+function timelineSummary(zone: SiteOpportunityZone): string {
+  const last = zone.captureTimeline[zone.captureTimeline.length - 1];
+  if (!last) return '';
+  return `m${last.month} mid ${formatZar(last.revenueMidZAR)}`;
+}
+
 function zoneRow(zone: SiteOpportunityZone): string[] {
   const base = [
     String(zone.rank),
@@ -23,17 +29,23 @@ function zoneRow(zone: SiteOpportunityZone): string[] {
     formatZar(zone.potentialLowZAR),
     formatZar(zone.potentialHighZAR),
     String(Math.round(zone.opportunityScore)),
+    zone.monthsToTargetMid != null ? String(zone.monthsToTargetMid) : '',
+    timelineSummary(zone),
   ];
+
+  const brands = zone.byBrand.map((b) => `${b.brand}:${b.count}`).join('; ');
 
   if (zone.kind === 'catchment') {
     base.push(
       zone.actualRevenueZAR != null ? formatZar(zone.actualRevenueZAR) : '',
-      zone.revenueGapZAR != null ? formatZar(zone.revenueGapZAR) : ''
+      zone.revenueGapZAR != null ? formatZar(zone.revenueGapZAR) : '',
+      brands,
     );
   } else {
     base.push(
       zone.nearestBranchKm != null ? zone.nearestBranchKm.toFixed(1) : '',
-      ''
+      '',
+      brands,
     );
   }
 
@@ -53,11 +65,14 @@ export function exportOpportunitiesCsv(
     'Clients in radius',
     'Competitors in radius',
     'Addressable pool',
-    'Potential low (15%)',
-    'Potential high (30%)',
+    'Potential low',
+    'Potential high',
     'Opportunity score',
+    'Months to 55% mid potential',
+    'Timeline end (mid)',
     'Actual revenue / Nearest branch km',
     'Revenue gap / spare',
+    'Brands in radius',
   ];
 
   const rows = [...catchments, ...greenfield].map(zoneRow);

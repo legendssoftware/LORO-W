@@ -20,7 +20,10 @@ export {
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport, useReportsMapData } from './use-map-report';
-export { useSiteOpportunities } from './use-site-opportunities';
+export {
+  siteOpportunitiesQueryKey,
+  useSiteOpportunities,
+} from './use-site-opportunities';
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
@@ -104,6 +107,12 @@ export {
   useCompleteSubtaskMutation,
   useUpdateSubtaskMutation,
   useDeleteSubtaskMutation,
+  useOptimizedRoutes,
+  useCalculateRoutesMutation,
+  useTaskFlags,
+  useCreateTaskFlagMutation,
+  useUpdateTaskFlagMutation,
+  useUpdateTaskFlagItemMutation,
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
 export {

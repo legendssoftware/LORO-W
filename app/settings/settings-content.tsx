@@ -192,6 +192,15 @@ function regionalFormStateFromSettings(s: OrganisationSettingsRecord) {
     itemsPerPage: p?.itemsPerPage ?? 25,
     menuCollapsed: p?.menuCollapsed ?? false,
     sendTaskNotifications: s.sendTaskNotifications ?? false,
+    createFollowUpTaskOnLeadCreate:
+      s.taskReminders?.createFollowUpTaskOnLeadCreate !== false,
+    reminderOffset24h: (s.taskReminders?.deadlineOffsetsMinutes ?? [1440, 60, 15]).includes(
+      1440
+    ),
+    reminderOffset1h: (s.taskReminders?.deadlineOffsetsMinutes ?? [1440, 60, 15]).includes(60),
+    reminderOffset15m: (s.taskReminders?.deadlineOffsetsMinutes ?? [1440, 60, 15]).includes(
+      15
+    ),
     feedbackTokenExpiryDays: s.feedbackTokenExpiryDays ?? 30,
     geofenceDefaultRadius: s.geofenceDefaultRadius ?? 500,
     geofenceEnabledByDefault: s.geofenceEnabledByDefault ?? false,
@@ -644,6 +653,10 @@ export function SettingsContent() {
     itemsPerPage: 25,
     menuCollapsed: false,
     sendTaskNotifications: false,
+    createFollowUpTaskOnLeadCreate: true,
+    reminderOffset24h: true,
+    reminderOffset1h: true,
+    reminderOffset15m: true,
     feedbackTokenExpiryDays: 30,
     geofenceDefaultRadius: 500,
     geofenceEnabledByDefault: false,
@@ -802,6 +815,17 @@ export function SettingsContent() {
       socialLinks,
       performance,
       sendTaskNotifications: regionalForm.sendTaskNotifications,
+      taskReminders: mergeSettingObjects(
+        ex?.taskReminders as Record<string, unknown>,
+        {
+          createFollowUpTaskOnLeadCreate: regionalForm.createFollowUpTaskOnLeadCreate,
+          deadlineOffsetsMinutes: [
+            ...(regionalForm.reminderOffset24h ? [1440] : []),
+            ...(regionalForm.reminderOffset1h ? [60] : []),
+            ...(regionalForm.reminderOffset15m ? [15] : []),
+          ],
+        }
+      ) as PatchOrganisationSettingsBody['taskReminders'],
       feedbackTokenExpiryDays: regionalForm.feedbackTokenExpiryDays,
       geofenceDefaultRadius: regionalForm.geofenceDefaultRadius,
       geofenceEnabledByDefault: regionalForm.geofenceEnabledByDefault,
@@ -1750,6 +1774,61 @@ export function SettingsContent() {
                       />
                       Send task notifications
                     </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={regionalForm.createFollowUpTaskOnLeadCreate}
+                        onChange={(e) =>
+                          setRegionalForm((s) => ({
+                            ...s,
+                            createFollowUpTaskOnLeadCreate: e.target.checked,
+                          }))
+                        }
+                      />
+                      Create follow-up task when a lead is created
+                    </label>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Task deadline reminders</p>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={regionalForm.reminderOffset24h}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              reminderOffset24h: e.target.checked,
+                            }))
+                          }
+                        />
+                        24 hours before deadline
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={regionalForm.reminderOffset1h}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              reminderOffset1h: e.target.checked,
+                            }))
+                          }
+                        />
+                        1 hour before deadline
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={regionalForm.reminderOffset15m}
+                          onChange={(e) =>
+                            setRegionalForm((s) => ({
+                              ...s,
+                              reminderOffset15m: e.target.checked,
+                            }))
+                          }
+                        />
+                        15 minutes before deadline
+                      </label>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="ft">Feedback token expiry (days)</Label>
                       <Input

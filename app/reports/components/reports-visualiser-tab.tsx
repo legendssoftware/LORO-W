@@ -1,15 +1,25 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal } from 'lucide-react';
-import { useReportsMapData, useSiteOpportunities, useTokenReady } from '@/api/hooks';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { getSiteOpportunities } from '@/api/endpoints/site-opportunities';
+import {
+  siteOpportunitiesQueryKey,
+  useReportsMapData,
+  useSiteOpportunities,
+  useTokenReady,
+} from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
+import type { GetSiteOpportunitiesParams } from '@/api/endpoints/site-opportunities';
 import type { SyncProfile } from '@/api/types';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type SiteOpportunityMode,
+  type SiteOpportunityResult,
   type SiteOpportunitySettings,
   type SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
@@ -36,6 +46,26 @@ const ReportsVisualiserMap = dynamic(
   { ssr: false }
 );
 
+const EMPTY_SITE_OPPORTUNITIES: SiteOpportunityResult = {
+  catchments: [],
+  greenfield: [],
+  dataQuality: {
+    totalCompetitors: 0,
+    competitorsWithCoords: 0,
+    totalClients: 0,
+    clientsWithCoords: 0,
+    totalBranches: 0,
+    branchesWithCoords: 0,
+    competitorCoveragePct: 100,
+    clientCoveragePct: 100,
+  },
+  settings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  warnings: [],
+  geocodingSummary: null,
+};
+
+const OPPORTUNITY_SETTINGS_DEBOUNCE_MS = 500;
+
 export interface ReportsVisualiserTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
@@ -48,17 +78,28 @@ export function ReportsVisualiserTab({
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   const mounted = authLoaded && isTokenReady;
+  const queryClient = useQueryClient();
+  const apiClient = useApiClient();
 
   const { selectedRegion, selectedBusinessType } = useVisitsStore();
 
   const [showOpportunities, setShowOpportunities] = useState(false);
   const [opportunityMode, setOpportunityMode] =
-    useState<SiteOpportunityMode>('both');
+    useState<SiteOpportunityMode>('greenfield');
   const [opportunitySettings, setOpportunitySettings] =
+    useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
+  const [debouncedOpportunitySettings, setDebouncedOpportunitySettings] =
     useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedOpportunitySettings(opportunitySettings);
+    }, OPPORTUNITY_SETTINGS_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [opportunitySettings]);
 
   const mapReportParams = useMemo((): GetMapReportParams => {
     const base: GetMapReportParams = {
@@ -71,18 +112,96 @@ export function ReportsVisualiserTab({
     return base;
   }, [profile?.uid, reportsMode]);
 
-  const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-
-  const siteOpportunitiesQuery = useSiteOpportunities(
-    {
+  const siteOpportunityParams = useMemo((): GetSiteOpportunitiesParams => {
+    return {
       ...mapReportParams,
       region: selectedRegion || undefined,
       businessType: selectedBusinessType || undefined,
       mode: opportunityMode,
-      settings: opportunitySettings,
-    },
-    { enabled: mounted && showOpportunities }
+      settings: debouncedOpportunitySettings,
+    };
+  }, [
+    mapReportParams,
+    selectedRegion,
+    selectedBusinessType,
+    opportunityMode,
+    debouncedOpportunitySettings,
+  ]);
+
+  const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
+
+  const siteOpportunitiesQuery = useSiteOpportunities(siteOpportunityParams, {
+    enabled: mounted && showOpportunities && mapReport.isSuccess,
+  });
+
+  const prefetchSiteOpportunities = useCallback(() => {
+    void queryClient.prefetchQuery({
+      queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
+      queryFn: () => getSiteOpportunities(apiClient, siteOpportunityParams),
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [apiClient, queryClient, siteOpportunityParams]);
+
+  const handleSelectOpportunity = useCallback((zone: SiteOpportunityZone) => {
+    setSelectedOpportunityId(zone.id);
+    setShowOpportunities(true);
+  }, []);
+
+  const opportunityPanelProps = useMemo(
+    () => ({
+      catchments: siteOpportunitiesQuery.data?.catchments ?? [],
+      greenfield: siteOpportunitiesQuery.data?.greenfield ?? [],
+      dataQuality:
+        siteOpportunitiesQuery.data?.dataQuality ??
+        EMPTY_SITE_OPPORTUNITIES.dataQuality,
+      warnings: siteOpportunitiesQuery.data?.warnings ?? [],
+      captureSettings:
+        siteOpportunitiesQuery.data?.settings ?? opportunitySettings,
+      selectedZoneId: selectedOpportunityId,
+      onSelectZone: handleSelectOpportunity,
+      isLoading: siteOpportunitiesQuery.isFetching,
+      isError: siteOpportunitiesQuery.isError,
+      errorMessage:
+        siteOpportunitiesQuery.error instanceof Error
+          ? siteOpportunitiesQuery.error.message
+          : siteOpportunitiesQuery.isError
+            ? 'Could not load suggested areas.'
+            : undefined,
+    }),
+    [
+      handleSelectOpportunity,
+      opportunitySettings,
+      selectedOpportunityId,
+      siteOpportunitiesQuery.data,
+      siteOpportunitiesQuery.error,
+      siteOpportunitiesQuery.isError,
+      siteOpportunitiesQuery.isFetching,
+    ]
   );
+
+  const handleToggleOpportunities = useCallback(() => {
+    setShowOpportunities((v) => {
+      const next = !v;
+      if (!next) {
+        setSelectedOpportunityId(null);
+      } else if (mapReport.isSuccess) {
+        prefetchSiteOpportunities();
+      }
+      return next;
+    });
+  }, [mapReport.isSuccess, prefetchSiteOpportunities]);
+
+  const handleSuggestedAreasFromMap = useCallback(() => {
+    if (!showOpportunities) {
+      setShowOpportunities(true);
+      if (mapReport.isSuccess) {
+        prefetchSiteOpportunities();
+      }
+      return;
+    }
+    setShowOpportunities(false);
+    setSelectedOpportunityId(null);
+  }, [mapReport.isSuccess, prefetchSiteOpportunities, showOpportunities]);
 
   const baseMarkers = useMemo(
     () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
@@ -134,33 +253,10 @@ export function ReportsVisualiserTab({
     filteredMarkers,
   ]);
 
-  const siteOpportunities = siteOpportunitiesQuery.data ?? {
-    catchments: [],
-    greenfield: [],
-    dataQuality: {
-      totalCompetitors: 0,
-      competitorsWithCoords: 0,
-      totalClients: 0,
-      clientsWithCoords: 0,
-      totalBranches: 0,
-      branchesWithCoords: 0,
-      competitorCoveragePct: 100,
-      clientCoveragePct: 100,
-    },
-    settings: opportunitySettings,
-  };
-
-  function handleSelectOpportunity(zone: SiteOpportunityZone) {
-    setSelectedOpportunityId(zone.id);
-    setShowOpportunities(true);
-  }
-
-  function handleToggleOpportunities() {
-    setShowOpportunities((v) => {
-      if (v) setSelectedOpportunityId(null);
-      return !v;
-    });
-  }
+  const mapOpportunityCatchments =
+    siteOpportunitiesQuery.data?.catchments ?? EMPTY_SITE_OPPORTUNITIES.catchments;
+  const mapOpportunityGreenfield =
+    siteOpportunitiesQuery.data?.greenfield ?? EMPTY_SITE_OPPORTUNITIES.greenfield;
 
   if (!mounted) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -191,6 +287,8 @@ export function ReportsVisualiserTab({
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
             isLoading={showOpportunities && siteOpportunitiesQuery.isFetching}
+            warnings={siteOpportunitiesQuery.data?.warnings ?? []}
+            dataQuality={siteOpportunitiesQuery.data?.dataQuality}
           />
         }
       />
@@ -218,19 +316,15 @@ export function ReportsVisualiserTab({
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
           className="flex-1 min-h-0 min-w-0"
           showOpportunities={showOpportunities}
-          opportunityCatchments={siteOpportunities.catchments}
-          opportunityGreenfield={siteOpportunities.greenfield}
+          opportunityCatchments={mapOpportunityCatchments}
+          opportunityGreenfield={mapOpportunityGreenfield}
           selectedOpportunityId={selectedOpportunityId}
           onSelectOpportunity={handleSelectOpportunity}
+          onSuggestedAreas={handleSuggestedAreasFromMap}
         />
         {showOpportunities ? (
           <SiteOpportunityPanel
-            catchments={siteOpportunities.catchments}
-            greenfield={siteOpportunities.greenfield}
-            dataQuality={siteOpportunities.dataQuality}
-            selectedZoneId={selectedOpportunityId}
-            onSelectZone={handleSelectOpportunity}
-            isLoading={siteOpportunitiesQuery.isFetching}
+            {...opportunityPanelProps}
             className="hidden lg:flex"
           />
         ) : null}
@@ -238,12 +332,7 @@ export function ReportsVisualiserTab({
       {showOpportunities ? (
         <div className="lg:hidden border-t max-h-[40vh] overflow-hidden flex flex-col">
           <SiteOpportunityPanel
-            catchments={siteOpportunities.catchments}
-            greenfield={siteOpportunities.greenfield}
-            dataQuality={siteOpportunities.dataQuality}
-            selectedZoneId={selectedOpportunityId}
-            onSelectZone={handleSelectOpportunity}
-            isLoading={siteOpportunitiesQuery.isFetching}
+            {...opportunityPanelProps}
             className="border-l-0 w-full max-h-[40vh]"
           />
         </div>

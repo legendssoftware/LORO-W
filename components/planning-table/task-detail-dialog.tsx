@@ -99,6 +99,7 @@ import {
   TASK_TYPE_OPTIONS,
   REPETITION_TYPE_OPTIONS,
 } from '@/lib/task-form-utils';
+import { TaskFlagsSection } from './task-flags-section';
 import {
   formatDeadline,
   formatClients,
@@ -1115,6 +1116,12 @@ export function TaskDetailDialog({
                       <DetailSectionHeading title="Notes" icon={MessageSquare} />
                       <p className="text-muted-foreground whitespace-pre-wrap">{displayTask.comment}</p>
                     </div>
+                  </>
+                ) : null}
+                {displayTask.uid ? (
+                  <>
+                    <Separator className="my-2" />
+                    <TaskFlagsSection taskId={displayTask.uid} />
                   </>
                 ) : null}
                 {(displayTask.subtasks?.length ?? 0) > 0 && (

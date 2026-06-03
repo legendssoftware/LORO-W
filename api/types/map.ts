@@ -21,6 +21,12 @@ export interface MapMarkerBase {
   latitude: number;
   longitude: number;
   markerType: string;
+  /** Resolved hardware retail brand for competitor markers (e.g. BUCO, CASHBUILD). */
+  hardwareBrand?: string;
+  /** Hex marker background color from API (competitor brand styling). */
+  markerColor?: string;
+  accountName?: string;
+  LegalEntity?: string;
   [key: string]: unknown;
 }
 
@@ -59,6 +65,9 @@ export interface InfluenceCircle {
   latitude: number;
   longitude: number;
   radiusMeters: number;
+  /** Brand-aligned hex color for competitor influence circles. */
+  markerColor?: string;
+  hardwareBrand?: string;
 }
 
 export interface MapOrganisationSummary {
