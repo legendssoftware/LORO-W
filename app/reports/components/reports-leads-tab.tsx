@@ -26,6 +26,8 @@ import {
   MapPin,
   Tag,
   TrendingUp,
+  Upload,
+  UserRound,
   Users,
 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
@@ -95,6 +97,10 @@ import {
   formatAxisTickThousands,
   takeTopNWithOther,
 } from '@/lib/utils/chart-series';
+import {
+  LEAD_ENTRY_TYPE_FILTER_OPTIONS,
+  leadEntryTypeToApiParam,
+} from '@/lib/leads-scope';
 
 /** Max categories per chart (rest grouped as Other where applicable). */
 const CHART_TOP_N = 10;
@@ -140,6 +146,18 @@ const LEAD_SOURCE_PICKER_OPTIONS: SearchableOptionRow[] =
     label: humanizeReportLabel(s),
     icon: <Layers className="size-4 shrink-0" />,
     searchExtra: s.replace(/_/g, ' '),
+  }));
+
+const LEAD_ENTRY_TYPE_PICKER_OPTIONS: SearchableOptionRow[] =
+  LEAD_ENTRY_TYPE_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    icon:
+      opt.value === 'import' ? (
+        <Upload className="size-4 shrink-0" />
+      ) : (
+        <UserRound className="size-4 shrink-0" />
+      ),
   }));
 
 const BAR_PALETTE = [
@@ -201,6 +219,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [selectedEntryType, setSelectedEntryType] = useState<string>('all');
   const [selectedOwnerUid, setSelectedOwnerUid] = useState<string>('all');
 
   const [draft, setDraft] = useState<DateRange | undefined>(() => {
@@ -274,6 +293,9 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
         : {}),
       ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
       ...(selectedSource !== 'all' ? { source: selectedSource } : {}),
+      ...(leadEntryTypeToApiParam(selectedEntryType)
+        ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
+        : {}),
     }),
     [
       dateFrom,
@@ -284,6 +306,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
       effectiveOwnerUid,
       selectedStatus,
       selectedSource,
+      selectedEntryType,
     ]
   );
 
@@ -579,6 +602,17 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
             searchPlaceholder="Search sources…"
             emptyMessage="No source found."
             triggerIcon={<Layers className="size-4 shrink-0" />}
+            triggerClassName="h-9 w-[180px] shrink-0 sm:w-[200px]"
+          />
+
+          <SearchableOptionListPicker
+            selectedValue={selectedEntryType}
+            onValueChange={setSelectedEntryType}
+            options={LEAD_ENTRY_TYPE_PICKER_OPTIONS}
+            placeholderLabelWhenAll="All origins"
+            searchPlaceholder="Search origins…"
+            emptyMessage="No origin found."
+            triggerIcon={<UserRound className="size-4 shrink-0" />}
             triggerClassName="h-9 w-[180px] shrink-0 sm:w-[200px]"
           />
 

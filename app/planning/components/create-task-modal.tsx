@@ -56,7 +56,10 @@ import {
   PlanningClientsMultiSelectPanel,
 } from '@/app/planning/components/planning-task-multi-select-panels';
 import type { CreateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
-import { TASK_TEMPLATES, applyTaskTemplate } from '@/lib/task-templates';
+import {
+  applyTaskTemplate,
+  getTemplatesForTaskType,
+} from '@/lib/task-templates';
 import { format } from 'date-fns';
 
 const MODAL_SELECT_TRIGGER =
@@ -104,6 +107,9 @@ export function CreateTaskModal({
   const [assigneesPopoverOpen, setAssigneesPopoverOpen] = useState(false);
   const [clientsPopoverOpen, setClientsPopoverOpen] = useState(false);
   const [attachmentsInput, setAttachmentsInput] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(
+    undefined
+  );
 
   const createMutation = useCreateTaskMutation();
   const { backendUserData } = useSessionSync();
@@ -166,6 +172,7 @@ export function CreateTaskModal({
     );
     setSelectedClientUids(initialValues?.client?.map((c) => c.uid) ?? []);
     setAttachmentsInput('');
+    setSelectedTemplateId(undefined);
   }, [
     open,
     initialValues,
@@ -318,31 +325,6 @@ export function CreateTaskModal({
           </DialogDescription>
         </DialogHeader>
         <form noValidate onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2 sm:max-w-xs">
-            <Label htmlFor="task-template">Template</Label>
-            <Select
-              onValueChange={(id) => {
-                const tpl = TASK_TEMPLATES.find((t) => t.id === id);
-                if (!tpl) return;
-                const applied = applyTaskTemplate(tpl, form);
-                setForm((f) => ({ ...f, ...applied }));
-                if (applied.subtasks?.length) {
-                  /* subtasks already on form */
-                }
-              }}
-            >
-              <SelectTrigger id="task-template" className={MODAL_SELECT_TRIGGER}>
-                <SelectValue placeholder="Choose a template (optional)" />
-              </SelectTrigger>
-              <SelectContent className={MODAL_SELECT_CONTENT}>
-                {TASK_TEMPLATES.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <div>
             <DetailSectionHeading title="Basic info" icon={ClipboardList} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -391,12 +373,13 @@ export function CreateTaskModal({
                 <Label>Task type</Label>
                 <Select
                   value={form.taskType ?? 'OTHER'}
-                  onValueChange={(v) =>
+                  onValueChange={(v) => {
+                    setSelectedTemplateId(undefined);
                     setForm((f) => ({
                       ...f,
                       taskType: v as CreateTaskPayload['taskType'],
-                    }))
-                  }
+                    }));
+                  }}
                 >
                   <SelectTrigger className={MODAL_SELECT_TRIGGER}>
                     <SelectValue placeholder="Select type" />
@@ -413,6 +396,35 @@ export function CreateTaskModal({
                   </SelectContent>
                 </Select>
               </div>
+              {getTemplatesForTaskType(form.taskType ?? 'OTHER').length > 0 && (
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="task-template">Template</Label>
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={(id) => {
+                      const templatesForType = getTemplatesForTaskType(
+                        form.taskType ?? 'OTHER'
+                      );
+                      const tpl = templatesForType.find((t) => t.id === id);
+                      if (!tpl) return;
+                      setSelectedTemplateId(id);
+                      const applied = applyTaskTemplate(tpl, form);
+                      setForm((f) => ({ ...f, ...applied }));
+                    }}
+                  >
+                    <SelectTrigger id="task-template" className={MODAL_SELECT_TRIGGER}>
+                      <SelectValue placeholder="Apply checklist for this task type" />
+                    </SelectTrigger>
+                    <SelectContent className={MODAL_SELECT_CONTENT}>
+                      {getTemplatesForTaskType(form.taskType ?? 'OTHER').map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label>Priority</Label>
                 <Select
