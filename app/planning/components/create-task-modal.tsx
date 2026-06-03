@@ -56,6 +56,7 @@ import {
   PlanningClientsMultiSelectPanel,
 } from '@/app/planning/components/planning-task-multi-select-panels';
 import type { CreateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
+import { TASK_TEMPLATES, applyTaskTemplate } from '@/lib/task-templates';
 import { format } from 'date-fns';
 
 const MODAL_SELECT_TRIGGER =
@@ -66,6 +67,8 @@ export interface CreateTaskModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Pre-fill form when opening (e.g. from lead follow-up). */
+  initialValues?: Partial<CreateTaskPayload>;
 }
 
 const defaultForm: Partial<CreateTaskPayload> = {
@@ -88,6 +91,7 @@ export function CreateTaskModal({
   open,
   onOpenChange,
   onSuccess,
+  initialValues,
 }: CreateTaskModalProps) {
   const [form, setForm] = useState(defaultForm);
   const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
@@ -127,7 +131,10 @@ export function CreateTaskModal({
   useEffect(() => {
     if (!open) return;
 
-    const next: Partial<CreateTaskPayload> = { ...defaultForm };
+    const next: Partial<CreateTaskPayload> = {
+      ...defaultForm,
+      ...initialValues,
+    };
     const assigneeIds: number[] = [];
 
     const filterAssignee = (() => {
@@ -154,11 +161,14 @@ export function CreateTaskModal({
     }
 
     setForm(next);
-    setSelectedAssigneeUids(assigneeIds);
-    setSelectedClientUids([]);
+    setSelectedAssigneeUids(
+      initialValues?.assignees?.map((a) => a.uid) ?? assigneeIds
+    );
+    setSelectedClientUids(initialValues?.client?.map((c) => c.uid) ?? []);
     setAttachmentsInput('');
   }, [
     open,
+    initialValues,
     selectedAssigneeId,
     selectedPriority,
     useAllTime,
@@ -308,6 +318,31 @@ export function CreateTaskModal({
           </DialogDescription>
         </DialogHeader>
         <form noValidate onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-2 sm:max-w-xs">
+            <Label htmlFor="task-template">Template</Label>
+            <Select
+              onValueChange={(id) => {
+                const tpl = TASK_TEMPLATES.find((t) => t.id === id);
+                if (!tpl) return;
+                const applied = applyTaskTemplate(tpl, form);
+                setForm((f) => ({ ...f, ...applied }));
+                if (applied.subtasks?.length) {
+                  /* subtasks already on form */
+                }
+              }}
+            >
+              <SelectTrigger id="task-template" className={MODAL_SELECT_TRIGGER}>
+                <SelectValue placeholder="Choose a template (optional)" />
+              </SelectTrigger>
+              <SelectContent className={MODAL_SELECT_CONTENT}>
+                {TASK_TEMPLATES.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <DetailSectionHeading title="Basic info" icon={ClipboardList} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

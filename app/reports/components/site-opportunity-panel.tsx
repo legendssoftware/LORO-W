@@ -302,6 +302,8 @@ export function SiteOpportunityPanel({
   onSelectZone,
   className,
   isLoading = false,
+  isError = false,
+  errorMessage,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
@@ -312,6 +314,8 @@ export function SiteOpportunityPanel({
   onSelectZone: (zone: SiteOpportunityZone) => void;
   className?: string;
   isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
 }) {
   const selectedZone =
     [...catchments, ...greenfield].find((z) => z.id === selectedZoneId) ?? null;
@@ -342,11 +346,13 @@ export function SiteOpportunityPanel({
             <span className="sr-only">Export CSV</span>
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Based on {dataQuality.competitorsWithCoords}/{dataQuality.totalCompetitors}{' '}
-          competitors with map coordinates (
-          {dataQuality.competitorCoveragePct}%).
-        </p>
+        {!isError ? (
+          <p className="text-xs text-muted-foreground">
+            Based on {dataQuality.competitorsWithCoords}/
+            {dataQuality.totalCompetitors} competitors with map coordinates (
+            {dataQuality.competitorCoveragePct}%).
+          </p>
+        ) : null}
         {lowConfidence && warnings.length > 0 ? (
           <ul className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 space-y-1 list-disc pl-4">
             {warnings.map((w) => (
@@ -390,7 +396,15 @@ export function SiteOpportunityPanel({
             >
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-3 space-y-2">
-                  {isLoading ? (
+                  {isError ? (
+                    <p
+                      className="text-sm text-destructive py-6 text-center px-2"
+                      role="alert"
+                    >
+                      {errorMessage ??
+                        'Could not load suggested areas from the server.'}
+                    </p>
+                  ) : isLoading ? (
                     <div className="flex items-center justify-center py-8 text-muted-foreground">
                       <Loader2 className="size-5 animate-spin mr-2" />
                       <span className="text-sm">Loading suggested areas…</span>

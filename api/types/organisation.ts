@@ -100,6 +100,12 @@ export interface OrganisationSettingsRecord {
   } | null;
   sendTaskNotifications?: boolean;
   feedbackTokenExpiryDays?: number;
+  taskReminders?: {
+    createFollowUpTaskOnLeadCreate?: boolean;
+    deadlineOffsetsMinutes?: number[];
+    dailySummaryHour?: number;
+    overdueSummaryHour?: number;
+  } | null;
   geofenceDefaultRadius?: number;
   geofenceEnabledByDefault?: boolean;
   geofenceDefaultNotificationType?: string;

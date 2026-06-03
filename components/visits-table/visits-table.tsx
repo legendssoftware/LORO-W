@@ -1633,6 +1633,11 @@ function VisitDetailDialog({
                     }
                   />
                   <DetailFieldRow label="Follow-up" icon={CalendarClock} value={visit.followUp?.trim() || '-'} />
+                  {visit.followUp?.trim() ? (
+                    <p className="text-xs text-muted-foreground -mt-1">
+                      Check-out with this follow-up date creates a task for the visit owner (visible in Planning).
+                    </p>
+                  ) : null}
                   <DetailFieldRow label="Quote number" icon={Hash} value={visit.quotationNumber?.trim() || '-'} />
                   <DetailFieldRow
                     label="Quotation status"

@@ -18,6 +18,13 @@ export interface GetSiteOpportunitiesParams {
   settings?: Partial<SiteOpportunitySettings>;
 }
 
+/** Server-side geo engine can exceed the default 20s axios timeout. */
+export const SITE_OPPORTUNITIES_LONG_TIMEOUT_MS = 120_000;
+
+export type GetSiteOpportunitiesOptions = {
+  signal?: AbortSignal;
+};
+
 function isSiteOpportunityResult(value: unknown): value is SiteOpportunityResult {
   return (
     typeof value === 'object' &&
@@ -34,7 +41,8 @@ function isSiteOpportunityResult(value: unknown): value is SiteOpportunityResult
  */
 export async function getSiteOpportunities(
   client: AxiosInstance,
-  params?: GetSiteOpportunitiesParams
+  params?: GetSiteOpportunitiesParams,
+  options?: GetSiteOpportunitiesOptions
 ): Promise<SiteOpportunityResult> {
   const search = new URLSearchParams();
   if (params?.orgId != null) search.set('orgId', String(params.orgId));
@@ -64,7 +72,10 @@ export async function getSiteOpportunities(
   const qs = search.toString();
   const { data } = await client.get<
     SiteOpportunityResult | { data: SiteOpportunityResult }
-  >(`/reports/site-opportunities${qs ? `?${qs}` : ''}`);
+  >(`/reports/site-opportunities${qs ? `?${qs}` : ''}`, {
+    timeout: SITE_OPPORTUNITIES_LONG_TIMEOUT_MS,
+    signal: options?.signal,
+  });
   if (isSiteOpportunityResult(data)) return data;
   if (
     data &&

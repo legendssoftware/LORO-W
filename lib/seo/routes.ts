@@ -30,9 +30,9 @@ export const PAGE_COPY = {
       'See period targets, converted wins and actioned visits together. Stop guessing quota progress—know what to do next, today.',
   },
   planning: {
-    title: 'Planning — Tasks your team actually finishes',
+    title: 'Planning — Tasks, routes & reminders',
     description:
-      'Plan, assign and track work without losing ownership. Turn strategy into dated actions—visibility for you, clarity for the floor.',
+      'Plan field work with tasks, daily routes, execution checklists, and reminder inbox. My day view, maps, and follow-ups from visits and leads.',
   },
   clients: {
     title: 'Clients — Account visibility that protects revenue',

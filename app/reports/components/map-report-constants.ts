@@ -1,4 +1,6 @@
 import { Flame, ShoppingBag, type LucideIcon } from 'lucide-react';
+import type { MapMarkerBase } from '@/api/types/map';
+import type { HardwareBrandKey } from '@/api/types/site-opportunity';
 
 /** Palette for map marker rings, influence spheres, and legend (aligned with reports visualiser). */
 export const MARKER_COLORS: Record<string, string> = {
@@ -17,6 +19,72 @@ export const MARKER_COLORS: Record<string, string> = {
   quotation: '#db2777',
   claim: '#b45309',
 };
+
+/** Map marker background colors by hardware brand (mirrors server brands.ts). */
+export const HARDWARE_BRAND_MARKER_COLORS: Record<HardwareBrandKey, string> = {
+  BUCO: '#f59e0b',
+  CASHBUILD: '#dc2626',
+  'BUILD IT': '#dc2626',
+  POWERBUILD: '#dc2626',
+  EST: '#dc2626',
+  'P&L HARDWARE': '#dc2626',
+  OTHER: '#dc2626',
+};
+
+const BRAND_ALIASES: Record<string, HardwareBrandKey> = {
+  BUCO: 'BUCO',
+  CASHBUILD: 'CASHBUILD',
+  'BUILD IT': 'BUILD IT',
+  BUILDIT: 'BUILD IT',
+  POWERBUILD: 'POWERBUILD',
+  EST: 'EST',
+  'EST STORES': 'EST',
+  'P&L HARDWARE': 'P&L HARDWARE',
+  'P&L': 'P&L HARDWARE',
+};
+
+function normalizeBrandToken(raw: string): HardwareBrandKey {
+  const upper = raw.trim().toUpperCase();
+  if (BRAND_ALIASES[upper]) return BRAND_ALIASES[upper];
+  for (const [key, value] of Object.entries(BRAND_ALIASES)) {
+    if (upper.startsWith(key)) return value;
+  }
+  return 'OTHER';
+}
+
+function resolveHardwareBrandFromMarker(marker: MapMarkerBase): HardwareBrandKey {
+  const fromApi = marker.hardwareBrand;
+  if (typeof fromApi === 'string' && fromApi.trim()) {
+    return normalizeBrandToken(fromApi);
+  }
+
+  const accountName = marker.accountName ?? marker.LegalEntity;
+  if (typeof accountName === 'string' && accountName.trim()) {
+    return normalizeBrandToken(accountName);
+  }
+
+  const name = String(marker.name ?? '').trim();
+  const dashIdx = name.indexOf(' – ');
+  const hyphenIdx = name.indexOf(' - ');
+  const splitIdx =
+    dashIdx >= 0 && hyphenIdx >= 0
+      ? Math.min(dashIdx, hyphenIdx)
+      : Math.max(dashIdx, hyphenIdx);
+  if (splitIdx > 0) {
+    return normalizeBrandToken(name.slice(0, splitIdx));
+  }
+
+  return normalizeBrandToken(name);
+}
+
+export function resolveCompetitorMarkerColor(marker: MapMarkerBase): string {
+  const fromApi = marker.markerColor;
+  if (typeof fromApi === 'string' && fromApi.trim()) {
+    return fromApi.trim();
+  }
+  const brand = resolveHardwareBrandFromMarker(marker);
+  return HARDWARE_BRAND_MARKER_COLORS[brand] ?? MARKER_COLORS.competitor;
+}
 
 export const ORG_SITE_MAP_MARKER: Record<
   'client' | 'competitor',
