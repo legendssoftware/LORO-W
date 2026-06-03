@@ -6,8 +6,17 @@ export const FULL_DOCUMENT_ROUTES = [
   '/onboarding',
   '/forgot-password',
   '/privacy-policy',
-];
+  '/about',
+  '/pricing',
+  '/customers',
+  '/integrations',
+  '/solutions',
+  '/compare',
+  '/blog',
+] as const;
 
 export function isFullDocumentRoute(pathname: string): boolean {
-  return FULL_DOCUMENT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  return FULL_DOCUMENT_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 }

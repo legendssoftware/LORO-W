@@ -19,7 +19,7 @@ import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 
 const selectTriggerClass =
-  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
 export const PROJECT_STATUS_FILTER_OPTIONS: SearchableOptionRow[] = [
   { value: 'planning', label: 'Planning', icon: null },
@@ -69,7 +69,7 @@ export function ProjectsFilterControls({
           <button
             type="button"
             onClick={() => onStatusChange('all')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
             aria-label="Clear status filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -123,7 +123,7 @@ export function ProjectsFiltersBar({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Clear search"
           >
             <XIcon className="size-4" />

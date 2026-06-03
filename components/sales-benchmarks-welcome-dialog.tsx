@@ -119,7 +119,7 @@ export function SalesBenchmarksWelcomeDialog({
               onValueChange={(value) => setLocale(value as SalesBenchmarksLocale)}
             >
               <SelectTrigger
-                className="h-8 w-[140px] border-red-200 bg-white text-xs"
+                className="h-8 w-[140px] border-red-200 bg-background text-xs"
                 aria-label="Notice language"
               >
                 <SelectValue />

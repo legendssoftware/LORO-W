@@ -24,6 +24,7 @@ import {
 } from '@/lib/client-session-keys';
 import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 import { useSidebar } from '@/components/ui/sidebar';
+import { ModeToggle } from '@/components/mode-toggle';
 
 /** Human-readable label for access level (e.g. owner → Owner). */
 function roleLabel(accessLevel: string | undefined): string {
@@ -110,6 +111,7 @@ export function AppHeader() {
       )}
 
       <div className="flex flex-1 items-center justify-end gap-3">
+        <ModeToggle />
         <SignedOut>
           <SignInButton mode="modal">
             <Button variant="ghost" size="sm">

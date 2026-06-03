@@ -182,7 +182,7 @@ export function ReportsContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
+      <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
         <h1 className="text-2xl font-semibold text-foreground mb-6 shrink-0">
           Reports
         </h1>

@@ -860,7 +860,7 @@ export function ReportsVisitsTab({
               Time of day and customer duration
             </h2>
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-              <Card className="bg-white border-gray-200 min-w-0">
+              <Card className="bg-background border-border min-w-0">
                 <CardHeader>
                   <CardTitle>Visits by hour</CardTitle>
                   <CardDescription>
@@ -937,7 +937,7 @@ export function ReportsVisitsTab({
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-gray-200 min-w-0">
+              <Card className="bg-background border-border min-w-0">
                 <CardHeader>
                   <CardTitle>Highest avg. duration per customer</CardTitle>
                   <CardDescription>
@@ -1032,7 +1032,7 @@ export function ReportsVisitsTab({
             <h2 className="text-lg font-semibold text-foreground">
               Quotation value by rep
             </h2>
-            <Card className="bg-white border-gray-200">
+            <Card className="bg-background border-border">
               <CardHeader>
                 <CardTitle>Visits by quotation value per user</CardTitle>
                 <CardDescription>
@@ -1250,7 +1250,7 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <Card className={cn('min-w-0 bg-white border-gray-200', className)}>
+    <Card className={cn('min-w-0 bg-background border-border', className)}>
       <CardHeader
         className={Icon ? 'flex flex-row items-start gap-2' : undefined}
       >
@@ -1296,7 +1296,7 @@ function KpiCard({
   return (
     <Card
       className={cn(
-        'border border-gray-200 bg-white py-4 shadow-none',
+        'border border-border bg-background py-4 shadow-none',
         'gap-3'
       )}
     >

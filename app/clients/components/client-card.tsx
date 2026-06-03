@@ -26,7 +26,7 @@ export function ClientCardSkeleton() {
   return (
     <Card
       className={cn(
-        'rounded-lg border border-gray-200 bg-white',
+        'rounded-lg border border-border bg-background',
         isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
       )}
     >
@@ -84,7 +84,7 @@ export function ClientCard({
           : undefined
       }
       className={cn(
-        'rounded-lg border border-gray-200 bg-white transition-shadow',
+        'rounded-lg border border-border bg-background transition-shadow',
         onClick && 'cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
       )}
@@ -96,7 +96,7 @@ export function ClientCard({
         )}
       >
         <div className="flex items-start gap-3 min-w-0">
-          <Avatar className="size-10 shrink-0 border border-gray-200">
+          <Avatar className="size-10 shrink-0 border border-border">
             <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
               {initials || <Building2 className="size-4" />}
             </AvatarFallback>

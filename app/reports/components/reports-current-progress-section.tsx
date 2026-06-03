@@ -45,7 +45,7 @@ import { isInternalOrExternalSalesRepWorkforce } from '@/lib/workforce-guards';
 import { formatEnumLabel } from '@/lib/format-enum-label';
 
 const selectTriggerClass =
-  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
 function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
@@ -488,7 +488,7 @@ export function ReportsCurrentProgressSection({
           <Button
             type="button"
             variant="outline"
-            className="h-9 gap-2 border-gray-200 bg-white"
+            className="h-9 gap-2 border-border bg-background"
             onClick={() => setFilterDialogOpen(true)}
           >
             <Filter className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -615,7 +615,7 @@ export function ReportsCurrentProgressSection({
         </p>
       ) : null}
 
-      <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
+      <div className="rounded-md border border-border bg-background overflow-x-auto">
         {shortfallLoading ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner />

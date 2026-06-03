@@ -48,7 +48,7 @@ import { cn } from '@/lib/utils';
 import type { StatusFilter } from '@/app/reports/types';
 
 const selectTriggerClass =
-  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
 export interface StaffDimensionFilterItem {
   value: string;
@@ -162,7 +162,7 @@ export function StaffFilterControls({
           <button
             type="button"
             onClick={() => onStatusFilterChange('all')}
-            className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+            className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
             aria-label="Clear status filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -186,7 +186,7 @@ export function StaffFilterControls({
           <button
             type="button"
             onClick={() => onRoleFilterChange(STAFF_DIMENSION_FILTER_ALL)}
-            className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+            className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
             aria-label="Clear role filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -210,7 +210,7 @@ export function StaffFilterControls({
           <button
             type="button"
             onClick={() => onWorkforceFilterChange(STAFF_DIMENSION_FILTER_ALL)}
-            className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+            className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
             aria-label="Clear workforce type filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -281,7 +281,7 @@ export function StaffFilterControls({
           <button
             type="button"
             onClick={() => onBranchFilterChange(STAFF_DIMENSION_FILTER_ALL)}
-            className="shrink-0 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+            className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
             aria-label="Clear branch filter"
           >
             <XIcon className="size-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ export function StaffFiltersBar({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
             aria-label="Clear search"
           >
             <XIcon className="size-4" />

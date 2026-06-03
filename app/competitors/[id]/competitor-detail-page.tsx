@@ -66,10 +66,10 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
   const addr = competitor?.address;
 
   return (
-    <div className="container mx-auto max-w-6xl px-3 py-8 sm:px-6 lg:max-w-[88rem]">
+    <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <Button variant="outline" size="icon" className="shrink-0 border-gray-200 bg-white" asChild>
+          <Button variant="outline" size="icon" className="shrink-0 border-border bg-background" asChild>
             <Link href="/competitors" aria-label="Back to competitors">
               <ArrowLeft className="size-4" />
             </Link>
@@ -90,7 +90,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
             {canEdit ? (
               <Button
                 variant="outline"
-                className="gap-1 border-gray-200 bg-white"
+                className="gap-1 border-border bg-background"
                 onClick={() => setFormOpen(true)}
                 disabled={!competitor}
               >
@@ -123,7 +123,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
       )}
       {!isLoading && competitor && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="rounded-lg border border-gray-200 bg-white">
+          <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Overview</CardTitle>
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -174,7 +174,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg border border-gray-200 bg-white">
+          <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Address & map</CardTitle>
             </CardHeader>
@@ -203,7 +203,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg border border-gray-200 bg-white md:col-span-2">
+          <Card className="rounded-lg border border-border bg-background md:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Intelligence</CardTitle>
             </CardHeader>
@@ -221,7 +221,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
             </CardContent>
           </Card>
           {(competitor.createdAt || competitor.updatedAt) && (
-            <Card className="rounded-lg border border-gray-200 bg-white md:col-span-2">
+            <Card className="rounded-lg border border-border bg-background md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold">Record</CardTitle>
               </CardHeader>

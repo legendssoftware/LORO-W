@@ -68,7 +68,7 @@ export function ClientsContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="clients-page-header"
@@ -123,7 +123,7 @@ export function ClientsContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-white border-gray-200"
+                className="bg-background border-border"
                 disabled={isFetchingNext}
                 onClick={() => clientsQuery.fetchNextPage()}
               >

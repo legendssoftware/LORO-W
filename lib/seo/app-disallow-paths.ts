@@ -1,0 +1,23 @@
+/** App and auth paths blocked in robots.txt (noindex is still set per route). */
+export const APP_DISALLOW_PATHS = [
+  '/dashboard',
+  '/visits',
+  '/leads',
+  '/pipeline',
+  '/planning',
+  '/clients',
+  '/competitors',
+  '/staff',
+  '/iot',
+  '/claims',
+  '/reports',
+  '/visualiser',
+  '/settings',
+  '/store',
+  '/orders',
+  '/projects',
+  '/account',
+  '/sign-in',
+  '/sign-up',
+  '/forgot-password',
+] as const;

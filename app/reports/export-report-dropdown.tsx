@@ -186,7 +186,7 @@ export function ExportReportDropdown({ singleDate }: ExportReportDropdownProps) 
                 <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 bg-white border-gray-200 text-foreground gap-1.5"
+                    className="h-9 border-border bg-background text-foreground gap-1.5"
                     disabled={loading}
                 >
                     {loading ? (

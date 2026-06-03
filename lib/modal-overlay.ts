@@ -1,5 +1,5 @@
 /** Blurred backdrop used by modals, sheets, and sidebar overlays. */
-export const MODAL_OVERLAY_CLASS = 'bg-white/20 backdrop-blur-sm';
+export const MODAL_OVERLAY_CLASS = 'bg-background/40 backdrop-blur-sm';
 
 /** Canonical red circular close button for dialogs and sheets. */
 export const DIALOG_CLOSE_BUTTON_CLASS =

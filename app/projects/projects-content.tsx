@@ -19,7 +19,7 @@ export function ProjectsContent() {
 
   return (
     <div className={appPageScrollWrapClass}>
-      <main className={`${appPageMainClass} lg:max-w-[88rem]`}>
+      <main className={appPageMainClass}>
         <ClientPortalLoading>
           {(client) => <ClientProjectsContent client={client} />}
         </ClientPortalLoading>

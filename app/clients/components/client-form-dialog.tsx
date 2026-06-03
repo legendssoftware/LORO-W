@@ -234,7 +234,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Company / client name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-white border-gray-200" />
+                          <Input {...field} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -247,7 +247,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Contact person</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-white border-gray-200" />
+                          <Input {...field} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -261,7 +261,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" className="bg-white border-gray-200" />
+                            <Input {...field} type="email" className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -274,7 +274,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="+27 11 123 4567" className="bg-white border-gray-200" />
+                            <Input {...field} placeholder="+27 11 123 4567" className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -288,7 +288,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Alternative phone (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-white border-gray-200" />
+                          <Input {...field} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -301,7 +301,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Website (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="bg-white border-gray-200" />
+                          <Input {...field} placeholder="https://…" className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -315,7 +315,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Category</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -328,7 +328,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Industry (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -346,7 +346,7 @@ export function ClientFormDialog({
                           onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
                         >
                           <FormControl>
-                            <SelectTrigger className="bg-white border-gray-200">
+                            <SelectTrigger className="bg-background border-border">
                               <SelectValue placeholder="None" />
                             </SelectTrigger>
                           </FormControl>
@@ -370,7 +370,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Description (optional)</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} className="bg-white border-gray-200 resize-y min-h-[72px]" />
+                          <Textarea {...field} rows={3} className="bg-background border-border resize-y min-h-[72px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -384,7 +384,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Street</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-white border-gray-200" />
+                          <Input {...field} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -398,7 +398,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Suburb</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -411,7 +411,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -426,7 +426,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Province / state</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -439,7 +439,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Country</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-white border-gray-200" />
+                            <Input {...field} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -453,7 +453,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Postal code (4 digits)</FormLabel>
                         <FormControl>
-                          <Input {...field} maxLength={4} className="bg-white border-gray-200" />
+                          <Input {...field} maxLength={4} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

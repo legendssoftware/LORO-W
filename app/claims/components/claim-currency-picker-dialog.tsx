@@ -38,7 +38,7 @@ export function ClaimCurrencyPickerTrigger({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'h-9 w-full justify-between gap-2 border-gray-200 bg-white font-normal',
+        'h-9 w-full justify-between gap-2 border-border bg-background font-normal',
         className
       )}
     >
@@ -100,7 +100,7 @@ export function ClaimCurrencyPickerDialog({
             autoCorrect="off"
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-gray-200">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border">
           {filteredRows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-sm text-muted-foreground">
               <Search className="size-5 opacity-50" />

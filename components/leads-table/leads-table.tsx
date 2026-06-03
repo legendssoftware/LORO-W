@@ -415,7 +415,7 @@ export function LeadsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded border bg-white">
+    <div className="overflow-x-auto rounded border border-border bg-card">
       <div className="divide-y divide-border">
         {groupedByOwner.map((group, index) => {
           const isExpanded = expandedOwnerKey === group.ownerKey;
@@ -440,7 +440,7 @@ export function LeadsTable({
                   <div
                     className={cn(
                       'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                      index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
+                      index % 2 === 1 ? 'bg-muted/50' : 'bg-card',
                       isExpanded && 'bg-muted/30'
                     )}
                     {...(index === 0 ? { 'data-tour': 'leads-first-group-row' } : {})}
@@ -516,7 +516,7 @@ export function LeadsTable({
                           <TableHead className="whitespace-nowrap">Activity</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                      <TableBody className="[&>tr:nth-child(odd)]:bg-muted/50">
                         {group.leads.map((lead, leadIndex) => {
                           const touch = effectiveLeadTouchDate(lead);
                           const {

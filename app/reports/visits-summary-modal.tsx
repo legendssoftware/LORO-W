@@ -102,7 +102,7 @@ export function VisitsSummaryModal({
           {checkIns.length === 0 ? (
             <p className="text-center text-black py-4">No visits to show.</p>
           ) : (
-            <div className="rounded-sm overflow-x-auto bg-white">
+            <div className="rounded-sm overflow-x-auto bg-card">
               <div className="divide-y divide-border">
                 {groupedByOwner.map((group, index) => {
                   const isExpanded = expandedOwnerKey === group.ownerKey;
@@ -127,7 +127,7 @@ export function VisitsSummaryModal({
                           <div
                             className={cn(
                               'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                              index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
+                              index % 2 === 1 ? 'bg-muted/50' : 'bg-card',
                               isExpanded && 'bg-muted/30'
                             )}
                           >
@@ -174,7 +174,7 @@ export function VisitsSummaryModal({
                                   ))}
                                 </TableRow>
                               </TableHeader>
-                              <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                              <TableBody className="[&>tr:nth-child(odd)]:bg-muted/50">
                                 {group.visits.map((c) => (
                                   <TableRow
                                     key={c.uid}

@@ -192,7 +192,7 @@ function KpiCard({
   iconClassName?: string;
 }) {
   return (
-    <Card className="border border-gray-200 bg-white shadow-sm">
+    <Card className="border border-border bg-background shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
@@ -638,7 +638,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
             <h2 className="text-lg font-semibold text-foreground">
               Lead activity
             </h2>
-            <Card className="min-w-0 border-gray-200 bg-white">
+            <Card className="min-w-0 border-border bg-background">
               <CardHeader>
                 <CardTitle>
                   {useHourlyActivity
@@ -754,7 +754,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               Pipeline and status
             </h2>
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <Card className="min-w-0 border-gray-200 bg-white">
+              <Card className="min-w-0 border-border bg-background">
                 <CardHeader>
                   <CardTitle>Leads by status</CardTitle>
                   <CardDescription>
@@ -777,7 +777,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
                 </CardContent>
               </Card>
 
-              <Card className="min-w-0 border-gray-200 bg-white">
+              <Card className="min-w-0 border-border bg-background">
                 <CardHeader>
                   <CardTitle>Value by status</CardTitle>
                   <CardDescription>
@@ -839,7 +839,7 @@ export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) 
               </Card>
             </div>
 
-            <Card className="min-w-0 border-gray-200 bg-white">
+            <Card className="min-w-0 border-border bg-background">
               <CardHeader>
                 <CardTitle>Lead activity by user</CardTitle>
                 <CardDescription>
@@ -1021,7 +1021,7 @@ function BreakdownPieCard({
   );
 
   return (
-    <Card className="min-w-0 border-gray-200 bg-white">
+    <Card className="min-w-0 border-border bg-background">
       <CardHeader className="flex flex-row items-start gap-2">
         <Icon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>
@@ -1086,7 +1086,7 @@ function BreakdownBarCard({
   } satisfies ChartConfig;
 
   return (
-    <Card className="min-w-0 border-gray-200 bg-white">
+    <Card className="min-w-0 border-border bg-background">
       <CardHeader className="flex flex-row items-start gap-2">
         <Icon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>

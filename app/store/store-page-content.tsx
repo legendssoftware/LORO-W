@@ -19,7 +19,7 @@ export function StorePageContent() {
 
   return (
     <div className={appPageScrollWrapClass}>
-      <main className={`${appPageMainClass} lg:max-w-[88rem]`}>
+      <main className={appPageMainClass}>
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="store-page-header"

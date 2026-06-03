@@ -239,7 +239,7 @@ export function StaffContent() {
 
   if (profile && !isStaff) {
     return (
-      <div className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6">
+      <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
         <p className="text-center text-muted-foreground py-12">
           Staff management is available to staff only.
         </p>
@@ -249,7 +249,7 @@ export function StaffContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
+      <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
         <div className="shrink-0 mb-6" data-tour="staff-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
             Staff

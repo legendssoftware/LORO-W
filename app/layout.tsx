@@ -9,7 +9,10 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { InactivityGuard } from '@/components/inactivity-guard';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ConditionalLayoutShell } from '@/components/conditional-layout-shell';
+import { ThemeProvider } from '@/components/theme-provider';
+import type { Metadata } from 'next';
 import { defaultMetadata } from '@/lib/seo';
+import { buildSiteVerificationMetadata } from '@/lib/seo/site-verification';
 import './globals.css';
 
 const urbanist = Urbanist({
@@ -27,7 +30,10 @@ const lora = Lora({
   style: ['normal', 'italic'],
 });
 
-export const metadata = defaultMetadata;
+export const metadata: Metadata = {
+  ...defaultMetadata,
+  ...buildSiteVerificationMetadata(),
+};
 
 function organisationRefFromPublicMetadata(
   user: Awaited<ReturnType<typeof currentUser>>,
@@ -50,38 +56,46 @@ export default async function RootLayout({
 
   return (
     <ClerkProvider afterSignOutUrl="/sign-in" dynamic>
-      <html lang="en" className="light" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
-          <OrgIdProvider initialOrgId={initialOrgId}>
-          <QueryProvider>
-          <TooltipProvider>
-            <SidebarProvider defaultOpen={false}>
-              <InactivityGuard />
-              <ConditionalLayoutShell>
-                <Suspense
-                  fallback={
-                    <div className="flex min-h-[200px] items-center justify-center">
-                      <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    </div>
-                  }
-                >
-                  {children}
-                </Suspense>
-              </ConditionalLayoutShell>
-            </SidebarProvider>
-            <Toaster
-            position="bottom-center"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#1f2937',
-                color: '#ffffff',
-              },
-            }}
-          />
-          </TooltipProvider>
-          </QueryProvider>
-          </OrgIdProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <OrgIdProvider initialOrgId={initialOrgId}>
+            <QueryProvider>
+            <TooltipProvider>
+              <SidebarProvider defaultOpen={false}>
+                <InactivityGuard />
+                <ConditionalLayoutShell>
+                  <Suspense
+                    fallback={
+                      <div className="flex min-h-[200px] items-center justify-center">
+                        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      </div>
+                    }
+                  >
+                    {children}
+                  </Suspense>
+                </ConditionalLayoutShell>
+              </SidebarProvider>
+              <Toaster
+              position="bottom-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: 'var(--popover)',
+                  color: 'var(--popover-foreground)',
+                  border: '1px solid var(--border)',
+                },
+              }}
+            />
+            </TooltipProvider>
+            </QueryProvider>
+            </OrgIdProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

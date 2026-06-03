@@ -68,7 +68,7 @@ export function ClaimFoldersPanel({
                 'min-w-[200px] shrink-0 cursor-pointer border transition-colors',
                 selected
                   ? 'border-violet-400 bg-violet-50/60'
-                  : 'border-gray-200 bg-white hover:border-violet-200'
+                  : 'border-border bg-background hover:border-violet-200'
               )}
               onClick={() => onSelectGroup(String(g.uid))}
             >

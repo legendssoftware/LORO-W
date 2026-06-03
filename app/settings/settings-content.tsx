@@ -386,11 +386,11 @@ function normalizeBranchAddressForSave(f: {
   };
 }
 
-const PANEL_CLASS = 'rounded border border-gray-200 bg-white';
+const PANEL_CLASS = 'rounded border border-border bg-card';
 
 /** Add-branch dialog: smaller gray placeholders; keep input text at text-sm on md+ */
 const CREATE_BRANCH_INPUT_CLASS =
-  'border-gray-200 bg-white text-sm md:text-sm placeholder:text-xs placeholder:text-gray-500';
+  'border-border bg-background text-sm md:text-sm placeholder:text-xs placeholder:text-muted-foreground';
 
 export function SettingsContent() {
   const client = useApiClient();
@@ -1328,7 +1328,7 @@ export function SettingsContent() {
                       setProfileForm((s) => ({ ...s, status: v }))
                     }
                   >
-                    <SelectTrigger id="org-status" className="max-w-xs bg-white border-gray-200">
+                    <SelectTrigger id="org-status" className="max-w-xs bg-background border-border">
                       {/* 
                         Radix SelectValue renders the selected SelectItem's ItemText.
                         Our SelectItems include an icon + label, so rendering an icon here
@@ -1368,7 +1368,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, email: e.target.value }))
                         }
-                        className="bg-white border-gray-200"
+                        className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1379,7 +1379,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, phone: e.target.value }))
                         }
-                        className="bg-white border-gray-200"
+                        className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -1390,7 +1390,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, website: e.target.value }))
                         }
-                        className="bg-white border-gray-200"
+                        className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -1433,7 +1433,7 @@ export function SettingsContent() {
                 </Row>
               </div>
               <div
-                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-border px-6 py-4"
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetProfile}>
@@ -1544,7 +1544,7 @@ export function SettingsContent() {
                           }))
                         }
                         placeholder="Alt text"
-                        className="bg-white border-gray-200"
+                        className="bg-background border-border"
                       />
                     </div>
                   </div>
@@ -1572,7 +1572,7 @@ export function SettingsContent() {
                 </Row>
               </div>
               <div
-                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-border px-6 py-4"
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetAppearance}>
@@ -1951,7 +1951,7 @@ export function SettingsContent() {
                   </div>
                 </Row>
                 <Separator />
-                <Collapsible className="rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                <Collapsible className="rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
                     <span>Contact &amp; address (settings JSON)</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
@@ -1970,7 +1970,7 @@ export function SettingsContent() {
                               contactEmail: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1985,7 +1985,7 @@ export function SettingsContent() {
                             }))
                           }
                           placeholder="+27"
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1999,7 +1999,7 @@ export function SettingsContent() {
                               contactPhoneNumber: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
@@ -2013,7 +2013,7 @@ export function SettingsContent() {
                               contactWebsite: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       {(
@@ -2037,7 +2037,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            className="border-gray-200 bg-white"
+                            className="border-border bg-background"
                           />
                         </div>
                       ))}
@@ -2045,7 +2045,7 @@ export function SettingsContent() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
                     <span>Branding (settings JSON, separate from Appearance tab)</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
@@ -2077,7 +2077,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            className="border-gray-200 bg-white"
+                            className="border-border bg-background"
                           />
                         </div>
                       ))}
@@ -2085,7 +2085,7 @@ export function SettingsContent() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
                     <span>Business profile</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
@@ -2103,7 +2103,7 @@ export function SettingsContent() {
                               businessName: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
@@ -2117,7 +2117,7 @@ export function SettingsContent() {
                               businessReg: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
@@ -2131,7 +2131,7 @@ export function SettingsContent() {
                               businessTaxId: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
@@ -2145,7 +2145,7 @@ export function SettingsContent() {
                               businessIndustry: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
@@ -2162,7 +2162,7 @@ export function SettingsContent() {
                             }))
                           }
                         >
-                          <SelectTrigger className="w-full border-gray-200 bg-white">
+                          <SelectTrigger className="w-full border-border bg-background">
                             <SelectValue placeholder="Not set" />
                           </SelectTrigger>
                           <SelectContent>
@@ -2178,7 +2178,7 @@ export function SettingsContent() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible className="mt-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2">
+                <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
                     <span>Social links &amp; performance targets</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
@@ -2206,11 +2206,11 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            className="border-gray-200 bg-white"
+                            className="border-border bg-background"
                           />
                         </div>
                       ))}
-                      <div className="space-y-2 sm:col-span-2 border-t border-gray-200 pt-3">
+                      <div className="space-y-2 sm:col-span-2 border-t border-border pt-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Revenue targets (optional numbers)
                         </p>
@@ -2235,7 +2235,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            className="border-gray-200 bg-white"
+                            className="border-border bg-background"
                           />
                         </div>
                       ))}
@@ -2253,7 +2253,7 @@ export function SettingsContent() {
                             }))
                           }
                         >
-                          <SelectTrigger className="w-full border-gray-200 bg-white">
+                          <SelectTrigger className="w-full border-border bg-background">
                             <SelectValue placeholder="Not set" />
                           </SelectTrigger>
                           <SelectContent>
@@ -2276,7 +2276,7 @@ export function SettingsContent() {
                               perfHistDays: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
@@ -2291,7 +2291,7 @@ export function SettingsContent() {
                               perfGrowthPct: e.target.value,
                             }))
                           }
-                          className="border-gray-200 bg-white"
+                          className="border-border bg-background"
                         />
                       </div>
                     </div>
@@ -2299,7 +2299,7 @@ export function SettingsContent() {
                 </Collapsible>
               </div>
               <div
-                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-border px-6 py-4"
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetRegional}>
@@ -2373,7 +2373,7 @@ export function SettingsContent() {
                           'flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm',
                           hoursForm.weekly[key]
                             ? 'border-green-600 bg-green-600/10'
-                            : 'border-gray-200'
+                            : 'border-border'
                         )}
                       >
                         <input
@@ -2419,7 +2419,7 @@ export function SettingsContent() {
                 </Row>
                 <Separator />
                 <Collapsible defaultOpen className="mt-6 space-y-3">
-                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-gray-200 bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-border bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
                     <span>Detailed weekly schedule</span>
                     <ChevronDown className="size-4 shrink-0 transition-transform" />
                   </CollapsibleTrigger>
@@ -2580,7 +2580,7 @@ export function SettingsContent() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="gap-2 bg-white"
+                      className="gap-2"
                       onClick={() =>
                         setHoursForm((s) => ({
                           ...s,
@@ -2603,7 +2603,7 @@ export function SettingsContent() {
                 </Row>
               </div>
               <div
-                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-border px-6 py-4"
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetHours}>
@@ -2651,7 +2651,7 @@ export function SettingsContent() {
                         variant="outline"
                         role="combobox"
                         aria-expanded={branchPickerOpen}
-                        className="h-10 w-full max-w-xl justify-between bg-white border-gray-200 font-normal"
+                        className="h-10 w-full max-w-xl justify-between bg-background border-border font-normal"
                         disabled={branchTabs.length === 0}
                       >
                         {selectedBranch
@@ -2853,7 +2853,7 @@ export function SettingsContent() {
                           }
                           autoCapitalize="off"
                           autoCorrect="off"
-                          className="bg-white border-gray-200 normal-case"
+                          className="bg-background border-border normal-case"
                         />
                       </div>
                     ))}
@@ -2861,7 +2861,7 @@ export function SettingsContent() {
                 </section>
               </div>
               <div
-                className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-border px-6 py-4"
                 data-tour="settings-panel-actions"
               >
                 <Button

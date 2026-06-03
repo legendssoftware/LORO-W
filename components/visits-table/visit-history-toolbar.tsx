@@ -55,7 +55,7 @@ import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 
 const selectTriggerClass =
-  'h-9 w-full bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
 /** Matches icons used in `TYPE_OF_BUSINESS_OPTIONS` (lucide + class components). */
 export type VisitHistoryBusinessIcon = ComponentType<{ className?: string; size?: number }>;
@@ -94,7 +94,7 @@ function VisitMapTableToggleButton() {
     <Button
       variant={viewMode === 'map' ? 'default' : 'outline'}
       size="sm"
-      className="h-9 shrink-0 gap-1.5 border-gray-200 bg-white text-foreground"
+      className="h-9 shrink-0 gap-1.5 border-border bg-background text-foreground"
       onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
     >
       {viewMode === 'map' ? (
@@ -313,7 +313,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
             e.stopPropagation();
             resetDateRangeToDefault();
           }}
-          className="ml-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="ml-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Reset to default range"
         >
           <XIcon className="size-4 text-muted-foreground" />
@@ -482,7 +482,7 @@ export function VisitHistoryToolbar({
           <button
             type="button"
             onClick={() => setSearchQuery('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Clear search"
           >
             <XIcon className="size-4" />
@@ -501,7 +501,7 @@ export function VisitHistoryToolbar({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 w-9 shrink-0 border-gray-200 bg-white p-0 text-foreground"
+              className="h-9 w-9 shrink-0 border-border bg-background p-0 text-foreground"
               onClick={onOpenVisitsSummary}
               disabled={visitsSummaryDisabled}
               aria-label="View visits summary"

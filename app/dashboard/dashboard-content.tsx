@@ -303,7 +303,7 @@ export function DashboardContent() {
                   <button
                     type="button"
                     onClick={() => setAttendanceModalUser(currentUserForModal)}
-                    className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-gray-200 bg-white px-2 text-sm text-foreground hover:bg-gray-50 md:w-auto md:px-3"
+                    className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-border bg-background px-2 text-sm text-foreground hover:bg-accent md:w-auto md:px-3"
                     aria-label="View attendance logs"
                     data-tour="attendance-logs-button"
                   >
