@@ -286,7 +286,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Competitor name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="border-gray-200 bg-white" />
+                          <Input {...field} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -300,7 +300,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Contact email (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" className="border-gray-200 bg-white" />
+                            <Input {...field} type="email" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -313,7 +313,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Contact phone (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -327,7 +327,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Website (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="border-gray-200 bg-white" />
+                          <Input {...field} placeholder="https://…" className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -341,7 +341,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Industry (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -355,7 +355,7 @@ export function CompetitorFormDialog({
                           <FormLabel>Status</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger className="border-gray-200 bg-white">
+                              <SelectTrigger className="border-border bg-background">
                                 <SelectValue placeholder="Status" />
                               </SelectTrigger>
                             </FormControl>
@@ -381,7 +381,7 @@ export function CompetitorFormDialog({
                           <FormLabel>Threat level (optional)</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger className="border-gray-200 bg-white">
+                              <SelectTrigger className="border-border bg-background">
                                 <SelectValue placeholder="Not set" />
                               </SelectTrigger>
                             </FormControl>
@@ -402,7 +402,7 @@ export function CompetitorFormDialog({
                       control={form.control}
                       name="isDirect"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-200 p-3">
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Direct competitor</FormLabel>
                           </div>
@@ -423,7 +423,7 @@ export function CompetitorFormDialog({
                           <Textarea
                             {...field}
                             rows={3}
-                            className="min-h-[72px] resize-y border-gray-200 bg-white"
+                            className="min-h-[72px] resize-y border-border bg-background"
                           />
                         </FormControl>
                         <FormMessage />
@@ -438,7 +438,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Latitude (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -451,7 +451,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Longitude (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -465,7 +465,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Logo URL (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="border-gray-200 bg-white" />
+                          <Input {...field} placeholder="https://…" className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -476,7 +476,7 @@ export function CompetitorFormDialog({
                     control={form.control}
                     name="enableGeofence"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-200 p-3">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
                         <FormLabel className="text-base">Enable geofence</FormLabel>
                         <FormControl>
                           <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -493,7 +493,7 @@ export function CompetitorFormDialog({
                           <FormLabel>Geofence type</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger className="border-gray-200 bg-white">
+                              <SelectTrigger className="border-border bg-background">
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
@@ -516,7 +516,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Radius (m)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={100} max={5000} className="border-gray-200 bg-white" />
+                            <Input {...field} type="number" min={100} max={5000} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -531,7 +531,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Street</FormLabel>
                         <FormControl>
-                          <Input {...field} className="border-gray-200 bg-white" />
+                          <Input {...field} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -545,7 +545,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Suburb</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -558,7 +558,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -571,7 +571,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Province</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -584,7 +584,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Country</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -597,7 +597,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Postal code</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-gray-200 bg-white" />
+                            <Input {...field} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -606,7 +606,7 @@ export function CompetitorFormDialog({
                   </div>
                 </div>
               </div>
-              <DialogFooter className="shrink-0 gap-2 border-t border-gray-200 px-6 py-3">
+              <DialogFooter className="shrink-0 gap-2 border-t border-border px-6 py-3">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>

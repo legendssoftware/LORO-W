@@ -264,7 +264,7 @@ export function ClaimCreateDialog({
             />
           </div>
           {folderUid !== 'none' ? (
-            <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+            <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
               Claims added to a folder stay in draft until you submit the folder
               from the Claims page. No emails are sent while you keep adding
               receipts.

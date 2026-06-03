@@ -15,7 +15,7 @@ export function CompetitorCardSkeleton() {
   return (
     <Card
       className={cn(
-        'rounded-lg border border-gray-200 bg-white',
+        'rounded-lg border border-border bg-background',
         isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
       )}
     >
@@ -77,7 +77,7 @@ export function CompetitorCard({
           : undefined
       }
       className={cn(
-        'rounded-lg border border-gray-200 bg-white transition-shadow',
+        'rounded-lg border border-border bg-background transition-shadow',
         onClick && 'cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isMobile ? 'min-h-[140px]' : 'min-h-[180px]'
       )}
@@ -89,7 +89,7 @@ export function CompetitorCard({
         )}
       >
         <div className="flex min-w-0 items-start gap-3">
-          <Avatar className="size-10 shrink-0 border border-gray-200">
+          <Avatar className="size-10 shrink-0 border border-border">
             <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
               {initials || <Swords className="size-4" />}
             </AvatarFallback>

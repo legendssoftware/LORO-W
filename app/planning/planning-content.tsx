@@ -174,7 +174,7 @@ export function PlanningContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="planning-page-header"

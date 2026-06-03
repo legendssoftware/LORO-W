@@ -415,7 +415,7 @@ export function LeadsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded border bg-white">
+    <div className="overflow-x-auto rounded border border-border bg-card">
       <div className="divide-y divide-border">
         {groupedByOwner.map((group, index) => {
           const isExpanded = expandedOwnerKey === group.ownerKey;
@@ -440,7 +440,6 @@ export function LeadsTable({
                   <div
                     className={cn(
                       'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                      index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
                       isExpanded && 'bg-muted/30'
                     )}
                     {...(index === 0 ? { 'data-tour': 'leads-first-group-row' } : {})}
@@ -499,7 +498,7 @@ export function LeadsTable({
                 </CollapsibleTrigger>
                 <CollapsibleContent id={contentId} className="overflow-hidden">
                   <div className="bg-muted/20 border-t border-border overflow-x-auto">
-                    <Table className="min-w-max">
+                    <Table className="min-w-max border-separate border-spacing-y-1">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="max-w-[200px] whitespace-nowrap md:max-w-[240px]">
@@ -516,7 +515,7 @@ export function LeadsTable({
                           <TableHead className="whitespace-nowrap">Activity</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                      <TableBody>
                         {group.leads.map((lead, leadIndex) => {
                           const touch = effectiveLeadTouchDate(lead);
                           const {
@@ -533,21 +532,23 @@ export function LeadsTable({
                               ? { 'data-tour': 'leads-first-lead-row' }
                               : {})}
                             className={cn(
-                              'border-b-0',
-                              isTodayTouch && '!bg-emerald-50/50',
-                              isStaleRed && '!bg-red-50/50',
-                              isStaleAmber && '!bg-amber-50/50',
+                              'border-b-0 bg-transparent',
+                              isTodayTouch &&
+                                '!bg-emerald-50/50 dark:!bg-emerald-950/30',
+                              isStaleRed && '!bg-red-50/50 dark:!bg-red-950/30',
+                              isStaleAmber &&
+                                '!bg-amber-50/50 dark:!bg-amber-950/30',
                               onLeadClick &&
                                 'cursor-pointer transition-colors hover:bg-muted/50',
                               isTodayTouch &&
                                 onLeadClick &&
-                                'hover:!bg-emerald-50/70',
+                                'hover:!bg-emerald-50/70 dark:hover:!bg-emerald-950/40',
                               isStaleRed &&
                                 onLeadClick &&
-                                'hover:!bg-red-50/70',
+                                'hover:!bg-red-50/70 dark:hover:!bg-red-950/40',
                               isStaleAmber &&
                                 onLeadClick &&
-                                'hover:!bg-amber-50/70'
+                                'hover:!bg-amber-50/70 dark:hover:!bg-amber-950/40'
                             )}
                             role={onLeadClick ? 'button' : undefined}
                             tabIndex={onLeadClick ? 0 : undefined}

@@ -174,7 +174,7 @@ export function DashboardTargetsRadial({
     return (
       <div
         className={cn(
-          'flex min-h-[200px] flex-col justify-center rounded-lg border border-gray-200 bg-card p-4',
+          'flex min-h-[200px] flex-col justify-center rounded-lg border border-border bg-card p-4',
           className
         )}
       >
@@ -187,7 +187,7 @@ export function DashboardTargetsRadial({
     return (
       <div
         className={cn(
-          'flex flex-col gap-4 rounded-lg border border-gray-200 bg-card p-5',
+          'flex flex-col gap-4 rounded-lg border border-border bg-card p-5',
           className
         )}
       >
@@ -217,7 +217,7 @@ export function DashboardTargetsRadial({
     return (
       <div
         className={cn(
-          'flex min-h-[160px] flex-col justify-center rounded-lg border border-gray-200 bg-card p-4',
+          'flex min-h-[160px] flex-col justify-center rounded-lg border border-border bg-card p-4',
           className
         )}
       >
@@ -230,7 +230,7 @@ export function DashboardTargetsRadial({
     return (
       <div
         className={cn(
-          'flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-card p-8',
+          'flex flex-col items-center justify-center rounded-lg border border-border bg-card p-8',
           className
         )}
       >
@@ -248,7 +248,7 @@ export function DashboardTargetsRadial({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-lg border border-gray-200 bg-card p-5 shadow-sm',
+        'flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm',
         className
       )}
     >

@@ -42,7 +42,7 @@ export function IotDeviceCardSkeleton() {
   const isMobile = useIsMobile();
   if (isMobile) {
     return (
-      <Card className="gap-0 py-0 rounded-lg border border-gray-200 bg-white">
+      <Card className="gap-0 py-0 rounded-lg border border-border bg-background">
         <CardContent className="flex items-start gap-2 p-2">
           <Skeleton className="size-9 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -57,7 +57,7 @@ export function IotDeviceCardSkeleton() {
     );
   }
   return (
-    <Card className="rounded-lg border border-gray-200 bg-white min-h-[220px]">
+    <Card className="rounded-lg border border-border bg-background min-h-[220px]">
       <CardContent className="flex flex-col flex-1 justify-between p-4 min-h-[220px]">
         <div className="flex flex-col gap-3 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -121,7 +121,7 @@ export function IotDeviceCard({
           >
             {formatEnumLabel(device.currentStatus)}
           </Badge>
-          <Badge variant="outline" className="text-[11px] font-medium border-gray-200">
+          <Badge variant="outline" className="text-[11px] font-medium border-border">
             {formatEnumLabel(device.deviceType)}
           </Badge>
         </div>
@@ -157,7 +157,7 @@ export function IotDeviceCard({
     return (
       <Card
         className={cn(
-          'relative gap-0 py-0 bg-white border rounded-lg border-gray-200',
+          'relative gap-0 py-0 rounded-lg',
           onClick && 'cursor-pointer transition-colors hover:opacity-90'
         )}
         {...(onClick ? { onClick } : {})}
@@ -170,7 +170,7 @@ export function IotDeviceCard({
   return (
     <Card
       className={cn(
-        'rounded-lg border border-gray-200 bg-white min-h-[220px]',
+        'rounded-lg border border-border bg-background min-h-[220px]',
         onClick && 'cursor-pointer transition-shadow hover:shadow-sm'
       )}
       {...(onClick ? { onClick } : {})}

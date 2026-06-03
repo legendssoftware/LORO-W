@@ -1737,7 +1737,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
 
   return (
     <>
-      <div className="rounded border overflow-x-auto bg-white">
+      <div className="rounded border border-border overflow-x-auto bg-card">
         <div className="divide-y divide-border">
           {groupedByOwner.map((group, index) => {
             const isExpanded = expandedOwnerKey === group.ownerKey;
@@ -1760,7 +1760,6 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                     <div
                       className={cn(
                         'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
-                        index % 2 === 1 ? 'bg-gray-50/80' : 'bg-white',
                         isExpanded && 'bg-muted/30'
                       )}
                     >
@@ -1782,7 +1781,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                 </CollapsibleTrigger>
                 <CollapsibleContent id={contentId} className="overflow-hidden">
                   <div className="bg-muted/20 border-t border-border overflow-x-auto">
-                    <Table className="min-w-max">
+                    <Table className="min-w-max border-separate border-spacing-y-1">
                       <TableHeader>
                         <TableRow>
                           {VISITS_TABLE_COLUMNS.map((col) => (
@@ -1795,11 +1794,11 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                           ))}
                         </TableRow>
                       </TableHeader>
-                      <TableBody className="[&>tr:nth-child(odd)]:bg-gray-50/80">
+                      <TableBody>
                         {group.visits.map((c) => (
                           <TableRow
                             key={c.uid}
-                            className="cursor-pointer hover:bg-muted/50 transition-colors border-b-0"
+                            className="cursor-pointer border-b-0 bg-transparent transition-colors hover:bg-muted/50"
                             onClick={() => {
                               setSelectedVisit(c);
                               setVisitDetailOpen(true);

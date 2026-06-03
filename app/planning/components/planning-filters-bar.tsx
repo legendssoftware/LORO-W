@@ -45,7 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const selectTriggerClass =
-  'h-9 bg-white border-gray-200 text-foreground sm:w-auto';
+  'h-9 border-border bg-background text-foreground sm:w-auto';
 
 export interface PlanningFilterControlsProps {
   layout: 'row' | 'stack';

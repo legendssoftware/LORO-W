@@ -73,10 +73,10 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
   const addr = client?.address;
 
   return (
-    <div className="container mx-auto max-w-6xl lg:max-w-[88rem] px-3 py-8 sm:px-6">
+    <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="outline" size="icon" className="shrink-0 bg-white border-gray-200" asChild>
+          <Button variant="outline" size="icon" className="shrink-0 bg-background border-border" asChild>
             <Link href="/clients" aria-label="Back to clients">
               <ArrowLeft className="size-4" />
             </Link>
@@ -95,7 +95,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
         <div className="flex flex-wrap gap-2 shrink-0">
           <Button
             variant="outline"
-            className="gap-1 bg-white border-gray-200"
+            className="gap-1 bg-background border-border"
             onClick={() => setFormOpen(true)}
             disabled={!client}
           >
@@ -124,7 +124,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
       )}
       {!isLoading && client && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="rounded-lg border border-gray-200 bg-white">
+          <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Overview</CardTitle>
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -167,7 +167,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg border border-gray-200 bg-white">
+          <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Address</CardTitle>
             </CardHeader>
@@ -187,7 +187,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg border border-gray-200 bg-white md:col-span-2">
+          <Card className="rounded-lg border border-border bg-background md:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Business & financial</CardTitle>
             </CardHeader>
@@ -227,7 +227,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             </CardContent>
           </Card>
           {(client.createdAt || client.updatedAt) && (
-            <Card className="rounded-lg border border-gray-200 bg-white md:col-span-2">
+            <Card className="rounded-lg border border-border bg-background md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold">Record</CardTitle>
               </CardHeader>

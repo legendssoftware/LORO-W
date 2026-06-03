@@ -244,7 +244,7 @@ export function IotDeviceDialog({
                 onBranchChange={setBranchUid}
                 withAllOption={false}
                 emptySelectionLabel="Select branch"
-                triggerClassName="w-full max-w-none justify-between font-normal bg-white"
+                triggerClassName="w-full max-w-none justify-between font-normal"
                 searchPlaceholder="Search branches…"
               />
             </div>
@@ -257,7 +257,7 @@ export function IotDeviceDialog({
                   onValueChange={(v) => setDeviceType(v as DeviceType)}
                   disabled={busy}
                 >
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -276,7 +276,7 @@ export function IotDeviceDialog({
                   onValueChange={(v) => setCurrentStatus(v as DeviceStatus)}
                   disabled={busy}
                 >
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

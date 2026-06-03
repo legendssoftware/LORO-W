@@ -211,7 +211,7 @@ export function LeadsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8 lg:max-w-[88rem]">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="leads-page-header"
@@ -351,7 +351,7 @@ export function LeadsContent() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 border-gray-200 bg-white"
+              className="h-9 border-border bg-background"
               onClick={() => leadsQuery.fetchNextPage()}
               disabled={leadsQuery.isFetchingNextPage}
             >
@@ -363,7 +363,7 @@ export function LeadsContent() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 border-gray-200 bg-white"
+              className="h-9 border-border bg-background"
               onClick={() => unassignedQuery.fetchNextPage()}
               disabled={unassignedQuery.isFetchingNextPage}
             >

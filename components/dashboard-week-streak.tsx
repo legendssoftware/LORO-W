@@ -11,7 +11,7 @@ export function DashboardWeekStreak({ streak }: { streak?: number }) {
   const weekDays = getCurrentWeekDays();
   const value = streak ?? 0;
   return (
-    <div className="rounded border border-gray-200 bg-muted/30 px-4 py-3">
+    <div className="rounded border border-border bg-muted/30 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1 sm:gap-2">
           {weekDays.map((date) => (

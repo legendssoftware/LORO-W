@@ -156,7 +156,7 @@ export function AppHeader() {
               variant="ghost"
               size="icon"
               aria-label="Sign out"
-              className="shrink-0 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
+              className="shrink-0 text-red-600 hover:bg-transparent hover:text-red-700 dark:hover:text-red-400"
               onClick={handleSignOut}
             >
               <PowerIcon className="size-5" />

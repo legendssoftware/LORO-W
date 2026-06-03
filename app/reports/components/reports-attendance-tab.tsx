@@ -708,7 +708,7 @@ export function ReportsAttendanceTab({
           type="button"
           variant="outline"
           size="sm"
-          className="h-9 shrink-0 bg-white border-gray-200 text-foreground gap-2"
+          className="h-9 shrink-0 bg-background border-border text-foreground gap-2"
           onClick={() => setSummaryOpen(true)}
         >
           <BarChart3 className="size-4 shrink-0" />
@@ -777,7 +777,7 @@ export function ReportsAttendanceTab({
               Today and punctuality
             </h2>
             <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="flex min-w-0 flex-col bg-white border-gray-200">
+              <Card className="flex min-w-0 flex-col bg-background border-border">
                 <CardHeader className="items-center pb-0">
                   <CardTitle>Attendance rate today</CardTitle>
                   <CardDescription>
@@ -880,7 +880,7 @@ export function ReportsAttendanceTab({
                 </CardFooter>
               </Card>
 
-              <Card className="min-w-0 bg-white border-gray-200">
+              <Card className="min-w-0 bg-background border-border">
                 <CardHeader>
                   <CardTitle>Late vs on time</CardTitle>
                   <CardDescription>
@@ -908,7 +908,7 @@ export function ReportsAttendanceTab({
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">Trends</h2>
-            <Card className="min-w-0 bg-white border-gray-200">
+            <Card className="min-w-0 bg-background border-border">
               <CardHeader>
                 <CardTitle>Daily on-time rate</CardTitle>
                 <CardDescription>
@@ -1070,7 +1070,7 @@ export function ReportsAttendanceTab({
             <h2 className="text-lg font-semibold text-foreground">
               Clock-in mix
             </h2>
-            <Card className="min-w-0 bg-white border-gray-200">
+            <Card className="min-w-0 bg-background border-border">
               <CardHeader>
                 <CardTitle>Clock-in mode</CardTitle>
                 <CardDescription>
@@ -1174,7 +1174,7 @@ function KpiCard({
   return (
     <Card
       className={cn(
-        'border border-gray-200 bg-white py-4 shadow-none',
+        'border border-border bg-background py-4 shadow-none',
         'gap-3'
       )}
     >

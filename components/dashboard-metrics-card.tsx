@@ -82,7 +82,7 @@ export function DashboardMetricsCard({
             ))}
           </div>
           {showCrmSkeletonBlock ? (
-            <div className="mt-6 border-t border-gray-200 pt-6">
+            <div className="mt-6 border-t border-border pt-6">
               <div className="mb-4 flex items-center gap-2">
                 <Skeleton className="h-5 w-5 rounded-md" />
                 <Skeleton className="h-4 w-48 rounded-md" />
@@ -93,7 +93,7 @@ export function DashboardMetricsCard({
                   !adminNoTargetsCrmSkeleton && 'sm:grid-cols-2'
                 )}
               >
-                <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+                <div className="space-y-3 rounded-lg border border-border p-4">
                   <Skeleton className="h-3 w-32 rounded-md" />
                   <Skeleton className="h-4 w-full rounded-md" />
                   <Skeleton className="h-4 w-full rounded-md" />
@@ -102,7 +102,7 @@ export function DashboardMetricsCard({
                   <Skeleton className="h-4 w-full rounded-md" />
                 </div>
                 {adminNoTargetsCrmSkeleton ? null : (
-                  <div className="min-h-[220px] rounded-lg border border-gray-200 p-4">
+                  <div className="min-h-[220px] rounded-lg border border-border p-4">
                     <Skeleton className="h-3 w-24 rounded-md" />
                     <Skeleton className="mx-auto mt-6 h-[160px] w-[200px] rounded-full" />
                   </div>
@@ -183,7 +183,7 @@ export function DashboardMetricsCard({
         </div>
 
         {metrics.productivity && showCrmVisitsSection ? (
-          <div className="mt-6 border-t border-gray-200 pt-6">
+          <div className="mt-6 border-t border-border pt-6">
             <div className="mb-4 flex items-center gap-2">
               <MapPinIcon className="size-5 text-primary" aria-hidden />
               <span className="text-sm font-medium uppercase text-foreground">
@@ -196,7 +196,7 @@ export function DashboardMetricsCard({
                 !hideAdminTargetsColumn && 'sm:grid-cols-2'
               )}
             >
-              <div className="rounded-lg border border-gray-200 bg-card p-4">
+              <div className="rounded-lg border border-border bg-card p-4">
                 <p className="text-xs font-medium text-muted-foreground">This month · {monthLabel}</p>
                 <dl className="mt-2 space-y-1.5 text-sm">
                   <div className="flex justify-between gap-2">
