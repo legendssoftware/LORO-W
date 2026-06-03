@@ -3,6 +3,9 @@
  * Aligned with server leads controller and LeadsService.
  */
 
+/** Matches server LeadEntryType. */
+export type LeadEntryTypeApi = 'manual' | 'import';
+
 /** One row in `Lead.activity` / `activityAuditFull` (server `LeadActivityLogEntry`); API omits `system`/LORO rows. */
 export interface LeadActivityLogItem {
   at: string;
@@ -23,6 +26,8 @@ export interface LeadListItem {
   companyName?: string;
   status: string;
   source?: string;
+  /** How the lead entered the system: manual (user-created) or import (CSV). */
+  entryType?: LeadEntryTypeApi;
   notes?: string;
   leadScore?: number;
   temperature?: string;
@@ -143,6 +148,8 @@ export interface GetLeadsParams {
   maxScore?: number;
   priority?: string;
   source?: string;
+  /** Filter by how the lead entered the system. */
+  entryType?: LeadEntryTypeApi;
   ownerId?: number;
   /**
    * `me` (default): leads you own or are assigned to.
@@ -159,6 +166,7 @@ export interface GetLeadsReportParams {
   ownerId?: number;
   status?: string;
   source?: string;
+  entryType?: LeadEntryTypeApi;
   search?: string;
   /**
    * `created` (default): leads created in range.
@@ -181,6 +189,7 @@ export interface GetUnassignedLeadsParams {
   minScore?: number;
   maxScore?: number;
   source?: string;
+  entryType?: LeadEntryTypeApi;
   /**
    * `me` (default): unassigned leads where you appear in assignees.
    * `all`: all unassigned in org (admin or owner only).

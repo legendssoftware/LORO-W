@@ -29,7 +29,7 @@ import { formatUtcYmd } from '@/app/reports/utils/overview-daily-summary';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { useSessionStore } from '@/store/session-store';
-import { canViewAllOrgLeads, canDedupeOrgLeads } from '@/lib/leads-scope';
+import { canViewAllOrgLeads, canDedupeOrgLeads, leadEntryTypeToApiParam } from '@/lib/leads-scope';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,7 @@ export function LeadsContent() {
     useAllTime,
     selectedStatus,
     selectedSource,
+    selectedEntryType,
     selectedUserId,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
@@ -57,6 +58,7 @@ export function LeadsContent() {
     resetDateRangeToDefault,
     setSelectedStatus,
     setSelectedSource,
+    setSelectedEntryType,
     setSelectedUserId,
     setSearchQuery,
   } = useLeadsStore();
@@ -137,6 +139,9 @@ export function LeadsContent() {
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
+    ...(leadEntryTypeToApiParam(selectedEntryType)
+      ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
+      : {}),
     ...(listScope === 'all' &&
     selectedUserId &&
     selectedUserId !== 'all' &&
@@ -160,6 +165,9 @@ export function LeadsContent() {
         }),
     ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
+    ...(leadEntryTypeToApiParam(selectedEntryType)
+      ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
+      : {}),
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
@@ -248,6 +256,7 @@ export function LeadsContent() {
         useAllTime={useAllTime}
         selectedStatus={selectedStatus}
         selectedSource={selectedSource}
+        selectedEntryType={selectedEntryType}
         selectedUserId={selectedUserId}
         dateRangePopoverOpen={dateRangePopoverOpen}
         onDateRangePopoverOpenChange={setDateRangePopoverOpen}
@@ -256,6 +265,7 @@ export function LeadsContent() {
         onResetDateRange={resetDateRangeToDefault}
         onSelectedStatusChange={setSelectedStatus}
         onSelectedSourceChange={setSelectedSource}
+        onSelectedEntryTypeChange={setSelectedEntryType}
         onSelectedUserIdChange={setSelectedUserId}
         searchInput={searchInput}
         onSearchChange={setSearchInput}

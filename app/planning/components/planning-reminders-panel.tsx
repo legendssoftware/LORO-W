@@ -2,10 +2,14 @@
 
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { Bell, AlertTriangle, CalendarClock } from 'lucide-react';
+import { Bell, AlertTriangle, CalendarClock, ChevronDown } from 'lucide-react';
 import { useTasks } from '@/api/hooks';
 import { formatUtcYmd, utcToday } from '@/app/reports/utils/overview-daily-summary';
-import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/api/types/tasks';
 
@@ -73,41 +77,56 @@ export function PlanningRemindersPanel({
     title: string,
     icon: React.ReactNode,
     tasks: Task[],
-    tone?: 'danger' | 'default'
+    options?: { tone?: 'danger' | 'default'; defaultOpen?: boolean }
   ) {
+    const tone = options?.tone;
+    const defaultOpen = options?.defaultOpen ?? false;
+
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          {icon}
-          <span>{title}</span>
-          <span className="text-muted-foreground">({tasks.length})</span>
-        </div>
-        {tasks.length === 0 ? (
-          <p className="text-xs text-muted-foreground">None</p>
-        ) : (
-          <ul className="space-y-1">
-            {tasks.slice(0, 8).map((t) => (
-              <li key={t.uid}>
-                <button
-                  type="button"
-                  className={cn(
-                    'w-full rounded-md border px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted/60',
-                    tone === 'danger' && 'border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/30'
-                  )}
-                  onClick={() => onOpenTask(t)}
-                >
-                  <span className="font-medium line-clamp-1">{t.title}</span>
-                  {t.deadline && (
-                    <span className="mt-0.5 block text-muted-foreground">
-                      {format(new Date(t.deadline), 'PPp')}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Collapsible defaultOpen={defaultOpen} className="space-y-2">
+        <CollapsibleTrigger
+          className="flex w-full items-center justify-between gap-2 text-sm font-medium text-foreground outline-none hover:opacity-80 [&[data-state=open]>svg:last-child]:rotate-180"
+          aria-label={`${title}, ${tasks.length} tasks`}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {icon}
+            <span>{title}</span>
+            <span className="text-muted-foreground">({tasks.length})</span>
+          </div>
+          <ChevronDown
+            className="size-4 shrink-0 text-muted-foreground transition-transform"
+            aria-hidden
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-2 pt-0">
+          {tasks.length === 0 ? (
+            <p className="text-xs text-muted-foreground">None</p>
+          ) : (
+            <ul className="space-y-1">
+              {tasks.slice(0, 8).map((t) => (
+                <li key={t.uid}>
+                  <button
+                    type="button"
+                    className={cn(
+                      'w-full rounded-md border px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted/60',
+                      tone === 'danger' &&
+                        'border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/30'
+                    )}
+                    onClick={() => onOpenTask(t)}
+                  >
+                    <span className="font-medium line-clamp-1">{t.title}</span>
+                    {t.deadline && (
+                      <span className="mt-0.5 block text-muted-foreground">
+                        {format(new Date(t.deadline), 'PPp')}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
     );
   }
 
@@ -131,13 +150,14 @@ export function PlanningRemindersPanel({
           {renderSection(
             'Due today',
             <CalendarClock className="size-3.5 text-violet-600" />,
-            dueToday
+            dueToday,
+            { defaultOpen: true }
           )}
           {renderSection(
             'Overdue',
             <AlertTriangle className="size-3.5 text-red-600" />,
             overdue,
-            'danger'
+            { tone: 'danger' }
           )}
           {renderSection(
             'Next 7 days',

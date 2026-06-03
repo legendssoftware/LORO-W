@@ -8,6 +8,7 @@ import {
   Filter,
   LayoutGrid,
   Upload as UploadIcon,
+  UserRound,
 } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -48,6 +49,7 @@ import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
 } from '@/lib/lead-form-utils';
+import { LEAD_ENTRY_TYPE_FILTER_OPTIONS } from '@/lib/leads-scope';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -68,6 +70,7 @@ export interface LeadsFilterControlsProps {
   useAllTime: boolean;
   selectedStatus: string;
   selectedSource: string;
+  selectedEntryType: string;
   selectedUserId: string;
   dateRangePopoverOpen: boolean;
   onDateRangePopoverOpenChange: (open: boolean) => void;
@@ -76,6 +79,7 @@ export interface LeadsFilterControlsProps {
   onResetDateRange: () => void;
   onSelectedStatusChange: (v: string) => void;
   onSelectedSourceChange: (v: string) => void;
+  onSelectedEntryTypeChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
 }
 
@@ -89,6 +93,7 @@ export function LeadsFilterControls({
   useAllTime,
   selectedStatus,
   selectedSource,
+  selectedEntryType,
   selectedUserId,
   dateRangePopoverOpen,
   onDateRangePopoverOpenChange,
@@ -97,12 +102,14 @@ export function LeadsFilterControls({
   onResetDateRange,
   onSelectedStatusChange,
   onSelectedSourceChange,
+  onSelectedEntryTypeChange,
   onSelectedUserIdChange,
 }: LeadsFilterControlsProps) {
   const row = layout === 'row';
 
   const statusVal = selectedStatus === '' ? 'all' : selectedStatus;
   const sourceVal = selectedSource === '' ? 'all' : selectedSource;
+  const entryTypeVal = selectedEntryType === '' ? 'all' : selectedEntryType;
 
   const SourceAllIconOption = LEAD_SOURCE_OPTIONS_WITH_ALL[0]?.icon;
 
@@ -173,6 +180,21 @@ export function LeadsFilterControls({
           icon: <Icon className="size-4 shrink-0" size={16} />,
         };
       }),
+    []
+  );
+
+  const entryTypePickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      LEAD_ENTRY_TYPE_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((opt) => ({
+        value: opt.value,
+        label: opt.label,
+        icon:
+          opt.value === 'import' ? (
+            <UploadIcon className="size-4 shrink-0" aria-hidden />
+          ) : (
+            <UserRound className="size-4 shrink-0" aria-hidden />
+          ),
+      })),
     []
   );
 
@@ -369,6 +391,17 @@ export function LeadsFilterControls({
         triggerClassName={smallTrigger}
       />
 
+      <SearchableOptionListPicker
+        selectedValue={entryTypeVal}
+        onValueChange={onSelectedEntryTypeChange}
+        options={entryTypePickerOptions}
+        placeholderLabelWhenAll="All origins"
+        searchPlaceholder="Search origins…"
+        emptyMessage="No origin found."
+        triggerIcon={<UserRound className="size-4 shrink-0" aria-hidden />}
+        triggerClassName={smallTrigger}
+      />
+
       {listScope === 'all' ? (
         <SearchableUserPicker
           users={users}
@@ -509,7 +542,7 @@ export function LeadsFiltersBar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Date range, status, source, and owner for the leads list.
+              Date range, status, source, origin, and owner for the leads list.
             </DialogDescription>
           </DialogHeader>
           <LeadsFilterControls {...filterProps} layout="stack" />

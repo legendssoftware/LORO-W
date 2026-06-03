@@ -14,6 +14,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,18 +34,12 @@ import {
   LORO_WELCOME_SHOWN_SESSION_KEY,
 } from '@/lib/client-session-keys';
 import {
-  MINIMUM_DAILY_REQUIREMENTS_HEADING,
-  MINIMUM_DAILY_REQUIREMENTS_TABLE,
-  NOTICE_CLOSING_PARAGRAPHS,
-  NOTICE_EFFECTIVE_DATE,
-  NOTICE_EMPHASIS_BULLETS,
-  NOTICE_EMPHASIS_INTRO,
-  NOTICE_GREETING,
-  NOTICE_INTRO_PARAGRAPHS,
-  NOTICE_SECTIONS,
-  NOTICE_SUBTITLE,
-  NOTICE_TITLE,
-} from '@/lib/sales-benchmarks-welcome-content';
+  DEFAULT_SALES_BENCHMARKS_LOCALE,
+  SALES_BENCHMARKS_BY_LOCALE,
+  SALES_BENCHMARKS_LANG_ATTR,
+  SALES_BENCHMARKS_LOCALE_OPTIONS,
+  type SalesBenchmarksLocale,
+} from '@/lib/sales-benchmarks-welcome';
 import { useSessionStore } from '@/store/session-store';
 import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 
@@ -64,7 +65,10 @@ export function SalesBenchmarksWelcomeDialog({
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const [open, setOpen] = useState(false);
+  const [locale, setLocale] = useState<SalesBenchmarksLocale>(DEFAULT_SALES_BENCHMARKS_LOCALE);
   const profile = useSessionStore((s) => s.profileData);
+
+  const content = SALES_BENCHMARKS_BY_LOCALE[locale];
 
   const inAppShell = !isFullDocumentRoute(pathname);
   const isDashboard = pathname === '/dashboard';
@@ -88,6 +92,7 @@ export function SalesBenchmarksWelcomeDialog({
     } catch {
       return;
     }
+    setLocale(DEFAULT_SALES_BENCHMARKS_LOCALE);
     setOpen(true);
   }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname, deferForPendingWarning, profile?.workforceType]);
 
@@ -107,58 +112,83 @@ export function SalesBenchmarksWelcomeDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center">
+        <div className="relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center">
+          <div className="absolute top-4 right-4 z-10">
+            <Select
+              value={locale}
+              onValueChange={(value) => setLocale(value as SalesBenchmarksLocale)}
+            >
+              <SelectTrigger
+                className="h-8 w-[140px] border-red-200 bg-white text-xs"
+                aria-label="Notice language"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SALES_BENCHMARKS_LOCALE_OPTIONS.map((option) => (
+                  <SelectItem key={option.id} value={option.id} className="text-xs">
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100">
             <AlertTriangle className="size-7 text-red-700" aria-hidden />
           </div>
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
-            <DialogTitle className="text-lg font-semibold">{NOTICE_TITLE}</DialogTitle>
-            <p className="text-sm font-semibold text-foreground">{NOTICE_SUBTITLE}</p>
+            <DialogTitle className="text-lg font-semibold">{content.noticeTitle}</DialogTitle>
+            <p className="text-sm font-semibold text-foreground">{content.noticeSubtitle}</p>
             <DialogDescription className="text-muted-foreground text-sm">
-              {NOTICE_EFFECTIVE_DATE}
+              {content.effectiveDate}
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          <p className="mb-3 text-sm font-medium text-foreground">{NOTICE_GREETING}</p>
+        <div
+          className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
+          lang={SALES_BENCHMARKS_LANG_ATTR[locale]}
+        >
+          <p className="mb-3 text-sm font-medium text-foreground">{content.greeting}</p>
 
-          {NOTICE_INTRO_PARAGRAPHS.map((paragraph) => (
-            <p key={paragraph} className="mb-3 text-sm text-foreground/90">
+          {content.introParagraphs.map((paragraph, index) => (
+            <p key={`intro-${index}`} className="mb-3 text-sm text-foreground/90">
               {paragraph}
             </p>
           ))}
 
           <section className="mb-5">
-            <p className="mb-2 text-sm font-medium text-foreground">{NOTICE_EMPHASIS_INTRO}</p>
+            <p className="mb-2 text-sm font-medium text-foreground">{content.emphasisIntro}</p>
             <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-              {NOTICE_EMPHASIS_BULLETS.map((line) => (
-                <li key={line}>{line}</li>
+              {content.emphasisBullets.map((line, index) => (
+                <li key={`emphasis-${index}`}>{line}</li>
               ))}
             </ul>
           </section>
 
           <section className="mb-5">
             <h3 className="mb-3 text-base font-semibold text-foreground">
-              {MINIMUM_DAILY_REQUIREMENTS_HEADING}
+              {content.minimumDailyHeading}
             </h3>
             <Table>
               <TableHeader>
                 <TableRow>
-                  {MINIMUM_DAILY_REQUIREMENTS_TABLE.headers.map((header) => (
-                    <TableHead key={header} className="whitespace-nowrap text-xs sm:text-sm">
+                  {content.table.headers.map((header, index) => (
+                    <TableHead key={`header-${index}`} className="whitespace-nowrap text-xs sm:text-sm">
                       {header}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {MINIMUM_DAILY_REQUIREMENTS_TABLE.rows.map((row) => (
-                  <TableRow key={row[0]}>
-                    {row.map((cell, index) => (
+                {content.table.rows.map((row, rowIndex) => (
+                  <TableRow key={`row-${rowIndex}`}>
+                    {row.map((cell, cellIndex) => (
                       <TableCell
-                        key={`${row[0]}-${index}`}
-                        className={index === 0 ? 'min-w-[140px] text-xs sm:text-sm' : 'text-xs sm:text-sm'}
+                        key={`row-${rowIndex}-cell-${cellIndex}`}
+                        className={
+                          cellIndex === 0 ? 'min-w-[140px] text-xs sm:text-sm' : 'text-xs sm:text-sm'
+                        }
                       >
                         {cell}
                       </TableCell>
@@ -169,21 +199,21 @@ export function SalesBenchmarksWelcomeDialog({
             </Table>
           </section>
 
-          {NOTICE_SECTIONS.map((section) => (
-            <section key={section.title} className="mb-5 last:mb-0">
+          {content.sections.map((section, sectionIndex) => (
+            <section key={`section-${sectionIndex}`} className="mb-5 last:mb-0">
               <h3 className="mb-2 text-base font-semibold text-foreground">{section.title}</h3>
               {section.intro ? (
                 <p className="mb-2 text-sm text-foreground/90">{section.intro}</p>
               ) : null}
-              {section.paragraphs?.map((paragraph) => (
-                <p key={paragraph} className="mb-2 text-sm text-foreground/90">
+              {section.paragraphs?.map((paragraph, paragraphIndex) => (
+                <p key={`section-${sectionIndex}-p-${paragraphIndex}`} className="mb-2 text-sm text-foreground/90">
                   {paragraph}
                 </p>
               ))}
               {section.bullets && section.bullets.length > 0 ? (
                 <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-                  {section.bullets.map((line) => (
-                    <li key={line}>{line}</li>
+                  {section.bullets.map((line, bulletIndex) => (
+                    <li key={`section-${sectionIndex}-b-${bulletIndex}`}>{line}</li>
                   ))}
                 </ul>
               ) : null}
@@ -191,11 +221,11 @@ export function SalesBenchmarksWelcomeDialog({
           ))}
 
           <section className="mt-4 border-t border-border pt-4">
-            {NOTICE_CLOSING_PARAGRAPHS.map((paragraph) => (
+            {content.closingParagraphs.map((paragraph, index) => (
               <p
-                key={paragraph}
+                key={`closing-${index}`}
                 className={
-                  paragraph === 'Management'
+                  paragraph === content.closingSignature
                     ? 'text-sm font-semibold text-foreground'
                     : 'mb-2 text-sm text-foreground/90'
                 }
@@ -213,7 +243,7 @@ export function SalesBenchmarksWelcomeDialog({
             className="h-auto min-h-12 w-full max-w-md whitespace-normal px-4 py-3 text-center text-sm leading-snug"
             onClick={() => handleOpenChange(false)}
           >
-            I have read and acknowledged it
+            {content.acknowledgeLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
