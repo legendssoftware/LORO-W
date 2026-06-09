@@ -32,6 +32,7 @@ export function siteOpportunitiesQueryKey(params: GetSiteOpportunitiesParams | u
 
 /**
  * Fetches server-computed site opportunities when the visualiser "Suggested areas" toggle is on.
+ * Uses a 2 min staleTime for passive refetches; explicit `fetchQuery` on toggle always hits the server.
  */
 export function useSiteOpportunities(
   params?: GetSiteOpportunitiesParams,

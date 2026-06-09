@@ -17,6 +17,8 @@ import {
   useUsers,
   useClients,
   useSessionSync,
+  useProvisionUserMutation,
+  useReInviteUserMutation,
   getBranchDisplayLabel,
 } from '@/api/hooks';
 import type { PatchUserBody, PatchUserTargetBody, UserListItem } from '@/api/endpoints/user';
@@ -34,6 +36,7 @@ import {
   UserCheck,
   Briefcase,
   ChevronsUpDown,
+  Mail,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -81,6 +84,7 @@ import {
 } from '@/components/ui/command';
 import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
+import { canManageStaffUsers } from '@/lib/access';
 
 function userSettingsMatchesSearch(haystack: string, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -528,6 +532,8 @@ export default function UserSettingsPage() {
   const deleteUserMutation = useDeleteUser(ref);
   const restoreUserMutation = useRestoreUser(ref);
   const deletePermanentMutation = useDeleteUserPermanently(ref);
+  const provisionUserMutation = useProvisionUserMutation();
+  const reInviteUserMutation = useReInviteUserMutation();
   const { data: branches = [] } = useBranches({ enabled: !!ref });
   const { data: users = [] } = useUsers({ enabled: !!ref, limit: 200 });
   const { data: clients = [] } = useClients({ enabled: !!ref, limit: 100 });
@@ -729,6 +735,28 @@ export default function UserSettingsPage() {
     (v) => typeof v === 'string'
   ) as string[];
 
+  const canInviteOthers = canManageStaffUsers(sessionUser?.accessLevel);
+  const isSelfProfile =
+    sessionUser?.uid != null && user.uid != null && sessionUser.uid === user.uid;
+  const hasClerkLink = Boolean(user.clerkUserId?.trim());
+  const invitePending =
+    provisionUserMutation.isPending || reInviteUserMutation.isPending;
+  const userUid = user.uid;
+
+  async function handleSendInvite() {
+    try {
+      if (hasClerkLink) {
+        const res = await reInviteUserMutation.mutateAsync(userUid);
+        toast.success(res.message);
+      } else {
+        const res = await provisionUserMutation.mutateAsync(userUid);
+        toast.success(`Invite sent to ${res.user.email}`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send invite');
+    }
+  }
+
   return (
     <div className="h-full overflow-auto flex flex-col items-center">
       <div className="max-w-4xl w-full mx-auto px-3 py-5 sm:px-4 sm:py-8">
@@ -843,6 +871,28 @@ export default function UserSettingsPage() {
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   User reference, HR ID, role, access level, workforce type and status.
                 </p>
+                {canInviteOthers && !isSelfProfile && (
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <Badge variant={hasClerkLink ? 'secondary' : 'outline'}>
+                      {hasClerkLink ? 'Clerk linked' : 'Pending sign-in'}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={invitePending}
+                      onClick={handleSendInvite}
+                    >
+                      {invitePending ? (
+                        <Loader2Icon className="size-4 animate-spin" />
+                      ) : (
+                        <Mail className="size-4" />
+                      )}
+                      Send invite
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">

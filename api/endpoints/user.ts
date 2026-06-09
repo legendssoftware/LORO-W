@@ -28,6 +28,7 @@ export interface UserResponse {
   assignedClientIds?: number[];
   userTarget?: Record<string, unknown> | null;
   isDeleted?: boolean;
+  clerkUserId?: string | null;
   [key: string]: unknown;
 }
 
@@ -252,6 +253,68 @@ export async function patchUser(
   const { data } = await client.patch<{ message: string; user: UserResponse }>(
     `/user/${ref}`,
     body
+  );
+  return data;
+}
+
+/** POST /user/invite — create Clerk user, sync DB, send welcome email. */
+export interface InviteUserBody {
+  name: string;
+  surname: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  accessLevel?: string;
+  workforceType?: string;
+  branchId?: number;
+}
+
+export interface InviteUserResponse {
+  message: string;
+  user: {
+    uid: number;
+    email: string;
+    clerkUserId: string;
+    userref: string | null;
+  };
+}
+
+export async function inviteUser(
+  client: AxiosInstance,
+  body: InviteUserBody
+): Promise<InviteUserResponse> {
+  const { data } = await client.post<InviteUserResponse>('/user/invite', body);
+  return data;
+}
+
+/** POST /user/admin/:userId/provision — link existing DB user to Clerk. */
+export async function provisionUser(
+  client: AxiosInstance,
+  userId: number | string
+): Promise<InviteUserResponse> {
+  const { data } = await client.post<InviteUserResponse>(
+    `/user/admin/${userId}/provision`
+  );
+  return data;
+}
+
+/** POST /user/admin/:userId/re-invite — resend invitation email. */
+export interface ReInviteUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    userId: string;
+    email: string;
+    sentBy?: string;
+  };
+}
+
+export async function reInviteUser(
+  client: AxiosInstance,
+  userId: number | string
+): Promise<ReInviteUserResponse> {
+  const { data } = await client.post<ReInviteUserResponse>(
+    `/user/admin/${userId}/re-invite`
   );
   return data;
 }

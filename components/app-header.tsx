@@ -25,13 +25,6 @@ import {
 import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 import { useSidebar } from '@/components/ui/sidebar';
 
-/** Human-readable label for access level (e.g. owner → Owner). */
-function roleLabel(accessLevel: string | undefined): string {
-  if (!accessLevel?.trim()) return 'User';
-  const s = accessLevel.trim();
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-}
-
 export function AppHeader() {
   const { sessionId } = useAuth();
   const { isLoaded, isSignedIn, user } = useUser();
@@ -42,8 +35,6 @@ export function AppHeader() {
   const { backendUserData } = useSessionSync();
   const { toggleSidebar, open, openMobile, isMobile } = useSidebar();
   const sidebarOpen = isMobile ? openMobile : open;
-  const accessLevel = backendUserData?.accessLevel;
-  const role = roleLabel(accessLevel);
 
   const handleSignOut = () => {
     setIsSigningOut(true);
@@ -141,7 +132,6 @@ export function AppHeader() {
                 </p>
                 <p className="truncate text-xs text-muted-foreground" title={user?.primaryEmailAddress?.emailAddress ?? undefined}>
                   {user?.primaryEmailAddress?.emailAddress ?? ''}
-                  {role && role !== 'User' ? ` · ${role}` : ''}
                 </p>
               </div>
               <Avatar className="size-9 shrink-0">

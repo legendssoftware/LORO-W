@@ -257,8 +257,14 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
 /** Sidebar item for org settings (admin / owner / manager only). */
 export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
 
+/** Whether the user may invite or provision staff accounts. */
+export function canManageStaffUsers(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return level === 'admin' || level === 'manager' || level === 'owner';
+}
+
 /**
- * Returns whether the staff dashboard (e.g. expanded nav) is visible.
  * True for admin, manager, owner and other non-restricted roles; false for user and empty.
  */
 export function isStaffDashboardVisible(

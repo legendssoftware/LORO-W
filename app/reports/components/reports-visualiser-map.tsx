@@ -668,6 +668,7 @@ function ReportsVisualiserMapInner({
             markers={allMarkers}
             onSelectMarker={handleSelectMarker}
             onSuggestedAreas={onSuggestedAreas}
+            showOpportunities={showOpportunities}
           />
           <MapZoomBoundsSync
             markers={allMarkers}

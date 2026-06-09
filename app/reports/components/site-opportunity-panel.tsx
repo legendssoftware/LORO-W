@@ -303,6 +303,7 @@ export function SiteOpportunityPanel({
   className,
   isLoading = false,
   isError = false,
+  hasLoadedData = true,
   errorMessage,
 }: {
   catchments: BranchCatchmentOpportunity[];
@@ -315,6 +316,8 @@ export function SiteOpportunityPanel({
   className?: string;
   isLoading?: boolean;
   isError?: boolean;
+  /** When false, hides coverage stats until the first server response arrives. */
+  hasLoadedData?: boolean;
   errorMessage?: string;
 }) {
   const selectedZone =
@@ -346,7 +349,7 @@ export function SiteOpportunityPanel({
             <span className="sr-only">Export CSV</span>
           </Button>
         </div>
-        {!isError ? (
+        {!isError && hasLoadedData ? (
           <p className="text-xs text-muted-foreground">
             Based on {dataQuality.competitorsWithCoords}/
             {dataQuality.totalCompetitors} competitors with map coordinates (

@@ -31,6 +31,7 @@ import {
   getSortedUniqueRegionsFromMarkers,
 } from '@/lib/utils/map-marker-filters';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
+import { debugApi } from '@/lib/api-debug';
 import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-mode';
 import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
@@ -85,7 +86,7 @@ export function ReportsVisualiserTab({
 
   const [showOpportunities, setShowOpportunities] = useState(false);
   const [opportunityMode, setOpportunityMode] =
-    useState<SiteOpportunityMode>('greenfield');
+    useState<SiteOpportunityMode>('both');
   const [opportunitySettings, setOpportunitySettings] =
     useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
   const [debouncedOpportunitySettings, setDebouncedOpportunitySettings] =
@@ -131,16 +132,50 @@ export function ReportsVisualiserTab({
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
 
   const siteOpportunitiesQuery = useSiteOpportunities(siteOpportunityParams, {
-    enabled: mounted && showOpportunities && mapReport.isSuccess,
+    enabled: mounted && showOpportunities,
   });
 
-  const prefetchSiteOpportunities = useCallback(() => {
-    void queryClient.prefetchQuery({
+  const fetchSiteOpportunities = useCallback(() => {
+    void queryClient.fetchQuery({
       queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
       queryFn: () => getSiteOpportunities(apiClient, siteOpportunityParams),
-      staleTime: 2 * 60 * 1000,
+      staleTime: 0,
     });
   }, [apiClient, queryClient, siteOpportunityParams]);
+
+  const opportunitiesBusy =
+    showOpportunities &&
+    (siteOpportunitiesQuery.isPending || siteOpportunitiesQuery.isFetching);
+
+  useEffect(() => {
+    if (
+      showOpportunities &&
+      !siteOpportunitiesQuery.data &&
+      !siteOpportunitiesQuery.isFetching &&
+      !siteOpportunitiesQuery.isError
+    ) {
+      fetchSiteOpportunities();
+    }
+  }, [
+    showOpportunities,
+    siteOpportunitiesQuery.data,
+    siteOpportunitiesQuery.isFetching,
+    siteOpportunitiesQuery.isError,
+    fetchSiteOpportunities,
+  ]);
+
+  useEffect(() => {
+    debugApi('suggested-areas:status', {
+      status: siteOpportunitiesQuery.status,
+      fetchStatus: siteOpportunitiesQuery.fetchStatus,
+      catchments: siteOpportunitiesQuery.data?.catchments.length ?? null,
+      greenfield: siteOpportunitiesQuery.data?.greenfield.length ?? null,
+    });
+  }, [
+    siteOpportunitiesQuery.status,
+    siteOpportunitiesQuery.fetchStatus,
+    siteOpportunitiesQuery.data,
+  ]);
 
   const handleSelectOpportunity = useCallback((zone: SiteOpportunityZone) => {
     setSelectedOpportunityId(zone.id);
@@ -159,8 +194,9 @@ export function ReportsVisualiserTab({
         siteOpportunitiesQuery.data?.settings ?? opportunitySettings,
       selectedZoneId: selectedOpportunityId,
       onSelectZone: handleSelectOpportunity,
-      isLoading: siteOpportunitiesQuery.isFetching,
+      isLoading: opportunitiesBusy,
       isError: siteOpportunitiesQuery.isError,
+      hasLoadedData: siteOpportunitiesQuery.data != null,
       errorMessage:
         siteOpportunitiesQuery.error instanceof Error
           ? siteOpportunitiesQuery.error.message
@@ -170,38 +206,53 @@ export function ReportsVisualiserTab({
     }),
     [
       handleSelectOpportunity,
+      opportunitiesBusy,
       opportunitySettings,
       selectedOpportunityId,
       siteOpportunitiesQuery.data,
       siteOpportunitiesQuery.error,
       siteOpportunitiesQuery.isError,
-      siteOpportunitiesQuery.isFetching,
     ]
   );
 
   const handleToggleOpportunities = useCallback(() => {
     setShowOpportunities((v) => {
       const next = !v;
+      debugApi('suggested-areas:toggle', {
+        on: next,
+        mapReady: mapReport.isSuccess,
+        willFetch: next,
+      });
       if (!next) {
         setSelectedOpportunityId(null);
-      } else if (mapReport.isSuccess) {
-        prefetchSiteOpportunities();
+      } else {
+        fetchSiteOpportunities();
       }
       return next;
     });
-  }, [mapReport.isSuccess, prefetchSiteOpportunities]);
+  }, [fetchSiteOpportunities, mapReport.isSuccess]);
 
   const handleSuggestedAreasFromMap = useCallback(() => {
     if (!showOpportunities) {
+      debugApi('suggested-areas:toggle', {
+        on: true,
+        mapReady: mapReport.isSuccess,
+        willFetch: true,
+        source: 'map',
+      });
       setShowOpportunities(true);
-      if (mapReport.isSuccess) {
-        prefetchSiteOpportunities();
-      }
+      fetchSiteOpportunities();
       return;
     }
+    debugApi('suggested-areas:toggle', {
+      on: false,
+      mapReady: mapReport.isSuccess,
+      willFetch: false,
+      source: 'map',
+    });
     setShowOpportunities(false);
     setSelectedOpportunityId(null);
-  }, [mapReport.isSuccess, prefetchSiteOpportunities, showOpportunities]);
+  }, [fetchSiteOpportunities, mapReport.isSuccess, showOpportunities]);
 
   const baseMarkers = useMemo(
     () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
@@ -286,7 +337,7 @@ export function ReportsVisualiserTab({
             onSettingsChange={(patch) =>
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
-            isLoading={showOpportunities && siteOpportunitiesQuery.isFetching}
+            isLoading={opportunitiesBusy}
             warnings={siteOpportunitiesQuery.data?.warnings ?? []}
             dataQuality={siteOpportunitiesQuery.data?.dataQuality}
           />

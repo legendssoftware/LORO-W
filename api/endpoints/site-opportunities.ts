@@ -4,6 +4,7 @@ import type {
   SiteOpportunityResult,
   SiteOpportunitySettings,
 } from '@/api/types/site-opportunity';
+import { debugApi } from '@/lib/api-debug';
 
 export interface GetSiteOpportunitiesParams {
   orgId?: number;
@@ -70,20 +71,50 @@ export async function getSiteOpportunities(
     search.set('captureHighPct', String(params.settings.captureHighPct));
   }
   const qs = search.toString();
-  const { data } = await client.get<
-    SiteOpportunityResult | { data: SiteOpportunityResult }
-  >(`/reports/site-opportunities${qs ? `?${qs}` : ''}`, {
-    timeout: SITE_OPPORTUNITIES_LONG_TIMEOUT_MS,
-    signal: options?.signal,
+  const path = `/reports/site-opportunities${qs ? `?${qs}` : ''}`;
+  const startedAt = Date.now();
+  debugApi('site-opportunities:start', {
+    path,
+    mode: params?.mode ?? null,
+    allTime: params?.allTime ?? null,
+    region: params?.region ?? null,
+    businessType: params?.businessType ?? null,
   });
-  if (isSiteOpportunityResult(data)) return data;
-  if (
-    data &&
-    typeof data === 'object' &&
-    'data' in data &&
-    isSiteOpportunityResult((data as { data: SiteOpportunityResult }).data)
-  ) {
-    return (data as { data: SiteOpportunityResult }).data;
+
+  try {
+    const { data } = await client.get<
+      SiteOpportunityResult | { data: SiteOpportunityResult }
+    >(path, {
+      timeout: SITE_OPPORTUNITIES_LONG_TIMEOUT_MS,
+      signal: options?.signal,
+    });
+
+    let result: SiteOpportunityResult;
+    if (isSiteOpportunityResult(data)) {
+      result = data;
+    } else if (
+      data &&
+      typeof data === 'object' &&
+      'data' in data &&
+      isSiteOpportunityResult((data as { data: SiteOpportunityResult }).data)
+    ) {
+      result = (data as { data: SiteOpportunityResult }).data;
+    } else {
+      throw new Error('Invalid site opportunities response');
+    }
+
+    debugApi('site-opportunities:ok', {
+      durationMs: Date.now() - startedAt,
+      catchments: result.catchments.length,
+      greenfield: result.greenfield.length,
+      warnings: result.warnings.length,
+    });
+    return result;
+  } catch (err) {
+    debugApi('site-opportunities:error', {
+      durationMs: Date.now() - startedAt,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
   }
-  throw new Error('Invalid site opportunities response');
 }
