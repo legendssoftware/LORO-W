@@ -34,10 +34,7 @@ import type {
 } from '@/api/types/site-opportunity';
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
-import {
-  PanToSelectedZone,
-  SiteOpportunityMapOverlays,
-} from './site-opportunity-map-overlays';
+import { SiteOpportunityMapOverlays } from './site-opportunity-map-overlays';
 import {
   MARKER_COLORS,
   ORG_SITE_MAP_MARKER,
@@ -106,6 +103,12 @@ const customMarkerStyles = `
   .reports-viz-popup .leaflet-popup-close-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px #fff, 0 0 0 4px #fca5a5;
+  }
+
+  .leaflet-popup-content,
+  .leaflet-popup-content-wrapper,
+  .site-opp-rank-marker {
+    font-family: var(--font-urbanist, Urbanist), ui-sans-serif, system-ui, sans-serif;
   }
 
   .reports-viz-search-hidden.leaflet-div-icon {
@@ -380,13 +383,11 @@ function circlePathOptions(kind: string, markerColor?: unknown) {
 
 function FitReportBounds({
   markers,
-  circles,
 }: {
   markers: MapMarkerBase[];
-  circles: InfluenceCircle[];
 }) {
   const map = useMap();
-  const lastKeyRef = useRef<string>('');
+  const hasFittedRef = useRef(false);
 
   const boundsKey = useMemo(() => {
     const pts: string[] = [];
@@ -395,25 +396,19 @@ function FitReportBounds({
         pts.push(`${m.latitude.toFixed(5)},${m.longitude.toFixed(5)}`);
       }
     }
-    for (const c of circles) {
-      pts.push(`${c.latitude.toFixed(5)},${c.longitude.toFixed(5)}`);
-    }
     pts.sort();
     return pts.join('|');
-  }, [markers, circles]);
+  }, [markers]);
 
   useEffect(() => {
-    if (boundsKey === lastKeyRef.current) return;
-    lastKeyRef.current = boundsKey;
+    if (hasFittedRef.current || !boundsKey) return;
+    hasFittedRef.current = true;
 
     const latLngs: L.LatLngExpression[] = [];
     for (const m of markers) {
       if (m.latitude != null && m.longitude != null) {
         latLngs.push([m.latitude, m.longitude]);
       }
-    }
-    for (const c of circles) {
-      latLngs.push([c.latitude, c.longitude]);
     }
     if (latLngs.length === 0) return;
     if (latLngs.length === 1) {
@@ -422,7 +417,7 @@ function FitReportBounds({
     }
     const b = L.latLngBounds(latLngs);
     map.fitBounds(b, { padding: [32, 32], maxZoom: 14, animate: false });
-  }, [map, boundsKey, markers, circles]);
+  }, [map, boundsKey, markers]);
 
   return null;
 }
@@ -440,14 +435,8 @@ function SelectedMarkerPopup({
   selectedMarker: MapMarkerBase | null;
   onClose: () => void;
 }) {
-  const map = useMap();
   const markerRef = useRef<L.Marker | null>(null);
   const position = selectedMarker ? markerPosition(selectedMarker) : null;
-
-  useEffect(() => {
-    if (!position) return;
-    map.panTo(position, { animate: true, duration: 0.25 });
-  }, [map, position]);
 
   useEffect(() => {
     if (!position) return;
@@ -569,15 +558,10 @@ function InfluenceCirclesLayer({
 
 function MapZoomBoundsSync({
   markers,
-  influenceCircles,
 }: {
   markers: MapMarkerBase[];
-  influenceCircles: InfluenceCircle[];
 }) {
-  const zoom = useMapZoom();
-  const circlesForBounds =
-    zoom >= INFLUENCE_CIRCLES_MIN_ZOOM ? influenceCircles : [];
-  return <FitReportBounds markers={markers} circles={circlesForBounds} />;
+  return <FitReportBounds markers={markers} />;
 }
 
 export interface ReportsVisualiserMapProps {
@@ -619,19 +603,6 @@ function ReportsVisualiserMapInner({
     );
   }, [allMarkers, selectedMarker]);
 
-  const selectedOpportunity = useMemo((): SiteOpportunityZone | null => {
-    if (!selectedOpportunityId) return null;
-    return (
-      [...opportunityCatchments, ...opportunityGreenfield].find(
-        (z) => z.id === selectedOpportunityId
-      ) ?? null
-    );
-  }, [
-    selectedOpportunityId,
-    opportunityCatchments,
-    opportunityGreenfield,
-  ]);
-
   const center = useMemo((): [number, number] => {
     if (allMarkers.length === 0 && influenceCircles.length === 0) return DEFAULT_CENTER;
     const first =
@@ -668,11 +639,9 @@ function ReportsVisualiserMapInner({
             markers={allMarkers}
             onSelectMarker={handleSelectMarker}
             onSuggestedAreas={onSuggestedAreas}
+            showOpportunities={showOpportunities}
           />
-          <MapZoomBoundsSync
-            markers={allMarkers}
-            influenceCircles={influenceCircles}
-          />
+          <MapZoomBoundsSync markers={allMarkers} />
           <InfluenceCirclesLayer influenceCircles={influenceCircles} />
           {showOpportunities ? (
             <SiteOpportunityMapOverlays
@@ -682,7 +651,6 @@ function ReportsVisualiserMapInner({
               onSelectZone={(z) => onSelectOpportunity?.(z)}
             />
           ) : null}
-          <PanToSelectedZone zone={selectedOpportunity} />
           <MapMarkerLayers
             allMarkers={allMarkers}
             onSelectMarker={handleSelectMarker}

@@ -1,12 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal } from 'lucide-react';
-import { useApiClient } from '@/api/hooks/use-api-client';
-import { getSiteOpportunities } from '@/api/endpoints/site-opportunities';
 import {
   siteOpportunitiesQueryKey,
   useReportsMapData,
@@ -31,6 +29,7 @@ import {
   getSortedUniqueRegionsFromMarkers,
 } from '@/lib/utils/map-marker-filters';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
+import { debugApi } from '@/lib/api-debug';
 import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-mode';
 import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
@@ -79,13 +78,13 @@ export function ReportsVisualiserTab({
   const { isTokenReady } = useTokenReady();
   const mounted = authLoaded && isTokenReady;
   const queryClient = useQueryClient();
-  const apiClient = useApiClient();
 
   const { selectedRegion, selectedBusinessType } = useVisitsStore();
 
   const [showOpportunities, setShowOpportunities] = useState(false);
+  const prevShowOpportunitiesRef = useRef(false);
   const [opportunityMode, setOpportunityMode] =
-    useState<SiteOpportunityMode>('greenfield');
+    useState<SiteOpportunityMode>('both');
   const [opportunitySettings, setOpportunitySettings] =
     useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
   const [debouncedOpportunitySettings, setDebouncedOpportunitySettings] =
@@ -131,16 +130,39 @@ export function ReportsVisualiserTab({
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
 
   const siteOpportunitiesQuery = useSiteOpportunities(siteOpportunityParams, {
-    enabled: mounted && showOpportunities && mapReport.isSuccess,
+    enabled: mounted && showOpportunities,
   });
 
-  const prefetchSiteOpportunities = useCallback(() => {
-    void queryClient.prefetchQuery({
+  const opportunitiesBusy =
+    showOpportunities &&
+    (siteOpportunitiesQuery.isPending || siteOpportunitiesQuery.isFetching);
+
+  useEffect(() => {
+    if (mounted && showOpportunities && !prevShowOpportunitiesRef.current) {
+      void siteOpportunitiesQuery.refetch();
+    }
+    prevShowOpportunitiesRef.current = showOpportunities;
+  }, [mounted, showOpportunities, siteOpportunitiesQuery]);
+
+  useEffect(() => {
+    if (showOpportunities) return;
+    void queryClient.cancelQueries({
       queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
-      queryFn: () => getSiteOpportunities(apiClient, siteOpportunityParams),
-      staleTime: 2 * 60 * 1000,
     });
-  }, [apiClient, queryClient, siteOpportunityParams]);
+  }, [showOpportunities, queryClient, siteOpportunityParams]);
+
+  useEffect(() => {
+    debugApi('suggested-areas:status', {
+      status: siteOpportunitiesQuery.status,
+      fetchStatus: siteOpportunitiesQuery.fetchStatus,
+      catchments: siteOpportunitiesQuery.data?.catchments.length ?? null,
+      greenfield: siteOpportunitiesQuery.data?.greenfield.length ?? null,
+    });
+  }, [
+    siteOpportunitiesQuery.status,
+    siteOpportunitiesQuery.fetchStatus,
+    siteOpportunitiesQuery.data,
+  ]);
 
   const handleSelectOpportunity = useCallback((zone: SiteOpportunityZone) => {
     setSelectedOpportunityId(zone.id);
@@ -159,8 +181,9 @@ export function ReportsVisualiserTab({
         siteOpportunitiesQuery.data?.settings ?? opportunitySettings,
       selectedZoneId: selectedOpportunityId,
       onSelectZone: handleSelectOpportunity,
-      isLoading: siteOpportunitiesQuery.isFetching,
+      isLoading: opportunitiesBusy,
       isError: siteOpportunitiesQuery.isError,
+      hasLoadedData: siteOpportunitiesQuery.data != null,
       errorMessage:
         siteOpportunitiesQuery.error instanceof Error
           ? siteOpportunitiesQuery.error.message
@@ -170,38 +193,50 @@ export function ReportsVisualiserTab({
     }),
     [
       handleSelectOpportunity,
+      opportunitiesBusy,
       opportunitySettings,
       selectedOpportunityId,
       siteOpportunitiesQuery.data,
       siteOpportunitiesQuery.error,
       siteOpportunitiesQuery.isError,
-      siteOpportunitiesQuery.isFetching,
     ]
   );
 
   const handleToggleOpportunities = useCallback(() => {
     setShowOpportunities((v) => {
       const next = !v;
+      debugApi('suggested-areas:toggle', {
+        on: next,
+        mapReady: mapReport.isSuccess,
+        willFetch: next,
+      });
       if (!next) {
         setSelectedOpportunityId(null);
-      } else if (mapReport.isSuccess) {
-        prefetchSiteOpportunities();
       }
       return next;
     });
-  }, [mapReport.isSuccess, prefetchSiteOpportunities]);
+  }, [mapReport.isSuccess]);
 
   const handleSuggestedAreasFromMap = useCallback(() => {
     if (!showOpportunities) {
+      debugApi('suggested-areas:toggle', {
+        on: true,
+        mapReady: mapReport.isSuccess,
+        willFetch: true,
+        source: 'map',
+      });
       setShowOpportunities(true);
-      if (mapReport.isSuccess) {
-        prefetchSiteOpportunities();
-      }
       return;
     }
+    debugApi('suggested-areas:toggle', {
+      on: false,
+      mapReady: mapReport.isSuccess,
+      willFetch: false,
+      source: 'map',
+    });
     setShowOpportunities(false);
     setSelectedOpportunityId(null);
-  }, [mapReport.isSuccess, prefetchSiteOpportunities, showOpportunities]);
+  }, [mapReport.isSuccess, showOpportunities]);
 
   const baseMarkers = useMemo(
     () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
@@ -286,7 +321,7 @@ export function ReportsVisualiserTab({
             onSettingsChange={(patch) =>
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
-            isLoading={showOpportunities && siteOpportunitiesQuery.isFetching}
+            isLoading={opportunitiesBusy}
             warnings={siteOpportunitiesQuery.data?.warnings ?? []}
             dataQuality={siteOpportunitiesQuery.data?.dataQuality}
           />

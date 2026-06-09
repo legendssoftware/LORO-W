@@ -32,6 +32,7 @@ export function siteOpportunitiesQueryKey(params: GetSiteOpportunitiesParams | u
 
 /**
  * Fetches server-computed site opportunities when the visualiser "Suggested areas" toggle is on.
+ * staleTime 0 ensures re-toggling always refetches from the server.
  */
 export function useSiteOpportunities(
   params?: GetSiteOpportunitiesParams,
@@ -44,7 +45,7 @@ export function useSiteOpportunities(
     queryFn: ({ signal }): Promise<SiteOpportunityResult> =>
       getSiteOpportunities(client, params, { signal }),
     enabled: options?.enabled !== false,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,

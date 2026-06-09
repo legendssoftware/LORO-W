@@ -22,7 +22,7 @@ import {
   staffUserMatchesWorkforceFilter,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
-import { isStaffDashboardVisible } from '@/lib/access';
+import { canManageStaffUsers, isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
 import {
@@ -33,6 +33,10 @@ import {
 } from '@/app/reports/tabs/constants';
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
+import { AddUserModal } from '@/app/staff/components/add-user-modal';
+import { Button } from '@/components/ui/button';
+import { UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function StaffContent() {
   const { isTokenReady } = useTokenReady();
@@ -48,6 +52,7 @@ export function StaffContent() {
   const [branchFilter, setBranchFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
   const singleDateStr = format(today, 'yyyy-MM-dd');
   const monthForSingle = today.getMonth() + 1;
   const yearForSingle = today.getFullYear();
@@ -230,6 +235,7 @@ export function StaffContent() {
   );
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
+  const canAddUser = canManageStaffUsers(profile?.accessLevel);
   const isLoading =
     (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 
@@ -250,13 +256,33 @@ export function StaffContent() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-        <div className="shrink-0 mb-6" data-tour="staff-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Staff
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1 sm:text-sm">
-            View and manage staff attendance and activity.
-          </p>
+        <div
+          className="shrink-0 mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+          data-tour="staff-page-header"
+        >
+          <div>
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+              Staff
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1 sm:text-sm">
+              View and manage staff attendance and activity.
+            </p>
+          </div>
+          {canAddUser && (
+            <Button
+              className={cn(
+                'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+                'bg-violet-600 text-white hover:bg-violet-700',
+                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                '[&_svg]:text-white focus-visible:ring-violet-500/40'
+              )}
+              data-tour="staff-add-user"
+              onClick={() => setAddUserOpen(true)}
+            >
+              <UserPlus className="size-4" />
+              Add user
+            </Button>
+          )}
         </div>
 
         <StaffFiltersBar
@@ -316,6 +342,7 @@ export function StaffContent() {
         onClose={() => setAttendanceModalUser(null)}
       />
 
+      <AddUserModal open={addUserOpen} onOpenChange={setAddUserOpen} />
     </div>
   );
 }
