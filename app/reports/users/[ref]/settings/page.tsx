@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
   useUser,
@@ -21,7 +20,7 @@ import {
   useReInviteUserMutation,
   getBranchDisplayLabel,
 } from '@/api/hooks';
-import type { PatchUserBody, PatchUserTargetBody, UserListItem } from '@/api/endpoints/user';
+import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
@@ -85,6 +84,19 @@ import {
 import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
 import { canManageStaffUsers } from '@/lib/access';
+import {
+  CURRENCY_OPTIONS,
+  TARGET_PERIOD_OPTIONS,
+  targetFormSchema,
+  userFormSchema,
+  buildPatchBody,
+  buildUserTargetBody,
+  getDefaultTargetValues,
+  parseFormDateInput,
+  normalizePrimaryBranchUid,
+  type TargetFormValues,
+  type UserFormValues,
+} from '@/lib/user-form';
 
 function userSettingsMatchesSearch(haystack: string, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -187,81 +199,8 @@ function workforceTypeRowIcon(value: string): React.ComponentType<{ className?: 
   return User;
 }
 
-const profileSchema = z.object({
-  height: z.string().optional().nullable(),
-  weight: z.string().optional().nullable(),
-  hairColor: z.string().optional().nullable(),
-  eyeColor: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
-  dateOfBirth: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-});
-
-const employmentProfileSchema = z.object({
-  branchref: z.string().optional().nullable(),
-  position: z.string().optional().nullable(),
-  department: z.string().optional().nullable(),
-  startDate: z.string().optional().nullable(),
-  endDate: z.string().optional().nullable(),
-  isCurrentlyEmployed: z.boolean().optional().nullable(),
-  email: z.string().optional().nullable(),
-  contactNumber: z.string().optional().nullable(),
-});
-
-/** User targets form schema (PATCH /user/:ref/target). */
-const targetFormSchema = z.object({
-  targetSalesAmount: z.number().optional().nullable(),
-  targetQuotationsAmount: z.number().optional().nullable(),
-  targetCurrency: z.string().optional().nullable(),
-  targetHoursWorked: z.number().optional().nullable(),
-  targetNewClients: z.number().optional().nullable(),
-  targetNewLeads: z.number().optional().nullable(),
-  targetCheckIns: z.number().optional().nullable(),
-  targetCalls: z.number().optional().nullable(),
-  targetPeriod: z.string().optional().nullable(),
-  periodStartDate: z.string().optional().nullable(),
-  periodEndDate: z.string().optional().nullable(),
-  isRecurring: z.boolean().optional().nullable(),
-  recurringInterval: z.enum(['daily', 'weekly', 'monthly']).optional().nullable(),
-  carryForwardUnfulfilled: z.boolean().optional().nullable(),
-  baseSalary: z.number().optional().nullable(),
-  carInstalment: z.number().optional().nullable(),
-  carInsurance: z.number().optional().nullable(),
-  fuel: z.number().optional().nullable(),
-  cellPhoneAllowance: z.number().optional().nullable(),
-  carMaintenance: z.number().optional().nullable(),
-  cgicCosts: z.number().optional().nullable(),
-  totalCost: z.number().optional().nullable(),
-  erpSalesRepCode: z.string().optional().nullable(),
-  performanceWarningLevel: z.enum(['none', '1', '2', '3']).optional().nullable(),
-});
-
-type TargetFormValues = z.infer<typeof targetFormSchema>;
-
-const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  surname: z.string().min(1, 'Surname is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().optional().nullable(),
-  userref: z.string().optional().nullable(),
-  hrID: z.union([z.number(), z.null()]).optional(),
-  role: z.string().optional(),
-  status: z.string().optional(),
-  accessLevel: z.string().optional(),
-  workforceType: z.string().optional(),
-  departmentId: z.union([z.number(), z.null()]).optional(),
-  branchUid: z.union([z.number(), z.null()]).optional(),
-  managedBranches: z.array(z.number()).optional(),
-  managedStaff: z.array(z.number()).optional(),
-  businesscardURL: z.string().optional().nullable(),
-  profile: profileSchema.optional().nullable(),
-  employmentProfile: employmentProfileSchema.optional().nullable(),
-  assignedClientIds: z.array(z.number()).optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+const formSchema = userFormSchema;
+type FormValues = UserFormValues;
 
 /** Format enum value for display (e.g. "event planner" -> "Event planner"). */
 function formatEnumLabel(value: string): string {
@@ -269,249 +208,6 @@ function formatEnumLabel(value: string): string {
     .split(/[\s_-]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
-}
-
-/** Normalize API date strings (ISO or yyyy-mm-dd) for date inputs. */
-function parseFormDateInput(v: unknown): string | null {
-  if (v == null) return null;
-  if (typeof v === 'string') {
-    const t = v.trim();
-    if (!t) return null;
-    if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
-    const d = new Date(t);
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-  }
-  if (v instanceof Date) {
-    return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
-  }
-  try {
-    const d = new Date(v as string | number | Date);
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-  } catch {
-    return null;
-  }
-}
-
-/** ISO 4217 currency options for target currency dropdown. */
-const CURRENCY_OPTIONS = [
-  { value: 'ZAR', label: 'ZAR - South African Rand' },
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'CHF', label: 'CHF - Swiss Franc' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' },
-  { value: 'BWP', label: 'BWP - Botswana Pula' },
-  { value: 'NAD', label: 'NAD - Namibian Dollar' },
-  { value: 'SZL', label: 'SZL - Swazi Lilangeni' },
-  { value: 'LSL', label: 'LSL - Lesotho Loti' },
-  { value: 'NGN', label: 'NGN - Nigerian Naira' },
-  { value: 'KES', label: 'KES - Kenyan Shilling' },
-  { value: 'GHS', label: 'GHS - Ghanaian Cedi' },
-  { value: 'MUR', label: 'MUR - Mauritian Rupee' },
-  { value: 'INR', label: 'INR - Indian Rupee' },
-  { value: 'CNY', label: 'CNY - Chinese Yuan' },
-];
-
-/** Target period options for dropdown. */
-const TARGET_PERIOD_OPTIONS = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'annually', label: 'Annually' },
-];
-
-/** User shape used for diffing (subset of API response). */
-type UserBaseline = {
-  name?: string | null;
-  surname?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  userref?: string | null;
-  hrID?: number | null;
-  role?: string | null;
-  status?: string | null;
-  accessLevel?: string | null;
-  workforceType?: string | null;
-  departmentId?: number | null;
-  branch?: { uid?: number } | null;
-  branchUid?: number | null;
-  managedBranches?: number[];
-  managedStaff?: number[];
-  businesscardURL?: string | null;
-  userProfile?: Record<string, unknown> | null;
-  userEmployeementProfile?: Record<string, unknown> | null;
-  assignedClientIds?: number[];
-};
-
-/** Primary branch FK from API: treat non-positive / invalid as unassigned (never send uid 0 on PATCH). */
-function normalizePrimaryBranchUid(value: number | null | undefined): number | null {
-  if (value == null || !Number.isFinite(value) || value <= 0) return null;
-  return value;
-}
-
-/** Build userTarget object from target form values (only defined, non-empty). */
-function buildUserTargetBody(values: TargetFormValues): PatchUserTargetBody | undefined {
-  const keys: (keyof PatchUserTargetBody)[] = [
-    'targetSalesAmount', 'targetQuotationsAmount',
-    'targetCurrency', 'targetHoursWorked', 'targetNewClients',
-    'targetNewLeads', 'targetCheckIns', 'targetCalls',
-    'targetPeriod', 'periodStartDate', 'periodEndDate', 'isRecurring', 'recurringInterval', 'carryForwardUnfulfilled',
-    'baseSalary', 'carInstalment', 'carInsurance', 'fuel', 'cellPhoneAllowance', 'carMaintenance', 'cgicCosts', 'totalCost', 'erpSalesRepCode',
-  ];
-  const body: PatchUserTargetBody = {};
-  for (const k of keys) {
-    const v = values[k as keyof TargetFormValues];
-    if (v !== undefined && v !== null && v !== '') {
-      (body as Record<string, unknown>)[k] = v;
-    }
-  }
-  return Object.keys(body).length > 0 ? body : undefined;
-}
-
-/** Build PATCH body with only fields that changed. Never sends empty string for enum fields. */
-function buildPatchBody(user: UserBaseline | null | undefined, values: FormValues): PatchUserBody {
-  if (!user) return {};
-
-  const norm = (s: string | null | undefined) => (s ?? '').trim();
-  const sameStr = (a: string | null | undefined, b: string | null | undefined) =>
-    norm(a) === norm(b);
-  const sameNum = (a: number | null | undefined, b: number | null | undefined) =>
-    (a ?? null) === (b ?? null);
-  const sameArr = (a?: number[], b?: number[]) => {
-    const x = [...(a ?? [])].sort((i, j) => i - j);
-    const y = [...(b ?? [])].sort((i, j) => i - j);
-    return x.length === y.length && x.every((v, i) => v === y[i]);
-  };
-
-  const body: PatchUserBody = {};
-
-  if (!sameStr(user.name, values.name)) body.name = values.name;
-  if (!sameStr(user.surname, values.surname)) body.surname = values.surname;
-  if (!sameStr(user.email, values.email)) body.email = values.email;
-  if (norm(user.phone) !== norm(values.phone ?? null))
-    body.phone = values.phone ?? undefined;
-  if (norm(user.userref) !== norm(values.userref ?? null))
-    body.userref = values.userref ?? undefined;
-  if (!sameNum(user.hrID, values.hrID)) body.hrID = values.hrID ?? undefined;
-
-  if (!sameStr(user.role, values.role))
-    body.role = values.role?.trim() || undefined;
-  if (!sameStr(user.status, values.status))
-    body.status = values.status?.trim() || undefined;
-  if (!sameStr(user.accessLevel, values.accessLevel))
-    body.accessLevel = values.accessLevel?.trim() || undefined;
-  if (!sameStr(user.workforceType, values.workforceType))
-    body.workforceType = values.workforceType?.trim() || undefined;
-
-  if (!sameNum(user.departmentId ?? undefined, values.departmentId))
-    body.departmentId = values.departmentId ?? undefined;
-
-  const userBranchUid = normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null);
-  const valuesBranchNorm = normalizePrimaryBranchUid(values.branchUid ?? null);
-  if (!sameNum(userBranchUid, valuesBranchNorm))
-    body.branch = valuesBranchNorm != null ? { uid: valuesBranchNorm } : undefined;
-
-  if (!sameArr(user.managedBranches, values.managedBranches))
-    body.managedBranches =
-      values.managedBranches?.length ? values.managedBranches : undefined;
-  if (!sameArr(user.managedStaff, values.managedStaff))
-    body.managedStaff = values.managedStaff?.length ? values.managedStaff : undefined;
-
-  if (norm(user.businesscardURL ?? null) !== norm(values.businesscardURL ?? null))
-    body.businesscardURL = values.businesscardURL ?? undefined;
-
-  const sameProfile = (
-    a: Record<string, unknown> | null | undefined,
-    b: FormValues['profile'] | FormValues['employmentProfile']
-  ) => {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-    for (const k of keys) {
-      const av = (a as Record<string, unknown>)[k];
-      const bv = (b as Record<string, unknown>)[k];
-      const as = av === null || av === undefined ? '' : String(av).trim();
-      const bs = bv === null || bv === undefined ? '' : String(bv).trim();
-      if (as !== bs) return false;
-    }
-    return true;
-  };
-  if (!sameProfile(user.userProfile ?? null, values.profile ?? null) && values.profile)
-    body.profile = values.profile as PatchUserBody['profile'];
-  if (!sameProfile(user.userEmployeementProfile ?? null, values.employmentProfile ?? null) && values.employmentProfile)
-    body.employmentProfile = {
-      ...values.employmentProfile,
-      isCurrentlyEmployed: values.employmentProfile.isCurrentlyEmployed ?? undefined,
-    } as PatchUserBody['employmentProfile'];
-
-  if (!sameArr(user.assignedClientIds, values.assignedClientIds))
-    body.assignedClientIds = values.assignedClientIds?.length ? values.assignedClientIds : undefined;
-
-  return body;
-}
-
-/** Default form values for user targets from API userTarget or null. */
-function getDefaultTargetValues(ut: Record<string, unknown> | null): TargetFormValues {
-  const num = (v: unknown): number | null =>
-    v === null || v === undefined ? null : typeof v === 'number' && !Number.isNaN(v) ? v : null;
-  const str = (v: unknown): string | null =>
-    v === null || v === undefined ? null : typeof v === 'string' ? v : null;
-  const bool = (v: unknown): boolean | null =>
-    v === null || v === undefined ? null : typeof v === 'boolean' ? v : null;
-
-  const src =
-    ut && typeof ut === 'object' && (ut as { personalTargets?: Record<string, unknown> }).personalTargets
-      ? ((ut as { personalTargets: Record<string, unknown> }).personalTargets as Record<string, unknown>)
-      : ut;
-
-  const tw =
-    (ut as { personalTargets?: { targetWarnings?: { level?: number } } })?.personalTargets?.targetWarnings ??
-    (ut as { targetWarnings?: { level?: number } })?.targetWarnings;
-  const lvl = tw?.level;
-  const performanceWarningLevel: 'none' | '1' | '2' | '3' =
-    lvl === 1 || lvl === 2 || lvl === 3 ? String(lvl) as '1' | '2' | '3' : 'none';
-
-  if (!src) {
-    return {
-      targetSalesAmount: null, targetQuotationsAmount: null, targetCurrency: null,
-      targetHoursWorked: null, targetNewClients: null,
-      targetNewLeads: null, targetCheckIns: null, targetCalls: null, targetPeriod: null,
-      periodStartDate: null, periodEndDate: null,
-      isRecurring: null, recurringInterval: null, carryForwardUnfulfilled: null,
-      baseSalary: null, carInstalment: null, carInsurance: null, fuel: null, cellPhoneAllowance: null,
-      carMaintenance: null, cgicCosts: null, totalCost: null, erpSalesRepCode: null,
-      performanceWarningLevel: 'none',
-    };
-  }
-  return {
-    targetSalesAmount: num(src.targetSalesAmount),
-    targetQuotationsAmount: num(src.targetQuotationsAmount),
-    targetCurrency: str(src.targetCurrency),
-    targetHoursWorked: num(src.targetHoursWorked),
-    targetNewClients: num(src.targetNewClients),
-    targetNewLeads: num(src.targetNewLeads),
-    targetCheckIns: num(src.targetCheckIns),
-    targetCalls: num(src.targetCalls),
-    targetPeriod: str(src.targetPeriod),
-    periodStartDate: parseFormDateInput(src.periodStartDate),
-    periodEndDate: parseFormDateInput(src.periodEndDate),
-    isRecurring: bool(src.isRecurring),
-    recurringInterval: (src.recurringInterval === 'daily' || src.recurringInterval === 'weekly' || src.recurringInterval === 'monthly') ? src.recurringInterval : null,
-    carryForwardUnfulfilled: bool(src.carryForwardUnfulfilled),
-    baseSalary: num(src.baseSalary),
-    carInstalment: num(src.carInstalment),
-    carInsurance: num(src.carInsurance),
-    fuel: num(src.fuel),
-    cellPhoneAllowance: num(src.cellPhoneAllowance),
-    carMaintenance: num(src.carMaintenance),
-    cgicCosts: num(src.cgicCosts),
-    totalCost: num(src.totalCost),
-    erpSalesRepCode: str(src.erpSalesRepCode),
-    performanceWarningLevel,
-  };
 }
 
 export default function UserSettingsPage() {

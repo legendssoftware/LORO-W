@@ -2,109 +2,153 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
   DetailDialogCloseButton,
-  DETAIL_DIALOG_SMALL_CONTENT_CLASS,
+  DETAIL_DIALOG_CONTENT_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form } from '@/components/ui/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useBranches, useInviteUserMutation } from '@/api/hooks';
-import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
-import { AccessLevel, WorkforceType } from '@/api/types/user';
-import { formatEnumLabel } from '@/lib/format-enum-label';
-import { Loader2Icon } from '@/lib/icons';
+  useBranches,
+  useClients,
+  useInviteUserMutation,
+  useUsers,
+} from '@/api/hooks';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { patchUser } from '@/api/endpoints/user';
+import { normalizePrimaryBranchUid } from '@/lib/user-form';
+import {
+  addUserWizardSchema,
+  buildInviteFollowUpPatchBody,
+  getDefaultAddUserWizardValues,
+  WIZARD_STEP_FIELDS,
+  WIZARD_STEP_LABELS,
+  type AddUserWizardValues,
+} from '@/lib/user-form';
 import { UserPlus } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { StepBasics } from './add-user-wizard/step-basics';
+import { StepAccess } from './add-user-wizard/step-access';
+import { StepTargets } from './add-user-wizard/step-targets';
+import { StepAssignments } from './add-user-wizard/step-assignments';
+import { WizardFooter } from './add-user-wizard/wizard-footer';
+import { WizardStepIndicator } from './add-user-wizard/wizard-step-indicator';
 
-const MODAL_SELECT_TRIGGER =
-  'h-9 w-full border-border bg-background text-foreground';
+const TOTAL_STEPS = WIZARD_STEP_LABELS.length;
 
 export interface AddUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const accessLevels = Object.values(AccessLevel);
-const workforceTypes = Object.values(WorkforceType);
-
 export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
   const router = useRouter();
+  const apiClient = useApiClient();
   const inviteMutation = useInviteUserMutation();
-  const { data: branches = [] } = useBranches({ enabled: open });
+  const [step, setStep] = useState(0);
 
-  const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [accessLevel, setAccessLevel] = useState<string>(AccessLevel.USER);
-  const [workforceType, setWorkforceType] = useState<string>(
-    WorkforceType.GENERAL_WORKER
-  );
-  const [branchId, setBranchId] = useState<string>('');
+  const { data: branches = [] } = useBranches({ enabled: open });
+  const { data: users = [] } = useUsers({ enabled: open, limit: 200 });
+  const { data: clients = [] } = useClients({ enabled: open, limit: 100 });
+
+  const form = useForm<AddUserWizardValues>({
+    resolver: zodResolver(addUserWizardSchema),
+    defaultValues: getDefaultAddUserWizardValues(),
+    mode: 'onChange',
+  });
 
   useEffect(() => {
     if (!open) {
-      setName('');
-      setSurname('');
-      setEmail('');
-      setPhone('');
-      setAccessLevel(AccessLevel.USER);
-      setWorkforceType(WorkforceType.GENERAL_WORKER);
-      setBranchId('');
+      form.reset(getDefaultAddUserWizardValues());
+      setStep(0);
     }
-  }, [open]);
+  }, [open, form]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmedEmail = email.trim();
-    if (!name.trim() || !surname.trim() || !trimmedEmail) {
+  async function validateCurrentStep(): Promise<boolean> {
+    const fields = WIZARD_STEP_FIELDS[step];
+    if (!fields?.length) return true;
+    const valid = await form.trigger(fields);
+    return valid;
+  }
+
+  async function handleNext() {
+    const valid = await validateCurrentStep();
+    if (!valid) return;
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
+  }
+
+  function handleBack() {
+    setStep((s) => Math.max(s - 1, 0));
+  }
+
+  async function handleSubmit(values: AddUserWizardValues) {
+    const trimmedEmail = values.email.trim();
+    if (!values.name.trim() || !values.surname.trim() || !trimmedEmail) {
       toast.error('Name, surname, and email are required.');
+      setStep(0);
       return;
     }
 
     try {
+      const branchId = normalizePrimaryBranchUid(values.branchUid ?? null);
+
       const result = await inviteMutation.mutateAsync({
-        name: name.trim(),
-        surname: surname.trim(),
+        name: values.name.trim(),
+        surname: values.surname.trim(),
         email: trimmedEmail,
-        phone: phone.trim() || undefined,
-        accessLevel,
-        workforceType,
-        role: accessLevel,
-        branchId: branchId ? Number(branchId) : undefined,
+        phone: values.phone?.trim() || undefined,
+        accessLevel: values.accessLevel,
+        workforceType: values.workforceType,
+        role: values.role || values.accessLevel,
+        branchId: branchId ?? undefined,
       });
-      toast.success(`Invite sent to ${result.user.email}`);
+
+      const patchBody = buildInviteFollowUpPatchBody(values);
+      const hasPatchFields = Object.keys(patchBody).length > 0;
+
+      if (hasPatchFields) {
+        try {
+          await patchUser(apiClient, String(result.user.uid), patchBody);
+          toast.success(
+            `User created, invite sent to ${result.user.email}, and profile linked`
+          );
+        } catch (patchErr) {
+          const patchMessage =
+            patchErr instanceof Error
+              ? patchErr.message
+              : 'Failed to save linked fields';
+          toast.error(
+            `User created and invite sent, but some fields could not be saved: ${patchMessage}`
+          );
+        }
+      } else {
+        toast.success(`Invite sent to ${result.user.email}`);
+      }
+
       onOpenChange(false);
       router.push(`/reports/users/${result.user.uid}/settings`);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to invite user';
+        err instanceof Error ? err.message : 'Failed to create user';
       toast.error(message);
     }
   }
+
+  const isPending = inviteMutation.isPending || form.formState.isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className={DETAIL_DIALOG_SMALL_CONTENT_CLASS}
+        className={DETAIL_DIALOG_CONTENT_CLASS}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute top-4 right-4 z-10">
@@ -116,136 +160,45 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
             Add user
           </DialogTitle>
           <DialogDescription>
-            Creates a Clerk account, syncs the user to LORO, and emails sign-in
-            instructions.
+            Step {step + 1} of {TOTAL_STEPS}: {WIZARD_STEP_LABELS[step]}. Creates
+            a Clerk account, syncs to LORO, and emails sign-in instructions.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="add-user-name">First name</Label>
-              <Input
-                id="add-user-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane"
-                autoComplete="given-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="add-user-surname">Surname</Label>
-              <Input
-                id="add-user-surname"
-                value={surname}
-                onChange={(e) => setSurname(e.target.value)}
-                placeholder="Smith"
-                autoComplete="family-name"
-              />
-            </div>
-          </div>
+        <WizardStepIndicator currentStep={step} />
 
-          <div className="space-y-2">
-            <Label htmlFor="add-user-email">Email</Label>
-            <Input
-              id="add-user-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="jane.smith@example.com"
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="add-user-phone">Phone (optional)</Label>
-            <Input
-              id="add-user-phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+27 64 123 4567"
-              autoComplete="tel"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Access level</Label>
-              <Select value={accessLevel} onValueChange={setAccessLevel}>
-                <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                  <SelectValue placeholder="Access level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accessLevels.map((level) => (
-                    <SelectItem key={level} value={level}>
-                      {formatEnumLabel(level)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Workforce type</Label>
-              <Select value={workforceType} onValueChange={setWorkforceType}>
-                <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                  <SelectValue placeholder="Workforce type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workforceTypes.map((wt) => (
-                    <SelectItem key={wt} value={wt}>
-                      {formatEnumLabel(wt)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Branch (optional)</Label>
-            <Select
-              value={branchId || '__none__'}
-              onValueChange={(v) => setBranchId(v === '__none__' ? '' : v)}
-            >
-              <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                <SelectValue placeholder="Select branch" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">No branch</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.uid} value={String(b.uid)}>
-                    {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              type="button"
-              variant="cancel"
-              className="rounded-full"
-              onClick={() => onOpenChange(false)}
-              disabled={inviteMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="success"
-              className={cn('rounded-full gap-2')}
-              disabled={inviteMutation.isPending}
-            >
-              {inviteMutation.isPending ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                <UserPlus className="size-4" />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
+            <div className="min-h-[280px]">
+              {step === 0 && <StepBasics control={form.control} />}
+              {step === 1 && (
+                <StepAccess control={form.control} branches={branches} />
               )}
-              Add user
-            </Button>
-          </DialogFooter>
-        </form>
+              {step === 2 && <StepTargets control={form.control} />}
+              {step === 3 && (
+                <StepAssignments
+                  control={form.control}
+                  branches={branches}
+                  users={users}
+                  clients={clients}
+                />
+              )}
+            </div>
+
+            <WizardFooter
+              step={step}
+              isFirstStep={step === 0}
+              isLastStep={step === TOTAL_STEPS - 1}
+              isPending={isPending}
+              onBack={handleBack}
+              onNext={handleNext}
+              onCancel={() => onOpenChange(false)}
+            />
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
