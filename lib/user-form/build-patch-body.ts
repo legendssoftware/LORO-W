@@ -207,6 +207,14 @@ function hasEmploymentData(
   );
 }
 
+function hasProfileData(
+  profile: NonNullable<UserFormValues['profile']>
+): boolean {
+  return Object.values(profile).some(
+    (v) => v !== null && v !== undefined && v !== ''
+  );
+}
+
 /** Collect optional fields for post-invite PATCH (no diff against existing user). */
 export function buildInviteFollowUpPatchBody(
   values: AddUserWizardValues
@@ -219,14 +227,18 @@ export function buildInviteFollowUpPatchBody(
   if (norm(values.status)) body.status = norm(values.status);
   if (values.departmentId != null) body.departmentId = values.departmentId;
 
-  const branchUid = normalizePrimaryBranchUid(values.branchUid ?? null);
-  if (branchUid != null) body.branch = { uid: branchUid };
+  if (norm(values.businesscardURL))
+    body.businesscardURL = norm(values.businesscardURL);
 
   if (values.managedBranches?.length)
     body.managedBranches = values.managedBranches;
   if (values.managedStaff?.length) body.managedStaff = values.managedStaff;
   if (values.assignedClientIds?.length)
     body.assignedClientIds = values.assignedClientIds;
+
+  if (values.profile && hasProfileData(values.profile)) {
+    body.profile = values.profile as PatchUserBody['profile'];
+  }
 
   if (
     values.employmentProfile &&

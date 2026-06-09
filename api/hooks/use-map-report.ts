@@ -38,6 +38,7 @@ export function useMapReport(
     enabled: options?.enabled !== false,
     staleTime: 1 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

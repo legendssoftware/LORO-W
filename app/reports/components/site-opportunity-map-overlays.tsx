@@ -1,7 +1,7 @@
 'use client';
 
-import { Fragment, useEffect } from 'react';
-import { Circle, Marker, Popup, useMap } from 'react-leaflet';
+import { Fragment } from 'react';
+import { Circle, Marker, Popup } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import type {
   BranchCatchmentOpportunity,
@@ -38,6 +38,7 @@ function rankedLabelIcon(rank: number, color: string) {
     html: `<div style="
       width:28px;height:28px;border-radius:9999px;
       background:${color};color:#fff;font-weight:700;font-size:12px;
+      font-family:var(--font-urbanist, Urbanist),ui-sans-serif,system-ui,sans-serif;
       display:flex;align-items:center;justify-content:center;
       border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);
     ">${rank}</div>`,
@@ -84,8 +85,8 @@ export function SiteOpportunityMapOverlays({
               click: () => onSelectZone(c),
             }}
           >
-            <Popup>
-              <div className="text-sm space-y-1 p-1 min-w-[180px]">
+            <Popup className="reports-viz-popup">
+              <div className="text-sm space-y-1 min-w-[180px]">
                 <p className="font-semibold">#{c.rank} {c.branchName}</p>
                 <p>Pool: {formatZarShort(c.addressablePoolZAR)}</p>
                 <p>
@@ -126,8 +127,8 @@ export function SiteOpportunityMapOverlays({
                 click: () => onSelectZone(g),
               }}
             >
-              <Popup>
-                <div className="text-sm space-y-1 p-1 min-w-[180px]">
+              <Popup className="reports-viz-popup">
+                <div className="text-sm space-y-1 min-w-[180px]">
                   <p className="font-semibold">#{g.rank} {g.label}</p>
                   <p>Pool: {formatZarShort(g.addressablePoolZAR)}</p>
                   <p>
@@ -146,19 +147,4 @@ export function SiteOpportunityMapOverlays({
       })}
     </>
   );
-}
-
-export function PanToSelectedZone({
-  zone,
-}: {
-  zone: SiteOpportunityZone | null;
-}) {
-  const map = useMap();
-  useEffect(() => {
-    if (!zone) return;
-    map.flyTo([zone.lat, zone.lng], Math.max(map.getZoom(), 12), {
-      duration: 0.5,
-    });
-  }, [map, zone?.id, zone?.lat, zone?.lng]);
-  return null;
 }

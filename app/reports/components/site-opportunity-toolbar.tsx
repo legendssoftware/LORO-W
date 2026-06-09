@@ -75,7 +75,7 @@ export function SiteOpportunityToolbar({
       {showDataBanner ? (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 max-w-md">
           {warnings[0] ??
-            `Hardware map coverage is ${dataQuality!.competitorCoveragePct}%. Import and geocode competitors (BUCO, CASHBUILD, BUILD IT, POWERBUILD, EST) for accurate pool totals.`}
+            `Hardware map coverage is ${dataQuality!.competitorCoveragePct}%. Geocode competitors for accurate pool totals.`}
         </p>
       ) : null}
 

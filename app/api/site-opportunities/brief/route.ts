@@ -45,17 +45,23 @@ export async function POST(req: Request) {
     zone?: Record<string, unknown>;
     dataQuality?: Record<string, unknown>;
     warnings?: string[];
+    orgBrandName?: string;
   };
 
   if (!payload.zone) {
     return Response.json({ error: 'zone is required' }, { status: 400 });
   }
 
+  const orgBrandName =
+    typeof payload.orgBrandName === 'string' && payload.orgBrandName.trim()
+      ? payload.orgBrandName.trim()
+      : 'the organisation';
+
   try {
     const { object } = await generateObject({
       model: google('gemini-2.0-flash'),
       schema: briefSchema,
-      prompt: `You are a retail expansion analyst for BitDrywall (hardware/building supplies) in South Africa.
+      prompt: `You are a retail expansion analyst for ${orgBrandName} (hardware/building supplies) in South Africa.
 
 Analyze this site opportunity using ONLY the structured data below. Do not invent competitor names, counts, or revenue figures not present in the JSON.
 

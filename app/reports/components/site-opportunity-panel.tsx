@@ -37,6 +37,7 @@ import {
   reportsTabsListCompactClassName,
 } from '@/app/reports/reports-tab-styles';
 import { cn } from '@/lib/utils';
+import { useOrgName } from '@/lib/org-id-context';
 
 const PANEL_TABS = [
   { value: 'all', label: 'All', Icon: LayoutGrid },
@@ -50,7 +51,14 @@ function formatZar(n: number): string {
   return `R ${Math.round(n).toLocaleString()}`;
 }
 
+function formatChartZarAxis(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}m`;
+  if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
+  return String(Math.round(v));
+}
+
 function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
+  const maxRevenue = Math.max(...data.map((d) => d.revenueMidZAR), 1);
   return (
     <div className="h-[140px] w-full mt-3">
       <ResponsiveContainer width="100%" height="100%">
@@ -62,8 +70,9 @@ function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
           />
           <YAxis
             tick={{ fontSize: 10 }}
-            tickFormatter={(v) => `${Math.round(v / 1_000_000)}m`}
-            width={32}
+            tickFormatter={formatChartZarAxis}
+            width={36}
+            domain={[0, maxRevenue * 1.1]}
           />
           <Tooltip
             formatter={(v: number) => formatZar(v)}
@@ -85,12 +94,14 @@ function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
 function ZoneDetail({
   zone,
   captureSettings,
+  orgBrandName,
   onExplain,
   explainLoading,
   brief,
 }: {
   zone: SiteOpportunityZone;
   captureSettings: SiteOpportunitySettings;
+  orgBrandName: string;
   onExplain: () => void;
   explainLoading: boolean;
   brief: SiteOpportunityBrief | null;
@@ -145,7 +156,7 @@ function ZoneDetail({
         </div>
         <div className="col-span-2">
           <dt className="text-muted-foreground">
-            BitDrywall potential ({lowPct}–{highPct}%)
+            {orgBrandName} potential ({lowPct}–{highPct}%)
           </dt>
           <dd className="font-medium">
             {formatZar(zone.potentialLowZAR)} – {formatZar(zone.potentialHighZAR)}
@@ -172,7 +183,7 @@ function ZoneDetail({
         ) : null}
         {zone.kind === 'greenfield' && zone.nearestBranchKm != null ? (
           <div className="col-span-2">
-            <dt className="text-muted-foreground">Nearest BitDrywall branch</dt>
+            <dt className="text-muted-foreground">Nearest {orgBrandName} branch</dt>
             <dd className="font-medium">{zone.nearestBranchKm.toFixed(1)} km</dd>
           </div>
         ) : null}
@@ -320,6 +331,9 @@ export function SiteOpportunityPanel({
   hasLoadedData?: boolean;
   errorMessage?: string;
 }) {
+  const orgName = useOrgName();
+  const orgBrandName = orgName?.trim() || 'Your brand';
+
   const selectedZone =
     [...catchments, ...greenfield].find((z) => z.id === selectedZoneId) ?? null;
 
@@ -343,7 +357,9 @@ export function SiteOpportunityPanel({
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() => downloadOpportunitiesCsv(catchments, greenfield)}
+            onClick={() =>
+              downloadOpportunitiesCsv(catchments, greenfield, captureSettings)
+            }
           >
             <Download className="size-4" />
             <span className="sr-only">Export CSV</span>
@@ -438,6 +454,7 @@ export function SiteOpportunityPanel({
           <ZoneDetail
             zone={selectedZone}
             captureSettings={captureSettings}
+            orgBrandName={orgBrandName}
             explainLoading={explainMutation.isPending}
             brief={
               explainMutation.data &&
@@ -454,6 +471,7 @@ export function SiteOpportunityPanel({
                 zone: selectedZone,
                 dataQuality,
                 warnings,
+                orgBrandName,
               })
             }
           />

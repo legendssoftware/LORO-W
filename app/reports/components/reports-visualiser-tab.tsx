@@ -1,12 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal } from 'lucide-react';
-import { useApiClient } from '@/api/hooks/use-api-client';
-import { getSiteOpportunities } from '@/api/endpoints/site-opportunities';
 import {
   siteOpportunitiesQueryKey,
   useReportsMapData,
@@ -80,11 +78,11 @@ export function ReportsVisualiserTab({
   const { isTokenReady } = useTokenReady();
   const mounted = authLoaded && isTokenReady;
   const queryClient = useQueryClient();
-  const apiClient = useApiClient();
 
   const { selectedRegion, selectedBusinessType } = useVisitsStore();
 
   const [showOpportunities, setShowOpportunities] = useState(false);
+  const prevShowOpportunitiesRef = useRef(false);
   const [opportunityMode, setOpportunityMode] =
     useState<SiteOpportunityMode>('both');
   const [opportunitySettings, setOpportunitySettings] =
@@ -135,34 +133,23 @@ export function ReportsVisualiserTab({
     enabled: mounted && showOpportunities,
   });
 
-  const fetchSiteOpportunities = useCallback(() => {
-    void queryClient.fetchQuery({
-      queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
-      queryFn: () => getSiteOpportunities(apiClient, siteOpportunityParams),
-      staleTime: 0,
-    });
-  }, [apiClient, queryClient, siteOpportunityParams]);
-
   const opportunitiesBusy =
     showOpportunities &&
     (siteOpportunitiesQuery.isPending || siteOpportunitiesQuery.isFetching);
 
   useEffect(() => {
-    if (
-      showOpportunities &&
-      !siteOpportunitiesQuery.data &&
-      !siteOpportunitiesQuery.isFetching &&
-      !siteOpportunitiesQuery.isError
-    ) {
-      fetchSiteOpportunities();
+    if (mounted && showOpportunities && !prevShowOpportunitiesRef.current) {
+      void siteOpportunitiesQuery.refetch();
     }
-  }, [
-    showOpportunities,
-    siteOpportunitiesQuery.data,
-    siteOpportunitiesQuery.isFetching,
-    siteOpportunitiesQuery.isError,
-    fetchSiteOpportunities,
-  ]);
+    prevShowOpportunitiesRef.current = showOpportunities;
+  }, [mounted, showOpportunities, siteOpportunitiesQuery]);
+
+  useEffect(() => {
+    if (showOpportunities) return;
+    void queryClient.cancelQueries({
+      queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
+    });
+  }, [showOpportunities, queryClient, siteOpportunityParams]);
 
   useEffect(() => {
     debugApi('suggested-areas:status', {
@@ -225,12 +212,10 @@ export function ReportsVisualiserTab({
       });
       if (!next) {
         setSelectedOpportunityId(null);
-      } else {
-        fetchSiteOpportunities();
       }
       return next;
     });
-  }, [fetchSiteOpportunities, mapReport.isSuccess]);
+  }, [mapReport.isSuccess]);
 
   const handleSuggestedAreasFromMap = useCallback(() => {
     if (!showOpportunities) {
@@ -241,7 +226,6 @@ export function ReportsVisualiserTab({
         source: 'map',
       });
       setShowOpportunities(true);
-      fetchSiteOpportunities();
       return;
     }
     debugApi('suggested-areas:toggle', {
@@ -252,7 +236,7 @@ export function ReportsVisualiserTab({
     });
     setShowOpportunities(false);
     setSelectedOpportunityId(null);
-  }, [fetchSiteOpportunities, mapReport.isSuccess, showOpportunities]);
+  }, [mapReport.isSuccess, showOpportunities]);
 
   const baseMarkers = useMemo(
     () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),

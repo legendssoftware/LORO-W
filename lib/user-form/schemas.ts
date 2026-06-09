@@ -107,6 +107,8 @@ export const wizardTargetsStepSchema = targetFormSchema.omit({
 });
 
 export const wizardAssignmentsStepSchema = addUserWizardSchema.pick({
+  profile: true,
+  businesscardURL: true,
   employmentProfile: true,
   managedBranches: true,
   managedStaff: true,
@@ -150,7 +152,14 @@ export const WIZARD_STEP_FIELDS: Record<number, (keyof AddUserWizardValues)[]> =
     'totalCost',
     'erpSalesRepCode',
   ],
-  3: ['employmentProfile', 'managedBranches', 'managedStaff', 'assignedClientIds'],
+  3: [
+    'profile',
+    'businesscardURL',
+    'employmentProfile',
+    'managedBranches',
+    'managedStaff',
+    'assignedClientIds',
+  ],
 };
 
 export const WIZARD_STEP_LABELS = [
@@ -177,7 +186,17 @@ export function getDefaultAddUserWizardValues(): AddUserWizardValues {
     managedBranches: [],
     managedStaff: [],
     businesscardURL: null,
-    profile: null,
+    profile: {
+      height: null,
+      weight: null,
+      hairColor: null,
+      eyeColor: null,
+      gender: null,
+      dateOfBirth: null,
+      address: null,
+      city: null,
+      country: null,
+    },
     employmentProfile: {
       branchref: null,
       position: null,

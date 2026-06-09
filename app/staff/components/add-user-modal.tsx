@@ -172,7 +172,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-4"
           >
-            <div className="min-h-[280px]">
+            <div className="min-h-[320px] max-h-[min(52vh,520px)] overflow-y-auto pr-1">
               {step === 0 && <StepBasics control={form.control} />}
               {step === 1 && (
                 <StepAccess control={form.control} branches={branches} />

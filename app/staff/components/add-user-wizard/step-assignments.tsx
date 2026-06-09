@@ -101,8 +101,209 @@ export function StepAssignments({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
+        <p className="text-sm font-medium">User profile (optional)</p>
+        <p className="text-sm text-muted-foreground">
+          Physical details and personal information.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField
+            control={control}
+            name="profile.height"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Height</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.weight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Weight</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.hairColor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hair color</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.eyeColor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Eye color</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. Male, Female"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.dateOfBirth"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date of birth</FormLabel>
+                <FormControl>
+                  <DatePickerField
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={control}
+          name="profile.address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value || null)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField
+            control={control}
+            name="profile.city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="profile.country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Country</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      <FormField
+        control={control}
+        name="businesscardURL"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Business card URL (optional)</FormLabel>
+            <FormControl>
+              <Input
+                type="url"
+                placeholder="https://..."
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => field.onChange(e.target.value || null)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="space-y-4">
         <p className="text-sm font-medium">Employment profile (optional)</p>
         <div className="grid gap-3 sm:grid-cols-2">
+          <FormField
+            control={control}
+            name="employmentProfile.branchref"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Branch ref</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={control}
             name="employmentProfile.position"
@@ -128,6 +329,24 @@ export function StepAssignments({
                 <FormLabel>Department</FormLabel>
                 <FormControl>
                   <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="employmentProfile.email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Work email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
