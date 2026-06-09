@@ -43,6 +43,7 @@ export interface LeafletMapControlsProps {
   markers: MapMarkerBase[];
   onSelectMarker?: (marker: MapMarkerBase) => void;
   onSuggestedAreas?: () => void;
+  showOpportunities?: boolean;
 }
 
 function swapBasemap(
@@ -61,6 +62,7 @@ export function LeafletMapControls({
   markers,
   onSelectMarker,
   onSuggestedAreas,
+  showOpportunities = false,
 }: LeafletMapControlsProps) {
   const map = useMap();
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -73,6 +75,7 @@ export function LeafletMapControls({
   const measureControlRef = useRef<L.Control.Measure | null>(null);
   const searchControlRef = useRef<L.Control.Search | null>(null);
   const basemapButtonRef = useRef<L.Control.EasyButton | null>(null);
+  const suggestedAreasButtonRef = useRef<L.Control.EasyButton | null>(null);
 
   useEffect(() => {
     ensureGestureHandlingRegistered();
@@ -173,20 +176,27 @@ export function LeafletMapControls({
     const easyButtons: L.Control.EasyButton[] = [basemapButton];
 
     if (onSuggestedAreas) {
-      easyButtons.push(
-        L.easyButton({
-          position: 'bottomleft',
-          leafletClasses: true,
-          states: [
-            {
-              stateName: 'suggested',
-              title: 'Suggested areas',
-              icon: '<span class="reports-viz-easybtn">★</span>',
-              onClick: () => onSuggestedAreas(),
-            },
-          ],
-        })
-      );
+      const suggestedButton = L.easyButton({
+        position: 'bottomleft',
+        leafletClasses: true,
+        states: [
+          {
+            stateName: 'suggested-off',
+            title: 'Show suggested areas',
+            icon: '<span class="reports-viz-easybtn">★</span>',
+            onClick: () => onSuggestedAreas(),
+          },
+          {
+            stateName: 'suggested-on',
+            title: 'Hide suggested areas',
+            icon: '<span class="reports-viz-easybtn" style="color:#facc15">★</span>',
+            onClick: () => onSuggestedAreas(),
+          },
+        ],
+      });
+      suggestedAreasButtonRef.current = suggestedButton;
+      suggestedButton.state(showOpportunities ? 'suggested-on' : 'suggested-off');
+      easyButtons.push(suggestedButton);
     }
 
     easyButtons.push(
@@ -312,8 +322,15 @@ export function LeafletMapControls({
       drawControlRef.current = null;
       measureControlRef.current = null;
       basemapButtonRef.current = null;
+      suggestedAreasButtonRef.current = null;
     };
-  }, [map, onSelectMarker, onSuggestedAreas]);
+  }, [map, onSelectMarker, onSuggestedAreas, showOpportunities]);
+
+  useEffect(() => {
+    suggestedAreasButtonRef.current?.state(
+      showOpportunities ? 'suggested-on' : 'suggested-off'
+    );
+  }, [showOpportunities]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
