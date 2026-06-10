@@ -15,6 +15,7 @@ export const STANDARD_USER_PATHS = [
     "/claims",
     "/reports",
     "/visualiser",
+    "/settings",
 ] as const;
 
 /** Matches server ReportsController.getAccessScope `isElevated` (org-wide reports / map). */
@@ -133,6 +134,15 @@ export function canAccessOrgSettings(accessLevel: string | undefined): boolean {
     return ORG_SETTINGS_ACCESS_LEVELS.has(level);
 }
 
+/**
+ * Whether the user may open /settings (calendar tab for all staff; org tabs for admins).
+ */
+export function canAccessUserSettings(accessLevel: string | undefined): boolean {
+    if (isClientPortalUser(accessLevel)) return false;
+    const level = normalize(accessLevel);
+    return Boolean(level);
+}
+
 const COMPETITOR_MANAGE_LEVELS = new Set<string>(["admin", "manager"]);
 
 /**
@@ -190,7 +200,7 @@ function isClientPortalPath(pathNormalized: string): boolean {
 /**
  * Returns whether the given path is allowed for the given access level.
  * - Public/auth paths are always allowed.
- * - `/settings` is allowed only for admin, owner, and manager.
+ * - `/settings` is allowed for all staff (calendar tab); org tabs gated in the page UI.
  * - Restricted roles only get STANDARD_USER_PATHS.
  * - Non-restricted roles (e.g. owner, admin, manager) can access any path.
  */
@@ -210,7 +220,7 @@ export function canAccess(
     }
 
     if (isSettingsPath(pathNormalized)) {
-        return canAccessOrgSettings(accessLevel);
+        return canAccessUserSettings(accessLevel);
     }
 
     if (isClientPortalUser(accessLevel)) {
@@ -254,7 +264,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/visualiser", label: "Visualiser" },
 ];
 
-/** Sidebar item for org settings (admin / owner / manager only). */
+/** Sidebar item for user settings (calendar for all staff; org tabs for admin / owner / manager). */
 export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
 
 /** Whether the user may invite or provision staff accounts. */
@@ -313,7 +323,13 @@ export function getAllowedRoutes(
         return fullNav;
     }
 
-    return fullNav.filter((r) =>
+    const restrictedNav = fullNav.filter((r) =>
         STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p))
     );
+
+    if (canAccessUserSettings(accessLevel)) {
+        return [...restrictedNav, STAFF_SETTINGS_ROUTE];
+    }
+
+    return restrictedNav;
 }

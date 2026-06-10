@@ -5,6 +5,8 @@ import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
+import { canAccessOrgSettings } from '@/lib/access';
 import {
   getCurrentYearMonth,
   readSettingsTourState,
@@ -84,6 +86,8 @@ function areTourTargetsReady(): boolean {
 export function SettingsTour() {
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const { backendUserData } = useSessionSync();
+  const canManageOrgSettings = canAccessOrgSettings(backendUserData?.accessLevel);
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
@@ -91,8 +95,15 @@ export function SettingsTour() {
   const programmaticDestroyRef = useRef(false);
 
   const shouldRun = useMemo(
-    () => Boolean(isLoaded && isSignedIn && userId && pathname === '/settings'),
-    [isLoaded, isSignedIn, userId, pathname]
+    () =>
+      Boolean(
+        isLoaded &&
+          isSignedIn &&
+          userId &&
+          pathname === '/settings' &&
+          canManageOrgSettings
+      ),
+    [isLoaded, isSignedIn, userId, pathname, canManageOrgSettings]
   );
 
   useEffect(() => {

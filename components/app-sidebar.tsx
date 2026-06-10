@@ -8,7 +8,7 @@ import { useSessionSync } from "@/api/hooks";
 import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard";
 import { usePrefetchStaffQueries } from "@/api/hooks/use-prefetch-staff";
 import {
-  canAccessOrgSettings,
+  canAccessUserSettings,
   getAllowedRoutes,
   getClientSidebarRoutes,
   isClientPortalUser,
@@ -114,7 +114,7 @@ export function AppSidebar() {
     : isStaff
       ? [
           ...STAFF_SIDEBAR_ROUTES,
-          ...(canAccessOrgSettings(profile?.accessLevel)
+          ...(canAccessUserSettings(profile?.accessLevel)
             ? [STAFF_SETTINGS_ROUTE]
             : []),
         ]
