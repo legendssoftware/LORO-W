@@ -203,6 +203,11 @@ export interface GetUserPreferencesResponse {
     biometricAuth?: boolean;
     advancedFeatures?: boolean;
     timezone?: string;
+    calendarSync?: {
+      enabled?: boolean;
+      preferredProvider?: 'google' | 'microsoft' | 'auto';
+      defaultDurationMinutes?: number;
+    };
   };
   message: string;
 }
@@ -455,5 +460,15 @@ export async function getUserPreferences(
   ref: string
 ): Promise<GetUserPreferencesResponse> {
   const { data } = await client.get<GetUserPreferencesResponse>(`/user/${ref}/preferences`);
+  return data;
+}
+
+/** PATCH /user/:ref/preferences - partial update of user preferences. */
+export async function patchUserPreferences(
+  client: AxiosInstance,
+  ref: string,
+  body: Record<string, unknown>
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(`/user/${ref}/preferences`, body);
   return data;
 }

@@ -101,7 +101,10 @@ import {
   Plus,
   Trash2,
   User,
+  CalendarDays,
 } from 'lucide-react';
+import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
+import { canAccessOrgSettings } from '@/lib/access';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
   { key: 'monday', label: 'Mon' },
@@ -332,7 +335,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -397,8 +400,10 @@ export function SettingsContent() {
   const queryClient = useQueryClient();
   const { backendUserData } = useSessionSync();
   const { isTokenReady } = useTokenReady();
+  const canManageOrgSettings = canAccessOrgSettings(backendUserData?.accessLevel);
   const orgRef = backendUserData?.organisationRef ?? '';
-  const enabled = Boolean(orgRef) && isTokenReady;
+  const orgEnabled = canManageOrgSettings && Boolean(orgRef) && isTokenReady;
+  const enabled = orgEnabled;
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
   const [addBranchOpen, setAddBranchOpen] = useState(false);
@@ -1194,17 +1199,32 @@ export function SettingsContent() {
   }, [branchRef, branchesQuery, orgRef, queryClient]);
 
   const loading =
-    !enabled ||
+    canManageOrgSettings &&
+    (!orgEnabled ||
     profileQuery.isLoading ||
     appearanceQuery.isLoading ||
     settingsQuery.isLoading ||
     hoursQuery.isLoading ||
-    branchesQuery.isLoading;
+    branchesQuery.isLoading);
 
   const profileOrg = profileQuery.data?.organisation;
 
   const branchTabs = branches.filter((b) => b.ref);
   const selectedBranch = branchTabs.find((b) => b.ref === branchRef);
+
+  if (!canManageOrgSettings) {
+    return (
+      <div className="container mx-auto flex w-full flex-col gap-6 px-2 py-8 sm:px-6">
+        <div data-tour="settings-page-header">
+          <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Connect your Outlook or Google Calendar using your LORO account email.
+          </p>
+        </div>
+        <CalendarIntegrationsSection />
+      </div>
+    );
+  }
 
   if (!orgRef) {
     return (
@@ -1287,6 +1307,16 @@ export function SettingsContent() {
             >
               <Building2 className="mr-2 size-4" />
               Branches
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('calendar')}
+              className={tabBtnClass('calendar')}
+            >
+              <CalendarDays className="mr-2 size-4" />
+              Calendar
             </Button>
           </div>
 
@@ -3029,6 +3059,10 @@ export function SettingsContent() {
               </DialogContent>
             </Dialog>
             </>
+          )}
+
+          {activeTab === 'calendar' && (
+            <CalendarIntegrationsSection />
           )}
         </>
       )}

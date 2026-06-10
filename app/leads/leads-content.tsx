@@ -285,10 +285,10 @@ export function LeadsContent() {
                 cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="gap-3">
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 onClick={() => setDedupeDialogOpen(false)}
                 disabled={dedupeMutation.isPending}
               >
@@ -296,6 +296,7 @@ export function LeadsContent() {
               </Button>
               <Button
                 type="button"
+                className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
                 onClick={() =>
                   dedupeMutation.mutate(undefined, {
                     onSuccess: (data) => {

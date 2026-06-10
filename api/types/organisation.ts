@@ -106,6 +106,10 @@ export interface OrganisationSettingsRecord {
     dailySummaryHour?: number;
     overdueSummaryHour?: number;
   } | null;
+  calendarIntegrations?: {
+    enabled?: boolean;
+    allowedProviders?: ('google' | 'microsoft')[];
+  } | null;
   geofenceDefaultRadius?: number;
   geofenceEnabledByDefault?: boolean;
   geofenceDefaultNotificationType?: string;
