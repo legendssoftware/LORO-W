@@ -50,8 +50,6 @@ import {
   useReassignLeadsMutation,
   useEngageDraftMutation,
   useSendLeadEngageMutation,
-  useInteractionsByLead,
-  useCreateInteractionMutation,
   useUsers,
   useLead,
   useApiClient,
@@ -121,6 +119,8 @@ import {
   isLeadActivityLoroRow,
 } from '@/lib/lead-activity-display';
 import { LeadHistoryEntry } from './lead-history-entry';
+import { LeadTeamChat } from './lead-team-chat';
+import { buildLeadMailtoUrl, buildLeadWhatsAppUrl } from '@/lib/lead-engage-utils';
 
 function getOptionLabel(
   options: { value: string; label: string }[],
@@ -214,7 +214,6 @@ export function LeadDetailDialog({
   const [engageOpen, setEngageOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferTargetUid, setTransferTargetUid] = useState<string | null>(null);
-  const [chatMessage, setChatMessage] = useState('');
   const [engageChannel, setEngageChannel] = useState<'email' | 'sms' | 'whatsapp' | null>(null);
   const [engageDraft, setEngageDraft] = useState('');
   const [engageTone, setEngageTone] = useState<'professional' | 'friendly' | 'formal'>('professional');
@@ -232,11 +231,6 @@ export function LeadDetailDialog({
     enabled: transferOpen,
   });
   const transferUsers = transferUsersQuery.data ?? [];
-  const interactionsQuery = useInteractionsByLead(
-    lead?.uid ?? null,
-    { enabled: (lead?.uid != null) && chatOpen }
-  );
-  const createInteractionMutation = useCreateInteractionMutation();
   const sendEngageMutation = useSendLeadEngageMutation();
   const client = useApiClient();
   const leadDetailQuery = useLead(leadUid ?? null, {
@@ -282,7 +276,6 @@ export function LeadDetailDialog({
       setEngageOpen(false);
       setTransferOpen(false);
       setTransferTargetUid(null);
-      setChatMessage('');
       setEngageChannel(null);
       setEngageDraft('');
       setEditOpen(false);
@@ -527,24 +520,6 @@ export function LeadDetailDialog({
     );
   };
 
-  const handleSendChatMessage = () => {
-    const msg = chatMessage.trim();
-    if (leadUid == null || !msg) return;
-    createInteractionMutation.mutate(
-      { message: msg, leadUid, type: 'message' },
-      {
-        onSuccess: () => {
-          setChatMessage('');
-          toast.success('Message sent');
-          onActionSuccess?.();
-        },
-        onError: (err: { message?: string }) => {
-          toast.error(err?.message ?? 'Failed to send message');
-        },
-      }
-    );
-  };
-
   /** Fallback draft when engage-draft API fails */
   const buildEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
     const name = lead?.name?.trim() || lead?.companyName?.trim() || 'there';
@@ -613,14 +588,52 @@ export function LeadDetailDialog({
   const handleSendEngage = () => {
     if (leadUid == null || engageChannel == null || !engageDraft.trim()) return;
     const channelLabel = engageChannel === 'email' ? 'Email' : engageChannel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+    const draft = engageDraft.trim();
     sendEngageMutation.mutate(
-      { ref: leadUid, channel: engageChannel, message: engageDraft.trim() },
+      { ref: leadUid, channel: engageChannel, message: draft },
       {
-        onSuccess: () => {
-          toast.success(`Sent via ${channelLabel}`);
+        onSuccess: (data) => {
+          if (data.delivered) {
+            toast.success(`Sent via ${channelLabel}`);
+          } else if (data.fallbackUrl) {
+            window.open(data.fallbackUrl, '_blank', 'noopener,noreferrer');
+            toast.success(`Opened ${channelLabel} to complete sending`);
+          } else if (engageChannel === 'email' && lead?.email) {
+            const name = lead.name?.trim() || lead.companyName?.trim() || 'there';
+            window.open(
+              buildLeadMailtoUrl(lead.email, `Following up — ${name}`, draft),
+              '_self'
+            );
+            toast.success('Opened your email app');
+          } else if (engageChannel === 'whatsapp') {
+            const phone = lead?.whatsAppNumber?.trim() || lead?.phone?.trim();
+            if (phone) {
+              window.open(buildLeadWhatsAppUrl(phone, draft), '_blank', 'noopener,noreferrer');
+              toast.success('Opened WhatsApp');
+            }
+          } else {
+            toast.success(data.message || `Prepared ${channelLabel} message`);
+          }
           onActionSuccess?.();
         },
         onError: (err: { message?: string }) => {
+          if (engageChannel === 'email' && lead?.email) {
+            const name = lead.name?.trim() || lead.companyName?.trim() || 'there';
+            window.open(
+              buildLeadMailtoUrl(lead.email, `Following up — ${name}`, draft),
+              '_self'
+            );
+            toast.success('SMTP unavailable — opened your email app instead');
+            return;
+          }
+          if (engageChannel === 'whatsapp') {
+            const phone = lead?.whatsAppNumber?.trim() || lead?.phone?.trim();
+            if (phone) {
+              window.open(buildLeadWhatsAppUrl(phone, draft), '_blank', 'noopener,noreferrer');
+              toast.success('Opened WhatsApp to send the message');
+              return;
+            }
+          }
           toast.error(err?.message ?? `Failed to send via ${channelLabel}`);
         },
       }
@@ -670,7 +683,7 @@ export function LeadDetailDialog({
       priority: 'MEDIUM',
       deadline,
       assignees,
-      targetCategory: 'lead_follow_up',
+      targetCategory: `lead_follow_up:${lead.uid}`,
     };
   }, [lead]);
 
@@ -787,61 +800,7 @@ export function LeadDetailDialog({
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto space-y-4">
-          {chatOpen && (
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
-              <h4 className="font-semibold text-sm">Team chat</h4>
-              <p className="text-xs text-muted-foreground">Visible to lead owner and assignees.</p>
-              <div className="max-h-48 overflow-y-auto space-y-2 min-h-[80px]">
-                {interactionsQuery.isLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (interactionsQuery.data?.data?.length ?? 0) === 0 ? (
-                  <p className="text-sm text-muted-foreground">No messages yet. Start the conversation.</p>
-                ) : (
-                  (interactionsQuery.data?.data ?? []).map((i) => (
-                    <div key={i.uid} className="text-sm">
-                      <span className="font-medium text-muted-foreground">
-                        {i.createdBy
-                          ? [i.createdBy.name, i.createdBy.surname].filter(Boolean).join(' ').trim() || i.createdBy.email || 'Someone'
-                          : 'Someone'}
-                        {' · '}
-                        {formatDateTime(i.createdAt)}
-                      </span>
-                      <p className="mt-0.5 whitespace-pre-wrap">{i.message}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Type a message…"
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendChatMessage();
-                    }
-                  }}
-                  rows={2}
-                  className="min-h-0 resize-none"
-                />
-                <Button
-                  size="sm"
-                  className={chatMessage.trim() && !createInteractionMutation.isPending ? 'bg-purple-600 text-white hover:bg-purple-700' : ''}
-                  onClick={handleSendChatMessage}
-                  disabled={!chatMessage.trim() || createInteractionMutation.isPending}
-                >
-                  {createInteractionMutation.isPending ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    'Send'
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+          {chatOpen && leadUid != null ? <LeadTeamChat leadRef={leadUid} /> : null}
 
           {transferOpen && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
@@ -1575,7 +1534,19 @@ export function LeadDetailDialog({
         open={scheduleTaskOpen}
         onOpenChange={setScheduleTaskOpen}
         initialValues={scheduleTaskInitial}
-        onSuccess={() => onActionSuccess?.()}
+        onSuccess={(payload) => {
+          if (
+            leadUid != null &&
+            payload.taskType === 'FOLLOW_UP' &&
+            payload.deadline?.trim()
+          ) {
+            updateMutation.mutate({
+              ref: leadUid,
+              payload: { nextFollowUpDate: payload.deadline.trim() },
+            });
+          }
+          onActionSuccess?.();
+        }}
       />
     </>
   );

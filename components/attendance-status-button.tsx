@@ -15,7 +15,12 @@ import { Loader2Icon } from '@/lib/icons';
 import type { AttCheckInContext, ClockInOptionKey } from '@/api/types/attendance';
 import {
   CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH,
+  isAtOfficeOnlyContext,
+  isLocationContextUnavailable,
+  LOCATION_CONTEXT_UNAVAILABLE_MESSAGE,
   OPTION_KEY_TO_LABEL,
+  OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK,
+  remoteOptionKeysFromContext,
   type ClockInOptionLabel,
 } from '@/lib/clock-in-options';
 import { cn } from '@/lib/utils';
@@ -34,6 +39,8 @@ export interface AttendanceStatusButtonProps {
   clockInContext?: AttCheckInContext | null;
   /** While fetching location + status for clock-in context */
   clockInContextLoading?: boolean;
+  /** Retry fetching GET /att/status?lat=&lng= when location context is unavailable. */
+  onRetryClockInContext?: () => void;
   onCheckOut: () => void;
   /** When true, user is on break; show End My Break only. */
   onBreak?: boolean;
@@ -72,19 +79,16 @@ const remoteClockInModalStackedClass =
 const soloStartShiftButtonClass =
   'min-h-[4.8rem] min-w-0 rounded-2xl border-0 px-8 py-[1.6rem] text-[1rem] font-semibold outline-none ring-0 sm:min-h-[5.6rem] sm:px-[2.4rem] sm:py-[1.8rem] sm:text-[1.2rem] md:min-h-[7.2rem] md:px-[3.2rem] md:py-8 md:text-[1.5rem] lg:min-h-[8rem] lg:px-16 lg:py-[2.4rem] lg:text-[1.8rem] focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
 
-/** Legacy clients only — server sends outsideBranchRadiusMessage from GET /att/status */
-const OUTSIDE_RADIUS_MESSAGE_FALLBACK =
-  'You are outside the office check-in radius.';
-
-function clockInModalDescription(ctx: AttCheckInContext | null | undefined): string {
-  const raw = ctx?.outsideBranchRadiusMessage?.trim() || OUTSIDE_RADIUS_MESSAGE_FALLBACK;
+function clockInModalDescription(
+  ctx: AttCheckInContext | null | undefined,
+  loading: boolean,
+): string {
+  if (isLocationContextUnavailable(ctx, loading)) {
+    return LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
+  }
+  const raw = ctx?.outsideBranchRadiusMessage?.trim() || OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK;
   const withPeriod = /[.!?]\s*$/.test(raw) ? raw : `${raw}.`;
   return `${withPeriod} Pick the option that applies.`;
-}
-
-function isAtOfficeOnlyMode(ctx: AttCheckInContext | null | undefined): boolean {
-  if (!ctx?.availableClockInOptions?.length) return true;
-  return ctx.availableClockInOptions.length === 1 && ctx.availableClockInOptions[0] === 'at_office';
 }
 
 const iconStroke = 1.25 as const;
@@ -119,6 +123,7 @@ export function AttendanceStatusButton({
   onClockInWithNote,
   clockInContext = null,
   clockInContextLoading = false,
+  onRetryClockInContext,
   onCheckOut,
   onStartBreak,
   onEndBreak,
@@ -203,9 +208,9 @@ export function AttendanceStatusButton({
   const showShiftTimer = checkedIn && !onBreak && startTime;
   const showBreakCounter = checkedIn && onBreak && breakStartTime;
 
-  const atOfficeOnly = isAtOfficeOnlyMode(clockInContext);
-  const remoteKeys =
-    clockInContext?.availableClockInOptions?.filter((k) => k !== 'at_office') ?? [];
+  const atOfficeOnly = isAtOfficeOnlyContext(clockInContext);
+  const locationUnavailable = isLocationContextUnavailable(clockInContext, clockInContextLoading);
+  const remoteKeys = remoteOptionKeysFromContext(clockInContext);
 
   const renderRemoteOptionButton = (key: ClockInOptionKey, opts?: { stacked?: boolean }) => {
     const stacked = opts?.stacked ?? false;
@@ -284,9 +289,20 @@ export function AttendanceStatusButton({
               ) : (
                 <>
                   <p className="text-center text-[0.7rem] text-muted-foreground">
-                    {clockInContext?.outsideBranchRadiusMessage?.trim() ||
-                      OUTSIDE_RADIUS_MESSAGE_FALLBACK}
+                    {locationUnavailable
+                      ? LOCATION_CONTEXT_UNAVAILABLE_MESSAGE
+                      : clockInContext?.outsideBranchRadiusMessage?.trim() ||
+                        OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK}
                   </p>
+                  {locationUnavailable && onRetryClockInContext ? (
+                    <button
+                      type="button"
+                      className="text-center text-xs text-primary underline"
+                      onClick={onRetryClockInContext}
+                    >
+                      Retry location
+                    </button>
+                  ) : null}
                   {/* md+: inline options */}
                   <div className="hidden md:block">{remoteGrid}</div>
                   {/* Mobile: open modal */}
@@ -312,7 +328,7 @@ export function AttendanceStatusButton({
                             Start your shift
                           </DialogTitle>
                           <DialogDescription className="text-center text-xs text-muted-foreground">
-                            {clockInModalDescription(clockInContext)}
+                            {clockInModalDescription(clockInContext, clockInContextLoading)}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-2 pt-2">
