@@ -1,7 +1,7 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Clock } from 'lucide-react';
 import {
@@ -114,6 +114,38 @@ export function DashboardContent() {
   const attLoading =
     attCheckInMutation.isPending || attCheckOutMutation.isPending || breakMutation.isPending;
 
+  const refreshClockInContext = useCallback(async () => {
+    setClockInContextLoading(true);
+    const position = await getPosition();
+    if (!position) {
+      setClockInContext(null);
+      setClockInContextLoading(false);
+      return;
+    }
+    try {
+      const data = await getAttStatus(apiClient, {
+        lat: position.lat,
+        lng: position.lng,
+      });
+      const ctx = data.checkInContext;
+      if (ctx?.availableClockInOptions?.length) {
+        setClockInContext({
+          withinBranchRadius: ctx.withinBranchRadius,
+          availableClockInOptions: ctx.availableClockInOptions,
+          radiusMeters: ctx.radiusMeters ?? 50,
+          distanceFromBranchMeters: ctx.distanceFromBranchMeters ?? null,
+          outsideBranchRadiusMessage: ctx.outsideBranchRadiusMessage ?? null,
+        });
+      } else {
+        setClockInContext(null);
+      }
+      setClockInContextLoading(false);
+    } catch {
+      setClockInContext(null);
+      setClockInContextLoading(false);
+    }
+  }, [apiClient]);
+
   /** When not checked in, fetch status with device location for server-driven clock-in options. */
   useEffect(() => {
     if (!staffAttendanceEnabled || checkedIn) {
@@ -121,48 +153,8 @@ export function DashboardContent() {
       setClockInContextLoading(false);
       return;
     }
-    let cancelled = false;
-    setClockInContextLoading(true);
-    void (async () => {
-      const position = await getPosition();
-      if (!position) {
-        if (!cancelled) {
-          setClockInContext(null);
-          setClockInContextLoading(false);
-        }
-        return;
-      }
-      try {
-        const data = await getAttStatus(apiClient, {
-          lat: position.lat,
-          lng: position.lng,
-        });
-        const ctx = data.checkInContext;
-        if (!cancelled) {
-          if (ctx?.availableClockInOptions?.length) {
-            setClockInContext({
-              withinBranchRadius: ctx.withinBranchRadius,
-              availableClockInOptions: ctx.availableClockInOptions,
-              radiusMeters: ctx.radiusMeters ?? 50,
-              distanceFromBranchMeters: ctx.distanceFromBranchMeters ?? null,
-              outsideBranchRadiusMessage: ctx.outsideBranchRadiusMessage ?? null,
-            });
-          } else {
-            setClockInContext(null);
-          }
-          setClockInContextLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setClockInContext(null);
-          setClockInContextLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [staffAttendanceEnabled, checkedIn, apiClient]);
+    void refreshClockInContext();
+  }, [staffAttendanceEnabled, checkedIn, refreshClockInContext]);
 
   const handleClockInWithNote = async (modeLabel: string, additionalNote?: string) => {
     const combined = buildClockInNotes(modeLabel, additionalNote);
@@ -284,6 +276,7 @@ export function DashboardContent() {
               onClockInWithNote={handleClockInWithNote}
               clockInContext={clockInContext}
               clockInContextLoading={clockInContextLoading}
+              onRetryClockInContext={() => void refreshClockInContext()}
               onCheckOut={handleCheckOut}
               onStartBreak={handleStartBreak}
               onEndBreak={handleEndBreak}

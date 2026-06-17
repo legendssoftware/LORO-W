@@ -19,6 +19,45 @@ export const OPTION_KEY_TO_LABEL: Record<ClockInOptionKey, ClockInOptionLabel> =
   driving: 'Driving',
 };
 
+/** When API omits outsideBranchRadiusMessage (older server). */
+export const OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK =
+  'You are outside the office check-in radius.';
+
+/** Shown when location context could not be loaded. */
+export const LOCATION_CONTEXT_UNAVAILABLE_MESSAGE =
+  'Could not verify your location. Choose how you are starting your shift, or retry location.';
+
+/** Remote options when server context is unavailable (never default to at-office). */
+export const FALLBACK_REMOTE_CLOCK_IN_OPTION_KEYS: ClockInOptionKey[] = [
+  'starting_from_home',
+  'work_from_home',
+  'offsite',
+  'driving',
+];
+
+export function isLocationContextUnavailable(
+  ctx: { availableClockInOptions?: ClockInOptionKey[] } | null | undefined,
+  loading: boolean,
+): boolean {
+  return !loading && ctx == null;
+}
+
+export function isAtOfficeOnlyContext(
+  ctx: { availableClockInOptions?: ClockInOptionKey[] } | null | undefined,
+): boolean {
+  if (!ctx?.availableClockInOptions?.length) return false;
+  return ctx.availableClockInOptions.length === 1 && ctx.availableClockInOptions[0] === 'at_office';
+}
+
+export function remoteOptionKeysFromContext(
+  ctx: { availableClockInOptions?: ClockInOptionKey[] } | null | undefined,
+): ClockInOptionKey[] {
+  const fromServer = (ctx?.availableClockInOptions ?? []).filter((k) => k !== 'at_office');
+  if (fromServer.length > 0) return fromServer;
+  if (ctx == null) return [...FALLBACK_REMOTE_CLOCK_IN_OPTION_KEYS];
+  return [];
+}
+
 export function labelFromOptionKey(key: string | undefined | null): ClockInOptionLabel | null {
   if (!key || !(key in OPTION_KEY_TO_LABEL)) return null;
   return OPTION_KEY_TO_LABEL[key as ClockInOptionKey];

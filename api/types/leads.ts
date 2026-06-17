@@ -24,6 +24,8 @@ export interface LeadListItem {
   email?: string;
   phone?: string;
   companyName?: string;
+  /** Profile image URL when set on the lead */
+  image?: string;
   status: string;
   source?: string;
   /** How the lead entered the system: manual (user-created) or import (CSV). */
@@ -323,9 +325,13 @@ export type UpdateLeadPayload = Partial<Omit<CreateLeadPayload, 'branch'>> & {
   nextStep?: string;
 };
 
-/** Response from PATCH /leads/:ref, PATCH restore/reactivate, DELETE /leads/:ref */
+/** Response from PATCH /leads/:ref, PATCH restore/reactivate, DELETE /leads/:ref, POST send-engage */
 export interface LeadActionResponse {
   message: string;
+  delivered?: boolean;
+  channel?: 'email' | 'sms' | 'whatsapp';
+  /** mailto: or wa.me when server could not deliver */
+  fallbackUrl?: string;
 }
 
 /** Params for GET /leads/:ref/engage-draft */

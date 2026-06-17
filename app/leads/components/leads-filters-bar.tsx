@@ -48,6 +48,8 @@ import { XIcon } from '@/lib/icons';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
+  LEAD_TEMPERATURE_OPTIONS_WITH_ALL,
+  LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { LEAD_ENTRY_TYPE_FILTER_OPTIONS } from '@/lib/leads-scope';
 import { cn } from '@/lib/utils';
@@ -71,6 +73,8 @@ export interface LeadsFilterControlsProps {
   selectedStatus: string;
   selectedSource: string;
   selectedEntryType: string;
+  selectedTemperature: string;
+  selectedPriority: string;
   selectedUserId: string;
   dateRangePopoverOpen: boolean;
   onDateRangePopoverOpenChange: (open: boolean) => void;
@@ -80,6 +84,8 @@ export interface LeadsFilterControlsProps {
   onSelectedStatusChange: (v: string) => void;
   onSelectedSourceChange: (v: string) => void;
   onSelectedEntryTypeChange: (v: string) => void;
+  onSelectedTemperatureChange: (v: string) => void;
+  onSelectedPriorityChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
 }
 
@@ -94,6 +100,8 @@ export function LeadsFilterControls({
   selectedStatus,
   selectedSource,
   selectedEntryType,
+  selectedTemperature,
+  selectedPriority,
   selectedUserId,
   dateRangePopoverOpen,
   onDateRangePopoverOpenChange,
@@ -103,6 +111,8 @@ export function LeadsFilterControls({
   onSelectedStatusChange,
   onSelectedSourceChange,
   onSelectedEntryTypeChange,
+  onSelectedTemperatureChange,
+  onSelectedPriorityChange,
   onSelectedUserIdChange,
 }: LeadsFilterControlsProps) {
   const row = layout === 'row';
@@ -110,6 +120,8 @@ export function LeadsFilterControls({
   const statusVal = selectedStatus === '' ? 'all' : selectedStatus;
   const sourceVal = selectedSource === '' ? 'all' : selectedSource;
   const entryTypeVal = selectedEntryType === '' ? 'all' : selectedEntryType;
+  const temperatureVal = selectedTemperature === '' ? 'all' : selectedTemperature;
+  const priorityVal = selectedPriority === '' ? 'all' : selectedPriority;
 
   const SourceAllIconOption = LEAD_SOURCE_OPTIONS_WITH_ALL[0]?.icon;
 
@@ -195,6 +207,32 @@ export function LeadsFilterControls({
             <UserRound className="size-4 shrink-0" aria-hidden />
           ),
       })),
+    []
+  );
+
+  const temperaturePickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      LEAD_TEMPERATURE_OPTIONS_WITH_ALL.filter((o) => o.value !== 'all').map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+        };
+      }),
+    []
+  );
+
+  const priorityPickerOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      LEAD_PRIORITY_OPTIONS.map((opt) => {
+        const Icon = opt.icon;
+        return {
+          value: opt.value,
+          label: opt.label,
+          icon: <Icon className="size-4 shrink-0" size={16} />,
+        };
+      }),
     []
   );
 
@@ -399,6 +437,28 @@ export function LeadsFilterControls({
         searchPlaceholder="Search origins…"
         emptyMessage="No origin found."
         triggerIcon={<UserRound className="size-4 shrink-0" aria-hidden />}
+        triggerClassName={smallTrigger}
+      />
+
+      <SearchableOptionListPicker
+        selectedValue={temperatureVal}
+        onValueChange={onSelectedTemperatureChange}
+        options={temperaturePickerOptions}
+        placeholderLabelWhenAll="All temperatures"
+        searchPlaceholder="Search temperatures…"
+        emptyMessage="No temperature found."
+        triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
+        triggerClassName={smallTrigger}
+      />
+
+      <SearchableOptionListPicker
+        selectedValue={priorityVal}
+        onValueChange={onSelectedPriorityChange}
+        options={priorityPickerOptions}
+        placeholderLabelWhenAll="All priorities"
+        searchPlaceholder="Search priorities…"
+        emptyMessage="No priority found."
+        triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={smallTrigger}
       />
 
