@@ -466,6 +466,28 @@ export default function UserSettingsPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            {canInviteOthers && !isSelfProfile && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Badge variant={hasClerkLink ? 'secondary' : 'outline'}>
+                  {hasClerkLink ? 'Clerk linked' : 'Pending sign-in'}
+                </Badge>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-2 bg-purple-600 text-white hover:bg-purple-700 [&_svg]:text-white"
+                  disabled={invitePending}
+                  onClick={handleSendInvite}
+                >
+                  {invitePending ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <Mail className="size-4" />
+                  )}
+                  Send invite
+                </Button>
+              </div>
+            )}
+
             {/* Basic details */}
             <Card>
               <CardHeader>
@@ -483,7 +505,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>First name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder="Jane" autoComplete="given-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -496,7 +518,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Surname</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder="Smith" autoComplete="family-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -510,7 +532,12 @@ export default function UserSettingsPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <Input
+                          type="email"
+                          {...field}
+                          placeholder="jane.smith@example.com"
+                          autoComplete="email"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -530,6 +557,8 @@ export default function UserSettingsPage() {
                           onChange={(e) =>
                             field.onChange(e.target.value || null)
                           }
+                          placeholder="+27 64 123 4567"
+                          autoComplete="tel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -567,28 +596,6 @@ export default function UserSettingsPage() {
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   User reference, HR ID, role, access level, workforce type and status.
                 </p>
-                {canInviteOthers && !isSelfProfile && (
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <Badge variant={hasClerkLink ? 'secondary' : 'outline'}>
-                      {hasClerkLink ? 'Clerk linked' : 'Pending sign-in'}
-                    </Badge>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      disabled={invitePending}
-                      onClick={handleSendInvite}
-                    >
-                      {invitePending ? (
-                        <Loader2Icon className="size-4 animate-spin" />
-                      ) : (
-                        <Mail className="size-4" />
-                      )}
-                      Send invite
-                    </Button>
-                  </div>
-                )}
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -931,7 +938,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Height</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. 175 cm" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -944,7 +951,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Weight</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. 70 kg" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -957,7 +964,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Hair color</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Black" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -970,7 +977,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Eye color</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Brown" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1013,7 +1020,7 @@ export default function UserSettingsPage() {
                     <FormItem>
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                        <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="Street address" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1027,7 +1034,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Johannesburg" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1040,7 +1047,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Country</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. South Africa" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1067,7 +1074,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Branch ref</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. BR001" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1080,7 +1087,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Position</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Sales Representative" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1093,7 +1100,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Department</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Sales" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1154,7 +1161,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Work email</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input type="email" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="work@company.com" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1167,7 +1174,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Contact number</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                          <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="+27 64 123 4567" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1344,6 +1351,7 @@ export default function UserSettingsPage() {
                               <Input
                                 type="number"
                                 step="any"
+                                placeholder="0"
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
@@ -1363,6 +1371,7 @@ export default function UserSettingsPage() {
                               <Input
                                 type="number"
                                 step="any"
+                                placeholder="0"
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
@@ -1418,7 +1427,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target hours</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1431,7 +1440,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target new clients</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1444,7 +1453,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target new leads</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1457,7 +1466,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target check-ins</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1470,7 +1479,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target calls</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1608,7 +1617,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Base salary</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1621,7 +1630,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car instalment</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1634,7 +1643,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car insurance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1647,7 +1656,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Fuel</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1660,7 +1669,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Cell phone allowance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1673,7 +1682,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car maintenance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1686,7 +1695,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>CGIC costs</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1699,7 +1708,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Total cost</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1712,7 +1721,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>ERP sales rep code</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} />
+                                <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. REP001" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
