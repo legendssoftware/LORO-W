@@ -67,6 +67,12 @@ export {
   useProvisionUserMutation,
   useReInviteUserMutation,
 } from './use-invite-user';
+export {
+  useIntakeInvitations,
+  useCreateIntakeInvitationMutation,
+  useResendIntakeInvitationMutation,
+  useDeleteIntakeInvitationMutation,
+} from './use-employee-intake';
 export { useTokenReady } from './use-token-ready';
 export { useSessionSync } from './use-session-sync';
 export { useSyncClerk } from './use-sync-clerk';

@@ -4,6 +4,7 @@ export const FULL_DOCUMENT_ROUTES = [
   '/sign-in',
   '/sign-up',
   '/onboarding',
+  '/employee-intake',
   '/forgot-password',
   '/privacy-policy',
   '/about',
