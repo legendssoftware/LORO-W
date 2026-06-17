@@ -69,7 +69,7 @@ const MODAL_SELECT_CONTENT = 'z-[10001]';
 export interface CreateTaskModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: (payload: CreateTaskPayload) => void;
   /** Pre-fill form when opening (e.g. from lead follow-up). */
   initialValues?: Partial<CreateTaskPayload>;
 }
@@ -248,7 +248,7 @@ export function CreateTaskModal({
       await createMutation.mutateAsync(payload);
       toast.success('Task created');
       onOpenChange(false);
-      onSuccess?.();
+      onSuccess?.(payload);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create task');
     }

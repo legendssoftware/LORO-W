@@ -21,6 +21,7 @@ import {
   type LeadActivityActorLookup,
   type LeadActivityActorProfile,
 } from '@/components/leads-table/leads-table';
+import { LeadsInboxView } from './components/leads-inbox-view';
 import { CreateLeadModal } from './components/create-lead-modal';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
@@ -49,6 +50,8 @@ export function LeadsContent() {
     selectedStatus,
     selectedSource,
     selectedEntryType,
+    selectedTemperature,
+    selectedPriority,
     selectedUserId,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
@@ -59,6 +62,8 @@ export function LeadsContent() {
     setSelectedStatus,
     setSelectedSource,
     setSelectedEntryType,
+    setSelectedTemperature,
+    setSelectedPriority,
     setSelectedUserId,
     setSearchQuery,
   } = useLeadsStore();
@@ -142,6 +147,12 @@ export function LeadsContent() {
     ...(leadEntryTypeToApiParam(selectedEntryType)
       ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
       : {}),
+    ...(selectedTemperature && selectedTemperature !== 'all'
+      ? { temperature: selectedTemperature }
+      : {}),
+    ...(selectedPriority && selectedPriority !== 'all'
+      ? { priority: selectedPriority }
+      : {}),
     ...(listScope === 'all' &&
     selectedUserId &&
     selectedUserId !== 'all' &&
@@ -167,6 +178,12 @@ export function LeadsContent() {
     ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
     ...(leadEntryTypeToApiParam(selectedEntryType)
       ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
+      : {}),
+    ...(selectedTemperature && selectedTemperature !== 'all'
+      ? { temperature: selectedTemperature }
+      : {}),
+    ...(selectedPriority && selectedPriority !== 'all'
+      ? { priority: selectedPriority }
       : {}),
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
@@ -257,6 +274,8 @@ export function LeadsContent() {
         selectedStatus={selectedStatus}
         selectedSource={selectedSource}
         selectedEntryType={selectedEntryType}
+        selectedTemperature={selectedTemperature}
+        selectedPriority={selectedPriority}
         selectedUserId={selectedUserId}
         dateRangePopoverOpen={dateRangePopoverOpen}
         onDateRangePopoverOpenChange={setDateRangePopoverOpen}
@@ -266,6 +285,8 @@ export function LeadsContent() {
         onSelectedStatusChange={setSelectedStatus}
         onSelectedSourceChange={setSelectedSource}
         onSelectedEntryTypeChange={setSelectedEntryType}
+        onSelectedTemperatureChange={setSelectedTemperature}
+        onSelectedPriorityChange={setSelectedPriority}
         onSelectedUserIdChange={setSelectedUserId}
         searchInput={searchInput}
         onSearchChange={setSearchInput}
@@ -331,19 +352,35 @@ export function LeadsContent() {
           </DialogContent>
         </Dialog>
       ) : null}
-      <div data-tour="leads-table">
-        <LeadsTable
-          leads={assignedOnlyLeads}
-          unassignedLeads={unassignedLeads}
-          unassignedTotal={unassignedTotal}
-          isLoading={listLoading}
-          emptyMessage="No leads match your filters."
-          activityActorLookup={activityActorLookup}
-          onLeadClick={(lead) => {
-            setSelectedLead(lead);
-            setLeadDialogOpen(true);
-          }}
-        />
+      <div data-tour="leads-table" className="min-h-0 flex-1">
+        <div className="hidden lg:block">
+          <LeadsInboxView
+            leads={assignedOnlyLeads}
+            unassignedLeads={unassignedLeads}
+            isLoading={listLoading}
+            emptyMessage="No leads match your filters."
+            selectedLeadUid={selectedLead?.uid ?? null}
+            activityActorLookup={activityActorLookup}
+            onLeadClick={(lead) => {
+              setSelectedLead(lead);
+              setLeadDialogOpen(true);
+            }}
+          />
+        </div>
+        <div className="lg:hidden">
+          <LeadsTable
+            leads={assignedOnlyLeads}
+            unassignedLeads={unassignedLeads}
+            unassignedTotal={unassignedTotal}
+            isLoading={listLoading}
+            emptyMessage="No leads match your filters."
+            activityActorLookup={activityActorLookup}
+            onLeadClick={(lead) => {
+              setSelectedLead(lead);
+              setLeadDialogOpen(true);
+            }}
+          />
+        </div>
       </div>
       {(leadsQuery.hasNextPage || (showUnassignedGroup && unassignedQuery.hasNextPage)) && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
