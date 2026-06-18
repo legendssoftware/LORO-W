@@ -79,9 +79,7 @@ export function IntakeInvitationsPanel() {
   }
 
   if (pending.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No pending employee intake links.</p>
-    );
+    return null;
   }
 
   return (

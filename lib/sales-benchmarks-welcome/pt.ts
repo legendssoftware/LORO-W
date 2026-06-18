@@ -2,78 +2,61 @@
 import type { SalesBenchmarksContent } from './types';
 
 export const salesBenchmarksPt: SalesBenchmarksContent = {
-  noticeTitle: 'AVISO IMPORTANTE',
-  noticeSubtitle: 'REQUISITOS DO BÓNUS DE DESEMPENHO DE FIM DE ANO',
-  effectiveDate: 'Data de vigência: 01 de junho de 2026',
-  greeting: 'Caros Colegas,',
+  noticeTitle: 'Mensagem a Todas as Filiais',
+  noticeSubtitle:
+    'Toler\u00e2ncia Zero para Roubo, Fraude e Apropria\u00e7\u00e3o Ind\u00e9bita de Fundos da Empresa',
+  greeting: 'Prezada Equipe,',
   introParagraphs: [
-    'Informamos que o Bónus de Desempenho de Fim de Ano baseia-se em requisitos mínimos de desempenho, assiduidade, pontualidade e conformidade ao longo do ano.',
-    'Os números abaixo NÃO são metas ou objetivos ambiciosos. São os requisitos MÍNIMOS diários esperados para a sua posição.',
-    'Para permanecer elegível para o Bónus de Desempenho de Fim de Ano, todos os colaboradores devem manter um desempenho médio mínimo de 90% ou superior durante o ano.',
-    'Os colaboradores que terminarem o ano com desempenho médio inferior a 90% serão automaticamente desqualificados do Bónus de Desempenho de Fim de Ano.',
+    'A BitDrywall deseja lembrar a todos os funcion\u00e1rios que qualquer roubo, fraude, apropria\u00e7\u00e3o ind\u00e9bita de fundos da empresa, estoque, pagamentos de clientes ou ativos da empresa n\u00e3o ser\u00e1 tolerado em nenhuma circunst\u00e2ncia.',
+    'Recentemente, ocorreu um incidente grave em nosso neg\u00f3cio no qual estoque foi vendido e fundos da empresa foram supostamente apropriados indevidamente para benef\u00edcio pessoal. O caso foi investigado e a\u00e7\u00f5es disciplinares e legais apropriadas foram iniciadas.',
   ],
-  emphasisIntro: 'Por favor, note:',
+  emphasisIntro: 'Que isto sirva como lembrete de que:',
   emphasisBullets: [
-    '90% é o nível mínimo aceitável.',
-    '89%, 88%, 80% ou qualquer percentagem abaixo de 90% NÃO qualifica.',
+    'Toda venda, cota\u00e7\u00e3o, fatura, entrega e pagamento pode ser rastreada.',
+    'Auditorias de filiais s\u00e3o realizadas regularmente.',
+    'Movimenta\u00e7\u00f5es de estoque s\u00e3o monitoradas por meio de nossos sistemas.',
+    'Confirma\u00e7\u00f5es de clientes, registros banc\u00e1rios e logs do sistema podem ser revisados a qualquer momento.',
+    'Funcion\u00e1rios considerados culpados de roubo, fraude, desonestidade ou apropria\u00e7\u00e3o ind\u00e9bita de propriedade da empresa enfrentar\u00e3o a\u00e7\u00e3o disciplinar, demiss\u00e3o e, quando apropriado, processo criminal.',
   ],
-  minimumDailyHeading: 'REQUISITOS MÍNIMOS DIÁRIOS',
-  table: {
-    headers: ['Posição', 'Chamadas Exigidas Por Dia', 'Visitas Exigidas Por Dia'],
-    rows: [
-      ['Representantes de Vendas Internos', '60 Chamadas', 'N/A'],
-      ['Representantes de Vendas Externos', '20 Chamadas', '8 Visitas'],
-      ['Líderes de Equipa de Filial', '60 Chamadas', 'N/A'],
-      ['Gestores de Filial (com Assistente)', '20 Chamadas', '8 Visitas'],
-      ['Gestores de País', '20 Chamadas', '8 Visitas'],
-    ],
-  },
   sections: [
     {
-      title: 'REGRAS DE DESQUALIFICAÇÃO DO BÓNUS',
-      intro:
-        'Os colaboradores serão automaticamente desqualificados do Bónus de Desempenho de Fim de Ano se:',
-      bullets: [
-        'O seu desempenho médio anual ficar abaixo de 90%.',
-        'Não cumprirem o desempenho mínimo exigido durante 3 meses consecutivos.',
-        'A assiduidade ficar abaixo de 97% de média durante 3 meses no ano.',
-        'Tiverem 3 ou mais chegadas tardias num mês durante 3 meses consecutivos.',
-        'Chamadas, visitas ou atividades não forem registadas corretamente no sistema CRM.',
-      ],
-    },
-    {
-      title: 'RECUPERAÇÃO DE DESEMPENHO',
-      intro: 'Os colaboradores podem recuperar o seu desempenho médio durante o ano.',
-      paragraphs: ['Exemplo:'],
-      bullets: [
-        'Um mês a 85%',
-        'Mês seguinte a 95%+',
-        'Isto pode recuperar a média anual global para o mínimo exigido de 90%.',
-        'No entanto, não cumprir o nível mínimo exigido durante 3 meses consecutivos resultará em desqualificação automática do bónus.',
-      ],
-    },
-    {
-      title: 'IMPORTANTE',
       paragraphs: [
-        'Todas as chamadas, visitas, interações com clientes e atividades devem ser registadas corretamente no sistema CRM.',
-        'Se não estiver registado no CRM, será considerado como NÃO FEITO.',
-        'A gestão pode auditar:',
+        'Um \u00fanico ato de desonestidade pode danificar permanentemente a carreira, a reputa\u00e7\u00e3o e as oportunidades futuras de emprego de uma pessoa.',
       ],
+    },
+    {
+      paragraphs: [
+        'A BitDrywall investiu recursos significativos para construir um neg\u00f3cio que oferece oportunidades de emprego em toda a \u00c1frica Austral. Esperamos que todos os funcion\u00e1rios ajam com honestidade, integridade e profissionalismo.',
+      ],
+    },
+    {
+      paragraphs: [
+        'Funcion\u00e1rios que tomarem conhecimento de roubo, fraude ou atividades suspeitas s\u00e3o incentivados a report\u00e1-las imediatamente \u00e0 ger\u00eancia. A falha em reportar condutas inadequadas conhecidas tamb\u00e9m pode resultar em a\u00e7\u00e3o disciplinar.',
+      ],
+    },
+    {
+      title: 'Nossa mensagem \u00e9 simples:',
+      paragraphs: ['Trabalhe duro. Ganhe com honestidade. Proteja a empresa.'],
+    },
+    {
+      intro:
+        'Qualquer pessoa que considere levar estoque, dinheiro, pagamentos de clientes, combust\u00edvel, ativos da empresa ou manipular transa\u00e7\u00f5es deve entender que as consequ\u00eancias podem incluir:',
       bullets: [
-        'Atividade no CRM',
-        'Registos de chamadas',
-        'Movimento GPS',
-        'Relatórios de visitas',
-        'Registos de assiduidade',
-        'Registos de entrada e saída',
-        'Feedback de clientes',
+        'Suspens\u00e3o imediata',
+        'Audi\u00eancias disciplinares',
+        'Demiss\u00e3o',
+        'Acusa\u00e7\u00f5es criminais',
+        'Recupera\u00e7\u00e3o civil de perdas',
+        'Inclus\u00e3o em lista negra de oportunidades futuras de emprego dentro do Grupo',
+      ],
+    },
+    {
+      paragraphs: [
+        'A BitDrywall continuar\u00e1 a aplicar uma pol\u00edtica de toler\u00e2ncia zero em rela\u00e7\u00e3o a roubo e desonestidade.',
       ],
     },
   ],
-  closingParagraphs: [
-    'Obrigado pelo vosso compromisso, disciplina e dedicação.',
-    'Gestão',
-  ],
-  acknowledgeLabel: 'Li e reconheço',
-  closingSignature: 'Gestão',
+  closingParagraphs: ['Atenciosamente,', 'Gest\u00e3o BitGroup'],
+  acknowledgeLabel: 'Li e compreendi este aviso',
+  closingSignature: 'Gest\u00e3o BitGroup',
 };

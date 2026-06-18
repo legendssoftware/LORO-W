@@ -468,7 +468,14 @@ export default function UserSettingsPage() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             {canInviteOthers && !isSelfProfile && (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <Badge variant={hasClerkLink ? 'secondary' : 'outline'}>
+                <Badge
+                  className={cn(
+                    'border-0 text-white',
+                    hasClerkLink
+                      ? 'bg-green-600 hover:bg-green-600'
+                      : 'bg-red-600 hover:bg-red-600'
+                  )}
+                >
                   {hasClerkLink ? 'Clerk linked' : 'Pending sign-in'}
                 </Badge>
                 <Button
@@ -483,7 +490,7 @@ export default function UserSettingsPage() {
                   ) : (
                     <Mail className="size-4" />
                   )}
-                  Send invite
+                  {hasClerkLink ? 'Re-Invite User' : 'Invite User'}
                 </Button>
               </div>
             )}
