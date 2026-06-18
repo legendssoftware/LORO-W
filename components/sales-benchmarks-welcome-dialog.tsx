@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -30,50 +31,106 @@ import {
 } from '@/components/ui/table';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 import {
+  LORO_ORG_NOTICE_DISMISSED_UID_KEY,
   LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
   LORO_WELCOME_SHOWN_SESSION_KEY,
 } from '@/lib/client-session-keys';
 import {
   DEFAULT_SALES_BENCHMARKS_LOCALE,
-  SALES_BENCHMARKS_BY_LOCALE,
   SALES_BENCHMARKS_LANG_ATTR,
-  SALES_BENCHMARKS_LOCALE_OPTIONS,
+  type SalesBenchmarksContent,
   type SalesBenchmarksLocale,
 } from '@/lib/sales-benchmarks-welcome';
 import { useSessionStore } from '@/store/session-store';
 import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
+import { useTokenReady } from '@/api/hooks/use-token-ready';
+import { getActiveOrganisationNotice } from '@/api/endpoints/organisation-notice';
+import { activeOrgNoticeKey } from '@/api/query-keys/settings';
+import type { OrganisationNoticeRecord } from '@/api/types/organisation-notice';
+import {
+  buildNoticeContentFromRecord,
+  getNoticeLocaleOptions,
+} from '@/lib/organisation-notice-content';
 
-function persistDismiss(sessionId: string) {
+function persistDismiss(sessionId: string, noticeUid: number | null) {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY, sessionId);
+    if (noticeUid != null) {
+      sessionStorage.setItem(LORO_ORG_NOTICE_DISMISSED_UID_KEY, String(noticeUid));
+    } else {
+      sessionStorage.removeItem(LORO_ORG_NOTICE_DISMISSED_UID_KEY);
+    }
     sessionStorage.setItem(LORO_WELCOME_SHOWN_SESSION_KEY, '1');
   } catch {
     // ignore quota / private mode
   }
 }
 
+function isDismissedForNotice(sessionId: string, noticeUid: number | null): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const dismissedFor = sessionStorage.getItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
+    if (dismissedFor !== sessionId) return false;
+    if (noticeUid == null) return true;
+    const dismissedUid = sessionStorage.getItem(LORO_ORG_NOTICE_DISMISSED_UID_KEY);
+    return dismissedUid === String(noticeUid);
+  } catch {
+    return false;
+  }
+}
+
 export function SalesBenchmarksWelcomeDialog({
   deferForPendingWarning = false,
+  previewNotice = null,
+  forceOpen = false,
+  onPreviewClose,
 }: {
-  /**
-   * When true, benchmarks modal stays closed until user target has settled (no fetch error) and any
-   * blocking performance warning is cleared.
-   */
   deferForPendingWarning?: boolean;
+  previewNotice?: OrganisationNoticeRecord | null;
+  forceOpen?: boolean;
+  onPreviewClose?: () => void;
 } = {}) {
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
+  const client = useApiClient();
+  const { isTokenReady } = useTokenReady();
+  const { backendUserData } = useSessionSync();
+  const orgRef = backendUserData?.organisationRef ?? '';
   const [open, setOpen] = useState(false);
   const [locale, setLocale] = useState<SalesBenchmarksLocale>(DEFAULT_SALES_BENCHMARKS_LOCALE);
   const profile = useSessionStore((s) => s.profileData);
 
-  const content = SALES_BENCHMARKS_BY_LOCALE[locale];
+  const activeNoticeQuery = useQuery({
+    queryKey: activeOrgNoticeKey(orgRef),
+    queryFn: () => getActiveOrganisationNotice(client, orgRef),
+    enabled: !previewNotice && Boolean(orgRef) && isTokenReady && isSignedIn,
+    staleTime: 60_000,
+  });
+
+  const activeNotice = previewNotice ?? activeNoticeQuery.data?.notice ?? null;
+
+  const localeOptions = useMemo(() => {
+    if (!activeNotice) return [];
+    return getNoticeLocaleOptions(activeNotice);
+  }, [activeNotice]);
+
+  const content: SalesBenchmarksContent | null = useMemo(() => {
+    if (!activeNotice) return null;
+    return buildNoticeContentFromRecord(activeNotice, locale);
+  }, [activeNotice, locale]);
 
   const inAppShell = !isFullDocumentRoute(pathname);
   const isDashboard = pathname === '/dashboard';
+  const noticeUid = activeNotice?.uid ?? null;
 
   useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+      return;
+    }
     if (isGeneralWorkerWorkforce(profile?.workforceType)) {
       setOpen(false);
       return;
@@ -85,32 +142,68 @@ export function SalesBenchmarksWelcomeDialog({
       setOpen(false);
       return;
     }
-    if (typeof window === 'undefined') return;
-    try {
-      const dismissedFor = sessionStorage.getItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
-      if (dismissedFor === sessionId) return;
-    } catch {
+    if (activeNoticeQuery.isLoading && !previewNotice) {
+      return;
+    }
+    if (!activeNotice && !previewNotice) {
+      if (!isDismissedForNotice(sessionId, null)) {
+        persistDismiss(sessionId, null);
+      }
+      setOpen(false);
+      return;
+    }
+    if (isDismissedForNotice(sessionId, noticeUid)) {
+      setOpen(false);
       return;
     }
     setLocale(DEFAULT_SALES_BENCHMARKS_LOCALE);
     setOpen(true);
-  }, [isLoaded, isSignedIn, inAppShell, isDashboard, sessionId, pathname, deferForPendingWarning, profile?.workforceType]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    inAppShell,
+    isDashboard,
+    sessionId,
+    pathname,
+    deferForPendingWarning,
+    profile?.workforceType,
+    activeNotice,
+    activeNoticeQuery.isLoading,
+    previewNotice,
+    forceOpen,
+    noticeUid,
+  ]);
 
   const handleOpenChange = (next: boolean) => {
+    if (forceOpen) {
+      if (!next) onPreviewClose?.();
+      setOpen(next);
+      return;
+    }
     if (!next && sessionId) {
-      persistDismiss(sessionId);
+      persistDismiss(sessionId, noticeUid);
     }
     setOpen(next);
   };
 
+  if (!content) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        showCloseButton={false}
+        showCloseButton={forceOpen}
         className="!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => {
+          if (!forceOpen) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (!forceOpen) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (!forceOpen) e.preventDefault();
+        }}
       >
         <div className="relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center dark:bg-red-950/40">
           <div className="absolute top-4 right-4 z-10">
@@ -125,7 +218,7 @@ export function SalesBenchmarksWelcomeDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SALES_BENCHMARKS_LOCALE_OPTIONS.map((option) => (
+                {localeOptions.map((option) => (
                   <SelectItem key={option.id} value={option.id} className="text-xs">
                     {option.label}
                   </SelectItem>
@@ -149,7 +242,7 @@ export function SalesBenchmarksWelcomeDialog({
 
         <div
           className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
-          lang={SALES_BENCHMARKS_LANG_ATTR[locale]}
+          lang={SALES_BENCHMARKS_LANG_ATTR[locale] ?? locale}
         >
           <p className="mb-3 text-sm font-medium text-foreground">{content.greeting}</p>
 

@@ -70,6 +70,8 @@ export interface GreenfieldOpportunityZone {
   id: string;
   rank: number;
   label: string;
+  /** Google reverse-geocoded street address for the cluster centroid. */
+  address: string | null;
   lat: number;
   lng: number;
   radiusMeters: number;
