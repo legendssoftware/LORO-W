@@ -1,3 +1,4 @@
+import { salesBenchmarksAf } from './af';
 import { salesBenchmarksEn } from './en';
 import { salesBenchmarksFr } from './fr';
 import { salesBenchmarksNso } from './nso';
@@ -5,6 +6,7 @@ import { salesBenchmarksPt } from './pt';
 import { salesBenchmarksSn } from './sn';
 import { salesBenchmarksSt } from './st';
 import { salesBenchmarksTn } from './tn';
+import { salesBenchmarksXh } from './xh';
 import { salesBenchmarksZu } from './zu';
 import {
   DEFAULT_SALES_BENCHMARKS_LOCALE,
@@ -26,6 +28,8 @@ export {
 
 export const SALES_BENCHMARKS_BY_LOCALE: Record<SalesBenchmarksLocale, SalesBenchmarksContent> = {
   en: salesBenchmarksEn,
+  af: salesBenchmarksAf,
+  xh: salesBenchmarksXh,
   pt: salesBenchmarksPt,
   fr: salesBenchmarksFr,
   zu: salesBenchmarksZu,
