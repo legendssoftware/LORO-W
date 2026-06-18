@@ -1,7 +1,17 @@
-export type SalesBenchmarksLocale = 'en' | 'pt' | 'fr' | 'zu' | 'nso' | 'st' | 'sn' | 'tn';
+export type SalesBenchmarksLocale =
+  | 'en'
+  | 'af'
+  | 'xh'
+  | 'pt'
+  | 'fr'
+  | 'zu'
+  | 'nso'
+  | 'st'
+  | 'sn'
+  | 'tn';
 
 export type NoticeSection = {
-  title: string;
+  title?: string;
   intro?: string;
   bullets?: readonly string[];
   paragraphs?: readonly string[];
@@ -10,13 +20,13 @@ export type NoticeSection = {
 export type SalesBenchmarksContent = {
   noticeTitle: string;
   noticeSubtitle: string;
-  effectiveDate: string;
+  effectiveDate?: string;
   greeting: string;
   introParagraphs: readonly string[];
   emphasisIntro: string;
   emphasisBullets: readonly string[];
-  minimumDailyHeading: string;
-  table: { headers: readonly string[]; rows: readonly (readonly string[])[] };
+  minimumDailyHeading?: string;
+  table?: { headers: readonly string[]; rows: readonly (readonly string[])[] };
   sections: readonly NoticeSection[];
   closingParagraphs: readonly string[];
   acknowledgeLabel: string;
@@ -28,6 +38,8 @@ export const SALES_BENCHMARKS_LOCALE_OPTIONS: readonly {
   label: string;
 }[] = [
   { id: 'en', label: 'English' },
+  { id: 'af', label: 'Afrikaans' },
+  { id: 'xh', label: 'Xhosa' },
   { id: 'pt', label: 'Portuguese' },
   { id: 'fr', label: 'French' },
   { id: 'zu', label: 'Zulu' },
@@ -41,6 +53,8 @@ export const DEFAULT_SALES_BENCHMARKS_LOCALE: SalesBenchmarksLocale = 'en';
 
 export const SALES_BENCHMARKS_LANG_ATTR: Record<SalesBenchmarksLocale, string> = {
   en: 'en',
+  af: 'af',
+  xh: 'xh',
   pt: 'pt',
   fr: 'fr',
   zu: 'zu',

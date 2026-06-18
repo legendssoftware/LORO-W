@@ -2,78 +2,61 @@
 import type { SalesBenchmarksContent } from './types';
 
 export const salesBenchmarksTn: SalesBenchmarksContent = {
-  noticeTitle: 'TSEBIŠO E E BOTLHOKWA',
-  noticeSubtitle: 'DITLHOKWA TSA BONUS YA TIRAGATSO YA BOKA JA NGWAGA',
-  effectiveDate: 'Letsatsi la Tshimologo: 01 June 2026',
-  greeting: 'Thobela Sehlopha,',
+  noticeTitle: 'Molaetsa go Makala Otlhe',
+  noticeSubtitle:
+    'Go Se Go Nne le Tshwarelo ya Bosela, Bofora le Tshomi\u0161o e e Fosahetseng ya Madi a Khamphani',
+  greeting: 'Sehlopha sa rona,',
   introParagraphs: [
-    'Tsweetswee ela tlhoko gore Bonus ya Tiragatso ya Boka ja Ngwaga e theilwe mo ditlhokweng tsa bonyane tsa tiragatso, go nna teng, go goroga ka nako, le go obamela melao mo ngwageng ka moka.',
-    'Dinomoro tse fa tlase GA SE maikaelelo kgotsa maikaelelo a maatla. Ke ditlhokwa tsa BONYANE tsa letsatsi le letsatsi tse di solofetsweng go tswa mo maemong a gago.',
-    'Go nna o loketswe Bonus ya Tiragatso ya Boka ja Ngwaga, badirisi botlhe ba tshwanetse go boloka tiragatso ya avg e bonyane ya 90% kgotsa go feta mo ngwageng.',
-    'Badirisi ba ba fetsang ngwaga ka tlase ga tiragatso ya avg ya 90% ba tla tloswa ka boitiriso mo Bonus ya Tiragatso ya Boka ja Ngwaga.',
+    'BitDrywall e batla go gakolola badiredi botlhe gore bosela, bofora, tshomi\u0161o e e fosahetseng ya madi a khamphani, setoko, dit\u0161helete tsa bareki kgotsa dithoto tsa khamphani ga di tla amogelwa fa e le fa.',
+    'Gompieno go diragaletse kgogelo e e botlhokwa mo gare ga kgwebo ya rona moo setoko se nengwe \u2019me madi a khamphani a re\u0161wa a tshomi\u0161iwa ka tsela e e fosahetseng go nna le molemo wa motho ka no\u0161i. Tabo e sekasekilwe \u2019me go t\u0161imolwe dikgato t\u0161a go laola le t\u0161a molao t\u0161eo di siameng.',
   ],
-  emphasisIntro: 'Tsweetswee ela tlhoko:',
+  emphasisIntro: 'A se ke a re gakolola gore:',
   emphasisBullets: [
-    '90% ke maemo a bonyane a amogelwang.',
-    '89%, 88%, 80%, kgotsa peresente efe goba efe e e fa tlase ga 90% GA E TSENELE.',
+    'Thekiso nngwe le nngwe, tlhahiso, invoice, go isa thepa le tefo di ka latelwa.',
+    'Diteko tsa makala di dirwa ka dinako tsotlhe.',
+    'Go tsamaya ga setoko go laolwa ka mananeo a rona.',
+    'Ditii\u0161o tsa bareki, direkoto tsa banka le dilogo tsa mananeo di ka sekasekwa nako nngwe le nngwe.',
+    'Badiredi bao ba bonwang ba na le molato wa bosela, bofora, go se nne le boikanyo kgotsa tshomi\u0161o ya thepa ya khamphani ka tsela e e fosahetseng ba tla kgopana le kgato ya go laola, go tlo\u0161wa mo\u0161omong, \u2019me fa go tlhokega, go t\u0161hwarelwa ka molao.',
   ],
-  minimumDailyHeading: 'DITLHOKWA TSA BONYANE TSA LETSATSI LE LETSATSI',
-  table: {
-    headers: ['Maemo', 'Direitišo tse di Batlwang ka Letsatsi', 'Dikopano tse di Batlwang ka Letsatsi'],
-    rows: [
-      ['Baemedi ba Thekiso ya ka Gare', '60 Direitišo', 'N/A'],
-      ['Baemedi ba Thekiso ya kwa Ntle', '20 Direitišo', '8 Dikopano'],
-      ['Batautona ba Sehlopha sa Lekala', '60 Direitišo', 'N/A'],
-      ['Batsamaisi ba Lekala (le Mothusi)', '20 Direitišo', '8 Dikopano'],
-      ['Batsamaisi ba Naga', '20 Direitišo', '8 Dikopano'],
-    ],
-  },
   sections: [
     {
-      title: 'MELAO YA GO TLOŠWA GA BONUS',
-      intro:
-        'Badirisi ba tla tloswa ka boitiriso mo Bonus ya Tiragatso ya Boka ja Ngwaga fa:',
-      bullets: [
-        'Tiragatso ya bona ya avg ya ngwaga e fela ka tlase ga 90%.',
-        'Ba palelwa go fitlhelela tiragatso e bonyane e e batlweng dikgwedi tse 3 ka morago-rao.',
-        'Go nna teng go fela ka tlase ga avg ya 97% dikgwedi tse 3 mo ngwageng.',
-        'Ba na le go goroga go le sieo go feta ga 3 ka kgwedi dikgwedi tse 3 ka morago-rao.',
-        'Direitišo, dikopano, kgotsa ditiro ga di kwadiswe sentle mo tsamaisong ya CRM.',
-      ],
-    },
-    {
-      title: 'GO BUSA TIRAGATSO',
-      intro: 'Badirisi ba ka busa tiragatso ya bona ya avg mo ngwageng.',
-      paragraphs: ['Mohlala:'],
-      bullets: [
-        'Kgwedi e le nngwe go 85%',
-        'Kgwedi e e latelang go 95%+',
-        'Seno se ka busa avg ya ngwaga ka moka go fitlhelela go 90% e bonyane e e batlweng.',
-        'Le fa go le jalo, go palelwa go fitlhelela maemo a bonyane a a batlweng dikgwedi tse 3 ka morago-rao go tla dira gore o tloswe mo bonus ka boitiriso.',
-      ],
-    },
-    {
-      title: 'BOTLHOKWA',
       paragraphs: [
-        'Direitišo tsotlhe, dikopano, puisano le bareki, le ditiro di tshwanetse go kwadiswa sentle mo tsamaisong ya CRM.',
-        'Fa e sa kwadiswe mo CRM, e tla tewa e sa dirilwe.',
-        'Taolo e ka sekaseka:',
+        'Tiro e le nngwe ya go se nne le boikanyo e ka senya mosebetsi, t\u0161homi\u0161o le menyetla ya go bona tiro mo nakong e e tlang ya motho ka ho sa fetoge.',
       ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall e t\u0161ent\u0161hit\u0161e lisebelisoa tse di boholo go aga kgwebo e e nang le menyetla ya tiro mo Aforika Borwa. Re lebeletse gore modiredi mongwe le mongwe a dire ka boikanyo, boitshwaro jo bo siameng le boitsebi\u0161o.',
+      ],
+    },
+    {
+      paragraphs: [
+        'Badiredi bao ba itse ka bosela, bofora kgotsa ditiro tse di bela\u0161ang ba kgothi\u0161et\u0161wa go di begela taolo ka bonako. Go se bega boitshwaro jo bo sa siamang jo bo itsegeng go ka tlisa le kgato ya go laola.',
+      ],
+    },
+    {
+      title: 'Molaetsa wa rona o bonolo:',
+      paragraphs: ['Dira ka thata. Fumana ka boikanyo. Sireletsa khamphani.'],
+    },
+    {
+      intro:
+        'Motho mongwe le mongwe yo o nahanang ka go t\u0161ea setoko, madi, dit\u0161helete tsa bareki, phethiloli, dithoto tsa khamphani kgotsa go fetola dipoledi\u0161ano o tshwanetse go kwe\u0161i\u0161a gore ditlamorago di ka akaretsa:',
       bullets: [
-        'Tiro ya CRM',
-        'Direkhoto tsa direitišo',
-        'Go tsamaya ga GPS',
-        'Dipego tsa dikopano',
-        'Direkhoto tsa go nna teng',
-        'Direkhoto tsa go tsena le go tswa',
-        'Maikutlo a bareki',
+        'Go emisiwa ka bonako',
+        'Dikgotla t\u0161a go laola',
+        'Go tlo\u0161wa mo\u0161omong',
+        'Ditshwarelo t\u0161a molao',
+        'Go busediwa ga diphokotelo ka molao',
+        'Go ngwalelwa lenaneong le le sa dumelelwang la menyetla ya tiro mo nakong e e tlang mo gare ga Sehlopha',
+      ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall e tla t\u0161wela pele go dira gore leano la go se nne le tshwarelo mabapi le bosela le go se nne le boikanyo le phethagwe.',
       ],
     },
   ],
-  closingParagraphs: [
-    'Re leboga go ikaya ga lona, go itshwara, le go ineela.',
-    'Taolo',
-  ],
-  acknowledgeLabel: 'Ke balile mme ke dumalana',
-  closingSignature: 'Taolo',
+  closingParagraphs: ['Ka tlhompho,', 'Taolo ya BitGroup'],
+  acknowledgeLabel: 'Ke balile mme ke kwe\u0161i\u0161e tsebi\u0161o le',
+  closingSignature: 'Taolo ya BitGroup',
 };

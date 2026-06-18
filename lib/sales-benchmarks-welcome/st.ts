@@ -2,78 +2,61 @@
 import type { SalesBenchmarksContent } from './types';
 
 export const salesBenchmarksSt: SalesBenchmarksContent = {
-  noticeTitle: 'TSEBIŠO EA Bohlokoa',
-  noticeSubtitle: "LITLHOKO TSA BONUS EA TS'EBETSO EA QETELLONG EA SELEMO",
-  effectiveDate: 'Letsatsi la ho Sebetsa: 01 Juni 2026',
-  greeting: 'Team e Ratehang,',
+  noticeTitle: 'Molaetsa ho Lihloohong Tsohle',
+  noticeSubtitle:
+    'Ho Se Be le T\u0161oarelo ea Bosela, Bofora le T\u0161ebeliso e Fosahetseng ea Chelete ea K\u2019hamphani',
+  greeting: 'Sehlopha sa rona,',
   introParagraphs: [
-    "Ka kopo elello hore Bonus ea Ts'ebetso ea Qetellong ea Selemo e thehiloe holim'a litlhoko tse nyane tsa ts'ebetso, ho ba teng, ho fihla ka nako, le ho obamela melao selemong ka bophara.",
-    'Linomoro tse ka tlase HA LI SE lipheo kapa lipheo tse matla. Ke litlhoko tsa BONYANE tsa letsatsi le letsatsi tse lebelletsoeng maemong a hau.',
-    "Ho lula u loketse Bonus ea Ts'ebetso ea Qetellong ea Selemo, basebetsi bohle ba tlameha ho boloka ts'ebetso e bohareng e fokolang ea 90% kapa ho feta selemong.",
-    "Basebetsi ba qetang selemo ka tlase ho ts'ebetso e bohareng ea 90% ba tla hlakoloa ka bo-iketsetse ho Bonus ea Ts'ebetso ea Qetellong ea Selemo.",
+    'BitDrywall e batla ho hopotsa basebetsi bohle hore bosela, bofora, t\u0161ebeliso e fosahetseng ea chelete ea k\u2019hamphani, thepa, litefello tsa bareki kapa thepa ea k\u2019hamphani e ke ke ea amoheloa ka tsela efe kapa efe.',
+    'Haufinyane ho etsahetse ketsahalo e bohlasoa ka har\u2019a khoebo ea rona moo thepa e rekisitsoeng \u2019me chelete ea k\u2019hamphani e re \u0161et\u0161e e sebelisitsoe ka tsela e fosahetseng bakeng sa molemo oa motho ka sebele. Tabo e hlahlobiloe \u2019me ho nkuoe mehato e nepahetseng ea dissiplinary le ea molao.',
   ],
-  emphasisIntro: 'Ka kopo elello:',
+  emphasisIntro: 'Ha e be ke hopolo hore:',
   emphasisBullets: [
-    '90% ke boemo bo fokolang bo amoheloang.',
-    '89%, 88%, 80%, kapa peresente efe kapa efe ka tlase ho 90% HA E FANELE.',
+    'Thekiso e \u2019ngoe le e \u2019ngoe, tlhahiso ea theko, invoice, ho isa thepa le tefo li ka latedisoa.',
+    'Liteko tsa lihlooho li etsoa ka mehla.',
+    'Ho tsamaea ha thepa ho laoloa ka mananeo a rona.',
+    'Lit\u0161enyo tsa bareki, lirekoto tsa banka le li-log tsa mananeo li ka hlahloboa nako efe kapa efe.',
+    'Basebetsi ba fumanoeng ba le molato oa bosela, bofora, ho se t\u0161oarele kapa t\u0161ebeliso e fosahetseng ea thepa ea k\u2019hamphani ba tla tobana le ketsahalo ea dissiplinary, ho tlosoa mosebetsing, \u2019me ha ho hlokahala, ho t\u0161oaroa ka molao.',
   ],
-  minimumDailyHeading: 'LITLHOKO TSA BONYANE TSA LETSATSI LE LETSATSI',
-  table: {
-    headers: ['Maemo', 'Mehala e Hlokahalang ka Letsatsi', 'Litšoantšo tse Hlokahalang ka Letsatsi'],
-    rows: [
-      ['Baemeli ba Thekiso ka Hare', '60 Mehala', 'N/A'],
-      ['Baemeli ba Thekiso kantle', '20 Mehala', '8 Litšoantšo'],
-      ['Bataoli ba Sehlopha sa Lekala', '60 Mehala', 'N/A'],
-      ['Batsamaisi ba Lekala (le Mothusi)', '20 Mehala', '8 Litšoantšo'],
-      ['Batsamaisi ba Naha', '20 Mehala', '8 Litšoantšo'],
-    ],
-  },
   sections: [
     {
-      title: 'MELAO EA HO HLAKOLWA HA BONUS',
-      intro:
-        "Basebetsi ba tla hlakoloa ka bo-iketsetse ho Bonus ea Ts'ebetso ea Qetellong ea Selemo haeba:",
-      bullets: [
-        "Ts'ebetso ea bona e bohareng ea selemo e fella ka tlase ho 90%.",
-        "Ba hloleha ho fihlela ts'ebetso e fokolang e hlokahalang likhoeli tse 3 ka morao-rao.",
-        'Ho ba teng ho fella ka tlase ho 97% e bohareng likhoeli tse 3 selemong.',
-        'Ba na le ho fihla ho le khale ho feta ha 3 khoeli ho likhoeli tse 3 ka morao-rao.',
-        'Mehala, litšoantšo, kapa mesebetsi ha e ngoloe hantle tsamaisong ea CRM.',
-      ],
-    },
-    {
-      title: "HO KHOLOLA TS'EBETSO",
-      intro: "Basebetsi ba ka khola ts'ebetso ea bona e bohareng selemong.",
-      paragraphs: ['Mohlala:'],
-      bullets: [
-        "Khoeli e le 'ngoe ho 85%",
-        'Khoeli e latelang ho 95%+',
-        'Sena se ka khola karolelano ea selemo ka bophara ho fihlela ho 90% e fokolang e hlokahalang.',
-        'Le ha ho le joalo, ho hloleha ho fihlela boemo bo fokolang bo hlokahalang likhoeli tse 3 ka morao-rao ho tla bakatsa ho hlakoloa ha bonus ka bo-iketsetse.',
-      ],
-    },
-    {
-      title: 'Bohlokoa',
       paragraphs: [
-        'Mehala eohle, litšoantšo, puisano le bareki, le mesebetsi e tlameha ho ngoloa hantle tsamaisong ea CRM.',
-        'Haeba e sa ngoloe CRM, e tla nkuoa e sa etsoa.',
-        'Tsamaiso e ka hlahloba:',
+        'Ketso e le \u2019ngoe ea ho se t\u0161oarele e ka senya mosebetsi, botumo le menyetla ea ho fumana mosebetsi ka nako e tlang ea motho ka ho sa fetoge.',
       ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall e t\u0161ent\u0161hitse lisebelisoa tse boholo ho haha khoebo e fanang ka menyetla ea mosebetsi ho Afrika Borwa. Re lebeletse hore basebetsi bohle ba sebetse ka bo\u0161o, bo\u0161o le bo\u0161o.',
+      ],
+    },
+    {
+      paragraphs: [
+        'Basebetsi ba tsebang ka bosela, bofora kapa mesebetsi e bela\u0161ang ba khothaletsoa ho e tlaleha ho taolo hang-hang. Ho se tlalehe boit\u0161oaro bo sa nepahalang bo tseboang bo ka boela ba lebisa ho ketsahalo ea dissiplinary.',
+      ],
+    },
+    {
+      title: 'Molaetsa oa rona o bonolo:',
+      paragraphs: ['Sebetsa ka thata. Fumana ka bo\u0161o. Sireletsa k\u2019hamphani.'],
+    },
+    {
+      intro:
+        'Motho e mong le e mong ea nahanang ka ho nka thepa, chelete, litefello tsa bareki, phethiloli, thepa ea k\u2019hamphani kapa ho fetola lipapatso o lokela ho utloisisa hore ditlamorao di ka kenyelletsa:',
       bullets: [
-        'Mosebetsi oa CRM',
-        'Lirekoto tsa mehala',
-        'Ho tsamaea ha GPS',
-        'Lipego tsa litšoantšo',
-        'Lirekoto tsa ho ba teng',
-        'Lirekoto tsa ho kena le ho tsoa',
-        'Maikutlo a bareki',
+        'Ho emisoa hang-hang',
+        'Dikopano tsa dissiplinary',
+        'Ho tlosoa mosebetsing',
+        'Lit\u0161oaro tsa molao',
+        'Ho busoa ha lit\u0161enyehelo ka molao',
+        'Ho ngoloa lenaneng le sa lumelwang la menyetla ea mosebetsi ka nako e tlang ka har\u2019a Sehlopha',
+      ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall e tla t\u0161wela pele ho kenya ts\u2019ebetsong leano la ho se be le t\u0161oarelo mabapi le bosela le ho se t\u0161oarele.',
       ],
     },
   ],
-  closingParagraphs: [
-    'Re leboha boitlamo, boitlhompho, le boineelo ba lona.',
-    'Tsamaiso',
-  ],
-  acknowledgeLabel: 'Ke balile mme ke ananela',
-  closingSignature: 'Tsamaiso',
+  closingParagraphs: ['Ka t\u0161oarelo,', 'Taolo ea BitGroup'],
+  acknowledgeLabel: 'Ke balile \u2019me ke utloisisa tsebiso ena',
+  closingSignature: 'Taolo ea BitGroup',
 };

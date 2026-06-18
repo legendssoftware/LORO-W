@@ -139,9 +139,11 @@ export function SalesBenchmarksWelcomeDialog({
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
             <DialogTitle className="text-lg font-semibold">{content.noticeTitle}</DialogTitle>
             <p className="text-sm font-semibold text-foreground">{content.noticeSubtitle}</p>
-            <DialogDescription className="text-muted-foreground text-sm">
-              {content.effectiveDate}
-            </DialogDescription>
+            {content.effectiveDate ? (
+              <DialogDescription className="text-muted-foreground text-sm">
+                {content.effectiveDate}
+              </DialogDescription>
+            ) : null}
           </DialogHeader>
         </div>
 
@@ -166,42 +168,48 @@ export function SalesBenchmarksWelcomeDialog({
             </ul>
           </section>
 
-          <section className="mb-5">
-            <h3 className="mb-3 text-base font-semibold text-foreground">
-              {content.minimumDailyHeading}
-            </h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {content.table.headers.map((header, index) => (
-                    <TableHead key={`header-${index}`} className="whitespace-nowrap text-xs sm:text-sm">
-                      {header}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {content.table.rows.map((row, rowIndex) => (
-                  <TableRow key={`row-${rowIndex}`}>
-                    {row.map((cell, cellIndex) => (
-                      <TableCell
-                        key={`row-${rowIndex}-cell-${cellIndex}`}
-                        className={
-                          cellIndex === 0 ? 'min-w-[140px] text-xs sm:text-sm' : 'text-xs sm:text-sm'
-                        }
-                      >
-                        {cell}
-                      </TableCell>
+          {content.table?.rows?.length ? (
+            <section className="mb-5">
+              {content.minimumDailyHeading ? (
+                <h3 className="mb-3 text-base font-semibold text-foreground">
+                  {content.minimumDailyHeading}
+                </h3>
+              ) : null}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {content.table.headers.map((header, index) => (
+                      <TableHead key={`header-${index}`} className="whitespace-nowrap text-xs sm:text-sm">
+                        {header}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </section>
+                </TableHeader>
+                <TableBody>
+                  {content.table.rows.map((row, rowIndex) => (
+                    <TableRow key={`row-${rowIndex}`}>
+                      {row.map((cell, cellIndex) => (
+                        <TableCell
+                          key={`row-${rowIndex}-cell-${cellIndex}`}
+                          className={
+                            cellIndex === 0 ? 'min-w-[140px] text-xs sm:text-sm' : 'text-xs sm:text-sm'
+                          }
+                        >
+                          {cell}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </section>
+          ) : null}
 
           {content.sections.map((section, sectionIndex) => (
             <section key={`section-${sectionIndex}`} className="mb-5 last:mb-0">
-              <h3 className="mb-2 text-base font-semibold text-foreground">{section.title}</h3>
+              {section.title ? (
+                <h3 className="mb-2 text-base font-semibold text-foreground">{section.title}</h3>
+              ) : null}
               {section.intro ? (
                 <p className="mb-2 text-sm text-foreground/90">{section.intro}</p>
               ) : null}

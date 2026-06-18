@@ -2,78 +2,61 @@
 import type { SalesBenchmarksContent } from './types';
 
 export const salesBenchmarksSn: SalesBenchmarksContent = {
-  noticeTitle: 'CHIZIVISO CHAKAKOSHA',
-  noticeSubtitle: 'ZVINANGWA ZVEBONUS YEKUSHANDIRA PAKUPEDZISWA GORE',
-  effectiveDate: 'Zuva Rinoshanda: 01 Juni 2026',
-  greeting: 'Vashandi Vakuru,',
+  noticeTitle: 'Meseji Kune Masebhesi Ese',
+  noticeSubtitle:
+    'Kusagamuchirwa Kwezvibhero, Kubira neKushandiswa KweMari yeKambani Zvisiri Pamutemo',
+  greeting: 'Chikwata chedu,',
   introParagraphs: [
-    'Ndapota chenjerai kuti Bonus yeKushandira Pakupedziswa Gore inovaka pamazvinangwa ekushandira epasi, kuvepo, kuwana nguva, uye kutevedzera mitemo panguva yose yegore.',
-    'Manhamba ari pasi HAASI zvinangwa kana zvinangwa zvakanyanya. Izvi ndizvo ZVINANGWA ZVEPASI zvezuva nezuva zvinotarisirwa kubva pachinzvimbo chenyu.',
-    'Kuti murambe muchikwanisi yeBonus yeKushandira Pakupedziswa Gore, vashandi vose vanofanira kuchengetedza kushanda kwepakati kunosi 90% kana kupfuura panguva yegore.',
-    'Vashandi vanopedzisa gore pasi pekushanda kwepakati kwe90% vachadzingwa otomatiki muBonus yeKushandira Pakupedziswa Gore.',
+    'BitDrywall inoda kukurudzira vese vashandi kuti chero kuba, kubira, kushandiswa kwemari yekambani, stock, kubhadharwa kwevatengi, kana zvinhu zvekambani hazvigamuchirwi pasi pemamiriro ezviri zvese.',
+    'Munguva pfupi yapfuura, pane chikonzero chakakomba chaitika mukati mebhizinesi redu uko stock akatengeswa uye mari yekambani inotaurwa kuti yakashandiswa zvisiri pamutemo kuti munhu afambirwe nemwoyo. Nyaya yakaongororwa uye zviito zvakakodzera zvekudzora uye zvemutemo zvatanga.',
   ],
-  emphasisIntro: 'Ndapota chenjerai:',
+  emphasisIntro: 'Zvichishandira sechikurudziro kuti:',
   emphasisBullets: [
-    '90% ndiyo nhanho yepasi inogamuchirwa.',
-    '89%, 88%, 80%, kana chero pacenti pasi pe90% HAINOKwanisi.',
+    'Kutengeswa kwega kwega, quotation, invoice, kuendesa uye kubhadhara kunogona kuteverwa.',
+    'Kuongororwa kwemasebhesi kunofanywa nguva dzose.',
+    'Kufamba kwestock kunotariswa kuburikidza nemasisitemu edu.',
+    'Kusimbiswa kwevatengi, marekodhi ebhanga, uye malogi esystem anogona kuongororwa chero nguva.',
+    'Vashandi vanowanikwa vane mhosva yekuba, kubira, kusaita zvakanaka kana kushandisa zvinhu zvekambani zvisiri pamutero vanotarisirwa kuitwa kudzora, kubviswa pabasa, uye kana zvichibvira, kutorerwa mhosva yemutemo.',
   ],
-  minimumDailyHeading: 'ZVINANGWA ZVEPASI ZVEZUVA NEZUVA',
-  table: {
-    headers: ['Chinzvimbo', 'Mafoni Anodiwa Pazuva', 'Shanyiro Dzinosungirwa Pazuva'],
-    rows: [
-      ['Vamiriri veKutengesa veMukati', '60 Mafoni', 'N/A'],
-      ['Vamiriri veKutengesa veKunze', '20 Mafoni', '8 Shanyiro'],
-      ['Vatungamiriri veChikwata cheDanga', '60 Mafoni', 'N/A'],
-      ['Vatungamiriri veDanga (neMubatsiri)', '20 Mafoni', '8 Shanyiro'],
-      ['Vatungamiriri veNyika', '20 Mafoni', '8 Shanyiro'],
-    ],
-  },
   sections: [
     {
-      title: 'MITEMO YEKUDZINGWA KWEBONUS',
-      intro:
-        'Vashandi vachadzingwa otomatiki muBonus yeKushandira Pakupedziswa Gore kana:',
-      bullets: [
-        'Kushanda kwavo kwepakati kwegore kwaderera pasi pe90%.',
-        'Vakundikana kusvika kushanda kwepasi kunodiwa kwemwedzi 3 zvichitevederana.',
-        'Kuvepo kwaderera pasi pe97% pakati kwemwedzi 3 panguva yegore.',
-        'Vane kuwana kwakadzika kupfuura 3 pamwedzi kwemwedzi 3 zvichitevederana.',
-        'Mafoni, shanyiro, kana zviitwa hazvinyorwe zvakanaka musystem yeCRM.',
-      ],
-    },
-    {
-      title: 'KUDZOSERESA KUSHANDA',
-      intro: 'Vashandi vanogona kudzoseresa kushanda kwavo kwepakati panguva yegore.',
-      paragraphs: ['Muenzaniso:'],
-      bullets: [
-        'Mwedzi mumwe pa85%',
-        'Mwedzi unotevera pa95%+',
-        'Izvi zvinogona kudzoseresa avhareji yegore rose kupfuura kuminimum inodiwa ye90%.',
-        'Zvisinei, kukundikana kusvika nhanho yepasi inodiwa kwemwedzi 3 zvichitevederana kuchakonzera kudzingwa kwebonus otomatiki.',
-      ],
-    },
-    {
-      title: 'ZVAKAKOSHA',
       paragraphs: [
-        'Mafoni ese, shanyiro, kubatana nevatakuri, uye zviitwa zvinofanira kunyorwa zvakanaka musystem yeCRM.',
-        'Kana hazvinyorwe muCRM, zvichatorwa seHAZVINA ITIKIWA.',
-        'Management inogona kuongorora:',
+        'Chiito chimwe chete chekusaita zvakanaka chinogona kukuvadza kwechikuru basa remunhu, mbiri, uye mikana yekuwana basa mune ramangwana.',
       ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall yaisa mari yakawanda kuvaka bhizinesi rinopa mikana yebasa kuSouthern Africa. Tinotarisira kuti vashandi vese vashande nekururama, kutendeseka, uye hunyanzvi.',
+      ],
+    },
+    {
+      paragraphs: [
+        'Vashandi vanoziva nezvekuba, kubira, kana zviito zvinonyudzika vanokurudzirwa kuzitaura nekukurumidza kune manejimendi. Kusaitaura zviito zvakaipa zvinozivikanwa zvinogona zvakare kutungamira kudzora.',
+      ],
+    },
+    {
+      title: 'Meseji yedu iri nyore:',
+      paragraphs: ['Shanda zvakadzama. Wana nemazvo. Chengetedza kambani.'],
+    },
+    {
+      intro:
+        'Chero ani anofunga kutora stock, mari, kubhadharwa kwevatengi, mafuta, zvinhu zvekambani, kana kushandura kutengeserana anofanira kunzwisisa kuti mhedzisiro inogona kusanganisira:',
       bullets: [
-        'Zviitwa muCRM',
-        'Zvinyorwa zvemafone',
-        'Kufamba kweGPS',
-        'Mishumo yeshanyiro',
-        'Zvinyorwa zvekuvepo',
-        'Zvinyorwa zvekupinda nekubuda',
-        'Mhinduro dvetakuri',
+        'Kumiswa nekukurumidza',
+        'Misangano yekudzora',
+        'Kubviswa pabasa',
+        'Mhosva dze mutemo',
+        'Kudzorwa kwemari yakaoraswa nemutemo',
+        'Kunyorwa pamusoro pemari yebasa mune ramangwana mukati meGroup',
+      ],
+    },
+    {
+      paragraphs: [
+        'BitDrywall icharamba ichishandisa mutemo wekusagamuchira kuba uye kusaita zvakanaka.',
       ],
     },
   ],
-  closingParagraphs: [
-    'Tinotenda nekusimbisa kwenyu, kururama, uye kuzvipira.',
-    'Management',
-  ],
-  acknowledgeLabel: 'Ndakaverenga ndobvuma',
-  closingSignature: 'Management',
+  closingParagraphs: ['Nemukurumbira,', 'Manejimendi yeBitGroup'],
+  acknowledgeLabel: 'Ndakaverenga ndokunzwisisa chiziviso ichi',
+  closingSignature: 'Manejimendi yeBitGroup',
 };
