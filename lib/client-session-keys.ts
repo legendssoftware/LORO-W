@@ -9,3 +9,6 @@ export const LORO_SALES_BENCHMARKS_WELCOME_DISMISSED_KEY = 'loro_sales_benchmark
 
 /** sessionStorage: stores Clerk sessionId string after user dismisses benchmarks (per sign-in session). */
 export const LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY = 'loro_sales_benchmarks_dismissed_session_id';
+
+/** sessionStorage: notice uid dismissed for the current Clerk session. */
+export const LORO_ORG_NOTICE_DISMISSED_UID_KEY = 'loro_org_notice_dismissed_uid';

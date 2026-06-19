@@ -102,8 +102,10 @@ import {
   Trash2,
   User,
   CalendarDays,
+  Megaphone,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
+import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
 import { canAccessOrgSettings } from '@/lib/access';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
@@ -335,7 +337,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -1249,7 +1251,7 @@ export function SettingsContent() {
       <div data-tour="settings-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage organisation profile, appearance, regional defaults, hours, and branches.
+          Manage organisation profile, appearance, regional defaults, hours, branches, and notices.
         </p>
       </div>
 
@@ -1317,6 +1319,16 @@ export function SettingsContent() {
             >
               <CalendarDays className="mr-2 size-4" />
               Calendar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('notices')}
+              className={tabBtnClass('notices')}
+            >
+              <Megaphone className="mr-2 size-4" />
+              Notices
             </Button>
           </div>
 
@@ -3063,6 +3075,10 @@ export function SettingsContent() {
 
           {activeTab === 'calendar' && (
             <CalendarIntegrationsSection />
+          )}
+
+          {activeTab === 'notices' && (
+            <OrganisationNoticesSection />
           )}
         </>
       )}
