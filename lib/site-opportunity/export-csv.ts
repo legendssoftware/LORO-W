@@ -4,6 +4,7 @@ import type {
   SiteOpportunitySettings,
   SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
+import { potentialMidZAR } from './format-potential';
 
 function zarRaw(n: number): string {
   return String(Math.round(n));
@@ -27,6 +28,7 @@ function catchmentRow(
     String(zone.rank),
     'Branch catchment',
     zone.branchName,
+    '',
     zone.lat.toFixed(5),
     zone.lng.toFixed(5),
     String(settings.radiusMeters / 1000),
@@ -35,6 +37,7 @@ function catchmentRow(
     zarRaw(zone.addressablePoolZAR),
     zarRaw(zone.potentialLowZAR),
     zarRaw(zone.potentialHighZAR),
+    zarRaw(potentialMidZAR(zone.potentialLowZAR, zone.potentialHighZAR)),
     String(Math.round(settings.captureLowPct * 100)),
     String(Math.round(settings.captureHighPct * 100)),
     zone.actualRevenueZAR != null ? zarRaw(zone.actualRevenueZAR) : '',
@@ -54,6 +57,7 @@ function greenfieldRow(
     String(zone.rank),
     'New site',
     zone.label,
+    zone.address ?? '',
     zone.lat.toFixed(5),
     zone.lng.toFixed(5),
     String(settings.radiusMeters / 1000),
@@ -62,6 +66,7 @@ function greenfieldRow(
     zarRaw(zone.addressablePoolZAR),
     zarRaw(zone.potentialLowZAR),
     zarRaw(zone.potentialHighZAR),
+    zarRaw(potentialMidZAR(zone.potentialLowZAR, zone.potentialHighZAR)),
     String(Math.round(settings.captureLowPct * 100)),
     String(Math.round(settings.captureHighPct * 100)),
     '',
@@ -77,6 +82,7 @@ const HEADERS = [
   'Rank',
   'Type',
   'Name',
+  'Address',
   'Latitude',
   'Longitude',
   'Radius km',
@@ -85,6 +91,7 @@ const HEADERS = [
   'Addressable pool ZAR',
   'Potential low ZAR',
   'Potential high ZAR',
+  'Potential mid ZAR',
   'Capture low %',
   'Capture high %',
   'Actual revenue ZAR',

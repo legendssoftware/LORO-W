@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
+import { getPotentialBreakdown } from '@/lib/site-opportunity/format-potential';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type BranchCatchmentOpportunity,
@@ -110,6 +111,10 @@ function ZoneDetail({
   const highPct = Math.round(captureSettings.captureHighPct * 100);
   const title =
     zone.kind === 'catchment' ? zone.branchName : zone.label;
+  const potential = getPotentialBreakdown(
+    zone.potentialLowZAR,
+    zone.potentialHighZAR,
+  );
 
   return (
     <div className="space-y-3">
@@ -119,6 +124,9 @@ function ZoneDetail({
             #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
           </p>
           <h3 className="font-semibold text-foreground">{title}</h3>
+          {zone.kind === 'greenfield' && zone.address ? (
+            <p className="text-sm text-muted-foreground mt-0.5">{zone.address}</p>
+          ) : null}
         </div>
         <Button
           type="button"
@@ -158,8 +166,10 @@ function ZoneDetail({
           <dt className="text-muted-foreground">
             {orgBrandName} potential ({lowPct}–{highPct}%)
           </dt>
-          <dd className="font-medium">
-            {formatZar(zone.potentialLowZAR)} – {formatZar(zone.potentialHighZAR)}
+          <dd className="font-medium space-y-0.5">
+            <span className="block">Low: {formatZar(potential.low)}</span>
+            <span className="block">Avg: {formatZar(potential.avg)}</span>
+            <span className="block">High: {formatZar(potential.high)}</span>
           </dd>
         </div>
         {zone.kind === 'catchment' && zone.actualRevenueZAR != null ? (
@@ -257,6 +267,10 @@ function ZoneListItem({
   onSelect: () => void;
 }) {
   const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
+  const subtitle =
+    zone.kind === 'greenfield' && zone.address
+      ? zone.address
+      : `${zone.competitorCount} competitors · ${formatZar(zone.potentialHighZAR)} high`;
   return (
     <button
       type="button"
@@ -272,9 +286,7 @@ function ZoneListItem({
         <span className="font-medium text-sm truncate">{title}</span>
         <Badge variant="outline">#{zone.rank}</Badge>
       </div>
-      <p className="text-xs text-muted-foreground mt-1">
-        {zone.competitorCount} competitors · {formatZar(zone.potentialHighZAR)} high
-      </p>
+      <p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>
     </button>
   );
 }

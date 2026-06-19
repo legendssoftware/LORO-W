@@ -8,12 +8,10 @@ import type {
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
-
-function formatZarShort(n: number): string {
-  if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(1)}m`;
-  if (n >= 1_000) return `R ${Math.round(n / 1_000)}k`;
-  return `R ${Math.round(n).toLocaleString()}`;
-}
+import {
+  formatZarShort,
+  getPotentialBreakdown,
+} from '@/lib/site-opportunity/format-potential';
 
 function brandSummary(byBrand: SiteOpportunityZone['byBrand'] | undefined): string {
   if (!byBrand?.length) return 'No hardware in radius';
@@ -45,6 +43,28 @@ function rankedLabelIcon(rank: number, color: string) {
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
+}
+
+function PotentialBreakdown({
+  potentialLowZAR,
+  potentialHighZAR,
+}: {
+  potentialLowZAR: number;
+  potentialHighZAR: number;
+}) {
+  const { low, avg, high } = getPotentialBreakdown(
+    potentialLowZAR,
+    potentialHighZAR,
+  );
+
+  return (
+    <div className="space-y-0.5">
+      <p className="text-xs font-medium text-muted-foreground">Potential</p>
+      <p>Low: {formatZarShort(low)}</p>
+      <p>Avg: {formatZarShort(avg)}</p>
+      <p>High: {formatZarShort(high)}</p>
+    </div>
+  );
 }
 
 export function SiteOpportunityMapOverlays({
@@ -87,16 +107,20 @@ export function SiteOpportunityMapOverlays({
           >
             <Popup className="reports-viz-popup">
               <div className="text-sm space-y-1 min-w-[180px]">
-                <p className="font-semibold">#{c.rank} {c.branchName}</p>
-                <p>Pool: {formatZarShort(c.addressablePoolZAR)}</p>
-                <p>
-                  Potential: {formatZarShort(c.potentialLowZAR)} –{' '}
-                  {formatZarShort(c.potentialHighZAR)}
+                <p className="font-semibold">
+                  #{c.rank} {c.branchName}
                 </p>
+                <p>Pool: {formatZarShort(c.addressablePoolZAR)}</p>
+                <PotentialBreakdown
+                  potentialLowZAR={c.potentialLowZAR}
+                  potentialHighZAR={c.potentialHighZAR}
+                />
                 <p>
                   {c.competitorCount} competitors · {c.clientCount} clients
                 </p>
-                <p className="text-xs text-muted-foreground">{brandSummary(c.byBrand)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {brandSummary(c.byBrand)}
+                </p>
               </div>
             </Popup>
           </Circle>
@@ -129,16 +153,23 @@ export function SiteOpportunityMapOverlays({
             >
               <Popup className="reports-viz-popup">
                 <div className="text-sm space-y-1 min-w-[180px]">
-                  <p className="font-semibold">#{g.rank} {g.label}</p>
-                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}</p>
-                  <p>
-                    Potential: {formatZarShort(g.potentialLowZAR)} –{' '}
-                    {formatZarShort(g.potentialHighZAR)}
+                  <p className="font-semibold">
+                    {g.label} ({g.competitorCount} competitors)
                   </p>
+                  {g.address ? (
+                    <p className="text-xs text-muted-foreground">{g.address}</p>
+                  ) : null}
+                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}</p>
+                  <PotentialBreakdown
+                    potentialLowZAR={g.potentialLowZAR}
+                    potentialHighZAR={g.potentialHighZAR}
+                  />
                   <p>
                     {g.competitorCount} competitors · {g.clientCount} clients
                   </p>
-                  <p className="text-xs text-muted-foreground">{brandSummary(g.byBrand)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {brandSummary(g.byBrand)}
+                  </p>
                 </div>
               </Popup>
             </Marker>
