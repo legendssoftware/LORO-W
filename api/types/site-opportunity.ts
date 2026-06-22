@@ -9,6 +9,17 @@ export type HardwareBrandKey =
 
 export type SiteOpportunityMode = 'greenfield' | 'catchment' | 'both';
 
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface MapMarkerBuckets {
+  branches: import('@/api/types/map').MapMarkerBase[];
+  competitors: import('@/api/types/map').MapMarkerBase[];
+  clients: import('@/api/types/map').MapMarkerBase[];
+}
+
 export interface SiteOpportunitySettings {
   radiusMeters: number;
   topN: number;
