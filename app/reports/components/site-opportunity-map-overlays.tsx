@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment } from 'react';
-import { Circle, Marker, Popup } from 'react-leaflet';
+import { Fragment, useCallback, useEffect, useRef } from 'react';
+import { Circle, Marker, Popup, useMap } from 'react-leaflet';
 import { divIcon } from 'leaflet';
+import type L from 'leaflet';
 import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
@@ -12,6 +13,9 @@ import {
   formatZarShort,
   getPotentialBreakdown,
 } from '@/lib/site-opportunity/format-potential';
+
+const FLY_DURATION_S = 0.6;
+const POPUP_OPEN_DELAY_MS = 650;
 
 function brandSummary(byBrand: SiteOpportunityZone['byBrand'] | undefined): string {
   if (!byBrand?.length) return 'No hardware in radius';
@@ -67,17 +71,88 @@ function PotentialBreakdown({
   );
 }
 
+function openLayerPopup(layer: L.Layer | undefined): void {
+  if (!layer || !('openPopup' in layer)) return;
+  const openPopup = layer.openPopup;
+  if (typeof openPopup === 'function') {
+    openPopup.call(layer);
+  }
+}
+
+function OpportunityZoneNavigator({
+  catchments,
+  greenfield,
+  selectedZoneId,
+  selectionSeq,
+  layerRefs,
+}: {
+  catchments: BranchCatchmentOpportunity[];
+  greenfield: GreenfieldOpportunityZone[];
+  selectedZoneId: string | null;
+  selectionSeq: number;
+  layerRefs: React.MutableRefObject<Map<string, L.Layer>>;
+}) {
+  const map = useMap();
+  const flyTokenRef = useRef(0);
+
+  useEffect(() => {
+    if (!selectedZoneId || selectionSeq === 0) return;
+
+    const zone =
+      catchments.find((c) => c.id === selectedZoneId) ??
+      greenfield.find((g) => g.id === selectedZoneId);
+    if (!zone) return;
+
+    const token = ++flyTokenRef.current;
+    map.flyTo([zone.lat, zone.lng], Math.max(map.getZoom(), 14), {
+      duration: FLY_DURATION_S,
+    });
+
+    const timer = window.setTimeout(() => {
+      if (token !== flyTokenRef.current) return;
+      openLayerPopup(layerRefs.current.get(selectedZoneId));
+    }, POPUP_OPEN_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    catchments,
+    greenfield,
+    layerRefs,
+    map,
+    selectedZoneId,
+    selectionSeq,
+  ]);
+
+  return null;
+}
+
 export function SiteOpportunityMapOverlays({
   catchments,
   greenfield,
   selectedZoneId,
+  selectionSeq = 0,
   onSelectZone,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
   selectedZoneId: string | null;
+  /** Increments on each selection so re-clicking the same zone re-flies. */
+  selectionSeq?: number;
   onSelectZone: (zone: SiteOpportunityZone) => void;
 }) {
+  const layerRefs = useRef<Map<string, L.Layer>>(new Map());
+
+  const registerLayerRef = useCallback(
+    (zoneId: string) => (instance: L.Layer | null) => {
+      if (instance) {
+        layerRefs.current.set(zoneId, instance);
+        return;
+      }
+      layerRefs.current.delete(zoneId);
+    },
+    []
+  );
+
   const maxScore = Math.max(
     ...catchments.map((c) => c.opportunityScore),
     ...greenfield.map((g) => g.opportunityScore),
@@ -86,12 +161,20 @@ export function SiteOpportunityMapOverlays({
 
   return (
     <>
+      <OpportunityZoneNavigator
+        catchments={catchments}
+        greenfield={greenfield}
+        selectedZoneId={selectedZoneId}
+        selectionSeq={selectionSeq}
+        layerRefs={layerRefs}
+      />
       {catchments.map((c) => {
         const color = scoreColor(c.opportunityScore, maxScore);
         const selected = selectedZoneId === c.id;
         return (
           <Circle
             key={c.id}
+            ref={registerLayerRef(c.id)}
             center={[c.lat, c.lng]}
             radius={c.radiusMeters}
             pathOptions={{
@@ -145,6 +228,7 @@ export function SiteOpportunityMapOverlays({
               }}
             />
             <Marker
+              ref={registerLayerRef(g.id)}
               position={[g.lat, g.lng]}
               icon={rankedLabelIcon(g.rank, color)}
               eventHandlers={{

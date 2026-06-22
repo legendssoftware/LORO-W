@@ -27,12 +27,12 @@ export function VisualiserContent() {
   });
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
-        <h1 className="text-2xl font-semibold text-foreground mb-6 shrink-0">
+    <div className="flex flex-col flex-1 min-h-0">
+      <main className="container mx-auto max-w-8xl px-3 py-4 sm:px-6 sm:py-6 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <h1 className="text-2xl font-semibold text-foreground mb-4 shrink-0">
           Visualiser
         </h1>
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           {!isSignedIn || !isTokenReady ? (
             <LoadingSpinner wrapperClassName="py-12" />
           ) : profile ? (

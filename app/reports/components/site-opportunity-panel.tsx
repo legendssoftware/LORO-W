@@ -2,6 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import {
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -20,10 +21,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
 import { getPotentialBreakdown } from '@/lib/site-opportunity/format-potential';
+import { buildTurnoverSimulation } from '@/lib/site-opportunity/turnover-simulation';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type BranchCatchmentOpportunity,
@@ -59,11 +60,20 @@ function formatChartZarAxis(v: number): string {
 }
 
 function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
-  const maxRevenue = Math.max(...data.map((d) => d.revenueMidZAR), 1);
+  const monthlyData = data.map((d) => ({
+    ...d,
+    revenueLowZAR: d.revenueLowZAR / 12,
+    revenueMidZAR: d.revenueMidZAR / 12,
+    revenueHighZAR: d.revenueHighZAR / 12,
+  }));
+  const maxRevenue = Math.max(
+    ...monthlyData.map((d) => d.revenueHighZAR),
+    1
+  );
   return (
-    <div className="h-[140px] w-full mt-3">
+    <div className="h-[160px] w-full min-w-0 mt-3">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <XAxis
             dataKey="month"
             tick={{ fontSize: 10 }}
@@ -79,15 +89,131 @@ function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
             formatter={(v: number) => formatZar(v)}
             labelFormatter={(m) => `Month ${m}`}
           />
+          <Legend
+            wrapperStyle={{ fontSize: 10 }}
+            formatter={(value) =>
+              value === 'revenueLowZAR'
+                ? 'Low'
+                : value === 'revenueMidZAR'
+                  ? 'Expected'
+                  : 'High'
+            }
+          />
+          <Line
+            type="monotone"
+            dataKey="revenueLowZAR"
+            name="revenueLowZAR"
+            stroke="hsl(var(--muted-foreground))"
+            strokeWidth={1.5}
+            dot={false}
+            strokeDasharray="4 3"
+          />
           <Line
             type="monotone"
             dataKey="revenueMidZAR"
+            name="revenueMidZAR"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
             dot={false}
           />
+          <Line
+            type="monotone"
+            dataKey="revenueHighZAR"
+            name="revenueHighZAR"
+            stroke="#16a34a"
+            strokeWidth={1.5}
+            dot={false}
+            strokeDasharray="4 3"
+          />
         </LineChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+function TurnoverSimulatorSection({ zone }: { zone: SiteOpportunityZone }) {
+  const simulation = buildTurnoverSimulation(zone);
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-muted/30 p-3 min-w-0">
+      <div>
+        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+          Monthly turnover simulator
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          Derived from competitor pool · mature mid{' '}
+          {formatZar(simulation.matureMidMonthlyZAR)}/mo (
+          {formatZar(simulation.matureMidAnnualZAR)}/yr)
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-0">
+          <thead>
+            <tr className="text-left text-muted-foreground border-b">
+              <th className="pb-1.5 pr-2 font-medium">Scenario</th>
+              <th className="pb-1.5 pr-2 font-medium">Monthly</th>
+              <th className="pb-1.5 font-medium">Annual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {simulation.scenarios.map((s) => (
+              <tr key={s.key} className="border-b border-border/50 last:border-0">
+                <td className="py-1.5 pr-2">{s.label}</td>
+                <td className="py-1.5 pr-2 font-medium tabular-nums">
+                  {formatZar(s.monthlyZAR)}
+                </td>
+                <td className="py-1.5 font-medium tabular-nums text-muted-foreground">
+                  {formatZar(s.annualZAR)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">
+          Capture milestones (monthly)
+        </p>
+        <div className="space-y-1">
+          {simulation.milestones.map((m) => (
+            <div
+              key={m.month}
+              className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs"
+            >
+              <span className="text-muted-foreground shrink-0">{m.label}</span>
+              <span className="font-medium tabular-nums text-right">
+                {formatZar(m.midMonthlyZAR)}
+                <span className="text-muted-foreground font-normal ml-1">
+                  ({formatZar(m.lowMonthlyZAR)}–{formatZar(m.highMonthlyZAR)})
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">
+          Product mix estimate (mid mature monthly)
+        </p>
+        <ul className="space-y-1">
+          {simulation.productMix.map((line) => (
+            <li
+              key={line.category}
+              className="flex items-baseline justify-between gap-2 text-xs min-w-0"
+            >
+              <span className="text-muted-foreground truncate min-w-0">
+                {line.category} ({line.pct}%)
+              </span>
+              <span className="font-medium tabular-nums shrink-0">
+                {formatZar(line.monthlyZAR)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -117,15 +243,17 @@ function ZoneDetail({
   );
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
+    <div className="space-y-3 min-w-0">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">
             #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
           </p>
-          <h3 className="font-semibold text-foreground">{title}</h3>
+          <h3 className="font-semibold text-foreground break-words">{title}</h3>
           {zone.kind === 'greenfield' && zone.address ? (
-            <p className="text-sm text-muted-foreground mt-0.5">{zone.address}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 break-words">
+              {zone.address}
+            </p>
           ) : null}
         </div>
         <Button
@@ -134,17 +262,21 @@ function ZoneDetail({
           variant="outline"
           onClick={onExplain}
           disabled={explainLoading}
+          className="shrink-0"
         >
           {explainLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <Sparkles className="size-4" />
           )}
-          <span className="ml-1.5">Explain with AI</span>
+          <span className="ml-1.5 hidden sm:inline">Explain with AI</span>
+          <span className="ml-1.5 sm:hidden">AI</span>
         </Button>
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+      <TurnoverSimulatorSection zone={zone} />
+
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm min-w-0">
         <div>
           <dt className="text-muted-foreground">Clients in radius</dt>
           <dd className="font-medium">{zone.clientCount}</dd>
@@ -216,9 +348,9 @@ function ZoneDetail({
         </p>
       ) : null}
 
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-medium text-muted-foreground mb-1">
-          Market capture ramp (mid estimate)
+          Market capture ramp (monthly turnover)
         </p>
         <CaptureTimelineChart data={zone.captureTimeline} />
       </div>
@@ -267,26 +399,31 @@ function ZoneListItem({
   onSelect: () => void;
 }) {
   const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
+  const simulation = buildTurnoverSimulation(zone);
   const subtitle =
     zone.kind === 'greenfield' && zone.address
-      ? zone.address
-      : `${zone.competitorCount} competitors · ${formatZar(zone.potentialHighZAR)} high`;
+      ? `${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected · ${zone.address}`
+      : `${zone.competitorCount} competitors · ${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected`;
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        'w-full text-left rounded-lg border px-3 py-2.5 transition-colors',
+        'w-full max-w-full min-w-0 text-left rounded-lg border px-3 py-2.5 transition-colors overflow-hidden',
         selected
           ? 'border-primary bg-primary/5'
           : 'border-border hover:bg-muted/50'
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-sm truncate">{title}</span>
-        <Badge variant="outline">#{zone.rank}</Badge>
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <span className="font-medium text-sm truncate min-w-0 flex-1">{title}</span>
+        <Badge variant="outline" className="shrink-0">
+          #{zone.rank}
+        </Badge>
       </div>
-      <p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>
+      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 break-words">
+        {subtitle}
+      </p>
     </button>
   );
 }
@@ -358,11 +495,11 @@ export function SiteOpportunityPanel({
   return (
     <aside
       className={cn(
-        'flex flex-col min-h-0 border-l bg-background w-full lg:w-[360px] shrink-0',
+        'flex flex-col h-full max-h-full min-h-0 min-w-0 overflow-hidden border-l bg-background w-full lg:w-[360px] shrink-0',
         className
       )}
     >
-      <div className="p-3 border-b space-y-2 shrink-0">
+      <div className="p-3 border-b space-y-2 shrink-0 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold text-sm">Suggested areas</h2>
           <Button
@@ -397,8 +534,11 @@ export function SiteOpportunityPanel({
         </p>
       </div>
 
-      <Tabs defaultValue="all" className="flex flex-col flex-1 min-h-0">
-        <TabsList className={reportsTabsListCompactClassName}>
+      <Tabs
+        defaultValue="all"
+        className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden"
+      >
+        <TabsList className={cn(reportsTabsListCompactClassName, 'shrink-0')}>
           {PANEL_TABS.map(({ value, label, Icon }) => (
             <TabsTrigger
               key={value}
@@ -423,72 +563,70 @@ export function SiteOpportunityPanel({
             <TabsContent
               key={tab}
               value={tab}
-              className="flex flex-col flex-1 min-h-0 mt-0 data-[state=inactive]:hidden"
+              className="flex-1 min-h-0 min-w-0 mt-0 overflow-y-auto overflow-x-hidden data-[state=inactive]:hidden"
             >
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="p-3 space-y-2">
-                  {isError ? (
-                    <p
-                      className="text-sm text-destructive py-6 text-center px-2"
-                      role="alert"
-                    >
-                      {errorMessage ??
-                        'Could not load suggested areas from the server.'}
-                    </p>
-                  ) : isLoading ? (
-                    <div className="flex items-center justify-center py-8 text-muted-foreground">
-                      <Loader2 className="size-5 animate-spin mr-2" />
-                      <span className="text-sm">Loading suggested areas…</span>
-                    </div>
-                  ) : list.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-6 text-center">
-                      No opportunities in this view.
-                    </p>
-                  ) : (
-                    list.map((zone) => (
-                      <ZoneListItem
-                        key={zone.id}
-                        zone={zone}
-                        selected={zone.id === selectedZoneId}
-                        onSelect={() => onSelectZone(zone)}
-                      />
-                    ))
-                  )}
+              <div className="p-3 space-y-2 min-w-0 max-w-full">
+                {isError ? (
+                  <p
+                    className="text-sm text-destructive py-6 text-center px-2"
+                    role="alert"
+                  >
+                    {errorMessage ??
+                      'Could not load suggested areas from the server.'}
+                  </p>
+                ) : isLoading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <Loader2 className="size-5 animate-spin mr-2" />
+                    <span className="text-sm">Loading suggested areas…</span>
+                  </div>
+                ) : list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    No opportunities in this view.
+                  </p>
+                ) : (
+                  list.map((zone) => (
+                    <ZoneListItem
+                      key={zone.id}
+                      zone={zone}
+                      selected={zone.id === selectedZoneId}
+                      onSelect={() => onSelectZone(zone)}
+                    />
+                  ))
+                )}
+              </div>
+
+              {selectedZone ? (
+                <div className="border-t p-3 min-w-0">
+                  <ZoneDetail
+                    zone={selectedZone}
+                    captureSettings={captureSettings}
+                    orgBrandName={orgBrandName}
+                    explainLoading={explainMutation.isPending}
+                    brief={
+                      explainMutation.data &&
+                      explainMutation.variables &&
+                      (explainMutation.variables as { zoneId?: string }).zoneId ===
+                        selectedZone.id
+                        ? explainMutation.data
+                        : null
+                    }
+                    onExplain={() =>
+                      explainMutation.mutate({
+                        zoneId: selectedZone.id,
+                        mode: selectedZone.kind,
+                        zone: selectedZone,
+                        dataQuality,
+                        warnings,
+                        orgBrandName,
+                      })
+                    }
+                  />
                 </div>
-              </ScrollArea>
+              ) : null}
             </TabsContent>
           );
         })}
       </Tabs>
-
-      {selectedZone ? (
-        <div className="border-t p-3 shrink-0 max-h-[45%] overflow-y-auto">
-          <ZoneDetail
-            zone={selectedZone}
-            captureSettings={captureSettings}
-            orgBrandName={orgBrandName}
-            explainLoading={explainMutation.isPending}
-            brief={
-              explainMutation.data &&
-              explainMutation.variables &&
-              (explainMutation.variables as { zoneId?: string }).zoneId ===
-                selectedZone.id
-                ? explainMutation.data
-                : null
-            }
-            onExplain={() =>
-              explainMutation.mutate({
-                zoneId: selectedZone.id,
-                mode: selectedZone.kind,
-                zone: selectedZone,
-                dataQuality,
-                warnings,
-                orgBrandName,
-              })
-            }
-          />
-        </div>
-      ) : null}
     </aside>
   );
 }

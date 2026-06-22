@@ -92,6 +92,7 @@ export function ReportsVisualiserTab({
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<
     string | null
   >(null);
+  const [opportunitySelectionSeq, setOpportunitySelectionSeq] = useState(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -167,6 +168,7 @@ export function ReportsVisualiserTab({
   const handleSelectOpportunity = useCallback((zone: SiteOpportunityZone) => {
     setSelectedOpportunityId(zone.id);
     setShowOpportunities(true);
+    setOpportunitySelectionSeq((n) => n + 1);
   }, []);
 
   const opportunityPanelProps = useMemo(
@@ -298,8 +300,9 @@ export function ReportsVisualiserTab({
   }
 
   return (
-    <section className="flex flex-col min-h-0">
-      <VisitHistoryToolbar
+    <section className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="shrink-0">
+        <VisitHistoryToolbar
         uniqueRegions={uniqueRegions}
         uniqueBusinessTypes={uniqueBusinessTypes}
         businessTypeLabelMap={businessTypeLabelMap}
@@ -327,7 +330,8 @@ export function ReportsVisualiserTab({
           />
         }
       />
-      <div className="min-h-[700px] overflow-hidden flex flex-row relative flex-1">
+      </div>
+      <div className="flex flex-1 min-h-0 h-full overflow-hidden flex-row relative">
         {mapReport.isError ? (
           <p
             className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
@@ -349,26 +353,27 @@ export function ReportsVisualiserTab({
           allMarkers={filteredMarkers}
           influenceCircles={influenceCircles}
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
-          className="flex-1 min-h-0 min-w-0"
+          className="flex-1 min-h-0 min-w-0 h-full"
           showOpportunities={showOpportunities}
           opportunityCatchments={mapOpportunityCatchments}
           opportunityGreenfield={mapOpportunityGreenfield}
           selectedOpportunityId={selectedOpportunityId}
+          opportunitySelectionSeq={opportunitySelectionSeq}
           onSelectOpportunity={handleSelectOpportunity}
           onSuggestedAreas={handleSuggestedAreasFromMap}
         />
         {showOpportunities ? (
           <SiteOpportunityPanel
             {...opportunityPanelProps}
-            className="hidden lg:flex"
+            className="hidden lg:flex h-full max-h-full"
           />
         ) : null}
       </div>
       {showOpportunities ? (
-        <div className="lg:hidden border-t max-h-[40vh] overflow-hidden flex flex-col">
+        <div className="lg:hidden border-t h-[40vh] max-h-[40vh] shrink-0 overflow-hidden flex flex-col">
           <SiteOpportunityPanel
             {...opportunityPanelProps}
-            className="border-l-0 w-full max-h-[40vh]"
+            className="border-l-0 w-full h-full max-h-full"
           />
         </div>
       ) : null}

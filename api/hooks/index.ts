@@ -46,6 +46,7 @@ export {
   useCreateCompetitorMutation,
   useUpdateCompetitorMutation,
   useDeleteCompetitorMutation,
+  useImportCompetitorsMutation,
 } from './use-competitors';
 export { useUsers } from './use-users';
 export {
