@@ -574,6 +574,7 @@ export interface ReportsVisualiserMapProps {
   opportunityCatchments?: BranchCatchmentOpportunity[];
   opportunityGreenfield?: GreenfieldOpportunityZone[];
   selectedOpportunityId?: string | null;
+  opportunitySelectionSeq?: number;
   onSelectOpportunity?: (zone: SiteOpportunityZone) => void;
   /** Map ★ control — toggles suggested areas (same as toolbar). */
   onSuggestedAreas?: () => void;
@@ -588,6 +589,7 @@ function ReportsVisualiserMapInner({
   opportunityCatchments = [],
   opportunityGreenfield = [],
   selectedOpportunityId = null,
+  opportunitySelectionSeq = 0,
   onSelectOpportunity,
   onSuggestedAreas,
 }: ReportsVisualiserMapProps) {
@@ -614,9 +616,9 @@ function ReportsVisualiserMapInner({
   }, [allMarkers, influenceCircles]);
 
   return (
-    <div className={cn('flex flex-col min-h-0', className)}>
+    <div className={cn('flex flex-col min-h-0 h-full', className)}>
       <style dangerouslySetInnerHTML={{ __html: customMarkerStyles }} />
-      <div className="flex-1 min-h-0 rounded border overflow-hidden bg-muted/30 relative">
+      <div className="flex-1 min-h-0 h-full rounded border overflow-hidden bg-muted/30 relative">
         {mapLayerBusy ? (
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[2000] border-b border-border/80 bg-background/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur-sm"
@@ -648,6 +650,7 @@ function ReportsVisualiserMapInner({
               catchments={opportunityCatchments}
               greenfield={opportunityGreenfield}
               selectedZoneId={selectedOpportunityId}
+              selectionSeq={opportunitySelectionSeq}
               onSelectZone={(z) => onSelectOpportunity?.(z)}
             />
           ) : null}

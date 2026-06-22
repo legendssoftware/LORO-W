@@ -6,6 +6,7 @@ import type {
   GetCompetitorsResponse,
   UpdateCompetitorPayload,
   CompetitorDeleteResponse,
+  CompetitorImportResponse,
 } from '@/api/types/competitors';
 
 export type {
@@ -96,5 +97,32 @@ export async function deleteCompetitor(
   id: number
 ): Promise<CompetitorDeleteResponse> {
   const { data } = await client.delete<CompetitorDeleteResponse>(`/competitors/${id}`);
+  return data;
+}
+
+const IMPORT_CSV_LONG_TIMEOUT_MS = 10 * 60 * 1000;
+
+export type ImportCompetitorsFromCSVOptions = {
+  longRunning?: boolean;
+  branchId?: number;
+};
+
+export async function importCompetitorsFromCSV(
+  client: AxiosInstance,
+  formData: FormData,
+  options?: ImportCompetitorsFromCSVOptions
+): Promise<CompetitorImportResponse> {
+  const search = new URLSearchParams();
+  if (options?.branchId != null) {
+    search.set('branchId', String(options.branchId));
+  }
+  const qs = search.toString();
+  const axiosConfig =
+    options?.longRunning === true ? { timeout: IMPORT_CSV_LONG_TIMEOUT_MS } : undefined;
+  const { data } = await client.post<CompetitorImportResponse>(
+    `/competitors/import-csv${qs ? `?${qs}` : ''}`,
+    formData,
+    axiosConfig
+  );
   return data;
 }

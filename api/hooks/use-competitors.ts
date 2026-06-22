@@ -14,6 +14,7 @@ import {
   createCompetitor,
   updateCompetitor,
   deleteCompetitor,
+  importCompetitorsFromCSV,
 } from '@/api/endpoints/competitors';
 import type { CreateCompetitorPayload, UpdateCompetitorPayload } from '@/api/types/competitors';
 import toast from 'react-hot-toast';
@@ -163,5 +164,28 @@ export function useDeleteCompetitorMutation() {
       toast.success('Competitor removed');
     },
     onError: (err) => mutationToastError(err, 'Could not delete competitor'),
+  });
+}
+
+export function useImportCompetitorsMutation() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      formData,
+      longRunning,
+      branchId,
+    }: {
+      formData: FormData;
+      longRunning?: boolean;
+      branchId?: number;
+    }) =>
+      importCompetitorsFromCSV(api, formData, {
+        longRunning: longRunning === true,
+        branchId,
+      }),
+    onSuccess: () => {
+      invalidateCompetitorQueries(queryClient);
+    },
   });
 }

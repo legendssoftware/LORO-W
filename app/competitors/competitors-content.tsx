@@ -27,8 +27,14 @@ import { canDeleteCompetitors, canManageCompetitors } from '@/lib/access';
 import { CompetitorCard, CompetitorCardSkeleton } from './components/competitor-card';
 import { CompetitorDetailDialog } from './components/competitor-detail-dialog';
 import { CompetitorFormDialog } from './components/competitor-form-dialog';
+import { ImportCompetitorsModal } from './components/import-competitors-modal';
 import { cn } from '@/lib/utils';
-import { Link2, ListFilter, Plus, ShieldAlert } from 'lucide-react';
+import { Link2, ListFilter, Plus, ShieldAlert, Upload } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -53,6 +59,7 @@ export function CompetitorsContent() {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [formCompetitorId, setFormCompetitorId] = useState<number | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const statusParam = statusFilter === 'all' ? undefined : statusFilter;
   const isDirectParam = competitorDirectFilterToBool(directFilter);
@@ -137,13 +144,30 @@ export function CompetitorsContent() {
             </p>
           </div>
           {canEdit ? (
-            <Button
-              className="h-9 shrink-0 gap-2 self-start bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
-              onClick={openCreate}
-            >
-              <Plus className="size-4" />
-              Add competitor
-            </Button>
+            <div className="flex shrink-0 items-center gap-2 self-start">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
+                    onClick={() => setImportModalOpen(true)}
+                    aria-label="Import competitors"
+                  >
+                    <Upload className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import competitors</TooltipContent>
+              </Tooltip>
+              <Button
+                className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
+                onClick={openCreate}
+              >
+                <Plus className="size-4" />
+                Add competitor
+              </Button>
+            </div>
           ) : null}
         </div>
 
@@ -277,6 +301,12 @@ export function CompetitorsContent() {
         onOpenChange={setFormOpen}
         mode={formMode}
         competitorId={formCompetitorId}
+      />
+
+      <ImportCompetitorsModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onSuccess={() => void competitorsQuery.refetch()}
       />
     </div>
   );
