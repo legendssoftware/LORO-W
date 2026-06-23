@@ -34,42 +34,153 @@ export function normalizePrimaryBranchUid(
   return value;
 }
 
+const TARGET_PATCH_FIELD_KEYS = [
+  'targetSalesAmount',
+  'targetQuotationsAmount',
+  'targetCurrency',
+  'targetHoursWorked',
+  'targetNewClients',
+  'targetNewLeads',
+  'targetCheckIns',
+  'targetCalls',
+  'targetPeriod',
+  'periodStartDate',
+  'periodEndDate',
+  'isRecurring',
+  'recurringInterval',
+  'carryForwardUnfulfilled',
+  'baseSalary',
+  'carInstalment',
+  'carInsurance',
+  'fuel',
+  'cellPhoneAllowance',
+  'carMaintenance',
+  'cgicCosts',
+  'totalCost',
+  'erpSalesRepCode',
+] as const satisfies readonly (keyof PatchUserTargetBody &
+  keyof TargetFormValues)[];
+
+type TargetPatchFieldKey = (typeof TARGET_PATCH_FIELD_KEYS)[number];
+
+function sameTargetStr(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  return (a ?? '').trim() === (b ?? '').trim();
+}
+
+function sameTargetNum(
+  a: number | null | undefined,
+  b: number | null | undefined
+): boolean {
+  return (a ?? null) === (b ?? null);
+}
+
+function sameTargetBool(
+  a: boolean | null | undefined,
+  b: boolean | null | undefined
+): boolean {
+  return (a ?? null) === (b ?? null);
+}
+
+function targetFieldChanged(
+  key: TargetPatchFieldKey,
+  baseline: TargetFormValues,
+  values: TargetFormValues
+): boolean {
+  const a = baseline[key];
+  const b = values[key];
+  switch (key) {
+    case 'erpSalesRepCode':
+    case 'targetCurrency':
+    case 'targetPeriod':
+    case 'periodStartDate':
+    case 'periodEndDate':
+      return !sameTargetStr(a as string | null, b as string | null);
+    case 'recurringInterval':
+      return (a ?? null) !== (b ?? null);
+    case 'isRecurring':
+    case 'carryForwardUnfulfilled':
+      return !sameTargetBool(a as boolean | null, b as boolean | null);
+    default:
+      return !sameTargetNum(a as number | null, b as number | null);
+  }
+}
+
+function resolveErpSalesRepCode(
+  ut: Record<string, unknown> | null
+): string | null {
+  if (!ut) return null;
+  const personalTargets = (ut as { personalTargets?: Record<string, unknown> })
+    .personalTargets;
+  const fromPersonal = personalTargets
+    ? parseTargetString(personalTargets.erpSalesRepCode)
+    : null;
+  if (fromPersonal) return fromPersonal;
+  return parseTargetString(ut.erpSalesRepCode);
+}
+
+function parseTargetString(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  return typeof v === 'string' ? v : null;
+}
+
 /** Build userTarget object from target form values (only defined, non-empty). */
 export function buildUserTargetBody(
   values: TargetFormValues
 ): PatchUserTargetBody | undefined {
-  const keys: (keyof PatchUserTargetBody)[] = [
-    'targetSalesAmount',
-    'targetQuotationsAmount',
-    'targetCurrency',
-    'targetHoursWorked',
-    'targetNewClients',
-    'targetNewLeads',
-    'targetCheckIns',
-    'targetCalls',
-    'targetPeriod',
-    'periodStartDate',
-    'periodEndDate',
-    'isRecurring',
-    'recurringInterval',
-    'carryForwardUnfulfilled',
-    'baseSalary',
-    'carInstalment',
-    'carInsurance',
-    'fuel',
-    'cellPhoneAllowance',
-    'carMaintenance',
-    'cgicCosts',
-    'totalCost',
-    'erpSalesRepCode',
-  ];
   const body: PatchUserTargetBody = {};
-  for (const k of keys) {
-    const v = values[k as keyof TargetFormValues];
+  for (const k of TARGET_PATCH_FIELD_KEYS) {
+    const v = values[k];
     if (v !== undefined && v !== null && v !== '') {
       (body as Record<string, unknown>)[k] = v;
     }
   }
+  return Object.keys(body).length > 0 ? body : undefined;
+}
+
+/** Build userTarget patch with only dirty or changed target fields. */
+export function buildUserTargetPatchBody(
+  baseline: TargetFormValues,
+  values: TargetFormValues,
+  dirtyFields?: Partial<Record<keyof TargetFormValues, boolean>>
+): PatchUserTargetBody | undefined {
+  const body: PatchUserTargetBody = {};
+
+  const shouldInclude = (key: keyof TargetFormValues): boolean => {
+    if (dirtyFields) return Boolean(dirtyFields[key]);
+    if (key === 'performanceWarningLevel') {
+      return values.performanceWarningLevel !== baseline.performanceWarningLevel;
+    }
+    return targetFieldChanged(key as TargetPatchFieldKey, baseline, values);
+  };
+
+  for (const k of TARGET_PATCH_FIELD_KEYS) {
+    if (!shouldInclude(k)) continue;
+    const v = values[k];
+    if (k === 'erpSalesRepCode') {
+      body.erpSalesRepCode =
+        v == null || v === '' ? null : String(v).trim();
+      continue;
+    }
+    if (v !== undefined && v !== null && v !== '') {
+      (body as Record<string, unknown>)[k] = v;
+    }
+  }
+
+  if (shouldInclude('performanceWarningLevel')) {
+    const v = values.performanceWarningLevel;
+    if (v && v !== 'none') {
+      body.targetWarnings = {
+        level: Number(v) as 1 | 2 | 3,
+        issuedAt: new Date().toISOString(),
+      };
+    } else {
+      body.targetWarnings = null;
+    }
+  }
+
   return Object.keys(body).length > 0 ? body : undefined;
 }
 
@@ -141,18 +252,15 @@ export function buildPatchBody(
     user.branch?.uid ?? user.branchUid ?? null
   );
   const valuesBranchNorm = normalizePrimaryBranchUid(values.branchUid ?? null);
-  if (!sameNum(userBranchUid, valuesBranchNorm))
+  if (!sameNum(userBranchUid, valuesBranchNorm)) {
     body.branch =
-      valuesBranchNorm != null ? { uid: valuesBranchNorm } : undefined;
+      valuesBranchNorm != null ? { uid: valuesBranchNorm } : null;
+  }
 
   if (!sameArr(user.managedBranches, values.managedBranches))
-    body.managedBranches = values.managedBranches?.length
-      ? values.managedBranches
-      : undefined;
+    body.managedBranches = values.managedBranches ?? [];
   if (!sameArr(user.managedStaff, values.managedStaff))
-    body.managedStaff = values.managedStaff?.length
-      ? values.managedStaff
-      : undefined;
+    body.managedStaff = values.managedStaff ?? [];
 
   if (norm(user.businesscardURL ?? null) !== norm(values.businesscardURL ?? null))
     body.businesscardURL = values.businesscardURL ?? undefined;
@@ -192,9 +300,7 @@ export function buildPatchBody(
     } as PatchUserBody['employmentProfile'];
 
   if (!sameArr(user.assignedClientIds, values.assignedClientIds))
-    body.assignedClientIds = values.assignedClientIds?.length
-      ? values.assignedClientIds
-      : undefined;
+    body.assignedClientIds = values.assignedClientIds ?? [];
 
   return body;
 }
@@ -354,7 +460,7 @@ export function getDefaultTargetValues(
     carMaintenance: num(src.carMaintenance),
     cgicCosts: num(src.cgicCosts),
     totalCost: num(src.totalCost),
-    erpSalesRepCode: str(src.erpSalesRepCode),
+    erpSalesRepCode: resolveErpSalesRepCode(ut),
     performanceWarningLevel,
   };
 }
