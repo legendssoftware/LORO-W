@@ -73,7 +73,7 @@ export interface PatchUserBody {
   organisationRef?: string | null;
   userref?: string | null;
   hrID?: number | null;
-  branch?: { uid: number };
+  branch?: { uid: number } | null;
   assignedClientIds?: number[];
   linkedClientUid?: number | null;
   managedBranches?: number[];
@@ -152,7 +152,7 @@ export interface PatchUserTargetBody {
   carMaintenance?: number;
   cgicCosts?: number;
   totalCost?: number;
-  erpSalesRepCode?: string;
+  erpSalesRepCode?: string | null;
   targetWarnings?: TargetWarningsPayload | null;
 }
 

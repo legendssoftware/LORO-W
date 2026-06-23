@@ -90,7 +90,7 @@ import {
   targetFormSchema,
   userFormSchema,
   buildPatchBody,
-  buildUserTargetBody,
+  buildUserTargetPatchBody,
   getDefaultTargetValues,
   parseFormDateInput,
   normalizePrimaryBranchUid,
@@ -364,30 +364,33 @@ export default function UserSettingsPage() {
 
   const onSubmit = (values: FormValues) => {
     const body = buildPatchBody(user ?? undefined, values);
-    let targetPayload = buildUserTargetBody(targetForm.getValues());
-    if (targetForm.formState.dirtyFields.performanceWarningLevel) {
-      const v = targetForm.getValues().performanceWarningLevel;
-      targetPayload = targetPayload ?? {};
-      if (v && v !== 'none') {
-        targetPayload.targetWarnings = {
-          level: Number(v) as 1 | 2 | 3,
-          issuedAt: new Date().toISOString(),
-        };
-      } else {
-        targetPayload.targetWarnings = null;
-      }
-    }
+    const targetBaseline = getDefaultTargetValues(
+      (user as { userTarget?: Record<string, unknown> | null })?.userTarget ?? null
+    );
+    const targetPayload = buildUserTargetPatchBody(
+      targetBaseline,
+      targetForm.getValues(),
+      targetForm.formState.dirtyFields
+    );
     if (targetPayload) {
       body.userTarget = targetPayload;
     }
-    const hasChanges = Object.keys(body).length > 0;
+    const hasUserChanges = Object.keys(body).some((k) => k !== 'userTarget');
+    const hasTargetChanges = body.userTarget != null;
+    const hasChanges = hasUserChanges || hasTargetChanges;
     if (!hasChanges) {
       toast.success('No changes to save');
       return;
     }
     patchUser.mutate(body, {
       onSuccess: () => {
-        toast.success(body.userTarget ? 'User and targets updated' : 'User updated');
+        if (hasUserChanges && hasTargetChanges) {
+          toast.success('User and targets updated');
+        } else if (hasTargetChanges) {
+          toast.success('Targets updated');
+        } else {
+          toast.success('User updated');
+        }
         router.push('/staff');
       },
       onError: (err: Error) => {
