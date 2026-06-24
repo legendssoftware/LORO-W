@@ -60,20 +60,14 @@ function formatChartZarAxis(v: number): string {
 }
 
 function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
-  const monthlyData = data.map((d) => ({
-    ...d,
-    revenueLowZAR: d.revenueLowZAR / 12,
-    revenueMidZAR: d.revenueMidZAR / 12,
-    revenueHighZAR: d.revenueHighZAR / 12,
-  }));
   const maxRevenue = Math.max(
-    ...monthlyData.map((d) => d.revenueHighZAR),
+    ...data.map((d) => d.revenueHighZAR),
     1
   );
   return (
     <div className="h-[160px] w-full min-w-0 mt-3">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <XAxis
             dataKey="month"
             tick={{ fontSize: 10 }}
@@ -286,22 +280,22 @@ function ZoneDetail({
           <dd className="font-medium">{zone.competitorCount}</dd>
         </div>
         <div className="col-span-2">
-          <dt className="text-muted-foreground">Addressable pool</dt>
+          <dt className="text-muted-foreground">Addressable pool (monthly)</dt>
           <dd className="font-medium">
-            {formatZar(zone.addressablePoolZAR)}
+            {formatZar(zone.addressablePoolZAR)}/mo
             <span className="block text-xs font-normal text-muted-foreground">
-              Σ hardware in {captureSettings.radiusMeters / 1000} km × brand turnover
+              Σ hardware in {captureSettings.radiusMeters / 1000} km × brand monthly turnover
             </span>
           </dd>
         </div>
         <div className="col-span-2">
           <dt className="text-muted-foreground">
-            {orgBrandName} potential ({lowPct}–{highPct}%)
+            {orgBrandName} potential ({lowPct}–{highPct}%, monthly)
           </dt>
           <dd className="font-medium space-y-0.5">
-            <span className="block">Low: {formatZar(potential.low)}</span>
-            <span className="block">Avg: {formatZar(potential.avg)}</span>
-            <span className="block">High: {formatZar(potential.high)}</span>
+            <span className="block">Low: {formatZar(potential.low)}/mo</span>
+            <span className="block">Avg: {formatZar(potential.avg)}/mo</span>
+            <span className="block">High: {formatZar(potential.high)}/mo</span>
           </dd>
         </div>
         {zone.kind === 'catchment' && zone.actualRevenueZAR != null ? (

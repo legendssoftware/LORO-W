@@ -1,20 +1,16 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import type { BranchListItem } from '@/api/types/branch';
-
-const NOMINATIM_DELAY_MS = 1100;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import {
+  formatAddressLine,
+  geocodeAddressLine,
+  hasStoredCoordinates,
+  NOMINATIM_DELAY_MS,
+  sleep,
+} from '@/lib/utils/address-map-geocode';
 
 /** Single-line postal address for geocoding (GET /branch list). */
 export function formatBranchAddressLine(b: BranchListItem): string | null {
-  const a = b.address;
-  if (!a) return null;
-  const parts = [a.street, a.suburb, a.city, a.state, a.postalCode, a.country].filter(
-    (p) => (p ?? '').toString().trim() !== ''
-  );
-  return parts.length ? parts.join(', ') : null;
+  return formatAddressLine(b.address);
 }
 
 export function branchDisplayName(b: BranchListItem): string {
@@ -23,43 +19,8 @@ export function branchDisplayName(b: BranchListItem): string {
   return alias || legal || `Branch ${b.uid}`;
 }
 
-function hasStoredCoordinates(b: BranchListItem): boolean {
-  const lat = Number(b.latitude);
-  const lng = Number(b.longitude);
-  return (
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    lat >= -90 &&
-    lat <= 90 &&
-    lng >= -180 &&
-    lng <= 180 &&
-    !(lat === 0 && lng === 0)
-  );
-}
-
-/**
- * Forward geocode via OpenStreetMap Nominatim (respect ~1 req/s usage policy).
- */
-async function geocodeAddressLine(
-  query: string
-): Promise<{ lat: number; lng: number } | null> {
-  const q = query.trim();
-  if (!q) return null;
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'Accept-Language': 'en',
-      'User-Agent': 'LORO-Reports/1.0 (branch map)',
-    },
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as Array<{ lat?: string; lon?: string }>;
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const lat = parseFloat(data[0].lat ?? '');
-  const lng = parseFloat(data[0].lon ?? '');
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return { lat, lng };
+function branchHasStoredCoordinates(b: BranchListItem): boolean {
+  return hasStoredCoordinates(b.latitude, b.longitude);
 }
 
 /**
@@ -75,7 +36,7 @@ export async function buildBranchMarkersFromList(
   for (const b of branches) {
     const line = formatBranchAddressLine(b);
 
-    if (hasStoredCoordinates(b)) {
+    if (branchHasStoredCoordinates(b)) {
       const lat = Number(b.latitude);
       const lng = Number(b.longitude);
       out.push({
@@ -95,7 +56,7 @@ export async function buildBranchMarkersFromList(
     if (!line) continue;
     if (!first) await sleep(NOMINATIM_DELAY_MS);
     first = false;
-    const coords = await geocodeAddressLine(line);
+    const coords = await geocodeAddressLine(line, 'LORO-Reports/1.0 (branch map)');
     if (!coords) continue;
     out.push({
       id: `branch-list-${b.uid}`,

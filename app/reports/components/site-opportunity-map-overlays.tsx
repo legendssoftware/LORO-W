@@ -63,10 +63,10 @@ function PotentialBreakdown({
 
   return (
     <div className="space-y-0.5">
-      <p className="text-xs font-medium text-muted-foreground">Potential</p>
-      <p>Low: {formatZarShort(low)}</p>
-      <p>Avg: {formatZarShort(avg)}</p>
-      <p>High: {formatZarShort(high)}</p>
+      <p className="text-xs font-medium text-muted-foreground">Potential (monthly)</p>
+      <p>Low: {formatZarShort(low)}/mo</p>
+      <p>Avg: {formatZarShort(avg)}/mo</p>
+      <p>High: {formatZarShort(high)}/mo</p>
     </div>
   );
 }
@@ -193,7 +193,7 @@ export function SiteOpportunityMapOverlays({
                 <p className="font-semibold">
                   #{c.rank} {c.branchName}
                 </p>
-                <p>Pool: {formatZarShort(c.addressablePoolZAR)}</p>
+                <p>Pool: {formatZarShort(c.addressablePoolZAR)}/mo</p>
                 <PotentialBreakdown
                   potentialLowZAR={c.potentialLowZAR}
                   potentialHighZAR={c.potentialHighZAR}
@@ -243,7 +243,7 @@ export function SiteOpportunityMapOverlays({
                   {g.address ? (
                     <p className="text-xs text-muted-foreground">{g.address}</p>
                   ) : null}
-                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}</p>
+                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}/mo</p>
                   <PotentialBreakdown
                     potentialLowZAR={g.potentialLowZAR}
                     potentialHighZAR={g.potentialHighZAR}
