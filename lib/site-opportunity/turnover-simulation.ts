@@ -74,11 +74,10 @@ function strongMonthlyZAR(lowMonthly: number, highMonthly: number): number {
 
 export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimulation {
   const { potentialLowZAR, potentialHighZAR, captureTimeline } = zone;
-  const midAnnual = potentialMidZAR(potentialLowZAR, potentialHighZAR);
+  const midMonthly = potentialMidZAR(potentialLowZAR, potentialHighZAR);
 
-  const lowMonthly = potentialLowZAR / 12;
-  const midMonthly = midAnnual / 12;
-  const highMonthly = potentialHighZAR / 12;
+  const lowMonthly = potentialLowZAR;
+  const highMonthly = potentialHighZAR;
   const strongMonthly = strongMonthlyZAR(lowMonthly, highMonthly);
 
   const scenarios: TurnoverScenario[] = [
@@ -86,13 +85,13 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
       key: 'conservative',
       label: 'Conservative',
       monthlyZAR: lowMonthly,
-      annualZAR: potentialLowZAR,
+      annualZAR: lowMonthly * 12,
     },
     {
       key: 'expected',
       label: 'Expected',
       monthlyZAR: midMonthly,
-      annualZAR: midAnnual,
+      annualZAR: midMonthly * 12,
     },
     {
       key: 'strong',
@@ -104,7 +103,7 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
       key: 'marketLeader',
       label: 'Market leader',
       monthlyZAR: highMonthly,
-      annualZAR: potentialHighZAR,
+      annualZAR: highMonthly * 12,
     },
   ];
 
@@ -113,17 +112,16 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
     return {
       label,
       month,
-      lowMonthlyZAR: (point?.revenueLowZAR ?? 0) / 12,
-      midMonthlyZAR: (point?.revenueMidZAR ?? 0) / 12,
-      highMonthlyZAR: (point?.revenueHighZAR ?? 0) / 12,
+      lowMonthlyZAR: point?.revenueLowZAR ?? 0,
+      midMonthlyZAR: point?.revenueMidZAR ?? 0,
+      highMonthlyZAR: point?.revenueHighZAR ?? 0,
     };
   });
 
   const maturePoint =
     timelinePointAtMonth(captureTimeline, 30) ??
     captureTimeline[captureTimeline.length - 1];
-  const matureMidMonthlyZAR =
-    (maturePoint?.revenueMidZAR ?? midAnnual) / 12;
+  const matureMidMonthlyZAR = maturePoint?.revenueMidZAR ?? midMonthly;
 
   const productMix: ProductMixLine[] = PRODUCT_MIX_PCT.map(({ category, pct }) => ({
     category,
@@ -132,8 +130,7 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
   }));
 
   const month6Point = timelinePointAtMonth(captureTimeline, 6);
-  const listSubtitleMonthlyZAR =
-    (month6Point?.revenueMidZAR ?? midAnnual) / 12;
+  const listSubtitleMonthlyZAR = month6Point?.revenueMidZAR ?? midMonthly;
 
   return {
     scenarios,
