@@ -27,6 +27,7 @@ export {
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
+export { useCompetitorMapMarkers } from './use-competitor-map-markers';
 export {
   CLIENTS_QUERY_KEY_PREFIX,
   invalidateClientQueries,

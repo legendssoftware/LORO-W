@@ -1,6 +1,7 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import type { BrandCount, HardwareBrandKey } from '@/api/types/site-opportunity';
 
+/** Estimated monthly turnover (ZAR) per hardware store by brand. */
 export const HARDWARE_TURNOVER_ZAR: Record<HardwareBrandKey, number> = {
 	BUCO: 2_000_000,
 	CASHBUILD: 3_000_000,

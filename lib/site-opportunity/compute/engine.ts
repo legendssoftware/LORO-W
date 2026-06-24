@@ -441,7 +441,7 @@ export function computeGreenfieldZones(
 		.map(({ _nearestM: _, ...z }, i) => ({
 			...z,
 			rank: i + 1,
-			label: `Location ${i + 1}`,
+			label: `Opportunity ${i + 1}`,
 		}));
 }
 

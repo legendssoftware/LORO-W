@@ -10,6 +10,10 @@ import {
   useReportsMapData,
   useSiteOpportunities,
   useTokenReady,
+  useBranches,
+  useBranchMapMarkers,
+  useCompetitorsInfinite,
+  useCompetitorMapMarkers,
 } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { GetSiteOpportunitiesParams } from '@/api/endpoints/site-opportunities';
@@ -37,6 +41,8 @@ import {
   filterInfluenceCirclesForMarkers,
   mergeInfluenceCircles,
 } from '@/app/reports/utils/merge-influence-circles';
+import { mergeBranchMapMarkers } from '@/app/reports/utils/merge-branch-map-markers';
+import { mergeCompetitorMapMarkers } from '@/app/reports/utils/merge-competitor-map-markers';
 import { SiteOpportunityPanel } from '@/app/reports/components/site-opportunity-panel';
 import { SiteOpportunityToolbar } from '@/app/reports/components/site-opportunity-toolbar';
 
@@ -129,6 +135,30 @@ export function ReportsVisualiserTab({
   ]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
+
+  const { data: branches = [] } = useBranches({ enabled: mounted });
+  const competitorsQuery = useCompetitorsInfinite({ enabled: mounted });
+  const orgLogoUrl = mapReport.data?.organisation?.logo ?? null;
+  const branchListMarkers = useBranchMapMarkers(branches, {
+    enabled: mounted && branches.length > 0,
+    logoUrl: orgLogoUrl,
+  });
+  const competitorListMarkers = useCompetitorMapMarkers(competitorsQuery.data, {
+    enabled: mounted && competitorsQuery.data.length > 0,
+  });
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (competitorsQuery.hasNextPage && !competitorsQuery.isFetchingNextPage) {
+      void competitorsQuery.fetchNextPage();
+    }
+  }, [
+    mounted,
+    competitorsQuery.hasNextPage,
+    competitorsQuery.isFetchingNextPage,
+    competitorsQuery.fetchNextPage,
+    competitorsQuery.data,
+  ]);
 
   const siteOpportunitiesQuery = useSiteOpportunities(siteOpportunityParams, {
     enabled: mounted && showOpportunities,
@@ -240,10 +270,17 @@ export function ReportsVisualiserTab({
     setSelectedOpportunityId(null);
   }, [mapReport.isSuccess, showOpportunities]);
 
-  const baseMarkers = useMemo(
-    () => excludeCheckInRelatedMapMarkers(mapReport.data?.allMarkers ?? []),
-    [mapReport.data?.allMarkers]
-  );
+  const baseMarkers = useMemo(() => {
+    const fromReport = excludeCheckInRelatedMapMarkers(
+      mapReport.data?.allMarkers ?? []
+    );
+    const withBranches = mergeBranchMapMarkers(fromReport, branchListMarkers.data);
+    return mergeCompetitorMapMarkers(withBranches, competitorListMarkers.data);
+  }, [
+    mapReport.data?.allMarkers,
+    branchListMarkers.data,
+    competitorListMarkers.data,
+  ]);
 
   const uniqueRegions = useMemo(
     () => getSortedUniqueRegionsFromMarkers(baseMarkers),
