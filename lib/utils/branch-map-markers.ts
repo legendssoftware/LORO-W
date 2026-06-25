@@ -1,14 +1,8 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import type { BranchListItem } from '@/api/types/branch';
-import {
-  formatAddressLine,
-  geocodeAddressLine,
-  hasStoredCoordinates,
-  NOMINATIM_DELAY_MS,
-  sleep,
-} from '@/lib/utils/address-map-geocode';
+import { formatAddressLine, hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 
-/** Single-line postal address for geocoding (GET /branch list). */
+/** Single-line postal address for display (GET /branch list). */
 export function formatBranchAddressLine(b: BranchListItem): string | null {
   return formatAddressLine(b.address);
 }
@@ -19,56 +13,30 @@ export function branchDisplayName(b: BranchListItem): string {
   return alias || legal || `Branch ${b.uid}`;
 }
 
-function branchHasStoredCoordinates(b: BranchListItem): boolean {
-  return hasStoredCoordinates(b.latitude, b.longitude);
-}
-
 /**
- * Build branch markers from org branch list (GET /branch). Geocodes sequentially.
+ * Build branch markers from org branch list using persisted coordinates only.
  */
-export async function buildBranchMarkersFromList(
-  branches: BranchListItem[],
-  options?: { logoUrl?: string | null }
-): Promise<MapMarkerBase[]> {
-  const logoUrl = options?.logoUrl ?? undefined;
+export function buildBranchMarkersFromList(branches: BranchListItem[]): MapMarkerBase[] {
   const out: MapMarkerBase[] = [];
-  let first = true;
+
   for (const b of branches) {
+    if (!hasStoredCoordinates(b.latitude, b.longitude)) continue;
+
+    const lat = Number(b.latitude);
+    const lng = Number(b.longitude);
     const line = formatBranchAddressLine(b);
 
-    if (branchHasStoredCoordinates(b)) {
-      const lat = Number(b.latitude);
-      const lng = Number(b.longitude);
-      out.push({
-        id: `branch-list-${b.uid}`,
-        name: branchDisplayName(b),
-        position: [lat, lng],
-        latitude: lat,
-        longitude: lng,
-        markerType: 'branch',
-        address: line ?? '',
-        branchUid: b.uid,
-        logoUrl,
-      });
-      continue;
-    }
-
-    if (!line) continue;
-    if (!first) await sleep(NOMINATIM_DELAY_MS);
-    first = false;
-    const coords = await geocodeAddressLine(line, 'LORO-Reports/1.0 (branch map)');
-    if (!coords) continue;
     out.push({
       id: `branch-list-${b.uid}`,
       name: branchDisplayName(b),
-      position: [coords.lat, coords.lng],
-      latitude: coords.lat,
-      longitude: coords.lng,
+      position: [lat, lng],
+      latitude: lat,
+      longitude: lng,
       markerType: 'branch',
-      address: line,
+      address: line ?? '',
       branchUid: b.uid,
-      logoUrl,
     });
   }
+
   return out;
 }

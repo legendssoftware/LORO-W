@@ -35,12 +35,15 @@ import type {
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
 import { SiteOpportunityMapOverlays } from './site-opportunity-map-overlays';
+import { Layers, type LucideIcon } from 'lucide-react';
 import {
+  CLUSTER_MARKER_BG,
+  MAP_ENTITY_MARKER_SIZE,
+  MAP_ENTITY_MARKERS,
   MARKER_COLORS,
-  ORG_SITE_MAP_MARKER,
-  ORG_SITE_MARKER_SIZE,
   influenceColorForKind,
   resolveCompetitorMarkerColor,
+  type MapEntityMarkerType,
 } from './map-report-constants';
 
 import 'leaflet/dist/leaflet.css';
@@ -60,6 +63,7 @@ const customMarkerStyles = `
   .reports-viz-popup .leaflet-popup-content {
     margin: 0;
     padding: 14px 16px;
+    color: var(--foreground);
   }
 
   .reports-viz-popup .leaflet-popup-close-button {
@@ -136,6 +140,17 @@ const customMarkerStyles = `
   .leaflet-container .easy-button-button:hover {
     background: hsl(var(--muted));
   }
+
+  .marker-cluster-small,
+  .marker-cluster-medium,
+  .marker-cluster-large {
+    background: transparent !important;
+  }
+
+  .reports-viz-cluster-marker.leaflet-div-icon {
+    border: none !important;
+    background: transparent !important;
+  }
 `;
 
 const DEFAULT_CENTER: [number, number] = [-26.2041, 28.0473];
@@ -144,7 +159,8 @@ const MARKER_SIZE = 36;
 const MARKER_ANCHOR = MARKER_SIZE / 2;
 
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
-const orgSiteIconCache = new Map<string, ReturnType<typeof divIcon>>();
+const lucideCircleIconCache = new Map<string, ReturnType<typeof divIcon>>();
+const clusterIconCache = new Map<number, ReturnType<typeof divIcon>>();
 
 const CLUSTER_MARKER_TYPES = new Set(['client', 'competitor']);
 
@@ -179,7 +195,6 @@ function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
     const owner = marker.owner as { photoURL?: string; avatar?: string } | undefined;
     return img || owner?.photoURL || owner?.avatar;
   }
-  if (mt === 'branch') return marker.logoUrl as string | undefined;
   if (mt === 'lead') {
     const img = marker.image as string | undefined;
     const owner = marker.owner as { photoURL?: string; avatar?: string } | undefined;
@@ -204,7 +219,6 @@ function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
 
 function genericPlaceholderChar(markerType: string): string {
   const m: Record<string, string> = {
-    branch: 'B',
     quotation: 'Q',
     task: 'T',
     journal: 'J',
@@ -215,16 +229,15 @@ function genericPlaceholderChar(markerType: string): string {
   return m[markerType] ?? markerType.slice(0, 1).toUpperCase();
 }
 
-function createOrgSiteMarkerIcon(
-  markerType: 'client' | 'competitor',
-  bg: string
+function createLucideCircleMarkerIcon(
+  bg: string,
+  Icon: LucideIcon,
+  cacheKey: string,
+  size = MAP_ENTITY_MARKER_SIZE
 ): ReturnType<typeof divIcon> {
-  const cacheKey = `${markerType}:${bg}`;
-  const cached = orgSiteIconCache.get(cacheKey);
+  const cached = lucideCircleIconCache.get(cacheKey);
   if (cached) return cached;
 
-  const { Icon } = ORG_SITE_MAP_MARKER[markerType];
-  const size = ORG_SITE_MARKER_SIZE;
   const html = renderToStaticMarkup(
     createElement(
       'div',
@@ -253,7 +266,59 @@ function createOrgSiteMarkerIcon(
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
-  orgSiteIconCache.set(cacheKey, icon);
+  lucideCircleIconCache.set(cacheKey, icon);
+  return icon;
+}
+
+function createClusterMarkerIcon(count: number): ReturnType<typeof divIcon> {
+  const cached = clusterIconCache.get(count);
+  if (cached) return cached;
+
+  const size = count < 10 ? 36 : count < 100 ? 44 : 52;
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      {
+        style: {
+          backgroundColor: CLUSTER_MARKER_BG,
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.32)',
+          color: 'white',
+          fontFamily: 'system-ui, sans-serif',
+        },
+      },
+      createElement(Layers, {
+        size: 14,
+        color: 'white',
+        strokeWidth: 2.5,
+      }),
+      createElement(
+        'span',
+        {
+          style: {
+            fontSize: 11,
+            fontWeight: 700,
+            lineHeight: 1,
+          },
+        },
+        String(count)
+      )
+    )
+  );
+  const icon = divIcon({
+    html,
+    className: 'reports-viz-cluster-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+  clusterIconCache.set(count, icon);
   return icon;
 }
 
@@ -296,7 +361,7 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
           justifyContent: 'center',
           background: '#e2e8f0',
           color: '#475569',
-          fontSize: mt === 'branch' || mt === 'quotation' ? 13 : 11,
+          fontSize: mt === 'quotation' ? 13 : 11,
           fontWeight: 700,
           fontFamily: 'system-ui, sans-serif',
         },
@@ -336,11 +401,13 @@ function ReportMapMarkerIcon({ marker }: { marker: MapMarkerBase }) {
 
 function getMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
   const mt = String(marker.markerType ?? 'unknown');
-  if (mt === 'client') {
-    return createOrgSiteMarkerIcon('client', ORG_SITE_MAP_MARKER.client.bg);
-  }
-  if (mt === 'competitor') {
-    return createOrgSiteMarkerIcon('competitor', resolveCompetitorMarkerColor(marker));
+
+  if (mt === 'client' || mt === 'competitor' || mt === 'branch' || mt === 'org') {
+    const entityType = mt as MapEntityMarkerType;
+    const { Icon, bg } = MAP_ENTITY_MARKERS[entityType];
+    const resolvedBg =
+      entityType === 'competitor' ? resolveCompetitorMarkerColor(marker) : bg;
+    return createLucideCircleMarkerIcon(resolvedBg, Icon, `${entityType}:${resolvedBg}`);
   }
 
   const img = resolveMarkerImageUrl(marker) ?? '';
@@ -510,6 +577,9 @@ function MapMarkerLayers({
           disableClusteringAtZoom={16}
           spiderfyOnMaxZoom
           showCoverageOnHover={false}
+          iconCreateFunction={(cluster) =>
+            createClusterMarkerIcon(cluster.getChildCount())
+          }
         >
           {clusterMarkers.map((m, idx) => (
             <ReportMapMarker

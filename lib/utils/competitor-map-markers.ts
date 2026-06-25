@@ -1,12 +1,6 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import type { CompetitorListItem } from '@/api/types/competitors';
-import {
-  formatAddressLine,
-  geocodeAddressLine,
-  hasStoredCoordinates,
-  NOMINATIM_DELAY_MS,
-  sleep,
-} from '@/lib/utils/address-map-geocode';
+import { formatAddressLine, hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 import {
   brandMarkerColor,
   resolveHardwareBrand,
@@ -25,24 +19,36 @@ function competitorStringField(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+function competitorListMarkerExtras(c: CompetitorListItem): Partial<MapMarkerBase> {
+  return {
+    contactPhone: competitorStringField(c.contactPhone),
+    contactEmail: competitorStringField(c.contactEmail),
+    website: competitorStringField(c.website),
+    description: competitorStringField(c.description),
+    threatLevel: typeof c.threatLevel === 'number' ? c.threatLevel : undefined,
+    isDirect: c.isDirect ?? undefined,
+  };
+}
+
 export interface BuildCompetitorMarkersOptions {
-  /** Cap new Nominatim lookups per run (stored coords are always used). */
+  /** @deprecated Ignored — only persisted coordinates are used. */
   maxNewGeocodes?: number;
 }
 
 /**
- * Build competitor markers from GET /competitors list. Geocodes sequentially when coords are missing.
+ * Build competitor markers from GET /competitors list using persisted coordinates only.
  */
-export async function buildCompetitorMarkersFromList(
+export function buildCompetitorMarkersFromList(
   competitors: CompetitorListItem[],
-  options?: BuildCompetitorMarkersOptions
-): Promise<MapMarkerBase[]> {
-  const maxNewGeocodes = options?.maxNewGeocodes ?? 100;
+  _options?: BuildCompetitorMarkersOptions
+): MapMarkerBase[] {
   const out: MapMarkerBase[] = [];
-  let firstGeocode = true;
-  let newGeocodeCount = 0;
 
   for (const c of competitors) {
+    if (!hasStoredCoordinates(c.latitude, c.longitude)) continue;
+
+    const lat = Number(c.latitude);
+    const lng = Number(c.longitude);
     const line = formatCompetitorAddressLine(c);
     const accountName = competitorStringField(c.accountName);
     const legalEntity = competitorStringField(c.LegalEntity);
@@ -54,44 +60,14 @@ export async function buildCompetitorMarkersFromList(
     const hardwareBrand = resolveHardwareBrand(brandInput);
     const markerColor = brandMarkerColor(hardwareBrand);
 
-    if (hasStoredCoordinates(c.latitude, c.longitude)) {
-      const lat = Number(c.latitude);
-      const lng = Number(c.longitude);
-      out.push({
-        id: `competitor-list-${c.uid}`,
-        name: competitorDisplayName(c),
-        position: [lat, lng],
-        latitude: lat,
-        longitude: lng,
-        markerType: 'competitor',
-        address: line ?? '',
-        competitorRef: c.competitorRef ?? String(c.uid),
-        hardwareBrand,
-        markerColor,
-        accountName,
-        LegalEntity: legalEntity,
-        industry: c.industry,
-        status: c.status ?? 'active',
-        logoUrl: c.logoUrl,
-      });
-      continue;
-    }
-
-    if (!line || newGeocodeCount >= maxNewGeocodes) continue;
-    if (!firstGeocode) await sleep(NOMINATIM_DELAY_MS);
-    firstGeocode = false;
-    newGeocodeCount++;
-    const coords = await geocodeAddressLine(line, 'LORO-Reports/1.0 (competitor map)');
-    if (!coords) continue;
-
     out.push({
       id: `competitor-list-${c.uid}`,
       name: competitorDisplayName(c),
-      position: [coords.lat, coords.lng],
-      latitude: coords.lat,
-      longitude: coords.lng,
+      position: [lat, lng],
+      latitude: lat,
+      longitude: lng,
       markerType: 'competitor',
-      address: line,
+      address: line ?? '',
       competitorRef: c.competitorRef ?? String(c.uid),
       hardwareBrand,
       markerColor,
@@ -100,6 +76,7 @@ export async function buildCompetitorMarkersFromList(
       industry: c.industry,
       status: c.status ?? 'active',
       logoUrl: c.logoUrl,
+      ...competitorListMarkerExtras(c),
     });
   }
 

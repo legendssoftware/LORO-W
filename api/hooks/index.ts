@@ -21,6 +21,14 @@ export {
 export { useAttendanceReport } from './use-attendance-report';
 export { useMapReport, useReportsMapData } from './use-map-report';
 export {
+  useMapGeocodeBackfillMutation,
+  totalCappedPending,
+  totalAlreadyExhausted,
+  totalCompetitorBranchCappedPending,
+  needsMapGeocodeBackfill,
+  needsCompetitorBranchGeocodeBackfill,
+} from './use-map-geocode-backfill';
+export {
   siteOpportunitiesQueryKey,
   useSiteOpportunities,
 } from './use-site-opportunities';

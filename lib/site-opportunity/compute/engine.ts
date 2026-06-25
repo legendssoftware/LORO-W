@@ -194,6 +194,7 @@ export function computeBranchCatchments(
 			rank: 0,
 			branchId,
 			branchName: branchDisplayName(branch),
+			address: null,
 			lat: center.lat,
 			lng: center.lng,
 			radiusMeters: settings.radiusMeters,
