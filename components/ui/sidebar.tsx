@@ -8,6 +8,10 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { MODAL_OVERLAY_CLASS } from "@/lib/modal-overlay";
+import {
+  zAboveLeafletFullscreen,
+  zAboveLeafletFullscreenPanel,
+} from "@/lib/z-index";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -200,7 +204,11 @@ function Sidebar({
             type="button"
             aria-label="Close sidebar"
             onClick={closeSidebar}
-            className={cn("fixed inset-0 z-[55] cursor-pointer md:block", MODAL_OVERLAY_CLASS)}
+            className={cn(
+              "fixed inset-0 cursor-pointer md:block",
+              zAboveLeafletFullscreen,
+              MODAL_OVERLAY_CLASS,
+            )}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -217,7 +225,8 @@ function Sidebar({
       <motion.div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-[60] hidden h-svh flex-col p-2 md:flex",
+          "fixed inset-y-0 hidden h-svh flex-col p-2 md:flex",
+          zAboveLeafletFullscreenPanel,
           side === "left" ? "left-0" : "right-0",
           className
         )}

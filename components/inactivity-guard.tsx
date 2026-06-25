@@ -28,7 +28,7 @@ function getTimeoutMs(): number {
  * Only active when signed in and NEXT_PUBLIC_INACTIVITY_TIMEOUT_MINUTES > 0.
  */
 export function InactivityGuard() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { performSignOut } = useSignOut();
   const timeoutMs = getTimeoutMs();
   const [showDialog, setShowDialog] = useState(false);
@@ -149,7 +149,7 @@ export function InactivityGuard() {
     }
   };
 
-  if (!isSignedIn || timeoutMs <= 0) return null;
+  if (!isLoaded || !isSignedIn || timeoutMs <= 0) return null;
 
   return (
     <AlertDialog open={showDialog} onOpenChange={handleOpenChange}>

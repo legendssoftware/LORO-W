@@ -1,6 +1,6 @@
 /**
  * Map report types for GET `/reports/map`.
- * `allMarkers` includes only `client`, `competitor`, and `branch` (plus optional `org`).
+ * `allMarkers` includes `client`, `competitor`, `branch`, and optional `org` HQ.
  * Clients/competitors are loaded by Clerk `organisationUid` string — not by branch.
  * Legacy activity arrays remain empty for API compatibility.
  */
@@ -84,6 +84,7 @@ export interface MapLayers {
   branches: MapMarkerBase[];
   competitors: MapMarkerBase[];
   clients: MapMarkerBase[];
+  org?: MapMarkerBase[];
   /** Mirrors top-level arrays; `checkIns`/shift/worker marker slots stay empty — check-in-related pins are omitted from maps. */
   activity: {
     leads: MapMarkerBase[];

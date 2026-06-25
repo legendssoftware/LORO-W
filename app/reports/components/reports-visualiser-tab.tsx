@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MapPinned, Loader2 } from 'lucide-react';
 import {
   siteOpportunitiesQueryKey,
   useReportsMapData,
@@ -14,6 +14,8 @@ import {
   useBranchMapMarkers,
   useCompetitorsInfinite,
   useCompetitorMapMarkers,
+  useMapGeocodeBackfillMutation,
+  totalCompetitorBranchCappedPending,
 } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { GetSiteOpportunitiesParams } from '@/api/endpoints/site-opportunities';
@@ -26,6 +28,7 @@ import {
   type SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { Button } from '@/components/ui/button';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 import {
   filterMapMarkers,
@@ -135,13 +138,42 @@ export function ReportsVisualiserTab({
   ]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-
-  const { data: branches = [] } = useBranches({ enabled: mounted });
+  const { data: branches = [], refetch: refetchBranches } = useBranches({ enabled: mounted });
   const competitorsQuery = useCompetitorsInfinite({ enabled: mounted });
-  const orgLogoUrl = mapReport.data?.organisation?.logo ?? null;
+  const backfillMutation = useMapGeocodeBackfillMutation();
+  const [backfillMessage, setBackfillMessage] = useState<string | null>(null);
+
+  const pendingGeocodes = totalCompetitorBranchCappedPending(mapReport.data?.geocodingSummary);
+
+  const runMapGeocodeBackfill = useCallback(() => {
+    setBackfillMessage('Resolving missing competitor and branch coordinates…');
+    return backfillMutation
+      .mutateAsync({
+        resetExhausted: true,
+        bypassCache: true,
+        scope: 'competitors,branches',
+      })
+      .then((result) => {
+        setBackfillMessage(
+          result.complete
+            ? 'Competitor and branch coordinates updated.'
+            : 'Some competitor or branch addresses still need coordinates — check CRM data or run again.'
+        );
+        return Promise.all([
+          mapReport.refetch(),
+          refetchBranches(),
+          competitorsQuery.refetch(),
+        ]);
+      })
+      .catch((err: unknown) => {
+        setBackfillMessage(
+          err instanceof Error ? err.message : 'Could not backfill map coordinates.'
+        );
+      });
+  }, [backfillMutation, competitorsQuery.refetch, mapReport.refetch, refetchBranches]);
+
   const branchListMarkers = useBranchMapMarkers(branches, {
     enabled: mounted && branches.length > 0,
-    logoUrl: orgLogoUrl,
   });
   const competitorListMarkers = useCompetitorMapMarkers(competitorsQuery.data, {
     enabled: mounted && competitorsQuery.data.length > 0,
@@ -351,6 +383,7 @@ export function ReportsVisualiserTab({
         showMapTableToggle={false}
         sectionHeading={null}
         extraFilters={
+          <>
           <SiteOpportunityToolbar
             className="border-0 py-0 px-0 shrink-0"
             showOpportunities={showOpportunities}
@@ -362,9 +395,38 @@ export function ReportsVisualiserTab({
               setOpportunitySettings((s) => ({ ...s, ...patch }))
             }
             isLoading={opportunitiesBusy}
+            isError={siteOpportunitiesQuery.isError}
+            errorMessage={
+              siteOpportunitiesQuery.error instanceof Error
+                ? siteOpportunitiesQuery.error.message
+                : siteOpportunitiesQuery.isError
+                  ? 'Could not load suggested areas.'
+                  : undefined
+            }
             warnings={siteOpportunitiesQuery.data?.warnings ?? []}
             dataQuality={siteOpportunitiesQuery.data?.dataQuality}
+            catchments={mapOpportunityCatchments}
+            greenfield={mapOpportunityGreenfield}
+            onSelectZone={handleSelectOpportunity}
           />
+            {reportsMode === 'org' ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={backfillMutation.isPending}
+                onClick={() => void runMapGeocodeBackfill()}
+                title="Forward-geocode competitor and branch addresses missing lat/lng and save to database"
+              >
+                {backfillMutation.isPending ? (
+                  <Loader2 className="size-4 mr-1.5 animate-spin" />
+                ) : (
+                  <MapPinned className="size-4 mr-1.5" />
+                )}
+                Re-geocode map
+              </Button>
+            ) : null}
+          </>
         }
       />
       </div>
@@ -375,6 +437,23 @@ export function ReportsVisualiserTab({
             role="alert"
           >
             {mapReport.error?.message ?? 'Could not load map data.'}
+          </p>
+        ) : null}
+        {backfillMutation.isPending || backfillMessage ? (
+          <p
+            className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-primary/30 bg-primary/10 px-3 py-2 text-center text-sm text-foreground"
+            role="status"
+          >
+            {backfillMutation.isPending
+              ? 'Resolving missing competitor and branch coordinates…'
+              : backfillMessage}
+          </p>
+        ) : pendingGeocodes > 0 && reportsMode === 'org' ? (
+          <p
+            className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-primary/30 bg-primary/10 px-3 py-2 text-center text-sm text-foreground"
+            role="status"
+          >
+            {pendingGeocodes} competitor or branch addresses need coordinates — use Re-geocode map or run the CLI backfill.
           </p>
         ) : null}
         {showOpportunities && siteOpportunitiesQuery.isError ? (
