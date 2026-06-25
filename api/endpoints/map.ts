@@ -57,3 +57,44 @@ export async function getMapReport(
   }
   throw new Error('Invalid map report response');
 }
+
+export type MapGeocodeBackfillScope = 'all' | 'competitors,branches';
+
+export interface MapGeocodeBackfillParams {
+  orgId?: number;
+  maxGeocodesPerRound?: number;
+  maxRounds?: number;
+  resetExhausted?: boolean;
+  bypassCache?: boolean;
+  scope?: MapGeocodeBackfillScope;
+}
+
+export interface MapGeocodeBackfillResponse {
+  message: string;
+  rounds: number;
+  complete: boolean;
+  summaries: MapDataResponse['geocodingSummary'];
+}
+
+/**
+ * POST /reports/map/geocode-backfill — persist lat/lng for all map entities missing coordinates.
+ */
+export async function postMapGeocodeBackfill(
+  client: AxiosInstance,
+  params?: MapGeocodeBackfillParams
+): Promise<MapGeocodeBackfillResponse> {
+  const search = new URLSearchParams();
+  if (params?.orgId != null) search.set('orgId', String(params.orgId));
+  if (params?.maxGeocodesPerRound != null) {
+    search.set('maxGeocodesPerRound', String(params.maxGeocodesPerRound));
+  }
+  if (params?.maxRounds != null) search.set('maxRounds', String(params.maxRounds));
+  if (params?.resetExhausted === false) search.set('resetExhausted', 'false');
+  if (params?.bypassCache === false) search.set('bypassCache', 'false');
+  if (params?.scope != null) search.set('scope', params.scope);
+  const qs = search.toString();
+  const { data } = await client.post<MapGeocodeBackfillResponse>(
+    `/reports/map/geocode-backfill${qs ? `?${qs}` : ''}`
+  );
+  return data;
+}

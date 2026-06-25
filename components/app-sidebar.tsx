@@ -81,10 +81,29 @@ const ROUTE_ICONS: Record<
   "/account": UserCircle,
 };
 
+function getSidebarRoutes(accessLevel: string | undefined) {
+  if (!accessLevel) {
+    return getAllowedRoutes(undefined);
+  }
+
+  if (isClientPortalUser(accessLevel)) {
+    return getClientSidebarRoutes();
+  }
+
+  if (isStaffDashboardVisible(accessLevel)) {
+    return [
+      ...STAFF_SIDEBAR_ROUTES,
+      ...(canAccessUserSettings(accessLevel) ? [STAFF_SETTINGS_ROUTE] : []),
+    ];
+  }
+
+  return getAllowedRoutes(accessLevel);
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { closeSidebar } = useSidebar();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const [faqOpen, setFaqOpen] = useState(false);
   const { backendUserData: profile } = useSessionSync();
   const prefetchDashboard = usePrefetchDashboardQueries();
@@ -105,20 +124,10 @@ export function AppSidebar() {
     else startDemoCall();
   };
 
-  if (!isSignedIn) return null;
+  if (!isLoaded || !isSignedIn) return null;
 
+  const routes = getSidebarRoutes(profile?.accessLevel);
   const isClient = isClientPortalUser(profile?.accessLevel);
-  const isStaff = isStaffDashboardVisible(profile?.accessLevel);
-  const routes = isClient
-    ? getClientSidebarRoutes()
-    : isStaff
-      ? [
-          ...STAFF_SIDEBAR_ROUTES,
-          ...(canAccessUserSettings(profile?.accessLevel)
-            ? [STAFF_SETTINGS_ROUTE]
-            : []),
-        ]
-      : getAllowedRoutes(profile?.accessLevel);
   const routeIcons = ROUTE_ICONS;
 
   return (

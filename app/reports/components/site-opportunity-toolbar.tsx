@@ -11,10 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { reportsFilterPortalHighZ } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import { SiteOpportunityTableDialog } from '@/app/reports/components/site-opportunity-table-dialog';
 import type {
+  BranchCatchmentOpportunity,
   DataQualitySummary,
+  GreenfieldOpportunityZone,
   SiteOpportunityMode,
   SiteOpportunitySettings,
+  SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
 
 const MODE_OPTIONS = [
@@ -32,8 +36,13 @@ export function SiteOpportunityToolbar({
   onSettingsChange,
   className,
   isLoading = false,
+  isError = false,
+  errorMessage,
   warnings = [],
   dataQuality,
+  catchments = [],
+  greenfield = [],
+  onSelectZone,
 }: {
   showOpportunities: boolean;
   onToggleShow: () => void;
@@ -43,8 +52,13 @@ export function SiteOpportunityToolbar({
   onSettingsChange: (patch: Partial<SiteOpportunitySettings>) => void;
   className?: string;
   isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
   warnings?: string[];
   dataQuality?: DataQualitySummary;
+  catchments?: BranchCatchmentOpportunity[];
+  greenfield?: GreenfieldOpportunityZone[];
+  onSelectZone?: (zone: SiteOpportunityZone) => void;
 }) {
   const showDataBanner =
     showOpportunities &&
@@ -188,6 +202,17 @@ export function SiteOpportunityToolbar({
               </div>
             </PopoverContent>
           </Popover>
+
+          {onSelectZone ? (
+            <SiteOpportunityTableDialog
+              catchments={catchments}
+              greenfield={greenfield}
+              isLoading={isLoading}
+              isError={isError}
+              errorMessage={errorMessage}
+              onSelectZone={onSelectZone}
+            />
+          ) : null}
         </>
       ) : null}
     </div>

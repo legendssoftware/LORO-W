@@ -7,6 +7,7 @@ import {
   Briefcase,
   ClipboardList,
   Clock,
+  Globe,
   Mail,
   MapPin,
   Phone,
@@ -15,7 +16,8 @@ import {
 } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatDisplayName, orgSiteInitials } from '@/lib/client-display';
+import { Badge } from '@/components/ui/badge';
+import { formatDisplayName, formatEmailDisplay, orgSiteInitials } from '@/lib/client-display';
 import { markerTypeLabel } from './map-report-constants';
 
 const SKIP_TOP_LEVEL = new Set([
@@ -146,7 +148,7 @@ function sectionShell(children: ReactNode) {
 
 function sectionHeading(label: string, Icon?: LucideIcon) {
   return (
-    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-neutral-700 mb-1.5 flex items-center gap-1.5">
       {Icon ? (
         <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} aria-hidden focusable={false} />
       ) : null}
@@ -158,9 +160,9 @@ function sectionHeading(label: string, Icon?: LucideIcon) {
 /** Definition-list label with leading icon (times, duration, location, etc.). */
 function DtIcon({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <dt className="text-muted-foreground shrink-0">
+    <dt className="text-neutral-700 shrink-0">
       <span className="inline-flex items-center gap-1.5">
-        <Icon className="size-3.5 shrink-0 text-muted-foreground/90" strokeWidth={2} aria-hidden focusable={false} />
+        <Icon className="size-3.5 shrink-0 text-neutral-500" strokeWidth={2} aria-hidden focusable={false} />
         {children}
       </span>
     </dt>
@@ -211,10 +213,21 @@ function resolveOrgSiteLogoUrl(marker: MapMarkerBase): string | undefined {
   return raw || undefined;
 }
 
+function dedupeAddressSegments(line: string): string {
+  const parts = line.split(',').map((p) => p.trim()).filter(Boolean);
+  const deduped: string[] = [];
+  for (const part of parts) {
+    const prev = deduped[deduped.length - 1];
+    if (prev !== undefined && prev.toLowerCase() === part.toLowerCase()) continue;
+    deduped.push(part);
+  }
+  return deduped.join(', ');
+}
+
 function formatMarkerAddress(address: unknown): string | undefined {
   if (address == null) return undefined;
   if (typeof address === 'string') {
-    const t = address.trim();
+    const t = dedupeAddressSegments(address.trim());
     return t || undefined;
   }
   if (typeof address === 'object' && !Array.isArray(address)) {
@@ -223,7 +236,7 @@ function formatMarkerAddress(address: unknown): string | undefined {
       .map((k) => o[k])
       .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
       .map((s) => s.trim());
-    if (parts.length > 0) return parts.join(', ');
+    if (parts.length > 0) return dedupeAddressSegments(parts.join(', '));
   }
   return undefined;
 }
@@ -232,6 +245,83 @@ function buildTelHref(phone: string): string {
   const trimmed = phone.trim();
   const core = trimmed.replace(/[^\d+]/g, '');
   return core ? `tel:${core}` : `tel:${encodeURIComponent(trimmed)}`;
+}
+
+function buildWebsiteHref(url: string): string {
+  const trimmed = url.trim();
+  return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+}
+
+function readMarkerString(marker: MapMarkerBase, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = marker[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function readStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+      .map((item) => item.trim());
+  }
+  if (typeof value === 'string' && value.trim()) {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function readNumericField(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function PopupValue({ children }: { children: ReactNode }) {
+  return (
+    <dd className="min-w-0 font-medium text-neutral-900 leading-snug break-words">{children}</dd>
+  );
+}
+
+function PopupLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      className="font-medium text-primary underline-offset-2 hover:underline break-all"
+      target={href.startsWith('http') ? '_blank' : undefined}
+      rel={href.startsWith('http') ? 'noreferrer' : undefined}
+    >
+      {children}
+    </a>
+  );
+}
+
+function StringListSection({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-700 mb-1">{label}</p>
+      <ul className="list-disc pl-4 text-xs text-neutral-900 space-y-0.5">
+        {items.slice(0, 20).map((item, index) => (
+          <li key={`${label}-${index}`}>{item}</li>
+        ))}
+        {items.length > 20 ? <li className="text-neutral-600">…</li> : null}
+      </ul>
+    </div>
+  );
 }
 
 function OrgSiteHeader({
@@ -266,8 +356,8 @@ function OrgSiteHeader({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{displayTitle}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{markerTypeLabel(mt)}</p>
+          <p className="font-semibold leading-snug text-neutral-900">{displayTitle}</p>
+          <p className="text-xs text-neutral-700 mt-0.5">{markerTypeLabel(mt)}</p>
         </div>
       </div>
     </div>
@@ -299,12 +389,12 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
       {address ? (
         <div className="flex items-center gap-2">
           <MapPin
-            className="size-3.5 shrink-0 text-muted-foreground"
+            className="size-3.5 shrink-0 text-neutral-500"
             strokeWidth={2}
             aria-hidden
             focusable={false}
           />
-          <p className="text-xs text-foreground leading-snug min-w-0 flex-1">{address}</p>
+          <p className="text-xs text-neutral-900 font-medium leading-snug min-w-0 flex-1">{address}</p>
         </div>
       ) : null}
 
@@ -313,19 +403,14 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
           {contactPerson ? (
             <>
               <DtIcon icon={User}>Contact</DtIcon>
-              <dd className="min-w-0 font-medium text-foreground leading-snug">{contactPerson}</dd>
+              <PopupValue>{contactPerson}</PopupValue>
             </>
           ) : null}
           {phonePrimary ? (
             <>
               <DtIcon icon={Phone}>Phone</DtIcon>
               <dd className="min-w-0">
-                <a
-                  href={buildTelHref(phonePrimary)}
-                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
-                >
-                  {phonePrimary}
-                </a>
+                <PopupLink href={buildTelHref(phonePrimary)}>{phonePrimary}</PopupLink>
               </dd>
             </>
           ) : null}
@@ -333,12 +418,7 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
             <>
               <DtIcon icon={Phone}>Alt phone</DtIcon>
               <dd className="min-w-0">
-                <a
-                  href={buildTelHref(phoneAlt)}
-                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
-                >
-                  {phoneAlt}
-                </a>
+                <PopupLink href={buildTelHref(phoneAlt)}>{phoneAlt}</PopupLink>
               </dd>
             </>
           ) : null}
@@ -346,17 +426,328 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
             <>
               <DtIcon icon={Mail}>Email</DtIcon>
               <dd className="min-w-0">
-                <a
-                  href={`mailto:${email}`}
-                  className="font-medium text-primary underline-offset-2 hover:underline break-all"
-                >
-                  {email}
-                </a>
+                <PopupLink href={`mailto:${email}`}>{formatEmailDisplay(email)}</PopupLink>
               </dd>
             </>
           ) : null}
         </dl>
       ) : null}
+    </div>
+  );
+}
+
+function CompetitorBadges({ marker }: { marker: MapMarkerBase }) {
+  const status = readMarkerString(marker, 'status');
+  const industry = readMarkerString(marker, 'industry');
+  const hardwareBrand = readMarkerString(marker, 'hardwareBrand');
+  const threatLevel = readNumericField(marker.threatLevel);
+  const isDirect = marker.isDirect;
+
+  const badges: ReactNode[] = [];
+  if (status) {
+    badges.push(
+      <Badge key="status" variant="secondary" className="capitalize text-neutral-900">
+        {status}
+      </Badge>
+    );
+  }
+  if (threatLevel != null && threatLevel > 0) {
+    badges.push(
+      <Badge key="threat" variant="outline" className="text-neutral-800">
+        Threat {threatLevel}/5
+      </Badge>
+    );
+  }
+  if (isDirect === true) {
+    badges.push(
+      <Badge key="direct" variant="outline" className="text-neutral-800">
+        Direct
+      </Badge>
+    );
+  } else if (isDirect === false) {
+    badges.push(
+      <Badge key="indirect" variant="outline" className="text-neutral-800">
+        Indirect
+      </Badge>
+    );
+  }
+  if (industry) {
+    badges.push(
+      <Badge key="industry" variant="outline" className="text-neutral-800">
+        {industry}
+      </Badge>
+    );
+  }
+  if (hardwareBrand) {
+    badges.push(
+      <Badge key="brand" variant="outline" className="text-neutral-800">
+        {hardwareBrand}
+      </Badge>
+    );
+  }
+
+  if (badges.length === 0) return null;
+  return <div className="flex flex-wrap gap-1.5 mb-3">{badges}</div>;
+}
+
+function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
+  const address = formatMarkerAddress(marker.address);
+  const contactPerson =
+    readMarkerString(marker, 'contactPerson', 'contactName');
+  const phonePrimary = readMarkerString(marker, 'phone', 'contactPhone');
+  const phoneAlt = readMarkerString(marker, 'alternativePhone');
+  const email = readMarkerString(marker, 'email', 'contactEmail');
+  const website = readMarkerString(marker, 'website');
+  const competitorRef = readMarkerString(marker, 'competitorRef');
+  const accountName = readMarkerString(marker, 'accountName');
+  const legalEntity = readMarkerString(marker, 'LegalEntity');
+  const description = readMarkerString(marker, 'description');
+  const marketShare = readNumericField(marker.marketSharePercentage);
+  const annualRevenue = readNumericField(marker.estimatedAnnualRevenue);
+  const employeeCount = readNumericField(marker.estimatedEmployeeCount);
+  const competitiveAdvantage = readNumericField(marker.competitiveAdvantage);
+  const foundedDate = marker.foundedDate;
+  const keyProducts = readStringArray(marker.keyProducts);
+  const keyStrengths = readStringArray(marker.keyStrengths);
+  const keyWeaknesses = readStringArray(marker.keyWeaknesses);
+  const businessStrategy = readMarkerString(marker, 'businessStrategy');
+  const marketingStrategy = readMarkerString(marker, 'marketingStrategy');
+  const pricingData = marker.pricingData;
+  const socialMedia = marker.socialMedia;
+  const geofencing = marker.geofencing;
+
+  const hasContact =
+    Boolean(contactPerson) ||
+    Boolean(phonePrimary) ||
+    Boolean(phoneAlt) ||
+    Boolean(email) ||
+    Boolean(website);
+  const hasBusiness =
+    Boolean(competitorRef) ||
+    Boolean(accountName) ||
+    Boolean(legalEntity) ||
+    Boolean(description);
+  const hasMetrics =
+    marketShare != null ||
+    annualRevenue != null ||
+    employeeCount != null ||
+    competitiveAdvantage != null ||
+    (foundedDate != null && foundedDate !== '');
+  const hasIntelligence =
+    keyProducts.length > 0 || keyStrengths.length > 0 || keyWeaknesses.length > 0;
+  const hasStrategy =
+    Boolean(businessStrategy) ||
+    Boolean(marketingStrategy) ||
+    (pricingData != null && typeof pricingData === 'object');
+  const hasSocial =
+    socialMedia != null &&
+    typeof socialMedia === 'object' &&
+    !Array.isArray(socialMedia) &&
+    Object.values(socialMedia as Record<string, unknown>).some(
+      (v) => typeof v === 'string' && v.trim() !== ''
+    );
+  const hasGeofencing =
+    geofencing != null &&
+    typeof geofencing === 'object' &&
+    !Array.isArray(geofencing);
+
+  return (
+    <div className="space-y-3">
+      <CompetitorBadges marker={marker} />
+
+      {address
+        ? sectionShell(
+            <>
+              {sectionHeading('Location', MapPin)}
+              <p className="text-xs font-medium text-neutral-900 leading-snug">{address}</p>
+            </>
+          )
+        : null}
+
+      {hasContact
+        ? sectionShell(
+            <>
+              {sectionHeading('Contact', Phone)}
+              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+                {contactPerson ? (
+                  <>
+                    <DtIcon icon={User}>Contact</DtIcon>
+                    <PopupValue>{contactPerson}</PopupValue>
+                  </>
+                ) : null}
+                {phonePrimary ? (
+                  <>
+                    <DtIcon icon={Phone}>Phone</DtIcon>
+                    <dd className="min-w-0">
+                      <PopupLink href={buildTelHref(phonePrimary)}>{phonePrimary}</PopupLink>
+                    </dd>
+                  </>
+                ) : null}
+                {phoneAlt ? (
+                  <>
+                    <DtIcon icon={Phone}>Alt phone</DtIcon>
+                    <dd className="min-w-0">
+                      <PopupLink href={buildTelHref(phoneAlt)}>{phoneAlt}</PopupLink>
+                    </dd>
+                  </>
+                ) : null}
+                {email ? (
+                  <>
+                    <DtIcon icon={Mail}>Email</DtIcon>
+                    <dd className="min-w-0">
+                      <PopupLink href={`mailto:${email}`}>{formatEmailDisplay(email)}</PopupLink>
+                    </dd>
+                  </>
+                ) : null}
+                {website ? (
+                  <>
+                    <DtIcon icon={Globe}>Website</DtIcon>
+                    <dd className="min-w-0">
+                      <PopupLink href={buildWebsiteHref(website)}>{website}</PopupLink>
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
+            </>
+          )
+        : null}
+
+      {hasBusiness
+        ? sectionShell(
+            <>
+              {sectionHeading('Business', Briefcase)}
+              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+                {competitorRef ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Reference</dt>
+                    <PopupValue>{competitorRef}</PopupValue>
+                  </>
+                ) : null}
+                {accountName ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Account</dt>
+                    <PopupValue>{formatDisplayName(accountName) || accountName}</PopupValue>
+                  </>
+                ) : null}
+                {legalEntity ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Legal entity</dt>
+                    <PopupValue>{legalEntity}</PopupValue>
+                  </>
+                ) : null}
+              </dl>
+              {description ? (
+                <p className="mt-2 whitespace-pre-wrap text-xs font-medium text-neutral-900 leading-snug">
+                  {description}
+                </p>
+              ) : null}
+            </>
+          )
+        : null}
+
+      {hasMetrics
+        ? sectionShell(
+            <>
+              {sectionHeading('Metrics', ClipboardList)}
+              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+                {marketShare != null ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Market share</dt>
+                    <PopupValue>{`${marketShare}%`}</PopupValue>
+                  </>
+                ) : null}
+                {annualRevenue != null ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Est. revenue</dt>
+                    <PopupValue>{formatPrimitive(annualRevenue)}</PopupValue>
+                  </>
+                ) : null}
+                {employeeCount != null ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Employees</dt>
+                    <PopupValue>{formatPrimitive(employeeCount)}</PopupValue>
+                  </>
+                ) : null}
+                {competitiveAdvantage != null ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Advantage</dt>
+                    <PopupValue>{formatPrimitive(competitiveAdvantage)}</PopupValue>
+                  </>
+                ) : null}
+                {foundedDate != null && foundedDate !== '' ? (
+                  <>
+                    <dt className="text-neutral-700 shrink-0">Founded</dt>
+                    <PopupValue>{formatDateish(foundedDate)}</PopupValue>
+                  </>
+                ) : null}
+              </dl>
+            </>
+          )
+        : null}
+
+      {hasIntelligence
+        ? sectionShell(
+            <>
+              {sectionHeading('Intelligence', ClipboardList)}
+              <div className="space-y-2">
+                <StringListSection label="Products" items={keyProducts} />
+                <StringListSection label="Strengths" items={keyStrengths} />
+                <StringListSection label="Weaknesses" items={keyWeaknesses} />
+              </div>
+            </>
+          )
+        : null}
+
+      {hasStrategy
+        ? sectionShell(
+            <>
+              {sectionHeading('Strategy', Briefcase)}
+              {businessStrategy ? (
+                <p className="text-xs font-medium text-neutral-900 leading-snug mb-2 whitespace-pre-wrap">
+                  {businessStrategy}
+                </p>
+              ) : null}
+              {marketingStrategy ? (
+                <p className="text-xs font-medium text-neutral-900 leading-snug mb-2 whitespace-pre-wrap">
+                  {marketingStrategy}
+                </p>
+              ) : null}
+              {pricingData != null ? renderValue(pricingData, 0, true) : null}
+            </>
+          )
+        : null}
+
+      {hasSocial
+        ? sectionShell(
+            <>
+              {sectionHeading('Social', Globe)}
+              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+                {Object.entries(socialMedia as Record<string, unknown>)
+                  .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+                  .map(([key, value]) => {
+                    const url = String(value).trim();
+                    return (
+                      <div key={key} className="contents">
+                        <dt className="text-neutral-700 shrink-0 capitalize">{humanKey(key)}</dt>
+                        <dd className="min-w-0">
+                          <PopupLink href={buildWebsiteHref(url)}>{url}</PopupLink>
+                        </dd>
+                      </div>
+                    );
+                  })}
+              </dl>
+            </>
+          )
+        : null}
+
+      {hasGeofencing
+        ? sectionShell(
+            <>
+              {sectionHeading('Geofencing', MapPin)}
+              {renderValue(geofencing, 0, true)}
+            </>
+          )
+        : null}
     </div>
   );
 }
@@ -528,7 +919,25 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
     );
   }
 
-  if (mt === 'branch' || mt === 'client' || mt === 'competitor') {
+  if (mt === 'competitor') {
+    return (
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
+        <OrgSiteHeader marker={marker} title={title} mt={mt} />
+        <CompetitorPopupBody marker={marker} />
+      </div>
+    );
+  }
+
+  if (mt === 'org') {
+    return (
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
+        <OrgSiteHeader marker={marker} title={title} mt={mt} />
+        <OrgSitePopupBody marker={marker} />
+      </div>
+    );
+  }
+
+  if (mt === 'branch' || mt === 'client') {
     return (
       <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
         <OrgSiteHeader marker={marker} title={title} mt={mt} />

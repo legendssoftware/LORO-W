@@ -1,4 +1,4 @@
-import { Flame, ShoppingBag, type LucideIcon } from 'lucide-react';
+import { Flame, Landmark, ShoppingBag, Store, type LucideIcon } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
 import type { HardwareBrandKey } from '@/api/types/site-opportunity';
 
@@ -14,6 +14,7 @@ export const MARKER_COLORS: Record<string, string> = {
   lead: '#9333ea',
   'check-in-visit': '#0891b2',
   branch: '#854d0e',
+  org: '#2563eb',
   task: '#ca8a04',
   journal: '#64748b',
   quotation: '#db2777',
@@ -86,15 +87,33 @@ export function resolveCompetitorMarkerColor(marker: MapMarkerBase): string {
   return HARDWARE_BRAND_MARKER_COLORS[brand] ?? MARKER_COLORS.competitor;
 }
 
-export const ORG_SITE_MAP_MARKER: Record<
-  'client' | 'competitor',
+export type MapEntityMarkerType = 'client' | 'competitor' | 'branch' | 'org';
+
+export const MAP_ENTITY_MARKERS: Record<
+  MapEntityMarkerType,
   { bg: string; Icon: LucideIcon }
 > = {
   client: { bg: MARKER_COLORS.client, Icon: ShoppingBag },
   competitor: { bg: MARKER_COLORS.competitor, Icon: Flame },
+  branch: { bg: MARKER_COLORS.branch, Icon: Store },
+  org: { bg: MARKER_COLORS.org, Icon: Landmark },
 };
 
-export const ORG_SITE_MARKER_SIZE = 30;
+/** @deprecated Prefer MAP_ENTITY_MARKERS */
+export const ORG_SITE_MAP_MARKER: Record<
+  'client' | 'competitor',
+  { bg: string; Icon: LucideIcon }
+> = {
+  client: MAP_ENTITY_MARKERS.client,
+  competitor: MAP_ENTITY_MARKERS.competitor,
+};
+
+export const MAP_ENTITY_MARKER_SIZE = 30;
+
+/** @deprecated Prefer MAP_ENTITY_MARKER_SIZE */
+export const ORG_SITE_MARKER_SIZE = MAP_ENTITY_MARKER_SIZE;
+
+export const CLUSTER_MARKER_BG = '#475569';
 
 export const MARKER_TYPE_LABELS: Record<string, string> = {
   'check-in': 'Active check-in',
@@ -107,6 +126,7 @@ export const MARKER_TYPE_LABELS: Record<string, string> = {
   lead: 'Lead',
   'check-in-visit': 'Visit (check-in)',
   branch: 'Branch',
+  org: 'Organisation HQ',
   task: 'Task',
   journal: 'Journal',
   quotation: 'Quotation (sales)',

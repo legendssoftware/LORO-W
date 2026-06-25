@@ -59,6 +59,8 @@ export interface BranchCatchmentOpportunity {
   rank: number;
   branchId: string | number;
   branchName: string;
+  /** Branch postal address or reverse-geocoded centroid. */
+  address: string | null;
   lat: number;
   lng: number;
   radiusMeters: number;
