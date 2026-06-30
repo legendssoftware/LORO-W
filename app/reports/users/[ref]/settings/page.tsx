@@ -24,6 +24,7 @@ import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
+import { CalendarDays } from 'lucide-react';
 import {
   Check,
   CheckCircle,
@@ -84,6 +85,7 @@ import {
 import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
 import { canManageStaffUsers } from '@/lib/access';
+import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
 import {
   CURRENCY_OPTIONS,
   TARGET_PERIOD_OPTIONS,
@@ -242,6 +244,7 @@ export default function UserSettingsPage() {
   const [primaryBranchOpen, setPrimaryBranchOpen] = useState(false);
   const [clientsPickerOpen, setClientsPickerOpen] = useState(false);
   const [clientsSearch, setClientsSearch] = useState('');
+  const [planVisitsOpen, setPlanVisitsOpen] = useState(false);
   const [managedBranchesPickerOpen, setManagedBranchesPickerOpen] = useState(false);
   const [managedBranchesSearch, setManagedBranchesSearch] = useState('');
   const [managedStaffPickerOpen, setManagedStaffPickerOpen] = useState(false);
@@ -1307,8 +1310,34 @@ export default function UserSettingsPage() {
                     </FormItem>
                   )}
                 />
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
+                  <p className="text-xs text-muted-foreground flex-1 min-w-[200px]">
+                    Split assigned clients into weekly visit batches and create planning tasks.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={!(form.watch('assignedClientIds')?.length ?? 0)}
+                    onClick={() => setPlanVisitsOpen(true)}
+                  >
+                    <CalendarDays className="size-4" />
+                    Plan visit schedule
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+
+            {ref ? (
+              <PlanClientVisitsDialog
+                open={planVisitsOpen}
+                onOpenChange={setPlanVisitsOpen}
+                userRef={ref}
+                assignedClientIds={form.watch('assignedClientIds') ?? []}
+                clients={clients}
+              />
+            ) : null}
 
             {/* User targets */}
             <Card>

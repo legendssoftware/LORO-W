@@ -343,6 +343,22 @@ function groupLeadsByOwner(leads: LeadListItem[]): GroupedByOwner[] {
   return grouped;
 }
 
+function splitLeadsByAssignment(allLeads: LeadListItem[]): {
+  assigned: LeadListItem[];
+  unassigned: LeadListItem[];
+} {
+  const assigned: LeadListItem[] = [];
+  const unassigned: LeadListItem[] = [];
+  for (const lead of allLeads) {
+    if (lead.owner == null) {
+      unassigned.push(lead);
+    } else {
+      assigned.push(lead);
+    }
+  }
+  return { assigned, unassigned };
+}
+
 function buildGroupedRows(
   assignedLeads: LeadListItem[],
   unassignedLeads?: LeadListItem[]
@@ -366,12 +382,8 @@ function buildGroupedRows(
 }
 
 export interface LeadsTableProps {
-  /** Leads that have an owner; unassigned are passed via `unassignedLeads`. */
+  /** Paginated leads from GET /leads (assigned and unassigned). */
   leads: LeadListItem[];
-  /** Fetched from GET /leads/unassigned; rendered as the first group. */
-  unassignedLeads?: LeadListItem[];
-  /** `meta.total` from unassigned response (can exceed `unassignedLeads.length`). */
-  unassignedTotal?: number;
   isLoading?: boolean;
   emptyMessage?: string;
   /** Called when a lead row is clicked. */
@@ -382,21 +394,20 @@ export interface LeadsTableProps {
 
 export function LeadsTable({
   leads,
-  unassignedLeads,
-  unassignedTotal,
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
   onLeadClick,
   activityActorLookup,
 }: LeadsTableProps) {
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
+  const { assigned, unassigned } = useMemo(() => splitLeadsByAssignment(leads), [leads]);
   const groupedByOwner = useMemo(
-    () => buildGroupedRows(leads, unassignedLeads),
-    [leads, unassignedLeads]
+    () => buildGroupedRows(assigned, unassigned),
+    [assigned, unassigned]
   );
 
-  const hasUnassigned = (unassignedLeads?.length ?? 0) > 0;
-  const hasAssigned = leads.length > 0;
+  const hasUnassigned = unassigned.length > 0;
+  const hasAssigned = assigned.length > 0;
 
   if (isLoading) {
     return (
@@ -439,7 +450,7 @@ export function LeadsTable({
                 >
                   <div
                     className={cn(
-                      'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
+                      'flex items-center gap-4 px-4 py-2 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
                       isExpanded && 'bg-muted/30'
                     )}
                     {...(index === 0 ? { 'data-tour': 'leads-first-group-row' } : {})}
@@ -468,24 +479,7 @@ export function LeadsTable({
                       )}
                     </span>
                     <span className="text-sm text-muted-foreground shrink-0">
-                      {(() => {
-                        const totalForLabel =
-                          group.isUnassignedGroup && unassignedTotal != null
-                            ? unassignedTotal
-                            : group.leads.length;
-                        return (
-                          <>
-                            {totalForLabel} lead{totalForLabel !== 1 ? 's' : ''}
-                            {group.isUnassignedGroup &&
-                            unassignedTotal != null &&
-                            unassignedTotal > group.leads.length ? (
-                              <span className="ml-1 text-xs">
-                                ({group.leads.length} in view)
-                              </span>
-                            ) : null}
-                          </>
-                        );
-                      })()}
+                      {group.leads.length} lead{group.leads.length !== 1 ? 's' : ''}
                     </span>
                     <ChevronRight
                       className={cn(
