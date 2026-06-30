@@ -63,9 +63,12 @@ function followUpBadge(lead: LeadListItem): ReactNode {
   );
 }
 
+function isUnassignedLead(lead: LeadListItem): boolean {
+  return lead.owner == null;
+}
+
 export interface LeadsInboxViewProps {
   leads: LeadListItem[];
-  unassignedLeads?: LeadListItem[];
   isLoading?: boolean;
   emptyMessage?: string;
   selectedLeadUid?: number | null;
@@ -75,23 +78,20 @@ export interface LeadsInboxViewProps {
 
 export function LeadsInboxView({
   leads,
-  unassignedLeads,
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
   selectedLeadUid,
   onLeadClick,
 }: LeadsInboxViewProps) {
   const rows = useMemo(() => {
-    const combined = [
-      ...(unassignedLeads ?? []).map((l) => ({ lead: l, unassigned: true })),
-      ...leads.map((l) => ({ lead: l, unassigned: false })),
-    ];
-    return combined.sort((a, b) => {
-      const aTouch = effectiveLeadTouchDate(a.lead)?.getTime() ?? 0;
-      const bTouch = effectiveLeadTouchDate(b.lead)?.getTime() ?? 0;
-      return bTouch - aTouch;
-    });
-  }, [leads, unassignedLeads]);
+    return [...leads]
+      .map((lead) => ({ lead, unassigned: isUnassignedLead(lead) }))
+      .sort((a, b) => {
+        const aTouch = effectiveLeadTouchDate(a.lead)?.getTime() ?? 0;
+        const bTouch = effectiveLeadTouchDate(b.lead)?.getTime() ?? 0;
+        return bTouch - aTouch;
+      });
+  }, [leads]);
 
   if (isLoading) {
     return (
@@ -108,11 +108,8 @@ export function LeadsInboxView({
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-xl border border-border bg-card"
-      data-tour="leads-inbox"
-    >
-      <ul className="divide-y divide-border">
+    <div className="p-1.5" data-tour="leads-inbox">
+      <ul className="flex flex-col gap-1.5">
         {rows.map(({ lead, unassigned }, index) => {
           const selected = selectedLeadUid === lead.uid;
           const touch = effectiveLeadTouchDate(lead);
@@ -127,20 +124,23 @@ export function LeadsInboxView({
           );
           const img = typeof lead.image === 'string' ? lead.image.trim() : '';
           return (
-            <li key={lead.uid}>
+            <li
+              key={lead.uid}
+              className="overflow-hidden rounded-lg border border-border bg-card/50"
+            >
               <button
                 type="button"
                 className={cn(
-                  'flex w-full items-center gap-3 px-3 py-3 text-left transition-colors sm:gap-4 sm:px-4',
+                  'flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors sm:gap-3 sm:px-3',
                   'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                   selected && 'bg-violet-50/80 dark:bg-violet-950/30'
                 )}
                 onClick={() => onLeadClick?.(lead)}
                 {...(index === 0 ? { 'data-tour': 'leads-first-lead-row' } : {})}
               >
-                <Avatar className="size-12 shrink-0 ring-2 ring-background sm:size-14">
+                <Avatar className="size-10 shrink-0 ring-2 ring-background sm:size-11">
                   {img ? <AvatarImage src={img} alt="" /> : null}
-                  <AvatarFallback className="bg-violet-100 text-sm font-semibold text-violet-800">
+                  <AvatarFallback className="bg-violet-100 text-xs font-semibold text-violet-800 sm:text-sm">
                     {leadInitials(lead)}
                   </AvatarFallback>
                 </Avatar>
@@ -161,7 +161,7 @@ export function LeadsInboxView({
                       {lead.companyName.trim()}
                     </p>
                   ) : null}
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                     {optionLabel(LEAD_STATUS_OPTIONS, lead.status) ? (
                       <span>{optionLabel(LEAD_STATUS_OPTIONS, lead.status)}</span>
                     ) : null}
@@ -179,7 +179,7 @@ export function LeadsInboxView({
                     ) : null}
                   </div>
                   {summary ? (
-                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{summary}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{summary}</p>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1 self-start">

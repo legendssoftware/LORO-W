@@ -97,6 +97,8 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
       return;
     }
 
+    const warnings: string[] = [];
+
     try {
       const branchId = normalizePrimaryBranchUid(values.branchUid ?? null);
 
@@ -111,26 +113,38 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
         branchId: branchId ?? undefined,
       });
 
+      if (result.warnings?.length) {
+        warnings.push(...result.warnings);
+      }
+
       const patchBody = buildInviteFollowUpPatchBody(values);
       const hasPatchFields = Object.keys(patchBody).length > 0;
 
       if (hasPatchFields) {
         try {
           await patchUser(apiClient, String(result.user.uid), patchBody);
-          toast.success(
-            `User created, invite sent to ${result.user.email}, and profile linked`
-          );
         } catch (patchErr) {
           const patchMessage =
             patchErr instanceof Error
               ? patchErr.message
               : 'Failed to save linked fields';
-          toast.error(
-            `User created and invite sent, but some fields could not be saved: ${patchMessage}`
+          warnings.push(
+            `Some profile fields could not be saved: ${patchMessage}`
           );
         }
+      }
+
+      if (warnings.length > 0) {
+        toast.success(
+          `User created for ${result.user.email}. Review warnings below.`
+        );
+        warnings.forEach((warning) => toast.error(warning, { duration: 6000 }));
       } else {
-        toast.success(`Invite sent to ${result.user.email}`);
+        toast.success(
+          hasPatchFields
+            ? `User created, invite sent to ${result.user.email}, and profile linked`
+            : `Invite sent to ${result.user.email}`
+        );
       }
 
       onOpenChange(false);

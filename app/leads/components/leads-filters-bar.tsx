@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   Upload as UploadIcon,
   UserRound,
+  Users,
 } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -76,6 +77,7 @@ export interface LeadsFilterControlsProps {
   selectedTemperature: string;
   selectedPriority: string;
   selectedUserId: string;
+  unassignedOnly: boolean;
   dateRangePopoverOpen: boolean;
   onDateRangePopoverOpenChange: (open: boolean) => void;
   onRangeChange: (range: { start: Date; end: Date }) => void;
@@ -87,6 +89,7 @@ export interface LeadsFilterControlsProps {
   onSelectedTemperatureChange: (v: string) => void;
   onSelectedPriorityChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
+  onUnassignedOnlyChange: (v: boolean) => void;
 }
 
 export function LeadsFilterControls({
@@ -103,6 +106,7 @@ export function LeadsFilterControls({
   selectedTemperature,
   selectedPriority,
   selectedUserId,
+  unassignedOnly,
   dateRangePopoverOpen,
   onDateRangePopoverOpenChange,
   onRangeChange,
@@ -114,6 +118,7 @@ export function LeadsFilterControls({
   onSelectedTemperatureChange,
   onSelectedPriorityChange,
   onSelectedUserIdChange,
+  onUnassignedOnlyChange,
 }: LeadsFilterControlsProps) {
   const row = layout === 'row';
 
@@ -462,7 +467,7 @@ export function LeadsFilterControls({
         triggerClassName={smallTrigger}
       />
 
-      {listScope === 'all' ? (
+      {listScope === 'all' && !unassignedOnly ? (
         <SearchableUserPicker
           users={users}
           branches={branches}
@@ -471,6 +476,21 @@ export function LeadsFilterControls({
           triggerClassName={ownerTrigger}
         />
       ) : null}
+
+      <Button
+        type="button"
+        variant={unassignedOnly ? 'default' : 'outline'}
+        className={cn(
+          row ? 'h-9 shrink-0 px-3' : 'h-9 w-full',
+          unassignedOnly &&
+            'border-transparent bg-violet-600 text-white hover:bg-violet-700 hover:text-white'
+        )}
+        onClick={() => onUnassignedOnlyChange(!unassignedOnly)}
+        aria-pressed={unassignedOnly}
+      >
+        <Users className="mr-2 size-4 shrink-0" aria-hidden />
+        Un-Assigned
+      </Button>
     </div>
   );
 }

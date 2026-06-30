@@ -11,7 +11,9 @@ import { MODAL_OVERLAY_CLASS } from "@/lib/modal-overlay";
 import {
   zAboveLeafletFullscreen,
   zAboveLeafletFullscreenPanel,
+  zAboveLeafletFullscreenThemeToggle,
 } from "@/lib/z-index";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -323,6 +325,17 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+function SidebarThemeToggle({ className }: { className?: string } = {}) {
+  return (
+    <div
+      data-slot="sidebar-theme-toggle"
+      className={cn("relative", zAboveLeafletFullscreenThemeToggle, className)}
+    >
+      <ModeToggle contentClassName={zAboveLeafletFullscreenThemeToggle} />
+    </div>
+  );
+}
+
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -470,6 +483,7 @@ export {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarThemeToggle,
   SidebarTrigger,
   useSidebar,
 };

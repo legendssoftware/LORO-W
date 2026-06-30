@@ -2,9 +2,8 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
-  useLeadsInfinite,
-  useUnassignedLeadsInfinite,
-  LEADS_LIST_PAGE_SIZE,
+  useLeads,
+  useUnassignedLeads,
   useUsers,
   useBranches,
   useDedupeLeadsMutation,
@@ -22,6 +21,12 @@ import {
   type LeadActivityActorProfile,
 } from '@/components/leads-table/leads-table';
 import { LeadsInboxView } from './components/leads-inbox-view';
+import {
+  LeadsListPagination,
+  readStoredLeadsPageSize,
+  LEADS_PAGE_SIZE_STORAGE_KEY,
+  type LeadsPageSize,
+} from './components/leads-list-pagination';
 import { CreateLeadModal } from './components/create-lead-modal';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
@@ -53,6 +58,7 @@ export function LeadsContent() {
     selectedTemperature,
     selectedPriority,
     selectedUserId,
+    unassignedOnly,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
     setStartDate,
@@ -66,6 +72,7 @@ export function LeadsContent() {
     setSelectedPriority,
     setSelectedUserId,
     setSearchQuery,
+    setUnassignedOnly,
   } = useLeadsStore();
 
   const [searchInput, setSearchInput] = useState(
@@ -83,6 +90,9 @@ export function LeadsContent() {
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(t);
   }, [searchInput, setSearchQuery]);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<LeadsPageSize>(() => readStoredLeadsPageSize());
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -133,9 +143,7 @@ export function LeadsContent() {
   /** Org-wide list for admin/owner; personal list otherwise (no UI toggle). */
   const listScope: 'me' | 'all' = canViewAll ? 'all' : 'me';
 
-  const leadsParams = {
-    limit: LEADS_LIST_PAGE_SIZE,
-    scope: listScope,
+  const sharedListFilters = {
     ...(useAllTime
       ? {}
       : {
@@ -150,85 +158,101 @@ export function LeadsContent() {
     ...(selectedTemperature && selectedTemperature !== 'all'
       ? { temperature: selectedTemperature }
       : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  };
+
+  const leadsParams = {
+    page,
+    limit: pageSize,
+    scope: listScope,
+    ...sharedListFilters,
     ...(selectedPriority && selectedPriority !== 'all'
       ? { priority: selectedPriority }
       : {}),
     ...(listScope === 'all' &&
+    !unassignedOnly &&
     selectedUserId &&
     selectedUserId !== 'all' &&
     !Number.isNaN(Number(selectedUserId))
       ? { ownerId: Number(selectedUserId) }
       : {}),
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
-
-  const showUnassignedGroup =
-    !selectedUserId || selectedUserId === 'all' || selectedUserId === '';
 
   const unassignedParams = {
-    limit: LEADS_LIST_PAGE_SIZE,
+    page,
+    limit: pageSize,
     scope: listScope,
-    ...(useAllTime
-      ? {}
-      : {
-          startDate: formatUtcYmd(startDate),
-          endDate: formatUtcYmd(endDate),
-        }),
-    ...(selectedStatus && selectedStatus !== 'all' ? { status: selectedStatus } : {}),
-    ...(selectedSource && selectedSource !== 'all' ? { source: selectedSource } : {}),
-    ...(leadEntryTypeToApiParam(selectedEntryType)
-      ? { entryType: leadEntryTypeToApiParam(selectedEntryType) }
-      : {}),
-    ...(selectedTemperature && selectedTemperature !== 'all'
-      ? { temperature: selectedTemperature }
-      : {}),
-    ...(selectedPriority && selectedPriority !== 'all'
-      ? { priority: selectedPriority }
-      : {}),
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...sharedListFilters,
   };
 
-  const leadsQuery = useLeadsInfinite(leadsParams, { skipErrorToast: true });
-  const unassignedQuery = useUnassignedLeadsInfinite(unassignedParams, {
-    enabled: showUnassignedGroup,
+  useEffect(() => {
+    setPage(1);
+  }, [
+    debouncedSearch,
+    useAllTime,
+    startDate,
+    endDate,
+    selectedStatus,
+    selectedSource,
+    selectedEntryType,
+    selectedTemperature,
+    selectedPriority,
+    selectedUserId,
+    listScope,
+    pageSize,
+    unassignedOnly,
+  ]);
+
+  const leadsQuery = useLeads(leadsParams, {
     skipErrorToast: true,
+    enabled: !unassignedOnly,
+  });
+  const unassignedQuery = useUnassignedLeads(unassignedParams, {
+    skipErrorToast: true,
+    enabled: unassignedOnly,
   });
 
-  const leads = useMemo(
-    () => leadsQuery.data?.pages.flatMap((p) => p.data ?? []) ?? [],
-    [leadsQuery.data]
-  );
-  const assignedOnlyLeads = useMemo(
-    () => leads.filter((l) => l.owner != null),
-    [leads]
-  );
-  const unassignedLeads = showUnassignedGroup
-    ? (unassignedQuery.data?.pages.flatMap((p) => p.data ?? []) ?? [])
-    : undefined;
-  const unassignedTotal = showUnassignedGroup
-    ? (unassignedQuery.data?.pages[0]?.meta?.total ?? 0)
-    : undefined;
+  const activeQuery = unassignedOnly ? unassignedQuery : leadsQuery;
 
-  const listLoading =
-    leadsQuery.isLoading || (showUnassignedGroup && unassignedQuery.isLoading);
+  const leads = activeQuery.data?.data ?? [];
+  const listMeta = activeQuery.data?.meta;
+  const total = listMeta?.total ?? 0;
+  const totalPages = listMeta?.totalPages ?? 0;
+
+  const listLoading = activeQuery.isLoading;
 
   const refetchLeads = () => {
-    void leadsQuery.refetch();
-    if (showUnassignedGroup) {
-      void unassignedQuery.refetch();
-    }
+    void activeQuery.refetch();
   };
 
-  const listError =
-    leadsQuery.isError
-      ? leadsQuery.error
-      : showUnassignedGroup && unassignedQuery.isError
-        ? unassignedQuery.error
-        : null;
+  const listError = activeQuery.isError ? activeQuery.error : null;
+
+  function handleSelectedUserIdChange(userId: string) {
+    if (userId !== '' && userId !== 'all') {
+      setUnassignedOnly(false);
+    }
+    setSelectedUserId(userId);
+  }
+
+  function handleUnassignedOnlyChange(value: boolean) {
+    if (value) {
+      setSelectedUserId('');
+    }
+    setUnassignedOnly(value);
+  }
+
+  function handlePageSizeChange(size: LeadsPageSize) {
+    setPageSize(size);
+    try {
+      localStorage.setItem(LEADS_PAGE_SIZE_STORAGE_KEY, String(size));
+    } catch {
+      /* ignore */
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="leads-page-header"
@@ -256,7 +280,7 @@ export function LeadsContent() {
 
         {listError != null ? (
           <QueryErrorBanner
-            className="mb-4"
+            className="mb-4 shrink-0"
             message={getQueryErrorMessage(
               listError,
               'Could not load leads. Try again.'
@@ -265,160 +289,145 @@ export function LeadsContent() {
           />
         ) : null}
         <LeadsFiltersBar
-        listScope={listScope}
-        users={users}
-        branches={branches as BranchListItem[]}
-        startDate={startDate}
-        endDate={endDate}
-        useAllTime={useAllTime}
-        selectedStatus={selectedStatus}
-        selectedSource={selectedSource}
-        selectedEntryType={selectedEntryType}
-        selectedTemperature={selectedTemperature}
-        selectedPriority={selectedPriority}
-        selectedUserId={selectedUserId}
-        dateRangePopoverOpen={dateRangePopoverOpen}
-        onDateRangePopoverOpenChange={setDateRangePopoverOpen}
-        onRangeChange={onLeadsRangeChange}
-        onSetUseAllTime={setUseAllTime}
-        onResetDateRange={resetDateRangeToDefault}
-        onSelectedStatusChange={setSelectedStatus}
-        onSelectedSourceChange={setSelectedSource}
-        onSelectedEntryTypeChange={setSelectedEntryType}
-        onSelectedTemperatureChange={setSelectedTemperature}
-        onSelectedPriorityChange={setSelectedPriority}
-        onSelectedUserIdChange={setSelectedUserId}
-        searchInput={searchInput}
-        onSearchChange={setSearchInput}
-        canDedupe={canDedupe}
-        dedupePending={dedupeMutation.isPending}
-        onImportClick={() => setImportModalOpen(true)}
-        onDedupeClick={() => setDedupeDialogOpen(true)}
-      />
-      {canDedupe ? (
-        <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Deduplicate leads?</DialogTitle>
-              <DialogDescription>
-                This permanently deletes duplicate leads in your organisation. For each group with the same email
-                or the same name and phone number, we keep the oldest lead and move interactions onto it. This
-                cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="gap-3">
-              <Button
-                type="button"
-                variant="cancel"
-                onClick={() => setDedupeDialogOpen(false)}
-                disabled={dedupeMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
-                onClick={() =>
-                  dedupeMutation.mutate(undefined, {
-                    onSuccess: (data) => {
-                      toast.success(data.message);
-                      setDedupeDialogOpen(false);
-                    },
-                    onError: (err: unknown) => {
-                      const msg =
-                        err &&
-                        typeof err === 'object' &&
-                        'response' in err &&
-                        err.response &&
-                        typeof err.response === 'object' &&
-                        'data' in err.response &&
-                        err.response.data &&
-                        typeof err.response.data === 'object' &&
-                        'message' in err.response.data &&
-                        typeof (err.response.data as { message: unknown }).message === 'string'
-                          ? (err.response.data as { message: string }).message
-                          : err instanceof Error
-                            ? err.message
-                            : 'Dedupe failed';
-                      toast.error(msg);
-                    },
-                  })
-                }
-                disabled={dedupeMutation.isPending}
-              >
-                {dedupeMutation.isPending ? 'Running…' : 'Run dedupe'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : null}
-      <div data-tour="leads-table" className="min-h-0 flex-1">
-        <div className="hidden lg:block">
-          <LeadsInboxView
-            leads={assignedOnlyLeads}
-            unassignedLeads={unassignedLeads}
-            isLoading={listLoading}
-            emptyMessage="No leads match your filters."
-            selectedLeadUid={selectedLead?.uid ?? null}
-            activityActorLookup={activityActorLookup}
-            onLeadClick={(lead) => {
-              setSelectedLead(lead);
-              setLeadDialogOpen(true);
-            }}
+          listScope={listScope}
+          users={users}
+          branches={branches as BranchListItem[]}
+          startDate={startDate}
+          endDate={endDate}
+          useAllTime={useAllTime}
+          selectedStatus={selectedStatus}
+          selectedSource={selectedSource}
+          selectedEntryType={selectedEntryType}
+          selectedTemperature={selectedTemperature}
+          selectedPriority={selectedPriority}
+          selectedUserId={selectedUserId}
+          dateRangePopoverOpen={dateRangePopoverOpen}
+          onDateRangePopoverOpenChange={setDateRangePopoverOpen}
+          onRangeChange={onLeadsRangeChange}
+          onSetUseAllTime={setUseAllTime}
+          onResetDateRange={resetDateRangeToDefault}
+          onSelectedStatusChange={setSelectedStatus}
+          onSelectedSourceChange={setSelectedSource}
+          onSelectedEntryTypeChange={setSelectedEntryType}
+          onSelectedTemperatureChange={setSelectedTemperature}
+          onSelectedPriorityChange={setSelectedPriority}
+          onSelectedUserIdChange={handleSelectedUserIdChange}
+          unassignedOnly={unassignedOnly}
+          onUnassignedOnlyChange={handleUnassignedOnlyChange}
+          searchInput={searchInput}
+          onSearchChange={setSearchInput}
+          canDedupe={canDedupe}
+          dedupePending={dedupeMutation.isPending}
+          onImportClick={() => setImportModalOpen(true)}
+          onDedupeClick={() => setDedupeDialogOpen(true)}
+        />
+        {canDedupe ? (
+          <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Deduplicate leads?</DialogTitle>
+                <DialogDescription>
+                  This permanently deletes duplicate leads in your organisation. For each group with the same email
+                  or the same name and phone number, we keep the oldest lead and move interactions onto it. This
+                  cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-3">
+                <Button
+                  type="button"
+                  variant="cancel"
+                  onClick={() => setDedupeDialogOpen(false)}
+                  disabled={dedupeMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
+                  onClick={() =>
+                    dedupeMutation.mutate(undefined, {
+                      onSuccess: (data) => {
+                        toast.success(data.message);
+                        setDedupeDialogOpen(false);
+                      },
+                      onError: (err: unknown) => {
+                        const msg =
+                          err &&
+                          typeof err === 'object' &&
+                          'response' in err &&
+                          err.response &&
+                          typeof err.response === 'object' &&
+                          'data' in err.response &&
+                          err.response.data &&
+                          typeof err.response.data === 'object' &&
+                          'message' in err.response.data &&
+                          typeof (err.response.data as { message: unknown }).message === 'string'
+                            ? (err.response.data as { message: string }).message
+                            : err instanceof Error
+                              ? err.message
+                              : 'Dedupe failed';
+                        toast.error(msg);
+                      },
+                    })
+                  }
+                  disabled={dedupeMutation.isPending}
+                >
+                  {dedupeMutation.isPending ? 'Running…' : 'Run dedupe'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        ) : null}
+        <div
+          data-tour="leads-table"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="hidden lg:block">
+              <LeadsInboxView
+                leads={leads}
+                isLoading={listLoading}
+                emptyMessage="No leads match your filters."
+                selectedLeadUid={selectedLead?.uid ?? null}
+                activityActorLookup={activityActorLookup}
+                onLeadClick={(lead) => {
+                  setSelectedLead(lead);
+                  setLeadDialogOpen(true);
+                }}
+              />
+            </div>
+            <div className="lg:hidden">
+              <LeadsTable
+                leads={leads}
+                isLoading={listLoading}
+                emptyMessage="No leads match your filters."
+                activityActorLookup={activityActorLookup}
+                onLeadClick={(lead) => {
+                  setSelectedLead(lead);
+                  setLeadDialogOpen(true);
+                }}
+              />
+            </div>
+          </div>
+          <LeadsListPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            isFetching={activeQuery.isFetching && !activeQuery.isLoading}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
           />
         </div>
-        <div className="lg:hidden">
-          <LeadsTable
-            leads={assignedOnlyLeads}
-            unassignedLeads={unassignedLeads}
-            unassignedTotal={unassignedTotal}
-            isLoading={listLoading}
-            emptyMessage="No leads match your filters."
-            activityActorLookup={activityActorLookup}
-            onLeadClick={(lead) => {
-              setSelectedLead(lead);
-              setLeadDialogOpen(true);
-            }}
-          />
-        </div>
-      </div>
-      {(leadsQuery.hasNextPage || (showUnassignedGroup && unassignedQuery.hasNextPage)) && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {leadsQuery.hasNextPage ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 border-border bg-background"
-              onClick={() => leadsQuery.fetchNextPage()}
-              disabled={leadsQuery.isFetchingNextPage}
-            >
-              {leadsQuery.isFetchingNextPage ? 'Loading…' : 'Load more leads'}
-            </Button>
-          ) : null}
-          {showUnassignedGroup && unassignedQuery.hasNextPage ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 border-border bg-background"
-              onClick={() => unassignedQuery.fetchNextPage()}
-              disabled={unassignedQuery.isFetchingNextPage}
-            >
-              {unassignedQuery.isFetchingNextPage ? 'Loading…' : 'Load more unassigned'}
-            </Button>
-          ) : null}
-        </div>
-      )}
-      <LeadDetailDialog
-        open={leadDialogOpen}
-        onOpenChange={(open) => {
-          setLeadDialogOpen(open);
-          if (!open) setSelectedLead(null);
-        }}
-        lead={selectedLead}
-        onActionSuccess={() => refetchLeads()}
-      />
+        <LeadDetailDialog
+          open={leadDialogOpen}
+          onOpenChange={(open) => {
+            setLeadDialogOpen(open);
+            if (!open) setSelectedLead(null);
+          }}
+          lead={selectedLead}
+          onActionSuccess={() => refetchLeads()}
+        />
         <ImportLeadsModal
           open={importModalOpen}
           onOpenChange={setImportModalOpen}
