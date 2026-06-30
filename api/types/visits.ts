@@ -184,6 +184,7 @@ export interface UseCheckInsParams {
 export interface UseCheckInsResult {
   data?: { message: string; checkIns: VisitListItem[] };
   isLoading: boolean;
+  isFetching: boolean;
   isError: boolean;
   error: Error | null;
   refetch: () => void;
