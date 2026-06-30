@@ -1737,15 +1737,18 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
 
   return (
     <>
-      <div className="rounded border border-border overflow-x-auto bg-card">
-        <div className="divide-y divide-border">
+      <div className="overflow-x-auto bg-card p-1.5">
+        <div className="flex flex-col gap-1.5">
           {groupedByOwner.map((group, index) => {
             const isExpanded = expandedOwnerKey === group.ownerKey;
             const contentId = `visits-${group.ownerKey}`;
             return (
               <div
                 key={group.ownerKey}
-                className={cn('rounded-sm', isExpanded && 'ring-1 ring-green-200')}
+                className={cn(
+                  'overflow-hidden rounded-lg border border-border bg-card/50',
+                  isExpanded && 'ring-1 ring-green-200'
+                )}
               >
                 <Collapsible
                   open={isExpanded}
@@ -1759,7 +1762,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                   >
                     <div
                       className={cn(
-                        'flex items-center gap-4 px-4 py-3 text-left cursor-pointer hover:bg-muted/50 transition-colors border-0 rounded-none',
+                        'flex cursor-pointer items-center gap-4 rounded-none border-0 px-2.5 py-2 text-left transition-colors hover:bg-muted/50 sm:px-3',
                         isExpanded && 'bg-muted/30'
                       )}
                     >
@@ -1787,7 +1790,10 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                           {VISITS_TABLE_COLUMNS.map((col) => (
                             <TableHead
                               key={col.key}
-                              className={cn('whitespace-nowrap', visitsColumnWidthClass(col.width))}
+                              className={cn(
+                                'whitespace-nowrap py-2',
+                                visitsColumnWidthClass(col.width)
+                              )}
                             >
                               {col.label}
                             </TableHead>
@@ -1808,7 +1814,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                               <TableCell
                                 key={col.key}
                                 className={cn(
-                                  'text-sm whitespace-normal align-top min-w-0',
+                                  'min-w-0 whitespace-normal py-2 align-top text-sm',
                                   visitsColumnWidthClass(col.width)
                                 )}
                               >

@@ -76,6 +76,12 @@ import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type { VisitsSummaryModalPayload } from '@/app/reports/visits-summary-modal';
+import {
+  VisitsListPagination,
+  readStoredVisitsPageSize,
+  VISITS_PAGE_SIZE_STORAGE_KEY,
+  type VisitsPageSize,
+} from './components/visits-list-pagination';
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
@@ -163,6 +169,8 @@ export function VisitsContent({
   const [mediaUrlInput, setMediaUrlInput] = useState('');
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
   const [clientComboboxOpen, setClientComboboxOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredVisitsPageSize());
   const orgName = useOrgName();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
@@ -236,6 +244,41 @@ export function VisitsContent({
       }),
     [checkIns, searchQuery, selectedRegion, selectedBusinessType]
   );
+
+  const total = filteredCheckIns.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+  const paginatedCheckIns = useMemo(
+    () => filteredCheckIns.slice((page - 1) * pageSize, page * pageSize),
+    [filteredCheckIns, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    startDate,
+    endDate,
+    useAllTime,
+    selectedRegion,
+    selectedBusinessType,
+    selectedUserUid,
+    searchQuery,
+    pageSize,
+  ]);
+
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  function handlePageSizeChange(size: VisitsPageSize) {
+    setPageSize(size);
+    try {
+      localStorage.setItem(VISITS_PAGE_SIZE_STORAGE_KEY, String(size));
+    } catch {
+      /* ignore */
+    }
+  }
 
   const activeVisit = useMemo(
     () => checkIns.find((c) => !c.checkOutTime) ?? null,
@@ -503,7 +546,7 @@ export function VisitsContent({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
       <div
         className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         data-tour="visits-page-header"
@@ -1311,20 +1354,41 @@ export function VisitsContent({
         onOpenVisitsSummary={handleOpenVisitsSummary}
         sectionHeading={null}
       />
-      <div data-tour="visits-history-content">
-          {viewMode === 'table' ? (
+      {viewMode === 'table' ? (
+        <div
+          data-tour="visits-history-content"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <VisitsTable
-              checkIns={filteredCheckIns}
+              checkIns={paginatedCheckIns}
               isLoading={checkInsQuery.isLoading}
-              emptyMessage={checkIns.length === 0 ? 'No visits yet. Start a visit to see it here.' : 'No visits match your search.'}
+              emptyMessage={
+                checkIns.length === 0
+                  ? 'No visits yet. Start a visit to see it here.'
+                  : 'No visits match your search.'
+              }
               onVisitUpdated={() => checkInsQuery.refetch()}
             />
-          ) : (
-            <div className="min-h-[500px] h-[70vh] overflow-hidden flex flex-col">
-              <VisitsMap visits={filteredCheckIns} className="flex-1 min-h-0" />
-            </div>
-          )}
+          </div>
+          <VisitsListPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            isFetching={checkInsQuery.isFetching && !checkInsQuery.isLoading}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
+      ) : (
+        <div
+          data-tour="visits-history-content"
+          className="flex min-h-[500px] h-[70vh] flex-col overflow-hidden"
+        >
+          <VisitsMap visits={filteredCheckIns} className="min-h-0 flex-1" />
+        </div>
+      )}
       </main>
     </div>
   );
