@@ -282,6 +282,7 @@ export interface InviteUserResponse {
     clerkUserId: string;
     userref: string | null;
   };
+  warnings?: string[];
 }
 
 export async function inviteUser(
@@ -470,5 +471,38 @@ export async function patchUserPreferences(
   body: Record<string, unknown>
 ): Promise<{ message: string }> {
   const { data } = await client.patch<{ message: string }>(`/user/${ref}/preferences`, body);
+  return data;
+}
+
+/** POST /user/:ref/plan-client-visits — batch weekly visit tasks for assigned clients. */
+export interface PlanClientVisitsBody {
+  startDate: string;
+  visitDayOfWeek: number;
+  batchSize?: number;
+  clientIds?: number[];
+}
+
+export interface PlanClientVisitsBatchResult {
+  batchIndex: number;
+  visitDate: string;
+  clientIds: number[];
+  tasksCreated: number;
+}
+
+export interface PlanClientVisitsResponse {
+  message: string;
+  batches: PlanClientVisitsBatchResult[];
+  warnings?: string[];
+}
+
+export async function planClientVisits(
+  client: AxiosInstance,
+  ref: string | number,
+  body: PlanClientVisitsBody
+): Promise<PlanClientVisitsResponse> {
+  const { data } = await client.post<PlanClientVisitsResponse>(
+    `/user/${ref}/plan-client-visits`,
+    body
+  );
   return data;
 }

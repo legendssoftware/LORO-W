@@ -23,6 +23,8 @@ export interface LeadsFiltersState {
   selectedPriority: string;
   selectedUserId: string;
   searchQuery: string;
+  /** When true, list shows only unassigned leads (GET /leads/unassigned). */
+  unassignedOnly: boolean;
 }
 
 export interface LeadsUIState {
@@ -41,6 +43,7 @@ interface LeadsStore extends LeadsFiltersState, LeadsUIState {
   setSelectedPriority: (priority: string) => void;
   setSelectedUserId: (userId: string) => void;
   setSearchQuery: (query: string) => void;
+  setUnassignedOnly: (value: boolean) => void;
   setDateRangePopoverOpen: (open: boolean) => void;
   selectEndDateAndClose: (date: Date) => void;
   resetDateRangeToDefault: () => void;
@@ -58,6 +61,7 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   selectedPriority: 'all',
   selectedUserId: '',
   searchQuery: '',
+  unassignedOnly: false,
   dateRangePopoverOpen: false,
 
   setStartDate: (date) => set({ startDate: date }),
@@ -71,6 +75,7 @@ export const useLeadsStore = create<LeadsStore>((set) => ({
   setSelectedPriority: (priority) => set({ selectedPriority: priority }),
   setSelectedUserId: (userId) => set({ selectedUserId: userId }),
   setSearchQuery: (query) => set({ searchQuery: query }),
+  setUnassignedOnly: (value) => set({ unassignedOnly: value }),
   setDateRangePopoverOpen: (open) => set({ dateRangePopoverOpen: open }),
 
   selectEndDateAndClose: (date) =>
