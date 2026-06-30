@@ -99,6 +99,7 @@ export function useCheckIns(
   return {
     data: query.data,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error as Error | null,
     refetch: query.refetch,
