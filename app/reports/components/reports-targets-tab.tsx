@@ -174,6 +174,7 @@ function buildSelfSubThresholdRow(
     fullName,
     email: detail?.email ?? profile.email ?? '',
     callCount: 0,
+    leadCount: 0,
     targetWarnings: tw,
   };
 }
@@ -468,7 +469,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
             <CardDescription>
               {elevated ? (
                 <>
-                  Sales reps under {callsBelowData?.minCalls ?? 60} calls on{' '}
+                  Sales reps below {callsBelowData?.minCalls ?? 60} combined calls + leads on{' '}
                   <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC).
                   Branch filter applies.{' '}
                   <Link
