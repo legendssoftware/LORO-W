@@ -173,6 +173,8 @@ export interface SubThresholdDailyCallUserRow {
   fullName: string;
   email: string;
   callCount: number;
+  /** Owned lead activity count for the org-local day (same window as callCount). */
+  leadCount: number;
   targetWarnings: TargetWarningsPayload | null;
 }
 
