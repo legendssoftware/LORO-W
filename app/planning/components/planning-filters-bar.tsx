@@ -410,12 +410,12 @@ export function PlanningFilterControls({
 
 export interface PlanningFiltersBarProps
   extends Omit<PlanningFilterControlsProps, 'layout'> {
-  searchQuery: string;
+  searchInput: string;
   onSearchChange: (value: string) => void;
 }
 
 export function PlanningFiltersBar({
-  searchQuery,
+  searchInput,
   onSearchChange,
   ...filterProps
 }: PlanningFiltersBarProps) {
@@ -441,11 +441,11 @@ export function PlanningFiltersBar({
       >
         <Input
           placeholder="Search tasks…"
-          value={searchQuery}
+          value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={cn(filterToolbarSearchInputClassName, searchQuery && 'pr-8')}
+          className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
         />
-        {searchQuery ? (
+        {searchInput ? (
           <button
             type="button"
             onClick={() => onSearchChange('')}

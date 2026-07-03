@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { format } from 'date-fns';
 import { Loader2, Mic, Paperclip, Send } from 'lucide-react';
@@ -11,9 +11,24 @@ import { useCreateInteractionMutation, useInteractionsByLead } from '@/api/hooks
 import { uploadInteractionAttachment } from '@/api/endpoints/interactions';
 import type { InteractionListItem, InteractionType } from '@/api/types/interactions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+  MessageFooter,
+  MessageHeader,
+} from '@/components/ui/message';
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from '@/components/ui/message-scroller';
 import {
   fileLabelFromUrl,
   inferAttachmentPresentation,
@@ -61,12 +76,47 @@ function isOutgoing(item: InteractionListItem, clerkUserId: string | null | unde
   );
 }
 
+function interactionSenderKey(item: InteractionListItem): string {
+  return (
+    item.createdByClerkUserId ??
+    item.createdBy?.clerkUserId ??
+    `uid:${item.createdBy?.uid ?? item.uid}`
+  );
+}
+
 /** Signed-in Clerk profile for fallback when API has no nested user yet. */
 type MineProfile = {
   name: string;
   email?: string;
   imageUrl?: string;
 };
+
+type InteractionSenderGroup = {
+  senderKey: string;
+  isMine: boolean;
+  items: InteractionListItem[];
+};
+
+function groupInteractionsBySender(
+  items: InteractionListItem[],
+  clerkUserId: string | null | undefined
+): InteractionSenderGroup[] {
+  const groups: InteractionSenderGroup[] = [];
+  for (const item of items) {
+    const key = interactionSenderKey(item);
+    const last = groups[groups.length - 1];
+    if (last?.senderKey === key) {
+      last.items.push(item);
+      continue;
+    }
+    groups.push({
+      senderKey: key,
+      isMine: isOutgoing(item, clerkUserId),
+      items: [item],
+    });
+  }
+  return groups;
+}
 
 function displayName(item: InteractionListItem, isMine: boolean, mine: MineProfile | null): string {
   const base = senderLabel(item);
@@ -145,94 +195,71 @@ function AttachmentContent({
   );
 }
 
-function MessageRow({
+function MessageBubbleBody({ item }: { item: InteractionListItem }) {
+  if (item.attachmentUrl?.trim()) {
+    const url = item.attachmentUrl.trim();
+    return (
+      <div className="space-y-2">
+        <AttachmentContent url={url} kind={inferAttachmentPresentation(url)} />
+        {item.message.trim() && item.message.trim() !== 'Attachment' ? (
+          <span>{item.message}</span>
+        ) : null}
+      </div>
+    );
+  }
+  return <>{item.message}</>;
+}
+
+function TeamChatMessage({
   item,
   isMine,
   mine,
+  showAvatar,
+  showHeader,
 }: {
   item: InteractionListItem;
   isMine: boolean;
   mine: MineProfile | null;
+  showAvatar: boolean;
+  showHeader: boolean;
 }) {
   const time = format(new Date(item.createdAt), 'MMM d, yyyy h:mm a');
   const src = displayAvatarSrc(item, isMine, mine);
   const label = displayName(item, isMine, mine);
   const email = displayEmail(item, isMine, mine);
   const fall = displayInitials(item, isMine, mine);
-  const bubble = (
-    <div
-      className={cn(
-        'max-w-[min(100%,85%)] rounded-2xl px-3 py-2 text-sm shadow-sm',
-        isMine
-          ? 'bg-primary text-primary-foreground rounded-br-md'
-          : 'rounded-bl-md border bg-card text-card-foreground'
-      )}
-    >
-      {item.attachmentUrl?.trim() ? (
-        <div className="space-y-2">
-          <AttachmentContent
-            url={item.attachmentUrl.trim()}
-            kind={inferAttachmentPresentation(item.attachmentUrl.trim())}
-          />
-          {item.message.trim() && item.message.trim() !== 'Attachment' ? (
-            <p className="whitespace-pre-wrap break-words">{item.message}</p>
-          ) : null}
-        </div>
-      ) : (
-        <p className="whitespace-pre-wrap break-words">{item.message}</p>
-      )}
-      <p
-        className={cn(
-          'mt-1.5 text-[10px] tabular-nums',
-          isMine ? 'text-primary-foreground/80' : 'text-muted-foreground'
-        )}
-      >
-        {time}
-      </p>
-    </div>
-  );
-
-  const meta = (
-    <div className={cn('flex max-w-[200px] flex-col gap-0.5', isMine ? 'items-end' : 'items-start')}>
-      <Avatar size="sm" className="size-8">
-        {src ? <AvatarImage src={src} alt={label} /> : null}
-        <AvatarFallback>{fall}</AvatarFallback>
-      </Avatar>
-      <span
-        className={cn(
-          'max-w-full truncate text-xs font-semibold leading-tight',
-          isMine ? 'text-end' : 'text-start'
-        )}
-      >
-        {label}
-      </span>
-      {email ? (
-        <span
-          className={cn(
-            'max-w-full truncate text-[10px] text-muted-foreground',
-            isMine ? 'text-end' : 'text-start'
-          )}
-        >
-          {email}
-        </span>
-      ) : null}
-    </div>
-  );
-
-  if (isMine) {
-    return (
-      <div className="flex justify-end gap-2">
-        <div className="flex min-w-0 flex-col items-end gap-1">{bubble}</div>
-        {meta}
-      </div>
-    );
-  }
 
   return (
-    <div className="flex justify-start gap-2">
-      {meta}
-      <div className="flex min-w-0 flex-col gap-1">{bubble}</div>
-    </div>
+    <Message align={isMine ? 'end' : 'start'}>
+      <MessageAvatar>
+        {showAvatar ? (
+          <Avatar size="sm" className="size-8">
+            {src ? <AvatarImage src={src} alt={label} /> : null}
+            <AvatarFallback>{fall}</AvatarFallback>
+          </Avatar>
+        ) : null}
+      </MessageAvatar>
+      <MessageContent>
+        {showHeader ? (
+          <>
+            <MessageHeader className="px-0 text-xs font-semibold text-foreground">
+              {label}
+            </MessageHeader>
+            {email ? (
+              <p className="text-[10px] text-muted-foreground">{email}</p>
+            ) : null}
+          </>
+        ) : null}
+        <Bubble variant={isMine ? 'default' : 'secondary'}>
+          <BubbleContent className="whitespace-pre-wrap break-words">
+            <MessageBubbleBody item={item} />
+          </BubbleContent>
+        </Bubble>
+        <MessageFooter className="px-0 text-[10px] tabular-nums text-muted-foreground">
+          {time}
+        </MessageFooter>
+      </MessageContent>
+    </Message>
   );
 }
 
@@ -268,15 +295,26 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
-  const items = listQuery.data?.data ?? [];
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [items.length, listQuery.isFetching]);
+  const items = useMemo(() => listQuery.data?.data ?? [], [listQuery.data?.data]);
+  const senderGroups = useMemo(
+    () => groupInteractionsBySender(items, userId ?? undefined),
+    [items, userId]
+  );
+  const flatItems = useMemo(
+    () =>
+      senderGroups.flatMap((group) =>
+        group.items.map((item, index) => ({
+          item,
+          isMine: group.isMine,
+          showAvatar: index === group.items.length - 1,
+          showHeader: index === group.items.length - 1,
+        }))
+      ),
+    [senderGroups]
+  );
 
   async function onPickFile(file: File | null) {
     if (!file) return;
@@ -330,26 +368,41 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
         <p className="text-xs text-muted-foreground">Visible to lead owner and assignees</p>
       </div>
 
-      <div className="max-h-[min(420px,50vh)] space-y-3 overflow-y-auto rounded-md border bg-background/80 p-3">
+      <div className="flex max-h-[min(420px,50vh)] min-h-[120px] flex-col overflow-hidden rounded-md border bg-background/80">
         {listQuery.isLoading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex flex-1 items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : listQuery.isError ? (
-          <p className="text-center text-sm text-destructive">Could not load messages.</p>
+          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-destructive">
+            Could not load messages.
+          </p>
         ) : items.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground">No messages yet.</p>
+          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-muted-foreground">
+            No messages yet.
+          </p>
         ) : (
-          items.map((item) => (
-            <MessageRow
-              key={item.uid}
-              item={item}
-              isMine={isOutgoing(item, userId ?? undefined)}
-              mine={mineProfile}
-            />
-          ))
+          <MessageScrollerProvider autoScroll defaultScrollPosition="end">
+            <MessageScroller className="min-h-0 flex-1">
+              <MessageScrollerViewport>
+                <MessageScrollerContent className="gap-3 p-3">
+                  {flatItems.map(({ item, isMine, showAvatar, showHeader }) => (
+                    <MessageScrollerItem key={item.uid} messageId={String(item.uid)}>
+                      <TeamChatMessage
+                        item={item}
+                        isMine={isMine}
+                        mine={mineProfile}
+                        showAvatar={showAvatar}
+                        showHeader={showHeader}
+                      />
+                    </MessageScrollerItem>
+                  ))}
+                </MessageScrollerContent>
+              </MessageScrollerViewport>
+              <MessageScrollerButton />
+            </MessageScroller>
+          </MessageScrollerProvider>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {pendingUrl ? (
@@ -417,7 +470,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
           type="button"
           onClick={() => void handleSend()}
           disabled={uploading || createMutation.isPending}
-          className="gap-2 shrink-0"
+          className="shrink-0 gap-2 bg-white text-black hover:bg-white/90"
         >
           {createMutation.isPending ? (
             <Loader2 className="size-4 animate-spin" />
