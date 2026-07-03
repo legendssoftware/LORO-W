@@ -1,14 +1,20 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { formatUtcYmd, utcToday } from '@/app/reports/utils/overview-daily-summary';
 import { useTasks, useTasksForUser, useUsers, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
-import { PlanningTable } from '@/components/planning-table/planning-table';
 import { TaskDetailDialog } from '@/components/planning-table/task-detail-dialog';
 import { PlanningFiltersBar } from './components/planning-filters-bar';
+import { PlanningInboxView } from './components/planning-inbox-view';
+import {
+  PlanningListPagination,
+  readStoredPlanningPageSize,
+  PLANNING_PAGE_SIZE_STORAGE_KEY,
+  type PlanningPageSize,
+} from './components/planning-list-pagination';
 import { CreateTaskModal } from './components/create-task-modal';
 import { PlanningRemindersPanel } from './components/planning-reminders-panel';
 import { PlanningRoutesMap } from './components/planning-routes-map';
@@ -17,13 +23,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/api/types/tasks';
 
+const SEARCH_DEBOUNCE_MS = 350;
+
 type PlanningTab = 'all' | 'my-day' | 'routes';
+
+function filterTasksBySearch(tasks: Task[], query: string): Task[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return tasks;
+  return tasks.filter((t) => {
+    const assigneeNames = (t.assignees ?? [])
+      .map((a) => [a.name, a.surname].filter(Boolean).join(' '))
+      .join(' ');
+    const clientNames = (t.clients ?? []).map((c) => c.name).join(' ');
+    const searchable = [
+      t.title,
+      t.description,
+      t.comment,
+      t.status,
+      t.priority,
+      assigneeNames,
+      clientNames,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return searchable.includes(q);
+  });
+}
 
 export function PlanningContent() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [planningTab, setPlanningTab] = useState<PlanningTab>('all');
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PlanningPageSize>(() => readStoredPlanningPageSize());
+  const [searchInput, setSearchInput] = useState(
+    () => usePlanningStore.getState().searchQuery
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(() =>
+    usePlanningStore.getState().searchQuery.trim()
+  );
 
   const { backendUserData } = useSessionSync();
 
@@ -36,7 +76,6 @@ export function PlanningContent() {
     selectedAssigneeId,
     selectedClientId,
     filterOverdueOnly,
-    searchQuery,
     dateRangePopoverOpen,
     setDateRangePopoverOpen,
     setUseAllTime,
@@ -49,6 +88,15 @@ export function PlanningContent() {
     setSearchQuery,
     setDateRange,
   } = usePlanningStore();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next = searchInput.trim();
+      setDebouncedSearch(next);
+      setSearchQuery(next);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchInput, setSearchQuery]);
 
   const applyMyDayRange = useCallback(() => {
     const today = utcToday();
@@ -73,15 +121,13 @@ export function PlanningContent() {
 
   const todayYmd = formatUtcYmd(utcToday());
   const effectiveUseAllTime = planningTab === 'my-day' ? false : useAllTime;
-  const effectiveStart =
-    planningTab === 'my-day' ? utcToday() : startDate;
-  const effectiveEnd =
-    planningTab === 'my-day' ? utcToday() : endDate;
+  const effectiveStart = planningTab === 'my-day' ? utcToday() : startDate;
+  const effectiveEnd = planningTab === 'my-day' ? utcToday() : endDate;
 
   const tasksParams = useMemo(
     () => ({
-      page: 1,
-      limit: 100,
+      page,
+      limit: pageSize,
       ...(effectiveUseAllTime
         ? {}
         : {
@@ -105,8 +151,11 @@ export function PlanningContent() {
         ? { clientId: Number(selectedClientId) }
         : {}),
       ...(filterOverdueOnly ? { isOverdue: true as const } : {}),
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
     }),
     [
+      page,
+      pageSize,
       effectiveUseAllTime,
       effectiveStart,
       effectiveEnd,
@@ -115,52 +164,54 @@ export function PlanningContent() {
       selectedAssigneeId,
       selectedClientId,
       filterOverdueOnly,
+      debouncedSearch,
     ]
   );
 
+  useEffect(() => {
+    setPage(1);
+  }, [
+    debouncedSearch,
+    effectiveUseAllTime,
+    effectiveStart,
+    effectiveEnd,
+    selectedStatus,
+    selectedPriority,
+    selectedAssigneeId,
+    selectedClientId,
+    filterOverdueOnly,
+    pageSize,
+  ]);
+
   const tasksQuery = useTasks(tasksParams, {
-    enabled: planningTab !== 'my-day' || !backendUserData?.uid,
+    enabled: planningTab === 'all',
   });
 
   const myDayQuery = useTasksForUser(backendUserData?.uid ?? null, {
     enabled: planningTab === 'my-day' && !!backendUserData?.uid,
   });
 
-  const orgTasks =
-    planningTab === 'my-day'
-      ? (myDayQuery.data?.tasks ?? []).filter((t) => {
-          if (!t.deadline) return false;
-          const d = formatUtcYmd(new Date(t.deadline));
-          return d === todayYmd;
-        })
-      : (tasksQuery.data?.data ?? []);
+  const allTasks = tasksQuery.data?.data ?? [];
+  const listMeta = tasksQuery.data?.meta;
+  const total = listMeta?.total ?? 0;
+  const totalPages = listMeta?.totalPages ?? 0;
+
+  const myDayTasks = useMemo(() => {
+    const tasks = myDayQuery.data?.tasks ?? [];
+    return tasks.filter((t) => {
+      if (!t.deadline) return false;
+      const d = formatUtcYmd(new Date(t.deadline));
+      return d === todayYmd;
+    });
+  }, [myDayQuery.data?.tasks, todayYmd]);
+
+  const myDayFilteredTasks = useMemo(
+    () => filterTasksBySearch(myDayTasks, debouncedSearch),
+    [myDayTasks, debouncedSearch]
+  );
 
   const isLoading =
     planningTab === 'my-day' ? myDayQuery.isLoading : tasksQuery.isLoading;
-
-  const filteredTasks = useMemo(() => {
-    if (!searchQuery.trim()) return orgTasks;
-    const q = searchQuery.trim().toLowerCase();
-    return orgTasks.filter((t) => {
-      const assigneeNames = (t.assignees ?? [])
-        .map((a) => [a.name, a.surname].filter(Boolean).join(' '))
-        .join(' ');
-      const clientNames = (t.clients ?? []).map((c) => c.name).join(' ');
-      const searchable = [
-        t.title,
-        t.description,
-        t.comment,
-        t.status,
-        t.priority,
-        assigneeNames,
-        clientNames,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return searchable.includes(q);
-    });
-  }, [orgTasks, searchQuery]);
 
   const openTask = useCallback((task: Task) => {
     setDetailTask(task);
@@ -172,9 +223,18 @@ export function PlanningContent() {
     void myDayQuery.refetch();
   }, [tasksQuery, myDayQuery]);
 
+  function handlePageSizeChange(size: PlanningPageSize) {
+    setPageSize(size);
+    try {
+      localStorage.setItem(PLANNING_PAGE_SIZE_STORAGE_KEY, String(size));
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="planning-page-header"
@@ -232,20 +292,30 @@ export function PlanningContent() {
                   onFilterOverdueChange={setFilterOverdueOnly}
                   onSelectedClientIdChange={setSelectedClientId}
                   onSelectedAssigneeIdChange={setSelectedAssigneeId}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  searchInput={searchInput}
+                  onSearchChange={setSearchInput}
                 />
-                <div data-tour="planning-task-table">
-                  <PlanningTable
-                    tasks={filteredTasks}
-                    isLoading={isLoading}
-                    emptyMessage={
-                      orgTasks.length === 0
-                        ? 'No tasks match your filters.'
-                        : 'No tasks match your search.'
-                    }
-                    onTaskUpdated={refetchTasks}
-                    onTaskClick={openTask}
+                <div
+                  className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+                  data-tour="planning-task-table"
+                >
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <PlanningInboxView
+                      tasks={allTasks}
+                      isLoading={isLoading}
+                      emptyMessage="No tasks match your filters."
+                      selectedTaskUid={detailTask?.uid ?? null}
+                      onTaskClick={openTask}
+                    />
+                  </div>
+                  <PlanningListPagination
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    pageSize={pageSize}
+                    isFetching={tasksQuery.isFetching && !tasksQuery.isLoading}
+                    onPageChange={setPage}
+                    onPageSizeChange={handlePageSizeChange}
                   />
                 </div>
               </div>
@@ -259,14 +329,23 @@ export function PlanningContent() {
               {backendUserData?.uid ? ' for your account' : ''}.
             </p>
             <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-              <div className="min-w-0 flex-1" data-tour="planning-task-table">
-                <PlanningTable
-                  tasks={filteredTasks}
-                  isLoading={isLoading}
-                  emptyMessage="No tasks due today."
-                  onTaskUpdated={refetchTasks}
-                  onTaskClick={openTask}
-                />
+              <div
+                className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+                data-tour="planning-task-table"
+              >
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <PlanningInboxView
+                    tasks={myDayFilteredTasks}
+                    isLoading={isLoading}
+                    emptyMessage={
+                      myDayTasks.length === 0
+                        ? 'No tasks due today.'
+                        : 'No tasks match your search.'
+                    }
+                    selectedTaskUid={detailTask?.uid ?? null}
+                    onTaskClick={openTask}
+                  />
+                </div>
               </div>
               <PlanningRemindersPanel onOpenTask={openTask} />
             </div>
@@ -275,7 +354,9 @@ export function PlanningContent() {
           <TabsContent value="routes" className="mt-0 min-h-0 flex-1">
             <PlanningRoutesMap
               onOpenTask={(taskId) => {
-                const t = orgTasks.find((x) => x.uid === taskId);
+                const t =
+                  allTasks.find((x) => x.uid === taskId) ??
+                  myDayTasks.find((x) => x.uid === taskId);
                 if (t) openTask(t);
                 else {
                   setDetailTask({ uid: taskId } as Task);

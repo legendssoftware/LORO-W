@@ -104,13 +104,23 @@ export interface PatchUserBody {
   userTarget?: PatchUserTargetBody;
 }
 
+/** One issued performance warning tier in chronological order. */
+export interface TargetWarningHistoryEntry {
+  level: 1 | 2 | 3;
+  issuedAt: string;
+  acknowledgedAt?: string;
+  source: 'auto_shift' | 'manual' | 'acknowledge';
+}
+
 /** Matches server TargetWarningsState on user_targets.targetWarnings */
 export interface TargetWarningsPayload {
-  level: 1 | 2 | 3;
+  /** Active warning tier; omitted when cleared but history retained. */
+  level?: 1 | 2 | 3;
   issuedAt?: string;
   acknowledgedLevel?: number;
   acknowledgedAt?: string;
   lastShiftEvalOrgYmd?: string;
+  history?: TargetWarningHistoryEntry[];
 }
 
 /** POST /user/:ref/target/performance-warning/acknowledge */

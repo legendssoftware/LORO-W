@@ -82,6 +82,7 @@ function bucketRowsToChartData(
     targetLeads: b.targetLeads,
     achievedVisits: achievedVisitsFromProgressBucket(b),
     targetVisits: b.targetVisits,
+    combinedTarget: b.targetVisits + b.targetLeads,
     achievedCalls: b.achievedCalls,
     targetCalls: b.targetCalls,
   }));
@@ -99,25 +100,18 @@ function variationLine(
   return { delta, pct };
 }
 
-const leadsChartConfig = {
-  achievedLeads: {
-    label: 'Achieved leads',
-    color: REPORT_CHART_HSL.c3,
-  },
-  targetLeads: {
-    label: 'Target (prorated)',
-    color: REPORT_CHART_HSL.c5,
-  },
-} satisfies ChartConfig;
-
-const visitsChartConfig = {
+const activityChartConfig = {
   achievedVisits: {
     label: 'Achieved visits',
     color: REPORT_CHART_HSL.c4,
   },
-  targetVisits: {
+  achievedLeads: {
+    label: 'Achieved leads',
+    color: REPORT_CHART_HSL.c3,
+  },
+  combinedTarget: {
     label: 'Target (prorated)',
-    color: REPORT_CHART_HSL.c2,
+    color: REPORT_CHART_HSL.c5,
   },
 } satisfies ChartConfig;
 
@@ -128,24 +122,22 @@ type TooltipPayloadItem = {
   payload?: Record<string, string | number>;
 };
 
-function OverviewTooltipBody({
+function ActivityTooltipBody({
   active,
   payload,
-  metric,
 }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
-  metric: 'leads' | 'visits';
 }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
   if (!row || typeof row !== 'object') return null;
 
-  const aKey = metric === 'leads' ? 'achievedLeads' : 'achievedVisits';
-  const tKey = metric === 'leads' ? 'targetLeads' : 'targetVisits';
-  const achieved = Number(row[aKey] ?? 0);
-  const target = Number(row[tKey] ?? 0);
-  const { delta, pct } = variationLine(achieved, target);
+  const visits = Number(row.achievedVisits ?? 0);
+  const leads = Number(row.achievedLeads ?? 0);
+  const target = Number(row.combinedTarget ?? 0);
+  const combinedAchieved = visits + leads;
+  const { delta, pct } = variationLine(combinedAchieved, target);
   const title =
     typeof row.tooltipTitle === 'string' && row.tooltipTitle
       ? row.tooltipTitle
@@ -286,8 +278,21 @@ export function ReportsOverviewTab({
       }),
       { leadsA: 0, leadsT: 0, visA: 0, visT: 0 }
     );
-    return { leadsA, leadsT, visA, visT };
+    return { leadsA, leadsT, visA, visT, combinedT: visT + leadsT };
   }, [progressData?.aggregateBuckets]);
+
+  const activityYMax = React.useMemo(() => {
+    let max = 0;
+    for (const row of chartData) {
+      max = Math.max(
+        max,
+        row.achievedVisits,
+        row.achievedLeads,
+        row.combinedTarget
+      );
+    }
+    return Math.max(Math.ceil(max * 1.12), 1);
+  }, [chartData]);
 
   React.useEffect(() => {
     if (!REPORTS_OVERVIEW_DEBUG_LOGS) return;
@@ -300,28 +305,25 @@ export function ReportsOverviewTab({
       key: b.key,
       label: b.label,
       window: { startDate: b.startDate, endDate: b.endDate },
-      leadsTrendInput: { achievedLeads: b.achievedLeads, targetLeads: b.targetLeads },
-      visitsTrendInput: {
+      activityTrendInput: {
+        achievedLeads: b.achievedLeads,
+        targetLeads: b.targetLeads,
         targetVisits: b.targetVisits,
         achievedCheckInsAllTypes: achievedVisitsFromProgressBucket(b),
+        combinedTarget: b.targetVisits + b.targetLeads,
       },
     }));
     console.debug('[reports/overview] trend mapping — source rows (targets-progress API)', {
       trendInputs,
     });
-    const leadsTrend = chartData.map((row) => ({
-      xTick: row.xTick,
-      achievedLeads: row.achievedLeads,
-      targetLeads: row.targetLeads,
-    }));
-    const visitsTrend = chartData.map((row) => ({
+    const activityTrend = chartData.map((row) => ({
       xTick: row.xTick,
       achievedVisits: row.achievedVisits,
-      targetVisits: row.targetVisits,
+      achievedLeads: row.achievedLeads,
+      combinedTarget: row.combinedTarget,
     }));
-    console.debug('[reports/overview] trend charts — mapped series (Leads trend / Visits trend)', {
-      leadsTrend,
-      visitsTrend,
+    console.debug('[reports/overview] trend chart — mapped series (Total activity)', {
+      activityTrend,
       chartDataFull: chartData,
     });
     console.debug('[reports/overview]', {
@@ -329,6 +331,7 @@ export function ReportsOverviewTab({
       broughtInLeadsTotal: totals.leadsA,
       bucketAchievedLeadsSum,
       mappedVisitsTotal: totals.visA,
+      combinedTargetTotal: totals.combinedT,
       range: rangeDescription,
       timeframe,
       reportsMode,
@@ -340,6 +343,7 @@ export function ReportsOverviewTab({
   }, [
     totals.leadsA,
     totals.visA,
+    totals.combinedT,
     rangeDescription,
     timeframe,
     reportsMode,
@@ -413,16 +417,18 @@ export function ReportsOverviewTab({
             <div className="grid gap-6 lg:grid-cols-1">
           <Card className="border border-border bg-background shadow-sm min-w-0">
             <CardHeader>
-              <CardTitle>Leads trend</CardTitle>
+              <CardTitle>Total activity</CardTitle>
               <CardDescription>
-                Achieved leads vs prorated target — {rangeDescription}. Range
-                totals: {totals.leadsA.toLocaleString()} achieved /{' '}
-                {totals.leadsT.toLocaleString()} target.
+                Achieved visits and leads vs combined prorated target —{' '}
+                {rangeDescription}. Range totals:{' '}
+                {totals.visA.toLocaleString()} visits,{' '}
+                {totals.leadsA.toLocaleString()} leads /{' '}
+                {totals.combinedT.toLocaleString()} target.
               </CardDescription>
             </CardHeader>
             <CardContent className="pl-0 sm:pr-2">
               <ChartContainer
-                config={leadsChartConfig}
+                config={activityChartConfig}
                 className="aspect-auto h-[340px] w-full min-w-0"
               >
                 <AreaChart
@@ -431,6 +437,24 @@ export function ReportsOverviewTab({
                   margin={{ ...trendAxis.chartMargin }}
                 >
                   <defs>
+                    <linearGradient
+                      id="fillAchievedVisits"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-achievedVisits)"
+                        stopOpacity={0.85}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-achievedVisits)"
+                        stopOpacity={0.12}
+                      />
+                    </linearGradient>
                     <linearGradient
                       id="fillAchievedLeads"
                       x1="0"
@@ -467,21 +491,14 @@ export function ReportsOverviewTab({
                     tickLine={false}
                     axisLine={false}
                     width={40}
-                    domain={[
-                      0,
-                      (max: number) =>
-                        Number.isFinite(max)
-                          ? Math.max(Math.ceil(max * 1.12), 1)
-                          : 1,
-                    ]}
+                    domain={[0, activityYMax]}
                   />
                   <ChartTooltip
                     cursor={false}
                     content={({ active, payload }) => (
-                      <OverviewTooltipBody
+                      <ActivityTooltipBody
                         active={active}
                         payload={payload as TooltipPayloadItem[]}
-                        metric="leads"
                       />
                     )}
                   />
@@ -490,117 +507,24 @@ export function ReportsOverviewTab({
                     content={<ChartLegendContent className="flex-wrap" />}
                   />
                   <Area
-                    name={leadsChartConfig.achievedLeads.label}
+                    name={activityChartConfig.achievedVisits.label}
+                    dataKey="achievedVisits"
+                    type="natural"
+                    fill="url(#fillAchievedVisits)"
+                    stroke="var(--color-achievedVisits)"
+                  />
+                  <Area
+                    name={activityChartConfig.achievedLeads.label}
                     dataKey="achievedLeads"
                     type="natural"
                     fill="url(#fillAchievedLeads)"
                     stroke="var(--color-achievedLeads)"
                   />
                   <Line
-                    name={leadsChartConfig.targetLeads.label}
+                    name={activityChartConfig.combinedTarget.label}
                     type="monotone"
-                    dataKey="targetLeads"
-                    stroke="var(--color-targetLeads)"
-                    strokeWidth={2}
-                    dot={false}
-                    strokeDasharray="5 5"
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-border bg-background shadow-sm min-w-0">
-            <CardHeader>
-              <CardTitle>Visits trend</CardTitle>
-              <CardDescription>
-                Achieved visits (all contact types, from targets-progress) vs
-                prorated target — {rangeDescription}. Range totals:{' '}
-                {totals.visA.toLocaleString()} achieved /{' '}
-                {totals.visT.toLocaleString()} target.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pl-0 sm:pr-2">
-              <ChartContainer
-                config={visitsChartConfig}
-                className="aspect-auto h-[340px] w-full min-w-0"
-              >
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{ ...trendAxis.chartMargin }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="fillAchievedVisits"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="var(--color-achievedVisits)"
-                        stopOpacity={0.85}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--color-achievedVisits)"
-                        stopOpacity={0.12}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="xTick"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    minTickGap={trendAxis.xAxis.minTickGap}
-                    angle={trendAxis.xAxis.angle}
-                    textAnchor={trendAxis.xAxis.textAnchor}
-                    height={trendAxis.xAxis.height}
-                    interval={trendAxis.xAxis.interval}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tickLine={false}
-                    axisLine={false}
-                    width={40}
-                    domain={[
-                      0,
-                      (max: number) =>
-                        Number.isFinite(max)
-                          ? Math.max(Math.ceil(max * 1.12), 1)
-                          : 1,
-                    ]}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={({ active, payload }) => (
-                      <OverviewTooltipBody
-                        active={active}
-                        payload={payload as TooltipPayloadItem[]}
-                        metric="visits"
-                      />
-                    )}
-                  />
-                  <ChartLegend
-                    verticalAlign="top"
-                    content={<ChartLegendContent className="flex-wrap" />}
-                  />
-                  <Area
-                    name={visitsChartConfig.achievedVisits.label}
-                    dataKey="achievedVisits"
-                    type="natural"
-                    fill="url(#fillAchievedVisits)"
-                    stroke="var(--color-achievedVisits)"
-                  />
-                  <Line
-                    name={visitsChartConfig.targetVisits.label}
-                    type="monotone"
-                    dataKey="targetVisits"
-                    stroke="var(--color-targetVisits)"
+                    dataKey="combinedTarget"
+                    stroke="var(--color-combinedTarget)"
                     strokeWidth={2}
                     dot={false}
                     strokeDasharray="5 5"

@@ -177,6 +177,7 @@ export function buildUserTargetPatchBody(
         issuedAt: new Date().toISOString(),
       };
     } else {
+      // Clears active tier only; server preserves issued warning history[].
       body.targetWarnings = null;
     }
   }

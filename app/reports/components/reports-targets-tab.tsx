@@ -55,6 +55,8 @@ import {
   normalizeOwnerDisplayLabel,
   utcMonthStartThroughToday,
 } from '@/app/reports/utils/overview-daily-summary';
+import { TargetWarningDetailDialog } from '@/app/reports/components/target-warning-detail-dialog';
+import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
 
 function filterVisitListItemsByOwnerUids(
   checkIns: VisitListItem[],
@@ -104,6 +106,7 @@ function issuedUtcYmdForAck(tw: TargetWarningsPayload | null | undefined, thresh
 }
 
 function isTierAcknowledged(tw: TargetWarningsPayload): boolean {
+  if (tw.level == null) return false;
   return tw.level <= (tw.acknowledgedLevel ?? 0);
 }
 
@@ -198,6 +201,36 @@ function listUserFromProfileAndDetail(
         ? { uid: profile.branch.uid, name: profile.branch.name }
         : undefined),
   };
+}
+
+function TargetWarningsBreakdown({
+  tw,
+}: {
+  tw: TargetWarningsPayload | null | undefined;
+}) {
+  const summary = summarizeTargetWarnings(tw);
+  const level = summary.currentLevel;
+
+  if (summary.totalIssued === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {level === 1 || level === 2 || level === 3 ? (
+        <Badge
+          variant="secondary"
+          className={cn('w-fit rounded-full font-mono tabular-nums', warningLevelBadgeClass(level))}
+        >
+          L{level}
+        </Badge>
+      ) : null}
+      <span className="text-muted-foreground text-xs tabular-nums">
+        Issued {summary.totalIssued} · Ack {summary.totalAcknowledged} · Total{' '}
+        {summary.totalIssued}
+      </span>
+    </div>
+  );
 }
 
 function TargetWarningStatusIndicator({
@@ -508,6 +541,7 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                     <TableHead>Warnings</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-10 p-2" />
+                    <TableHead className="w-10 p-2" />
                   </TableRow>
                 </TableHeader>
                 <TableBody className="[&_tr]:border-0">
@@ -529,7 +563,6 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                         : '—';
                     const visits = visitsByUid.get(u.uid) ?? 0;
                     const leads = leadsCountForListUser(listUser, leadByDisplayName);
-                    const level = u.targetWarnings?.level;
                     const { flag: branchFlag, label: branchLabel } = branchFlagAndLabel(
                       listUser,
                       branchByUid
@@ -561,22 +594,16 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                         <TableCell className="tabular-nums align-middle">{visits}</TableCell>
                         <TableCell className="tabular-nums align-middle">{leads}</TableCell>
                         <TableCell className="align-middle">
-                          {level === 1 || level === 2 || level === 3 ? (
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                'rounded-full font-mono tabular-nums',
-                                warningLevelBadgeClass(level)
-                              )}
-                            >
-                              L{level}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          <TargetWarningsBreakdown tw={u.targetWarnings} />
                         </TableCell>
                         <TableCell className="align-middle">
                           <TargetWarningStatusIndicator tw={u.targetWarnings} thresholdYmd={thresholdYmd} />
+                        </TableCell>
+                        <TableCell className="w-10 p-2 text-right align-middle">
+                          <TargetWarningDetailDialog
+                            employeeName={displayName}
+                            targetWarnings={u.targetWarnings}
+                          />
                         </TableCell>
                         <TableCell className="w-10 p-2 text-right align-middle">
                           <Link
