@@ -155,6 +155,7 @@ export interface GetTasksParams {
   startDate?: string;
   endDate?: string;
   isOverdue?: boolean;
+  search?: string;
 }
 
 export interface AssigneePayload {

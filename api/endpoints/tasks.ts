@@ -32,6 +32,7 @@ export async function getTasks(
   if (params.endDate) search.set('endDate', params.endDate);
   if (params.isOverdue === true) search.set('isOverdue', 'true');
   if (params.isOverdue === false) search.set('isOverdue', 'false');
+  if (params.search?.trim()) search.set('search', params.search.trim());
   const qs = search.toString();
   const { data } = await client.get<PaginatedTasksResponse>(`/tasks${qs ? `?${qs}` : ''}`);
   return data;

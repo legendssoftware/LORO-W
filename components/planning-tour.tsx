@@ -79,9 +79,19 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="planning-task-table"]',
     popover: {
-      title: 'Task table',
+      title: 'Task list',
       description:
-        'Review all matching tasks here. Open rows to inspect details and make updates as work progresses.',
+        'Review matching tasks as cards. Open a row to inspect details and make updates as work progresses.',
+      side: 'top',
+      align: 'center',
+    },
+  },
+  {
+    element: '[data-tour="planning-pagination"]',
+    popover: {
+      title: 'Pagination',
+      description:
+        'Change rows per page and move between pages when you have many tasks.',
       side: 'top',
       align: 'center',
     },
