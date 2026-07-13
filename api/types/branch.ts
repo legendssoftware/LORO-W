@@ -25,6 +25,8 @@ export interface BranchListItem {
   address?: BranchAddress;
   latitude?: number | null;
   longitude?: number | null;
+  /** Brand logo URL used as circular map pin when present. */
+  logoUrl?: string | null;
 }
 
 /** Response shape for GET /branch (findAll). */
