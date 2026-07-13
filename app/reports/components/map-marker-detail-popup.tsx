@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Building2,
@@ -15,7 +15,7 @@ import {
   User,
 } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDisplayName, formatEmailDisplay, orgSiteInitials } from '@/lib/client-display';
 import { markerTypeLabel } from './map-report-constants';
@@ -208,8 +208,8 @@ function readBranchName(marker: MapMarkerBase): string | undefined {
 
 function resolveOrgSiteLogoUrl(marker: MapMarkerBase): string | undefined {
   const raw =
-    (marker.logoUrl as string | undefined)?.trim() ||
-    (marker.logo as string | undefined)?.trim();
+    marker.logoUrl?.trim() ||
+    (typeof marker.logo === 'string' ? marker.logo.trim() : undefined);
   return raw || undefined;
 }
 
@@ -335,26 +335,49 @@ function OrgSiteHeader({
 }) {
   const isClient = mt === 'client';
   const logoUrl = isClient ? undefined : resolveOrgSiteLogoUrl(marker);
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [logoUrl, marker.id]);
+  const showLogo = Boolean(logoUrl) && !logoFailed;
   const initials = orgSiteInitials(title);
   const displayTitle = formatDisplayName(title) || title;
+  const ringColor =
+    typeof marker.markerColor === 'string' && marker.markerColor.trim()
+      ? marker.markerColor.trim()
+      : undefined;
 
   return (
     <div className="border-b border-border/60 pb-2 mb-3">
       <div className="flex gap-3 pr-6">
-        <Avatar size="lg" className="shrink-0">
-          {logoUrl ? (
-            <AvatarImage src={logoUrl} alt="" referrerPolicy="no-referrer" />
-          ) : null}
-          <AvatarFallback
-            className={
-              isClient
-                ? 'bg-[#16a34a] text-white text-xs font-semibold'
-                : undefined
-            }
+        {showLogo && logoUrl ? (
+          <span
+            className="size-10 shrink-0 overflow-hidden rounded-full border-2 border-border bg-white"
+            style={ringColor ? { borderColor: ringColor } : undefined}
+            aria-hidden
           >
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+            {/* eslint-disable-next-line @next/next/no-img-element -- external competitor/branch logo URLs */}
+            <img
+              src={logoUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="size-full object-contain p-0.5"
+              onError={() => setLogoFailed(true)}
+            />
+          </span>
+        ) : (
+          <Avatar size="lg" className="shrink-0">
+            <AvatarFallback
+              className={
+                isClient
+                  ? 'bg-[#16a34a] text-white text-xs font-semibold'
+                  : undefined
+              }
+            >
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        )}
         <div className="min-w-0 flex-1">
           <p className="font-semibold leading-snug text-neutral-900">{displayTitle}</p>
           <p className="text-xs text-neutral-700 mt-0.5">{markerTypeLabel(mt)}</p>

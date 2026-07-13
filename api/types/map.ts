@@ -25,6 +25,8 @@ export interface MapMarkerBase {
   hardwareBrand?: string;
   /** Hex marker background color from API (competitor brand styling). */
   markerColor?: string;
+  /** Competitor / branch / org logo URL used as circular map pin when present. */
+  logoUrl?: string | null;
   accountName?: string;
   LegalEntity?: string;
   [key: string]: unknown;

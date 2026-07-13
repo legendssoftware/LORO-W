@@ -15,7 +15,6 @@ import {
   useCompetitorsInfinite,
   useCompetitorMapMarkers,
   useMapGeocodeBackfillMutation,
-  totalCompetitorBranchCappedPending,
 } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { GetSiteOpportunitiesParams } from '@/api/endpoints/site-opportunities';
@@ -142,8 +141,6 @@ export function ReportsVisualiserTab({
   const competitorsQuery = useCompetitorsInfinite({ enabled: mounted });
   const backfillMutation = useMapGeocodeBackfillMutation();
   const [backfillMessage, setBackfillMessage] = useState<string | null>(null);
-
-  const pendingGeocodes = totalCompetitorBranchCappedPending(mapReport.data?.geocodingSummary);
 
   const runMapGeocodeBackfill = useCallback(() => {
     setBackfillMessage('Resolving missing competitor and branch coordinates…');
@@ -447,13 +444,6 @@ export function ReportsVisualiserTab({
             {backfillMutation.isPending
               ? 'Resolving missing competitor and branch coordinates…'
               : backfillMessage}
-          </p>
-        ) : pendingGeocodes > 0 && reportsMode === 'org' ? (
-          <p
-            className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-primary/30 bg-primary/10 px-3 py-2 text-center text-sm text-foreground"
-            role="status"
-          >
-            {pendingGeocodes} competitor or branch addresses need coordinates — use Re-geocode map or run the CLI backfill.
           </p>
         ) : null}
         {showOpportunities && siteOpportunitiesQuery.isError ? (

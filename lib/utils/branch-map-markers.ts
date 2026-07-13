@@ -35,6 +35,7 @@ export function buildBranchMarkersFromList(branches: BranchListItem[]): MapMarke
       markerType: 'branch',
       address: line ?? '',
       branchUid: b.uid,
+      logoUrl: b.logoUrl?.trim() || null,
     });
   }
 
