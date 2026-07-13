@@ -18,6 +18,7 @@ import {
 import { useMapReport, useBranches, useUsers, getBranchDisplayLabel } from '@/api/hooks';
 import type { MapMarkerBase, MapDataResponse } from '@/api/types/map';
 import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
+import { MapMarkerDetailPopup } from '@/app/reports/components/map-marker-detail-popup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,40 +54,88 @@ const MARKER_TYPE_CONFIG: Record<
 const MARKER_ICON_SIZE = 24;
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
 
-function createMarkerIcon(markerType: string): ReturnType<typeof divIcon> {
-  const cached = iconCache.get(markerType);
+function resolveCompetitorLogoUrl(marker: MapMarkerBase): string | undefined {
+  const raw =
+    marker.logoUrl?.trim() ||
+    (typeof marker.logo === 'string' ? marker.logo.trim() : undefined);
+  return raw || undefined;
+}
+
+function createMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
+  const markerType = marker.markerType;
+  const logoUrl =
+    markerType === 'competitor' || markerType === 'branch' || markerType === 'org'
+      ? resolveCompetitorLogoUrl(marker)
+      : undefined;
+  const cacheKey = logoUrl
+    ? `${markerType}:${marker.id}:${logoUrl}`
+    : markerType;
+  const cached = iconCache.get(cacheKey);
   if (cached) return cached;
+
   const config = getMarkerConfig(markerType);
-  const Icon = config.icon;
-  const html = renderToStaticMarkup(
-    createElement(
-      'div',
-      {
-        className: 'marker-circle',
-        style: {
-          backgroundColor: config.color,
-          width: MARKER_ICON_SIZE,
-          height: MARKER_ICON_SIZE,
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-      },
-      createElement(Icon, {
-        size: 14,
-        color: 'white',
-        strokeWidth: 2.5,
-      })
-    )
-  );
+  const size = MARKER_ICON_SIZE;
+
+  const html = logoUrl
+    ? renderToStaticMarkup(
+        createElement(
+          'div',
+          {
+            className: 'marker-circle',
+            style: {
+              width: size,
+              height: size,
+              borderRadius: '50%',
+              border: `2px solid ${config.color}`,
+              overflow: 'hidden',
+              background: '#fff',
+              boxSizing: 'border-box',
+            },
+          },
+          createElement('img', {
+            src: logoUrl,
+            alt: '',
+            referrerPolicy: 'no-referrer',
+            style: {
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '50%',
+              display: 'block',
+            },
+          })
+        )
+      )
+    : renderToStaticMarkup(
+        createElement(
+          'div',
+          {
+            className: 'marker-circle',
+            style: {
+              backgroundColor: config.color,
+              width: size,
+              height: size,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          },
+          createElement(config.icon, {
+            size: 14,
+            color: 'white',
+            strokeWidth: 2.5,
+          })
+        )
+      );
+
   const icon = divIcon({
     html,
     className: 'custom-marker-icon',
-    iconSize: [MARKER_ICON_SIZE, MARKER_ICON_SIZE],
-    iconAnchor: [MARKER_ICON_SIZE / 2, MARKER_ICON_SIZE / 2],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
-  iconCache.set(markerType, icon);
+  iconCache.set(cacheKey, icon);
   return icon;
 }
 
@@ -115,43 +164,7 @@ function filterMarkersByType(
 }
 
 function MarkerDetailContent({ marker }: { marker: MapMarkerBase }) {
-  const addr =
-    (marker.location as { address?: string } | undefined)?.address ??
-    marker.address ??
-    (marker as { location?: { address?: string } }).location?.address;
-  const typeConfig = getMarkerConfig(marker.markerType);
-  const Icon = typeConfig.icon;
-
-  return (
-    <div className="min-w-[200px] max-w-[320px] space-y-2 text-sm">
-      <p className="flex items-center gap-2 font-medium">
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
-        <span>{marker.name}</span>
-      </p>
-      {marker.status != null && (
-        <p className="text-muted-foreground">
-          <span className="font-medium">Status:</span> {String(marker.status)}
-        </p>
-      )}
-      {addr != null && String(addr).trim() !== '' && (
-        <p className="text-muted-foreground">
-          <span className="font-medium">Address:</span> {String(addr)}
-        </p>
-      )}
-      {(marker as { timestamp?: string }).timestamp && (
-        <p className="text-muted-foreground">
-          <span className="font-medium">Time:</span>{' '}
-          {new Date((marker as unknown as { timestamp: string }).timestamp).toLocaleString()}
-        </p>
-      )}
-      {(marker as { owner?: { name?: string } }).owner?.name && (
-        <p className="text-muted-foreground">
-          <span className="font-medium">By:</span>{' '}
-          {String((marker as unknown as { owner: { name?: string } }).owner.name)}
-        </p>
-      )}
-    </div>
-  );
+  return <MapMarkerDetailPopup marker={marker} />;
 }
 
 function LocationButton() {
@@ -222,7 +235,7 @@ function MapContent({
           <Marker
             key={String(marker.id)}
             position={pos as [number, number]}
-            icon={createMarkerIcon(marker.markerType)}
+            icon={createMarkerIcon(marker)}
           >
             <Popup>
               <MarkerDetailContent marker={marker} />
