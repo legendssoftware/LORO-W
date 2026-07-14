@@ -97,7 +97,7 @@ export function ReportsVisualiserTab({
   const mounted = authLoaded && isTokenReady;
   const queryClient = useQueryClient();
 
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('South Africa');
   const [selectedProvince, setSelectedProvince] = useState('');
 
   const [showOpportunities, setShowOpportunities] = useState(false);
