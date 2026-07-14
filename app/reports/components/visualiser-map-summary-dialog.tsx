@@ -354,7 +354,7 @@ export function VisualiserMapSummaryDialog({
         <DialogHeader className="!text-left">
           <DialogTitle>Map summary</DialogTitle>
           <DialogDescription>
-            Allocations for the current Visualiser filters.
+            Allocations for the current Competitor Overview filters.
           </DialogDescription>
         </DialogHeader>
 

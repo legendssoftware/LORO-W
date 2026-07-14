@@ -268,10 +268,12 @@ export function ReportUserCard({
   const mapsQuery = user.shiftStartAddress
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.shiftStartAddress)}`
     : null;
-  const salesWarningLevel = user.targetWarnings?.level;
-  const salesWarningChip =
-    salesWarningLevel === 1 || salesWarningLevel === 2 || salesWarningLevel === 3
-      ? PERFORMANCE_WARNING_CHIP[salesWarningLevel]
+  const performanceWarningLevel = user.targetWarnings?.level;
+  const performanceWarningChip =
+    performanceWarningLevel === 1 ||
+    performanceWarningLevel === 2 ||
+    performanceWarningLevel === 3
+      ? PERFORMANCE_WARNING_CHIP[performanceWarningLevel]
       : null;
 
   if (isMobile) {
@@ -327,16 +329,16 @@ export function ReportUserCard({
                   Behind on hours
                 </Badge>
               )}
-              {salesWarningChip ? (
+              {performanceWarningChip ? (
                 <HoverCard openDelay={200}>
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
                         'inline-flex size-6 shrink-0 items-center justify-center rounded-full cursor-default',
-                        salesWarningChip.className
+                        performanceWarningChip.className
                       )}
-                      title={`Sales performance warning: Level ${salesWarningLevel}`}
-                      aria-label={`Sales performance warning: Level ${salesWarningLevel}`}
+                      title={`Performance warning: Level ${performanceWarningLevel}`}
+                      aria-label={`Performance warning: Level ${performanceWarningLevel}`}
                     >
                       <span className="text-[12px] leading-none select-none" aria-hidden>
                         ⚠️
@@ -350,10 +352,10 @@ export function ReportUserCard({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <p className="text-sm font-medium leading-snug">
-                      Sales performance warning: Level {salesWarningLevel}
+                      Performance warning: Level {performanceWarningLevel}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {salesWarningChip.shortLabel}
+                      {performanceWarningChip.shortLabel}
                     </p>
                   </HoverCardContent>
                 </HoverCard>
@@ -476,16 +478,18 @@ export function ReportUserCard({
             Behind on hours
           </Badge>
         )}
-        {salesWarningChip ? (
+        {performanceWarningChip ? (
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
               <span
                 className={cn(
                   'inline-flex size-7 shrink-0 items-center justify-center rounded-full cursor-default',
-                  salesWarningChip.className
+                  performanceWarningChip.className
                 )}
-                title={isMobile ? `Sales performance warning: Level ${salesWarningLevel}` : undefined}
-                aria-label={`Sales performance warning: Level ${salesWarningLevel}`}
+                title={
+                  isMobile ? `Performance warning: Level ${performanceWarningLevel}` : undefined
+                }
+                aria-label={`Performance warning: Level ${performanceWarningLevel}`}
               >
                 <span className="text-[13px] leading-none select-none" aria-hidden>
                   ⚠️
@@ -499,9 +503,9 @@ export function ReportUserCard({
               onClick={(e) => e.stopPropagation()}
             >
               <p className="text-sm font-medium leading-snug">
-                Sales performance warning: Level {salesWarningLevel}
+                Performance warning: Level {performanceWarningLevel}
               </p>
-              <p className="text-xs text-muted-foreground">{salesWarningChip.shortLabel}</p>
+              <p className="text-xs text-muted-foreground">{performanceWarningChip.shortLabel}</p>
             </HoverCardContent>
           </HoverCard>
         ) : null}

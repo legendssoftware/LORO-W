@@ -65,7 +65,7 @@ export interface ReportCardUser {
   hrID?: number | null;
   /** Clock-in note / mode label for today (present only). */
   checkInNotes?: string | null;
-  /** Sales target performance warning from daily overview (user_targets). */
+  /** Activity performance warning from daily overview (user_targets). */
   targetWarnings?: TargetWarningsPayload | null;
   /** Last 7 days attendance status (attended/missed/future) from monthly metrics. */
   last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;

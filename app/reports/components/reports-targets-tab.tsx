@@ -226,8 +226,7 @@ function TargetWarningsBreakdown({
         </Badge>
       ) : null}
       <span className="text-muted-foreground text-xs tabular-nums">
-        Issued {summary.totalIssued} · Ack {summary.totalAcknowledged} · Total{' '}
-        {summary.totalIssued}
+        Issued {summary.totalIssued} · Ack {summary.totalAcknowledged}
       </span>
     </div>
   );
