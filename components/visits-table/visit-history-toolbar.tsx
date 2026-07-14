@@ -83,8 +83,14 @@ export interface VisitHistoryToolbarProps {
   showDateRange?: boolean;
   /** When false, hides the visit search field. Default true. */
   showSearch?: boolean;
+  /** When false, hides the flat region picker (e.g. Visualiser uses country/province). Default true. */
+  showRegionFilter?: boolean;
+  /** When false, hides the business type picker (e.g. Visualiser). Default true. */
+  showBusinessTypeFilter?: boolean;
   /** Extra controls rendered inline with region/business filters (e.g. Visualiser suggested areas). */
   extraFilters?: ReactNode;
+  /** Extra controls pinned to the far-right action cluster (e.g. Summary / Info). */
+  extraActions?: ReactNode;
 }
 
 function VisitMapTableToggleButton() {
@@ -333,6 +339,8 @@ interface VisitFilterControlsProps {
   branches: BranchListItem[];
   showUserFilter: boolean;
   showDateRange: boolean;
+  showRegionFilter: boolean;
+  showBusinessTypeFilter: boolean;
 }
 
 function VisitFilterControls({
@@ -345,6 +353,8 @@ function VisitFilterControls({
   branches,
   showUserFilter,
   showDateRange,
+  showRegionFilter,
+  showBusinessTypeFilter,
 }: VisitFilterControlsProps) {
   const { selectedRegion, selectedBusinessType, selectedUserUid, setSelectedRegion, setSelectedBusinessType, setSelectedUserUid } =
     useVisitsStore();
@@ -386,26 +396,30 @@ function VisitFilterControls({
   return (
     <div className={wrapClass}>
       {showDateRange ? <VisitDateRangePicker layout={layout} /> : null}
-      <SearchableOptionListPicker
-        selectedValue={selectedRegion || 'all'}
-        onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
-        options={regionPickerOptions}
-        placeholderLabelWhenAll="All regions"
-        searchPlaceholder="Search regions…"
-        emptyMessage="No region found."
-        triggerIcon={<MapPinIcon className="size-4 shrink-0" />}
-        triggerClassName={pickerTriggerClass}
-      />
-      <SearchableOptionListPicker
-        selectedValue={selectedBusinessType || 'all'}
-        onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
-        options={businessPickerOptions}
-        placeholderLabelWhenAll="All business types"
-        searchPlaceholder="Search business types…"
-        emptyMessage="No business type found."
-        triggerIcon={<BriefcaseIcon className="size-4 shrink-0" />}
-        triggerClassName={pickerTriggerClass}
-      />
+      {showRegionFilter ? (
+        <SearchableOptionListPicker
+          selectedValue={selectedRegion || 'all'}
+          onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
+          options={regionPickerOptions}
+          placeholderLabelWhenAll="All regions"
+          searchPlaceholder="Search regions…"
+          emptyMessage="No region found."
+          triggerIcon={<MapPinIcon className="size-4 shrink-0" />}
+          triggerClassName={pickerTriggerClass}
+        />
+      ) : null}
+      {showBusinessTypeFilter ? (
+        <SearchableOptionListPicker
+          selectedValue={selectedBusinessType || 'all'}
+          onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
+          options={businessPickerOptions}
+          placeholderLabelWhenAll="All business types"
+          searchPlaceholder="Search business types…"
+          emptyMessage="No business type found."
+          triggerIcon={<BriefcaseIcon className="size-4 shrink-0" />}
+          triggerClassName={pickerTriggerClass}
+        />
+      ) : null}
       {showUserFilter ? (
         <SearchableUserPicker
           users={usersList}
@@ -438,7 +452,10 @@ export function VisitHistoryToolbar({
   showUserFilter = true,
   showDateRange = true,
   showSearch = true,
+  showRegionFilter = true,
+  showBusinessTypeFilter = true,
   extraFilters = null,
+  extraActions = null,
 }: VisitHistoryToolbarProps) {
   const {
     searchQuery,
@@ -463,8 +480,8 @@ export function VisitHistoryToolbar({
 
   function resetAll() {
     if (showDateRange) resetDateRangeToDefault();
-    setSelectedRegion('');
-    setSelectedBusinessType('');
+    if (showRegionFilter) setSelectedRegion('');
+    if (showBusinessTypeFilter) setSelectedBusinessType('');
     if (showUserFilter) setSelectedUserUid('');
     if (showSearch) setSearchQuery('');
   }
@@ -494,6 +511,7 @@ export function VisitHistoryToolbar({
 
   const actionButtons = (
     <>
+      {extraActions}
       {showMapTableToggle ? <VisitMapTableToggleButton /> : null}
       {showVisitsSummaryButton && onOpenVisitsSummary ? (
         <Tooltip>
@@ -525,11 +543,15 @@ export function VisitHistoryToolbar({
     branches,
     showUserFilter,
     showDateRange,
+    showRegionFilter,
+    showBusinessTypeFilter,
   };
 
   const mobileFilterDescription = showDateRange
     ? 'Date range, region, business type, and user for visit history.'
-    : 'Region and business type for the map.';
+    : showRegionFilter
+      ? 'Region and business type for the map.'
+      : 'Country and province for the map and suggested areas.';
 
   return (
     <>

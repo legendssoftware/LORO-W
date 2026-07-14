@@ -19,6 +19,8 @@ export function siteOpportunitiesQueryKey(params: GetSiteOpportunitiesParams | u
     params?.startDate ?? null,
     params?.endDate ?? null,
     params?.allTime ?? null,
+    params?.country ?? null,
+    params?.province ?? null,
     params?.region ?? null,
     params?.businessType ?? null,
     params?.mode ?? null,
