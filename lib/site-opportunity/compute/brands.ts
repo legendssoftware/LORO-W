@@ -23,8 +23,23 @@ export const HARDWARE_BRAND_MARKER_COLORS: Record<HardwareBrandKey, string> = {
 	OTHER: '#dc2626',
 };
 
+/** Distinct palette for charts/legends (map pins stay on HARDWARE_BRAND_MARKER_COLORS). */
+export const HARDWARE_BRAND_CHART_COLORS: Record<HardwareBrandKey, string> = {
+	BUCO: '#f59e0b',
+	CASHBUILD: '#dc2626',
+	'BUILD IT': '#2563eb',
+	POWERBUILD: '#0d9488',
+	EST: '#7c3aed',
+	'P&L HARDWARE': '#ea580c',
+	OTHER: '#64748b',
+};
+
 export function brandMarkerColor(brand: HardwareBrandKey): string {
 	return HARDWARE_BRAND_MARKER_COLORS[brand] ?? HARDWARE_BRAND_MARKER_COLORS.OTHER;
+}
+
+export function brandChartColor(brand: HardwareBrandKey): string {
+	return HARDWARE_BRAND_CHART_COLORS[brand] ?? HARDWARE_BRAND_CHART_COLORS.OTHER;
 }
 
 const BRAND_ALIASES: Record<string, HardwareBrandKey> = {
