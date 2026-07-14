@@ -33,7 +33,7 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   topN: 10,
   minBranchSeparationKm: 10,
   captureLowPct: 0.15,
-  captureHighPct: 0.3,
+  captureHighPct: 0.2,
 };
 
 export interface BrandCount {

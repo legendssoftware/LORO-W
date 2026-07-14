@@ -43,6 +43,9 @@ export function SiteOpportunityToolbar({
   catchments = [],
   greenfield = [],
   onSelectZone,
+  suggestedAreasDisabled = false,
+  suggestedAreasDisabledReason,
+  insufficientGeoWarning,
 }: {
   showOpportunities: boolean;
   onToggleShow: () => void;
@@ -59,11 +62,20 @@ export function SiteOpportunityToolbar({
   catchments?: BranchCatchmentOpportunity[];
   greenfield?: GreenfieldOpportunityZone[];
   onSelectZone?: (zone: SiteOpportunityZone) => void;
+  /** When true, Suggested areas cannot be turned on (e.g. no country selected). */
+  suggestedAreasDisabled?: boolean;
+  suggestedAreasDisabledReason?: string;
+  /** Soft warning when filtered area lacks enough geolocated competitors for clusters. */
+  insufficientGeoWarning?: string | null;
 }) {
   const showDataBanner =
     showOpportunities &&
     dataQuality != null &&
     dataQuality.competitorCoveragePct < 95;
+  const showInsufficientGeo =
+    showOpportunities &&
+    !isLoading &&
+    Boolean(insufficientGeoWarning);
   return (
     <div
       className={cn(
@@ -76,7 +88,15 @@ export function SiteOpportunityToolbar({
         size="sm"
         variant={showOpportunities ? 'default' : 'outline'}
         onClick={onToggleShow}
-        disabled={isLoading && showOpportunities}
+        disabled={
+          (isLoading && showOpportunities) ||
+          (suggestedAreasDisabled && !showOpportunities)
+        }
+        title={
+          suggestedAreasDisabled && !showOpportunities
+            ? suggestedAreasDisabledReason
+            : undefined
+        }
       >
         {isLoading && showOpportunities ? (
           <Loader2 className="size-4 mr-1.5 animate-spin" />
@@ -86,7 +106,11 @@ export function SiteOpportunityToolbar({
         Suggested areas
       </Button>
 
-      {showDataBanner ? (
+      {showInsufficientGeo ? (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 max-w-md">
+          {insufficientGeoWarning}
+        </p>
+      ) : showDataBanner ? (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 max-w-md">
           {warnings[0] ??
             `Hardware map coverage is ${dataQuality!.competitorCoveragePct}%. Geocode competitors for accurate pool totals.`}

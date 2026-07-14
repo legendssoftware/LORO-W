@@ -1,48 +1,56 @@
 import type { MapMarkerBase } from '@/api/types/map';
+import {
+  UNMAPPED,
+  getMarkerCountryKey,
+  getMarkerProvinceKey,
+  getMarkerRegionGroupKey,
+  normalizeMarkerCountryLabel,
+  resolveMarkerAddressParts,
+} from '@/lib/utils/marker-geo-resolve';
 
-function filterPostalAddressParts(parts: string[]): string[] {
-  return parts.filter((p) => {
-    const t = p.trim();
-    if (!t) return false;
-    if (/^\d{4,8}$/.test(t)) return false;
-    return true;
-  });
-}
+export {
+  UNMAPPED,
+  getMarkerCountryKey,
+  getMarkerProvinceKey,
+  getMarkerRegionGroupKey,
+  normalizeMarkerCountryLabel,
+  resolveMarkerAddressParts,
+} from '@/lib/utils/marker-geo-resolve';
 
-/** Province/state + country from a formatted address string (aligned with visit region buckets). */
-export function getMarkerRegionGroupKey(marker: MapMarkerBase): string {
-  const addr = String(marker.address ?? '').trim();
-  if (!addr) return 'Not set';
-
-  let parts = addr.split(',').map((p) => p.trim()).filter(Boolean);
-  parts = filterPostalAddressParts(parts);
-  if (parts.length === 0) return 'Not set';
-
-  const country = parts[parts.length - 1];
-  const state = parts.length >= 2 ? parts[parts.length - 2] : '';
-  if (state && country) return `${state}, ${country}`;
-  if (country) return country;
-  return 'Not set';
-}
+const NOT_SET = 'Not set';
 
 /** Industry or explicit business type on map entities. */
 export function getMarkerBusinessTypeKey(marker: MapMarkerBase): string {
   const bt = marker.businessType ?? marker.industry;
-  if (bt == null || String(bt).trim() === '') return 'Not set';
+  if (bt == null || String(bt).trim() === '') return NOT_SET;
   return String(bt).trim();
 }
 
 export interface MapMarkerFilterInput {
-  selectedRegion: string;
-  selectedBusinessType: string;
+  selectedRegion?: string;
+  selectedCountry?: string;
+  selectedProvince?: string;
+  selectedBusinessType?: string;
 }
 
+/**
+ * Filter markers by geo + business type.
+ * Precedence: if `selectedCountry` is set, filter by country (+ province if set).
+ * Else if `selectedRegion` is set, exact region-key match (legacy).
+ */
 export function filterMapMarkers(
   markers: MapMarkerBase[],
   filters: MapMarkerFilterInput
 ): MapMarkerBase[] {
   let list = markers;
-  if (filters.selectedRegion) {
+  if (filters.selectedCountry) {
+    const country = filters.selectedCountry;
+    list = list.filter((m) => getMarkerCountryKey(m) === country);
+    if (filters.selectedProvince) {
+      const province = filters.selectedProvince;
+      list = list.filter((m) => getMarkerProvinceKey(m) === province);
+    }
+  } else if (filters.selectedRegion) {
     list = list.filter((m) => getMarkerRegionGroupKey(m) === filters.selectedRegion);
   }
   if (filters.selectedBusinessType) {
@@ -59,6 +67,35 @@ export function getSortedUniqueRegionsFromMarkers(markers: MapMarkerBase[]): str
     set.add(getMarkerRegionGroupKey(m));
   }
   return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+export function getSortedUniqueCountriesFromMarkers(markers: MapMarkerBase[]): string[] {
+  const set = new Set<string>();
+  for (const m of markers) {
+    set.add(getMarkerCountryKey(m));
+  }
+  return Array.from(set).sort((a, b) => {
+    if (a === UNMAPPED) return 1;
+    if (b === UNMAPPED) return -1;
+    return a.localeCompare(b);
+  });
+}
+
+export function getSortedUniqueProvincesFromMarkers(
+  markers: MapMarkerBase[],
+  country: string
+): string[] {
+  if (!country) return [];
+  const set = new Set<string>();
+  for (const m of markers) {
+    if (getMarkerCountryKey(m) !== country) continue;
+    set.add(getMarkerProvinceKey(m));
+  }
+  return Array.from(set).sort((a, b) => {
+    if (a === UNMAPPED) return 1;
+    if (b === UNMAPPED) return -1;
+    return a.localeCompare(b);
+  });
 }
 
 export function getSortedUniqueBusinessTypesFromMarkers(markers: MapMarkerBase[]): string[] {
