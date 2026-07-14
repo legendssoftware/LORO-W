@@ -113,6 +113,18 @@ export interface TargetWarningHistoryEntry {
 }
 
 /** Matches server TargetWarningsState on user_targets.targetWarnings */
+export interface TargetWarningMissContext {
+  orgLocalDateYmd: string;
+  dailyCalls: number | null;
+  dailyVisits: number | null;
+  dailyLeads: number | null;
+  actualCalls: number;
+  actualVisits: number;
+  actualLeads: number;
+  missedVisits: boolean;
+  missedCallsLeadsEngagement: boolean;
+}
+
 export interface TargetWarningsPayload {
   /** Active warning tier; omitted when cleared but history retained. */
   level?: 1 | 2 | 3;
@@ -120,6 +132,8 @@ export interface TargetWarningsPayload {
   acknowledgedLevel?: number;
   acknowledgedAt?: string;
   lastShiftEvalOrgYmd?: string;
+  /** Quotas/actuals from the shift day that last escalated the active tier. */
+  lastMiss?: TargetWarningMissContext;
   history?: TargetWarningHistoryEntry[];
 }
 
@@ -450,6 +464,66 @@ export async function getDailyProductivity(
     `/user/${ref}/daily-productivity`,
     { params: { startDate: params.startDate, endDate: params.endDate } }
   );
+  return data;
+}
+
+/** GET /user/:ref/bonus-status — year-end bonus eligibility */
+export type BonusEligibilityStatus =
+  | 'eligible'
+  | 'at_risk'
+  | 'disqualified'
+  | 'not_applicable';
+
+export interface BonusStatusResponse {
+  message: string;
+  status: BonusEligibilityStatus;
+  disqualificationReasons: string[];
+  bonusYear: { start: string; end: string; label: string };
+  position: {
+    key: string;
+    label: string;
+    callsPerDay: number;
+    visitsPerDay: number | null;
+  } | null;
+  ytdPerformancePct: number | null;
+  consecutiveMonthsBelowMin: number;
+  consecutiveMonthsLowAttendance: number;
+  consecutiveMonthsExcessLates: number;
+  months: Array<{
+    yyyyMm: string;
+    performancePct: number | null;
+    metMinimum: boolean;
+    attendancePct: number | null;
+    lateCount: number;
+    requiredCalls: number;
+    achievedCalls: number;
+    requiredVisits: number | null;
+    achievedVisits: number;
+    workingDays: number;
+    isPartialMonth: boolean;
+  }>;
+  today: {
+    date: string;
+    requiredCalls: number;
+    achievedCalls: number;
+    requiredVisits: number | null;
+    achievedVisits: number;
+    dayPct: number | null;
+  } | null;
+  sources: { crmOnly: true };
+}
+
+/**
+ * GET /user/:ref/bonus-status — year-end performance bonus progress and eligibility.
+ */
+export async function getBonusStatus(
+  client: AxiosInstance,
+  ref: string,
+  params?: { asOf?: string }
+): Promise<BonusStatusResponse> {
+  const { data } = await client.get<BonusStatusResponse>(`/user/${ref}/bonus-status`, {
+    params: params?.asOf ? { asOf: params.asOf } : undefined,
+  });
   return data;
 }
 

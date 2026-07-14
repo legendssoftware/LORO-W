@@ -30,7 +30,9 @@ export function VisualiserContent() {
     <div className="flex flex-col flex-1 min-h-0">
       <main className="container mx-auto max-w-8xl px-3 py-4 sm:px-6 sm:py-6 flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className="mb-4 shrink-0">
-          <h1 className="text-2xl font-semibold text-foreground">Visualiser</h1>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Competitor Overview
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Map competitors, branches, and clients for store planning and
             territory insight.

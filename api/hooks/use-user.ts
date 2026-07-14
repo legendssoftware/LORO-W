@@ -12,6 +12,7 @@ import {
   deleteUserPermanently,
   getUserTarget,
   getDailyProductivity,
+  getBonusStatus,
   patchUserTarget,
   getUserPreferences,
   postAcknowledgePerformanceWarning,
@@ -25,6 +26,7 @@ const QUERY_KEY_PREFIX = ['user'] as const;
 export const USER_TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
 const TARGET_QUERY_KEY_PREFIX = USER_TARGET_QUERY_KEY_PREFIX;
 const DAILY_PRODUCTIVITY_KEY_PREFIX = ['user', 'daily-productivity'] as const;
+const BONUS_STATUS_KEY_PREFIX = ['user', 'bonus-status'] as const;
 
 export function useUser(
   ref: string | null,
@@ -168,6 +170,25 @@ export function useDailyProductivity(
     },
     enabled:
       (options?.enabled !== false && !!ref && !!startDate && !!endDate) ?? false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+export function useBonusStatus(
+  ref: string | null,
+  options?: { enabled?: boolean; asOf?: string }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...BONUS_STATUS_KEY_PREFIX, ref, options?.asOf ?? null],
+    queryFn: async () => {
+      if (!ref) {
+        return null;
+      }
+      return getBonusStatus(client, ref, { asOf: options?.asOf });
+    },
+    enabled: (options?.enabled !== false && !!ref) ?? false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });

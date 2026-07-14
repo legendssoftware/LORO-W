@@ -78,7 +78,11 @@ export function PerformanceWarningWelcomeDialog({
   }
 
   const tier = tierAccent[level as PerformanceWarningLevel];
-  const copy = getPerformanceWarningCopy(level as PerformanceWarningLevel, employeeName);
+  const copy = getPerformanceWarningCopy(
+    level as PerformanceWarningLevel,
+    employeeName,
+    targetWarnings?.lastMiss ?? null
+  );
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
