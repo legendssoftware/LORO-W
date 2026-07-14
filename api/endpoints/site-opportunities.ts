@@ -16,6 +16,8 @@ export interface GetSiteOpportunitiesParams {
   endDate?: string;
   allTime?: boolean;
   region?: string;
+  country?: string;
+  province?: string;
   businessType?: string;
   mode?: SiteOpportunityMode;
   settings?: Partial<SiteOpportunitySettings>;
@@ -81,6 +83,8 @@ export async function getSiteOpportunities(
 ): Promise<SiteOpportunityResult> {
   const search = new URLSearchParams();
   appendMapScopeParams(search, params);
+  if (params?.country) search.set('country', params.country);
+  if (params?.province) search.set('province', params.province);
   if (params?.region) search.set('region', params.region);
   if (params?.businessType) search.set('businessType', params.businessType);
   if (params?.mode) search.set('mode', params.mode);
@@ -106,6 +110,8 @@ export async function getSiteOpportunities(
     path,
     mode: params?.mode ?? null,
     allTime: params?.allTime ?? null,
+    country: params?.country ?? null,
+    province: params?.province ?? null,
     region: params?.region ?? null,
     businessType: params?.businessType ?? null,
   });

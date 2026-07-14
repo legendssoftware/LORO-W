@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { MoreHorizontal, MapPinned, Loader2 } from 'lucide-react';
+import { MoreHorizontal, MapPinned, Loader2, Globe2 } from 'lucide-react';
 import {
   siteOpportunitiesQueryKey,
   useReportsMapData,
@@ -30,13 +30,18 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
 import {
+  SearchableOptionListPicker,
+  type SearchableOptionRow,
+} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import {
   filterMapMarkers,
   getSortedUniqueBusinessTypesFromMarkers,
+  getSortedUniqueCountriesFromMarkers,
+  getSortedUniqueProvincesFromMarkers,
   getSortedUniqueRegionsFromMarkers,
 } from '@/lib/utils/map-marker-filters';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { debugApi } from '@/lib/api-debug';
-import { useVisitsStore } from '@/store/visits-store';
 import type { ReportsMode } from '@/app/reports/reports-mode';
 import { excludeCheckInRelatedMapMarkers } from '@/app/reports/utils/filter-map-markers-no-checkins';
 import {
@@ -47,6 +52,9 @@ import { mergeBranchMapMarkers } from '@/app/reports/utils/merge-branch-map-mark
 import { mergeCompetitorMapMarkers } from '@/app/reports/utils/merge-competitor-map-markers';
 import { SiteOpportunityPanel } from '@/app/reports/components/site-opportunity-panel';
 import { SiteOpportunityToolbar } from '@/app/reports/components/site-opportunity-toolbar';
+import { VisualiserMapSummaryDialog } from '@/app/reports/components/visualiser-map-summary-dialog';
+import { SuggestedAreasInfoDialog } from '@/app/reports/components/suggested-areas-info-dialog';
+import { MapPinIcon } from '@/lib/icons';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -72,6 +80,8 @@ const EMPTY_SITE_OPPORTUNITIES: SiteOpportunityResult = {
 };
 
 const OPPORTUNITY_SETTINGS_DEBOUNCE_MS = 500;
+/** Greenfield engine needs clusters of ≥2 geolocated competitors. */
+const MIN_GEO_COMPETITORS_FOR_SUGGESTED_AREAS = 2;
 
 export interface ReportsVisualiserTabProps {
   profile: SyncProfile | null | undefined;
@@ -87,7 +97,8 @@ export function ReportsVisualiserTab({
   const mounted = authLoaded && isTokenReady;
   const queryClient = useQueryClient();
 
-  const { selectedRegion, selectedBusinessType } = useVisitsStore();
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
 
   const [showOpportunities, setShowOpportunities] = useState(false);
   const prevShowOpportunitiesRef = useRef(false);
@@ -123,21 +134,23 @@ export function ReportsVisualiserTab({
   const siteOpportunityParams = useMemo((): GetSiteOpportunitiesParams => {
     return {
       ...mapReportParams,
-      region: selectedRegion || undefined,
-      businessType: selectedBusinessType || undefined,
+      country: selectedCountry || undefined,
+      province: selectedProvince || undefined,
       mode: opportunityMode,
       settings: debouncedOpportunitySettings,
     };
   }, [
     mapReportParams,
-    selectedRegion,
-    selectedBusinessType,
+    selectedCountry,
+    selectedProvince,
     opportunityMode,
     debouncedOpportunitySettings,
   ]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-  const { data: branches = [], refetch: refetchBranches } = useBranches({ enabled: mounted });
+  const { data: branches = [], refetch: refetchBranches } = useBranches({
+    enabled: mounted,
+  });
   const competitorsQuery = useCompetitorsInfinite({ enabled: mounted });
   const backfillMutation = useMapGeocodeBackfillMutation();
   const [backfillMessage, setBackfillMessage] = useState<string | null>(null);
@@ -164,10 +177,17 @@ export function ReportsVisualiserTab({
       })
       .catch((err: unknown) => {
         setBackfillMessage(
-          err instanceof Error ? err.message : 'Could not backfill map coordinates.'
+          err instanceof Error
+            ? err.message
+            : 'Could not backfill map coordinates.'
         );
       });
-  }, [backfillMutation, competitorsQuery.refetch, mapReport.refetch, refetchBranches]);
+  }, [
+    backfillMutation,
+    competitorsQuery.refetch,
+    mapReport.refetch,
+    refetchBranches,
+  ]);
 
   const branchListMarkers = useBranchMapMarkers(branches, {
     enabled: mounted && branches.length > 0,
@@ -198,7 +218,11 @@ export function ReportsVisualiserTab({
     (siteOpportunitiesQuery.isPending || siteOpportunitiesQuery.isFetching);
 
   useEffect(() => {
-    if (mounted && showOpportunities && !prevShowOpportunitiesRef.current) {
+    if (
+      mounted &&
+      showOpportunities &&
+      !prevShowOpportunitiesRef.current
+    ) {
       void siteOpportunitiesQuery.refetch();
     }
     prevShowOpportunitiesRef.current = showOpportunities;
@@ -215,6 +239,8 @@ export function ReportsVisualiserTab({
     debugApi('suggested-areas:status', {
       status: siteOpportunitiesQuery.status,
       fetchStatus: siteOpportunitiesQuery.fetchStatus,
+      country: selectedCountry || null,
+      province: selectedProvince || null,
       catchments: siteOpportunitiesQuery.data?.catchments.length ?? null,
       greenfield: siteOpportunitiesQuery.data?.greenfield.length ?? null,
     });
@@ -222,6 +248,8 @@ export function ReportsVisualiserTab({
     siteOpportunitiesQuery.status,
     siteOpportunitiesQuery.fetchStatus,
     siteOpportunitiesQuery.data,
+    selectedCountry,
+    selectedProvince,
   ]);
 
   const handleSelectOpportunity = useCallback((zone: SiteOpportunityZone) => {
@@ -229,6 +257,164 @@ export function ReportsVisualiserTab({
     setShowOpportunities(true);
     setOpportunitySelectionSeq((n) => n + 1);
   }, []);
+
+  const handleToggleOpportunities = useCallback(() => {
+    setShowOpportunities((v) => {
+      const next = !v;
+      debugApi('suggested-areas:toggle', {
+        on: next,
+        mapReady: mapReport.isSuccess,
+        willFetch: next,
+        country: selectedCountry || null,
+      });
+      if (!next) {
+        setSelectedOpportunityId(null);
+      }
+      return next;
+    });
+  }, [mapReport.isSuccess, selectedCountry]);
+
+  const handleSuggestedAreasFromMap = useCallback(() => {
+    if (!showOpportunities) {
+      debugApi('suggested-areas:toggle', {
+        on: true,
+        mapReady: mapReport.isSuccess,
+        willFetch: true,
+        source: 'map',
+        country: selectedCountry || null,
+      });
+      setShowOpportunities(true);
+      return;
+    }
+    debugApi('suggested-areas:toggle', {
+      on: false,
+      mapReady: mapReport.isSuccess,
+      willFetch: false,
+      source: 'map',
+    });
+    setShowOpportunities(false);
+    setSelectedOpportunityId(null);
+  }, [mapReport.isSuccess, selectedCountry, showOpportunities]);
+
+  const handleCountryChange = useCallback((value: string) => {
+    const next = value === 'all' ? '' : value;
+    setSelectedCountry(next);
+    setSelectedProvince('');
+  }, []);
+
+  const handleProvinceChange = useCallback((value: string) => {
+    setSelectedProvince(value === 'all' ? '' : value);
+  }, []);
+
+  const baseMarkers = useMemo(() => {
+    const fromReport = excludeCheckInRelatedMapMarkers(
+      mapReport.data?.allMarkers ?? []
+    );
+    const withBranches = mergeBranchMapMarkers(
+      fromReport,
+      branchListMarkers.data
+    );
+    return mergeCompetitorMapMarkers(
+      withBranches,
+      competitorListMarkers.data
+    );
+  }, [
+    mapReport.data?.allMarkers,
+    branchListMarkers.data,
+    competitorListMarkers.data,
+  ]);
+
+  const uniqueRegions = useMemo(
+    () => getSortedUniqueRegionsFromMarkers(baseMarkers),
+    [baseMarkers]
+  );
+
+  const uniqueCountries = useMemo(
+    () => getSortedUniqueCountriesFromMarkers(baseMarkers),
+    [baseMarkers]
+  );
+
+  const uniqueProvinces = useMemo(
+    () => getSortedUniqueProvincesFromMarkers(baseMarkers, selectedCountry),
+    [baseMarkers, selectedCountry]
+  );
+
+  const countryPickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueCountries.map((country) => ({
+        value: country,
+        label: country,
+        icon: <Globe2 className="size-4 shrink-0" />,
+      })),
+    [uniqueCountries]
+  );
+
+  const provincePickerOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      uniqueProvinces.map((province) => ({
+        value: province,
+        label: province,
+        icon: <MapPinIcon className="size-4 shrink-0" />,
+      })),
+    [uniqueProvinces]
+  );
+
+  const businessTypeLabelMap = useMemo(
+    () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
+    []
+  );
+  const businessTypeIconMap = useMemo(() => {
+    const m = new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.icon]));
+    m.set('Not set', MoreHorizontal);
+    return m;
+  }, []);
+
+  const uniqueBusinessTypes = useMemo(
+    () => getSortedUniqueBusinessTypesFromMarkers(baseMarkers),
+    [baseMarkers]
+  );
+
+  const filteredMarkers = useMemo(
+    () =>
+      filterMapMarkers(baseMarkers, {
+        selectedCountry: selectedCountry || undefined,
+        selectedProvince: selectedProvince || undefined,
+      }),
+    [baseMarkers, selectedCountry, selectedProvince]
+  );
+
+  const influenceCircles = useMemo(() => {
+    const apiCircles = filterInfluenceCirclesForMarkers(
+      mapReport.data?.influenceCircles ?? [],
+      filteredMarkers
+    );
+    return mergeInfluenceCircles(
+      apiCircles,
+      filteredMarkers,
+      mapReport.data?.geofenceMapDefaults
+    );
+  }, [
+    mapReport.data?.influenceCircles,
+    mapReport.data?.geofenceMapDefaults,
+    filteredMarkers,
+  ]);
+
+  const mapOpportunityCatchments =
+    siteOpportunitiesQuery.data?.catchments ??
+    EMPTY_SITE_OPPORTUNITIES.catchments;
+  const mapOpportunityGreenfield =
+    siteOpportunitiesQuery.data?.greenfield ??
+    EMPTY_SITE_OPPORTUNITIES.greenfield;
+
+  const insufficientGeoWarning = useMemo(() => {
+    if (!showOpportunities) return null;
+    const dq = siteOpportunitiesQuery.data?.dataQuality;
+    if (!dq) return null;
+    if (dq.competitorsWithCoords >= MIN_GEO_COMPETITORS_FOR_SUGGESTED_AREAS) {
+      return null;
+    }
+    return 'Not enough geolocated stores in this area — try another province or Re-geocode map.';
+  }, [showOpportunities, siteOpportunitiesQuery.data?.dataQuality]);
 
   const opportunityPanelProps = useMemo(
     () => ({
@@ -263,103 +449,7 @@ export function ReportsVisualiserTab({
     ]
   );
 
-  const handleToggleOpportunities = useCallback(() => {
-    setShowOpportunities((v) => {
-      const next = !v;
-      debugApi('suggested-areas:toggle', {
-        on: next,
-        mapReady: mapReport.isSuccess,
-        willFetch: next,
-      });
-      if (!next) {
-        setSelectedOpportunityId(null);
-      }
-      return next;
-    });
-  }, [mapReport.isSuccess]);
-
-  const handleSuggestedAreasFromMap = useCallback(() => {
-    if (!showOpportunities) {
-      debugApi('suggested-areas:toggle', {
-        on: true,
-        mapReady: mapReport.isSuccess,
-        willFetch: true,
-        source: 'map',
-      });
-      setShowOpportunities(true);
-      return;
-    }
-    debugApi('suggested-areas:toggle', {
-      on: false,
-      mapReady: mapReport.isSuccess,
-      willFetch: false,
-      source: 'map',
-    });
-    setShowOpportunities(false);
-    setSelectedOpportunityId(null);
-  }, [mapReport.isSuccess, showOpportunities]);
-
-  const baseMarkers = useMemo(() => {
-    const fromReport = excludeCheckInRelatedMapMarkers(
-      mapReport.data?.allMarkers ?? []
-    );
-    const withBranches = mergeBranchMapMarkers(fromReport, branchListMarkers.data);
-    return mergeCompetitorMapMarkers(withBranches, competitorListMarkers.data);
-  }, [
-    mapReport.data?.allMarkers,
-    branchListMarkers.data,
-    competitorListMarkers.data,
-  ]);
-
-  const uniqueRegions = useMemo(
-    () => getSortedUniqueRegionsFromMarkers(baseMarkers),
-    [baseMarkers]
-  );
-
-  const businessTypeLabelMap = useMemo(
-    () => new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.label])),
-    []
-  );
-  const businessTypeIconMap = useMemo(() => {
-    const m = new Map(TYPE_OF_BUSINESS_OPTIONS.map((o) => [o.value, o.icon]));
-    m.set('Not set', MoreHorizontal);
-    return m;
-  }, []);
-
-  const uniqueBusinessTypes = useMemo(
-    () => getSortedUniqueBusinessTypesFromMarkers(baseMarkers),
-    [baseMarkers]
-  );
-
-  const filteredMarkers = useMemo(
-    () =>
-      filterMapMarkers(baseMarkers, {
-        selectedRegion,
-        selectedBusinessType,
-      }),
-    [baseMarkers, selectedRegion, selectedBusinessType]
-  );
-
-  const influenceCircles = useMemo(() => {
-    const apiCircles = filterInfluenceCirclesForMarkers(
-      mapReport.data?.influenceCircles ?? [],
-      filteredMarkers
-    );
-    return mergeInfluenceCircles(
-      apiCircles,
-      filteredMarkers,
-      mapReport.data?.geofenceMapDefaults
-    );
-  }, [
-    mapReport.data?.influenceCircles,
-    mapReport.data?.geofenceMapDefaults,
-    filteredMarkers,
-  ]);
-
-  const mapOpportunityCatchments =
-    siteOpportunitiesQuery.data?.catchments ?? EMPTY_SITE_OPPORTUNITIES.catchments;
-  const mapOpportunityGreenfield =
-    siteOpportunitiesQuery.data?.greenfield ?? EMPTY_SITE_OPPORTUNITIES.greenfield;
+  const geoPickerTriggerClass = 'h-9 min-w-[140px] shrink-0 sm:w-[200px]';
 
   if (!mounted) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -369,63 +459,104 @@ export function ReportsVisualiserTab({
     <section className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="shrink-0">
         <VisitHistoryToolbar
-        uniqueRegions={uniqueRegions}
-        uniqueBusinessTypes={uniqueBusinessTypes}
-        businessTypeLabelMap={businessTypeLabelMap}
-        businessTypeIconMap={businessTypeIconMap}
-        showDateRange={false}
-        showSearch={false}
-        showUserFilter={false}
-        showVisitsSummaryButton={false}
-        showMapTableToggle={false}
-        sectionHeading={null}
-        extraFilters={
-          <>
-          <SiteOpportunityToolbar
-            className="border-0 py-0 px-0 shrink-0"
-            showOpportunities={showOpportunities}
-            onToggleShow={handleToggleOpportunities}
-            mode={opportunityMode}
-            onModeChange={setOpportunityMode}
-            settings={opportunitySettings}
-            onSettingsChange={(patch) =>
-              setOpportunitySettings((s) => ({ ...s, ...patch }))
-            }
-            isLoading={opportunitiesBusy}
-            isError={siteOpportunitiesQuery.isError}
-            errorMessage={
-              siteOpportunitiesQuery.error instanceof Error
-                ? siteOpportunitiesQuery.error.message
-                : siteOpportunitiesQuery.isError
-                  ? 'Could not load suggested areas.'
-                  : undefined
-            }
-            warnings={siteOpportunitiesQuery.data?.warnings ?? []}
-            dataQuality={siteOpportunitiesQuery.data?.dataQuality}
-            catchments={mapOpportunityCatchments}
-            greenfield={mapOpportunityGreenfield}
-            onSelectZone={handleSelectOpportunity}
-          />
-            {reportsMode === 'org' ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={backfillMutation.isPending}
-                onClick={() => void runMapGeocodeBackfill()}
-                title="Forward-geocode competitor and branch addresses missing lat/lng and save to database"
-              >
-                {backfillMutation.isPending ? (
-                  <Loader2 className="size-4 mr-1.5 animate-spin" />
-                ) : (
-                  <MapPinned className="size-4 mr-1.5" />
-                )}
-                Re-geocode map
-              </Button>
-            ) : null}
-          </>
-        }
-      />
+          uniqueRegions={uniqueRegions}
+          uniqueBusinessTypes={uniqueBusinessTypes}
+          businessTypeLabelMap={businessTypeLabelMap}
+          businessTypeIconMap={businessTypeIconMap}
+          showDateRange={false}
+          showSearch={false}
+          showUserFilter={false}
+          showVisitsSummaryButton={false}
+          showMapTableToggle={false}
+          showRegionFilter={false}
+          showBusinessTypeFilter={false}
+          sectionHeading={null}
+          extraFilters={
+            <>
+              <SearchableOptionListPicker
+                selectedValue={selectedCountry || 'all'}
+                onValueChange={handleCountryChange}
+                options={countryPickerOptions}
+                placeholderLabelWhenAll="All countries"
+                searchPlaceholder="Search countries…"
+                emptyMessage="No countries with markers."
+                triggerIcon={<Globe2 className="size-4 shrink-0" />}
+                triggerClassName={geoPickerTriggerClass}
+              />
+              <SearchableOptionListPicker
+                selectedValue={selectedProvince || 'all'}
+                onValueChange={handleProvinceChange}
+                options={provincePickerOptions}
+                placeholderLabelWhenAll="All provinces"
+                searchPlaceholder="Search provinces…"
+                emptyMessage={
+                  selectedCountry
+                    ? 'No provinces in this country.'
+                    : 'Select a country first.'
+                }
+                triggerIcon={<MapPinIcon className="size-4 shrink-0" />}
+                triggerClassName={geoPickerTriggerClass}
+                disabled={!selectedCountry}
+              />
+              <SiteOpportunityToolbar
+                className="border-0 py-0 px-0 shrink-0"
+                showOpportunities={showOpportunities}
+                onToggleShow={handleToggleOpportunities}
+                mode={opportunityMode}
+                onModeChange={setOpportunityMode}
+                settings={opportunitySettings}
+                onSettingsChange={(patch) =>
+                  setOpportunitySettings((s) => ({ ...s, ...patch }))
+                }
+                isLoading={opportunitiesBusy}
+                isError={siteOpportunitiesQuery.isError}
+                errorMessage={
+                  siteOpportunitiesQuery.error instanceof Error
+                    ? siteOpportunitiesQuery.error.message
+                    : siteOpportunitiesQuery.isError
+                      ? 'Could not load suggested areas.'
+                      : undefined
+                }
+                warnings={siteOpportunitiesQuery.data?.warnings ?? []}
+                dataQuality={siteOpportunitiesQuery.data?.dataQuality}
+                catchments={mapOpportunityCatchments}
+                greenfield={mapOpportunityGreenfield}
+                onSelectZone={handleSelectOpportunity}
+                insufficientGeoWarning={insufficientGeoWarning}
+              />
+              {reportsMode === 'org' ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={backfillMutation.isPending}
+                  onClick={() => void runMapGeocodeBackfill()}
+                  title="Forward-geocode competitor and branch addresses missing lat/lng and save to database"
+                >
+                  {backfillMutation.isPending ? (
+                    <Loader2 className="size-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <MapPinned className="size-4 mr-1.5" />
+                  )}
+                  Re-geocode map
+                </Button>
+              ) : null}
+            </>
+          }
+          extraActions={
+            <>
+              <VisualiserMapSummaryDialog
+                markers={filteredMarkers}
+                organisation={mapReport.data?.organisation}
+                selectedCountry={selectedCountry}
+                selectedProvince={selectedProvince}
+              />
+              <SuggestedAreasInfoDialog
+                triggerClassName="bg-green-600 text-white hover:bg-green-700 hover:text-white border-green-600"
+              />
+            </>
+          }
+        />
       </div>
       <div className="flex flex-1 min-h-0 h-full overflow-hidden flex-row relative">
         {mapReport.isError ? (
