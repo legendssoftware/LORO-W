@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
+import { DashboardBonusStatusCard } from '@/components/dashboard-bonus-status-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/app/reports/types';
@@ -288,6 +289,9 @@ export function DashboardContent() {
               isLoading={metricsQuery.isLoading}
               userRef={profile?.uid != null ? String(profile.uid) : null}
               accessLevel={profile?.accessLevel}
+            />
+            <DashboardBonusStatusCard
+              userRef={profile?.uid != null ? String(profile.uid) : null}
             />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}

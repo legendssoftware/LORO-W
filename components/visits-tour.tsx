@@ -51,7 +51,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Filter and explore history',
       description:
-        'By default, your range runs from the start of this month through today. Change the dates, region, type of business, teammate, or search text whenever you need another slice of history. Open the visits summary for a grid report, or open Visualiser in the sidebar for the org-wide map view.',
+        'By default, your range runs from the start of this month through today. Change the dates, region, type of business, teammate, or search text whenever you need another slice of history. Open the visits summary for a grid report, or open Competitor Overview in the sidebar for the org-wide map view.',
       side: 'bottom',
       align: 'center',
     },

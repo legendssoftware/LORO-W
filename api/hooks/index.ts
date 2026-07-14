@@ -63,6 +63,7 @@ export {
   useUserTarget,
   USER_TARGET_QUERY_KEY_PREFIX,
   useDailyProductivity,
+  useBonusStatus,
   useUserPreferences,
   usePatchUser,
   usePatchUserTarget,

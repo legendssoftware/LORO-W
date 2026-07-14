@@ -98,9 +98,6 @@ export function TargetWarningDetailDialog({
             <Badge variant="secondary" className="tabular-nums">
               Ack {summary.totalAcknowledged}
             </Badge>
-            <Badge variant="secondary" className="tabular-nums">
-              Total {summary.totalIssued}
-            </Badge>
             {summary.pendingCount > 0 ? (
               <Badge
                 variant="secondary"
@@ -117,7 +114,8 @@ export function TargetWarningDetailDialog({
             {history.map((entry, index) => {
               const copy = getPerformanceWarningCopy(
                 entry.level as PerformanceWarningLevel,
-                employeeName
+                employeeName,
+                index === history.length - 1 ? targetWarnings?.lastMiss ?? null : null
               );
               const acknowledged = Boolean(entry.acknowledgedAt);
               return (
@@ -145,12 +143,17 @@ export function TargetWarningDetailDialog({
                       >
                         Acknowledged
                       </Badge>
-                    ) : (
+                    ) : targetWarnings?.level === entry.level &&
+                      entry.level > (targetWarnings.acknowledgedLevel ?? 0) ? (
                       <Badge
                         variant="secondary"
                         className="bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200"
                       >
                         Pending
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        Cleared
                       </Badge>
                     )}
                   </div>

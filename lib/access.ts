@@ -262,7 +262,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/competitors", label: "Competitors" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
-    { path: "/visualiser", label: "Visualiser" },
+    { path: "/visualiser", label: "Competitor Overview" },
 ];
 
 /** Sidebar item for user settings (calendar for all staff; org tabs for admin / owner / manager). */
@@ -317,7 +317,7 @@ export function getAllowedRoutes(
         { path: "/competitors", label: "Competitors" },
         { path: "/planning", label: "Planning" },
         { path: "/reports", label: "Reports" },
-        { path: "/visualiser", label: "Visualiser" },
+        { path: "/visualiser", label: "Competitor Overview" },
     ];
 
     if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {
