@@ -30,9 +30,9 @@ export interface SiteOpportunitySettings {
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   radiusMeters: 5000,
-  topN: 10,
+  topN: 5,
   minBranchSeparationKm: 10,
-  captureLowPct: 0.15,
+  captureLowPct: 0.2,
   captureHighPct: 0.2,
 };
 

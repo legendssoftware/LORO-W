@@ -5,6 +5,7 @@ import {
   Building2,
   ClipboardList,
   Landmark,
+  MapPinOff,
   Store,
   Users,
   type LucideIcon,
@@ -20,6 +21,8 @@ import {
 } from 'recharts';
 import type { MapMarkerBase, MapOrganisationSummary } from '@/api/types/map';
 import type { HardwareBrandKey } from '@/api/types/site-opportunity';
+import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
+import type { UnmappedMapEntry } from '@/lib/utils/unmapped-map-entries';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -86,9 +89,7 @@ function colorAt(palette: readonly string[], index: number): string {
 }
 
 function hasValidCoords(marker: MapMarkerBase): boolean {
-  const lat = Number(marker.latitude ?? marker.position?.[0]);
-  const lng = Number(marker.longitude ?? marker.position?.[1]);
-  return Number.isFinite(lat) && Number.isFinite(lng);
+  return hasStoredCoordinates(marker.latitude, marker.longitude);
 }
 
 function countByType(
@@ -156,15 +157,23 @@ const clientsProvinceConfig = {
 
 export function VisualiserMapSummaryDialog({
   markers,
+  unmappedEntries = [],
   organisation,
   selectedCountry,
   selectedProvince,
+  geocodingSummary,
   triggerClassName,
 }: {
   markers: MapMarkerBase[];
+  unmappedEntries?: UnmappedMapEntry[];
   organisation?: MapOrganisationSummary | null;
   selectedCountry: string;
   selectedProvince: string;
+  geocodingSummary?: {
+    clients?: { alreadyExhausted?: number };
+    competitors?: { alreadyExhausted?: number };
+    branches?: { alreadyExhausted?: number };
+  } | null;
   triggerClassName?: string;
 }) {
   const competitors = useMemo(
@@ -174,6 +183,24 @@ export function VisualiserMapSummaryDialog({
   const branches = useMemo(() => countByType(markers, 'branch'), [markers]);
   const orgMarkers = useMemo(() => countByType(markers, 'org'), [markers]);
   const clients = useMemo(() => countByType(markers, 'client'), [markers]);
+
+  const unmappedMarkers = unmappedEntries;
+  const geocodeExhaustedCount = useMemo(() => {
+    if (!geocodingSummary) return 0;
+    return (
+      (geocodingSummary.clients?.alreadyExhausted ?? 0) +
+      (geocodingSummary.competitors?.alreadyExhausted ?? 0) +
+      (geocodingSummary.branches?.alreadyExhausted ?? 0)
+    );
+  }, [geocodingSummary]);
+
+  const unmappedByType = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of unmappedMarkers) {
+      counts.set(m.markerType, (counts.get(m.markerType) ?? 0) + 1);
+    }
+    return counts;
+  }, [unmappedMarkers]);
 
   const competitorMarkers = useMemo(
     () => markers.filter((m) => String(m.markerType ?? '') === 'competitor'),
@@ -391,6 +418,66 @@ export function VisualiserMapSummaryDialog({
             detail="Customer sites in this filtered view"
             icon={Users}
           />
+        </div>
+
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-3 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-900/80">
+                Unmapped data
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+                {unmappedMarkers.length}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Records missing valid coordinates (null, 0,0, or invalid)
+                {geocodeExhaustedCount > 0
+                  ? ` · ${geocodeExhaustedCount} geocode exhausted`
+                  : ''}
+              </p>
+            </div>
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background border border-amber-200/80 text-amber-800">
+              <MapPinOff className="size-4" aria-hidden />
+            </div>
+          </div>
+          {unmappedByType.size > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Array.from(unmappedByType.entries()).map(([type, count]) => (
+                <span
+                  key={type}
+                  className="inline-flex items-center rounded-md border border-amber-200/80 bg-background px-2 py-0.5 text-xs text-foreground"
+                >
+                  {type} ×{count}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {unmappedMarkers.length > 0 ? (
+            <ul className="mt-3 max-h-40 overflow-y-auto space-y-1.5 text-xs border-t border-amber-200/60 pt-2">
+              {unmappedMarkers.slice(0, 50).map((m) => (
+                <li
+                  key={`${m.markerType}-${m.id}`}
+                  className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5"
+                >
+                  <span className="font-medium text-foreground truncate min-w-0">
+                    {m.name}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 capitalize">
+                    {m.markerType} · {m.reason}
+                  </span>
+                </li>
+              ))}
+              {unmappedMarkers.length > 50 ? (
+                <li className="text-muted-foreground pt-1">
+                  +{unmappedMarkers.length - 50} more not shown
+                </li>
+              ) : null}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              All records in scope have mappable coordinates.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

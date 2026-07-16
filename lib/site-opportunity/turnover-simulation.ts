@@ -35,6 +35,11 @@ export interface TurnoverSimulation {
   matureMidMonthlyZAR: number;
   matureMidAnnualZAR: number;
   listSubtitleMonthlyZAR: number;
+  /** Model mature mid monthly — never overridden by ERP actual. */
+  simulatedMonthlyZAR: number;
+  actualMonthlyZAR?: number | null;
+  varianceZAR?: number | null;
+  variancePct?: number | null;
 }
 
 /** BitDrywall product mix (memo reference) applied to projected mid mature monthly revenue. */
@@ -72,24 +77,37 @@ function strongMonthlyZAR(lowMonthly: number, highMonthly: number): number {
   return lowMonthly + (highMonthly - lowMonthly) * 0.75;
 }
 
-export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimulation {
+export function buildTurnoverSimulation(
+  zone: SiteOpportunityZone,
+  options?: { actualRevenueZAR?: number | null }
+): TurnoverSimulation {
   const { potentialLowZAR, potentialHighZAR, captureTimeline } = zone;
-  const midMonthly = potentialMidZAR(potentialLowZAR, potentialHighZAR);
+  const actualMonthly = options?.actualRevenueZAR;
+  const hasActual =
+    actualMonthly != null && Number.isFinite(actualMonthly) && actualMonthly > 0;
 
-  const lowMonthly = potentialLowZAR;
-  const highMonthly = potentialHighZAR;
+  const midMonthly = hasActual
+    ? actualMonthly
+    : potentialMidZAR(potentialLowZAR, potentialHighZAR);
+
+  const lowMonthly = hasActual
+    ? Math.min(actualMonthly, potentialLowZAR)
+    : potentialLowZAR;
+  const highMonthly = hasActual
+    ? Math.max(actualMonthly, potentialHighZAR)
+    : potentialHighZAR;
   const strongMonthly = strongMonthlyZAR(lowMonthly, highMonthly);
 
   const scenarios: TurnoverScenario[] = [
     {
       key: 'conservative',
-      label: 'Conservative',
+      label: hasActual ? 'Conservative (pool low)' : 'Conservative',
       monthlyZAR: lowMonthly,
       annualZAR: lowMonthly * 12,
     },
     {
       key: 'expected',
-      label: 'Expected',
+      label: hasActual ? 'Actual ERP (monthly avg)' : 'Expected',
       monthlyZAR: midMonthly,
       annualZAR: midMonthly * 12,
     },
@@ -101,7 +119,7 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
     },
     {
       key: 'marketLeader',
-      label: 'Market leader',
+      label: hasActual ? 'Pool high potential' : 'Market leader',
       monthlyZAR: highMonthly,
       annualZAR: highMonthly * 12,
     },
@@ -121,7 +139,21 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
   const maturePoint =
     timelinePointAtMonth(captureTimeline, 30) ??
     captureTimeline[captureTimeline.length - 1];
-  const matureMidMonthlyZAR = maturePoint?.revenueMidZAR ?? midMonthly;
+  const simulatedMonthlyZAR =
+    maturePoint?.revenueMidZAR ?? potentialMidZAR(potentialLowZAR, potentialHighZAR);
+  const matureMidMonthlyZAR = simulatedMonthlyZAR;
+
+  const actualMonthlyZAR = hasActual ? actualMonthly : null;
+  const varianceZAR =
+    hasActual && actualMonthly != null
+      ? actualMonthly - simulatedMonthlyZAR
+      : null;
+  const variancePct =
+    hasActual &&
+    actualMonthly != null &&
+    simulatedMonthlyZAR > 0
+      ? ((actualMonthly / simulatedMonthlyZAR) - 1) * 100
+      : null;
 
   const productMix: ProductMixLine[] = PRODUCT_MIX_PCT.map(({ category, pct }) => ({
     category,
@@ -139,5 +171,9 @@ export function buildTurnoverSimulation(zone: SiteOpportunityZone): TurnoverSimu
     matureMidMonthlyZAR,
     matureMidAnnualZAR: matureMidMonthlyZAR * 12,
     listSubtitleMonthlyZAR,
+    simulatedMonthlyZAR,
+    actualMonthlyZAR,
+    varianceZAR,
+    variancePct,
   };
 }

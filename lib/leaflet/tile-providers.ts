@@ -1,5 +1,4 @@
 import type { ProviderTileLayerOptions } from 'leaflet';
-import type { MapMarkerBase } from '@/api/types/map';
 
 export interface MapTileProvider {
   id: string;
@@ -11,45 +10,74 @@ export interface MapTileProvider {
 
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim();
 
-/** Curated basemaps for the visualiser. Mapbox is included only when `NEXT_PUBLIC_MAPBOX_TOKEN` is set. */
-export function getMapTileProviders(): MapTileProvider[] {
-  const providers: MapTileProvider[] = [
-    {
-      id: 'osm',
-      label: 'OpenStreetMap',
-      providerKey: 'OpenStreetMap.Mapnik',
-    },
-    {
-      id: 'esri',
-      label: 'Esri Streets',
-      providerKey: 'Esri.WorldStreetMap',
-    },
-    {
-      id: 'carto',
-      label: 'Carto Voyager',
-      providerKey: 'CartoDB.Voyager',
-    },
-  ];
+const LIGHT_CARTO: MapTileProvider = {
+  id: 'carto-voyager',
+  label: 'Carto Voyager',
+  providerKey: 'CartoDB.Voyager',
+};
 
-  if (mapboxToken) {
-    providers.push({
-      id: 'mapbox',
-      label: 'Mapbox Streets',
-      providerKey: 'MapBox',
-      options: {
-        accessToken: mapboxToken,
-        id: 'mapbox/streets-v12',
-      },
-    });
+const DARK_CARTO: MapTileProvider = {
+  id: 'carto-dark',
+  label: 'Carto Dark Matter',
+  providerKey: 'CartoDB.DarkMatter',
+};
+
+const LIGHT_OSM: MapTileProvider = {
+  id: 'osm',
+  label: 'OpenStreetMap',
+  providerKey: 'OpenStreetMap.Mapnik',
+};
+
+function mapboxLight(): MapTileProvider | null {
+  if (!mapboxToken) return null;
+  return {
+    id: 'mapbox-light',
+    label: 'Mapbox Streets',
+    providerKey: 'MapBox',
+    options: {
+      accessToken: mapboxToken,
+      id: 'mapbox/streets-v12',
+    },
+  };
+}
+
+function mapboxDark(): MapTileProvider | null {
+  if (!mapboxToken) return null;
+  return {
+    id: 'mapbox-dark',
+    label: 'Mapbox Dark',
+    providerKey: 'MapBox',
+    options: {
+      accessToken: mapboxToken,
+      id: 'mapbox/dark-v11',
+    },
+  };
+}
+
+/** Theme-aware default basemap for the visualiser. */
+export function getThemedTileProvider(isDark: boolean): MapTileProvider {
+  if (isDark) {
+    return mapboxDark() ?? DARK_CARTO;
   }
+  return mapboxLight() ?? LIGHT_CARTO;
+}
 
+/** Fallback light provider when Carto is unavailable. */
+export function getFallbackLightProvider(): MapTileProvider {
+  return LIGHT_OSM;
+}
+
+/** @deprecated Basemap cycling removed — use getThemedTileProvider. */
+export function getMapTileProviders(): MapTileProvider[] {
+  const providers: MapTileProvider[] = [LIGHT_OSM, LIGHT_CARTO, DARK_CARTO];
+  const mb = mapboxLight();
+  if (mb) providers.push(mb);
   return providers;
 }
 
-export const DEFAULT_TILE_PROVIDER_ID = 'osm';
+export const DEFAULT_TILE_PROVIDER_ID = 'carto-voyager';
 
+/** @deprecated */
 export function getDefaultTileProviderIndex(): number {
-  const providers = getMapTileProviders();
-  const index = providers.findIndex((p) => p.id === DEFAULT_TILE_PROVIDER_ID);
-  return index >= 0 ? index : 0;
+  return 0;
 }
