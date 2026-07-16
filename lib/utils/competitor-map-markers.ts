@@ -19,6 +19,15 @@ function competitorStringField(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+function competitorNumericField(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
 function competitorListMarkerExtras(c: CompetitorListItem): Partial<MapMarkerBase> {
   return {
     contactPhone: competitorStringField(c.contactPhone),
@@ -27,6 +36,7 @@ function competitorListMarkerExtras(c: CompetitorListItem): Partial<MapMarkerBas
     description: competitorStringField(c.description),
     threatLevel: typeof c.threatLevel === 'number' ? c.threatLevel : undefined,
     isDirect: c.isDirect ?? undefined,
+    estimatedAnnualRevenue: competitorNumericField(c.estimatedAnnualRevenue),
   };
 }
 
