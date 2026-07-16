@@ -8,6 +8,7 @@ import {
   Globe2,
   Info,
   MapPinned,
+  MousePointer2,
   RefreshCw,
   SlidersHorizontal,
   Target,
@@ -131,6 +132,36 @@ export function SuggestedAreasInfoDialog({
                 <span className="text-foreground font-medium">This info button</span>
                 {' '}
                 (green) explains the suggestions and how numbers are estimated.
+              </li>
+            </ul>
+          </InfoSection>
+
+          <InfoSection icon={MousePointer2} title="Using the map">
+            <ul className="list-disc space-y-1.5 pl-4">
+              <li>
+                <span className="text-foreground font-medium">Pan</span> — click
+                and drag the map background.
+              </li>
+              <li>
+                <span className="text-foreground font-medium">Zoom</span> — use
+                the + / − controls, pinch on trackpad or touch, or double-click a
+                point to zoom in. Scroll-wheel zoom is off by default so the page
+                does not jump while you scroll.
+              </li>
+              <li>
+                <span className="text-foreground font-medium">Clusters</span> —
+                client and competitor pins group into numbered circles when zoomed
+                out. Click a cluster to expand it; at street-level zoom (about 16+)
+                pins show individually.
+              </li>
+              <li>
+                Branch, organisation HQ, and opportunity circles are{' '}
+                <span className="text-foreground font-medium">not</span> clustered
+                — only clients and competitors cluster.
+              </li>
+              <li>
+                Influence geofence rings appear once you zoom in past a threshold
+                so the map stays fast at country view.
               </li>
             </ul>
           </InfoSection>

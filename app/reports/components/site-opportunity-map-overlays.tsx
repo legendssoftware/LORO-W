@@ -4,15 +4,21 @@ import { Fragment, useCallback, useEffect, useRef } from 'react';
 import { Circle, Marker, Popup, useMap } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import type L from 'leaflet';
+import type { BranchListItem } from '@/api/types/branch';
+import type { MapMarkerBase } from '@/api/types/map';
 import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
   SiteOpportunityZone,
 } from '@/api/types/site-opportunity';
+import { ActualVsSimulatedTurnover } from '@/app/reports/components/actual-vs-simulated-turnover';
+import { BranchCatchmentLogo } from '@/app/reports/components/branch-catchment-logo';
 import {
   formatZarShort,
   getPotentialBreakdown,
 } from '@/lib/site-opportunity/format-potential';
+import { buildTurnoverSimulation } from '@/lib/site-opportunity/turnover-simulation';
+import { resolveBranchLogoUrl } from '@/lib/utils/resolve-branch-logo-url';
 
 const FLY_DURATION_S = 0.6;
 const POPUP_OPEN_DELAY_MS = 650;
@@ -63,10 +69,54 @@ function PotentialBreakdown({
 
   return (
     <div className="space-y-0.5">
-      <p className="text-xs font-medium text-muted-foreground">Potential (monthly)</p>
-      <p>Low: {formatZarShort(low)}/mo</p>
-      <p>Avg: {formatZarShort(avg)}/mo</p>
-      <p>High: {formatZarShort(high)}/mo</p>
+      <p className="text-xs font-medium text-neutral-700">Potential (monthly)</p>
+      <p className="font-medium text-neutral-900">Low: {formatZarShort(low)}/mo</p>
+      <p className="font-medium text-neutral-900">Avg: {formatZarShort(avg)}/mo</p>
+      <p className="font-medium text-neutral-900">High: {formatZarShort(high)}/mo</p>
+    </div>
+  );
+}
+
+function CatchmentPopupContent({
+  catchment,
+  branchMarkers,
+  branches,
+  orgLogoUrl,
+}: {
+  catchment: BranchCatchmentOpportunity;
+  branchMarkers: MapMarkerBase[];
+  branches: BranchListItem[];
+  orgLogoUrl?: string | null;
+}) {
+  const logoUrl = resolveBranchLogoUrl(catchment.branchId, {
+    branchMarkers,
+    branches,
+    orgLogoUrl,
+  });
+  const simulation = buildTurnoverSimulation(catchment, {
+    actualRevenueZAR: catchment.actualRevenueZAR,
+  });
+
+  return (
+    <div className="min-w-[180px] space-y-2 text-sm text-neutral-900">
+      <div className="flex items-center gap-2">
+        <BranchCatchmentLogo branchName={catchment.branchName} logoUrl={logoUrl} />
+        <p className="font-semibold leading-snug text-neutral-900">
+          #{catchment.rank} {catchment.branchName}
+        </p>
+      </div>
+      <p className="font-medium text-neutral-900">
+        Pool: {formatZarShort(catchment.addressablePoolZAR)}/mo
+      </p>
+      <PotentialBreakdown
+        potentialLowZAR={catchment.potentialLowZAR}
+        potentialHighZAR={catchment.potentialHighZAR}
+      />
+      <ActualVsSimulatedTurnover simulation={simulation} compact />
+      <p className="font-medium text-neutral-900">
+        {catchment.competitorCount} competitors · {catchment.clientCount} clients
+      </p>
+      <p className="text-xs text-neutral-700">{brandSummary(catchment.byBrand)}</p>
     </div>
   );
 }
@@ -132,6 +182,9 @@ export function SiteOpportunityMapOverlays({
   selectedZoneId,
   selectionSeq = 0,
   onSelectZone,
+  branchMarkers = [],
+  branches = [],
+  orgLogoUrl,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
@@ -139,6 +192,9 @@ export function SiteOpportunityMapOverlays({
   /** Increments on each selection so re-clicking the same zone re-flies. */
   selectionSeq?: number;
   onSelectZone: (zone: SiteOpportunityZone) => void;
+  branchMarkers?: MapMarkerBase[];
+  branches?: BranchListItem[];
+  orgLogoUrl?: string | null;
 }) {
   const layerRefs = useRef<Map<string, L.Layer>>(new Map());
 
@@ -188,23 +244,13 @@ export function SiteOpportunityMapOverlays({
               click: () => onSelectZone(c),
             }}
           >
-            <Popup className="reports-viz-popup">
-              <div className="text-sm space-y-1 min-w-[180px]">
-                <p className="font-semibold">
-                  #{c.rank} {c.branchName}
-                </p>
-                <p>Pool: {formatZarShort(c.addressablePoolZAR)}/mo</p>
-                <PotentialBreakdown
-                  potentialLowZAR={c.potentialLowZAR}
-                  potentialHighZAR={c.potentialHighZAR}
-                />
-                <p>
-                  {c.competitorCount} competitors · {c.clientCount} clients
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {brandSummary(c.byBrand)}
-                </p>
-              </div>
+            <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={320}>
+              <CatchmentPopupContent
+                catchment={c}
+                branchMarkers={branchMarkers}
+                branches={branches}
+                orgLogoUrl={orgLogoUrl}
+              />
             </Popup>
           </Circle>
         );
@@ -235,25 +281,25 @@ export function SiteOpportunityMapOverlays({
                 click: () => onSelectZone(g),
               }}
             >
-              <Popup className="reports-viz-popup">
-                <div className="text-sm space-y-1 min-w-[180px]">
-                  <p className="font-semibold">
+              <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={320}>
+                <div className="min-w-[180px] space-y-1 text-sm text-neutral-900">
+                  <p className="font-semibold text-neutral-900">
                     {g.label} ({g.competitorCount} competitors)
                   </p>
                   {g.address ? (
-                    <p className="text-xs text-muted-foreground">{g.address}</p>
+                    <p className="text-xs text-neutral-700">{g.address}</p>
                   ) : null}
-                  <p>Pool: {formatZarShort(g.addressablePoolZAR)}/mo</p>
+                  <p className="font-medium text-neutral-900">
+                    Pool: {formatZarShort(g.addressablePoolZAR)}/mo
+                  </p>
                   <PotentialBreakdown
                     potentialLowZAR={g.potentialLowZAR}
                     potentialHighZAR={g.potentialHighZAR}
                   />
-                  <p>
+                  <p className="font-medium text-neutral-900">
                     {g.competitorCount} competitors · {g.clientCount} clients
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {brandSummary(g.byBrand)}
-                  </p>
+                  <p className="text-xs text-neutral-700">{brandSummary(g.byBrand)}</p>
                 </div>
               </Popup>
             </Marker>

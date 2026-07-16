@@ -34,12 +34,17 @@ import {
   type SearchableOptionRow,
 } from '@/app/reports/components/reports-searchable-filter-comboboxes';
 import {
-  filterMapMarkers,
   getSortedUniqueBusinessTypesFromMarkers,
-  getSortedUniqueCountriesFromMarkers,
-  getSortedUniqueProvincesFromMarkers,
-  getSortedUniqueRegionsFromMarkers,
 } from '@/lib/utils/map-marker-filters';
+import {
+  buildMapMarkerGeoIndex,
+  filterMapMarkersFromIndex,
+} from '@/lib/utils/map-marker-geo-index';
+import {
+  loadVisualiserPreferences,
+  saveVisualiserPreferences,
+} from '@/lib/visualiser-preferences';
+import { buildUnmappedMapEntries } from '@/lib/utils/unmapped-map-entries';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { debugApi } from '@/lib/api-debug';
 import type { ReportsMode } from '@/app/reports/reports-mode';
@@ -97,17 +102,28 @@ export function ReportsVisualiserTab({
   const mounted = authLoaded && isTokenReady;
   const queryClient = useQueryClient();
 
-  const [selectedCountry, setSelectedCountry] = useState('South Africa');
-  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(
+    () => loadVisualiserPreferences().selectedCountry
+  );
+  const [selectedProvince, setSelectedProvince] = useState(
+    () => loadVisualiserPreferences().selectedProvince
+  );
 
-  const [showOpportunities, setShowOpportunities] = useState(false);
+  const [showOpportunities, setShowOpportunities] = useState(
+    () => loadVisualiserPreferences().showOpportunities
+  );
   const prevShowOpportunitiesRef = useRef(false);
-  const [opportunityMode, setOpportunityMode] =
-    useState<SiteOpportunityMode>('both');
+  const [opportunityMode, setOpportunityMode] = useState<SiteOpportunityMode>(
+    () => loadVisualiserPreferences().opportunityMode
+  );
   const [opportunitySettings, setOpportunitySettings] =
-    useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
+    useState<SiteOpportunitySettings>(
+      () => loadVisualiserPreferences().opportunitySettings
+    );
   const [debouncedOpportunitySettings, setDebouncedOpportunitySettings] =
-    useState<SiteOpportunitySettings>(DEFAULT_SITE_OPPORTUNITY_SETTINGS);
+    useState<SiteOpportunitySettings>(
+      () => loadVisualiserPreferences().opportunitySettings
+    );
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<
     string | null
   >(null);
@@ -119,6 +135,22 @@ export function ReportsVisualiserTab({
     }, OPPORTUNITY_SETTINGS_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [opportunitySettings]);
+
+  useEffect(() => {
+    saveVisualiserPreferences({
+      selectedCountry,
+      selectedProvince,
+      showOpportunities,
+      opportunityMode,
+      opportunitySettings,
+    });
+  }, [
+    selectedCountry,
+    selectedProvince,
+    showOpportunities,
+    opportunityMode,
+    opportunitySettings,
+  ]);
 
   const mapReportParams = useMemo((): GetMapReportParams => {
     const base: GetMapReportParams = {
@@ -296,6 +328,24 @@ export function ReportsVisualiserTab({
     setSelectedOpportunityId(null);
   }, [mapReport.isSuccess, selectedCountry, showOpportunities]);
 
+  const handleCloseOpportunities = useCallback(() => {
+    debugApi('suggested-areas:close', {
+      mapReady: mapReport.isSuccess,
+      country: selectedCountry || null,
+    });
+    setShowOpportunities(false);
+    setSelectedOpportunityId(null);
+    setOpportunitySelectionSeq(0);
+    void queryClient.invalidateQueries({
+      queryKey: siteOpportunitiesQueryKey(siteOpportunityParams),
+    });
+  }, [
+    mapReport.isSuccess,
+    queryClient,
+    selectedCountry,
+    siteOpportunityParams,
+  ]);
+
   const handleCountryChange = useCallback((value: string) => {
     const next = value === 'all' ? '' : value;
     setSelectedCountry(next);
@@ -324,19 +374,21 @@ export function ReportsVisualiserTab({
     competitorListMarkers.data,
   ]);
 
-  const uniqueRegions = useMemo(
-    () => getSortedUniqueRegionsFromMarkers(baseMarkers),
+  const markerGeoIndex = useMemo(
+    () => buildMapMarkerGeoIndex(baseMarkers),
     [baseMarkers]
   );
 
-  const uniqueCountries = useMemo(
-    () => getSortedUniqueCountriesFromMarkers(baseMarkers),
-    [baseMarkers]
-  );
+  const uniqueRegions = markerGeoIndex.regions;
+
+  const uniqueCountries = markerGeoIndex.countries;
 
   const uniqueProvinces = useMemo(
-    () => getSortedUniqueProvincesFromMarkers(baseMarkers, selectedCountry),
-    [baseMarkers, selectedCountry]
+    () =>
+      selectedCountry
+        ? markerGeoIndex.provincesByCountry.get(selectedCountry) ?? []
+        : [],
+    [markerGeoIndex.provincesByCountry, selectedCountry]
   );
 
   const countryPickerOptions = useMemo<SearchableOptionRow[]>(
@@ -376,12 +428,19 @@ export function ReportsVisualiserTab({
 
   const filteredMarkers = useMemo(
     () =>
-      filterMapMarkers(baseMarkers, {
+      filterMapMarkersFromIndex(markerGeoIndex, {
         selectedCountry: selectedCountry || undefined,
         selectedProvince: selectedProvince || undefined,
       }),
-    [baseMarkers, selectedCountry, selectedProvince]
+    [markerGeoIndex, selectedCountry, selectedProvince]
   );
+
+  const branchMarkers = useMemo(
+    () => filteredMarkers.filter((m) => String(m.markerType ?? '') === 'branch'),
+    [filteredMarkers]
+  );
+
+  const orgLogoUrl = mapReport.data?.organisation?.logo ?? null;
 
   const influenceCircles = useMemo(() => {
     const apiCircles = filterInfluenceCirclesForMarkers(
@@ -416,6 +475,16 @@ export function ReportsVisualiserTab({
     return 'Not enough geolocated stores in this area — try another province or Re-geocode map.';
   }, [showOpportunities, siteOpportunitiesQuery.data?.dataQuality]);
 
+  const unmappedEntries = useMemo(
+    () =>
+      buildUnmappedMapEntries({
+        branches,
+        competitors: competitorsQuery.data,
+        mapMarkers: mapReport.data?.allMarkers ?? [],
+      }),
+    [branches, competitorsQuery.data, mapReport.data?.allMarkers]
+  );
+
   const opportunityPanelProps = useMemo(
     () => ({
       catchments: siteOpportunitiesQuery.data?.catchments ?? [],
@@ -437,11 +506,17 @@ export function ReportsVisualiserTab({
           : siteOpportunitiesQuery.isError
             ? 'Could not load suggested areas.'
             : undefined,
+      onClose: handleCloseOpportunities,
+      branchMarkers,
+      orgLogoUrl,
     }),
     [
+      branchMarkers,
+      handleCloseOpportunities,
       handleSelectOpportunity,
       opportunitiesBusy,
       opportunitySettings,
+      orgLogoUrl,
       selectedOpportunityId,
       siteOpportunitiesQuery.data,
       siteOpportunitiesQuery.error,
@@ -547,9 +622,11 @@ export function ReportsVisualiserTab({
             <>
               <VisualiserMapSummaryDialog
                 markers={filteredMarkers}
+                unmappedEntries={unmappedEntries}
                 organisation={mapReport.data?.organisation}
                 selectedCountry={selectedCountry}
                 selectedProvince={selectedProvince}
+                geocodingSummary={mapReport.data?.geocodingSummary}
               />
               <SuggestedAreasInfoDialog
                 triggerClassName="bg-green-600 text-white hover:bg-green-700 hover:text-white border-green-600"
@@ -589,6 +666,7 @@ export function ReportsVisualiserTab({
         <ReportsVisualiserMap
           allMarkers={filteredMarkers}
           influenceCircles={influenceCircles}
+          fitBoundsKey={`${selectedCountry}|${selectedProvince}`}
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
           className="flex-1 min-h-0 min-w-0 h-full"
           showOpportunities={showOpportunities}
@@ -598,10 +676,14 @@ export function ReportsVisualiserTab({
           opportunitySelectionSeq={opportunitySelectionSeq}
           onSelectOpportunity={handleSelectOpportunity}
           onSuggestedAreas={handleSuggestedAreasFromMap}
+          branchMarkers={branchMarkers}
+          branches={branches}
+          orgLogoUrl={orgLogoUrl}
         />
         {showOpportunities ? (
           <SiteOpportunityPanel
             {...opportunityPanelProps}
+            branches={branches}
             className="hidden lg:flex h-full max-h-full"
           />
         ) : null}
@@ -610,6 +692,7 @@ export function ReportsVisualiserTab({
         <div className="lg:hidden border-t h-[40vh] max-h-[40vh] shrink-0 overflow-hidden flex flex-col">
           <SiteOpportunityPanel
             {...opportunityPanelProps}
+            branches={branches}
             className="border-l-0 w-full h-full max-h-full"
           />
         </div>
