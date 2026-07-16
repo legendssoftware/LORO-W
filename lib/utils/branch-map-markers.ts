@@ -13,6 +13,10 @@ export function branchDisplayName(b: BranchListItem): string {
   return alias || legal || `Branch ${b.uid}`;
 }
 
+function branchStringField(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 /**
  * Build branch markers from org branch list using persisted coordinates only.
  */
@@ -36,6 +40,9 @@ export function buildBranchMarkersFromList(branches: BranchListItem[]): MapMarke
       address: line ?? '',
       branchUid: b.uid,
       logoUrl: b.logoUrl?.trim() || null,
+      email: branchStringField(b.email),
+      phone: branchStringField(b.phone),
+      contactPerson: branchStringField(b.contactPerson),
     });
   }
 

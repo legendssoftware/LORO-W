@@ -30,6 +30,7 @@ export interface CompetitorListItem {
   latitude?: number | string | null;
   longitude?: number | string | null;
   logoUrl?: string | null;
+  estimatedAnnualRevenue?: number | null;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;

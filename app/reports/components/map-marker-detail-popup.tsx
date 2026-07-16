@@ -13,11 +13,13 @@ import {
   Phone,
   Timer,
   User,
+  Banknote,
 } from 'lucide-react';
 import type { MapMarkerBase } from '@/api/types/map';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDisplayName, formatEmailDisplay, orgSiteInitials } from '@/lib/client-display';
+import { formatZar } from '@/lib/client-portal-utils';
 import { markerTypeLabel } from './map-report-constants';
 
 const SKIP_TOP_LEVEL = new Set([
@@ -148,7 +150,7 @@ function sectionShell(children: ReactNode) {
 
 function sectionHeading(label: string, Icon?: LucideIcon) {
   return (
-    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-neutral-700 mb-1.5 flex items-center gap-1.5">
+    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
       {Icon ? (
         <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} aria-hidden focusable={false} />
       ) : null}
@@ -160,9 +162,9 @@ function sectionHeading(label: string, Icon?: LucideIcon) {
 /** Definition-list label with leading icon (times, duration, location, etc.). */
 function DtIcon({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <dt className="text-neutral-700 shrink-0">
+    <dt className="text-muted-foreground shrink-0">
       <span className="inline-flex items-center gap-1.5">
-        <Icon className="size-3.5 shrink-0 text-neutral-500" strokeWidth={2} aria-hidden focusable={false} />
+        <Icon className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden focusable={false} />
         {children}
       </span>
     </dt>
@@ -286,7 +288,7 @@ function readNumericField(value: unknown): number | undefined {
 
 function PopupValue({ children }: { children: ReactNode }) {
   return (
-    <dd className="min-w-0 font-medium text-neutral-900 leading-snug break-words">{children}</dd>
+    <dd className="min-w-0 font-medium text-foreground leading-snug break-words">{children}</dd>
   );
 }
 
@@ -313,12 +315,12 @@ function StringListSection({ label, items }: { label: string; items: string[] })
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-700 mb-1">{label}</p>
-      <ul className="list-disc pl-4 text-xs text-neutral-900 space-y-0.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
+      <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
         {items.slice(0, 20).map((item, index) => (
           <li key={`${label}-${index}`}>{item}</li>
         ))}
-        {items.length > 20 ? <li className="text-neutral-600">…</li> : null}
+        {items.length > 20 ? <li className="text-muted-foreground">…</li> : null}
       </ul>
     </div>
   );
@@ -379,8 +381,8 @@ function OrgSiteHeader({
           </Avatar>
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug text-neutral-900">{displayTitle}</p>
-          <p className="text-xs text-neutral-700 mt-0.5">{markerTypeLabel(mt)}</p>
+          <p className="font-semibold leading-snug text-foreground">{displayTitle}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{markerTypeLabel(mt)}</p>
         </div>
       </div>
     </div>
@@ -412,12 +414,12 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
       {address ? (
         <div className="flex items-center gap-2">
           <MapPin
-            className="size-3.5 shrink-0 text-neutral-500"
+            className="size-3.5 shrink-0 text-muted-foreground"
             strokeWidth={2}
             aria-hidden
             focusable={false}
           />
-          <p className="text-xs text-neutral-900 font-medium leading-snug min-w-0 flex-1">{address}</p>
+          <p className="text-xs text-foreground font-medium leading-snug min-w-0 flex-1">{address}</p>
         </div>
       ) : null}
 
@@ -459,6 +461,50 @@ function OrgSitePopupBody({ marker }: { marker: MapMarkerBase }) {
   );
 }
 
+function BranchPopupBody({ marker }: { marker: MapMarkerBase }) {
+  const address = formatMarkerAddress(marker.address) ?? '—';
+  const contactPerson = readMarkerString(marker, 'contactPerson', 'contactName') || '—';
+  const cell = readMarkerString(marker, 'phone') || '—';
+  const email = readMarkerString(marker, 'email') || '—';
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-2">
+        <MapPin
+          className="size-3.5 shrink-0 text-muted-foreground mt-0.5"
+          strokeWidth={2}
+          aria-hidden
+          focusable={false}
+        />
+        <p className="text-xs text-foreground font-medium leading-snug min-w-0 flex-1">{address}</p>
+      </div>
+
+      <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+        <DtIcon icon={User}>Contact</DtIcon>
+        <PopupValue>{contactPerson}</PopupValue>
+
+        <DtIcon icon={Phone}>Cell</DtIcon>
+        <dd className="min-w-0">
+          {cell !== '—' ? (
+            <PopupLink href={buildTelHref(cell)}>{cell}</PopupLink>
+          ) : (
+            <span className="font-medium text-foreground">—</span>
+          )}
+        </dd>
+
+        <DtIcon icon={Mail}>Email</DtIcon>
+        <dd className="min-w-0">
+          {email !== '—' ? (
+            <PopupLink href={`mailto:${email}`}>{formatEmailDisplay(email)}</PopupLink>
+          ) : (
+            <span className="font-medium text-foreground">—</span>
+          )}
+        </dd>
+      </dl>
+    </div>
+  );
+}
+
 function CompetitorBadges({ marker }: { marker: MapMarkerBase }) {
   const status = readMarkerString(marker, 'status');
   const industry = readMarkerString(marker, 'industry');
@@ -469,41 +515,41 @@ function CompetitorBadges({ marker }: { marker: MapMarkerBase }) {
   const badges: ReactNode[] = [];
   if (status) {
     badges.push(
-      <Badge key="status" variant="secondary" className="capitalize text-neutral-900">
+      <Badge key="status" variant="secondary" className="capitalize text-foreground">
         {status}
       </Badge>
     );
   }
   if (threatLevel != null && threatLevel > 0) {
     badges.push(
-      <Badge key="threat" variant="outline" className="text-neutral-800">
+      <Badge key="threat" variant="outline" className="text-foreground">
         Threat {threatLevel}/5
       </Badge>
     );
   }
   if (isDirect === true) {
     badges.push(
-      <Badge key="direct" variant="outline" className="text-neutral-800">
+      <Badge key="direct" variant="outline" className="text-foreground">
         Direct
       </Badge>
     );
   } else if (isDirect === false) {
     badges.push(
-      <Badge key="indirect" variant="outline" className="text-neutral-800">
+      <Badge key="indirect" variant="outline" className="text-foreground">
         Indirect
       </Badge>
     );
   }
   if (industry) {
     badges.push(
-      <Badge key="industry" variant="outline" className="text-neutral-800">
+      <Badge key="industry" variant="outline" className="text-foreground">
         {industry}
       </Badge>
     );
   }
   if (hardwareBrand) {
     badges.push(
-      <Badge key="brand" variant="outline" className="text-neutral-800">
+      <Badge key="brand" variant="outline" className="text-foreground">
         {hardwareBrand}
       </Badge>
     );
@@ -525,11 +571,7 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
   const accountName = readMarkerString(marker, 'accountName');
   const legalEntity = readMarkerString(marker, 'LegalEntity');
   const description = readMarkerString(marker, 'description');
-  const marketShare = readNumericField(marker.marketSharePercentage);
   const annualRevenue = readNumericField(marker.estimatedAnnualRevenue);
-  const employeeCount = readNumericField(marker.estimatedEmployeeCount);
-  const competitiveAdvantage = readNumericField(marker.competitiveAdvantage);
-  const foundedDate = marker.foundedDate;
   const keyProducts = readStringArray(marker.keyProducts);
   const keyStrengths = readStringArray(marker.keyStrengths);
   const keyWeaknesses = readStringArray(marker.keyWeaknesses);
@@ -537,7 +579,6 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
   const marketingStrategy = readMarkerString(marker, 'marketingStrategy');
   const pricingData = marker.pricingData;
   const socialMedia = marker.socialMedia;
-  const geofencing = marker.geofencing;
 
   const hasContact =
     Boolean(contactPerson) ||
@@ -550,12 +591,7 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
     Boolean(accountName) ||
     Boolean(legalEntity) ||
     Boolean(description);
-  const hasMetrics =
-    marketShare != null ||
-    annualRevenue != null ||
-    employeeCount != null ||
-    competitiveAdvantage != null ||
-    (foundedDate != null && foundedDate !== '');
+  const hasRevenue = annualRevenue != null;
   const hasIntelligence =
     keyProducts.length > 0 || keyStrengths.length > 0 || keyWeaknesses.length > 0;
   const hasStrategy =
@@ -569,10 +605,6 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
     Object.values(socialMedia as Record<string, unknown>).some(
       (v) => typeof v === 'string' && v.trim() !== ''
     );
-  const hasGeofencing =
-    geofencing != null &&
-    typeof geofencing === 'object' &&
-    !Array.isArray(geofencing);
 
   return (
     <div className="space-y-3">
@@ -582,7 +614,7 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
         ? sectionShell(
             <>
               {sectionHeading('Location', MapPin)}
-              <p className="text-xs font-medium text-neutral-900 leading-snug">{address}</p>
+              <p className="text-xs font-medium text-foreground leading-snug">{address}</p>
             </>
           )
         : null}
@@ -635,6 +667,20 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
           )
         : null}
 
+      {hasRevenue
+        ? sectionShell(
+            <>
+              {sectionHeading('Revenue', Banknote)}
+              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
+                <dt className="text-muted-foreground shrink-0">Annual</dt>
+                <PopupValue>{formatZar(annualRevenue)}</PopupValue>
+                <dt className="text-muted-foreground shrink-0">Monthly</dt>
+                <PopupValue>{formatZar(annualRevenue / 12)}</PopupValue>
+              </dl>
+            </>
+          )
+        : null}
+
       {hasBusiness
         ? sectionShell(
             <>
@@ -642,68 +688,28 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
               <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
                 {competitorRef ? (
                   <>
-                    <dt className="text-neutral-700 shrink-0">Reference</dt>
+                    <dt className="text-muted-foreground shrink-0">Reference</dt>
                     <PopupValue>{competitorRef}</PopupValue>
                   </>
                 ) : null}
                 {accountName ? (
                   <>
-                    <dt className="text-neutral-700 shrink-0">Account</dt>
+                    <dt className="text-muted-foreground shrink-0">Account</dt>
                     <PopupValue>{formatDisplayName(accountName) || accountName}</PopupValue>
                   </>
                 ) : null}
                 {legalEntity ? (
                   <>
-                    <dt className="text-neutral-700 shrink-0">Legal entity</dt>
+                    <dt className="text-muted-foreground shrink-0">Legal entity</dt>
                     <PopupValue>{legalEntity}</PopupValue>
                   </>
                 ) : null}
               </dl>
               {description ? (
-                <p className="mt-2 whitespace-pre-wrap text-xs font-medium text-neutral-900 leading-snug">
+                <p className="mt-2 whitespace-pre-wrap text-xs font-medium text-foreground leading-snug">
                   {description}
                 </p>
               ) : null}
-            </>
-          )
-        : null}
-
-      {hasMetrics
-        ? sectionShell(
-            <>
-              {sectionHeading('Metrics', ClipboardList)}
-              <dl className="grid grid-cols-[minmax(0,auto)_1fr] gap-x-3 gap-y-2 text-xs">
-                {marketShare != null ? (
-                  <>
-                    <dt className="text-neutral-700 shrink-0">Market share</dt>
-                    <PopupValue>{`${marketShare}%`}</PopupValue>
-                  </>
-                ) : null}
-                {annualRevenue != null ? (
-                  <>
-                    <dt className="text-neutral-700 shrink-0">Est. revenue</dt>
-                    <PopupValue>{formatPrimitive(annualRevenue)}</PopupValue>
-                  </>
-                ) : null}
-                {employeeCount != null ? (
-                  <>
-                    <dt className="text-neutral-700 shrink-0">Employees</dt>
-                    <PopupValue>{formatPrimitive(employeeCount)}</PopupValue>
-                  </>
-                ) : null}
-                {competitiveAdvantage != null ? (
-                  <>
-                    <dt className="text-neutral-700 shrink-0">Advantage</dt>
-                    <PopupValue>{formatPrimitive(competitiveAdvantage)}</PopupValue>
-                  </>
-                ) : null}
-                {foundedDate != null && foundedDate !== '' ? (
-                  <>
-                    <dt className="text-neutral-700 shrink-0">Founded</dt>
-                    <PopupValue>{formatDateish(foundedDate)}</PopupValue>
-                  </>
-                ) : null}
-              </dl>
             </>
           )
         : null}
@@ -726,12 +732,12 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
             <>
               {sectionHeading('Strategy', Briefcase)}
               {businessStrategy ? (
-                <p className="text-xs font-medium text-neutral-900 leading-snug mb-2 whitespace-pre-wrap">
+                <p className="text-xs font-medium text-foreground leading-snug mb-2 whitespace-pre-wrap">
                   {businessStrategy}
                 </p>
               ) : null}
               {marketingStrategy ? (
-                <p className="text-xs font-medium text-neutral-900 leading-snug mb-2 whitespace-pre-wrap">
+                <p className="text-xs font-medium text-foreground leading-snug mb-2 whitespace-pre-wrap">
                   {marketingStrategy}
                 </p>
               ) : null}
@@ -751,7 +757,7 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
                     const url = String(value).trim();
                     return (
                       <div key={key} className="contents">
-                        <dt className="text-neutral-700 shrink-0 capitalize">{humanKey(key)}</dt>
+                        <dt className="text-muted-foreground shrink-0 capitalize">{humanKey(key)}</dt>
                         <dd className="min-w-0">
                           <PopupLink href={buildWebsiteHref(url)}>{url}</PopupLink>
                         </dd>
@@ -759,15 +765,6 @@ function CompetitorPopupBody({ marker }: { marker: MapMarkerBase }) {
                     );
                   })}
               </dl>
-            </>
-          )
-        : null}
-
-      {hasGeofencing
-        ? sectionShell(
-            <>
-              {sectionHeading('Geofencing', MapPin)}
-              {renderValue(geofencing, 0, true)}
             </>
           )
         : null}
@@ -960,7 +957,16 @@ export function MapMarkerDetailPopup({ marker }: MapMarkerDetailPopupProps) {
     );
   }
 
-  if (mt === 'branch' || mt === 'client') {
+  if (mt === 'branch') {
+    return (
+      <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
+        <OrgSiteHeader marker={marker} title={title} mt={mt} />
+        <BranchPopupBody marker={marker} />
+      </div>
+    );
+  }
+
+  if (mt === 'client') {
     return (
       <div className="font-sans text-sm min-w-[240px] max-w-[min(92vw,380px)] max-h-[min(70vh,420px)] overflow-y-auto px-3">
         <OrgSiteHeader marker={marker} title={title} mt={mt} />

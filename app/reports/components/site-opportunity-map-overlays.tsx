@@ -69,10 +69,10 @@ function PotentialBreakdown({
 
   return (
     <div className="space-y-0.5">
-      <p className="text-xs font-medium text-neutral-700">Potential (monthly)</p>
-      <p className="font-medium text-neutral-900">Low: {formatZarShort(low)}/mo</p>
-      <p className="font-medium text-neutral-900">Avg: {formatZarShort(avg)}/mo</p>
-      <p className="font-medium text-neutral-900">High: {formatZarShort(high)}/mo</p>
+      <p className="text-xs font-medium text-muted-foreground">Potential (monthly)</p>
+      <p className="font-medium text-foreground">Low: {formatZarShort(low)}/mo</p>
+      <p className="font-medium text-foreground">Avg: {formatZarShort(avg)}/mo</p>
+      <p className="font-medium text-foreground">High: {formatZarShort(high)}/mo</p>
     </div>
   );
 }
@@ -98,14 +98,14 @@ function CatchmentPopupContent({
   });
 
   return (
-    <div className="min-w-[180px] space-y-2 text-sm text-neutral-900">
+    <div className="min-w-[180px] space-y-2 text-sm text-foreground">
       <div className="flex items-center gap-2">
         <BranchCatchmentLogo branchName={catchment.branchName} logoUrl={logoUrl} />
-        <p className="font-semibold leading-snug text-neutral-900">
+        <p className="font-semibold leading-snug text-foreground">
           #{catchment.rank} {catchment.branchName}
         </p>
       </div>
-      <p className="font-medium text-neutral-900">
+      <p className="font-medium text-foreground">
         Pool: {formatZarShort(catchment.addressablePoolZAR)}/mo
       </p>
       <PotentialBreakdown
@@ -113,10 +113,10 @@ function CatchmentPopupContent({
         potentialHighZAR={catchment.potentialHighZAR}
       />
       <ActualVsSimulatedTurnover simulation={simulation} compact />
-      <p className="font-medium text-neutral-900">
+      <p className="font-medium text-foreground">
         {catchment.competitorCount} competitors · {catchment.clientCount} clients
       </p>
-      <p className="text-xs text-neutral-700">{brandSummary(catchment.byBrand)}</p>
+      <p className="text-xs text-muted-foreground">{brandSummary(catchment.byBrand)}</p>
     </div>
   );
 }
@@ -282,24 +282,24 @@ export function SiteOpportunityMapOverlays({
               }}
             >
               <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={320}>
-                <div className="min-w-[180px] space-y-1 text-sm text-neutral-900">
-                  <p className="font-semibold text-neutral-900">
+                <div className="min-w-[180px] space-y-1 text-sm text-foreground">
+                  <p className="font-semibold text-foreground">
                     {g.label} ({g.competitorCount} competitors)
                   </p>
                   {g.address ? (
-                    <p className="text-xs text-neutral-700">{g.address}</p>
+                    <p className="text-xs text-muted-foreground">{g.address}</p>
                   ) : null}
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium text-foreground">
                     Pool: {formatZarShort(g.addressablePoolZAR)}/mo
                   </p>
                   <PotentialBreakdown
                     potentialLowZAR={g.potentialLowZAR}
                     potentialHighZAR={g.potentialHighZAR}
                   />
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium text-foreground">
                     {g.competitorCount} competitors · {g.clientCount} clients
                   </p>
-                  <p className="text-xs text-neutral-700">{brandSummary(g.byBrand)}</p>
+                  <p className="text-xs text-muted-foreground">{brandSummary(g.byBrand)}</p>
                 </div>
               </Popup>
             </Marker>
