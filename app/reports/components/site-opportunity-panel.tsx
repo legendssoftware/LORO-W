@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, type RefObject } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   Legend,
@@ -9,6 +10,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Bar,
+  BarChart,
 } from 'recharts';
 import {
   Building2,
@@ -17,14 +20,22 @@ import {
   Loader2,
   MapPin,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useStoreMonthlyYtd } from '@/api/hooks';
+import type { BranchListItem } from '@/api/types/branch';
+import type { MapMarkerBase } from '@/api/types/map';
+import { ActualVsSimulatedTurnover } from '@/app/reports/components/actual-vs-simulated-turnover';
+import { BranchCatchmentLogo } from '@/app/reports/components/branch-catchment-logo';
 import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
 import { getPotentialBreakdown } from '@/lib/site-opportunity/format-potential';
 import { buildTurnoverSimulation } from '@/lib/site-opportunity/turnover-simulation';
+import { resolveChartStoreId } from '@/lib/utils/branch-store-code';
+import { resolveBranchLogoUrl } from '@/lib/utils/resolve-branch-logo-url';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type BranchCatchmentOpportunity,
@@ -125,8 +136,71 @@ function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
   );
 }
 
-function TurnoverSimulatorSection({ zone }: { zone: SiteOpportunityZone }) {
-  const simulation = buildTurnoverSimulation(zone);
+function BranchMonthlySalesChart({
+  chartStoreId,
+}: {
+  chartStoreId: string | undefined;
+}) {
+  const { data = [], isLoading, isError } = useStoreMonthlyYtd(chartStoreId, {
+    enabled: Boolean(chartStoreId),
+  });
+
+  if (!chartStoreId) return null;
+
+  return (
+    <div className="rounded-lg border bg-background p-3 min-w-0">
+      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+        ERP branch sales (YTD by month)
+      </p>
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Loading monthly sales…
+        </div>
+      ) : isError ? (
+        <p className="text-xs text-muted-foreground py-4">
+          Monthly ERP sales unavailable for this branch.
+        </p>
+      ) : data.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-4">
+          No monthly sales data for this branch yet.
+        </p>
+      ) : (
+        <div className="h-[140px] w-full min-w-0 mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                tickFormatter={formatChartZarAxis}
+                width={36}
+              />
+              <Tooltip formatter={(v: number) => formatZar(v)} />
+              <Bar
+                dataKey="totalRevenue"
+                fill="hsl(var(--primary))"
+                radius={[3, 3, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TurnoverSimulatorSection({
+  zone,
+  actualRevenueZAR,
+}: {
+  zone: SiteOpportunityZone;
+  actualRevenueZAR?: number | null;
+}) {
+  const simulation = buildTurnoverSimulation(zone, { actualRevenueZAR });
+  const hasActual =
+    actualRevenueZAR != null &&
+    Number.isFinite(actualRevenueZAR) &&
+    actualRevenueZAR > 0;
 
   return (
     <div className="space-y-3 rounded-lg border bg-muted/30 p-3 min-w-0">
@@ -135,11 +209,17 @@ function TurnoverSimulatorSection({ zone }: { zone: SiteOpportunityZone }) {
           Monthly turnover simulator
         </p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          Derived from competitor pool · mature mid{' '}
-          {formatZar(simulation.matureMidMonthlyZAR)}/mo (
+          {hasActual
+            ? 'Expected scenario anchored to ERP actual revenue · '
+            : 'Derived from competitor pool · '}
+          mature mid {formatZar(simulation.matureMidMonthlyZAR)}/mo (
           {formatZar(simulation.matureMidAnnualZAR)}/yr)
         </p>
       </div>
+
+      {zone.kind === 'catchment' ? (
+        <ActualVsSimulatedTurnover simulation={simulation} />
+      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs min-w-0">
@@ -219,6 +299,10 @@ function ZoneDetail({
   onExplain,
   explainLoading,
   brief,
+  branches,
+  branchMarkers = [],
+  orgLogoUrl,
+  detailRef,
 }: {
   zone: SiteOpportunityZone;
   captureSettings: SiteOpportunitySettings;
@@ -226,6 +310,10 @@ function ZoneDetail({
   onExplain: () => void;
   explainLoading: boolean;
   brief: SiteOpportunityBrief | null;
+  branches: BranchListItem[];
+  branchMarkers?: MapMarkerBase[];
+  orgLogoUrl?: string | null;
+  detailRef?: RefObject<HTMLDivElement | null>;
 }) {
   const lowPct = Math.round(captureSettings.captureLowPct * 100);
   const highPct = Math.round(captureSettings.captureHighPct * 100);
@@ -235,20 +323,42 @@ function ZoneDetail({
     zone.potentialLowZAR,
     zone.potentialHighZAR,
   );
+  const chartStoreId =
+    zone.kind === 'catchment'
+      ? resolveChartStoreId(zone.branchId, branches)
+      : undefined;
+  const branchLogoUrl =
+    zone.kind === 'catchment'
+      ? resolveBranchLogoUrl(zone.branchId, {
+          branchMarkers,
+          branches,
+          orgLogoUrl,
+        })
+      : undefined;
 
   return (
-    <div className="space-y-3 min-w-0">
+    <div ref={detailRef} className="space-y-3 min-w-0 scroll-mt-3">
       <div className="flex items-start justify-between gap-2 min-w-0">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">
-            #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
-          </p>
-          <h3 className="font-semibold text-foreground break-words">{title}</h3>
-          {zone.kind === 'greenfield' && zone.address ? (
-            <p className="text-sm text-muted-foreground mt-0.5 break-words">
-              {zone.address}
-            </p>
+        <div className="min-w-0 flex-1 flex items-start gap-2">
+          {zone.kind === 'catchment' ? (
+            <BranchCatchmentLogo
+              branchName={title}
+              logoUrl={branchLogoUrl}
+              size="sm"
+              className="mt-0.5"
+            />
           ) : null}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">
+              #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
+            </p>
+            <h3 className="font-semibold text-foreground break-words">{title}</h3>
+            {zone.kind === 'greenfield' && zone.address ? (
+              <p className="text-sm text-muted-foreground mt-0.5 break-words">
+                {zone.address}
+              </p>
+            ) : null}
+          </div>
         </div>
         <Button
           type="button"
@@ -268,7 +378,16 @@ function ZoneDetail({
         </Button>
       </div>
 
-      <TurnoverSimulatorSection zone={zone} />
+      <TurnoverSimulatorSection
+        zone={zone}
+        actualRevenueZAR={
+          zone.kind === 'catchment' ? zone.actualRevenueZAR : null
+        }
+      />
+
+      {zone.kind === 'catchment' ? (
+        <BranchMonthlySalesChart chartStoreId={chartStoreId} />
+      ) : null}
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm min-w-0">
         <div>
@@ -298,24 +417,18 @@ function ZoneDetail({
             <span className="block">High: {formatZar(potential.high)}/mo</span>
           </dd>
         </div>
-        {zone.kind === 'catchment' && zone.actualRevenueZAR != null ? (
-          <>
-            <div>
-              <dt className="text-muted-foreground">Actual ERP revenue</dt>
-              <dd className="font-medium">{formatZar(zone.actualRevenueZAR)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Gap to high potential</dt>
-              <dd
-                className={cn(
-                  'font-medium',
-                  (zone.revenueGapZAR ?? 0) > 0 ? 'text-amber-700' : 'text-green-700'
-                )}
-              >
-                {zone.revenueGapZAR != null ? formatZar(zone.revenueGapZAR) : '—'}
-              </dd>
-            </div>
-          </>
+        {zone.kind === 'catchment' && zone.revenueGapZAR != null ? (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Gap to high potential</dt>
+            <dd
+              className={cn(
+                'font-medium',
+                zone.revenueGapZAR > 0 ? 'text-amber-700' : 'text-green-700'
+              )}
+            >
+              {formatZar(zone.revenueGapZAR)}
+            </dd>
+          </div>
         ) : null}
         {zone.kind === 'greenfield' && zone.nearestBranchKm != null ? (
           <div className="col-span-2">
@@ -387,38 +500,77 @@ function ZoneListItem({
   zone,
   selected,
   onSelect,
+  captureSettings,
+  orgBrandName,
+  branches,
+  branchMarkers = [],
+  orgLogoUrl,
+  onExplain,
+  explainLoading,
+  brief,
+  detailRef,
 }: {
   zone: SiteOpportunityZone;
   selected: boolean;
   onSelect: () => void;
+  captureSettings: SiteOpportunitySettings;
+  orgBrandName: string;
+  branches: BranchListItem[];
+  branchMarkers?: MapMarkerBase[];
+  orgLogoUrl?: string | null;
+  onExplain: () => void;
+  explainLoading: boolean;
+  brief: SiteOpportunityBrief | null;
+  detailRef?: RefObject<HTMLDivElement | null>;
 }) {
   const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
-  const simulation = buildTurnoverSimulation(zone);
+  const simulation = buildTurnoverSimulation(zone, {
+    actualRevenueZAR:
+      zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
+  });
   const subtitle =
     zone.kind === 'greenfield' && zone.address
       ? `${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected · ${zone.address}`
       : `${zone.competitorCount} competitors · ${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected`;
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'w-full max-w-full min-w-0 text-left rounded-lg border px-3 py-2.5 transition-colors overflow-hidden',
-        selected
-          ? 'border-primary bg-primary/5'
-          : 'border-border hover:bg-muted/50'
-      )}
-    >
-      <div className="flex items-center justify-between gap-2 min-w-0">
-        <span className="font-medium text-sm truncate min-w-0 flex-1">{title}</span>
-        <Badge variant="outline" className="shrink-0">
-          #{zone.rank}
-        </Badge>
-      </div>
-      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 break-words">
-        {subtitle}
-      </p>
-    </button>
+    <div className="space-y-0">
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          'w-full max-w-full min-w-0 text-left rounded-lg border px-3 py-2.5 transition-colors overflow-hidden',
+          selected
+            ? 'border-primary bg-primary/5 rounded-b-none border-b-0'
+            : 'border-border hover:bg-muted/50'
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <span className="font-medium text-sm truncate min-w-0 flex-1">{title}</span>
+          <Badge variant="outline" className="shrink-0">
+            #{zone.rank}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 break-words">
+          {subtitle}
+        </p>
+      </button>
+      {selected ? (
+        <div className="border border-primary border-t-0 rounded-b-lg bg-primary/5 px-3 pb-3 pt-2">
+          <ZoneDetail
+            zone={zone}
+            captureSettings={captureSettings}
+            orgBrandName={orgBrandName}
+            explainLoading={explainLoading}
+            brief={brief}
+            onExplain={onExplain}
+            branches={branches}
+            branchMarkers={branchMarkers}
+            orgLogoUrl={orgLogoUrl}
+            detailRef={detailRef}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -459,6 +611,10 @@ export function SiteOpportunityPanel({
   isError = false,
   hasLoadedData = true,
   errorMessage,
+  branches = [],
+  branchMarkers = [],
+  orgLogoUrl,
+  onClose,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
@@ -473,12 +629,22 @@ export function SiteOpportunityPanel({
   /** When false, hides coverage stats until the first server response arrives. */
   hasLoadedData?: boolean;
   errorMessage?: string;
+  branches?: BranchListItem[];
+  branchMarkers?: MapMarkerBase[];
+  orgLogoUrl?: string | null;
+  onClose?: () => void;
 }) {
   const orgName = useOrgName();
   const orgBrandName = orgName?.trim() || 'Your brand';
+  const detailRef = useRef<HTMLDivElement>(null);
 
-  const selectedZone =
-    [...catchments, ...greenfield].find((z) => z.id === selectedZoneId) ?? null;
+  useEffect(() => {
+    if (!selectedZoneId) return;
+    const id = window.requestAnimationFrame(() => {
+      detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [selectedZoneId]);
 
   const explainMutation = useMutation({
     mutationFn: fetchSiteBrief,
@@ -496,17 +662,30 @@ export function SiteOpportunityPanel({
       <div className="p-3 border-b space-y-2 shrink-0 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold text-sm">Suggested areas</h2>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              downloadOpportunitiesCsv(catchments, greenfield, captureSettings)
-            }
-          >
-            <Download className="size-4" />
-            <span className="sr-only">Export CSV</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                downloadOpportunitiesCsv(catchments, greenfield, captureSettings)
+              }
+            >
+              <Download className="size-4" />
+              <span className="sr-only">Export CSV</span>
+            </Button>
+            {onClose ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onClose}
+                aria-label="Close suggested areas"
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
         </div>
         {!isError && hasLoadedData ? (
           <p className="text-xs text-muted-foreground">
@@ -584,39 +763,37 @@ export function SiteOpportunityPanel({
                       zone={zone}
                       selected={zone.id === selectedZoneId}
                       onSelect={() => onSelectZone(zone)}
+                      captureSettings={captureSettings}
+                      orgBrandName={orgBrandName}
+                      branches={branches}
+                      branchMarkers={branchMarkers}
+                      orgLogoUrl={orgLogoUrl}
+                      detailRef={
+                        zone.id === selectedZoneId ? detailRef : undefined
+                      }
+                      explainLoading={explainMutation.isPending}
+                      brief={
+                        explainMutation.data &&
+                        explainMutation.variables &&
+                        (explainMutation.variables as { zoneId?: string }).zoneId ===
+                          zone.id
+                          ? explainMutation.data
+                          : null
+                      }
+                      onExplain={() =>
+                        explainMutation.mutate({
+                          zoneId: zone.id,
+                          mode: zone.kind,
+                          zone,
+                          dataQuality,
+                          warnings,
+                          orgBrandName,
+                        })
+                      }
                     />
                   ))
                 )}
               </div>
-
-              {selectedZone ? (
-                <div className="border-t p-3 min-w-0">
-                  <ZoneDetail
-                    zone={selectedZone}
-                    captureSettings={captureSettings}
-                    orgBrandName={orgBrandName}
-                    explainLoading={explainMutation.isPending}
-                    brief={
-                      explainMutation.data &&
-                      explainMutation.variables &&
-                      (explainMutation.variables as { zoneId?: string }).zoneId ===
-                        selectedZone.id
-                        ? explainMutation.data
-                        : null
-                    }
-                    onExplain={() =>
-                      explainMutation.mutate({
-                        zoneId: selectedZone.id,
-                        mode: selectedZone.kind,
-                        zone: selectedZone,
-                        dataQuality,
-                        warnings,
-                        orgBrandName,
-                      })
-                    }
-                  />
-                </div>
-              ) : null}
             </TabsContent>
           );
         })}
