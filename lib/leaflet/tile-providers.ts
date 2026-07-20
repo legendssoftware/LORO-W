@@ -55,17 +55,26 @@ function mapboxDark(): MapTileProvider | null {
   };
 }
 
+/** Token-free basemap when Mapbox is missing or fails at runtime. */
+export function getFallbackTileProvider(isDark: boolean): MapTileProvider {
+  return isDark ? DARK_CARTO : LIGHT_OSM;
+}
+
+export function isMapboxProvider(provider: MapTileProvider): boolean {
+  return provider.providerKey === 'MapBox';
+}
+
 /** Theme-aware default basemap for the visualiser. */
 export function getThemedTileProvider(isDark: boolean): MapTileProvider {
   if (isDark) {
-    return mapboxDark() ?? LIGHT_OSM;
+    return mapboxDark() ?? getFallbackTileProvider(true);
   }
-  return mapboxLight() ?? LIGHT_OSM;
+  return mapboxLight() ?? getFallbackTileProvider(false);
 }
 
 /** Default Leaflet basemap when Mapbox is unavailable. */
 export function getFallbackLightProvider(): MapTileProvider {
-  return LIGHT_OSM;
+  return getFallbackTileProvider(false);
 }
 
 /** @deprecated Basemap cycling removed — use getThemedTileProvider. */
