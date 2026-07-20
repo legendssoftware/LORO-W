@@ -24,6 +24,8 @@ Work from this directory (`web/`) so dependencies and the Next.js dev server res
    ```
    From the monorepo root you can use: `yarn --cwd web install && yarn --cwd web dev`.
 
+5. Optional: set `NEXT_PUBLIC_MAPBOX_TOKEN` for themed Mapbox basemaps on `/visualiser` (see [Mapbox access tokens](https://account.mapbox.com/access-tokens/) and `web/.env.example`). Without it, the visualiser falls back to OpenStreetMap.
+
 ## Routes
 
 - `/` - Landing (redirects to dashboard if signed in)

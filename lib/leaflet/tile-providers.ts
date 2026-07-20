@@ -8,6 +8,7 @@ export interface MapTileProvider {
   options?: ProviderTileLayerOptions;
 }
 
+/** Only Mapbox styles need a token; OSM/Carto work without credentials. */
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim();
 
 const LIGHT_CARTO: MapTileProvider = {
@@ -57,12 +58,12 @@ function mapboxDark(): MapTileProvider | null {
 /** Theme-aware default basemap for the visualiser. */
 export function getThemedTileProvider(isDark: boolean): MapTileProvider {
   if (isDark) {
-    return mapboxDark() ?? DARK_CARTO;
+    return mapboxDark() ?? LIGHT_OSM;
   }
-  return mapboxLight() ?? LIGHT_CARTO;
+  return mapboxLight() ?? LIGHT_OSM;
 }
 
-/** Fallback light provider when Carto is unavailable. */
+/** Default Leaflet basemap when Mapbox is unavailable. */
 export function getFallbackLightProvider(): MapTileProvider {
   return LIGHT_OSM;
 }
