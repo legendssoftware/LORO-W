@@ -15,6 +15,7 @@ export const MARKER_COLORS: Record<string, string> = {
   'check-in-visit': '#0891b2',
   branch: '#854d0e',
   org: '#2563eb',
+  salesRep: '#0284c7',
   task: '#ca8a04',
   journal: '#64748b',
   quotation: '#db2777',

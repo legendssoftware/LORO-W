@@ -1,15 +1,26 @@
 import type { AxiosInstance } from 'axios';
 
-export interface BranchPerformanceRow {
-  store: string;
-  totalRevenue?: number;
+export interface SalesPerStoreRow {
+  storeId: string;
+  storeName: string;
+  countryCode?: string;
   transactionCount?: number;
-  label?: string;
+  totalRevenue?: number;
+  grossProfit?: number;
+  grossProfitPercentage?: number;
+  uniqueClients?: number;
+  averageTransactionValue?: number;
+}
+
+export interface PerformanceMasterBranch {
+  id: string;
+  code?: string;
+  name: string;
 }
 
 export interface PerformanceDashboardCharts {
   branchPerformance?: {
-    data?: BranchPerformanceRow[];
+    data?: Array<{ store: string; totalRevenue?: number; label?: string }>;
   };
 }
 
@@ -18,12 +29,18 @@ export interface PerformanceDashboardResponse {
     totalRevenue?: number;
   };
   charts?: PerformanceDashboardCharts;
+  salesPerStore?: SalesPerStoreRow[];
+  masterData?: {
+    branches?: PerformanceMasterBranch[];
+  };
 }
 
 export interface GetPerformanceDashboardParams {
   startDate?: string;
   endDate?: string;
   allTime?: boolean;
+  organisationId?: string;
+  country?: string;
 }
 
 /** One month row from GET /reports/performance/store-monthly-ytd */
@@ -44,8 +61,56 @@ export interface GetStoreMonthlyYtdParams {
   organisationId?: string;
 }
 
+function unwrapDashboardPayload(raw: unknown): PerformanceDashboardResponse {
+  if (!raw || typeof raw !== 'object') return {};
+  const obj = raw as Record<string, unknown>;
+  if (obj.success === true && obj.data && typeof obj.data === 'object') {
+    return normalizePerformanceDashboard(obj.data as PerformanceDashboardResponse);
+  }
+  return normalizePerformanceDashboard(raw as PerformanceDashboardResponse);
+}
+
+function normalizeSalesPerStore(raw: unknown): SalesPerStoreRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((store) => {
+    const s = store as Record<string, unknown>;
+    return {
+      storeId: String(s.storeId ?? s.store ?? ''),
+      storeName: String(s.storeName ?? s.store ?? ''),
+      countryCode: s.countryCode != null ? String(s.countryCode) : undefined,
+      transactionCount: Number(s.transactionCount) || 0,
+      totalRevenue: Number(s.totalRevenue) || 0,
+      grossProfit: Number(s.grossProfit ?? s.totalGP) || 0,
+      grossProfitPercentage: Number(s.grossProfitPercentage ?? s.gpPercentage) || 0,
+      uniqueClients: Number(s.uniqueClients ?? s.uniqueCustomers) || 0,
+      averageTransactionValue:
+        Number(s.averageTransactionValue ?? s.avgBasket) || 0,
+    };
+  });
+}
+
+export function normalizePerformanceDashboard(
+  data: PerformanceDashboardResponse,
+): PerformanceDashboardResponse {
+  return {
+    ...data,
+    salesPerStore: normalizeSalesPerStore(data.salesPerStore),
+    masterData: data.masterData
+      ? {
+          branches: Array.isArray(data.masterData.branches)
+            ? data.masterData.branches.map((b) => ({
+                id: String(b.id ?? ''),
+                code: b.code != null ? String(b.code) : undefined,
+                name: String(b.name ?? ''),
+              }))
+            : [],
+        }
+      : undefined,
+  };
+}
+
 /**
- * GET /reports/performance/dashboard — branch-level revenue for ERP compare.
+ * GET /reports/performance/dashboard — branch-level revenue (salesPerStore).
  */
 export async function getPerformanceDashboard(
   client: AxiosInstance,
@@ -55,11 +120,14 @@ export async function getPerformanceDashboard(
   if (params?.startDate) search.set('startDate', params.startDate);
   if (params?.endDate) search.set('endDate', params.endDate);
   if (params?.allTime) search.set('allTime', 'true');
+  if (params?.organisationId) search.set('organisationId', params.organisationId);
+  if (params?.country) search.set('country', params.country);
   const qs = search.toString();
-  const { data } = await client.get<PerformanceDashboardResponse>(
-    `/reports/performance/dashboard${qs ? `?${qs}` : ''}`
+  const { data } = await client.get<unknown>(
+    `/reports/performance/dashboard${qs ? `?${qs}` : ''}`,
+    { timeout: 120_000 }
   );
-  return data;
+  return unwrapDashboardPayload(data);
 }
 
 /**
@@ -73,10 +141,14 @@ export async function getStoreMonthlyYtd(
   if (params?.chartStoreId) search.set('chartStoreId', params.chartStoreId);
   if (params?.organisationId) search.set('organisationId', params.organisationId);
   const qs = search.toString();
-  const { data } = await client.get<StoreMonthlyYtdResponse>(
-    `/reports/performance/store-monthly-ytd${qs ? `?${qs}` : ''}`
+  const { data } = await client.get<StoreMonthlyYtdResponse | { data: StoreMonthlyYtdResponse }>(
+    `/reports/performance/store-monthly-ytd${qs ? `?${qs}` : ''}`,
+    { timeout: 120_000 }
   );
-  return data;
+  if (data && typeof data === 'object' && 'data' in data) {
+    return (data as { data: StoreMonthlyYtdResponse }).data;
+  }
+  return data as StoreMonthlyYtdResponse;
 }
 
 const MONTH_NAMES = [

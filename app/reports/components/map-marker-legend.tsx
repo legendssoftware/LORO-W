@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 export interface MapOverlayToggles {
   showInfluenceCircles: boolean;
   showSuggestedAreas: boolean;
+  showSalesRepLocations: boolean;
   showClients: boolean;
   showCompetitors: boolean;
   showBranches: boolean;
@@ -22,6 +23,7 @@ export interface MapOverlayToggles {
 export const DEFAULT_OVERLAY_TOGGLES: MapOverlayToggles = {
   showInfluenceCircles: false,
   showSuggestedAreas: false,
+  showSalesRepLocations: false,
   showClients: true,
   showCompetitors: true,
   showBranches: true,
@@ -105,6 +107,21 @@ export function MapMarkerLegend({
                 Suggested areas
               </label>
             ) : null}
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={overlays.showSalesRepLocations}
+                onChange={(e) =>
+                  onOverlayChange({ showSalesRepLocations: e.target.checked })
+                }
+                className="size-3.5 rounded border-border"
+              />
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: MARKER_COLORS.salesRep }}
+              />
+              Sales rep locations
+            </label>
           </fieldset>
           {presentTypes.length > 0 ? (
             <fieldset className="space-y-1">

@@ -15,6 +15,8 @@ import {
   useCompetitorsInfinite,
   useCompetitorMapMarkers,
   useMapGeocodeBackfillMutation,
+  useLatestRepLocations,
+  usePerformanceDashboard,
 } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
 import type { GetSiteOpportunitiesParams } from '@/api/endpoints/site-opportunities';
@@ -60,6 +62,7 @@ import { SiteOpportunityToolbar } from '@/app/reports/components/site-opportunit
 import { VisualiserMapSummaryDialog } from '@/app/reports/components/visualiser-map-summary-dialog';
 import { SuggestedAreasInfoDialog } from '@/app/reports/components/suggested-areas-info-dialog';
 import { MapPinIcon } from '@/lib/icons';
+import { useEnrichedCatchments } from '@/lib/site-opportunity/enrich-catchment-revenue';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -112,6 +115,9 @@ export function ReportsVisualiserTab({
   const [showOpportunities, setShowOpportunities] = useState(
     () => loadVisualiserPreferences().showOpportunities
   );
+  const [showSalesRepLocations, setShowSalesRepLocations] = useState(
+    () => loadVisualiserPreferences().showSalesRepLocations
+  );
   const prevShowOpportunitiesRef = useRef(false);
   const [opportunityMode, setOpportunityMode] = useState<SiteOpportunityMode>(
     () => loadVisualiserPreferences().opportunityMode
@@ -143,6 +149,7 @@ export function ReportsVisualiserTab({
       showOpportunities,
       opportunityMode,
       opportunitySettings,
+      showSalesRepLocations,
     });
   }, [
     selectedCountry,
@@ -150,6 +157,7 @@ export function ReportsVisualiserTab({
     showOpportunities,
     opportunityMode,
     opportunitySettings,
+    showSalesRepLocations,
   ]);
 
   const mapReportParams = useMemo((): GetMapReportParams => {
@@ -180,6 +188,10 @@ export function ReportsVisualiserTab({
   ]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
+  const repLocationsQuery = useLatestRepLocations(undefined, {
+    enabled: mounted && showSalesRepLocations,
+  });
+  const repLocations = repLocationsQuery.data?.locations ?? [];
   const { data: branches = [], refetch: refetchBranches } = useBranches({
     enabled: mounted,
   });
@@ -465,6 +477,15 @@ export function ReportsVisualiserTab({
     siteOpportunitiesQuery.data?.greenfield ??
     EMPTY_SITE_OPPORTUNITIES.greenfield;
 
+  const { data: performanceDashboard } = usePerformanceDashboard({
+    enabled: mounted && showOpportunities,
+  });
+  const enrichedCatchments = useEnrichedCatchments(
+    mapOpportunityCatchments,
+    branches,
+    performanceDashboard,
+  );
+
   const insufficientGeoWarning = useMemo(() => {
     if (!showOpportunities) return null;
     const dq = siteOpportunitiesQuery.data?.dataQuality;
@@ -487,7 +508,7 @@ export function ReportsVisualiserTab({
 
   const opportunityPanelProps = useMemo(
     () => ({
-      catchments: siteOpportunitiesQuery.data?.catchments ?? [],
+      catchments: enrichedCatchments,
       greenfield: siteOpportunitiesQuery.data?.greenfield ?? [],
       dataQuality:
         siteOpportunitiesQuery.data?.dataQuality ??
@@ -521,8 +542,13 @@ export function ReportsVisualiserTab({
       siteOpportunitiesQuery.data,
       siteOpportunitiesQuery.error,
       siteOpportunitiesQuery.isError,
+      enrichedCatchments,
     ]
   );
+
+  const handleSalesRepLocationsChange = useCallback((value: boolean) => {
+    setShowSalesRepLocations(value);
+  }, []);
 
   const geoPickerTriggerClass = 'h-9 min-w-[140px] shrink-0 sm:w-[200px]';
 
@@ -594,7 +620,7 @@ export function ReportsVisualiserTab({
                 }
                 warnings={siteOpportunitiesQuery.data?.warnings ?? []}
                 dataQuality={siteOpportunitiesQuery.data?.dataQuality}
-                catchments={mapOpportunityCatchments}
+                catchments={enrichedCatchments}
                 greenfield={mapOpportunityGreenfield}
                 onSelectZone={handleSelectOpportunity}
                 insufficientGeoWarning={insufficientGeoWarning}
@@ -663,6 +689,26 @@ export function ReportsVisualiserTab({
               'Could not load suggested areas.'}
           </p>
         ) : null}
+        {showSalesRepLocations &&
+        !repLocationsQuery.isPending &&
+        !repLocationsQuery.isError &&
+        repLocations.length === 0 ? (
+          <p
+            className="absolute left-0 right-0 top-10 z-[2001] mx-auto max-w-lg rounded-md border border-border bg-background/95 px-3 py-2 text-center text-sm text-muted-foreground shadow-sm"
+            role="status"
+          >
+            No recent mobile GPS for active reps (last 2 hours).
+          </p>
+        ) : null}
+        {showSalesRepLocations && repLocationsQuery.isError ? (
+          <p
+            className="absolute left-0 right-0 top-10 z-[2001] mx-auto max-w-lg rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+            role="alert"
+          >
+            {repLocationsQuery.error?.message ??
+              'Could not load sales rep locations.'}
+          </p>
+        ) : null}
         <ReportsVisualiserMap
           allMarkers={filteredMarkers}
           influenceCircles={influenceCircles}
@@ -670,7 +716,7 @@ export function ReportsVisualiserTab({
           mapLayerBusy={mapReport.isFetching && !mapReport.isError}
           className="flex-1 min-h-0 min-w-0 h-full"
           showOpportunities={showOpportunities}
-          opportunityCatchments={mapOpportunityCatchments}
+          opportunityCatchments={enrichedCatchments}
           opportunityGreenfield={mapOpportunityGreenfield}
           selectedOpportunityId={selectedOpportunityId}
           opportunitySelectionSeq={opportunitySelectionSeq}
@@ -679,6 +725,9 @@ export function ReportsVisualiserTab({
           branchMarkers={branchMarkers}
           branches={branches}
           orgLogoUrl={orgLogoUrl}
+          repLocations={repLocations}
+          showSalesRepLocations={showSalesRepLocations}
+          onSalesRepLocationsChange={handleSalesRepLocationsChange}
         />
         {showOpportunities ? (
           <SiteOpportunityPanel
