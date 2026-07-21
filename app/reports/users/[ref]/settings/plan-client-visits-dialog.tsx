@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import toast from 'react-hot-toast';
 import { CalendarDays, Search } from 'lucide-react';
 import { Loader2Icon } from '@/lib/icons';
@@ -19,13 +19,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { REPETITION_TYPE_OPTIONS } from '@/lib/task-form-utils';
 import { usePlanClientVisitsMutation } from '@/api/hooks/use-plan-client-visits';
 import { useUserVisitPlanSchedules } from '@/api/hooks/use-user-visit-plan-schedules';
 import {
   VISIT_DAY_OPTIONS,
   VISIT_DAY_PRESETS,
   computeVisitBatchPreviews,
+  estimateRecurringInstanceCount,
+  formatRecurrenceSummaryLabel,
+  getVisitSlotDate,
+  type RepetitionTypeValue,
   type VisitBatchPreviewClient,
 } from '@/lib/visit-planning/compute-visit-batches';
 import { deriveVisitPlanDefaultsFromActiveSchedule } from '@/lib/visit-planning/derive-visit-plan-defaults';
@@ -101,6 +113,8 @@ export function PlanClientVisitsDialog({
   const [clientSearch, setClientSearch] = useState('');
   const [defaultsReady, setDefaultsReady] = useState(false);
   const [hasActivePlanDefaults, setHasActivePlanDefaults] = useState(false);
+  const [repetitionType, setRepetitionType] = useState<RepetitionTypeValue>('NONE');
+  const [repetitionDeadline, setRepetitionDeadline] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -121,6 +135,8 @@ export function PlanClientVisitsDialog({
     setSelectedClientIds(defaults.selectedClientIds);
     setClientSearch('');
     setHasActivePlanDefaults(defaults.hasActivePlan);
+    setRepetitionType(defaults.repetitionType);
+    setRepetitionDeadline(defaults.repetitionDeadline);
     setDefaultsReady(true);
   }, [open, activeSchedulesLoading, activeSchedules?.slots, assignedClientIds]);
 
@@ -169,6 +185,41 @@ export function PlanClientVisitsDialog({
     );
   }, [previewClients, startDate, visitDaysOfWeek, parsedBatchSize]);
 
+  const recurrencePreview = useMemo(() => {
+    if (
+      repetitionType === 'NONE' ||
+      !repetitionDeadline?.trim() ||
+      !startDate ||
+      visitDaysOfWeek.length === 0
+    ) {
+      return null;
+    }
+
+    try {
+      const firstSlotDate = getVisitSlotDate(
+        startOfDay(parseISO(startDate.slice(0, 10))),
+        visitDaysOfWeek,
+        0
+      );
+      const endDate = startOfDay(parseISO(repetitionDeadline.slice(0, 10)));
+      if (endDate <= firstSlotDate) {
+        return 'Repetition end date must be after the first visit slot.';
+      }
+      const estimatedInstancesPerClient = estimateRecurringInstanceCount(
+        firstSlotDate,
+        repetitionType,
+        endDate
+      );
+      return formatRecurrenceSummaryLabel(
+        repetitionType,
+        repetitionDeadline,
+        estimatedInstancesPerClient
+      );
+    } catch {
+      return null;
+    }
+  }, [repetitionType, repetitionDeadline, startDate, visitDaysOfWeek]);
+
   function toggleVisitDay(day: number, checked: boolean) {
     setVisitDaysOfWeek((current) => {
       if (checked) {
@@ -211,6 +262,14 @@ export function PlanClientVisitsDialog({
       toast.error('Select at least one client.');
       return;
     }
+    if (repetitionType !== 'NONE' && !repetitionDeadline?.trim()) {
+      toast.error('Choose a repetition end date.');
+      return;
+    }
+    if (recurrencePreview?.startsWith('Repetition end date must be')) {
+      toast.error(recurrencePreview);
+      return;
+    }
 
     try {
       const result = await planMutation.mutateAsync({
@@ -218,6 +277,12 @@ export function PlanClientVisitsDialog({
         visitDaysOfWeek,
         batchSize: parsedBatchSize,
         clientIds: selectedClientIds,
+        ...(repetitionType !== 'NONE'
+          ? {
+              repetitionType,
+              repetitionDeadline: repetitionDeadline ?? undefined,
+            }
+          : {}),
       });
 
       const totalTasks = result.batches.reduce(
@@ -231,8 +296,15 @@ export function PlanClientVisitsDialog({
           ? ` ${assignedCount} client(s) assigned to this user.`
           : '';
 
+      const recurrenceNote = result.recurrenceSummary
+        ? ` Recurring ${result.recurrenceSummary.repetitionType.toLowerCase()} until ${format(
+            parseISO(result.recurrenceSummary.repetitionDeadline.slice(0, 10)),
+            'd MMM yyyy'
+          )} (~${result.recurrenceSummary.estimatedInstancesPerClient} visits per client).`
+        : '';
+
       toast.success(
-        `Visit plan created: ${result.batches.length} batch(es), ${totalTasks} task(s).${assignedNote}`
+        `Visit plan created: ${result.batches.length} batch(es), ${totalTasks} initial visit task(s).${assignedNote}${recurrenceNote}`
       );
 
       if (onClientsAssigned) {
@@ -363,6 +435,59 @@ export function PlanClientVisitsDialog({
                   hasActivePlanDefaults ? String(parsedBatchSize) : '10'
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Recurrence</Label>
+              <Select
+                value={repetitionType}
+                onValueChange={(value) => {
+                  const nextType = value as RepetitionTypeValue;
+                  setRepetitionType(nextType);
+                  if (nextType === 'NONE') {
+                    setRepetitionDeadline(null);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select repetition" />
+                </SelectTrigger>
+                <SelectContent className="z-[10001]">
+                  {REPETITION_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className="flex items-center gap-2">
+                        <option.icon className="size-4 shrink-0" />
+                        {option.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Each client visit repeats on its scheduled day until the end date.
+              </p>
+              {repetitionType !== 'NONE' && (
+                <div className="space-y-2">
+                  <Label>Repetition end date</Label>
+                  <DatePickerField
+                    value={repetitionDeadline}
+                    onChange={setRepetitionDeadline}
+                    placeholder="Pick end date"
+                  />
+                </div>
+              )}
+              {recurrencePreview && (
+                <p
+                  className={cn(
+                    'text-xs',
+                    recurrencePreview.startsWith('Repetition end date must be')
+                      ? 'text-destructive'
+                      : 'text-muted-foreground'
+                  )}
+                >
+                  {recurrencePreview}
+                </p>
+              )}
             </div>
           </div>
 
@@ -496,7 +621,9 @@ export function PlanClientVisitsDialog({
             disabled={
               planMutation.isPending ||
               selectedClientIds.length === 0 ||
-              visitDaysOfWeek.length === 0
+              visitDaysOfWeek.length === 0 ||
+              (repetitionType !== 'NONE' && !repetitionDeadline?.trim()) ||
+              recurrencePreview?.startsWith('Repetition end date must be') === true
             }
             onClick={handleGeneratePlan}
           >
