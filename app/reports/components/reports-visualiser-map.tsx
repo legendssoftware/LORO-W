@@ -38,6 +38,8 @@ import type {
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
 import { SiteOpportunityMapOverlays } from './site-opportunity-map-overlays';
+import { SalesRepLocationLayer } from './sales-rep-location-layer';
+import type { LatestRepLocation } from '@/api/types/tracking';
 import {
   MapMarkerLegend,
   DEFAULT_OVERLAY_TOGGLES,
@@ -273,6 +275,9 @@ export interface ReportsVisualiserMapProps {
   branchMarkers?: MapMarkerBase[];
   branches?: BranchListItem[];
   orgLogoUrl?: string | null;
+  repLocations?: LatestRepLocation[];
+  showSalesRepLocations?: boolean;
+  onSalesRepLocationsChange?: (value: boolean) => void;
 }
 
 function ReportsVisualiserMapInner({
@@ -291,10 +296,21 @@ function ReportsVisualiserMapInner({
   branchMarkers = [],
   branches = [],
   orgLogoUrl,
+  repLocations = [],
+  showSalesRepLocations = false,
+  onSalesRepLocationsChange,
 }: ReportsVisualiserMapProps) {
   const [selectedMarker, setSelectedMarker] = useState<MapMarkerBase | null>(null);
   const [overlays, setOverlays] = useState<MapOverlayToggles>(DEFAULT_OVERLAY_TOGGLES);
   const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+
+  const legendOverlays = useMemo(
+    (): MapOverlayToggles => ({
+      ...overlays,
+      showSalesRepLocations,
+    }),
+    [overlays, showSalesRepLocations]
+  );
 
   useEffect(() => {
     setOverlays((prev) => ({
@@ -302,6 +318,17 @@ function ReportsVisualiserMapInner({
       showSuggestedAreas: showOpportunities,
     }));
   }, [showOpportunities]);
+
+  const handleOverlayChange = useCallback(
+    (patch: Partial<MapOverlayToggles>) => {
+      if (patch.showSalesRepLocations !== undefined) {
+        onSalesRepLocationsChange?.(patch.showSalesRepLocations);
+        return;
+      }
+      setOverlays((prev) => ({ ...prev, ...patch }));
+    },
+    [onSalesRepLocationsChange]
+  );
 
   const handleSelectMarker = useCallback((marker: MapMarkerBase) => {
     setSelectedMarker((prev) =>
@@ -311,10 +338,6 @@ function ReportsVisualiserMapInner({
 
   const handleDeselectMarker = useCallback(() => {
     setSelectedMarker(null);
-  }, []);
-
-  const handleOverlayChange = useCallback((patch: Partial<MapOverlayToggles>) => {
-    setOverlays((prev) => ({ ...prev, ...patch }));
   }, []);
 
   const filteredByToggles = useMemo(
@@ -413,10 +436,13 @@ function ReportsVisualiserMapInner({
             onDeselectMarker={handleDeselectMarker}
             markerRefs={markerRefs}
           />
+          {showSalesRepLocations ? (
+            <SalesRepLocationLayer locations={repLocations} />
+          ) : null}
         </MapContainer>
         <MapMarkerLegend
           markers={allMarkers}
-          overlays={overlays}
+          overlays={legendOverlays}
           onOverlayChange={handleOverlayChange}
           onSuggestedAreas={onSuggestedAreas}
         />

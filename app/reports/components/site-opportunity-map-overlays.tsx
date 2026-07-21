@@ -17,8 +17,9 @@ import {
   formatZarShort,
   getPotentialBreakdown,
 } from '@/lib/site-opportunity/format-potential';
-import { buildTurnoverSimulation } from '@/lib/site-opportunity/turnover-simulation';
+import { buildTurnoverSimulation, branchSimulationTextClass } from '@/lib/site-opportunity/turnover-simulation';
 import { resolveBranchLogoUrl } from '@/lib/utils/resolve-branch-logo-url';
+import { cn } from '@/lib/utils';
 
 const FLY_DURATION_S = 0.6;
 const POPUP_OPEN_DELAY_MS = 650;
@@ -101,7 +102,12 @@ function CatchmentPopupContent({
     <div className="min-w-[180px] space-y-2 text-sm text-foreground">
       <div className="flex items-center gap-2">
         <BranchCatchmentLogo branchName={catchment.branchName} logoUrl={logoUrl} />
-        <p className="font-semibold leading-snug text-foreground">
+        <p
+          className={cn(
+            'font-semibold leading-snug',
+            branchSimulationTextClass(simulation),
+          )}
+        >
           #{catchment.rank} {catchment.branchName}
         </p>
       </div>

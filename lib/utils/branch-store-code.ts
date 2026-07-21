@@ -1,5 +1,12 @@
 import type { BranchListItem } from '@/api/types/branch';
 
+/** Normalize ERP store codes (B015, 015, 15 → 015). */
+export function normalizeStoreCode(code: string): string {
+  const trimmed = code.trim();
+  const withoutPrefix = /^[Bb]/.test(trimmed) ? trimmed.substring(1) : trimmed;
+  return withoutPrefix.padStart(3, '0');
+}
+
 /** Map ERP store code (e.g. "015") from branch ref / alias / name. */
 export function extractStoreCodeFromBranchMarker(marker: {
   ref?: unknown;
@@ -32,19 +39,23 @@ export function resolveChartStoreId(
   branches: BranchListItem[]
 ): string | undefined {
   const idStr = String(branchId);
-  const listUidMatch = /^branch-list-(\d+)$/.exec(idStr);
-  if (listUidMatch?.[1]) {
-    const uid = Number(listUidMatch[1]);
+
+  const resolveFromBranch = (branch: BranchListItem): string | undefined => {
+    const code = extractStoreCodeFromBranchMarker(branch);
+    if (code) return code;
+    if (branch.ref?.trim()) return branch.ref.trim();
+    return undefined;
+  };
+
+  const uidMatch =
+    /^(?:branch|branch-list)-(\d+)$/.exec(idStr) ??
+    (/^\d+$/.test(idStr) ? ['', idStr] : null);
+  if (uidMatch?.[1]) {
+    const uid = Number(uidMatch[1]);
     const branch = branches.find((b) => b.uid === uid);
     if (branch) {
-      const code = branch.ref?.trim();
-      if (code) {
-        const fromRef = extractStoreCodeFromBranchMarker({ ref: code });
-        if (fromRef) return fromRef;
-        return code;
-      }
-      const fromMeta = extractStoreCodeFromBranchMarker(branch);
-      if (fromMeta) return fromMeta;
+      const resolved = resolveFromBranch(branch);
+      if (resolved) return resolved;
     }
   }
 
@@ -52,10 +63,12 @@ export function resolveChartStoreId(
     (b) => String(b.uid) === idStr || b.ref === idStr
   );
   if (branch) {
-    const code = extractStoreCodeFromBranchMarker(branch);
-    if (code) return code;
-    if (branch.ref?.trim()) return branch.ref.trim();
+    const resolved = resolveFromBranch(branch);
+    if (resolved) return resolved;
   }
 
-  return idStr;
+  const fromId = extractStoreCodeFromBranchMarker({ ref: idStr, name: idStr });
+  if (fromId) return fromId;
+
+  return undefined;
 }
