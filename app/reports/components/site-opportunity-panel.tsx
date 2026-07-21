@@ -33,7 +33,7 @@ import { ActualVsSimulatedTurnover } from '@/app/reports/components/actual-vs-si
 import { BranchCatchmentLogo } from '@/app/reports/components/branch-catchment-logo';
 import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
 import { getPotentialBreakdown } from '@/lib/site-opportunity/format-potential';
-import { buildTurnoverSimulation } from '@/lib/site-opportunity/turnover-simulation';
+import { buildTurnoverSimulation, branchSimulationTextClass } from '@/lib/site-opportunity/turnover-simulation';
 import { resolveChartStoreId } from '@/lib/utils/branch-store-code';
 import { resolveBranchLogoUrl } from '@/lib/utils/resolve-branch-logo-url';
 import {
@@ -335,6 +335,10 @@ function ZoneDetail({
           orgLogoUrl,
         })
       : undefined;
+  const simulation = buildTurnoverSimulation(zone, {
+    actualRevenueZAR:
+      zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
+  });
 
   return (
     <div ref={detailRef} className="space-y-3 min-w-0 scroll-mt-3">
@@ -352,7 +356,7 @@ function ZoneDetail({
             <p className="text-xs text-muted-foreground uppercase tracking-wide">
               #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
             </p>
-            <h3 className="font-semibold text-foreground break-words">{title}</h3>
+            <h3 className={cn('font-semibold break-words', branchSimulationTextClass(simulation))}>{title}</h3>
             {zone.kind === 'greenfield' && zone.address ? (
               <p className="text-sm text-muted-foreground mt-0.5 break-words">
                 {zone.address}
@@ -545,7 +549,16 @@ function ZoneListItem({
         )}
       >
         <div className="flex items-center justify-between gap-2 min-w-0">
-          <span className="font-medium text-sm truncate min-w-0 flex-1">{title}</span>
+          <span
+            className={cn(
+              'text-sm truncate min-w-0 flex-1',
+              zone.kind === 'catchment'
+                ? branchSimulationTextClass(simulation)
+                : 'font-medium text-foreground',
+            )}
+          >
+            {title}
+          </span>
           <Badge variant="outline" className="shrink-0">
             #{zone.rank}
           </Badge>

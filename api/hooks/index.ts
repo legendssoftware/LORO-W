@@ -32,6 +32,10 @@ export {
   siteOpportunitiesQueryKey,
   useSiteOpportunities,
 } from './use-site-opportunities';
+export {
+  latestRepLocationsQueryKey,
+  useLatestRepLocations,
+} from './use-latest-rep-locations';
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';

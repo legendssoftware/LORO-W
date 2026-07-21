@@ -394,3 +394,86 @@ export function markerTooltipLabel(marker: MapMarkerBase): string {
   const mt = String(marker.markerType ?? '');
   return `${name} · ${mt}`;
 }
+
+function salesRepInitials(name: string, surname: string): string {
+  const parts = [name, surname].filter(Boolean);
+  if (parts.length === 0) return '?';
+  return parts
+    .map((p) => p.trim()[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function resolveUserAvatarUrl(
+  photoURL?: string | null,
+  avatar?: string | null
+): string | undefined {
+  const fromPhoto = photoURL?.trim();
+  if (fromPhoto) return fromPhoto;
+  const fromAvatar = avatar?.trim();
+  if (fromAvatar) return fromAvatar;
+  return undefined;
+}
+
+/** Distinct pin for latest mobile GPS per sales rep on the visualiser map. */
+export function createSalesRepLocationIcon(options: {
+  uid: number;
+  name: string;
+  surname: string;
+  photoURL?: string | null;
+  avatar?: string | null;
+}): ReturnType<typeof divIcon> {
+  const imageUrl = resolveUserAvatarUrl(options.photoURL, options.avatar);
+  const cacheKey = `sales-rep:${options.uid}:${imageUrl ?? 'none'}`;
+  const cached = iconCache.get(cacheKey);
+  if (cached) return cached;
+
+  const size = MAP_ENTITY_MARKER_SIZE;
+  const color = MARKER_COLORS.salesRep;
+
+  if (imageUrl) {
+    const icon = createLogoCircleMarkerIcon(
+      imageUrl,
+      color,
+      cacheKey,
+      size,
+      'sales-rep-marker'
+    );
+    iconCache.set(cacheKey, icon);
+    return icon;
+  }
+
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      {
+        className: 'sales-rep-marker',
+        style: {
+          backgroundColor: color,
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: 11,
+          fontWeight: 700,
+          boxShadow: '0 2px 8px rgba(2,132,199,0.45)',
+          border: '2px solid #fff',
+        },
+      },
+      salesRepInitials(options.name, options.surname)
+    )
+  );
+
+  const icon = divIcon({
+    html,
+    className: 'reports-viz-marker sales-rep-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+  iconCache.set(cacheKey, icon);
+  return icon;
+}

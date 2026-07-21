@@ -177,3 +177,15 @@ export function buildTurnoverSimulation(
     variancePct,
   };
 }
+
+/** Branch list / popup text: red when model exceeds actual ERP, green when at/above model. */
+export function branchSimulationTextClass(
+  simulation: Pick<TurnoverSimulation, 'actualMonthlyZAR' | 'simulatedMonthlyZAR'>,
+): string {
+  const actual = simulation.actualMonthlyZAR;
+  const hasActual = actual != null && Number.isFinite(actual) && actual > 0;
+  if (!hasActual) return 'text-foreground';
+  return simulation.simulatedMonthlyZAR > actual
+    ? 'text-red-600 font-semibold'
+    : 'text-green-600 font-semibold';
+}

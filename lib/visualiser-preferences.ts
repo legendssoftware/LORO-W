@@ -12,6 +12,7 @@ export interface VisualiserPreferences {
   showOpportunities: boolean;
   opportunityMode: SiteOpportunityMode;
   opportunitySettings: SiteOpportunitySettings;
+  showSalesRepLocations: boolean;
 }
 
 const DEFAULT_PREFERENCES: VisualiserPreferences = {
@@ -20,6 +21,7 @@ const DEFAULT_PREFERENCES: VisualiserPreferences = {
   showOpportunities: false,
   opportunityMode: 'both',
   opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  showSalesRepLocations: false,
 };
 
 function isSiteOpportunityMode(value: unknown): value is SiteOpportunityMode {
@@ -78,6 +80,7 @@ export function loadVisualiserPreferences(): VisualiserPreferences {
         ? parsed.opportunityMode
         : DEFAULT_PREFERENCES.opportunityMode,
       opportunitySettings: parseSettings(parsed.opportunitySettings),
+      showSalesRepLocations: parsed.showSalesRepLocations === true,
     };
   } catch {
     return DEFAULT_PREFERENCES;
