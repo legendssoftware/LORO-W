@@ -560,10 +560,10 @@ export async function patchUserPreferences(
   return data;
 }
 
-/** POST /user/:ref/plan-client-visits — batch weekly visit tasks for assigned clients. */
+/** POST /user/:ref/plan-client-visits — batch weekly visit tasks for selected clients. */
 export interface PlanClientVisitsBody {
   startDate: string;
-  visitDayOfWeek: number;
+  visitDaysOfWeek: number[];
   batchSize?: number;
   clientIds?: number[];
 }
@@ -578,6 +578,7 @@ export interface PlanClientVisitsBatchResult {
 export interface PlanClientVisitsResponse {
   message: string;
   batches: PlanClientVisitsBatchResult[];
+  newlyAssignedClientIds?: number[];
   warnings?: string[];
 }
 
@@ -589,6 +590,36 @@ export async function planClientVisits(
   const { data } = await client.post<PlanClientVisitsResponse>(
     `/user/${ref}/plan-client-visits`,
     body
+  );
+  return data;
+}
+
+/** GET /user/:ref/visit-plan-schedules — active visit-plan tasks grouped by date. */
+export interface VisitPlanScheduleTask {
+  uid: number;
+  title: string;
+  status: string;
+  clientUid?: number;
+  clientName?: string;
+}
+
+export interface VisitPlanScheduleSlot {
+  visitDate: string;
+  tasks: VisitPlanScheduleTask[];
+}
+
+export interface VisitPlanSchedulesResponse {
+  message: string;
+  slots: VisitPlanScheduleSlot[];
+  totalActiveTasks: number;
+}
+
+export async function getUserVisitPlanSchedules(
+  client: AxiosInstance,
+  ref: string | number
+): Promise<VisitPlanSchedulesResponse> {
+  const { data } = await client.get<VisitPlanSchedulesResponse>(
+    `/user/${ref}/visit-plan-schedules`
   );
   return data;
 }

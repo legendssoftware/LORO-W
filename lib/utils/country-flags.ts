@@ -17,6 +17,8 @@ const COUNTRY_FLAG_MAP: Record<string, CountryFlagInfo> = {
   ZAM: { code: 'ZAM', name: 'Zambia', flag: '🇿🇲' },
   MOZ: { code: 'MOZ', name: 'Mozambique', flag: '🇲🇿' },
   ZW: { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼' },
+  MAL: { code: 'MAL', name: 'Malawi', flag: '🇲🇼' },
+  CON: { code: 'CON', name: 'Congo', flag: '🇨🇩' },
 };
 
 /** ISO / legacy aliases → canonical keys used in COUNTRY_FLAG_MAP */
@@ -34,6 +36,13 @@ const ALIAS_TO_CANON: Record<string, string> = {
   MZ: 'MOZ',
   ZW: 'ZW',
   ZWE: 'ZW',
+  MAL: 'MAL',
+  MW: 'MAL',
+  MWI: 'MAL',
+  CON: 'CON',
+  CD: 'CON',
+  COD: 'CON',
+  DRC: 'CON',
 };
 
 const FULL_NAME_TO_CANON: Record<string, string> = {
@@ -43,10 +52,13 @@ const FULL_NAME_TO_CANON: Record<string, string> = {
   ZAMBIA: 'ZAM',
   MOZAMBIQUE: 'MOZ',
   ZIMBABWE: 'ZW',
+  MALAWI: 'MAL',
+  CONGO: 'CON',
+  'DEMOCRATIC REPUBLIC OF THE CONGO': 'CON',
 };
 
 /**
- * Map a single country string (column or free text) to SA | BOT | ZAM | MOZ | ZW, or null if unknown.
+ * Map a single country string (column or free text) to SA | BOT | ZAM | MOZ | ZW | MAL | CON, or null if unknown.
  */
 export function normalizeCountryToken(raw: string | null | undefined): string | null {
   if (raw == null) return null;
