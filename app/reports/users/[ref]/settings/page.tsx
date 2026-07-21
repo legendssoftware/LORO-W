@@ -86,6 +86,7 @@ import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
 import { canManageStaffUsers } from '@/lib/access';
 import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
+import { ActiveVisitSchedules } from './active-visit-schedules';
 import {
   CURRENCY_OPTIONS,
   TARGET_PERIOD_OPTIONS,
@@ -1319,13 +1320,14 @@ export default function UserSettingsPage() {
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    disabled={!(form.watch('assignedClientIds')?.length ?? 0)}
                     onClick={() => setPlanVisitsOpen(true)}
                   >
                     <CalendarDays className="size-4" />
                     Plan visit schedule
                   </Button>
                 </div>
+
+                {ref ? <ActiveVisitSchedules userRef={ref} /> : null}
               </CardContent>
             </Card>
 
@@ -1336,6 +1338,9 @@ export default function UserSettingsPage() {
                 userRef={ref}
                 assignedClientIds={form.watch('assignedClientIds') ?? []}
                 clients={clients}
+                onClientsAssigned={(clientIds) =>
+                  form.setValue('assignedClientIds', clientIds, { shouldDirty: true })
+                }
               />
             ) : null}
 

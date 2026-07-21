@@ -208,7 +208,7 @@ function userBehindOnAny(
   );
 }
 
-const COUNTRY_GROUP_ORDER = ['SA', 'BOT', 'ZAM', 'MOZ', 'ZW'] as const;
+const COUNTRY_GROUP_ORDER = ['SA', 'BOT', 'ZAM', 'MOZ', 'ZW', 'MAL', 'CON'] as const;
 const UNASSIGNED_GROUP_KEY = '__unassigned__';
 
 function countrySortKey(
