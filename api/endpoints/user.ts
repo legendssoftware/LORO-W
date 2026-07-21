@@ -566,6 +566,8 @@ export interface PlanClientVisitsBody {
   visitDaysOfWeek: number[];
   batchSize?: number;
   clientIds?: number[];
+  repetitionType?: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  repetitionDeadline?: string;
 }
 
 export interface PlanClientVisitsBatchResult {
@@ -575,11 +577,18 @@ export interface PlanClientVisitsBatchResult {
   tasksCreated: number;
 }
 
+export interface PlanClientVisitsRecurrenceSummary {
+  repetitionType: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  repetitionDeadline: string;
+  estimatedInstancesPerClient: number;
+}
+
 export interface PlanClientVisitsResponse {
   message: string;
   batches: PlanClientVisitsBatchResult[];
   newlyAssignedClientIds?: number[];
   warnings?: string[];
+  recurrenceSummary?: PlanClientVisitsRecurrenceSummary;
 }
 
 export async function planClientVisits(
@@ -601,6 +610,9 @@ export interface VisitPlanScheduleTask {
   status: string;
   clientUid?: number;
   clientName?: string;
+  repetitionType?: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  repetitionDeadline?: string;
+  repetitionSeriesId?: string;
 }
 
 export interface VisitPlanScheduleSlot {

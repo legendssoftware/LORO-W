@@ -1,4 +1,4 @@
-import { addWeeks, format, parseISO, startOfDay } from 'date-fns';
+import { addDays, addMonths, addWeeks, addYears, format, parseISO, startOfDay } from 'date-fns';
 
 export function nextDayOfWeekOnOrAfter(startDate: Date, visitDayOfWeek: number): Date {
   const anchor = startOfDay(startDate);
@@ -88,6 +88,75 @@ export type VisitBatchPreview = {
   visitDateLabel: string;
   clients: VisitBatchPreviewClient[];
 };
+
+export type RepetitionTypeValue =
+  | 'NONE'
+  | 'DAILY'
+  | 'WEEKLY'
+  | 'MONTHLY'
+  | 'YEARLY';
+
+/** Count visit task instances for a series (first task + repeats until end date). */
+export function estimateRecurringInstanceCount(
+  firstVisitDate: Date,
+  repetitionType: RepetitionTypeValue,
+  repetitionDeadline: Date
+): number {
+  if (repetitionType === 'NONE') {
+    return 1;
+  }
+
+  const startDate = startOfDay(firstVisitDate);
+  const endDate = startOfDay(repetitionDeadline);
+
+  if (endDate <= startDate) {
+    return 1;
+  }
+
+  let count = 1;
+  let currentDate = new Date(startDate);
+
+  while (currentDate < endDate) {
+    let nextDate: Date;
+    switch (repetitionType) {
+      case 'DAILY':
+        nextDate = addDays(currentDate, 1);
+        break;
+      case 'WEEKLY':
+        nextDate = addWeeks(currentDate, 1);
+        break;
+      case 'MONTHLY':
+        nextDate = addMonths(currentDate, 1);
+        break;
+      case 'YEARLY':
+        nextDate = addYears(currentDate, 1);
+        break;
+      default:
+        return count;
+    }
+
+    if (nextDate > endDate) {
+      break;
+    }
+
+    count++;
+    currentDate = nextDate;
+  }
+
+  return count;
+}
+
+export function formatRecurrenceSummaryLabel(
+  repetitionType: RepetitionTypeValue,
+  repetitionDeadlineIso: string,
+  estimatedInstancesPerClient: number
+): string {
+  const typeLabel = repetitionType.toLowerCase();
+  const endLabel = format(parseISO(repetitionDeadlineIso.slice(0, 10)), 'd MMM yyyy');
+  return `Repeats ${typeLabel} until ${endLabel} (~${estimatedInstancesPerClient} visit${
+    estimatedInstancesPerClient === 1 ? '' : 's'
+  } per client)`;
+}
 
 export function computeVisitBatchPreviews(
   clients: VisitBatchPreviewClient[],

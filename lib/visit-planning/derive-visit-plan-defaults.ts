@@ -1,13 +1,30 @@
 import { format, parseISO } from 'date-fns';
 import type { VisitPlanScheduleSlot } from '@/api/endpoints/user';
 
+export type RepetitionTypeValue =
+  | 'NONE'
+  | 'DAILY'
+  | 'WEEKLY'
+  | 'MONTHLY'
+  | 'YEARLY';
+
 export type VisitPlanFormDefaults = {
   startDate: string;
   visitDaysOfWeek: number[];
   batchSize: number;
   selectedClientIds: number[];
   hasActivePlan: boolean;
+  repetitionType: RepetitionTypeValue;
+  repetitionDeadline: string | null;
 };
+
+const VALID_REPETITION_TYPES: RepetitionTypeValue[] = [
+  'NONE',
+  'DAILY',
+  'WEEKLY',
+  'MONTHLY',
+  'YEARLY',
+];
 
 function inferBatchSizeFromSlots(slots: VisitPlanScheduleSlot[]): number {
   const counts = slots.map((slot) => slot.tasks.length).filter((count) => count > 0);
@@ -30,6 +47,42 @@ function inferBatchSizeFromSlots(slots: VisitPlanScheduleSlot[]): number {
   return Math.min(50, Math.max(1, batchSize));
 }
 
+function inferRecurrenceFromSlots(slots: VisitPlanScheduleSlot[]): {
+  repetitionType: RepetitionTypeValue;
+  repetitionDeadline: string | null;
+} {
+  const allTasks = slots.flatMap((slot) => slot.tasks);
+  const seriesTasks = allTasks.filter((task) => task.repetitionSeriesId);
+
+  if (seriesTasks.length === 0) {
+    return { repetitionType: 'NONE', repetitionDeadline: null };
+  }
+
+  const seriesIds = new Set(
+    seriesTasks.map((task) => task.repetitionSeriesId).filter(Boolean)
+  );
+  const firstSeriesId = [...seriesIds][0];
+  const matchingSeriesTasks = seriesTasks.filter(
+    (task) => task.repetitionSeriesId === firstSeriesId
+  );
+  const anchorTask =
+    matchingSeriesTasks.find(
+      (task) => task.repetitionType && task.repetitionType !== 'NONE'
+    ) ?? matchingSeriesTasks[0];
+
+  const repetitionType = VALID_REPETITION_TYPES.includes(
+    anchorTask.repetitionType as RepetitionTypeValue
+  ) && anchorTask.repetitionType !== 'NONE'
+    ? (anchorTask.repetitionType as RepetitionTypeValue)
+    : 'WEEKLY';
+
+  const repetitionDeadline = anchorTask.repetitionDeadline
+    ? format(parseISO(anchorTask.repetitionDeadline.slice(0, 10)), 'yyyy-MM-dd')
+    : null;
+
+  return { repetitionType, repetitionDeadline };
+}
+
 export function deriveVisitPlanDefaultsFromActiveSchedule(
   slots: VisitPlanScheduleSlot[],
   assignedClientIds: number[]
@@ -43,6 +96,8 @@ export function deriveVisitPlanDefaultsFromActiveSchedule(
       batchSize: 10,
       selectedClientIds: [...assignedClientIds],
       hasActivePlan: false,
+      repetitionType: 'NONE',
+      repetitionDeadline: null,
     };
   }
 
@@ -73,6 +128,8 @@ export function deriveVisitPlanDefaultsFromActiveSchedule(
     ),
   ];
 
+  const { repetitionType, repetitionDeadline } = inferRecurrenceFromSlots(sortedSlots);
+
   return {
     startDate,
     visitDaysOfWeek: visitDaysOfWeek.length > 0 ? visitDaysOfWeek : [2],
@@ -80,5 +137,7 @@ export function deriveVisitPlanDefaultsFromActiveSchedule(
     selectedClientIds:
       clientIdsFromPlan.length > 0 ? clientIdsFromPlan : [...assignedClientIds],
     hasActivePlan: true,
+    repetitionType,
+    repetitionDeadline,
   };
 }

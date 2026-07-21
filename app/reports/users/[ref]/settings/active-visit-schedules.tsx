@@ -66,6 +66,11 @@ export function ActiveVisitSchedules({ userRef }: ActiveVisitSchedulesProps) {
                   <span className="text-foreground">
                     {task.clientName ?? task.title}
                   </span>
+                  {task.repetitionSeriesId && (
+                    <Badge variant="secondary" className="text-[10px] font-normal">
+                      Recurring
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="text-[10px] font-normal">
                     {formatTaskStatus(task.status)}
                   </Badge>
