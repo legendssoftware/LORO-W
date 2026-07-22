@@ -126,7 +126,7 @@ const ReportMapMarker = memo(function ReportMapMarker({
 }: {
   marker: MapMarkerBase;
   onSelectMarker: (marker: MapMarkerBase) => void;
-  onDeselectMarker: () => void;
+  onDeselectMarker: (markerId: string) => void;
   isSelected: boolean;
   markerRefs: React.MutableRefObject<Map<string, L.Marker>>;
 }) {
@@ -141,6 +141,17 @@ const ReportMapMarker = memo(function ReportMapMarker({
     return () => window.clearTimeout(id);
   }, [isSelected, markerId, markerRefs]);
 
+  useEffect(() => {
+    const ref = markerRefs.current.get(markerId);
+    const el = ref?.getElement();
+    if (!el) return;
+    const pinEl = el.querySelector('.reports-viz-marker') ?? el;
+    pinEl.classList.toggle('is-selected', isSelected);
+    return () => {
+      pinEl.classList.remove('is-selected');
+    };
+  }, [isSelected, markerId, markerRefs]);
+
   if (!position) return null;
 
   return (
@@ -150,7 +161,7 @@ const ReportMapMarker = memo(function ReportMapMarker({
         else markerRefs.current.delete(markerId);
       }}
       position={position}
-      icon={getReportMarkerIcon(marker, { isSelected })}
+      icon={getReportMarkerIcon(marker)}
       zIndexOffset={mt === 'org' ? 500 : undefined}
       eventHandlers={{
         click: () => onSelectMarker(marker),
@@ -158,7 +169,7 @@ const ReportMapMarker = memo(function ReportMapMarker({
     >
       <Tooltip
         direction="top"
-        offset={[0, -18]}
+        offset={[0, -36]}
         className="reports-viz-tooltip"
         opacity={1}
       >
@@ -170,7 +181,7 @@ const ReportMapMarker = memo(function ReportMapMarker({
           autoPanPadding={[24, 24]}
           maxWidth={320}
           eventHandlers={{
-            remove: () => onDeselectMarker(),
+            popupclose: () => onDeselectMarker(markerId),
           }}
         >
           <MapMarkerDetailPopup marker={marker} />
@@ -195,7 +206,7 @@ function MapMarkerLayers({
   allMarkers: MapMarkerBase[];
   selectedMarkerId: string | null;
   onSelectMarker: (marker: MapMarkerBase) => void;
-  onDeselectMarker: () => void;
+  onDeselectMarker: (markerId: string) => void;
   markerRefs: React.MutableRefObject<Map<string, L.Marker>>;
 }) {
   const visibleMarkers = useViewportMarkers(allMarkers);
@@ -331,13 +342,15 @@ function ReportsVisualiserMapInner({
   );
 
   const handleSelectMarker = useCallback((marker: MapMarkerBase) => {
-    setSelectedMarker((prev) =>
-      prev && String(prev.id) === String(marker.id) ? null : marker
-    );
+    setSelectedMarker(marker);
   }, []);
 
-  const handleDeselectMarker = useCallback(() => {
-    setSelectedMarker(null);
+  const handleDeselectMarker = useCallback((markerId: string) => {
+    setSelectedMarker((prev) => {
+      if (!prev) return null;
+      if (String(prev.id) !== markerId) return prev;
+      return null;
+    });
   }, []);
 
   const filteredByToggles = useMemo(

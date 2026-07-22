@@ -11,6 +11,14 @@ import {
   resolveCompetitorMarkerColor,
   type MapEntityMarkerType,
 } from '@/app/reports/components/map-report-constants';
+import {
+  MAP_PIN_HEIGHT,
+  MAP_PIN_WIDTH,
+  ORG_BRANCH_PIN_URL,
+} from '@/lib/leaflet/map-pin-constants';
+import {
+  resolveCompetitorLogoUrlFromMarker,
+} from '@/lib/utils/resolve-competitor-logo-url';
 
 const MARKER_SIZE = 36;
 const MARKER_ANCHOR = MARKER_SIZE / 2;
@@ -45,6 +53,7 @@ class LRUCache<K, V> {
 const iconCache = new LRUCache<string, ReturnType<typeof divIcon>>(ICON_CACHE_MAX);
 const lucideCircleIconCache = new LRUCache<string, ReturnType<typeof divIcon>>(ICON_CACHE_MAX);
 const logoCircleIconCache = new LRUCache<string, ReturnType<typeof divIcon>>(ICON_CACHE_MAX);
+const mapPinIconCache = new LRUCache<string, ReturnType<typeof divIcon>>(ICON_CACHE_MAX);
 
 function getInitials(name: string): string {
   const parts = String(name).trim().split(/\s+/).filter(Boolean).slice(0, 2);
@@ -66,13 +75,6 @@ function initialsSourceForLeadMarker(marker: MapMarkerBase): string {
   return String(marker.name ?? marker.id ?? 'lead');
 }
 
-function resolveCompetitorLogoUrl(marker: MapMarkerBase): string | undefined {
-  const raw =
-    marker.logoUrl?.trim() ||
-    (typeof marker.logo === 'string' ? marker.logo.trim() : undefined);
-  return raw || undefined;
-}
-
 function resolveBranchOrOrgLogoUrl(marker: MapMarkerBase): string | undefined {
   const raw =
     marker.logoUrl?.trim() ||
@@ -82,7 +84,7 @@ function resolveBranchOrOrgLogoUrl(marker: MapMarkerBase): string | undefined {
 
 function resolveMarkerImageUrl(marker: MapMarkerBase): string | undefined {
   const mt = String(marker.markerType ?? '');
-  if (mt === 'competitor') return resolveCompetitorLogoUrl(marker);
+  if (mt === 'competitor') return resolveCompetitorLogoUrlFromMarker(marker);
   if (mt === 'branch' || mt === 'org') return resolveBranchOrOrgLogoUrl(marker);
   if (
     ['check-in', 'shift-start', 'shift-end', 'break-start', 'break-end', 'claim'].includes(mt)
@@ -163,6 +165,27 @@ function escapeHtmlAttr(value: string): string {
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;');
+}
+
+function createMapPinMarkerIcon(
+  logoUrl: string,
+  cacheKey: string,
+  extraClass = ''
+): ReturnType<typeof divIcon> {
+  const cached = mapPinIconCache.get(cacheKey);
+  if (cached) return cached;
+
+  const classAttr = extraClass ? ` ${extraClass}` : '';
+  const safeUrl = escapeHtmlAttr(logoUrl);
+  const html = `<div class="map-pin-marker${classAttr}" style="width:${MAP_PIN_WIDTH}px;height:${MAP_PIN_HEIGHT}px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.28));"><img src="${safeUrl}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;" /></div>`;
+  const icon = divIcon({
+    html,
+    className: `reports-viz-marker map-pin-marker${extraClass ? ` ${extraClass}` : ''}`,
+    iconSize: [MAP_PIN_WIDTH, MAP_PIN_HEIGHT],
+    iconAnchor: [MAP_PIN_WIDTH / 2, MAP_PIN_HEIGHT],
+  });
+  mapPinIconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function createLogoCircleMarkerIcon(
@@ -326,14 +349,12 @@ export function getReportMarkerIcon(
   const extraClass = [selectedClass, checkInClass].filter(Boolean).join(' ');
 
   if (mt === 'competitor') {
-    const logoUrl = resolveCompetitorLogoUrl(marker);
+    const logoUrl = resolveCompetitorLogoUrlFromMarker(marker);
     const resolvedBg = resolveCompetitorMarkerColor(marker);
     if (logoUrl) {
-      return createLogoCircleMarkerIcon(
+      return createMapPinMarkerIcon(
         logoUrl,
-        resolvedBg,
-        `competitor-logo:${marker.id}:${logoUrl}:${resolvedBg}:${extraClass}`,
-        MAP_ENTITY_MARKER_SIZE,
+        `map-pin:${marker.id}:${logoUrl}:${extraClass}`,
         extraClass
       );
     }
@@ -351,16 +372,11 @@ export function getReportMarkerIcon(
     const entityType = mt as MapEntityMarkerType;
     const { Icon, bg } = MAP_ENTITY_MARKERS[entityType];
     if (mt === 'branch' || mt === 'org') {
-      const logoUrl = resolveBranchOrOrgLogoUrl(marker);
-      if (logoUrl) {
-        return createLogoCircleMarkerIcon(
-          logoUrl,
-          bg,
-          `${entityType}-logo:${marker.id}:${logoUrl}:${bg}:${extraClass}`,
-          MAP_ENTITY_MARKER_SIZE,
-          extraClass
-        );
-      }
+      return createMapPinMarkerIcon(
+        ORG_BRANCH_PIN_URL,
+        `${entityType}-pin:${marker.id}:${ORG_BRANCH_PIN_URL}:${extraClass}`,
+        extraClass
+      );
     }
     return createLucideCircleMarkerIcon(
       bg,
