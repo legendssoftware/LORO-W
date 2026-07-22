@@ -143,6 +143,12 @@ export {
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
 export {
+  PAYSLIPS_QUERY_KEY_PREFIX,
+  type PayslipsListHookOptions,
+  usePayslips,
+  usePayslipDocument,
+} from './use-payslips';
+export {
   CLAIMS_QUERY_KEY_PREFIX,
   invalidateClaimsQueries,
   useClaims,
