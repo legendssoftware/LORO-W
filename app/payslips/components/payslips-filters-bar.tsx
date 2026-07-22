@@ -169,9 +169,9 @@ function PayslipsFilterControls({
               size="sm"
               className="h-8"
               onClick={() => {
-                const { start, end } = getUtcMonthRange(utcToday());
+                const { from, to } = getUtcMonthRange(utcToday());
                 onSetUseAllTime(false);
-                onRangeChange({ start, end });
+                onRangeChange(payslipsDateStateFromYmd(from, to));
                 setDatePopoverOpen(false);
               }}
             >
