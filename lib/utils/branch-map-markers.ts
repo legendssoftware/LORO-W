@@ -1,5 +1,6 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import type { BranchListItem } from '@/api/types/branch';
+import { ORG_BRANCH_PIN_URL } from '@/lib/leaflet/map-pin-constants';
 import { formatAddressLine, hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 
 /** Single-line postal address for display (GET /branch list). */
@@ -39,7 +40,7 @@ export function buildBranchMarkersFromList(branches: BranchListItem[]): MapMarke
       markerType: 'branch',
       address: line ?? '',
       branchUid: b.uid,
-      logoUrl: b.logoUrl?.trim() || null,
+      logoUrl: ORG_BRANCH_PIN_URL,
       email: branchStringField(b.email),
       phone: branchStringField(b.phone),
       contactPerson: branchStringField(b.contactPerson),

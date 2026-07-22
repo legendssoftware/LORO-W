@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { orgSiteInitials } from '@/lib/client-display';
+import { isLocalMapPinAsset } from '@/lib/utils/resolve-competitor-logo-url';
 import { cn } from '@/lib/utils';
 
 export function BranchCatchmentLogo({
@@ -25,23 +26,29 @@ export function BranchCatchmentLogo({
   const showLogo = Boolean(logoUrl) && !logoFailed;
   const initials = orgSiteInitials(branchName);
   const dim = size === 'sm' ? 'size-8' : 'size-10';
+  const isPinLogo = isLocalMapPinAsset(logoUrl);
 
   if (showLogo && logoUrl) {
     return (
       <span
         className={cn(
-          dim,
-          'shrink-0 overflow-hidden rounded-full border-2 border-border bg-white',
+          isPinLogo ? 'h-12 w-10' : dim,
+          'shrink-0 overflow-hidden',
+          !isPinLogo && 'rounded-full border-2 border-border bg-white',
           className,
         )}
         aria-hidden
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- external branch logo URLs */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- local pin assets / branch logos */}
         <img
           src={logoUrl}
           alt=""
-          referrerPolicy="no-referrer"
-          className="size-full object-contain p-0.5"
+          referrerPolicy={isPinLogo ? undefined : 'no-referrer'}
+          className={
+            isPinLogo
+              ? 'size-full object-contain object-bottom'
+              : 'size-full object-contain p-0.5'
+          }
           onError={() => setLogoFailed(true)}
         />
       </span>

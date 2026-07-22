@@ -5,6 +5,7 @@ import {
   brandMarkerColor,
   resolveHardwareBrand,
 } from '@/lib/site-opportunity/compute/brands';
+import { resolveCompetitorLogoUrl } from '@/lib/utils/resolve-competitor-logo-url';
 
 export function formatCompetitorAddressLine(c: CompetitorListItem): string | null {
   return formatAddressLine(c.address);
@@ -62,6 +63,9 @@ export function buildCompetitorMarkersFromList(
     const line = formatCompetitorAddressLine(c);
     const accountName = competitorStringField(c.accountName);
     const legalEntity = competitorStringField(c.LegalEntity);
+    const tradingName = competitorStringField(c.TradingName);
+    const brandStatus = competitorStringField(c.brandStatus);
+    const alias = competitorStringField(c.alias);
     const brandInput = {
       name: c.name,
       accountName,
@@ -69,6 +73,15 @@ export function buildCompetitorMarkersFromList(
     };
     const hardwareBrand = resolveHardwareBrand(brandInput);
     const markerColor = brandMarkerColor(hardwareBrand);
+    const logoUrl =
+      resolveCompetitorLogoUrl({
+        name: c.name,
+        accountName,
+        LegalEntity: legalEntity,
+        TradingName: tradingName,
+        brandStatus,
+        alias,
+      }) ?? undefined;
 
     out.push({
       id: `competitor-list-${c.uid}`,
@@ -85,7 +98,7 @@ export function buildCompetitorMarkersFromList(
       LegalEntity: legalEntity,
       industry: c.industry,
       status: c.status ?? 'active',
-      logoUrl: c.logoUrl,
+      logoUrl,
       ...competitorListMarkerExtras(c),
     });
   }

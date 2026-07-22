@@ -29,6 +29,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2Icon } from '@/lib/icons';
+import {
+  isLocalMapPinAsset,
+  resolveMapPinUrl,
+} from '@/lib/utils/resolve-competitor-logo-url';
+import {
+  MAP_PIN_HEIGHT,
+  MAP_PIN_WIDTH,
+} from '@/lib/leaflet/map-pin-constants';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -54,80 +62,65 @@ const MARKER_TYPE_CONFIG: Record<
 const MARKER_ICON_SIZE = 24;
 const iconCache = new Map<string, ReturnType<typeof divIcon>>();
 
-function resolveCompetitorLogoUrl(marker: MapMarkerBase): string | undefined {
-  const raw =
-    marker.logoUrl?.trim() ||
-    (typeof marker.logo === 'string' ? marker.logo.trim() : undefined);
-  return raw || undefined;
-}
-
 function createMarkerIcon(marker: MapMarkerBase): ReturnType<typeof divIcon> {
   const markerType = marker.markerType;
-  const logoUrl =
-    markerType === 'competitor' || markerType === 'branch' || markerType === 'org'
-      ? resolveCompetitorLogoUrl(marker)
-      : undefined;
-  const cacheKey = logoUrl
-    ? `${markerType}:${marker.id}:${logoUrl}`
+  const mapPinUrl = resolveMapPinUrl(marker);
+  const cacheKey = mapPinUrl
+    ? `${markerType}:${marker.id}:${mapPinUrl}`
     : markerType;
   const cached = iconCache.get(cacheKey);
   if (cached) return cached;
 
   const config = getMarkerConfig(markerType);
+
+  if (mapPinUrl && isLocalMapPinAsset(mapPinUrl)) {
+    const html = renderToStaticMarkup(
+      createElement('img', {
+        src: mapPinUrl,
+        alt: '',
+        style: {
+          width: MAP_PIN_WIDTH,
+          height: MAP_PIN_HEIGHT,
+          objectFit: 'contain',
+          display: 'block',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.28))',
+        },
+      })
+    );
+    const icon = divIcon({
+      html,
+      className: 'custom-marker-icon map-pin-marker',
+      iconSize: [MAP_PIN_WIDTH, MAP_PIN_HEIGHT],
+      iconAnchor: [MAP_PIN_WIDTH / 2, MAP_PIN_HEIGHT],
+    });
+    iconCache.set(cacheKey, icon);
+    return icon;
+  }
+
   const size = MARKER_ICON_SIZE;
 
-  const html = logoUrl
-    ? renderToStaticMarkup(
-        createElement(
-          'div',
-          {
-            className: 'marker-circle',
-            style: {
-              width: size,
-              height: size,
-              borderRadius: '50%',
-              border: `2px solid ${config.color}`,
-              overflow: 'hidden',
-              background: '#fff',
-              boxSizing: 'border-box',
-            },
-          },
-          createElement('img', {
-            src: logoUrl,
-            alt: '',
-            referrerPolicy: 'no-referrer',
-            style: {
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              borderRadius: '50%',
-              display: 'block',
-            },
-          })
-        )
-      )
-    : renderToStaticMarkup(
-        createElement(
-          'div',
-          {
-            className: 'marker-circle',
-            style: {
-              backgroundColor: config.color,
-              width: size,
-              height: size,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-          },
-          createElement(config.icon, {
-            size: 14,
-            color: 'white',
-            strokeWidth: 2.5,
-          })
-        )
-      );
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      {
+        className: 'marker-circle',
+        style: {
+          backgroundColor: config.color,
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      },
+      createElement(config.icon, {
+        size: 14,
+        color: 'white',
+        strokeWidth: 2.5,
+      })
+    )
+  );
 
   const icon = divIcon({
     html,

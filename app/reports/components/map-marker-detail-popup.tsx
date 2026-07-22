@@ -20,6 +20,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDisplayName, formatEmailDisplay, orgSiteInitials } from '@/lib/client-display';
 import { formatZar } from '@/lib/client-portal-utils';
+import {
+  isLocalMapPinAsset,
+  resolveCompetitorLogoUrlFromMarker,
+  resolveOrgBranchPinUrl,
+} from '@/lib/utils/resolve-competitor-logo-url';
 import { markerTypeLabel } from './map-report-constants';
 
 const SKIP_TOP_LEVEL = new Set([
@@ -209,6 +214,12 @@ function readBranchName(marker: MapMarkerBase): string | undefined {
 }
 
 function resolveOrgSiteLogoUrl(marker: MapMarkerBase): string | undefined {
+  const mt = String(marker.markerType ?? '');
+  if (mt === 'competitor') {
+    return resolveCompetitorLogoUrlFromMarker(marker);
+  }
+  const orgBranchPin = resolveOrgBranchPinUrl(marker);
+  if (orgBranchPin) return orgBranchPin;
   const raw =
     marker.logoUrl?.trim() ||
     (typeof marker.logo === 'string' ? marker.logo.trim() : undefined);
@@ -337,6 +348,7 @@ function OrgSiteHeader({
 }) {
   const isClient = mt === 'client';
   const logoUrl = isClient ? undefined : resolveOrgSiteLogoUrl(marker);
+  const isPinLogo = isLocalMapPinAsset(logoUrl);
   const [logoFailed, setLogoFailed] = useState(false);
   useEffect(() => {
     setLogoFailed(false);
@@ -354,16 +366,24 @@ function OrgSiteHeader({
       <div className="flex gap-3 pr-6">
         {showLogo && logoUrl ? (
           <span
-            className="size-10 shrink-0 overflow-hidden rounded-full border-2 border-border bg-white"
-            style={ringColor ? { borderColor: ringColor } : undefined}
+            className={
+              isPinLogo
+                ? 'h-12 w-10 shrink-0 overflow-hidden'
+                : 'size-10 shrink-0 overflow-hidden rounded-full border-2 border-border bg-white'
+            }
+            style={!isPinLogo && ringColor ? { borderColor: ringColor } : undefined}
             aria-hidden
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- external competitor/branch logo URLs */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- competitor pin assets / branch logos */}
             <img
               src={logoUrl}
               alt=""
-              referrerPolicy="no-referrer"
-              className="size-full object-contain p-0.5"
+              referrerPolicy={isPinLogo ? undefined : 'no-referrer'}
+              className={
+                isPinLogo
+                  ? 'size-full object-contain object-bottom'
+                  : 'size-full object-contain p-0.5'
+              }
               onError={() => setLogoFailed(true)}
             />
           </span>
