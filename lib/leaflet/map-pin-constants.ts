@@ -2,5 +2,5 @@
 export const MAP_PIN_WIDTH = 68;
 export const MAP_PIN_HEIGHT = 84;
 
-/** BitDrywall / Build It pin used for org HQ and branch markers. */
+/** BitDrywall pin used for org HQ and branch markers. */
 export const ORG_BRANCH_PIN_URL = '/competitor/bitdrywall.png';

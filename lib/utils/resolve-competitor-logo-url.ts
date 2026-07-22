@@ -4,6 +4,7 @@ import { ORG_BRANCH_PIN_URL } from '@/lib/leaflet/map-pin-constants';
 /** Local 3D map-pin assets under `web/public/competitor/`. */
 export const COMPETITOR_PIN_ASSETS = {
   bitdrywall: ORG_BRANCH_PIN_URL,
+  buildit: '/competitor/buildit.png',
   buco: '/competitor/buco.png',
   builders: '/competitor/builders.png',
   builtmart: '/competitor/builtmart.png',
@@ -92,7 +93,7 @@ export function resolveCompetitorLogoSlug(input: CompetitorLogoInput): Competito
   ) {
     return null;
   }
-  if (/(^| )build ?it( |$)/.test(hay) || /(^| )buildit( |$)/.test(hay)) return 'bitdrywall';
+  if (/(^| )build ?it( |$)/.test(hay) || /(^| )buildit( |$)/.test(hay)) return 'buildit';
   if (/bitdrywall|bit drywall/.test(hay)) return 'bitdrywall';
   if (/build ?mart|builtmart|build-mart/.test(hay)) return 'builtmart';
   if (/capco/.test(hay)) return 'capco';
