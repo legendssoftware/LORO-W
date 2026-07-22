@@ -30,9 +30,9 @@ export function useLatestRepLocations(
       return response.data;
     },
     enabled,
-    staleTime: 30_000,
+    staleTime: 15_000,
     gcTime: 5 * 60 * 1000,
-    refetchInterval: enabled ? 60_000 : false,
+    refetchInterval: enabled ? 30_000 : false,
     refetchOnWindowFocus: false,
   });
 }

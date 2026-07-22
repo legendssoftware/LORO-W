@@ -81,9 +81,13 @@ function filterMarkersByOverlayToggles(
 
 function FitReportBounds({
   markers,
+  repLocations = [],
+  includeRepLocations = false,
   fitBoundsKey,
 }: {
   markers: MapMarkerBase[];
+  repLocations?: LatestRepLocation[];
+  includeRepLocations?: boolean;
   /** Changes when country/province filters change — not on every marker refetch. */
   fitBoundsKey: string;
 }) {
@@ -91,9 +95,7 @@ function FitReportBounds({
   const lastFittedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!fitBoundsKey || markers.length === 0) return;
-    if (lastFittedKeyRef.current === fitBoundsKey) return;
-    lastFittedKeyRef.current = fitBoundsKey;
+    if (!fitBoundsKey) return;
 
     const latLngs: L.LatLngExpression[] = [];
     for (const m of markers) {
@@ -101,7 +103,19 @@ function FitReportBounds({
         latLngs.push([m.latitude, m.longitude]);
       }
     }
+    if (includeRepLocations) {
+      for (const rep of repLocations) {
+        const lat = Number(rep.latitude);
+        const lng = Number(rep.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          latLngs.push([lat, lng]);
+        }
+      }
+    }
     if (latLngs.length === 0) return;
+    if (lastFittedKeyRef.current === fitBoundsKey) return;
+    lastFittedKeyRef.current = fitBoundsKey;
+
     if (latLngs.length === 1) {
       map.flyTo(latLngs[0], DEFAULT_ZOOM, { duration: FLY_BOUNDS_DURATION_S });
       return;
@@ -112,7 +126,7 @@ function FitReportBounds({
       maxZoom: 14,
       duration: FLY_BOUNDS_DURATION_S,
     });
-  }, [map, fitBoundsKey, markers]);
+  }, [map, fitBoundsKey, markers, repLocations, includeRepLocations]);
 
   return null;
 }
@@ -425,6 +439,8 @@ function ReportsVisualiserMapInner({
           />
           <FitReportBounds
             markers={filteredByToggles}
+            repLocations={repLocations}
+            includeRepLocations={showSalesRepLocations}
             fitBoundsKey={fitBoundsKey}
           />
           {overlays.showInfluenceCircles ? (

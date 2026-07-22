@@ -13,6 +13,7 @@ export interface VisualiserPreferences {
   opportunityMode: SiteOpportunityMode;
   opportunitySettings: SiteOpportunitySettings;
   showSalesRepLocations: boolean;
+  repLocationsMaxAgeHours: number;
 }
 
 const DEFAULT_PREFERENCES: VisualiserPreferences = {
@@ -22,6 +23,7 @@ const DEFAULT_PREFERENCES: VisualiserPreferences = {
   opportunityMode: 'both',
   opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   showSalesRepLocations: false,
+  repLocationsMaxAgeHours: 2,
 };
 
 function isSiteOpportunityMode(value: unknown): value is SiteOpportunityMode {
@@ -81,6 +83,12 @@ export function loadVisualiserPreferences(): VisualiserPreferences {
         : DEFAULT_PREFERENCES.opportunityMode,
       opportunitySettings: parseSettings(parsed.opportunitySettings),
       showSalesRepLocations: parsed.showSalesRepLocations === true,
+      repLocationsMaxAgeHours:
+        typeof parsed.repLocationsMaxAgeHours === 'number' &&
+        parsed.repLocationsMaxAgeHours >= 1 &&
+        parsed.repLocationsMaxAgeHours <= 24
+          ? parsed.repLocationsMaxAgeHours
+          : DEFAULT_PREFERENCES.repLocationsMaxAgeHours,
     };
   } catch {
     return DEFAULT_PREFERENCES;

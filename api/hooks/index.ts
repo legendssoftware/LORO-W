@@ -36,6 +36,7 @@ export {
   latestRepLocationsQueryKey,
   useLatestRepLocations,
 } from './use-latest-rep-locations';
+export { useRepLocationStream } from './use-rep-location-stream';
 export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
