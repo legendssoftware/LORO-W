@@ -30,6 +30,7 @@ import {
 } from "@/lib/icons";
 import {
   Building2,
+  FileText,
   FolderKanban,
   GitBranch,
   Map,
@@ -72,6 +73,7 @@ const ROUTE_ICONS: Record<
   "/competitors": Swords,
   "/planning": CheckSquareIcon,
   "/claims": Receipt,
+  "/payslips": FileText,
   "/staff": UsersIcon,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,

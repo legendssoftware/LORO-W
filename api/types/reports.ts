@@ -151,15 +151,13 @@ export interface IotAnalyticsSummary {
   summary?: Record<string, unknown>;
 }
 
-export interface PayslipsListResponse {
-  data?: Array<{
-    uid: number;
-    user?: { name?: string };
-    period?: string;
-    createdAt?: string;
-  }>;
-  meta?: { total: number };
-}
+export type {
+  PayslipListItem,
+  PayslipDocumentResponse,
+  PayslipsListMeta,
+  PayslipsListResponse,
+  PayslipStatus,
+} from './payslips';
 
 export interface RewardsLeaderboardResponse {
   data?: Array<{ user?: { name?: string }; xp?: number }>;

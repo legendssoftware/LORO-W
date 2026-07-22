@@ -164,6 +164,11 @@ export const PAGE_COPY = {
     description:
       'Create expense claims with receipts, organise trips and folders, and follow approval status from submission to payment.',
   },
+  payslips: {
+    title: 'Payslips — View and download your pay documents',
+    description:
+      'Browse payslips by period, preview PDFs in your browser, and download secure copies whenever you need them.',
+  },
   reports: {
     title: 'Reports - Leadership visibility & exports that save time',
     description:
