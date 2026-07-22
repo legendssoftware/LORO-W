@@ -16,6 +16,7 @@ import {
   useCompetitorMapMarkers,
   useMapGeocodeBackfillMutation,
   useLatestRepLocations,
+  useRepLocationStream,
   usePerformanceDashboard,
 } from '@/api/hooks';
 import type { GetMapReportParams } from '@/api/endpoints/map';
@@ -47,6 +48,7 @@ import {
   saveVisualiserPreferences,
 } from '@/lib/visualiser-preferences';
 import { buildUnmappedMapEntries } from '@/lib/utils/unmapped-map-entries';
+import { filterRepLocationsByGeoBounds } from '@/lib/utils/filter-rep-locations-by-geo';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { debugApi } from '@/lib/api-debug';
 import type { ReportsMode } from '@/app/reports/reports-mode';
@@ -118,6 +120,9 @@ export function ReportsVisualiserTab({
   const [showSalesRepLocations, setShowSalesRepLocations] = useState(
     () => loadVisualiserPreferences().showSalesRepLocations
   );
+  const [repLocationsMaxAgeHours] = useState(
+    () => loadVisualiserPreferences().repLocationsMaxAgeHours
+  );
   const prevShowOpportunitiesRef = useRef(false);
   const [opportunityMode, setOpportunityMode] = useState<SiteOpportunityMode>(
     () => loadVisualiserPreferences().opportunityMode
@@ -150,6 +155,7 @@ export function ReportsVisualiserTab({
       opportunityMode,
       opportunitySettings,
       showSalesRepLocations,
+      repLocationsMaxAgeHours,
     });
   }, [
     selectedCountry,
@@ -158,6 +164,7 @@ export function ReportsVisualiserTab({
     opportunityMode,
     opportunitySettings,
     showSalesRepLocations,
+    repLocationsMaxAgeHours,
   ]);
 
   const mapReportParams = useMemo((): GetMapReportParams => {
@@ -188,10 +195,15 @@ export function ReportsVisualiserTab({
   ]);
 
   const mapReport = useReportsMapData(mapReportParams, { enabled: mounted });
-  const repLocationsQuery = useLatestRepLocations(undefined, {
+  const repLocationsQuery = useLatestRepLocations(
+    { maxAgeHours: repLocationsMaxAgeHours },
+    { enabled: mounted && showSalesRepLocations }
+  );
+  useRepLocationStream({
     enabled: mounted && showSalesRepLocations,
+    maxAgeHours: repLocationsMaxAgeHours,
   });
-  const repLocations = repLocationsQuery.data?.locations ?? [];
+  const repLocationsRaw = repLocationsQuery.data?.locations ?? [];
   const { data: branches = [], refetch: refetchBranches } = useBranches({
     enabled: mounted,
   });
@@ -447,6 +459,15 @@ export function ReportsVisualiserTab({
     [markerGeoIndex, selectedCountry, selectedProvince]
   );
 
+  const repLocations = useMemo(
+    () =>
+      filterRepLocationsByGeoBounds(repLocationsRaw, filteredMarkers, {
+        selectedCountry: selectedCountry || undefined,
+        selectedProvince: selectedProvince || undefined,
+      }),
+    [repLocationsRaw, filteredMarkers, selectedCountry, selectedProvince]
+  );
+
   const branchMarkers = useMemo(
     () => filteredMarkers.filter((m) => String(m.markerType ?? '') === 'branch'),
     [filteredMarkers]
@@ -697,7 +718,8 @@ export function ReportsVisualiserTab({
             className="absolute left-0 right-0 top-10 z-[2001] mx-auto max-w-lg rounded-md border border-border bg-background/95 px-3 py-2 text-center text-sm text-muted-foreground shadow-sm"
             role="status"
           >
-            No recent mobile GPS for active reps (last 2 hours).
+            No recent mobile GPS for active reps (last {repLocationsMaxAgeHours}{' '}
+            {repLocationsMaxAgeHours === 1 ? 'hour' : 'hours'}).
           </p>
         ) : null}
         {showSalesRepLocations && repLocationsQuery.isError ? (
