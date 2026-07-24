@@ -173,6 +173,7 @@ function ActivityTooltipBody({
 export interface ReportsOverviewTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
+  isActive?: boolean;
 }
 
 export function ReportsOverviewTab({

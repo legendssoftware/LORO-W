@@ -209,6 +209,7 @@ function KpiCard({
 export interface ReportsLeadsTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
+  isActive?: boolean;
 }
 
 export function ReportsLeadsTab({ profile, reportsMode }: ReportsLeadsTabProps) {

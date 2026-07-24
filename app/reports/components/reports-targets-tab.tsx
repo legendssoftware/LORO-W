@@ -57,6 +57,7 @@ import {
 } from '@/app/reports/utils/overview-daily-summary';
 import { TargetWarningDetailDialog } from '@/app/reports/components/target-warning-detail-dialog';
 import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
+import { getQueryErrorMessage } from '@/lib/api/query-error';
 
 function filterVisitListItemsByOwnerUids(
   checkIns: VisitListItem[],
@@ -280,9 +281,14 @@ function TargetWarningStatusIndicator({
 export interface ReportsTargetsTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
+  isActive?: boolean;
 }
 
-export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabProps) {
+export function ReportsTargetsTab({
+  profile,
+  reportsMode,
+  isActive = true,
+}: ReportsTargetsTabProps) {
   const elevated =
     isReportsElevatedViewer(profile?.accessLevel as string | undefined) &&
     reportsMode === 'org';
@@ -318,8 +324,8 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     [branches]
   );
 
-  const { data: usersList = [] } = useUsers({
-    enabled: elevated,
+  const { data: usersList = [], isLoading: usersListLoading } = useUsers({
+    enabled: elevated && isActive,
     limit: 250,
     ...(selectedBranchId !== 'all'
       ? { branchId: Number(selectedBranchId) }
@@ -352,9 +358,14 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
 
   const callsBelowBranchId =
     selectedBranchId !== 'all' ? Number(selectedBranchId) : undefined;
-  const { data: callsBelowData, isFetching: callsBelowLoading } = useSubThresholdDailyCalls(
+  const {
+    data: callsBelowData,
+    isLoading: callsBelowLoading,
+    isError: callsBelowError,
+    error: callsBelowQueryError,
+  } = useSubThresholdDailyCalls(
     elevated ? { date: thresholdYmd, branchId: callsBelowBranchId } : null,
-    { enabled: elevated && !!thresholdYmd }
+    { enabled: elevated && isActive && !!thresholdYmd }
   );
 
   const thresholdCheckInsParams = useMemo(() => {
@@ -381,12 +392,15 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
   ]);
 
   const thresholdCheckInsEnabled =
+    isActive &&
     Boolean(thresholdCheckInsParams.startDate && thresholdCheckInsParams.endDate) &&
-    (elevated || selfScoped);
+    selfScoped;
 
   const {
     data: thresholdCheckInsData,
     isLoading: thresholdCheckInsLoading,
+    isError: thresholdCheckInsError,
+    error: thresholdCheckInsQueryError,
   } = useCheckIns(thresholdCheckInsParams, {
     enabled: thresholdCheckInsEnabled,
   });
@@ -414,12 +428,14 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     ]
   );
 
-  const { data: thresholdLeadsData, isLoading: thresholdLeadsLoading } = useLeadsReport(
-    thresholdLeadsParams,
-    {
-      enabled: (elevated || selfScoped) && Boolean(thresholdYmd),
-    }
-  );
+  const {
+    data: thresholdLeadsData,
+    isLoading: thresholdLeadsLoading,
+    isError: thresholdLeadsError,
+    error: thresholdLeadsQueryError,
+  } = useLeadsReport(thresholdLeadsParams, {
+    enabled: isActive && selfScoped && Boolean(thresholdYmd),
+  });
 
   const thresholdCheckInsForTable = useMemo(() => {
     const raw = thresholdCheckInsData?.checkIns ?? [];
@@ -446,13 +462,20 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
   );
 
   const filteredThresholdUsers = useMemo(() => {
+    if (!elevated || usersListLoading) return [];
     const raw = callsBelowData?.users ?? [];
     return raw.filter((u) => {
       if (!reportingUidSet.has(u.uid)) return false;
       if (resolvedOwnerUid !== 'all' && u.uid !== Number(resolvedOwnerUid)) return false;
       return true;
     });
-  }, [callsBelowData?.users, reportingUidSet, resolvedOwnerUid]);
+  }, [
+    elevated,
+    usersListLoading,
+    callsBelowData?.users,
+    reportingUidSet,
+    resolvedOwnerUid,
+  ]);
 
   const tableRows = useMemo(() => {
     if (elevated) return filteredThresholdUsers;
@@ -462,9 +485,28 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
     return [];
   }, [elevated, selfScoped, profile, userDetail, filteredThresholdUsers]);
 
-  const isThresholdTableLoading = selfScoped
-    ? thresholdCheckInsLoading || thresholdLeadsLoading
-    : callsBelowLoading || thresholdCheckInsLoading || thresholdLeadsLoading;
+  const isThresholdTableLoading = elevated
+    ? callsBelowLoading || usersListLoading
+    : thresholdCheckInsLoading || thresholdLeadsLoading;
+
+  const tableLoadError = elevated
+    ? callsBelowError
+      ? getQueryErrorMessage(
+          callsBelowQueryError,
+          'Failed to load reps below threshold. Try again or contact support.'
+        )
+      : null
+    : thresholdCheckInsError
+      ? getQueryErrorMessage(
+          thresholdCheckInsQueryError,
+          'Failed to load visit data for this day.'
+        )
+      : thresholdLeadsError
+        ? getQueryErrorMessage(
+            thresholdLeadsQueryError,
+            'Failed to load lead activity for this day.'
+          )
+        : null;
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -522,7 +564,11 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {isThresholdTableLoading ? (
+            {tableLoadError ? (
+              <p className="text-destructive text-center py-6 text-sm" role="alert">
+                {tableLoadError}
+              </p>
+            ) : isThresholdTableLoading ? (
               <div className="flex justify-center py-6">
                 <LoadingSpinner className="min-h-0" wrapperClassName="py-0" />
               </div>
@@ -535,7 +581,9 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                 <TableHeader className="[&_tr]:border-0">
                   <TableRow className="border-0 hover:bg-transparent bg-muted/40">
                     <TableHead>Sales Person</TableHead>
-                    <TableHead className="tabular-nums">Visits</TableHead>
+                    <TableHead className="tabular-nums">
+                      {elevated ? 'Calls' : 'Visits'}
+                    </TableHead>
                     <TableHead className="tabular-nums">Leads</TableHead>
                     <TableHead>Warnings</TableHead>
                     <TableHead>Status</TableHead>
@@ -560,8 +608,12 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                       displayName.length > 0
                         ? displayName.slice(0, 2).toUpperCase()
                         : '—';
-                    const visits = visitsByUid.get(u.uid) ?? 0;
-                    const leads = leadsCountForListUser(listUser, leadByDisplayName);
+                    const callsOrVisits = elevated
+                      ? u.callCount
+                      : (visitsByUid.get(u.uid) ?? 0);
+                    const leads = elevated
+                      ? u.leadCount
+                      : leadsCountForListUser(listUser, leadByDisplayName);
                     const { flag: branchFlag, label: branchLabel } = branchFlagAndLabel(
                       listUser,
                       branchByUid
@@ -590,7 +642,9 @@ export function ReportsTargetsTab({ profile, reportsMode }: ReportsTargetsTabPro
                             </span>
                           </span>
                         </TableCell>
-                        <TableCell className="tabular-nums align-middle">{visits}</TableCell>
+                        <TableCell className="tabular-nums align-middle">
+                          {callsOrVisits}
+                        </TableCell>
                         <TableCell className="tabular-nums align-middle">{leads}</TableCell>
                         <TableCell className="align-middle">
                           <TargetWarningsBreakdown tw={u.targetWarnings} />
