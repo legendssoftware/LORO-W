@@ -43,7 +43,7 @@ function getValidReportsTab(value: string | null) {
     : 'overview';
 }
 
-const SECONDARY_PREFETCH_TABS = new Set(['leads']);
+const SECONDARY_PREFETCH_TABS = new Set(['leads', 'targets']);
 
 function ReportsTabsEqualWidth({
   profile,
@@ -121,6 +121,57 @@ function ReportsTabsEqualWidth({
     [prefetchSecondaryTabs]
   );
 
+  const renderTabPanel = (value: (typeof REPORT_TABS)[number]['value']) => {
+    if (activeTab !== value) return null;
+    const isActive = true;
+    switch (value) {
+      case 'overview':
+        return (
+          <ReportsOverviewTab
+            profile={profile}
+            reportsMode={reportsMode}
+            isActive={isActive}
+          />
+        );
+      case 'attendance':
+        return (
+          <ReportsAttendanceTab
+            profile={profile}
+            reportsMode={reportsMode}
+            isActive={isActive}
+          />
+        );
+      case 'visits':
+        return (
+          <ReportsVisitsTab
+            profile={profile}
+            reportsMode={reportsMode}
+            isActive={isActive}
+          />
+        );
+      case 'leads':
+        return (
+          <ReportsLeadsTab
+            profile={profile}
+            reportsMode={reportsMode}
+            isActive={isActive}
+          />
+        );
+      case 'targets':
+        return (
+          <ReportsTargetsTab
+            profile={profile}
+            reportsMode={reportsMode}
+            isActive={isActive}
+          />
+        );
+      default: {
+        const _exhaustive: never = value;
+        return _exhaustive;
+      }
+    }
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as (typeof REPORT_TABS)[number]['value'])} className="w-full">
       <TabsList ref={listRef} className={reportsTabsListClassName}>
@@ -147,17 +198,7 @@ function ReportsTabsEqualWidth({
       </TabsList>
       {REPORT_TABS.map(({ value }) => (
         <TabsContent key={value} value={value}>
-          {value === 'overview' ? (
-            <ReportsOverviewTab profile={profile} reportsMode={reportsMode} />
-          ) : value === 'attendance' ? (
-            <ReportsAttendanceTab profile={profile} reportsMode={reportsMode} />
-          ) : value === 'visits' ? (
-            <ReportsVisitsTab profile={profile} reportsMode={reportsMode} />
-          ) : value === 'leads' ? (
-            <ReportsLeadsTab profile={profile} reportsMode={reportsMode} />
-          ) : value === 'targets' ? (
-            <ReportsTargetsTab profile={profile} reportsMode={reportsMode} />
-          ) : null}
+          {renderTabPanel(value)}
         </TabsContent>
       ))}
     </Tabs>

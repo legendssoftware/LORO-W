@@ -8,8 +8,9 @@ import { BRANCHES_QUERY_KEY } from '@/api/hooks/use-branches';
 import { getBranches } from '@/api/endpoints/branch';
 import { getTargetsProgress } from '@/api/endpoints/targets-progress';
 import { targetsProgressQueryKey } from '@/api/hooks/use-targets-progress';
-import { getUsers } from '@/api/endpoints/user';
+import { getUsers, getSubThresholdDailyCalls } from '@/api/endpoints/user';
 import { usersListQueryKey } from '@/api/hooks/use-users';
+import { subThresholdDailyCallsQueryKey } from '@/api/hooks/use-user';
 import { getLeadsReport } from '@/api/endpoints/leads';
 import { leadsReportQueryKey } from '@/api/hooks/use-leads';
 import type { SyncProfile } from '@/api/types';
@@ -54,12 +55,12 @@ export function getReportsOverviewPrefetchParams() {
 }
 
 /**
- * Warms cache for the Leads tab. Call on tab hover/focus.
+ * Warms cache for secondary report tabs (Leads, Targets). Call on tab hover/focus.
  */
 export function prefetchReportsSecondaryTabs(
   queryClient: QueryClient,
   client: AxiosInstance,
-  _options: {
+  options: {
     reportsMode: 'org' | 'self';
     profile: SyncProfile | null | undefined;
   }
@@ -80,6 +81,29 @@ export function prefetchReportsSecondaryTabs(
       }),
     staleTime: 5 * 60 * 1000,
   });
+
+  const elevated =
+    isReportsElevatedViewer(options.profile?.accessLevel as string | undefined) &&
+    options.reportsMode === 'org';
+
+  if (elevated) {
+    void queryClient.prefetchQuery({
+      queryKey: subThresholdDailyCallsQueryKey({ date: todayYmd }),
+      queryFn: () => getSubThresholdDailyCalls(client, { date: todayYmd }),
+      staleTime: 30 * 1000,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: usersListQueryKey(REPORTS_USERS_LIST_OPTIONS),
+      queryFn: async () => {
+        const res = await getUsers(client, {
+          page: REPORTS_USERS_LIST_OPTIONS.page,
+          limit: REPORTS_USERS_LIST_OPTIONS.limit,
+        });
+        return Array.isArray(res?.data) ? res.data : [];
+      },
+      staleTime: 2 * 60 * 1000,
+    });
+  }
 }
 
 export function useReportsPrefetch(options: {

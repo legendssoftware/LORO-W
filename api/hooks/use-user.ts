@@ -227,13 +227,26 @@ export function usePatchUserTarget(ref: string | null) {
   });
 }
 
+
+export function subThresholdDailyCallsQueryKey(
+  params: { date: string; branchId?: number; minCalls?: number } | null | undefined
+) {
+  return [
+    ...QUERY_KEY_PREFIX,
+    'sub-threshold-calls',
+    params?.date,
+    params?.branchId,
+    params?.minCalls,
+  ] as const;
+}
+
 export function useSubThresholdDailyCalls(
   params: { date: string; branchId?: number; minCalls?: number } | null,
   options?: { enabled?: boolean }
 ) {
   const client = useApiClient();
   return useQuery({
-    queryKey: [...QUERY_KEY_PREFIX, 'sub-threshold-calls', params?.date, params?.branchId, params?.minCalls],
+    queryKey: subThresholdDailyCallsQueryKey(params),
     queryFn: async () => {
       if (!params?.date) {
         return { message: '', date: '', minCalls: 60, users: [] };
@@ -242,6 +255,7 @@ export function useSubThresholdDailyCalls(
     },
     enabled: (options?.enabled !== false && !!params?.date) ?? false,
     staleTime: 30 * 1000,
+    retry: false,
   });
 }
 
