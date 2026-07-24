@@ -16,10 +16,20 @@ import type {
   BranchCatchmentOpportunity,
   DataQualitySummary,
   GreenfieldOpportunityZone,
+  HardwareBrandKey,
   SiteOpportunityMode,
   SiteOpportunitySettings,
   SiteOpportunityZone,
+  TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
+import {
+  CATEGORY_LABELS,
+  RETAILER_BRANDS,
+  SD_BRANDS,
+} from '@/lib/site-opportunity/compute/competitor-category';
+import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
+
+const ALL_BRAND_KEYS = Object.keys(HARDWARE_TURNOVER_ZAR) as HardwareBrandKey[];
 
 const MODE_OPTIONS = [
   ['greenfield', 'New sites'],
@@ -34,6 +44,8 @@ export function SiteOpportunityToolbar({
   onModeChange,
   settings,
   onSettingsChange,
+  turnoverOverrides,
+  onTurnoverOverridesChange,
   className,
   isLoading = false,
   isError = false,
@@ -53,6 +65,8 @@ export function SiteOpportunityToolbar({
   onModeChange: (mode: SiteOpportunityMode) => void;
   settings: SiteOpportunitySettings;
   onSettingsChange: (patch: Partial<SiteOpportunitySettings>) => void;
+  turnoverOverrides?: TurnoverOverrideSettings;
+  onTurnoverOverridesChange?: (next: TurnoverOverrideSettings) => void;
   className?: string;
   isLoading?: boolean;
   isError?: boolean;
@@ -143,7 +157,7 @@ export function SiteOpportunityToolbar({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className={cn('w-72', reportsFilterPortalHighZ)}
+              className={cn('w-80 max-h-[80vh] overflow-y-auto', reportsFilterPortalHighZ)}
               align="end"
               side="bottom"
             >
@@ -223,6 +237,126 @@ export function SiteOpportunityToolbar({
                     }
                   />
                 </div>
+                <div>
+                  <Label htmlFor="opp-rep-target">Rep monthly target (ZAR)</Label>
+                  <Input
+                    id="opp-rep-target"
+                    type="number"
+                    min={100000}
+                    step={100000}
+                    value={settings.repTargetMonthlyZAR}
+                    onChange={(e) =>
+                      onSettingsChange({
+                        repTargetMonthlyZAR: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                {onTurnoverOverridesChange ? (
+                  <div className="space-y-2 border-t pt-3">
+                    <p className="text-xs font-semibold text-foreground">
+                      Competitor turnover overrides (monthly)
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="opp-retailer-turnover" className="text-xs">
+                          {CATEGORY_LABELS.retailer} (all)
+                        </Label>
+                        <Input
+                          id="opp-retailer-turnover"
+                          type="number"
+                          min={0}
+                          step={100000}
+                          placeholder="Default per brand"
+                          value={
+                            turnoverOverrides?.categoryTurnoverOverrides?.retailer ?? ''
+                          }
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            const next = { ...(turnoverOverrides ?? {}) };
+                            next.categoryTurnoverOverrides = {
+                              ...next.categoryTurnoverOverrides,
+                            };
+                            if (!raw) {
+                              delete next.categoryTurnoverOverrides.retailer;
+                            } else {
+                              next.categoryTurnoverOverrides.retailer = Number(raw);
+                            }
+                            onTurnoverOverridesChange(next);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="opp-sd-turnover" className="text-xs">
+                          {CATEGORY_LABELS.sd} (all)
+                        </Label>
+                        <Input
+                          id="opp-sd-turnover"
+                          type="number"
+                          min={0}
+                          step={100000}
+                          placeholder="Default per brand"
+                          value={
+                            turnoverOverrides?.categoryTurnoverOverrides?.sd ?? ''
+                          }
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            const next = { ...(turnoverOverrides ?? {}) };
+                            next.categoryTurnoverOverrides = {
+                              ...next.categoryTurnoverOverrides,
+                            };
+                            if (!raw) {
+                              delete next.categoryTurnoverOverrides.sd;
+                            } else {
+                              next.categoryTurnoverOverrides.sd = Number(raw);
+                            }
+                            onTurnoverOverridesChange(next);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {ALL_BRAND_KEYS.map((brand) => (
+                        <div key={brand} className="flex items-center gap-2">
+                          <Label
+                            htmlFor={`opp-brand-${brand}`}
+                            className="text-[11px] shrink-0 w-[88px] truncate"
+                            title={brand}
+                          >
+                            {brand}
+                          </Label>
+                          <Input
+                            id={`opp-brand-${brand}`}
+                            type="number"
+                            min={0}
+                            step={100000}
+                            className="h-8 text-xs"
+                            placeholder={String(HARDWARE_TURNOVER_ZAR[brand])}
+                            value={
+                              turnoverOverrides?.brandTurnoverOverrides?.[brand] ?? ''
+                            }
+                            onChange={(e) => {
+                              const raw = e.target.value.trim();
+                              const next = { ...(turnoverOverrides ?? {}) };
+                              next.brandTurnoverOverrides = {
+                                ...next.brandTurnoverOverrides,
+                              };
+                              if (!raw) {
+                                delete next.brandTurnoverOverrides[brand];
+                              } else {
+                                next.brandTurnoverOverrides[brand] = Number(raw);
+                              }
+                              onTurnoverOverridesChange(next);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Retailers: {RETAILER_BRANDS.join(', ')} · SD: {SD_BRANDS.join(', ')}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </PopoverContent>
           </Popover>

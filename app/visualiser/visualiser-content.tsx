@@ -28,8 +28,8 @@ export function VisualiserContent() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <main className="container mx-auto max-w-8xl px-3 py-4 sm:px-6 sm:py-6 flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="mb-4 shrink-0">
+      <main className="w-full max-w-none px-2 py-3 sm:px-4 sm:py-4 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="mb-2 shrink-0">
           <h1 className="text-2xl font-semibold text-foreground">
             Competitor Overview
           </h1>

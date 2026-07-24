@@ -2,10 +2,13 @@ export type HardwareBrandKey =
   | 'BUCO'
   | 'CASHBUILD'
   | 'BUILD IT'
+  | 'BUILDERS'
   | 'POWERBUILD'
   | 'EST'
   | 'P&L HARDWARE'
   | 'OTHER';
+
+export type CompetitorCategoryKey = 'retailer' | 'sd';
 
 export type SiteOpportunityMode = 'greenfield' | 'catchment' | 'both';
 
@@ -26,6 +29,8 @@ export interface SiteOpportunitySettings {
   minBranchSeparationKm: number;
   captureLowPct: number;
   captureHighPct: number;
+  /** Monthly sales target per rep for territory sizing (default R 1m). */
+  repTargetMonthlyZAR: number;
 }
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
@@ -34,10 +39,22 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   minBranchSeparationKm: 10,
   captureLowPct: 0.2,
   captureHighPct: 0.2,
+  repTargetMonthlyZAR: 1_000_000,
 };
+
+export interface TurnoverOverrideSettings {
+  brandTurnoverOverrides?: Partial<Record<HardwareBrandKey, number>>;
+  categoryTurnoverOverrides?: Partial<Record<CompetitorCategoryKey, number>>;
+}
 
 export interface BrandCount {
   brand: HardwareBrandKey;
+  count: number;
+  turnoverZAR: number;
+}
+
+export interface CategoryCount {
+  category: CompetitorCategoryKey;
   count: number;
   turnoverZAR: number;
 }
@@ -68,6 +85,7 @@ export interface BranchCatchmentOpportunity {
   competitorCount: number;
   competitorsMissingGeo: number;
   byBrand: BrandCount[];
+  byCategory?: CategoryCount[];
   addressablePoolZAR: number;
   potentialLowZAR: number;
   potentialHighZAR: number;
@@ -92,6 +110,7 @@ export interface GreenfieldOpportunityZone {
   competitorCount: number;
   competitorsMissingGeo: number;
   byBrand: BrandCount[];
+  byCategory?: CategoryCount[];
   addressablePoolZAR: number;
   potentialLowZAR: number;
   potentialHighZAR: number;

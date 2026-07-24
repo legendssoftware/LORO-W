@@ -28,6 +28,7 @@ import {
   type SiteOpportunityResult,
   type SiteOpportunitySettings,
   type SiteOpportunityZone,
+  type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ import {
   saveVisualiserPreferences,
 } from '@/lib/visualiser-preferences';
 import { buildUnmappedMapEntries } from '@/lib/utils/unmapped-map-entries';
-import { filterRepLocationsByGeoBounds } from '@/lib/utils/filter-rep-locations-by-geo';
+import { filterRepLocationsByGeoBoundsDetailed } from '@/lib/utils/filter-rep-locations-by-geo';
 import { TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { debugApi } from '@/lib/api-debug';
 import type { ReportsMode } from '@/app/reports/reports-mode';
@@ -65,6 +66,7 @@ import { VisualiserMapSummaryDialog } from '@/app/reports/components/visualiser-
 import { SuggestedAreasInfoDialog } from '@/app/reports/components/suggested-areas-info-dialog';
 import { MapPinIcon } from '@/lib/icons';
 import { useEnrichedCatchments } from '@/lib/site-opportunity/enrich-catchment-revenue';
+import { needsCompetitorBranchGeocodeBackfill } from '@/api/hooks/use-map-geocode-backfill';
 
 const ReportsVisualiserMap = dynamic(
   () => import('./reports-visualiser-map').then((m) => m.ReportsVisualiserMap),
@@ -135,6 +137,10 @@ export function ReportsVisualiserTab({
     useState<SiteOpportunitySettings>(
       () => loadVisualiserPreferences().opportunitySettings
     );
+  const [turnoverOverrides, setTurnoverOverrides] =
+    useState<TurnoverOverrideSettings>(
+      () => loadVisualiserPreferences().turnoverOverrides
+    );
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<
     string | null
   >(null);
@@ -154,6 +160,7 @@ export function ReportsVisualiserTab({
       showOpportunities,
       opportunityMode,
       opportunitySettings,
+      turnoverOverrides,
       showSalesRepLocations,
       repLocationsMaxAgeHours,
     });
@@ -163,6 +170,7 @@ export function ReportsVisualiserTab({
     showOpportunities,
     opportunityMode,
     opportunitySettings,
+    turnoverOverrides,
     showSalesRepLocations,
     repLocationsMaxAgeHours,
   ]);
@@ -459,14 +467,15 @@ export function ReportsVisualiserTab({
     [markerGeoIndex, selectedCountry, selectedProvince]
   );
 
-  const repLocations = useMemo(
+  const repLocationGeo = useMemo(
     () =>
-      filterRepLocationsByGeoBounds(repLocationsRaw, filteredMarkers, {
+      filterRepLocationsByGeoBoundsDetailed(repLocationsRaw, filteredMarkers, {
         selectedCountry: selectedCountry || undefined,
         selectedProvince: selectedProvince || undefined,
       }),
     [repLocationsRaw, filteredMarkers, selectedCountry, selectedProvince]
   );
+  const repLocations = repLocationGeo.locations;
 
   const branchMarkers = useMemo(
     () => filteredMarkers.filter((m) => String(m.markerType ?? '') === 'branch'),
@@ -517,6 +526,16 @@ export function ReportsVisualiserTab({
     return 'Not enough geolocated stores in this area — try another province or Re-geocode map.';
   }, [showOpportunities, siteOpportunitiesQuery.data?.dataQuality]);
 
+  const geocodePendingBanner = useMemo(() => {
+    if (!mounted || reportsMode !== 'org') return null;
+    const summary = mapReport.data?.geocodingSummary;
+    if (!needsCompetitorBranchGeocodeBackfill(summary)) return null;
+    const pending =
+      (summary?.competitors?.cappedPending ?? 0) +
+      (summary?.branches?.cappedPending ?? 0);
+    return `${pending} competitor/branch address(es) still need geocoding — use Re-geocode map to place them on the map.`;
+  }, [mounted, mapReport.data?.geocodingSummary, reportsMode]);
+
   const unmappedEntries = useMemo(
     () =>
       buildUnmappedMapEntries({
@@ -537,6 +556,7 @@ export function ReportsVisualiserTab({
       warnings: siteOpportunitiesQuery.data?.warnings ?? [],
       captureSettings:
         siteOpportunitiesQuery.data?.settings ?? opportunitySettings,
+      turnoverOverrides,
       selectedZoneId: selectedOpportunityId,
       onSelectZone: handleSelectOpportunity,
       isLoading: opportunitiesBusy,
@@ -558,6 +578,7 @@ export function ReportsVisualiserTab({
       handleSelectOpportunity,
       opportunitiesBusy,
       opportunitySettings,
+      turnoverOverrides,
       orgLogoUrl,
       selectedOpportunityId,
       siteOpportunitiesQuery.data,
@@ -630,6 +651,8 @@ export function ReportsVisualiserTab({
                 onSettingsChange={(patch) =>
                   setOpportunitySettings((s) => ({ ...s, ...patch }))
                 }
+                turnoverOverrides={turnoverOverrides}
+                onTurnoverOverridesChange={setTurnoverOverrides}
                 isLoading={opportunitiesBusy}
                 isError={siteOpportunitiesQuery.isError}
                 errorMessage={
@@ -682,7 +705,15 @@ export function ReportsVisualiserTab({
           }
         />
       </div>
-      <div className="flex flex-1 min-h-0 h-full overflow-hidden flex-row relative">
+      <div className="flex flex-1 min-h-0 h-full overflow-hidden flex-row relative min-h-[calc(100vh-12rem)]">
+        {geocodePendingBanner ? (
+          <p
+            className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-2xl rounded-b-md border-x border-b border-amber-300 bg-amber-50 px-3 py-2 text-center text-sm text-amber-900"
+            role="status"
+          >
+            {geocodePendingBanner}
+          </p>
+        ) : null}
         {mapReport.isError ? (
           <p
             className="absolute left-0 right-0 top-0 z-[2001] mx-auto max-w-lg rounded-b-md border-x border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
@@ -718,8 +749,7 @@ export function ReportsVisualiserTab({
             className="absolute left-0 right-0 top-10 z-[2001] mx-auto max-w-lg rounded-md border border-border bg-background/95 px-3 py-2 text-center text-sm text-muted-foreground shadow-sm"
             role="status"
           >
-            No recent mobile GPS for active reps (last {repLocationsMaxAgeHours}{' '}
-            {repLocationsMaxAgeHours === 1 ? 'hour' : 'hours'}).
+            {`No recent mobile GPS for active reps (last ${repLocationsMaxAgeHours} ${repLocationsMaxAgeHours === 1 ? 'hour' : 'hours'}). Reps appear here when the mobile app uploads location while on shift.`}
           </p>
         ) : null}
         {showSalesRepLocations && repLocationsQuery.isError ? (
@@ -747,6 +777,10 @@ export function ReportsVisualiserTab({
           branchMarkers={branchMarkers}
           branches={branches}
           orgLogoUrl={orgLogoUrl}
+          opportunityCaptureSettings={
+            siteOpportunitiesQuery.data?.settings ?? opportunitySettings
+          }
+          turnoverOverrides={turnoverOverrides}
           repLocations={repLocations}
           showSalesRepLocations={showSalesRepLocations}
           onSalesRepLocationsChange={handleSalesRepLocationsChange}

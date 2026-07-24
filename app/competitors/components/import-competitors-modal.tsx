@@ -282,6 +282,10 @@ export function ImportCompetitorsModal({
                   {lastResult.message ||
                     `Imported ${lastResult.imported}, updated ${lastResult.updated}${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
                 </p>
+                <p className="text-muted-foreground text-xs">
+                  Addresses are geocoded after import. Open the Visualiser and use Re-geocode map
+                  if any competitors still show as not mapped.
+                </p>
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-3">

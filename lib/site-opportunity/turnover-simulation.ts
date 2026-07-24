@@ -38,8 +38,11 @@ export interface TurnoverSimulation {
   /** Model mature mid monthly — never overridden by ERP actual. */
   simulatedMonthlyZAR: number;
   actualMonthlyZAR?: number | null;
+  actualRevenueMonthLabel?: string | null;
   varianceZAR?: number | null;
   variancePct?: number | null;
+  repsRequired?: number | null;
+  repTargetMonthlyZAR?: number | null;
 }
 
 /** BitDrywall product mix (memo reference) applied to projected mid mature monthly revenue. */
@@ -53,24 +56,52 @@ export const PRODUCT_MIX_PCT: readonly { category: string; pct: number }[] = [
 ];
 
 const MILESTONE_MONTHS: readonly { label: string; month: number }[] = [
-  { label: 'Month 1–3', month: 3 },
-  { label: 'Month 6', month: 6 },
-  { label: 'Month 12', month: 12 },
+  { label: 'Month 1–5', month: 5 },
+  { label: 'Month 6–12', month: 12 },
   { label: 'Month 24', month: 24 },
   { label: 'Mature (30)', month: 30 },
 ];
+
+function interpolateTimelinePoint(
+  timeline: CaptureTimelinePoint[],
+  month: number,
+): CaptureTimelinePoint | null {
+  if (timeline.length === 0) return null;
+
+  const exact = timeline.find((point) => point.month === month);
+  if (exact) return exact;
+
+  let lower = timeline[0]!;
+  let upper = timeline[timeline.length - 1]!;
+
+  for (const point of timeline) {
+    if (point.month <= month) lower = point;
+    if (point.month >= month) {
+      upper = point;
+      break;
+    }
+  }
+
+  if (lower.month === upper.month) return lower;
+
+  const span = upper.month - lower.month;
+  const t = span > 0 ? (month - lower.month) / span : 0;
+  const lerp = (a: number, b: number) => a + (b - a) * t;
+
+  return {
+    month,
+    captureMidPct: lerp(lower.captureMidPct, upper.captureMidPct),
+    revenueLowZAR: lerp(lower.revenueLowZAR, upper.revenueLowZAR),
+    revenueMidZAR: lerp(lower.revenueMidZAR, upper.revenueMidZAR),
+    revenueHighZAR: lerp(lower.revenueHighZAR, upper.revenueHighZAR),
+  };
+}
 
 function timelinePointAtMonth(
   timeline: CaptureTimelinePoint[],
   month: number,
 ): CaptureTimelinePoint | null {
-  if (timeline.length === 0) return null;
-  let closest = timeline[0]!;
-  for (const point of timeline) {
-    if (point.month <= month) closest = point;
-    else break;
-  }
-  return closest;
+  return interpolateTimelinePoint(timeline, month);
 }
 
 function strongMonthlyZAR(lowMonthly: number, highMonthly: number): number {
@@ -79,10 +110,16 @@ function strongMonthlyZAR(lowMonthly: number, highMonthly: number): number {
 
 export function buildTurnoverSimulation(
   zone: SiteOpportunityZone,
-  options?: { actualRevenueZAR?: number | null }
+  options?: {
+    actualRevenueZAR?: number | null;
+    actualRevenueMonthLabel?: string | null;
+    repTargetMonthlyZAR?: number;
+  },
 ): TurnoverSimulation {
   const { potentialLowZAR, potentialHighZAR, captureTimeline } = zone;
   const actualMonthly = options?.actualRevenueZAR;
+  const actualRevenueMonthLabel = options?.actualRevenueMonthLabel ?? null;
+  const repTargetMonthlyZAR = options?.repTargetMonthlyZAR ?? 1_000_000;
   const hasActual =
     actualMonthly != null && Number.isFinite(actualMonthly) && actualMonthly > 0;
 
@@ -98,6 +135,10 @@ export function buildTurnoverSimulation(
     : potentialHighZAR;
   const strongMonthly = strongMonthlyZAR(lowMonthly, highMonthly);
 
+  const actualLabel = actualRevenueMonthLabel
+    ? `Actual ERP (${actualRevenueMonthLabel})`
+    : 'Actual ERP (latest month)';
+
   const scenarios: TurnoverScenario[] = [
     {
       key: 'conservative',
@@ -107,7 +148,7 @@ export function buildTurnoverSimulation(
     },
     {
       key: 'expected',
-      label: hasActual ? 'Actual ERP (monthly avg)' : 'Expected',
+      label: hasActual ? actualLabel : 'Expected',
       monthlyZAR: midMonthly,
       annualZAR: midMonthly * 12,
     },
@@ -155,14 +196,19 @@ export function buildTurnoverSimulation(
       ? ((actualMonthly / simulatedMonthlyZAR) - 1) * 100
       : null;
 
+  const repsRequired =
+    repTargetMonthlyZAR > 0
+      ? Math.ceil(simulatedMonthlyZAR / repTargetMonthlyZAR)
+      : null;
+
   const productMix: ProductMixLine[] = PRODUCT_MIX_PCT.map(({ category, pct }) => ({
     category,
     pct,
     monthlyZAR: matureMidMonthlyZAR * (pct / 100),
   }));
 
-  const month6Point = timelinePointAtMonth(captureTimeline, 6);
-  const listSubtitleMonthlyZAR = month6Point?.revenueMidZAR ?? midMonthly;
+  const month12Point = timelinePointAtMonth(captureTimeline, 12);
+  const listSubtitleMonthlyZAR = month12Point?.revenueMidZAR ?? midMonthly;
 
   return {
     scenarios,
@@ -173,8 +219,11 @@ export function buildTurnoverSimulation(
     listSubtitleMonthlyZAR,
     simulatedMonthlyZAR,
     actualMonthlyZAR,
+    actualRevenueMonthLabel,
     varianceZAR,
     variancePct,
+    repsRequired,
+    repTargetMonthlyZAR,
   };
 }
 
