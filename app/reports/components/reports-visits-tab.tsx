@@ -241,11 +241,13 @@ const lineHourConfig = {
 export interface ReportsVisitsTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
+  isActive?: boolean;
 }
 
 export function ReportsVisitsTab({
   profile,
   reportsMode,
+  isActive = true,
 }: ReportsVisitsTabProps) {
   const [startDate, setStartDate] = useState(() => {
     const { start } = utcMonthStartThroughToday();
@@ -316,7 +318,7 @@ export function ReportsVisitsTab({
       endDate: endIso,
       ...(checkInUserUid ? { userUid: checkInUserUid } : {}),
     },
-    { enabled: true }
+    { enabled: isActive }
   );
 
   const mappedRaw = useMemo(

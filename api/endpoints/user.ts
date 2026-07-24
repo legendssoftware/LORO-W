@@ -429,6 +429,7 @@ export async function getSubThresholdDailyCalls(
         ...(params.branchId != null ? { branchId: params.branchId } : {}),
         ...(params.minCalls != null ? { minCalls: params.minCalls } : {}),
       },
+      timeout: 120_000,
     }
   );
   return data;

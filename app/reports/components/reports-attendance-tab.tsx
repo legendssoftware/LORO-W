@@ -253,11 +253,13 @@ function filterUserMetricsForSummary(
 export interface ReportsAttendanceTabProps {
   profile: SyncProfile | null | undefined;
   reportsMode: ReportsMode;
+  isActive?: boolean;
 }
 
 export function ReportsAttendanceTab({
   profile,
   reportsMode,
+  isActive = true,
 }: ReportsAttendanceTabProps) {
   const todayStr = formatUtcYmd(utcToday());
 
@@ -357,7 +359,7 @@ export function ReportsAttendanceTab({
 
   const dailyOverviewQuery = useDailyOverview(
     { date: todayStr },
-    { enabled: true }
+    { enabled: isActive }
   );
 
   const { data: branches = [] } = useBranches();
