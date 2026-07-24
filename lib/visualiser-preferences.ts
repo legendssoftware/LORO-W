@@ -1,7 +1,9 @@
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  type HardwareBrandKey,
   type SiteOpportunityMode,
   type SiteOpportunitySettings,
+  type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 
 export const VISUALISER_PREFERENCES_STORAGE_KEY = 'visualiser-preferences-v1';
@@ -12,6 +14,7 @@ export interface VisualiserPreferences {
   showOpportunities: boolean;
   opportunityMode: SiteOpportunityMode;
   opportunitySettings: SiteOpportunitySettings;
+  turnoverOverrides: TurnoverOverrideSettings;
   showSalesRepLocations: boolean;
   repLocationsMaxAgeHours: number;
 }
@@ -22,12 +25,58 @@ const DEFAULT_PREFERENCES: VisualiserPreferences = {
   showOpportunities: false,
   opportunityMode: 'both',
   opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  turnoverOverrides: {},
   showSalesRepLocations: false,
   repLocationsMaxAgeHours: 2,
 };
 
+const HARDWARE_BRAND_KEYS: HardwareBrandKey[] = [
+  'BUCO',
+  'CASHBUILD',
+  'BUILD IT',
+  'BUILDERS',
+  'POWERBUILD',
+  'EST',
+  'P&L HARDWARE',
+  'OTHER',
+];
+
 function isSiteOpportunityMode(value: unknown): value is SiteOpportunityMode {
   return value === 'greenfield' || value === 'catchment' || value === 'both';
+}
+
+function parseBrandTurnoverOverrides(
+  raw: unknown,
+): Partial<Record<HardwareBrandKey, number>> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Partial<Record<HardwareBrandKey, number>> = {};
+  for (const brand of HARDWARE_BRAND_KEYS) {
+    const value = (raw as Record<string, unknown>)[brand];
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      out[brand] = value;
+    }
+  }
+  return out;
+}
+
+function parseTurnoverOverrides(raw: unknown): TurnoverOverrideSettings {
+  if (!raw || typeof raw !== 'object') return {};
+  const obj = raw as Record<string, unknown>;
+  const categoryRaw = obj.categoryTurnoverOverrides;
+  const categoryTurnoverOverrides: TurnoverOverrideSettings['categoryTurnoverOverrides'] =
+    {};
+  if (categoryRaw && typeof categoryRaw === 'object') {
+    for (const key of ['retailer', 'sd'] as const) {
+      const value = (categoryRaw as Record<string, unknown>)[key];
+      if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        categoryTurnoverOverrides[key] = value;
+      }
+    }
+  }
+  return {
+    brandTurnoverOverrides: parseBrandTurnoverOverrides(obj.brandTurnoverOverrides),
+    categoryTurnoverOverrides,
+  };
 }
 
 function parseSettings(raw: unknown): SiteOpportunitySettings {
@@ -38,6 +87,7 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
   const minSep = Number(s.minBranchSeparationKm);
   const captureLow = Number(s.captureLowPct);
   const captureHigh = Number(s.captureHighPct);
+  const repTarget = Number(s.repTargetMonthlyZAR);
   return {
     radiusMeters:
       Number.isFinite(radiusKm) && radiusKm >= 1000 && radiusKm <= 20_000
@@ -59,6 +109,10 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
       Number.isFinite(captureHigh) && captureHigh >= 0.01 && captureHigh <= 1
         ? captureHigh
         : DEFAULT_SITE_OPPORTUNITY_SETTINGS.captureHighPct,
+    repTargetMonthlyZAR:
+      Number.isFinite(repTarget) && repTarget >= 100_000 && repTarget <= 50_000_000
+        ? repTarget
+        : DEFAULT_SITE_OPPORTUNITY_SETTINGS.repTargetMonthlyZAR,
   };
 }
 
@@ -82,6 +136,7 @@ export function loadVisualiserPreferences(): VisualiserPreferences {
         ? parsed.opportunityMode
         : DEFAULT_PREFERENCES.opportunityMode,
       opportunitySettings: parseSettings(parsed.opportunitySettings),
+      turnoverOverrides: parseTurnoverOverrides(parsed.turnoverOverrides),
       showSalesRepLocations: parsed.showSalesRepLocations === true,
       repLocationsMaxAgeHours:
         typeof parsed.repLocationsMaxAgeHours === 'number' &&
@@ -107,6 +162,20 @@ export function saveVisualiserPreferences(
       opportunitySettings: patch.opportunitySettings
         ? { ...current.opportunitySettings, ...patch.opportunitySettings }
         : current.opportunitySettings,
+      turnoverOverrides: patch.turnoverOverrides
+        ? {
+            ...current.turnoverOverrides,
+            ...patch.turnoverOverrides,
+            brandTurnoverOverrides: {
+              ...current.turnoverOverrides.brandTurnoverOverrides,
+              ...patch.turnoverOverrides.brandTurnoverOverrides,
+            },
+            categoryTurnoverOverrides: {
+              ...current.turnoverOverrides.categoryTurnoverOverrides,
+              ...patch.turnoverOverrides.categoryTurnoverOverrides,
+            },
+          }
+        : current.turnoverOverrides,
     };
     localStorage.setItem(
       VISUALISER_PREFERENCES_STORAGE_KEY,

@@ -18,7 +18,13 @@ export function ActualVsSimulatedTurnover({
 }: {
   simulation: Pick<
     TurnoverSimulation,
-    'actualMonthlyZAR' | 'simulatedMonthlyZAR' | 'varianceZAR' | 'variancePct'
+    | 'actualMonthlyZAR'
+    | 'actualRevenueMonthLabel'
+    | 'simulatedMonthlyZAR'
+    | 'varianceZAR'
+    | 'variancePct'
+    | 'repsRequired'
+    | 'repTargetMonthlyZAR'
   >;
   compact?: boolean;
   className?: string;
@@ -27,6 +33,10 @@ export function ActualVsSimulatedTurnover({
     simulation.actualMonthlyZAR != null &&
     Number.isFinite(simulation.actualMonthlyZAR) &&
     simulation.actualMonthlyZAR > 0;
+
+  const actualLabel = simulation.actualRevenueMonthLabel
+    ? `Actual (ERP — ${simulation.actualRevenueMonthLabel})`
+    : 'Actual (ERP)';
 
   const variancePct = simulation.variancePct;
   const varianceClass =
@@ -56,7 +66,7 @@ export function ActualVsSimulatedTurnover({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <p className={cn('text-neutral-700', compact ? 'text-[10px]' : 'text-xs')}>
-            Actual (ERP)
+            {actualLabel}
           </p>
           <p
             className={cn(
@@ -99,6 +109,14 @@ export function ActualVsSimulatedTurnover({
           No ERP data for this branch yet.
         </p>
       )}
+      {simulation.repsRequired != null && simulation.repTargetMonthlyZAR != null ? (
+        <p className={cn('text-neutral-700', compact ? 'text-[10px]' : 'text-xs')}>
+          <span className="font-semibold tabular-nums">{simulation.repsRequired}</span>
+          {' rep'}
+          {simulation.repsRequired === 1 ? '' : 's'} at{' '}
+          {formatZarShort(simulation.repTargetMonthlyZAR)}/mo to reach model
+        </p>
+      ) : null}
     </div>
   );
 }

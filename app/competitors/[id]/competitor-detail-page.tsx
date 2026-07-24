@@ -20,12 +20,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { CompetitorFormDialog } from '../components/competitor-form-dialog';
 import { canDeleteCompetitors, canManageCompetitors } from '@/lib/access';
+import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
+import { CompetitorMapPreview } from '../components/competitor-map-preview';
 
 function Row({
   label,
@@ -193,6 +195,29 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
               )}
               {competitor.latitude != null && competitor.longitude != null ? (
                 <Row label="Coordinates" value={`${competitor.latitude}, ${competitor.longitude}`} />
+              ) : null}
+              <Row
+                label="Map status"
+                value={
+                  hasStoredCoordinates(competitor.latitude, competitor.longitude)
+                    ? 'On map'
+                    : 'Not mapped'
+                }
+              />
+              {hasStoredCoordinates(competitor.latitude, competitor.longitude) ? (
+                <div className="space-y-2 pt-2">
+                  <CompetitorMapPreview
+                    latitude={Number(competitor.latitude)}
+                    longitude={Number(competitor.longitude)}
+                    name={competitor.name}
+                  />
+                  <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                    <Link href="/visualiser">
+                      <ExternalLink className="size-4" />
+                      View on visualiser
+                    </Link>
+                  </Button>
+                </div>
               ) : null}
               {competitor.enableGeofence ? (
                 <Row

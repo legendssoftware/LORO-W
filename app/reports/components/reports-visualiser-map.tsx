@@ -33,7 +33,9 @@ import type { InfluenceCircle, MapMarkerBase } from '@/api/types/map';
 import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
+  SiteOpportunitySettings,
   SiteOpportunityZone,
+  TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 import { cn } from '@/lib/utils';
 import { MapMarkerDetailPopup } from './map-marker-detail-popup';
@@ -300,6 +302,8 @@ export interface ReportsVisualiserMapProps {
   branchMarkers?: MapMarkerBase[];
   branches?: BranchListItem[];
   orgLogoUrl?: string | null;
+  opportunityCaptureSettings?: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
   repLocations?: LatestRepLocation[];
   showSalesRepLocations?: boolean;
   onSalesRepLocationsChange?: (value: boolean) => void;
@@ -321,6 +325,8 @@ function ReportsVisualiserMapInner({
   branchMarkers = [],
   branches = [],
   orgLogoUrl,
+  opportunityCaptureSettings,
+  turnoverOverrides,
   repLocations = [],
   showSalesRepLocations = false,
   onSalesRepLocationsChange,
@@ -456,6 +462,17 @@ function ReportsVisualiserMapInner({
               branchMarkers={branchMarkers}
               branches={branches}
               orgLogoUrl={orgLogoUrl}
+              captureSettings={
+                opportunityCaptureSettings ?? {
+                  radiusMeters: 5000,
+                  topN: 5,
+                  minBranchSeparationKm: 10,
+                  captureLowPct: 0.2,
+                  captureHighPct: 0.2,
+                  repTargetMonthlyZAR: 1_000_000,
+                }
+              }
+              turnoverOverrides={turnoverOverrides}
             />
           ) : null}
           <MapMarkerLayers
