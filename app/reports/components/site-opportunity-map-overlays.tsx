@@ -9,28 +9,28 @@ import type { MapMarkerBase } from '@/api/types/map';
 import type {
   BranchCatchmentOpportunity,
   GreenfieldOpportunityZone,
+  SiteOpportunitySettings,
   SiteOpportunityZone,
+  TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
+import { useStoreMonthlyYtd } from '@/api/hooks';
 import { ActualVsSimulatedTurnover } from '@/app/reports/components/actual-vs-simulated-turnover';
 import { BranchCatchmentLogo } from '@/app/reports/components/branch-catchment-logo';
+import { CompetitorBrandSummaryTable } from '@/app/reports/components/competitor-brand-summary-table';
 import {
   formatZarShort,
   getPotentialBreakdown,
 } from '@/lib/site-opportunity/format-potential';
+import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
+import { countByCategoryFromBrandCounts } from '@/lib/site-opportunity/compute/competitor-category';
 import { buildTurnoverSimulation, branchSimulationTextClass } from '@/lib/site-opportunity/turnover-simulation';
+import { resolveChartStoreId } from '@/lib/utils/branch-store-code';
+import { getLatestMonthlyRevenue } from '@/lib/utils/erp-latest-monthly-revenue';
 import { resolveBranchLogoUrl } from '@/lib/utils/resolve-branch-logo-url';
 import { cn } from '@/lib/utils';
 
 const FLY_DURATION_S = 0.6;
 const POPUP_OPEN_DELAY_MS = 650;
-
-function brandSummary(byBrand: SiteOpportunityZone['byBrand'] | undefined): string {
-  if (!byBrand?.length) return 'No hardware in radius';
-  return byBrand
-    .slice(0, 4)
-    .map((b) => `${b.brand} ×${b.count}`)
-    .join(' · ');
-}
 
 function scoreColor(score: number, maxScore: number): string {
   if (maxScore <= 0) return '#22c55e';
@@ -83,46 +83,70 @@ function CatchmentPopupContent({
   branchMarkers,
   branches,
   orgLogoUrl,
+  captureSettings,
+  turnoverOverrides,
 }: {
   catchment: BranchCatchmentOpportunity;
   branchMarkers: MapMarkerBase[];
   branches: BranchListItem[];
   orgLogoUrl?: string | null;
+  captureSettings: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
 }) {
-  const logoUrl = resolveBranchLogoUrl(catchment.branchId, {
+  const adjustedCatchment = applyTurnoverOverridesToZone(
+    {
+      ...catchment,
+      byCategory: catchment.byCategory ?? countByCategoryFromBrandCounts(catchment.byBrand),
+    },
+    captureSettings.captureLowPct,
+    captureSettings.captureHighPct,
+    turnoverOverrides,
+  );
+  const logoUrl = resolveBranchLogoUrl(adjustedCatchment.branchId, {
     branchMarkers,
     branches,
     orgLogoUrl,
   });
-  const simulation = buildTurnoverSimulation(catchment, {
-    actualRevenueZAR: catchment.actualRevenueZAR,
+  const chartStoreId = resolveChartStoreId(adjustedCatchment.branchId, branches);
+  const monthlyYtdQuery = useStoreMonthlyYtd(chartStoreId, {
+    enabled: Boolean(chartStoreId),
+  });
+  const latestErp = getLatestMonthlyRevenue(monthlyYtdQuery.data ?? []);
+  const simulation = buildTurnoverSimulation(adjustedCatchment, {
+    actualRevenueZAR: latestErp?.amount ?? null,
+    actualRevenueMonthLabel: latestErp?.monthLabel ?? null,
+    repTargetMonthlyZAR: captureSettings.repTargetMonthlyZAR,
   });
 
   return (
-    <div className="min-w-[180px] space-y-2 text-sm text-foreground">
+    <div className="min-w-[220px] space-y-2 text-sm text-foreground">
       <div className="flex items-center gap-2">
-        <BranchCatchmentLogo branchName={catchment.branchName} logoUrl={logoUrl} />
+        <BranchCatchmentLogo branchName={adjustedCatchment.branchName} logoUrl={logoUrl} />
         <p
           className={cn(
             'font-semibold leading-snug',
             branchSimulationTextClass(simulation),
           )}
         >
-          #{catchment.rank} {catchment.branchName}
+          #{adjustedCatchment.rank} {adjustedCatchment.branchName}
         </p>
       </div>
       <p className="font-medium text-foreground">
-        Pool: {formatZarShort(catchment.addressablePoolZAR)}/mo
+        Pool: {formatZarShort(adjustedCatchment.addressablePoolZAR)}/mo
       </p>
       <PotentialBreakdown
-        potentialLowZAR={catchment.potentialLowZAR}
-        potentialHighZAR={catchment.potentialHighZAR}
+        potentialLowZAR={adjustedCatchment.potentialLowZAR}
+        potentialHighZAR={adjustedCatchment.potentialHighZAR}
       />
       <ActualVsSimulatedTurnover simulation={simulation} compact />
       <p className="font-medium text-foreground">
-        {catchment.competitorCount} competitors · {catchment.clientCount} clients
+        {adjustedCatchment.competitorCount} competitors · {adjustedCatchment.clientCount} clients
       </p>
-      <p className="text-xs text-muted-foreground">{brandSummary(catchment.byBrand)}</p>
+      <CompetitorBrandSummaryTable
+        byBrand={adjustedCatchment.byBrand}
+        byCategory={adjustedCatchment.byCategory}
+        compact
+      />
     </div>
   );
 }
@@ -191,6 +215,8 @@ export function SiteOpportunityMapOverlays({
   branchMarkers = [],
   branches = [],
   orgLogoUrl,
+  captureSettings,
+  turnoverOverrides,
 }: {
   catchments: BranchCatchmentOpportunity[];
   greenfield: GreenfieldOpportunityZone[];
@@ -201,6 +227,8 @@ export function SiteOpportunityMapOverlays({
   branchMarkers?: MapMarkerBase[];
   branches?: BranchListItem[];
   orgLogoUrl?: string | null;
+  captureSettings: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
 }) {
   const layerRefs = useRef<Map<string, L.Layer>>(new Map());
 
@@ -250,12 +278,14 @@ export function SiteOpportunityMapOverlays({
               click: () => onSelectZone(c),
             }}
           >
-            <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={320}>
+            <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={420}>
               <CatchmentPopupContent
                 catchment={c}
                 branchMarkers={branchMarkers}
                 branches={branches}
                 orgLogoUrl={orgLogoUrl}
+                captureSettings={captureSettings}
+                turnoverOverrides={turnoverOverrides}
               />
             </Popup>
           </Circle>
@@ -264,6 +294,15 @@ export function SiteOpportunityMapOverlays({
       {greenfield.map((g) => {
         const color = scoreColor(g.opportunityScore, maxScore);
         const selected = selectedZoneId === g.id;
+        const adjustedGreenfield = applyTurnoverOverridesToZone(
+          {
+            ...g,
+            byCategory: g.byCategory ?? countByCategoryFromBrandCounts(g.byBrand),
+          },
+          captureSettings.captureLowPct,
+          captureSettings.captureHighPct,
+          turnoverOverrides,
+        );
         return (
           <Fragment key={g.id}>
             <Circle
@@ -287,8 +326,8 @@ export function SiteOpportunityMapOverlays({
                 click: () => onSelectZone(g),
               }}
             >
-              <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={320}>
-                <div className="min-w-[180px] space-y-1 text-sm text-foreground">
+              <Popup className="reports-viz-popup" autoPanPadding={[24, 24]} maxWidth={420}>
+                <div className="min-w-[220px] space-y-2 text-sm text-foreground">
                   <p className="font-semibold text-foreground">
                     {g.label} ({g.competitorCount} competitors)
                   </p>
@@ -296,16 +335,20 @@ export function SiteOpportunityMapOverlays({
                     <p className="text-xs text-muted-foreground">{g.address}</p>
                   ) : null}
                   <p className="font-medium text-foreground">
-                    Pool: {formatZarShort(g.addressablePoolZAR)}/mo
+                    Pool: {formatZarShort(adjustedGreenfield.addressablePoolZAR)}/mo
                   </p>
                   <PotentialBreakdown
-                    potentialLowZAR={g.potentialLowZAR}
-                    potentialHighZAR={g.potentialHighZAR}
+                    potentialLowZAR={adjustedGreenfield.potentialLowZAR}
+                    potentialHighZAR={adjustedGreenfield.potentialHighZAR}
                   />
                   <p className="font-medium text-foreground">
                     {g.competitorCount} competitors · {g.clientCount} clients
                   </p>
-                  <p className="text-xs text-muted-foreground">{brandSummary(g.byBrand)}</p>
+                  <CompetitorBrandSummaryTable
+                    byBrand={adjustedGreenfield.byBrand}
+                    byCategory={adjustedGreenfield.byCategory}
+                    compact
+                  />
                 </div>
               </Popup>
             </Marker>

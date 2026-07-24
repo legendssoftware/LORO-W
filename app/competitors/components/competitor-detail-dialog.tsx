@@ -23,6 +23,7 @@ import {
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
+import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -178,6 +179,24 @@ export function CompetitorDetailDialog({
                         label="Coordinates"
                         value={`${competitor.latitude}, ${competitor.longitude}`}
                       />
+                    ) : null}
+                    <ModalRow
+                      label="Map status"
+                      value={
+                        hasStoredCoordinates(competitor.latitude, competitor.longitude)
+                          ? 'On map'
+                          : 'Not mapped — add address or coordinates'
+                      }
+                    />
+                    {hasStoredCoordinates(competitor.latitude, competitor.longitude) ? (
+                      <div className="pt-2">
+                        <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                          <Link href="/visualiser">
+                            <ExternalLink className="size-4" />
+                            View on map
+                          </Link>
+                        </Button>
+                      </div>
                     ) : null}
                   </ModalSection>
                   {competitor.description ? (

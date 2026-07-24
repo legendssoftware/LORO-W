@@ -121,6 +121,9 @@ export function MapMarkerLegend({
                 style={{ background: MARKER_COLORS.salesRep }}
               />
               Sales rep locations
+              <span className="text-[10px] font-normal text-muted-foreground">
+                (last mobile GPS within map recency window)
+              </span>
             </label>
           </fieldset>
           {presentTypes.length > 0 ? (

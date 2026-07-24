@@ -9,6 +9,7 @@ import type {
 } from '@/api/types/site-opportunity';
 import { DEFAULT_SITE_OPPORTUNITY_SETTINGS } from '@/api/types/site-opportunity';
 import { countByBrand, sumAddressablePool } from './brands';
+import { countByCategoryFromBrandCounts } from './competitor-category';
 import {
 	buildCaptureTimeline,
 	monthsToTargetMid,
@@ -179,6 +180,7 @@ export function computeBranchCatchments(
 			settings.radiusMeters,
 		);
 		const byBrand = countByBrand(inRadiusCompetitors);
+		const byCategory = countByCategoryFromBrandCounts(byBrand);
 		const addressablePoolZAR = sumAddressablePool(inRadiusCompetitors);
 		const potentialLowZAR = addressablePoolZAR * settings.captureLowPct;
 		const potentialHighZAR = addressablePoolZAR * settings.captureHighPct;
@@ -202,6 +204,7 @@ export function computeBranchCatchments(
 			competitorCount: inRadiusCompetitors.length,
 			competitorsMissingGeo: Math.max(0, totalCompetitors - geoCompetitors.length),
 			byBrand,
+			byCategory,
 			addressablePoolZAR,
 			potentialLowZAR,
 			potentialHighZAR,
@@ -420,6 +423,7 @@ export function computeGreenfieldZones(
 			competitorCount: cell.competitorCount,
 			competitorsMissingGeo: Math.max(0, totalCompetitors - geoCompetitors.length),
 			byBrand: cell.byBrand,
+			byCategory: countByCategoryFromBrandCounts(cell.byBrand),
 			addressablePoolZAR: cell.pool,
 			potentialLowZAR,
 			potentialHighZAR,

@@ -36,30 +36,71 @@ function computeBounds(markers: MapMarkerBase[]): {
 
 const BOUNDS_PADDING_DEG = 0.5;
 
+export type RepLocationGeoFilterResult = {
+  locations: LatestRepLocation[];
+  /** True when country filter is on but no rep fell inside marker bounds (reps are still shown). */
+  hadGeoFilterActive: boolean;
+  /** Count of reps that would have been hidden by legacy geo bounds filtering. */
+  geoFilteredOutCount: number;
+};
+
 /**
- * Filter rep locations to the geographic bounds of reference map markers.
- * `referenceMarkers` should already be filtered by country/province (see filterMapMarkersFromIndex).
- * When a country filter is active but no reference markers exist, returns an empty list.
+ * Rep pins are shown org-wide. Country/province filters apply to client/competitor markers only;
+ * reps are never clipped by marker bounds so managers always see recent mobile GPS.
  */
 export function filterRepLocationsByGeoBounds(
   repLocations: LatestRepLocation[],
   referenceMarkers: MapMarkerBase[],
   options?: { selectedCountry?: string; selectedProvince?: string }
 ): LatestRepLocation[] {
-  if (!options?.selectedCountry) return repLocations;
+  const result = filterRepLocationsByGeoBoundsDetailed(
+    repLocations,
+    referenceMarkers,
+    options
+  );
+  return result.locations;
+}
+
+export function filterRepLocationsByGeoBoundsDetailed(
+  repLocations: LatestRepLocation[],
+  referenceMarkers: MapMarkerBase[],
+  options?: { selectedCountry?: string; selectedProvince?: string }
+): RepLocationGeoFilterResult {
+  if (!options?.selectedCountry) {
+    return {
+      locations: repLocations,
+      hadGeoFilterActive: false,
+      geoFilteredOutCount: 0,
+    };
+  }
 
   const bounds = computeBounds(referenceMarkers);
-  if (!bounds) return [];
+  if (!bounds) {
+    return {
+      locations: repLocations,
+      hadGeoFilterActive: true,
+      geoFilteredOutCount: 0,
+    };
+  }
 
   const minLat = bounds.minLat - BOUNDS_PADDING_DEG;
   const maxLat = bounds.maxLat + BOUNDS_PADDING_DEG;
   const minLng = bounds.minLng - BOUNDS_PADDING_DEG;
   const maxLng = bounds.maxLng + BOUNDS_PADDING_DEG;
 
-  return repLocations.filter((rep) => {
+  let geoFilteredOutCount = 0;
+  for (const rep of repLocations) {
     const lat = Number(rep.latitude);
     const lng = Number(rep.longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-    return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
-  });
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const inside =
+      lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+    if (!inside) geoFilteredOutCount += 1;
+  }
+
+  return {
+    locations: repLocations,
+    hadGeoFilterActive: true,
+    geoFilteredOutCount,
+  };
 }

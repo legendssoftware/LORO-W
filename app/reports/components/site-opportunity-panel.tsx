@@ -12,6 +12,8 @@ import {
   YAxis,
   Bar,
   BarChart,
+  Cell,
+  ReferenceLine,
 } from 'recharts';
 import {
   Building2,
@@ -31,6 +33,11 @@ import type { BranchListItem } from '@/api/types/branch';
 import type { MapMarkerBase } from '@/api/types/map';
 import { ActualVsSimulatedTurnover } from '@/app/reports/components/actual-vs-simulated-turnover';
 import { BranchCatchmentLogo } from '@/app/reports/components/branch-catchment-logo';
+import { CompetitorBrandSummaryTable } from '@/app/reports/components/competitor-brand-summary-table';
+import type { BranchMonthlySalesPoint } from '@/api/endpoints/performance-dashboard';
+import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
+import { countByCategoryFromBrandCounts } from '@/lib/site-opportunity/compute/competitor-category';
+import { getLatestMonthlyRevenue } from '@/lib/utils/erp-latest-monthly-revenue';
 import { downloadOpportunitiesCsv } from '@/lib/site-opportunity';
 import { getPotentialBreakdown } from '@/lib/site-opportunity/format-potential';
 import { buildTurnoverSimulation, branchSimulationTextClass } from '@/lib/site-opportunity/turnover-simulation';
@@ -44,6 +51,7 @@ import {
   type GreenfieldOpportunityZone,
   type SiteOpportunitySettings,
   type SiteOpportunityZone,
+  type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 import {
   reportsTabTriggerClassName,
@@ -136,16 +144,48 @@ function CaptureTimelineChart({ data }: { data: CaptureTimelinePoint[] }) {
   );
 }
 
+const ERP_BAR_COLORS = [
+  '#2563eb',
+  '#16a34a',
+  '#f59e0b',
+  '#dc2626',
+  '#7c3aed',
+  '#0891b2',
+  '#ea580c',
+  '#64748b',
+  '#db2777',
+  '#84cc16',
+  '#0d9488',
+  '#9333ea',
+];
+
 function BranchMonthlySalesChart({
   chartStoreId,
+  repTargetMonthlyZAR,
+  monthlyData,
+  monthlyLoading,
+  monthlyError,
 }: {
   chartStoreId: string | undefined;
+  repTargetMonthlyZAR: number;
+  monthlyData?: BranchMonthlySalesPoint[];
+  monthlyLoading?: boolean;
+  monthlyError?: boolean;
 }) {
-  const { data = [], isLoading, isError } = useStoreMonthlyYtd(chartStoreId, {
-    enabled: Boolean(chartStoreId),
+  const internalQuery = useStoreMonthlyYtd(chartStoreId, {
+    enabled: Boolean(chartStoreId) && monthlyData === undefined,
   });
+  const data = monthlyData ?? internalQuery.data ?? [];
+  const isLoading = monthlyLoading ?? internalQuery.isLoading;
+  const isError = monthlyError ?? internalQuery.isError;
 
   if (!chartStoreId) return null;
+
+  const maxRevenue = Math.max(
+    ...data.map((row) => row.totalRevenue ?? 0),
+    repTargetMonthlyZAR,
+    1,
+  );
 
   return (
     <div className="rounded-lg border bg-background p-3 min-w-0">
@@ -166,21 +206,36 @@ function BranchMonthlySalesChart({
           No monthly sales data for this branch yet.
         </p>
       ) : (
-        <div className="h-[140px] w-full min-w-0 mt-2">
+        <div className="h-[180px] w-full min-w-0 mt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
               <YAxis
                 tick={{ fontSize: 10 }}
                 tickFormatter={formatChartZarAxis}
-                width={36}
+                width={40}
+                domain={[0, maxRevenue * 1.1]}
               />
               <Tooltip formatter={(v: number) => formatZar(v)} />
-              <Bar
-                dataKey="totalRevenue"
-                fill="hsl(var(--primary))"
-                radius={[3, 3, 0, 0]}
+              <ReferenceLine
+                y={repTargetMonthlyZAR}
+                stroke="#dc2626"
+                strokeDasharray="4 4"
+                label={{
+                  value: 'Rep target',
+                  position: 'insideTopRight',
+                  fill: '#dc2626',
+                  fontSize: 10,
+                }}
               />
+              <Bar dataKey="totalRevenue" radius={[3, 3, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`${entry.month}-${index}`}
+                    fill={ERP_BAR_COLORS[index % ERP_BAR_COLORS.length]}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -192,11 +247,19 @@ function BranchMonthlySalesChart({
 function TurnoverSimulatorSection({
   zone,
   actualRevenueZAR,
+  actualRevenueMonthLabel,
+  repTargetMonthlyZAR,
 }: {
   zone: SiteOpportunityZone;
   actualRevenueZAR?: number | null;
+  actualRevenueMonthLabel?: string | null;
+  repTargetMonthlyZAR: number;
 }) {
-  const simulation = buildTurnoverSimulation(zone, { actualRevenueZAR });
+  const simulation = buildTurnoverSimulation(zone, {
+    actualRevenueZAR,
+    actualRevenueMonthLabel,
+    repTargetMonthlyZAR,
+  });
   const hasActual =
     actualRevenueZAR != null &&
     Number.isFinite(actualRevenueZAR) &&
@@ -295,6 +358,7 @@ function TurnoverSimulatorSection({
 function ZoneDetail({
   zone,
   captureSettings,
+  turnoverOverrides,
   orgBrandName,
   onExplain,
   explainLoading,
@@ -306,6 +370,7 @@ function ZoneDetail({
 }: {
   zone: SiteOpportunityZone;
   captureSettings: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
   orgBrandName: string;
   onExplain: () => void;
   explainLoading: boolean;
@@ -315,29 +380,45 @@ function ZoneDetail({
   orgLogoUrl?: string | null;
   detailRef?: RefObject<HTMLDivElement | null>;
 }) {
+  const adjustedZone = applyTurnoverOverridesToZone(
+    {
+      ...zone,
+      byCategory: zone.byCategory ?? countByCategoryFromBrandCounts(zone.byBrand),
+    },
+    captureSettings.captureLowPct,
+    captureSettings.captureHighPct,
+    turnoverOverrides,
+  );
   const lowPct = Math.round(captureSettings.captureLowPct * 100);
   const highPct = Math.round(captureSettings.captureHighPct * 100);
   const title =
-    zone.kind === 'catchment' ? zone.branchName : zone.label;
+    adjustedZone.kind === 'catchment' ? adjustedZone.branchName : adjustedZone.label;
   const potential = getPotentialBreakdown(
-    zone.potentialLowZAR,
-    zone.potentialHighZAR,
+    adjustedZone.potentialLowZAR,
+    adjustedZone.potentialHighZAR,
   );
   const chartStoreId =
-    zone.kind === 'catchment'
-      ? resolveChartStoreId(zone.branchId, branches)
+    adjustedZone.kind === 'catchment'
+      ? resolveChartStoreId(adjustedZone.branchId, branches)
       : undefined;
+  const monthlyYtdQuery = useStoreMonthlyYtd(chartStoreId, {
+    enabled: Boolean(chartStoreId),
+  });
+  const latestErp = getLatestMonthlyRevenue(monthlyYtdQuery.data ?? []);
+  const actualRevenueZAR = latestErp?.amount ?? null;
+  const actualRevenueMonthLabel = latestErp?.monthLabel ?? null;
   const branchLogoUrl =
-    zone.kind === 'catchment'
-      ? resolveBranchLogoUrl(zone.branchId, {
+    adjustedZone.kind === 'catchment'
+      ? resolveBranchLogoUrl(adjustedZone.branchId, {
           branchMarkers,
           branches,
           orgLogoUrl,
         })
       : undefined;
-  const simulation = buildTurnoverSimulation(zone, {
-    actualRevenueZAR:
-      zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
+  const simulation = buildTurnoverSimulation(adjustedZone, {
+    actualRevenueZAR,
+    actualRevenueMonthLabel,
+    repTargetMonthlyZAR: captureSettings.repTargetMonthlyZAR,
   });
 
   return (
@@ -354,12 +435,12 @@ function ZoneDetail({
           ) : null}
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">
-              #{zone.rank} · {zone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
+              #{adjustedZone.rank} · {adjustedZone.kind === 'catchment' ? 'Branch catchment' : 'New site'}
             </p>
             <h3 className={cn('font-semibold break-words', branchSimulationTextClass(simulation))}>{title}</h3>
-            {zone.kind === 'greenfield' && zone.address ? (
+            {adjustedZone.kind === 'greenfield' && adjustedZone.address ? (
               <p className="text-sm text-muted-foreground mt-0.5 break-words">
-                {zone.address}
+                {adjustedZone.address}
               </p>
             ) : null}
           </div>
@@ -383,29 +464,42 @@ function ZoneDetail({
       </div>
 
       <TurnoverSimulatorSection
-        zone={zone}
-        actualRevenueZAR={
-          zone.kind === 'catchment' ? zone.actualRevenueZAR : null
+        zone={adjustedZone}
+        actualRevenueZAR={adjustedZone.kind === 'catchment' ? actualRevenueZAR : null}
+        actualRevenueMonthLabel={
+          adjustedZone.kind === 'catchment' ? actualRevenueMonthLabel : null
         }
+        repTargetMonthlyZAR={captureSettings.repTargetMonthlyZAR}
       />
 
-      {zone.kind === 'catchment' ? (
-        <BranchMonthlySalesChart chartStoreId={chartStoreId} />
+      {adjustedZone.kind === 'catchment' ? (
+        <BranchMonthlySalesChart
+          chartStoreId={chartStoreId}
+          repTargetMonthlyZAR={captureSettings.repTargetMonthlyZAR}
+          monthlyData={monthlyYtdQuery.data}
+          monthlyLoading={monthlyYtdQuery.isLoading}
+          monthlyError={monthlyYtdQuery.isError}
+        />
       ) : null}
+
+      <CompetitorBrandSummaryTable
+        byBrand={adjustedZone.byBrand}
+        byCategory={adjustedZone.byCategory}
+      />
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm min-w-0">
         <div>
           <dt className="text-muted-foreground">Clients in radius</dt>
-          <dd className="font-medium">{zone.clientCount}</dd>
+          <dd className="font-medium">{adjustedZone.clientCount}</dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Competitors</dt>
-          <dd className="font-medium">{zone.competitorCount}</dd>
+          <dd className="font-medium">{adjustedZone.competitorCount}</dd>
         </div>
         <div className="col-span-2">
           <dt className="text-muted-foreground">Addressable pool (monthly)</dt>
           <dd className="font-medium">
-            {formatZar(zone.addressablePoolZAR)}/mo
+            {formatZar(adjustedZone.addressablePoolZAR)}/mo
             <span className="block text-xs font-normal text-muted-foreground">
               Σ hardware in {captureSettings.radiusMeters / 1000} km × brand monthly turnover
             </span>
@@ -421,41 +515,31 @@ function ZoneDetail({
             <span className="block">High: {formatZar(potential.high)}/mo</span>
           </dd>
         </div>
-        {zone.kind === 'catchment' && zone.revenueGapZAR != null ? (
+        {adjustedZone.kind === 'catchment' && adjustedZone.revenueGapZAR != null ? (
           <div className="col-span-2">
             <dt className="text-muted-foreground">Gap to high potential</dt>
             <dd
               className={cn(
                 'font-medium',
-                zone.revenueGapZAR > 0 ? 'text-amber-700' : 'text-green-700'
+                adjustedZone.revenueGapZAR > 0 ? 'text-amber-700' : 'text-green-700'
               )}
             >
-              {formatZar(zone.revenueGapZAR)}
+              {formatZar(adjustedZone.revenueGapZAR)}
             </dd>
           </div>
         ) : null}
-        {zone.kind === 'greenfield' && zone.nearestBranchKm != null ? (
+        {adjustedZone.kind === 'greenfield' && adjustedZone.nearestBranchKm != null ? (
           <div className="col-span-2">
             <dt className="text-muted-foreground">Nearest {orgBrandName} branch</dt>
-            <dd className="font-medium">{zone.nearestBranchKm.toFixed(1)} km</dd>
+            <dd className="font-medium">{adjustedZone.nearestBranchKm.toFixed(1)} km</dd>
           </div>
         ) : null}
       </dl>
 
-      {zone.byBrand.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {zone.byBrand.map((b) => (
-            <Badge key={b.brand} variant="secondary" className="text-xs">
-              {b.brand} ×{b.count}
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-
-      {zone.monthsToTargetMid != null ? (
+      {adjustedZone.monthsToTargetMid != null ? (
         <p className="text-xs text-muted-foreground">
           Mid-scenario ramp reaches ~55% of full potential by month{' '}
-          {zone.monthsToTargetMid}.
+          {adjustedZone.monthsToTargetMid}.
         </p>
       ) : null}
 
@@ -463,7 +547,7 @@ function ZoneDetail({
         <p className="text-xs font-medium text-muted-foreground mb-1">
           Market capture ramp (monthly turnover)
         </p>
-        <CaptureTimelineChart data={zone.captureTimeline} />
+        <CaptureTimelineChart data={adjustedZone.captureTimeline} />
       </div>
 
       {brief ? (
@@ -505,6 +589,7 @@ function ZoneListItem({
   selected,
   onSelect,
   captureSettings,
+  turnoverOverrides,
   orgBrandName,
   branches,
   branchMarkers = [],
@@ -518,6 +603,7 @@ function ZoneListItem({
   selected: boolean;
   onSelect: () => void;
   captureSettings: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
   orgBrandName: string;
   branches: BranchListItem[];
   branchMarkers?: MapMarkerBase[];
@@ -527,15 +613,20 @@ function ZoneListItem({
   brief: SiteOpportunityBrief | null;
   detailRef?: RefObject<HTMLDivElement | null>;
 }) {
-  const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
-  const simulation = buildTurnoverSimulation(zone, {
-    actualRevenueZAR:
-      zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
+  const adjustedZone = applyTurnoverOverridesToZone(
+    zone,
+    captureSettings.captureLowPct,
+    captureSettings.captureHighPct,
+    turnoverOverrides,
+  );
+  const title = adjustedZone.kind === 'catchment' ? adjustedZone.branchName : adjustedZone.label;
+  const simulation = buildTurnoverSimulation(adjustedZone, {
+    repTargetMonthlyZAR: captureSettings.repTargetMonthlyZAR,
   });
   const subtitle =
-    zone.kind === 'greenfield' && zone.address
-      ? `${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected · ${zone.address}`
-      : `${zone.competitorCount} competitors · ${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected`;
+    adjustedZone.kind === 'greenfield' && adjustedZone.address
+      ? `${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected · ${adjustedZone.address}`
+      : `${adjustedZone.competitorCount} competitors · ${formatZar(simulation.listSubtitleMonthlyZAR)}/mo expected`;
   return (
     <div className="space-y-0">
       <button
@@ -560,7 +651,7 @@ function ZoneListItem({
             {title}
           </span>
           <Badge variant="outline" className="shrink-0">
-            #{zone.rank}
+            #{adjustedZone.rank}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-1 line-clamp-2 break-words">
@@ -572,6 +663,7 @@ function ZoneListItem({
           <ZoneDetail
             zone={zone}
             captureSettings={captureSettings}
+            turnoverOverrides={turnoverOverrides}
             orgBrandName={orgBrandName}
             explainLoading={explainLoading}
             brief={brief}
@@ -617,6 +709,7 @@ export function SiteOpportunityPanel({
   dataQuality,
   warnings = [],
   captureSettings = DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  turnoverOverrides,
   selectedZoneId,
   onSelectZone,
   className,
@@ -634,6 +727,7 @@ export function SiteOpportunityPanel({
   dataQuality: DataQualitySummary;
   warnings?: string[];
   captureSettings?: SiteOpportunitySettings;
+  turnoverOverrides?: TurnoverOverrideSettings;
   selectedZoneId: string | null;
   onSelectZone: (zone: SiteOpportunityZone) => void;
   className?: string;
@@ -668,7 +762,7 @@ export function SiteOpportunityPanel({
   return (
     <aside
       className={cn(
-        'flex flex-col h-full max-h-full min-h-0 min-w-0 overflow-hidden border-l bg-background w-full lg:w-[360px] shrink-0',
+        'flex flex-col h-full max-h-full min-h-0 min-w-0 overflow-hidden border-l bg-background w-full lg:w-[420px] shrink-0',
         className
       )}
     >
@@ -777,6 +871,7 @@ export function SiteOpportunityPanel({
                       selected={zone.id === selectedZoneId}
                       onSelect={() => onSelectZone(zone)}
                       captureSettings={captureSettings}
+                      turnoverOverrides={turnoverOverrides}
                       orgBrandName={orgBrandName}
                       branches={branches}
                       branchMarkers={branchMarkers}
