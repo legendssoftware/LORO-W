@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { Bell, AlertTriangle, CalendarClock, ChevronDown } from 'lucide-react';
 import { useTasks } from '@/api/hooks';
-import { formatUtcYmd, utcToday } from '@/app/reports/utils/overview-daily-summary';
+import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import {
   Collapsible,
   CollapsibleContent,

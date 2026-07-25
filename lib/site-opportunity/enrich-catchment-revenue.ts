@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { BranchListItem } from '@/api/types/branch';
 import type { BranchCatchmentOpportunity } from '@/api/types/site-opportunity';
-import type { PerformanceDashboardResponse } from '@/api/endpoints/performance-dashboard';
+import type { PerformanceDashboardResponse } from '@/lib/types/erp-performance';
 import { normalizeStoreCode } from '@/lib/utils/branch-store-code';
 import {
   findBranchListItem,

@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import {
   formatUtcYmd,
   utcMonthStartThroughToday,
-} from '@/app/reports/utils/overview-daily-summary';
+} from '@/lib/utils/overview-daily-summary';
 
 function matchesSearch(claim: Claim, q: string): boolean {
   if (!q) return true;

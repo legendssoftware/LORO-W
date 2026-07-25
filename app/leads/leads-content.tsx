@@ -31,7 +31,7 @@ import { CreateLeadModal } from './components/create-lead-modal';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { LeadsFiltersBar } from './components/leads-filters-bar';
-import { formatUtcYmd } from '@/app/reports/utils/overview-daily-summary';
+import { formatUtcYmd } from '@/lib/utils/overview-daily-summary';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { useSessionStore } from '@/store/session-store';

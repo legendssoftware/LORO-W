@@ -14,7 +14,7 @@ import { MapPinIcon } from 'lucide-react';
 import { DashboardTargetsRadial } from '@/components/dashboard-targets-radial';
 import { formatPayrollPeriodLabel } from '@/lib/payroll-period';
 import { isAdminAccessLevel } from '@/lib/access';
-import { userHasPerformanceTarget } from '@/app/reports/utils/user-has-performance-target';
+import { userHasPerformanceTarget } from '@/lib/utils/user-has-performance-target';
 import { cn } from '@/lib/utils';
 
 /** Current month name (e.g. "February"). */

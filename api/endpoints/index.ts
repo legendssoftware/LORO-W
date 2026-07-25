@@ -15,8 +15,6 @@ export * from './erp-profile-quotations';
 export * from './shop-quotations';
 export * from './products';
 export * from './resellers';
-export * from './map';
-export * from './site-opportunities';
 export * from './competitors';
 export * from './tracking';
 export * from './iot';

@@ -1,4 +1,4 @@
-import type { BranchMonthlySalesPoint } from '@/api/endpoints/performance-dashboard';
+import type { BranchMonthlySalesPoint } from '@/lib/types/erp-performance';
 
 export interface LatestMonthlyRevenue {
   amount: number;

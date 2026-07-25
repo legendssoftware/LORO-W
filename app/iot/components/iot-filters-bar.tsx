@@ -27,7 +27,7 @@ import {
   SearchableBranchPicker,
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
-} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+} from '@/components/filters/searchable-filter-comboboxes';
 import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import type { BranchListItem } from '@/api/types/branch';

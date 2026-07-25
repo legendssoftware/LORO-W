@@ -1,6 +1,6 @@
 /**
  * Staff attendance status filter options with icons for dropdown display.
- * Aligned with StatusFilter in @/app/reports/types.
+ * Aligned with StatusFilter in @/lib/types/staff-report-types.
  */
 
 import type { ComponentType } from 'react';
@@ -18,7 +18,7 @@ import {
   Car,
   AlertTriangle,
 } from 'lucide-react';
-import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
+import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-types';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
 import { formatEnumLabel } from '@/lib/format-enum-label';
 

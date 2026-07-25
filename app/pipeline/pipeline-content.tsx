@@ -61,7 +61,7 @@ import { PipelineCharts } from './pipeline-charts';
 import {
   formatUtcYmd,
   utcMonthStartThroughToday,
-} from '@/app/reports/utils/overview-daily-summary';
+} from '@/lib/utils/overview-daily-summary';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object' && !Array.isArray(v);
