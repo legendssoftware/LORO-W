@@ -1,6 +1,5 @@
 import type {
   BrandCount,
-  CaptureTimelinePoint,
   HardwareBrandKey,
   SiteOpportunityZone,
   TurnoverOverrideSettings,
@@ -10,6 +9,10 @@ import {
   countByCategoryFromBrandCounts,
   resolveCompetitorCategory,
 } from '@/lib/site-opportunity/compute/competitor-category';
+import {
+  buildCaptureTimeline,
+  monthsToTargetMid,
+} from '@/lib/site-opportunity/compute/capture-phases';
 
 function effectiveBrandTurnover(
   brand: HardwareBrandKey,
@@ -39,21 +42,6 @@ function rebuildByBrand(
     .sort((a, b) => b.turnoverZAR - a.turnoverZAR);
 }
 
-function rebuildCaptureTimeline(
-  potentialLowZAR: number,
-  potentialHighZAR: number,
-  existing: CaptureTimelinePoint[],
-): CaptureTimelinePoint[] {
-  if (existing.length === 0) return existing;
-  const potentialMidZAR = (potentialLowZAR + potentialHighZAR) / 2;
-  return existing.map((point) => ({
-    ...point,
-    revenueLowZAR: potentialLowZAR * point.captureMidPct,
-    revenueMidZAR: potentialMidZAR * point.captureMidPct,
-    revenueHighZAR: potentialHighZAR * point.captureMidPct,
-  }));
-}
-
 function hasOverrides(overrides?: TurnoverOverrideSettings): boolean {
   if (!overrides) return false;
   const brandKeys = Object.keys(overrides.brandTurnoverOverrides ?? {});
@@ -75,6 +63,7 @@ export function applyTurnoverOverridesToZone<T extends SiteOpportunityZone>(
   const potentialLowZAR = addressablePoolZAR * captureLowPct;
   const potentialHighZAR = addressablePoolZAR * captureHighPct;
   const byCategory = countByCategoryFromBrandCounts(byBrand);
+  const captureTimeline = buildCaptureTimeline(potentialLowZAR, potentialHighZAR);
 
   return {
     ...zone,
@@ -83,10 +72,7 @@ export function applyTurnoverOverridesToZone<T extends SiteOpportunityZone>(
     addressablePoolZAR,
     potentialLowZAR,
     potentialHighZAR,
-    captureTimeline: rebuildCaptureTimeline(
-      potentialLowZAR,
-      potentialHighZAR,
-      zone.captureTimeline,
-    ),
+    captureTimeline,
+    monthsToTargetMid: monthsToTargetMid(potentialLowZAR, potentialHighZAR),
   };
 }

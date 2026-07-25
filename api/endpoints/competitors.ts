@@ -7,6 +7,7 @@ import type {
   UpdateCompetitorPayload,
   CompetitorDeleteResponse,
   CompetitorImportResponse,
+  CompetitorListItem,
 } from '@/api/types/competitors';
 
 export type {
@@ -62,6 +63,44 @@ export async function getCompetitors(
   const qs = search.toString();
   const { data } = await client.get<GetCompetitorsResponse>(`/competitors${qs ? `?${qs}` : ''}`);
   return data;
+}
+
+/** Lightweight competitor row from GET /competitors/map-data (coords required). */
+export interface CompetitorMapMarker {
+  id: number;
+  name: string;
+  position: [number, number];
+  markerType: 'competitor';
+  threatLevel?: number;
+  isDirect?: boolean;
+  industry?: string;
+  status?: string | null;
+  website?: string | null;
+  logoUrl?: string | null;
+  competitorRef?: string | null;
+  address?: CompetitorListItem['address'];
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  estimatedAnnualRevenue?: number | null;
+  accountName?: string | null;
+  LegalEntity?: string | null;
+  TradingName?: string | null;
+  latitude?: number;
+  longitude?: number;
+}
+
+/**
+ * GET /competitors/map-data — up to 1000 geocoded competitors for the visualiser.
+ */
+export async function getCompetitorsMapData(
+  client: AxiosInstance
+): Promise<CompetitorMapMarker[]> {
+  const { data } = await client.get<CompetitorMapMarker[] | { data?: CompetitorMapMarker[] }>(
+    '/competitors/map-data'
+  );
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
 }
 
 export async function getCompetitor(

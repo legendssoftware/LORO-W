@@ -1,91 +1,131 @@
-import type { CaptureTimelinePoint } from '@/api/types/site-opportunity';
+import type {
+	CapturePhasePoint,
+	CaptureTimelinePoint,
+} from '@/api/types/site-opportunity';
 
-export interface CapturePhasePoint {
-	phase: string;
-	monthStart: number;
-	monthEnd: number;
-	captureLowPct: number;
-	captureHighPct: number;
-	captureMidPct: number;
-}
+export type { CapturePhasePoint };
 
+/**
+ * BitDrywall maturity curve — progress toward mature potential (pool × 15–30%).
+ * Phase % of potential maps to consultant market-share bands (Start-up 2–4% → Leader 15–20%).
+ */
 export const MARKET_CAPTURE_PHASES: CapturePhasePoint[] = [
 	{
-		phase: 'Launch',
+		phase: 'Start-up',
 		monthStart: 0,
 		monthEnd: 3,
-		captureLowPct: 0.1,
-		captureHighPct: 0.2,
-		captureMidPct: 0.15,
+		captureLowPct: 0.13,
+		captureHighPct: 0.27,
+		captureMidPct: 0.2,
 	},
 	{
-		phase: 'Entry',
+		phase: 'Establishment',
 		monthStart: 3,
 		monthEnd: 6,
-		captureLowPct: 0.2,
-		captureHighPct: 0.35,
-		captureMidPct: 0.275,
+		captureLowPct: 0.27,
+		captureHighPct: 0.4,
+		captureMidPct: 0.33,
 	},
 	{
 		phase: 'Growth',
 		monthStart: 6,
 		monthEnd: 12,
-		captureLowPct: 0.35,
-		captureHighPct: 0.55,
-		captureMidPct: 0.45,
+		captureLowPct: 0.4,
+		captureHighPct: 0.67,
+		captureMidPct: 0.53,
 	},
 	{
 		phase: 'Expansion',
 		monthStart: 12,
 		monthEnd: 18,
-		captureLowPct: 0.5,
-		captureHighPct: 0.7,
-		captureMidPct: 0.6,
+		captureLowPct: 0.67,
+		captureHighPct: 0.87,
+		captureMidPct: 0.77,
 	},
 	{
-		phase: 'Dominance',
+		phase: 'Mature',
 		monthStart: 18,
-		monthEnd: 30,
-		captureLowPct: 0.6,
-		captureHighPct: 0.8,
-		captureMidPct: 0.7,
+		monthEnd: 24,
+		captureLowPct: 0.87,
+		captureHighPct: 1,
+		captureMidPct: 0.93,
+	},
+	{
+		phase: 'Market Leader',
+		monthStart: 24,
+		monthEnd: 36,
+		captureLowPct: 1,
+		captureHighPct: 1.33,
+		captureMidPct: 1.17,
 	},
 ];
 
-function captureMidAtMonth(month: number): number {
-	for (const p of MARKET_CAPTURE_PHASES) {
-		if (month >= p.monthStart && month < p.monthEnd) return p.captureMidPct;
+/** Mature market share of local pool by competitive intensity. */
+export function matureShareByCompetition(competitorCount: number): {
+	label: string;
+	lowPct: number;
+	highPct: number;
+} {
+	if (competitorCount >= 5) {
+		return { label: 'Highly competitive', lowPct: 0.1, highPct: 0.12 };
 	}
-	const last = MARKET_CAPTURE_PHASES[MARKET_CAPTURE_PHASES.length - 1];
-	return last?.captureMidPct ?? 0.7;
+	if (competitorCount >= 3) {
+		return { label: 'Normal market', lowPct: 0.13, highPct: 0.15 };
+	}
+	if (competitorCount >= 1) {
+		return { label: 'Weak competition', lowPct: 0.16, highPct: 0.18 };
+	}
+	return { label: 'Dominant specialist opportunity', lowPct: 0.18, highPct: 0.22 };
 }
 
-/** Projected revenue curve from potential band and market capture phases. */
+function captureBandAtMonth(month: number): {
+	low: number;
+	mid: number;
+	high: number;
+} {
+	for (const p of MARKET_CAPTURE_PHASES) {
+		if (month >= p.monthStart && month < p.monthEnd) {
+			return {
+				low: p.captureLowPct,
+				mid: p.captureMidPct,
+				high: p.captureHighPct,
+			};
+		}
+	}
+	const last = MARKET_CAPTURE_PHASES[MARKET_CAPTURE_PHASES.length - 1];
+	return {
+		low: last?.captureLowPct ?? 1,
+		mid: last?.captureMidPct ?? 1.17,
+		high: last?.captureHighPct ?? 1.33,
+	};
+}
+
+/** Projected revenue curve from potential band and maturity phases. */
 export function buildCaptureTimeline(
 	potentialLowZAR: number,
 	potentialHighZAR: number,
-	maxMonths = 30,
+	maxMonths = 36,
 ): CaptureTimelinePoint[] {
 	const potentialMidZAR = (potentialLowZAR + potentialHighZAR) / 2;
 	const points: CaptureTimelinePoint[] = [];
 	for (let month = 0; month <= maxMonths; month += 3) {
-		const captureMidPct = captureMidAtMonth(month);
+		const band = captureBandAtMonth(month);
 		points.push({
 			month,
-			captureMidPct,
-			revenueLowZAR: potentialLowZAR * captureMidPct,
-			revenueMidZAR: potentialMidZAR * captureMidPct,
-			revenueHighZAR: potentialHighZAR * captureMidPct,
+			captureMidPct: band.mid,
+			revenueLowZAR: potentialLowZAR * band.low,
+			revenueMidZAR: potentialMidZAR * band.mid,
+			revenueHighZAR: potentialHighZAR * band.high,
 		});
 	}
 	return points;
 }
 
-/** First month (0–30) when mid-scenario revenue reaches 55% of full mid potential. */
+/** First month when mid-scenario revenue reaches mature mid potential (~93%). */
 export function monthsToTargetMid(
 	potentialLowZAR: number,
 	potentialHighZAR: number,
-	targetFraction = 0.55,
+	targetFraction = 0.93,
 ): number | null {
 	const potentialMidZAR = (potentialLowZAR + potentialHighZAR) / 2;
 	const target = potentialMidZAR * targetFraction;
