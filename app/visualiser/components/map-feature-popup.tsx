@@ -2,11 +2,13 @@
 
 import type { ReactNode } from 'react';
 import Image from 'next/image';
-import { Building2, Mail, MapPin, Phone, User } from 'lucide-react';
+import { Building2, Mail, MapPin, Phone, Route, User } from 'lucide-react';
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { CompetitorRevenueEditor } from '@/app/visualiser/components/competitor-revenue-editor';
+import type { RepJourneyRange } from '@/api/types/tracking';
 
 function Row({
   icon,
@@ -24,10 +26,30 @@ function Row({
   );
 }
 
+const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
+  { range: 'hour', label: 'Hour' },
+  { range: 'day', label: 'Day' },
+  { range: 'week', label: 'Week' },
+];
+
+export type MapFeaturePopupContentProps = {
+  point: VisualiserMapPoint;
+  activeTraceRange?: RepJourneyRange | null;
+  isTracing?: boolean;
+  onTraceRoute?: (repUid: number, range: RepJourneyRange) => void;
+  onClearRoute?: () => void;
+};
+
 /**
  * Rich popup body for a visualiser map feature.
  */
-export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint }) {
+export function MapFeaturePopupContent({
+  point,
+  activeTraceRange = null,
+  isTracing = false,
+  onTraceRoute,
+  onClearRoute,
+}: MapFeaturePopupContentProps) {
   const meta = LAYER_META[point.layer];
   const recorded =
     point.recordedAt &&
@@ -45,6 +67,11 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
       : point.metricLabel && point.metricValue
         ? [{ label: point.metricLabel, value: point.metricValue }]
         : [];
+
+  const canTrace =
+    point.layer === 'reps' &&
+    point.repUid != null &&
+    typeof onTraceRoute === 'function';
 
   return (
     <div className="min-w-52 max-w-80 space-y-2.5 pr-1 font-sans">
@@ -110,6 +137,40 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
 
       {point.layer === 'competitors' && point.competitorUid != null ? (
         <CompetitorRevenueEditor point={point} />
+      ) : null}
+
+      {canTrace ? (
+        <div className="space-y-1.5 border-t border-border/40 pt-2">
+          <p className="text-muted-foreground flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase">
+            <Route className="size-3" />
+            Trace route
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {TRACE_RANGES.map(({ range, label }) => (
+              <Button
+                key={range}
+                type="button"
+                size="xs"
+                variant={activeTraceRange === range ? 'default' : 'outline'}
+                disabled={isTracing}
+                onClick={() => onTraceRoute?.(point.repUid as number, range)}
+              >
+                {label}
+              </Button>
+            ))}
+            {activeTraceRange ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                disabled={isTracing}
+                onClick={() => onClearRoute?.()}
+              >
+                Clear
+              </Button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {point.status ? (

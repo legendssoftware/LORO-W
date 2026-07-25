@@ -1,5 +1,9 @@
 import type { AxiosInstance } from 'axios';
-import type { LatestRepLocationsResponse } from '@/api/types/tracking';
+import type {
+  LatestRepLocationsResponse,
+  RepJourneyRange,
+  RepJourneyResponse,
+} from '@/api/types/tracking';
 
 export interface GetLatestRepLocationsParams {
   maxAgeHours?: number;
@@ -42,4 +46,37 @@ export async function getLatestRepLocations(
     return (data as { data: LatestRepLocationsResponse }).data;
   }
   throw new Error('Invalid latest rep locations response');
+}
+
+function isRepJourneyResponse(value: unknown): value is RepJourneyResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value &&
+    'data' in value
+  );
+}
+
+/**
+ * GET /gps/user/:userId/journey — ordered GPS trail for map route plotting.
+ */
+export async function getRepJourney(
+  client: AxiosInstance,
+  userId: number,
+  range: RepJourneyRange
+): Promise<RepJourneyResponse> {
+  const { data } = await client.get<
+    RepJourneyResponse | { data: RepJourneyResponse }
+  >(`/gps/user/${userId}/journey?range=${encodeURIComponent(range)}`);
+
+  if (isRepJourneyResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isRepJourneyResponse((data as { data: RepJourneyResponse }).data)
+  ) {
+    return (data as { data: RepJourneyResponse }).data;
+  }
+  throw new Error('Invalid rep journey response');
 }
