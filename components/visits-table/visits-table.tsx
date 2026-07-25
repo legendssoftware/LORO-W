@@ -567,8 +567,10 @@ export function groupCheckInsByOwner(checkIns: VisitExportItem[]): GroupedByOwne
   const grouped: GroupedByOwner[] = [];
   map.forEach((visits, ownerKey) => {
     const sorted = [...visits].sort((a, b) => {
-      const aTime = new Date(a.createdAt ?? a.checkInTime).getTime();
-      const bTime = new Date(b.createdAt ?? b.checkInTime).getTime();
+      const aRaw = a.createdAt ?? a.checkInTime;
+      const bRaw = b.createdAt ?? b.checkInTime;
+      const aTime = new Date(aRaw).getTime();
+      const bTime = new Date(bRaw).getTime();
       return bTime - aTime;
     });
     grouped.push({

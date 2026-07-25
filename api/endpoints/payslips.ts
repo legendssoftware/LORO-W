@@ -36,6 +36,22 @@ export async function getPayslips(
 }
 
 /**
+ * GET /payslips/user/:ref - payslips for a specific user (matches APK).
+ * `ref` is numeric uid or Clerk user id (user_…).
+ */
+export async function getUserPayslips(
+  client: AxiosInstance,
+  userRef: number | string,
+  opts?: PayslipsRequestOpts
+): Promise<PayslipsListResponse> {
+  const { data } = await client.get<PayslipsListResponse>(
+    `/payslips/user/${userRef}`,
+    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+  );
+  return data;
+}
+
+/**
  * GET /payslips/:id/document - signed download URL for payslip PDF.
  */
 export async function getPayslipDocument(

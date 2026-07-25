@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   usePayslips,
+  useUserPayslips,
   useSessionSync,
   useTokenReady,
   useUsers,
-  useBranches,
   useApiClient,
 } from '@/api/hooks';
 import { getPayslipDocument } from '@/api/endpoints/payslips';
 import type { PayslipListItem } from '@/api/types/payslips';
-import type { BranchListItem } from '@/api/types/branch';
 import { PayslipsTable } from '@/components/payslips-table/payslips-table';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -19,6 +18,7 @@ import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { canViewOrgPayslips } from '@/lib/payslips-scope';
 import {
   buildPayslipFileName,
+  filterPayslipListItems,
 } from '@/lib/utils/payslips-format';
 import { useSessionStore } from '@/store/session-store';
 import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
@@ -43,7 +43,7 @@ export function PayslipsContent() {
   const defaultRange = useMemo(() => utcMonthStartThroughToday(), []);
   const [startDate, setStartDate] = useState(defaultRange.start);
   const [endDate, setEndDate] = useState(defaultRange.end);
-  const [useAllTime, setUseAllTime] = useState(false);
+  const [useAllTime, setUseAllTime] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedUserId, setSelectedUserId] = useState('all');
   const [page, setPage] = useState(1);
@@ -59,18 +59,16 @@ export function PayslipsContent() {
     () => canViewOrgPayslips(profile?.accessLevel, profile?.role),
     [profile?.accessLevel, profile?.role]
   );
+  const currentUserId = profile?.uid != null ? Number(profile.uid) : null;
 
   const { data: users = [] } = useUsers({
     limit: 100,
     enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
   });
-  const { data: branches = [] } = useBranches({
-    enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
-  });
 
   const dateFilters = payslipsFilterDatesFromState(useAllTime, startDate, endDate);
 
-  const listParams = {
+  const orgListParams = {
     page,
     limit: pageSize,
     ...dateFilters,
@@ -95,15 +93,51 @@ export function PayslipsContent() {
     canViewOrg,
   ]);
 
-  const payslipsQuery = usePayslips(listParams, {
-    enabled: isTokenReady && !sessionSyncLoading,
+  const orgPayslipsQuery = usePayslips(orgListParams, {
+    enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
     skipErrorToast: true,
   });
 
-  const payslips = payslipsQuery.data?.data ?? [];
-  const listMeta = payslipsQuery.data?.meta;
-  const total = listMeta?.total ?? 0;
-  const totalPages = listMeta?.totalPages ?? 0;
+  const userPayslipsQuery = useUserPayslips(currentUserId, {
+    enabled:
+      isTokenReady &&
+      !sessionSyncLoading &&
+      !canViewOrg &&
+      currentUserId != null &&
+      !Number.isNaN(currentUserId),
+    skipErrorToast: true,
+  });
+
+  const userFilteredPayslips = useMemo(() => {
+    const all = userPayslipsQuery.data?.data ?? [];
+    return filterPayslipListItems(all, {
+      ...dateFilters,
+      ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
+    });
+  }, [userPayslipsQuery.data?.data, dateFilters, selectedStatus]);
+
+  const userPagination = useMemo(() => {
+    const total = userFilteredPayslips.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * pageSize;
+    return {
+      payslips: userFilteredPayslips.slice(start, start + pageSize),
+      total,
+      totalPages: total === 0 ? 0 : totalPages,
+    };
+  }, [userFilteredPayslips, page, pageSize]);
+
+  const payslipsQuery = canViewOrg ? orgPayslipsQuery : userPayslipsQuery;
+  const payslips = canViewOrg
+    ? (orgPayslipsQuery.data?.data ?? [])
+    : userPagination.payslips;
+  const total = canViewOrg
+    ? (orgPayslipsQuery.data?.meta?.total ?? 0)
+    : userPagination.total;
+  const totalPages = canViewOrg
+    ? (orgPayslipsQuery.data?.meta?.totalPages ?? 0)
+    : userPagination.totalPages;
 
   const onRangeChange = useCallback((range: { start: Date; end: Date }) => {
     setStartDate(range.start);
@@ -115,7 +149,7 @@ export function PayslipsContent() {
     const { start, end } = utcMonthStartThroughToday();
     setStartDate(start);
     setEndDate(end);
-    setUseAllTime(false);
+    setUseAllTime(true);
   }, []);
 
   function handlePageSizeChange(size: PayslipsPageSize) {
@@ -175,7 +209,9 @@ export function PayslipsContent() {
               Payslips
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              View and download your payslip documents.
+              {canViewOrg
+                ? 'View and download payslip documents for your organisation.'
+                : 'View and download your payslip documents.'}
             </p>
           </div>
         </div>
@@ -195,7 +231,6 @@ export function PayslipsContent() {
           <PayslipsFiltersBar
             canViewOrg={canViewOrg}
             users={users}
-            branches={branches as BranchListItem[]}
             startDate={startDate}
             endDate={endDate}
             useAllTime={useAllTime}
