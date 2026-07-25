@@ -67,8 +67,10 @@ function normalizeBrandToken(raw: string): HardwareBrandKey {
 	return 'OTHER';
 }
 
-type HardwareBrandInput = Pick<MapMarkerBase, 'name'> &
-	Partial<Pick<MapMarkerBase, 'accountName' | 'LegalEntity'>>;
+type HardwareBrandInput = Pick<MapMarkerBase, 'name'> & {
+	accountName?: string | null;
+	LegalEntity?: string | null;
+};
 
 /** Resolve hardware brand from marker name prefix, accountName, or LegalEntity. */
 export function resolveHardwareBrand(marker: HardwareBrandInput): HardwareBrandKey {

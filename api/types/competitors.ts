@@ -87,9 +87,36 @@ export interface CreateCompetitorPayload {
   geofenceType?: GeofenceTypeValue;
   geofenceRadius?: number;
   enableGeofence?: boolean;
+  estimatedAnnualRevenue?: number | null;
+  accountName?: string;
+  LegalEntity?: string;
+  TradingName?: string;
 }
 
 export type UpdateCompetitorPayload = Partial<CreateCompetitorPayload>;
+
+/** One item in PATCH /competitors/bulk. */
+export interface BulkCompetitorUpdateItem {
+  ref: number;
+  data: UpdateCompetitorPayload;
+}
+
+export interface BulkUpdateCompetitorsPayload {
+  updates: BulkCompetitorUpdateItem[];
+}
+
+export interface BulkUpdateCompetitorsResponse {
+  success?: boolean;
+  message?: string;
+  results?: Array<{
+    ref: number;
+    success: boolean;
+    error?: string;
+    name?: string;
+  }>;
+  successCount?: number;
+  failureCount?: number;
+}
 
 export interface CompetitorDeleteResponse {
   message: string;

@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type * as GeoJSON from 'geojson';
-import type {
-  GeoJSONSource,
-  MapMouseEvent,
-  MapGeoJSONFeature,
-} from 'maplibre-gl';
+import type { GeoJSONSource, MapMouseEvent } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import {
+  BRANCH_HQ_LOGO_SLUG,
   COMPETITOR_LOGO_SLUGS,
   competitorLogoPublicPath,
   type CompetitorLogoSlug,
@@ -16,12 +13,18 @@ import {
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 
+const CLIENT_HANDSHAKE_IMAGE_ID = 'client-handshake-icon';
+const HQ_BORDERED_IMAGE_ID = 'comp-logo-bitdrywall-hq';
+const HQ_BORDER_COLOR = '#22c55e';
+
 type LogoClusterLayerProps = {
   points: VisualiserMapPoint[];
   clusterColor: string;
   pointColor: string;
-  /** Prefer logo icons for unclustered points when `logoUrl` is a /competitor/*.png path. */
+  /** Prefer logo / avatar / handshake icons for unclustered points. */
   useLogoIcons?: boolean;
+  /** Layer id — drives HQ green border + client handshake. */
+  layerId?: keyof typeof LAYER_META;
   onPointClick?: (point: VisualiserMapPoint, coordinates: [number, number]) => void;
 };
 
@@ -33,34 +36,123 @@ function slugFromPublicPath(url: string | null | undefined): CompetitorLogoSlug 
   return COMPETITOR_LOGO_SLUGS.includes(slug) ? slug : null;
 }
 
-/** Downscale large public logos so MapLibre textures stay within GPU limits. */
-async function loadPinBitmap(url: string, size = 64): Promise<ImageBitmap | null> {
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const blob = await res.blob();
-  const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
+function isRemoteOrAbsoluteUrl(url: string): boolean {
+  return (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('data:') ||
+    url.startsWith('/')
+  );
+}
+
+function safeImageId(prefix: string, key: string): string {
+  return `${prefix}-${key.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80)}`;
+}
+
+/** Downscale / composite pin bitmaps for MapLibre textures. */
+async function loadPinBitmap(
+  url: string,
+  size = 64,
+  options?: { borderColor?: string; circular?: boolean },
+): Promise<ImageBitmap | null> {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return null;
+    }
+    ctx.clearRect(0, 0, size, size);
+    if (options?.circular) {
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+    }
+    ctx.drawImage(bitmap, 0, 0, size, size);
     bitmap.close();
+
+    if (options?.borderColor || options?.circular) {
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+      ctx.strokeStyle = options.borderColor ?? '#ffffff';
+      ctx.lineWidth = options.borderColor ? 5 : 3;
+      ctx.stroke();
+    }
+    return createImageBitmap(canvas);
+  } catch {
     return null;
   }
-  ctx.clearRect(0, 0, size, size);
-  ctx.drawImage(bitmap, 0, 0, size, size);
-  bitmap.close();
-  return createImageBitmap(canvas);
+}
+
+/** Blue circle + white handshake (Lucide-style) for client pins. */
+async function loadHandshakeBitmap(size = 64): Promise<ImageBitmap | null> {
+  const svg = encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="11" fill="#2563eb"/>
+      <path d="m11 17 2 2a1 1 0 1 0 3-3" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.74-3.74a2 2 0 0 0-2.82 0L9 13" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m8 12 3.5-3.5a2 2 0 0 1 2.82 0L16 11" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m2 15 6-6" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m7 20 5-5" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  );
+  return loadPinBitmap(`data:image/svg+xml,${svg}`, size);
+}
+
+function resolveIconMeta(
+  point: VisualiserMapPoint,
+  useLogoIcons: boolean,
+  layerId?: keyof typeof LAYER_META,
+): { iconId: string; hasIcon: number } {
+  if (!useLogoIcons) return { iconId: '', hasIcon: 0 };
+
+  if (layerId === 'clients') {
+    return { iconId: CLIENT_HANDSHAKE_IMAGE_ID, hasIcon: 1 };
+  }
+
+  if (layerId === 'hq') {
+    const slug = slugFromPublicPath(point.logoUrl) ?? BRANCH_HQ_LOGO_SLUG;
+    if (slug === BRANCH_HQ_LOGO_SLUG) {
+      return { iconId: HQ_BORDERED_IMAGE_ID, hasIcon: 1 };
+    }
+    return { iconId: `comp-logo-${slug}`, hasIcon: 1 };
+  }
+
+  if (layerId === 'reps' && point.logoUrl && isRemoteOrAbsoluteUrl(point.logoUrl)) {
+    return { iconId: safeImageId('rep-avatar', point.id), hasIcon: 1 };
+  }
+
+  const slug = slugFromPublicPath(point.logoUrl);
+  if (slug) return { iconId: `comp-logo-${slug}`, hasIcon: 1 };
+
+  // HQ already handled above; fallback logo for branch pins without a slug.
+  if (layerId === 'branches' && (!point.logoUrl || !slugFromPublicPath(point.logoUrl))) {
+    return {
+      iconId: `comp-logo-${BRANCH_HQ_LOGO_SLUG}`,
+      hasIcon: 1,
+    };
+  }
+
+  return { iconId: '', hasIcon: 0 };
 }
 
 /**
- * Clustered GeoJSON layer with optional competitor/branch logo icons.
+ * Clustered GeoJSON layer with optional competitor/branch/HQ logos,
+ * client handshake icons, and sales-rep avatars.
  */
 export function LogoClusterLayer({
   points,
   clusterColor,
   pointColor,
   useLogoIcons = true,
+  layerId,
   onPointClick,
 }: LogoClusterLayerProps) {
   const { map, isLoaded } = useMap();
@@ -74,12 +166,13 @@ export function LogoClusterLayer({
   onPointClickRef.current = onPointClick;
   const pointsByIdRef = useRef(new Map<string, VisualiserMapPoint>());
   pointsByIdRef.current = new Map(points.map((p) => [p.id, p]));
+  const [layersReady, setLayersReady] = useState(false);
 
   const data = useMemo((): GeoJSON.FeatureCollection => {
     return {
       type: 'FeatureCollection',
       features: points.map((p) => {
-        const slug = slugFromPublicPath(p.logoUrl);
+        const { iconId, hasIcon } = resolveIconMeta(p, useLogoIcons, layerId);
         return {
           type: 'Feature' as const,
           id: p.id,
@@ -87,8 +180,8 @@ export function LogoClusterLayer({
             id: p.id,
             layer: p.layer,
             name: p.name,
-            iconId: slug ? `comp-logo-${slug}` : '',
-            hasIcon: slug && useLogoIcons ? 1 : 0,
+            iconId,
+            hasIcon,
           },
           geometry: {
             type: 'Point' as const,
@@ -97,7 +190,7 @@ export function LogoClusterLayer({
         };
       }),
     };
-  }, [points, useLogoIcons]);
+  }, [points, useLogoIcons, layerId]);
 
   useEffect(() => {
     if (!isLoaded || !map) return;
@@ -105,6 +198,7 @@ export function LogoClusterLayer({
 
     async function ensureImages() {
       if (!useLogoIcons) return;
+
       await Promise.all(
         COMPETITOR_LOGO_SLUGS.map(async (slug) => {
           const imageId = `comp-logo-${slug}`;
@@ -114,15 +208,52 @@ export function LogoClusterLayer({
             if (cancelled || !bitmap || map!.hasImage(imageId)) return;
             map!.addImage(imageId, bitmap, { sdf: false });
           } catch {
-            // skip missing / failed logo
+            // skip
           }
-        })
+        }),
       );
+
+      if (layerId === 'hq' && !map!.hasImage(HQ_BORDERED_IMAGE_ID)) {
+        const bitmap = await loadPinBitmap(
+          competitorLogoPublicPath(BRANCH_HQ_LOGO_SLUG),
+          64,
+          { borderColor: HQ_BORDER_COLOR, circular: true },
+        );
+        if (!cancelled && bitmap && !map!.hasImage(HQ_BORDERED_IMAGE_ID)) {
+          map!.addImage(HQ_BORDERED_IMAGE_ID, bitmap, { sdf: false });
+        }
+      }
+
+      if (layerId === 'clients' && !map!.hasImage(CLIENT_HANDSHAKE_IMAGE_ID)) {
+        const bitmap = await loadHandshakeBitmap(64);
+        if (!cancelled && bitmap && !map!.hasImage(CLIENT_HANDSHAKE_IMAGE_ID)) {
+          map!.addImage(CLIENT_HANDSHAKE_IMAGE_ID, bitmap, { sdf: false });
+        }
+      }
+
+      if (layerId === 'reps') {
+        await Promise.all(
+          points.map(async (p) => {
+            if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) return;
+            const imageId = safeImageId('rep-avatar', p.id);
+            if (map!.hasImage(imageId)) return;
+            const bitmap = await loadPinBitmap(p.logoUrl, 64, {
+              circular: true,
+              borderColor: '#ffffff',
+            });
+            if (cancelled || !bitmap || map!.hasImage(imageId)) return;
+            map!.addImage(imageId, bitmap, { sdf: false });
+          }),
+        );
+      }
     }
 
     void ensureImages().then(() => {
       if (cancelled || !map) return;
-      if (map.getSource(sourceId)) return;
+      if (map.getSource(sourceId)) {
+        if (!cancelled) setLayersReady(true);
+        return;
+      }
 
       map.addSource(sourceId, {
         type: 'geojson',
@@ -181,8 +312,8 @@ export function LogoClusterLayer({
         paint: {
           'circle-color': pointColor,
           'circle-radius': 14,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': layerId === 'hq' ? 3 : 2,
+          'circle-stroke-color': layerId === 'hq' ? HQ_BORDER_COLOR : '#ffffff',
         },
       });
 
@@ -198,16 +329,19 @@ export function LogoClusterLayer({
           ],
           layout: {
             'icon-image': ['get', 'iconId'],
-            'icon-size': 1.1,
+            'icon-size': layerId === 'clients' || layerId === 'reps' ? 0.95 : 1.1,
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
           },
         });
       }
+
+      if (!cancelled) setLayersReady(true);
     });
 
     return () => {
       cancelled = true;
+      setLayersReady(false);
       try {
         if (map.getLayer(unclusteredSymbolId)) map.removeLayer(unclusteredSymbolId);
         if (map.getLayer(unclusteredCircleId)) map.removeLayer(unclusteredCircleId);
@@ -218,7 +352,6 @@ export function LogoClusterLayer({
         // ignore
       }
     };
-    // Mount once per map load — data updates via separate effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, map, sourceId]);
 
@@ -227,6 +360,32 @@ export function LogoClusterLayer({
     const source = map.getSource(sourceId) as GeoJSONSource | undefined;
     if (source) source.setData(data);
   }, [isLoaded, map, data, sourceId]);
+
+  /** Reload rep avatars when points change. */
+  useEffect(() => {
+    if (!isLoaded || !map || !useLogoIcons || layerId !== 'reps') return;
+    let cancelled = false;
+    void (async () => {
+      for (const p of points) {
+        if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) continue;
+        const imageId = safeImageId('rep-avatar', p.id);
+        if (map.hasImage(imageId)) continue;
+        const bitmap = await loadPinBitmap(p.logoUrl, 64, {
+          circular: true,
+          borderColor: '#ffffff',
+        });
+        if (cancelled || !bitmap || map.hasImage(imageId)) continue;
+        map.addImage(imageId, bitmap, { sdf: false });
+      }
+      if (!cancelled) {
+        const source = map.getSource(sourceId) as GeoJSONSource | undefined;
+        source?.setData(data);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, map, points, useLogoIcons, layerId, sourceId, data]);
 
   useEffect(() => {
     if (!isLoaded || !map) return;
@@ -239,19 +398,55 @@ export function LogoClusterLayer({
   }, [isLoaded, map, clusterLayerId, unclusteredCircleId, clusterColor, pointColor]);
 
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!isLoaded || !map || !layersReady) return;
+    const raise = () => {
+      for (const id of [
+        clusterLayerId,
+        clusterCountId,
+        unclusteredCircleId,
+        unclusteredSymbolId,
+      ]) {
+        if (map.getLayer(id)) {
+          try {
+            map.moveLayer(id);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    };
+    raise();
+    map.on('sourcedata', raise);
+    return () => {
+      map.off('sourcedata', raise);
+    };
+  }, [
+    isLoaded,
+    map,
+    layersReady,
+    clusterLayerId,
+    clusterCountId,
+    unclusteredCircleId,
+    unclusteredSymbolId,
+  ]);
+
+  useEffect(() => {
+    if (!isLoaded || !map || !layersReady) return;
 
     const clickable = [clusterLayerId, unclusteredCircleId, unclusteredSymbolId];
 
-    const handleClick = async (
-      e: MapMouseEvent & { features?: MapGeoJSONFeature[] }
-    ) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: clickable.filter((id) => map.getLayer(id)),
-      });
+    const handleClick = async (e: MapMouseEvent) => {
+      const layerIds = clickable.filter((id) => map.getLayer(id));
+      if (!layerIds.length) return;
+      const features = map.queryRenderedFeatures(e.point, { layers: layerIds });
       if (!features.length) return;
-      const feature = features[0];
-      const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number];
+
+      const feature =
+        features.find((f) => !f.properties?.cluster) ?? features[0]!;
+      const coords = (feature.geometry as GeoJSON.Point).coordinates as [
+        number,
+        number,
+      ];
 
       if (feature.properties?.cluster) {
         const clusterId = feature.properties.cluster_id as number;
@@ -286,24 +481,25 @@ export function LogoClusterLayer({
       map.getCanvas().style.cursor = '';
     };
 
-    for (const layerId of clickable) {
-      if (!map.getLayer(layerId)) continue;
-      map.on('click', layerId, handleClick);
-      map.on('mouseenter', layerId, handleEnter);
-      map.on('mouseleave', layerId, handleLeave);
+    for (const id of clickable) {
+      if (!map.getLayer(id)) continue;
+      map.on('click', id, handleClick);
+      map.on('mouseenter', id, handleEnter);
+      map.on('mouseleave', id, handleLeave);
     }
 
     return () => {
-      for (const layerId of clickable) {
-        if (!map.getLayer(layerId)) continue;
-        map.off('click', layerId, handleClick);
-        map.off('mouseenter', layerId, handleEnter);
-        map.off('mouseleave', layerId, handleLeave);
+      for (const id of clickable) {
+        if (!map.getLayer(id)) continue;
+        map.off('click', id, handleClick);
+        map.off('mouseenter', id, handleEnter);
+        map.off('mouseleave', id, handleLeave);
       }
     };
   }, [
     isLoaded,
     map,
+    layersReady,
     sourceId,
     clusterLayerId,
     unclusteredCircleId,
@@ -327,7 +523,12 @@ export function LayeredLogoClusters({
         const pts = pointsByLayer[layer] ?? [];
         if (pts.length === 0) return null;
         const meta = LAYER_META[layer];
-        const useLogos = layer === 'competitors' || layer === 'branches' || layer === 'hq';
+        const useLogos =
+          layer === 'competitors' ||
+          layer === 'branches' ||
+          layer === 'hq' ||
+          layer === 'clients' ||
+          layer === 'reps';
         return (
           <LogoClusterLayer
             key={layer}
@@ -335,6 +536,7 @@ export function LayeredLogoClusters({
             clusterColor={meta.color}
             pointColor={meta.color}
             useLogoIcons={useLogos}
+            layerId={layer}
             onPointClick={onPointClick}
           />
         );

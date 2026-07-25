@@ -12,6 +12,7 @@ import {
   branchOrHqLogoUrl,
   resolveCompetitorLogoUrl,
 } from '@/lib/utils/map-marker-logos';
+import { resolveHardwareBrand } from '@/lib/site-opportunity/compute/brands';
 
 export type VisualiserLayerId =
   | 'branches'
@@ -47,6 +48,12 @@ export interface VisualiserMapPoint {
   status?: string | null;
   subtitle?: string | null;
   recordedAt?: string | null;
+  /** Competitor uid for PATCH updates from the map popup. */
+  competitorUid?: number;
+  /** Hardware brand key for group revenue updates (e.g. CASHBUILD). */
+  brandKey?: string | null;
+  /** Raw estimated annual revenue (ZAR) for competitor popup editing. */
+  estimatedAnnualRevenue?: number | null;
 }
 
 function formatMoney(value: unknown): string | null {
@@ -151,6 +158,18 @@ export function competitorToMapPoint(
     null;
 
   const revenue = formatMoney(competitor.estimatedAnnualRevenue);
+  const rawRevenue =
+    competitor.estimatedAnnualRevenue != null
+      ? Number(competitor.estimatedAnnualRevenue)
+      : null;
+  const estimatedAnnualRevenue =
+    rawRevenue != null && Number.isFinite(rawRevenue) ? rawRevenue : null;
+  const brandKey = resolveHardwareBrand({
+    name: competitor.name,
+    accountName: competitor.accountName,
+    LegalEntity: competitor.LegalEntity,
+  });
+
   const highlights: VisualiserMapHighlight[] = [];
   if (revenue) {
     highlights.push({ label: 'Est. annual revenue', value: revenue });
@@ -190,6 +209,9 @@ export function competitorToMapPoint(
       competitor.threatLevel != null
         ? `Threat level ${competitor.threatLevel}`
         : 'Mapped competitor location',
+    competitorUid: competitor.uid,
+    brandKey,
+    estimatedAnnualRevenue,
   };
 }
 
@@ -310,12 +332,12 @@ export const LAYER_META: Record<
   hq: {
     label: 'HQ',
     color: '#b45309',
-    description: 'Headquarters',
+    description: 'Headquarters (branch logo + green border)',
   },
   clients: {
     label: 'Clients',
     color: '#2563eb',
-    description: 'Client locations (simple dots)',
+    description: 'Client locations (handshake icons)',
   },
   competitors: {
     label: 'Competitors',
@@ -325,6 +347,6 @@ export const LAYER_META: Record<
   reps: {
     label: 'Sales reps',
     color: '#7c3aed',
-    description: 'Last known phone GPS',
+    description: 'Last known phone GPS (profile avatar)',
   },
 };

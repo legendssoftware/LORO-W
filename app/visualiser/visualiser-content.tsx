@@ -33,7 +33,7 @@ function VisualiserBody() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+      <main className="container mx-auto flex min-h-0 max-w-[96.8rem] flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
         <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-foreground">

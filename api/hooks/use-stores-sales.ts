@@ -7,21 +7,22 @@ import {
   type GetStoresSalesParams,
   type StoresSalesApiResponse,
 } from '@/api/endpoints/erp-stores-sales';
-import { ytdDateRange } from '@/lib/utils/sales-per-store-match';
+import { monthlyDateRange } from '@/lib/utils/sales-per-store-match';
 
 export const STORES_SALES_QUERY_KEY = ['erp', 'stores', 'sales'] as const;
 
 /**
- * YTD (or custom) per-store ERP sales for visualiser simulation enrichment.
+ * Monthly (or custom) per-store ERP sales for visualiser simulation enrichment.
+ * Defaults to the current calendar month — same basis as Performance Tracker monthly views.
  */
 export function useStoresSales(
   params?: GetStoresSalesParams,
   options?: { enabled?: boolean },
 ) {
   const client = useApiClient();
-  const ytd = ytdDateRange();
-  const startDate = params?.startDate ?? ytd.startDate;
-  const endDate = params?.endDate ?? ytd.endDate;
+  const month = monthlyDateRange();
+  const startDate = params?.startDate ?? month.startDate;
+  const endDate = params?.endDate ?? month.endDate;
   const countries = params?.countries ?? 'ALL';
 
   return useQuery<StoresSalesApiResponse>({

@@ -14,10 +14,25 @@ export interface MasterBranchRow {
   name: string;
 }
 
+/** Strip BitDrywall "Bit" prefix and non-alphanumerics for ERP name matching. */
+function normalizeBranchNameForMatch(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^bit/, '');
+}
+
 function branchNamesMatchStrict(a: string, b: string): boolean {
-  const na = a.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const nb = b.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  return na.length > 0 && na === nb;
+  const na = normalizeBranchNameForMatch(a);
+  const nb = normalizeBranchNameForMatch(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  // Soft: one contains the other when both are meaningful (e.g. BitMidrand ↔ Midrand)
+  if (na.length >= 4 && nb.length >= 4 && (na.includes(nb) || nb.includes(na))) {
+    return true;
+  }
+  return false;
 }
 
 export function storeCodesMatch(a: string, b: string): boolean {
@@ -120,4 +135,23 @@ export function ytdDateRange(): { startDate: string; endDate: string } {
   const endDate = end.toISOString().split('T')[0]!;
   const startDate = `${end.getFullYear()}-01-01`;
   return { startDate, endDate };
+}
+
+/** Current calendar month (1st → today) — matches Performance Tracker monthly comparison. */
+export function monthlyDateRange(): { startDate: string; endDate: string } {
+  const end = new Date();
+  const endDate = end.toISOString().split('T')[0]!;
+  const y = end.getFullYear();
+  const m = String(end.getMonth() + 1).padStart(2, '0');
+  const startDate = `${y}-${m}-01`;
+  return { startDate, endDate };
+}
+
+/** Short label for the current month (e.g. "Jul 2026"). */
+export function currentMonthLabel(date = new Date()): string {
+  try {
+    return date.toLocaleString('en-ZA', { month: 'short', year: 'numeric' });
+  } catch {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
 }

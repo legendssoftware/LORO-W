@@ -27,8 +27,8 @@ export interface MapMarkerBase {
   markerColor?: string;
   /** Competitor / branch / org logo URL used as circular map pin when present. */
   logoUrl?: string | null;
-  accountName?: string;
-  LegalEntity?: string;
+  accountName?: string | null;
+  LegalEntity?: string | null;
   [key: string]: unknown;
 }
 
