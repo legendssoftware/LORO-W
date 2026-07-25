@@ -17,7 +17,6 @@ import {
   STAFF_SIDEBAR_ROUTES,
 } from "@/lib/access";
 import {
-  BarChart3Icon,
   CheckSquareIcon,
   CpuIcon,
   HandshakeIcon,
@@ -64,7 +63,6 @@ const ROUTE_ICONS: Record<
   React.ComponentType<{ className?: string }>
 > = {
   "/dashboard": LayoutDashboardIcon,
-  "/reports": BarChart3Icon,
   "/visualiser": Map,
   "/visits": MapPinIcon,
   "/leads": HandshakeIcon,

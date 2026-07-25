@@ -37,7 +37,7 @@ import {
   useDeleteIotDeviceMutation,
   useUpdateIotDeviceMutation,
 } from '@/api/hooks/use-iot-devices';
-import { SearchableBranchPicker } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import { SearchableBranchPicker } from '@/components/filters/searchable-filter-comboboxes';
 
 const DEVICE_STATUSES: DeviceStatus[] = [
   'online',

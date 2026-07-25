@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useUser, useUserTarget, useUserPreferences } from '@/api/hooks';
-import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
-import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/reports/tabs/constants';
-import type { ReportCardUser } from '@/app/reports/types';
+import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
+import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/staff/lib/staff-report-constants';
+import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import {
   Dialog,
@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { SettingsIcon } from '@/lib/icons';
 import { Smartphone, Laptop } from 'lucide-react';
-import { formatLastSeen } from '@/app/reports/format-last-seen';
+import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { cn } from '@/lib/utils';
 
 function ModalRow({
@@ -447,7 +447,7 @@ export function ReportUserDetailModal({
 
             <ModalSection title="Actions">
               <Link
-                href={`/reports/users/${user.ref}/settings`}
+                href="/staff"
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 <SettingsIcon className="size-4 shrink-0" />

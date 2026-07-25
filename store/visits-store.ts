@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import type { MethodOfContact } from '@/api/types/visits';
 import type { ClientListItem } from '@/api/endpoints/clients';
-import { utcMonthStartThroughToday } from '@/app/reports/utils/overview-daily-summary';
+import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 
 function defaultUtcMtdDates(): { start: Date; end: Date } {
   return utcMonthStartThroughToday();

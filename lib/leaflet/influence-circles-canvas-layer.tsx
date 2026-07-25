@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { InfluenceCircle } from '@/api/types/map';
-import { influenceColorForKind } from '@/app/reports/components/map-report-constants';
+import { influenceColorForKind } from '@/lib/leaflet/map-report-constants';
 import { INFLUENCE_PANE } from '@/lib/leaflet/setup-map-panes';
 import { INFLUENCE_CIRCLES_MIN_ZOOM } from '@/lib/leaflet/use-map-zoom';
 

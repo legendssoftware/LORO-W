@@ -75,7 +75,7 @@ import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-sche
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import type { VisitsSummaryModalPayload } from '@/app/reports/visits-summary-modal';
+import type { VisitsSummaryModalPayload } from '@/app/visits/visits-summary-modal';
 import {
   VisitsListPagination,
   readStoredVisitsPageSize,

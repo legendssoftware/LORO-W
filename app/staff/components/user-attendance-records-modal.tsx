@@ -11,7 +11,7 @@ import {
   useSessionSync,
   useDailyProductivity,
 } from '@/api/hooks';
-import type { ReportCardUser } from '@/app/reports/types';
+import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';

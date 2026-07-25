@@ -8,7 +8,6 @@ import {
   useTokenReady,
   useSessionSync,
   useAttStatus,
-  useAttMetrics,
   useAttCheckInMutation,
   useAttCheckOutMutation,
   useBreakMutation,
@@ -20,11 +19,9 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
-import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
-import { DashboardBonusStatusCard } from '@/components/dashboard-bonus-status-card';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
-import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
-import type { ReportCardUser } from '@/app/reports/types';
+import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
+import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 import { buildClockInNotes } from '@/lib/clock-in-options';
 import { isClientMode } from '@/lib/user-mode';
@@ -70,39 +67,24 @@ export function DashboardContent() {
   const attQuery = useAttStatus({
     enabled: staffAttendanceEnabled,
   });
-  const metricsQuery = useAttMetrics({
-    enabled: staffAttendanceEnabled,
-  });
 
   useEffect(() => {
     if (!isApiDebugEnabled()) return;
     const attErr = attQuery.error;
-    const metricsErr = metricsQuery.error;
     debugApi('dashboard React Query', {
       isSignedIn,
       isTokenReady,
       attFetchStatus: attQuery.fetchStatus,
-      metricsFetchStatus: metricsQuery.fetchStatus,
       attIsFetching: attQuery.isFetching,
-      metricsIsFetching: metricsQuery.isFetching,
       attError:
         attErr instanceof Error ? attErr.message : attErr ? String(attErr) : undefined,
-      metricsError:
-        metricsErr instanceof Error
-          ? metricsErr.message
-          : metricsErr
-            ? String(metricsErr)
-            : undefined,
     });
   }, [
     isSignedIn,
     isTokenReady,
     attQuery.fetchStatus,
-    metricsQuery.fetchStatus,
     attQuery.isFetching,
-    metricsQuery.isFetching,
     attQuery.error,
-    metricsQuery.error,
   ]);
 
   const attCheckInMutation = useAttCheckInMutation();
@@ -283,15 +265,6 @@ export function DashboardContent() {
               onEndBreak={handleEndBreak}
               startTime={attStatus?.startTime ?? null}
               breakStartTime={attStatus?.breakStartTime ?? null}
-            />
-            <DashboardMetricsCard
-              metrics={metricsQuery.data}
-              isLoading={metricsQuery.isLoading}
-              userRef={profile?.uid != null ? String(profile.uid) : null}
-              accessLevel={profile?.accessLevel}
-            />
-            <DashboardBonusStatusCard
-              userRef={profile?.uid != null ? String(profile.uid) : null}
             />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}

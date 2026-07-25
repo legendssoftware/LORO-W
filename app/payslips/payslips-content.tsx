@@ -21,7 +21,7 @@ import {
   buildPayslipFileName,
 } from '@/lib/utils/payslips-format';
 import { useSessionStore } from '@/store/session-store';
-import { utcMonthStartThroughToday } from '@/app/reports/utils/overview-daily-summary';
+import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 import {
   PayslipsFiltersBar,
   payslipsFilterDatesFromState,

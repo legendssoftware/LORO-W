@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { SearchableOptionListPicker } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import { SearchableOptionListPicker } from '@/components/filters/searchable-filter-comboboxes';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   useClaimGroups,

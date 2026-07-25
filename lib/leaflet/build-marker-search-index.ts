@@ -6,7 +6,7 @@ import {
   resolveMarkerAddressParts,
 } from '@/lib/utils/map-marker-filters';
 import { formatAddressLine } from '@/lib/utils/address-map-geocode';
-import { markerTypeLabel } from '@/app/reports/components/map-report-constants';
+import { markerTypeLabel } from '@/lib/leaflet/map-report-constants';
 
 export interface MarkerSearchEntry {
   id: string;

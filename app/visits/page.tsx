@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   VisitsSummaryModal,
   type VisitsSummaryModalPayload,
-} from '@/app/reports/visits-summary-modal';
+} from '@/app/visits/visits-summary-modal';
 import { VisitsContent } from './visits-content';
 
 export default function VisitsPage() {

@@ -36,7 +36,7 @@ import { canViewOrgClaimsList } from '@/lib/access';
 import {
   utcDateFromYmd,
   utcRangeIsoFromUtcCalendarStoredRange,
-} from '@/app/reports/utils/overview-daily-summary';
+} from '@/lib/utils/overview-daily-summary';
 
 /** Query key prefix for claims. Use for invalidateQueries/refetchQueries after claim mutations. */
 export const CLAIMS_QUERY_KEY_PREFIX = ['claims'] as const;

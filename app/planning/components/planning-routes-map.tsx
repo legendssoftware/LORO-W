@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { format } from 'date-fns';
 import { Loader2, MapPin, RefreshCw } from 'lucide-react';
 import { useCalculateRoutesMutation, useOptimizedRoutes, useUsers } from '@/api/hooks';
-import { formatUtcYmd, utcToday } from '@/app/reports/utils/overview-daily-summary';
+import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
