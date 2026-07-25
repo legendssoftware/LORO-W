@@ -17,6 +17,7 @@ import {
   getUserPreferences,
   postAcknowledgePerformanceWarning,
   getSubThresholdDailyCalls,
+  getEngagementRange,
   type PatchUserBody,
   type PatchUserTargetBody,
   type UserResponse,
@@ -254,6 +255,50 @@ export function useSubThresholdDailyCalls(
       return getSubThresholdDailyCalls(client, params);
     },
     enabled: (options?.enabled !== false && !!params?.date) ?? false,
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+}
+
+export function engagementRangeQueryKey(
+  params: { from: string; to: string; branchId?: number } | null | undefined
+) {
+  return [
+    ...QUERY_KEY_PREFIX,
+    'engagement-range',
+    params?.from,
+    params?.to,
+    params?.branchId,
+  ] as const;
+}
+
+export function useEngagementRange(
+  params: { from: string; to: string; branchId?: number } | null,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: engagementRangeQueryKey(params),
+    queryFn: async () => {
+      if (!params?.from || !params?.to) {
+        return { message: '', from: '', to: '', users: [] };
+      }
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[engagement-range] request', params);
+      }
+      const data = await getEngagementRange(client, params);
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[engagement-range] response', {
+          from: data.from,
+          to: data.to,
+          users: data.users.length,
+          sample: data.users.slice(0, 3),
+        });
+      }
+      return data;
+    },
+    enabled:
+      (options?.enabled !== false && !!params?.from && !!params?.to) ?? false,
     staleTime: 30 * 1000,
     retry: false,
   });

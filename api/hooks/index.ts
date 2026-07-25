@@ -68,6 +68,7 @@ export {
   usePatchUserTarget,
   useAcknowledgePerformanceWarning,
   useSubThresholdDailyCalls,
+  useEngagementRange,
   useDeleteUser,
   useRestoreUser,
   useDeleteUserPermanently,
