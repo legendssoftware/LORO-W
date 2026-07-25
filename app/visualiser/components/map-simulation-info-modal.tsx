@@ -29,7 +29,7 @@ export function MapSimulationInfoModal({
         <DialogHeader>
           <DialogTitle>How simulation works</DialogTitle>
           <DialogDescription>
-            Feasibility model for BitDrywall branch catchments and greenfield
+            Feasibility model for BitDrywall branch catchments and opportunity
             sites — ranking upside and ramp time, not a guaranteed forecast.
           </DialogDescription>
         </DialogHeader>
@@ -43,7 +43,7 @@ export function MapSimulationInfoModal({
               clients. For each branch it draws a 5 km radius, counts hardwares
               inside, multiplies by brand monthly turnover to get an addressable
               pool, then takes 5% (low) and 20% (high) as BitDrywall potential.
-              ERP YTD store sales (when available) show actual vs modelled
+              ERP monthly store sales (when available) show actual vs modelled
               monthly turnover — red when behind the model, green when at or
               above. Adjust radius, capture %, and brand turnovers in the side
               panel before you run.
@@ -82,12 +82,12 @@ export function MapSimulationInfoModal({
                     <th className="py-1.5 font-medium">Of mature potential</th>
                   </tr>
                 </thead>
-                <tbody className="text-muted-foreground">
+                  <tbody className="text-muted-foreground">
                   {MARKET_CAPTURE_PHASES.map((p) => (
                     <tr key={p.phase} className="border-b border-dashed">
                       <td className="py-1.5 pr-2">{p.phase}</td>
                       <td className="py-1.5 pr-2">
-                        {p.monthStart}–{p.monthEnd}
+                        {p.monthStart}–{p.monthEnd - 1}
                       </td>
                       <td className="py-1.5">
                         {Math.round(p.captureLowPct * 100)}–
@@ -113,7 +113,7 @@ export function MapSimulationInfoModal({
                 run. Toast progress shows while catchments are scored.
               </li>
               <li>
-                Review ranked branch catchments and greenfield zones. Select a
+                Review ranked branch catchments and opportunity zones. Expand a
                 row for pool, brand mix, potential band, and maturity ramp.
               </li>
               <li>
@@ -130,6 +130,18 @@ export function MapSimulationInfoModal({
           <section className="space-y-2">
             <h3 className="font-semibold">Caveats</h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-5">
+              <li>
+                This is a simulation only. Outputs are modelled estimates for
+                ranking and planning — not guaranteed revenue, site fitness, or
+                investment advice.
+              </li>
+              <li>
+                Do not rely on simulation alone. Visit candidate sites in
+                person, verify footfall, access, neighbours, and competition,
+                and complete independent due diligence before lease or capital
+                decisions. LORO is not liable for losses from acting solely on
+                these results.
+              </li>
               <li>
                 Circles use crow-flies distance, not drive time.
               </li>

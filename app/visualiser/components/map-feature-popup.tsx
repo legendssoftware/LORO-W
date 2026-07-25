@@ -6,6 +6,7 @@ import { Building2, Mail, MapPin, Phone, User } from 'lucide-react';
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 import { cn } from '@/lib/utils';
+import { CompetitorRevenueEditor } from '@/app/visualiser/components/competitor-revenue-editor';
 
 function Row({
   icon,
@@ -105,6 +106,10 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
             </div>
           ))}
         </div>
+      ) : null}
+
+      {point.layer === 'competitors' && point.competitorUid != null ? (
+        <CompetitorRevenueEditor point={point} />
       ) : null}
 
       {point.status ? (
