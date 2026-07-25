@@ -13,6 +13,10 @@ import {
   targetNum,
 } from '@/lib/utils/target-progress';
 import { formatUtcYmd } from '@/lib/utils/overview-daily-summary';
+import {
+  TARGET_WORKING_DAYS_PER_MONTH,
+  workingDaysInclusiveYmd,
+} from '@/lib/utils/target-working-days';
 
 export interface ReportsTargetMetricCell {
   current: number;
@@ -124,8 +128,9 @@ function formatPeriodYmd(value: string): string {
 }
 
 /**
- * Prorate a period target across the selected filter range (calendar days).
- * Used so Calls/Leads show daily (or range) quotas when the date filter is set.
+ * Prorate a period (monthly) calls/leads target onto the selected filter range.
+ * Daily rate = periodTarget ÷ 20 working days (so 1200 → 60/day).
+ * Range target = daily rate × Mon–Fri days in the overlap with the period.
  */
 export function prorateTargetForRange(params: {
   periodTarget: number;
@@ -137,21 +142,29 @@ export function prorateTargetForRange(params: {
   const periodTarget = Math.max(0, params.periodTarget);
   if (periodTarget <= 0) return 0;
 
+  const dailyRate = periodTarget / TARGET_WORKING_DAYS_PER_MONTH;
+
   const pStart = params.periodStartDate
     ? formatPeriodYmd(params.periodStartDate)
     : params.rangeFromYmd;
   const pEnd = params.periodEndDate
     ? formatPeriodYmd(params.periodEndDate)
     : params.rangeToYmd;
-  const periodDays = inclusiveDayCount(pStart, pEnd);
 
   const overlapStart =
     params.rangeFromYmd > pStart ? params.rangeFromYmd : pStart;
   const overlapEnd = params.rangeToYmd < pEnd ? params.rangeToYmd : pEnd;
   if (overlapStart > overlapEnd) return 0;
 
-  const overlapDays = inclusiveDayCount(overlapStart, overlapEnd);
-  return Math.max(0, Math.round((periodTarget / periodDays) * overlapDays));
+  const overlapWorkingDays = workingDaysInclusiveYmd(overlapStart, overlapEnd);
+  if (overlapWorkingDays <= 0) {
+    // Weekend-only / empty working-day overlap: still show one day of quota when
+    // the filter is a single calendar day (matches shift-day display of 60).
+    const calendarDays = inclusiveDayCount(overlapStart, overlapEnd);
+    return calendarDays === 1 ? Math.round(dailyRate) : 0;
+  }
+
+  return Math.max(0, Math.round(dailyRate * overlapWorkingDays));
 }
 
 /** Build a row from GET /user list item + nested userTarget. */

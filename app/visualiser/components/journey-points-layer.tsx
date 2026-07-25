@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import type * as GeoJSON from 'geojson';
-import type { GeoJSONSource, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl';
+import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import type { RepJourneyPoint } from '@/api/types/tracking';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
@@ -123,7 +123,7 @@ export function JourneyPointsLayer({
       });
     }
 
-    const handleClick = (e: MapMouseEvent) => {
+    const handleClick = (e: MapLayerMouseEvent) => {
       const feature = e.features?.[0];
       if (!feature?.properties) return;
       const props = feature.properties;
@@ -153,18 +153,14 @@ export function JourneyPointsLayer({
     };
 
     for (const layerId of [MOVE_LAYER_ID, STOP_LAYER_ID]) {
-      map.on('click', layerId, handleClick as (e: MapLayerMouseEvent) => void);
+      map.on('click', layerId, handleClick);
       map.on('mouseenter', layerId, handleEnter);
       map.on('mouseleave', layerId, handleLeave);
     }
 
     return () => {
       for (const layerId of [MOVE_LAYER_ID, STOP_LAYER_ID]) {
-        map.off(
-          'click',
-          layerId,
-          handleClick as (e: MapLayerMouseEvent) => void
-        );
+        map.off('click', layerId, handleClick);
         map.off('mouseenter', layerId, handleEnter);
         map.off('mouseleave', layerId, handleLeave);
       }
