@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
+  Check,
+  ChevronDown,
   Loader2,
   MapPin,
   RotateCcw,
@@ -15,11 +17,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useBranches, useClientsInfinite } from '@/api/hooks';
 import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
 import { useStoresSales } from '@/api/hooks/use-stores-sales';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import { SimulationTrendChart } from '@/app/visualiser/components/simulation-trend-chart';
+import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
@@ -34,6 +42,7 @@ import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turno
 import {
   buildTurnoverSimulation,
   branchSimulationTextClass,
+  type TurnoverSimulation,
 } from '@/lib/site-opportunity/turnover-simulation';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import { matureShareByCompetition } from '@/lib/site-opportunity/compute/capture-phases';
@@ -43,7 +52,11 @@ import {
   loadVisualiserPreferences,
   saveVisualiserPreferences,
 } from '@/lib/visualiser-preferences';
-import { ytdDateRange } from '@/lib/utils/sales-per-store-match';
+import {
+  currentMonthLabel,
+  monthlyDateRange,
+} from '@/lib/utils/sales-per-store-match';
+import { cn } from '@/lib/utils';
 
 const EDITABLE_BRANDS: HardwareBrandKey[] = [
   'BUCO',
@@ -68,56 +81,221 @@ function seedBrandTurnovers(
   return next;
 }
 
-function ZoneRow({
+function ZoneDetailBody({
+  zone,
+  detailSim,
+  captureLowPctDisplay,
+  captureHighPctDisplay,
+  competitorsByBrand,
+}: {
+  zone: SiteOpportunityZone;
+  detailSim: TurnoverSimulation;
+  captureLowPctDisplay: number;
+  captureHighPctDisplay: number;
+  competitorsByBrand: Map<
+    HardwareBrandKey,
+    ReturnType<typeof listCompetitorsInZone>
+  >;
+}) {
+  const monthLabel = detailSim.actualRevenueMonthLabel ?? currentMonthLabel();
+
+  return (
+    <div className="space-y-3 border-t px-2.5 py-2.5">
+      <p className="text-muted-foreground text-[10px]">
+        Radius {(zone.radiusMeters / 1000).toFixed(0)} km ·{' '}
+        {zone.competitorCount} competitors · {zone.clientCount} clients
+        {zone.monthsToTargetMid != null
+          ? ` · ~${zone.monthsToTargetMid} mo to mature`
+          : ''}
+      </p>
+
+      <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+        <div className="bg-muted/40 rounded p-1.5">
+          <p className="text-muted-foreground">Addressable pool</p>
+          <p className="text-xs font-semibold">
+            {formatZarShort(zone.addressablePoolZAR)}
+          </p>
+        </div>
+        <div className="bg-muted/40 rounded p-1.5">
+          <p className="text-muted-foreground">
+            Potential ({captureLowPctDisplay}–{captureHighPctDisplay}%)
+          </p>
+          <p className="text-xs font-semibold">
+            {formatZarShort(zone.potentialLowZAR)} –{' '}
+            {formatZarShort(zone.potentialHighZAR)}
+          </p>
+        </div>
+        <div className="bg-muted/40 rounded p-1.5">
+          <p className="text-muted-foreground">Mature mid (model)</p>
+          <p className="text-xs font-semibold">
+            {formatZarShort(detailSim.simulatedMonthlyZAR)}
+          </p>
+        </div>
+        <div className="bg-muted/40 rounded p-1.5">
+          <p className="text-muted-foreground">ERP actual ({monthLabel})</p>
+          <p className="text-xs font-semibold">
+            {detailSim.actualMonthlyZAR != null
+              ? formatZarShort(detailSim.actualMonthlyZAR)
+              : '—'}
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium">Competitors in radius</p>
+        {competitorsByBrand.size === 0 ? (
+          <p className="text-muted-foreground text-[11px]">
+            No geocoded competitors in this bubble.
+          </p>
+        ) : (
+          <div className="max-h-36 space-y-2 overflow-y-auto">
+            {[...competitorsByBrand.entries()].map(([brand, stores]) => (
+              <div key={brand}>
+                <p className="text-muted-foreground text-[10px] font-medium">
+                  {brand} ({stores.length})
+                </p>
+                <ul className="mt-0.5 space-y-1">
+                  {stores.map((store) => (
+                    <li
+                      key={String(store.id)}
+                      className="border-border/60 border-b border-dashed pb-1 text-[11px] last:border-0"
+                    >
+                      <p className="font-medium leading-snug">{store.name}</p>
+                      {store.address ? (
+                        <p className="text-muted-foreground leading-snug">
+                          {store.address}
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground italic">
+                          No address on record
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium">Monthly turnover trend</p>
+        <SimulationTrendChart timeline={zone.captureTimeline} />
+        <ul className="text-muted-foreground mt-2 space-y-0.5 text-[10px]">
+          {detailSim.milestones.map((m) => (
+            <li
+              key={m.label}
+              className="flex justify-between gap-2 border-b border-dashed py-0.5 last:border-0"
+            >
+              <span>{m.label}</span>
+              <span>
+                {formatZarShort(m.lowMonthlyZAR)} –{' '}
+                {formatZarShort(m.highMonthlyZAR)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <ZoneExplainAiButton
+        payload={{
+          kind: zone.kind === 'catchment' ? 'catchment' : 'greenfield',
+          title:
+            zone.kind === 'catchment' ? zone.branchName : zone.label,
+          rank: zone.rank,
+          radiusKm: zone.radiusMeters / 1000,
+          competitorCount: zone.competitorCount,
+          clientCount: zone.clientCount,
+          addressablePoolZAR: zone.addressablePoolZAR,
+          potentialLowZAR: zone.potentialLowZAR,
+          potentialHighZAR: zone.potentialHighZAR,
+          simulatedMonthlyZAR: detailSim.simulatedMonthlyZAR,
+          actualMonthlyZAR: detailSim.actualMonthlyZAR ?? null,
+          actualMonthLabel: monthLabel,
+          competitionLabel: matureShareByCompetition(zone.competitorCount)
+            .label,
+          competitorNames: [...competitorsByBrand.values()]
+            .flat()
+            .map((s) => s.name)
+            .slice(0, 12),
+          monthsToMature: zone.monthsToTargetMid ?? null,
+        }}
+      />
+    </div>
+  );
+}
+
+function ZoneAccordionRow({
   zone,
   selected,
-  onSelect,
+  onOpenChange,
+  detailContent,
 }: {
   zone: SiteOpportunityZone;
   selected: boolean;
-  onSelect: () => void;
+  onOpenChange: (open: boolean) => void;
+  detailContent: ReactNode;
 }) {
   const sim = buildTurnoverSimulation(zone, {
     actualRevenueZAR: zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
+    actualRevenueMonthLabel: currentMonthLabel(),
   });
   const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
   const intensity = matureShareByCompetition(zone.competitorCount);
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full rounded-md border px-2.5 py-2 text-left transition-colors ${
+    <Collapsible
+      open={selected}
+      onOpenChange={onOpenChange}
+      className={cn(
+        'rounded-md border transition-colors',
         selected
           ? 'border-teal-700/40 bg-teal-50/80 dark:bg-teal-950/30'
-          : 'border-border hover:bg-muted/40'
-      }`}
+          : 'border-border hover:bg-muted/40',
+      )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className={`truncate text-xs ${branchSimulationTextClass(sim)}`}>
-            #{zone.rank} {title}
-          </p>
-          <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
-            {zone.competitorCount} hardwares · pool{' '}
-            {formatZarShort(zone.addressablePoolZAR)}/mo · {intensity.label}
-          </p>
-        </div>
-        <div className="shrink-0 text-right text-[10px]">
-          <p className="font-medium">{formatZarShort(sim.simulatedMonthlyZAR)}</p>
-          <p className="text-muted-foreground">
-            {sim.actualMonthlyZAR != null
-              ? `Actual ${formatZarShort(sim.actualMonthlyZAR)}`
-              : 'Simulated'}
-          </p>
-        </div>
-      </div>
-    </button>
+      <CollapsibleTrigger asChild>
+        <button type="button" className="w-full px-2.5 py-2 text-left">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className={`truncate text-xs ${branchSimulationTextClass(sim)}`}>
+                #{zone.rank} {title}
+              </p>
+              <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
+                {zone.competitorCount} hardwares · pool{' '}
+                {formatZarShort(zone.addressablePoolZAR)}/mo · {intensity.label}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-start gap-1">
+              <div className="text-right text-[10px]">
+                <p className="font-medium">
+                  {formatZarShort(sim.simulatedMonthlyZAR)}
+                </p>
+                <p className="text-muted-foreground">
+                  {sim.actualMonthlyZAR != null
+                    ? `ERP ${formatZarShort(sim.actualMonthlyZAR)}`
+                    : 'Simulated'}
+                </p>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'text-muted-foreground mt-0.5 size-3.5 shrink-0 transition-transform',
+                  selected && 'rotate-180',
+                )}
+              />
+            </div>
+          </div>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{selected ? detailContent : null}</CollapsibleContent>
+    </Collapsible>
   );
 }
 
 /**
- * Docked ~30% simulation panel: configure defaults, run, and review results beside the map.
+ * Docked simulation panel: configure defaults, run, and review results beside the map.
+ * ~20% width so the map gains ~10pp vs the previous 30% panel.
  */
 export function SimulationSidePanel() {
   const {
@@ -174,6 +352,9 @@ export function SimulationSidePanel() {
     void fetchNextPage();
   }, [panelOpen, hasNextPage, isFetchingNextPage, clientsLoading, fetchNextPage]);
 
+  const monthRange = monthlyDateRange();
+  const monthLabel = currentMonthLabel();
+
   const detailSim = useMemo(() => {
     if (!selectedZone) return null;
     return buildTurnoverSimulation(selectedZone, {
@@ -181,10 +362,10 @@ export function SimulationSidePanel() {
         selectedZone.kind === 'catchment'
           ? selectedZone.actualRevenueZAR
           : null,
-      actualRevenueMonthLabel: 'YTD avg',
+      actualRevenueMonthLabel: monthLabel,
       repTargetMonthlyZAR: settings.repTargetMonthlyZAR,
     });
-  }, [selectedZone, settings.repTargetMonthlyZAR]);
+  }, [selectedZone, settings.repTargetMonthlyZAR, monthLabel]);
 
   const competitorsInZone = useMemo(() => {
     if (!selectedZone || runMarkers.length === 0) return [];
@@ -285,12 +466,18 @@ export function SimulationSidePanel() {
 
       let matched = 0;
       let erpErr: string | null = null;
-      const dashboard = storesSalesQuery.data;
+
+      toast.loading(`Matching ERP store sales (${monthLabel})…`, {
+        id: 'map-simulate',
+      });
+
+      let dashboard = storesSalesQuery.data;
+      if (!dashboard && !storesSalesQuery.isError) {
+        const refreshed = await storesSalesQuery.refetch();
+        dashboard = refreshed.data;
+      }
 
       if (dashboard?.salesPerStore?.length) {
-        toast.loading('Matching ERP store sales to branches…', {
-          id: 'map-simulate',
-        });
         const enriched = enrichCatchmentsWithDashboardRevenue(
           computed.catchments,
           branches,
@@ -298,11 +485,19 @@ export function SimulationSidePanel() {
             salesPerStore: dashboard.salesPerStore,
             masterData: dashboard.masterData,
           },
+          {
+            startDate: dashboard.startDate ?? monthRange.startDate,
+            endDate: dashboard.endDate ?? monthRange.endDate,
+          },
         );
         matched = enriched.filter(
           (c) => c.actualRevenueZAR != null && c.actualRevenueZAR > 0,
         ).length;
         computed = { ...computed, catchments: enriched };
+        if (matched === 0) {
+          erpErr =
+            'ERP sales loaded but no branches matched store codes/names — modelled potential only.';
+        }
       } else if (storesSalesQuery.isError) {
         erpErr =
           'ERP store sales unavailable — showing modelled potential only.';
@@ -310,6 +505,9 @@ export function SimulationSidePanel() {
         erpErr =
           dashboard.errors?.[0]?.message ??
           'ERP store sales returned no rows — modelled potential only.';
+      } else {
+        erpErr =
+          'ERP store sales returned no rows for this month — modelled potential only.';
       }
 
       setSimulationResult(computed, {
@@ -318,9 +516,8 @@ export function SimulationSidePanel() {
         markers,
       });
 
-      const ytd = ytdDateRange();
       toast.success(
-        `Simulation ready: ${computed.catchments.length} catchments, ${computed.greenfield.length} greenfield${matched ? ` · ${matched} with ERP (${ytd.startDate}–${ytd.endDate})` : ''}.`,
+        `Simulation ready: ${computed.catchments.length} catchments, ${computed.greenfield.length} opportunities${matched ? ` · ${matched} with ERP (${monthLabel})` : ''}.`,
         { id: 'map-simulate', duration: 5000 },
       );
     } catch (error) {
@@ -337,8 +534,21 @@ export function SimulationSidePanel() {
   const captureLowPctDisplay = Math.round(settings.captureLowPct * 100);
   const captureHighPctDisplay = Math.round(settings.captureHighPct * 100);
 
+  function renderZoneDetail(zone: SiteOpportunityZone) {
+    if (!detailSim || selectedZoneId !== zone.id) return null;
+    return (
+      <ZoneDetailBody
+        zone={zone}
+        detailSim={detailSim}
+        captureLowPctDisplay={captureLowPctDisplay}
+        captureHighPctDisplay={captureHighPctDisplay}
+        competitorsByBrand={competitorsByBrand}
+      />
+    );
+  }
+
   return (
-    <aside className="border-border bg-background flex h-full w-[30%] min-w-[20rem] max-w-[28rem] shrink-0 flex-col overflow-hidden border-l">
+    <aside className="border-border bg-background flex h-full w-[20%] min-w-[16rem] max-w-[22rem] shrink-0 flex-col overflow-hidden border-l">
       <div className="flex shrink-0 items-start justify-between gap-2 border-b px-3 py-2.5">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">Store turnover simulation</h2>
@@ -362,8 +572,12 @@ export function SimulationSidePanel() {
         <Button
           type="button"
           size="sm"
-          variant={panelMode === 'configure' ? 'secondary' : 'ghost'}
-          className="h-7 flex-1 text-xs"
+          className={cn(
+            'h-7 flex-1 text-xs',
+            panelMode === 'configure'
+              ? 'bg-red-600 text-white hover:bg-red-600/90'
+              : 'bg-red-600/15 text-red-700 hover:bg-red-600/25 dark:text-red-300',
+          )}
           onClick={() => setPanelMode('configure')}
         >
           <Settings2 className="size-3.5" />
@@ -372,12 +586,22 @@ export function SimulationSidePanel() {
         <Button
           type="button"
           size="sm"
-          variant={panelMode === 'results' ? 'secondary' : 'ghost'}
-          className="h-7 flex-1 text-xs"
+          className={cn(
+            'h-7 flex-1 text-xs',
+            isActive
+              ? panelMode === 'results'
+                ? 'bg-green-600 text-white hover:bg-green-600/90'
+                : 'bg-green-600/20 text-green-800 hover:bg-green-600/30 dark:text-green-300'
+              : 'bg-muted text-muted-foreground',
+          )}
           disabled={!isActive}
           onClick={() => setPanelMode('results')}
         >
-          <Store className="size-3.5" />
+          {isActive ? (
+            <Check className="size-3.5" />
+          ) : (
+            <Store className="size-3.5" />
+          )}
           Results
         </Button>
       </div>
@@ -415,7 +639,7 @@ export function SimulationSidePanel() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-sep" className="text-[11px]">
-                  Min branch sep. (km)
+                  Dist to Branch
                 </Label>
                 <Input
                   id="sim-sep"
@@ -478,7 +702,7 @@ export function SimulationSidePanel() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-topn" className="text-[11px]">
-                  Top N greenfield
+                  Top N opportunities
                 </Label>
                 <Input
                   id="sim-topn"
@@ -570,17 +794,20 @@ export function SimulationSidePanel() {
                     </h3>
                     {erpMatchedStores > 0 ? (
                       <span className="text-muted-foreground text-[10px]">
-                        {erpMatchedStores} ERP
+                        {erpMatchedStores} ERP · {monthLabel}
                       </span>
                     ) : null}
                   </div>
-                  <div className="max-h-40 space-y-1 overflow-y-auto">
+                  <div className="space-y-1">
                     {result.catchments.map((z) => (
-                      <ZoneRow
+                      <ZoneAccordionRow
                         key={z.id}
                         zone={z}
                         selected={selectedZoneId === z.id}
-                        onSelect={() => selectZone(z.id)}
+                        onOpenChange={(open) =>
+                          selectZone(open ? z.id : null)
+                        }
+                        detailContent={renderZoneDetail(z)}
                       />
                     ))}
                   </div>
@@ -589,145 +816,28 @@ export function SimulationSidePanel() {
                 <div className="space-y-1.5">
                   <h3 className="flex items-center gap-1 text-xs font-semibold">
                     <MapPin className="size-3.5" />
-                    Greenfield ({result.greenfield.length})
+                    Opportunities ({result.greenfield.length})
                   </h3>
-                  <div className="max-h-28 space-y-1 overflow-y-auto">
+                  <div className="space-y-1">
                     {result.greenfield.map((z) => (
-                      <ZoneRow
+                      <ZoneAccordionRow
                         key={z.id}
                         zone={z}
                         selected={selectedZoneId === z.id}
-                        onSelect={() => selectZone(z.id)}
+                        onOpenChange={(open) =>
+                          selectZone(open ? z.id : null)
+                        }
+                        detailContent={renderZoneDetail(z)}
                       />
                     ))}
                   </div>
                 </div>
 
-                {selectedZone && detailSim ? (
-                  <div className="space-y-3 rounded-md border p-2.5">
-                    <div>
-                      <h3
-                        className={`text-sm ${branchSimulationTextClass(detailSim)}`}
-                      >
-                        {selectedZone.kind === 'catchment'
-                          ? selectedZone.branchName
-                          : selectedZone.label}
-                      </h3>
-                      <p className="text-muted-foreground text-[10px]">
-                        Radius {(selectedZone.radiusMeters / 1000).toFixed(0)} km ·{' '}
-                        {selectedZone.competitorCount} competitors ·{' '}
-                        {selectedZone.clientCount} clients
-                        {selectedZone.monthsToTargetMid != null
-                          ? ` · ~${selectedZone.monthsToTargetMid} mo to mature`
-                          : ''}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                      <div className="bg-muted/40 rounded p-1.5">
-                        <p className="text-muted-foreground">Addressable pool</p>
-                        <p className="text-xs font-semibold">
-                          {formatZarShort(selectedZone.addressablePoolZAR)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/40 rounded p-1.5">
-                        <p className="text-muted-foreground">
-                          Potential ({captureLowPctDisplay}–{captureHighPctDisplay}
-                          %)
-                        </p>
-                        <p className="text-xs font-semibold">
-                          {formatZarShort(selectedZone.potentialLowZAR)} –{' '}
-                          {formatZarShort(selectedZone.potentialHighZAR)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/40 rounded p-1.5">
-                        <p className="text-muted-foreground">Mature mid (model)</p>
-                        <p className="text-xs font-semibold">
-                          {formatZarShort(detailSim.simulatedMonthlyZAR)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/40 rounded p-1.5">
-                        <p className="text-muted-foreground">ERP actual (mo avg)</p>
-                        <p className="text-xs font-semibold">
-                          {detailSim.actualMonthlyZAR != null
-                            ? formatZarShort(detailSim.actualMonthlyZAR)
-                            : '—'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="mb-1 text-xs font-medium">
-                        Competitors in radius
-                      </p>
-                      {competitorsByBrand.size === 0 ? (
-                        <p className="text-muted-foreground text-[11px]">
-                          No geocoded competitors in this bubble.
-                        </p>
-                      ) : (
-                        <div className="max-h-36 space-y-2 overflow-y-auto">
-                          {[...competitorsByBrand.entries()].map(
-                            ([brand, stores]) => (
-                              <div key={brand}>
-                                <p className="text-muted-foreground text-[10px] font-medium">
-                                  {brand} ({stores.length})
-                                </p>
-                                <ul className="mt-0.5 space-y-1">
-                                  {stores.map((store) => (
-                                    <li
-                                      key={String(store.id)}
-                                      className="border-border/60 border-b border-dashed pb-1 text-[11px] last:border-0"
-                                    >
-                                      <p className="font-medium leading-snug">
-                                        {store.name}
-                                      </p>
-                                      {store.address ? (
-                                        <p className="text-muted-foreground leading-snug">
-                                          {store.address}
-                                        </p>
-                                      ) : (
-                                        <p className="text-muted-foreground italic">
-                                          No address on record
-                                        </p>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="mb-1 text-xs font-medium">
-                        Monthly turnover trend
-                      </p>
-                      <SimulationTrendChart
-                        timeline={selectedZone.captureTimeline}
-                      />
-                      <ul className="text-muted-foreground mt-2 space-y-0.5 text-[10px]">
-                        {detailSim.milestones.map((m) => (
-                          <li
-                            key={m.label}
-                            className="flex justify-between gap-2 border-b border-dashed py-0.5 last:border-0"
-                          >
-                            <span>{m.label}</span>
-                            <span>
-                              {formatZarShort(m.lowMonthlyZAR)} –{' '}
-                              {formatZarShort(m.highMonthlyZAR)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
+                {!selectedZoneId ? (
                   <p className="text-muted-foreground text-xs">
-                    Select a catchment or greenfield row for detail.
+                    Expand a catchment or opportunity row for detail.
                   </p>
-                )}
+                ) : null}
               </>
             ) : (
               <p className="text-muted-foreground text-xs">

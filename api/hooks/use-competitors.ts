@@ -13,12 +13,18 @@ import {
   getCompetitor,
   createCompetitor,
   updateCompetitor,
+  bulkUpdateCompetitors,
   deleteCompetitor,
   importCompetitorsFromCSV,
 } from '@/api/endpoints/competitors';
-import type { CreateCompetitorPayload, UpdateCompetitorPayload } from '@/api/types/competitors';
+import type {
+  BulkUpdateCompetitorsPayload,
+  CreateCompetitorPayload,
+  UpdateCompetitorPayload,
+} from '@/api/types/competitors';
 import toast from 'react-hot-toast';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
+import { COMPETITORS_MAP_DATA_QUERY_KEY } from '@/api/hooks/use-competitors-map-data';
 
 export const COMPETITORS_QUERY_KEY_PREFIX = ['competitors'] as const;
 
@@ -40,6 +46,7 @@ export function invalidateCompetitorQueries(
 ) {
   queryClient.invalidateQueries({ queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'list'] });
   queryClient.invalidateQueries({ queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'infinite'] });
+  queryClient.invalidateQueries({ queryKey: COMPETITORS_MAP_DATA_QUERY_KEY });
   if (opts?.detailId != null) {
     queryClient.invalidateQueries({
       queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'detail', opts.detailId],
@@ -151,6 +158,30 @@ export function useUpdateCompetitorMutation() {
       toast.success('Competitor updated');
     },
     onError: (err) => mutationToastError(err, 'Could not update competitor'),
+  });
+}
+
+export function useBulkUpdateCompetitorsMutation(options?: {
+  /** When true, skip the default success toast (caller shows a custom message). */
+  silentSuccess?: boolean;
+}) {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: BulkUpdateCompetitorsPayload) =>
+      bulkUpdateCompetitors(api, payload),
+    onSuccess: (data) => {
+      invalidateCompetitorQueries(queryClient);
+      if (options?.silentSuccess) return;
+      const ok = data.successCount ?? data.results?.filter((r) => r.success).length ?? 0;
+      const fail = data.failureCount ?? 0;
+      if (fail > 0) {
+        toast.success(`Updated ${ok} competitors (${fail} failed)`);
+      } else {
+        toast.success(`Updated ${ok} competitor${ok === 1 ? '' : 's'}`);
+      }
+    },
+    onError: (err) => mutationToastError(err, 'Could not bulk-update competitors'),
   });
 }
 

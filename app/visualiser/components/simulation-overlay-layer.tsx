@@ -1,15 +1,18 @@
 'use client';
 
 import { useMemo } from 'react';
-import { MapGeoJSON } from '@/components/ui/map';
+import { MapGeoJSON, useMap } from '@/components/ui/map';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import { opportunityZonesToFeatureCollection } from '@/lib/site-opportunity/circle-geojson';
 
 /**
- * 5 km catchment / greenfield radius overlays after a simulation run.
+ * 5 km catchment / opportunity radius overlays after a simulation run.
+ * Clicks prefer competitor/branch marker layers when both hit the same point.
  */
 export function SimulationOverlayLayer() {
-  const { isActive, allZones, selectedZoneId, selectZone } = useVisualiserSimulation();
+  const { map } = useMap();
+  const { isActive, allZones, selectedZoneId, selectZone } =
+    useVisualiserSimulation();
 
   const data = useMemo(() => {
     if (!isActive || allZones.length === 0) {
@@ -57,6 +60,23 @@ export function SimulationOverlayLayer() {
         'line-opacity': 0.9,
       }}
       onClick={(e) => {
+        if (map) {
+          const styleLayers = map.getStyle()?.layers ?? [];
+          const markerLayerIds = styleLayers
+            .map((layer) => layer.id)
+            .filter(
+              (id) =>
+                id.includes('logo-unclustered') ||
+                id.includes('logo-clusters') ||
+                id.includes('logo-cluster-count'),
+            );
+          if (markerLayerIds.length > 0) {
+            const hits = map.queryRenderedFeatures(e.originalEvent.point, {
+              layers: markerLayerIds.filter((id) => map.getLayer(id)),
+            });
+            if (hits.length > 0) return;
+          }
+        }
         const id = e.feature.properties?.id;
         if (typeof id === 'string') selectZone(id);
       }}

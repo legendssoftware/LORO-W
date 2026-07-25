@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Urbanist, Lora } from 'next/font/google';
+import localFont from 'next/font/local';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
@@ -15,19 +15,29 @@ import { defaultMetadata } from '@/lib/seo';
 import { buildSiteVerificationMetadata } from '@/lib/seo/site-verification';
 import './globals.css';
 
-const urbanist = Urbanist({
+/** Self-hosted so `next build` does not depend on fonts.googleapis.com. */
+const urbanist = localFont({
+  src: './fonts/urbanist-latin-var.woff2',
   variable: '--font-urbanist',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: '300 700',
   display: 'swap',
 });
 
-const lora = Lora({
+const lora = localFont({
+  src: [
+    {
+      path: './fonts/lora-latin-var.woff2',
+      weight: '400 700',
+      style: 'normal',
+    },
+    {
+      path: './fonts/lora-latin-italic-var.woff2',
+      weight: '400 700',
+      style: 'italic',
+    },
+  ],
   variable: '--font-lora',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
   display: 'swap',
-  style: ['normal', 'italic'],
 });
 
 export const metadata: Metadata = {

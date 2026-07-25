@@ -8,6 +8,8 @@ import type {
   CompetitorDeleteResponse,
   CompetitorImportResponse,
   CompetitorListItem,
+  BulkUpdateCompetitorsPayload,
+  BulkUpdateCompetitorsResponse,
 } from '@/api/types/competitors';
 
 export type {
@@ -17,6 +19,8 @@ export type {
   GetCompetitorResponse,
   CreateCompetitorPayload,
   UpdateCompetitorPayload,
+  BulkUpdateCompetitorsPayload,
+  BulkUpdateCompetitorsResponse,
 } from '@/api/types/competitors';
 
 export interface GetCompetitorsParams {
@@ -129,6 +133,47 @@ export async function updateCompetitor(
     payload
   );
   return data;
+}
+
+const BULK_UPDATE_CHUNK = 50;
+
+/**
+ * PATCH /competitors/bulk — update many competitors (max 50 per request).
+ * Chunks automatically when `updates.length` exceeds the server limit.
+ */
+export async function bulkUpdateCompetitors(
+  client: AxiosInstance,
+  payload: BulkUpdateCompetitorsPayload
+): Promise<BulkUpdateCompetitorsResponse> {
+  const updates = payload.updates ?? [];
+  if (updates.length === 0) {
+    return { success: true, successCount: 0, failureCount: 0, results: [] };
+  }
+
+  const allResults: NonNullable<BulkUpdateCompetitorsResponse['results']> = [];
+  let successCount = 0;
+  let failureCount = 0;
+
+  for (let i = 0; i < updates.length; i += BULK_UPDATE_CHUNK) {
+    const chunk = updates.slice(i, i + BULK_UPDATE_CHUNK);
+    const { data } = await client.patch<BulkUpdateCompetitorsResponse>(
+      '/competitors/bulk',
+      { updates: chunk }
+    );
+    const results = data.results ?? [];
+    allResults.push(...results);
+    successCount +=
+      data.successCount ?? results.filter((r) => r.success).length;
+    failureCount +=
+      data.failureCount ?? results.filter((r) => !r.success).length;
+  }
+
+  return {
+    success: failureCount === 0,
+    successCount,
+    failureCount,
+    results: allResults,
+  };
 }
 
 export async function deleteCompetitor(

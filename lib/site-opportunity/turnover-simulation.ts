@@ -56,10 +56,11 @@ export const PRODUCT_MIX_PCT: readonly { category: string; pct: number }[] = [
 ];
 
 const MILESTONE_MONTHS: readonly { label: string; month: number }[] = [
-  { label: 'Start-up (3 mo)', month: 3 },
-  { label: 'Year 1 (12 mo)', month: 12 },
-  { label: 'Mature (24 mo)', month: 24 },
-  { label: 'Market leader (36 mo)', month: 36 },
+  { label: '0–5 months', month: 5 },
+  { label: '6–12 months', month: 12 },
+  { label: '13–18 months', month: 18 },
+  { label: '19–24 months', month: 24 },
+  { label: '25–36 months', month: 36 },
 ];
 
 function interpolateTimelinePoint(
