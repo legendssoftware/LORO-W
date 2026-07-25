@@ -58,18 +58,26 @@ function formatSales(cell: ReportsTargetMetricCell): string {
 function MetricCell({
   cell,
   formatValue,
+  done = false,
 }: {
   cell: ReportsTargetMetricCell;
   formatValue: (cell: ReportsTargetMetricCell) => string;
+  /** Calls+leads engagement gate met — show 100% / Done. */
+  done?: boolean;
 }) {
-  const colors = getProgressColorClasses(cell.progress);
+  const displayProgress = done ? 100 : cell.progress;
+  const colors = getProgressColorClasses(displayProgress);
   return (
     <div className="min-w-[7.5rem] space-y-1.5">
       <p className="text-xs text-muted-foreground tabular-nums">{formatValue(cell)}</p>
-      <ReportProgressBar value={cell.progress} />
-      <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
-        {cell.target > 0 ? `${cell.progress}%` : '—'}
-      </p>
+      <ReportProgressBar value={displayProgress} />
+      {cell.target > 0 ? (
+        <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
+          {done ? 'Done' : `${displayProgress}%`}
+        </p>
+      ) : (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
+      )}
     </div>
   );
 }
@@ -238,12 +246,14 @@ export function ReportsTargetsTable({
                 <TableCell>
                   <MetricCell
                     cell={row.calls}
+                    done={row.engagementMet && row.calls.target > 0}
                     formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                   />
                 </TableCell>
                 <TableCell>
                   <MetricCell
                     cell={row.leads}
+                    done={row.engagementMet && row.leads.target > 0}
                     formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                   />
                 </TableCell>

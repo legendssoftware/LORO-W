@@ -12,6 +12,7 @@ export * from './payslips';
 export * from './sales-tips';
 export * from './erp-profile-sales';
 export * from './erp-user-sales';
+export * from './erp-user-commissions';
 export * from './erp-profile-quotations';
 export * from './shop-quotations';
 export * from './products';
