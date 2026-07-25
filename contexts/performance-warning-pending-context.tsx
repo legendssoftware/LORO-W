@@ -5,10 +5,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { SyncProfile } from '@/api/types';
 import { useSessionStore } from '@/store/session-store';
 import { useUserTarget } from '@/api/hooks';
@@ -82,6 +83,8 @@ function acknowledgmentStatus(
 
 export function PerformanceWarningGateProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '';
+  const router = useRouter();
+  const lockedPathRef = useRef<string | null>(null);
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const clerkSessionIdFromStore = useSessionStore((s) => s.clerkSessionId);
   const profile = useSessionStore((s) => s.profileData);
@@ -106,26 +109,34 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       !targetQuery.isLoading &&
       targetQuery.isSuccess);
 
-  const tw = pickEffectiveWarnings(targetResolved, userTargetPayload, twFromProfile);
-
   const profileCarriesPendingWarning =
     twFromProfile != null &&
     typeof twFromProfile.level === 'number' &&
     twFromProfile.level > (twFromProfile.acknowledgedLevel ?? 0);
+
+  /**
+   * Prefer target payload after success. On target fetch error, keep sync-profile warnings
+   * so a known pending warning is not cleared (fail-closed when profile already shows unacked).
+   */
+  const tw = targetQuery.isError
+    ? twFromProfile !== undefined
+      ? twFromProfile
+      : pickEffectiveWarnings(false, userTargetPayload, twFromProfile)
+    : pickEffectiveWarnings(targetResolved, userTargetPayload, twFromProfile);
 
   const hasUnackedWarning =
     !!tw &&
     typeof tw.level === 'number' &&
     tw.level > (tw.acknowledgedLevel ?? 0);
 
-  /** Let sync profile unblock the modal before GET /target returns (warnings must lead). */
+  /**
+   * Ready when target succeeded, or sync profile already reports a pending warning
+   * (including while target is loading or errored — do not suppress known pending).
+   */
   const blockingDataReady =
     isClient ||
     targetResolved ||
-    (!targetQuery.isError &&
-      profileCarriesPendingWarning &&
-      !!staffUserRef &&
-      !!isSignedIn);
+    (profileCarriesPendingWarning && !!staffUserRef && !!isSignedIn);
 
   const sessionOk = !!(sessionId ?? clerkSessionIdFromStore);
 
@@ -138,6 +149,21 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     !!staffUserRef &&
     blockingDataReady &&
     hasUnackedWarning;
+
+  /** Lock navigation while a blocking warning is active (typed URLs / browser back). */
+  useEffect(() => {
+    if (!pendingBlockingWarning) {
+      lockedPathRef.current = null;
+      return;
+    }
+    if (lockedPathRef.current == null) {
+      lockedPathRef.current = pathname;
+      return;
+    }
+    if (pathname !== lockedPathRef.current) {
+      router.replace(lockedPathRef.current);
+    }
+  }, [pendingBlockingWarning, pathname, router]);
 
   const targetQueryEnabled = !!staffUserRef && !!isSignedIn;
   const deferUntilTargetSettled =

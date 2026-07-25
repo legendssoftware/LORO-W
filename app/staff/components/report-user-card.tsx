@@ -434,8 +434,11 @@ export function ReportUserCard({
                 </button>
               )}
               <Link
-                href="/staff"
-                {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
+                href={`/staff/users/${user.ref}/settings`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettingsClick?.(e);
+                }}
                 className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
                 aria-label="User settings"
               >
@@ -637,8 +640,11 @@ export function ReportUserCard({
                 </button>
               )}
               <Link
-                href="/staff"
-                {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
+                href={`/staff/users/${user.ref}/settings`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettingsClick?.(e);
+                }}
                 className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
                 aria-label="User settings"
               >

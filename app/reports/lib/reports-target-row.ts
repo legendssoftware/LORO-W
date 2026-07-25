@@ -338,6 +338,28 @@ export function enrichRowWithTargetDashboard(
 }
 
 /**
+ * Overlay live ERP turnover onto Sales (from GET /erp/profile/sales or
+ * GET /erp/user/:userId/sales). CRM `currentSalesAmount` is often 0 / stale.
+ */
+export function applyErpSalesToRow(
+  row: ReportsTargetRow,
+  totalRevenue: number | null | undefined
+): ReportsTargetRow {
+  if (totalRevenue == null || !Number.isFinite(totalRevenue)) return row;
+  const current = Math.max(0, totalRevenue);
+  const sales: ReportsTargetMetricCell = {
+    ...row.sales,
+    current,
+    progress: calcTargetProgress(current, row.sales.target),
+  };
+  return {
+    ...row,
+    sales,
+    achievement: achievementFromCells(row.calls, row.leads, sales, row.hours),
+  };
+}
+
+/**
  * Overlay range engagement counts onto Calls/Leads (Sales/Hours unchanged).
  * Targets for calls/leads are prorated to the selected date range.
  */
@@ -380,5 +402,43 @@ export function applyEngagementToRow(
     calls,
     leads,
     achievement: achievementFromCells(calls, leads, row.sales, row.hours),
+  };
+}
+
+/**
+ * Overlay attendance hours onto the Hours cell.
+ * When rangeFromYmd/rangeToYmd are set, the hours target is prorated like calls/leads.
+ * `hoursWorked` should come from GET /att/report (range) or payroll-hours (period).
+ */
+export function applyHoursToRow(
+  row: ReportsTargetRow,
+  hoursWorked: number | undefined,
+  rangeFromYmd?: string | null,
+  rangeToYmd?: string | null
+): ReportsTargetRow {
+  if (hoursWorked == null || !Number.isFinite(hoursWorked)) return row;
+
+  const current = Math.round(Math.max(0, hoursWorked) * 10) / 10;
+  const target =
+    rangeFromYmd && rangeToYmd
+      ? prorateTargetForRange({
+          periodTarget: row.hours.target,
+          periodStartDate: row.periodStartDate,
+          periodEndDate: row.periodEndDate,
+          rangeFromYmd,
+          rangeToYmd,
+        })
+      : row.hours.target;
+
+  const hours: ReportsTargetMetricCell = {
+    current,
+    target,
+    progress: calcTargetProgress(current, target),
+  };
+
+  return {
+    ...row,
+    hours,
+    achievement: achievementFromCells(row.calls, row.leads, row.sales, hours),
   };
 }

@@ -105,11 +105,7 @@ function AcknowledgedCell({ row }: { row: ReportsTargetRow }) {
         {summary.totalAcknowledged} / {summary.totalIssued}
       </p>
       {summary.pendingCount > 0 || notAcked > 0 ? (
-        <p className="text-[10px] text-amber-700">
-          {summary.pendingCount > 0
-            ? `${summary.pendingCount} not acknowledged`
-            : `${notAcked} not acknowledged`}
-        </p>
+        <p className="text-[10px] text-amber-700">Still pending · Needs attention</p>
       ) : (
         <p className="text-[10px] text-muted-foreground">All acknowledged</p>
       )}

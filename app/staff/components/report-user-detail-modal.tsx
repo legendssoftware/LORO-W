@@ -447,7 +447,7 @@ export function ReportUserDetailModal({
 
             <ModalSection title="Actions">
               <Link
-                href="/staff"
+                href={`/staff/users/${user.ref}/settings`}
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 <SettingsIcon className="size-4 shrink-0" />

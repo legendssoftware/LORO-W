@@ -1,8 +1,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
-import { useDailyProductivity, useUserTarget } from '@/api/hooks';
+import { useApiClient, useDailyProductivity, useUserTarget } from '@/api/hooks';
+import {
+  getUserSales,
+  profileSalesFromResponse,
+} from '@/api/endpoints/erp-user-sales';
 import {
   ReportProgressBar,
   getProgressColorClasses,
@@ -11,7 +16,10 @@ import type {
   ReportsTargetMetricCell,
   ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
-import { enrichRowWithTargetDashboard } from '@/app/reports/lib/reports-target-row';
+import {
+  applyErpSalesToRow,
+  enrichRowWithTargetDashboard,
+} from '@/app/reports/lib/reports-target-row';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DialogCloseButton } from '@/components/dialog-close-button';
@@ -27,6 +35,7 @@ import {
   getTargetWarningHistory,
   summarizeTargetWarnings,
 } from '@/lib/target-warnings-summary';
+import { formatWarningDateTime } from '@/lib/format-warning-datetime';
 import { cn } from '@/lib/utils';
 
 const WARNING_BADGE: Record<1 | 2 | 3, string> = {
@@ -55,23 +64,6 @@ function formatSales(cell: ReportsTargetMetricCell): string {
   const tgt = cell.target.toLocaleString(undefined, { maximumFractionDigits: 0 });
   if (currency) return `${currency} ${cur} / ${tgt}`;
   return `${cur} / ${tgt}`;
-}
-
-function formatDateTime(iso: string | undefined): string {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString(undefined, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function ModalSection({ title, children }: { title: string; children: ReactNode }) {
@@ -125,14 +117,38 @@ export function ReportsTargetDetailDialog({
   reviewStartYmd,
   reviewEndYmd,
 }: ReportsTargetDetailDialogProps) {
+  const client = useApiClient();
   const targetQuery = useUserTarget(row?.ref ?? null, {
     enabled: open && !!row?.ref,
   });
 
-  const displayRow =
-    row && targetQuery.data?.userTarget
+  const erpSalesQuery = useQuery({
+    queryKey: ['erp', 'user-sales', row?.userId] as const,
+    queryFn: async (): Promise<number | null> => {
+      if (row?.userId == null) return null;
+      try {
+        const res = await getUserSales(client, row.userId);
+        return profileSalesFromResponse(res)?.totalRevenue ?? null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: open && !!row?.userId && (row?.sales.target ?? 0) > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const displayRow = (() => {
+    if (!row) return null;
+    const enriched = targetQuery.data?.userTarget
       ? enrichRowWithTargetDashboard(row, targetQuery.data.userTarget)
       : row;
+    // Live ERP when available; otherwise keep table overlay (or CRM current).
+    return applyErpSalesToRow(
+      enriched,
+      erpSalesQuery.data ?? row.sales.current
+    );
+  })();
 
   const hasReviewRange = !!reviewStartYmd && !!reviewEndYmd;
   const productivityQuery = useDailyProductivity(
@@ -343,7 +359,7 @@ export function ReportsTargetDetailDialog({
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Issued {formatDateTime(entry.issuedAt)}
+                        Issued {formatWarningDateTime(entry.issuedAt)}
                       </p>
                       <p
                         className={cn(
@@ -354,8 +370,8 @@ export function ReportsTargetDetailDialog({
                         )}
                       >
                         {entry.acknowledgedAt
-                          ? `Acknowledged ${formatDateTime(entry.acknowledgedAt)}`
-                          : 'Not acknowledged'}
+                          ? `Acknowledged ${formatWarningDateTime(entry.acknowledgedAt)}`
+                          : 'Still pending · Needs attention'}
                       </p>
                     </li>
                   ))}
