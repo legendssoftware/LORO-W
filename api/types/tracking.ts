@@ -46,11 +46,55 @@ export interface LatestRepLocationsResponse {
 export type RepJourneyRange = 'hour' | 'day' | 'week';
 
 export interface RepJourneyPoint {
+  uid?: number;
   latitude: number;
   longitude: number;
   recordedAt: string;
   accuracy?: number | null;
+  /** Device GPS speed in m/s. */
   speed?: number | null;
+  address?: string | null;
+  isStop?: boolean;
+  stopDurationMinutes?: number | null;
+  stopDurationFormatted?: string | null;
+}
+
+export interface RepJourneyPeriodAverages {
+  averageSpeedKmh: number;
+  averageDistanceKm: number;
+  totalDistanceKm: number;
+  totalPoints: number;
+}
+
+export interface RepJourneyProminentLocation {
+  address: string;
+  latitude: number;
+  longitude: number;
+  timeSpentMinutes: number;
+  timeSpentFormatted: string;
+}
+
+export interface RepJourneyFuelPrice {
+  averagePetrolPerLitreZar: number | null;
+  grade: string | null;
+  region: string | null;
+  asOf: string | null;
+  source: 'fuel-sa' | null;
+}
+
+export interface RepJourneySummary {
+  totalPoints: number;
+  totalDistanceKm: number;
+  averageSpeedKmh: number;
+  totalStopMinutes: number;
+  totalStopFormatted: string;
+  prominentLocations: RepJourneyProminentLocation[];
+  fuelPrice: RepJourneyFuelPrice;
+  periodAverages: {
+    day: RepJourneyPeriodAverages;
+    week: RepJourneyPeriodAverages;
+    month: RepJourneyPeriodAverages;
+  };
 }
 
 export interface RepJourneyData {
@@ -59,6 +103,7 @@ export interface RepJourneyData {
   period: { start: string; end: string };
   totalPoints: number;
   points: RepJourneyPoint[];
+  summary: RepJourneySummary;
 }
 
 export interface RepJourneyResponse {

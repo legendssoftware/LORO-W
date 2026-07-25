@@ -2,13 +2,13 @@
 
 import type { ReactNode } from 'react';
 import Image from 'next/image';
-import { Building2, Mail, MapPin, Phone, Route, User } from 'lucide-react';
+import { Building2, Fuel, Mail, MapPin, Phone, Route, User } from 'lucide-react';
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CompetitorRevenueEditor } from '@/app/visualiser/components/competitor-revenue-editor';
-import type { RepJourneyRange } from '@/api/types/tracking';
+import type { RepJourneyRange, RepJourneySummary } from '@/api/types/tracking';
 
 function Row({
   icon,
@@ -26,16 +26,54 @@ function Row({
   );
 }
 
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/50 bg-background/40 px-2 py-1.5">
+      <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+        {label}
+      </p>
+      <p className="text-foreground text-sm font-semibold tabular-nums break-words">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
   { range: 'day', label: 'Day' },
   { range: 'week', label: 'Week' },
 ];
 
+function formatKm(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return `${value.toFixed(1)} km`;
+}
+
+function formatSpeed(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return `${value.toFixed(1)} km/h`;
+}
+
+function formatFuel(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  try {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `R${value.toFixed(2)}`;
+  }
+}
+
 export type MapFeaturePopupContentProps = {
   point: VisualiserMapPoint;
   activeTraceRange?: RepJourneyRange | null;
   isTracing?: boolean;
+  journeySummary?: RepJourneySummary | null;
   onTraceRoute?: (repUid: number, range: RepJourneyRange) => void;
   onClearRoute?: () => void;
 };
@@ -47,6 +85,7 @@ export function MapFeaturePopupContent({
   point,
   activeTraceRange = null,
   isTracing = false,
+  journeySummary = null,
   onTraceRoute,
   onClearRoute,
 }: MapFeaturePopupContentProps) {
@@ -72,6 +111,9 @@ export function MapFeaturePopupContent({
     point.layer === 'reps' &&
     point.repUid != null &&
     typeof onTraceRoute === 'function';
+
+  const showSummary =
+    canTrace && activeTraceRange != null && journeySummary != null;
 
   return (
     <div className="min-w-52 max-w-80 space-y-2.5 pr-1 font-sans">
@@ -170,6 +212,106 @@ export function MapFeaturePopupContent({
               </Button>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {showSummary && journeySummary ? (
+        <div className="space-y-2 border-t border-border/40 pt-2">
+          <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+            Journey summary
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <StatCell
+              label="Points"
+              value={String(journeySummary.totalPoints)}
+            />
+            <StatCell
+              label="Total km"
+              value={formatKm(journeySummary.totalDistanceKm)}
+            />
+            <StatCell
+              label="Avg speed"
+              value={formatSpeed(journeySummary.averageSpeedKmh)}
+            />
+            <StatCell
+              label="Stop time"
+              value={journeySummary.totalStopFormatted || '—'}
+            />
+          </div>
+
+          <div className="rounded-md border border-border/50 bg-background/40 px-2 py-1.5">
+            <p className="text-muted-foreground flex items-center gap-1 text-[10px] tracking-wide uppercase">
+              <Fuel className="size-3" />
+              Avg fuel today
+            </p>
+            <p className="text-foreground text-sm font-semibold tabular-nums">
+              {formatFuel(journeySummary.fuelPrice.averagePetrolPerLitreZar)}
+              <span className="text-muted-foreground ml-1 text-[11px] font-normal">
+                / L
+                {journeySummary.fuelPrice.grade
+                  ? ` · ${journeySummary.fuelPrice.grade}`
+                  : ''}
+              </span>
+            </p>
+            {!journeySummary.fuelPrice.averagePetrolPerLitreZar ? (
+              <p className="text-muted-foreground mt-0.5 text-[10px]">
+                Set FUEL_SA_API_KEY on the server to load Fuel SA prices
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              Avg speed · distance
+            </p>
+            <div className="grid grid-cols-3 gap-1">
+              {(
+                [
+                  ['Day', journeySummary.periodAverages.day],
+                  ['Week', journeySummary.periodAverages.week],
+                  ['Month', journeySummary.periodAverages.month],
+                ] as const
+              ).map(([label, stats]) => (
+                <div
+                  key={label}
+                  className="rounded-md border border-border/50 bg-background/40 px-1.5 py-1.5 text-center"
+                >
+                  <p className="text-muted-foreground text-[9px] uppercase">
+                    {label}
+                  </p>
+                  <p className="text-foreground text-[11px] font-semibold tabular-nums leading-tight">
+                    {formatSpeed(stats.averageSpeedKmh)}
+                  </p>
+                  <p className="text-muted-foreground text-[10px] tabular-nums">
+                    {formatKm(stats.averageDistanceKm)}
+                    {label !== 'Day' ? '/d' : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {journeySummary.prominentLocations.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                Prominent stops
+              </p>
+              <ul className="max-h-28 space-y-1 overflow-y-auto">
+                {journeySummary.prominentLocations.map((loc) => (
+                  <li
+                    key={`${loc.latitude}-${loc.longitude}-${loc.address}`}
+                    className="text-muted-foreground rounded-md border border-border/40 bg-background/30 px-2 py-1 text-[11px]"
+                  >
+                    <span className="text-foreground font-medium">
+                      {loc.timeSpentFormatted}
+                    </span>
+                    {' · '}
+                    <span className="break-words">{loc.address}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
