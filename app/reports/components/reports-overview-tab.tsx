@@ -9,9 +9,18 @@ import {
   useUserTarget,
   useApiClient,
   useEngagementRange,
+  useAttendanceReport,
+  usePayrollHoursAll,
+  useAttMetricsByUser,
+  useProfileSales,
   USER_TARGET_QUERY_KEY_PREFIX,
 } from '@/api/hooks';
 import { getUserTarget } from '@/api/endpoints/user';
+import {
+  getUserSales,
+  profileSalesFromResponse,
+} from '@/api/endpoints/erp-user-sales';
+import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
   ReportsListPagination,
@@ -24,6 +33,8 @@ import { ReportsTargetsTable } from '@/app/reports/components/reports-targets-ta
 import { ReportsTargetsToolbar } from '@/app/reports/components/reports-targets-toolbar';
 import {
   applyEngagementToRow,
+  applyErpSalesToRow,
+  applyHoursToRow,
   enrichRowWithTargetDashboard,
   rowFromPersonalTarget,
   rowFromUserListItem,
@@ -40,6 +51,7 @@ import {
 import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
 
 const SEARCH_DEBOUNCE_MS = 300;
+const ERP_USER_SALES_QUERY_KEY = ['erp', 'user-sales'] as const;
 
 export function ReportsOverviewTab() {
   const { isTokenReady } = useTokenReady();
@@ -109,6 +121,36 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && !isSyncing && !!rangeParams,
   });
 
+  const attendanceReportQuery = useAttendanceReport(
+    {
+      dateFrom: rangeParams?.from,
+      dateTo: rangeParams?.to,
+      includeUserDetails: false,
+    },
+    {
+      enabled: isTokenReady && !isSyncing && !!rangeParams,
+    }
+  );
+
+  const payrollHoursQuery = usePayrollHoursAll(
+    {},
+    {
+      enabled: isTokenReady && !isSyncing && useAllTime && isElevated,
+    }
+  );
+
+  const selfAttMetricsQuery = useAttMetricsByUser(
+    !isElevated ? backendUserData?.uid ?? null : null,
+    {
+      enabled:
+        isTokenReady &&
+        !isSyncing &&
+        !isElevated &&
+        useAllTime &&
+        backendUserData?.uid != null,
+    }
+  );
+
   const engagementByUid = useMemo(() => {
     const map = new Map<number, { callCount: number; leadCount: number; visitCount: number }>();
     for (const u of engagementQuery.data?.users ?? []) {
@@ -120,6 +162,53 @@ export function ReportsOverviewTab() {
     }
     return map;
   }, [engagementQuery.data?.users]);
+
+  const hoursByUid = useMemo(() => {
+    const map = new Map<number, number>();
+    if (rangeParams && attendanceReportQuery.isSuccess) {
+      for (const m of attendanceReportQuery.data?.report?.userMetrics ?? []) {
+        map.set(m.userId, resolveAttendanceReportPeriodHours(m.metrics));
+      }
+      return map;
+    }
+    if (useAllTime && isElevated && payrollHoursQuery.isSuccess) {
+      for (const m of payrollHoursQuery.data?.userMetrics ?? []) {
+        map.set(m.userId, m.payrollHours);
+      }
+      return map;
+    }
+    if (
+      useAllTime &&
+      !isElevated &&
+      selfAttMetricsQuery.isSuccess &&
+      backendUserData?.uid != null
+    ) {
+      const payroll = selfAttMetricsQuery.data?.totalHours?.payrollHours;
+      if (typeof payroll === 'number' && Number.isFinite(payroll)) {
+        map.set(backendUserData.uid, payroll);
+      }
+    }
+    return map;
+  }, [
+    rangeParams,
+    attendanceReportQuery.isSuccess,
+    attendanceReportQuery.data?.report?.userMetrics,
+    useAllTime,
+    isElevated,
+    payrollHoursQuery.isSuccess,
+    payrollHoursQuery.data?.userMetrics,
+    selfAttMetricsQuery.isSuccess,
+    selfAttMetricsQuery.data?.totalHours?.payrollHours,
+    backendUserData?.uid,
+  ]);
+
+  const hoursOverlayReady = rangeParams
+    ? attendanceReportQuery.isSuccess
+    : useAllTime
+      ? isElevated
+        ? payrollHoursQuery.isSuccess
+        : selfAttMetricsQuery.isSuccess
+      : false;
 
   const cohortRows = useMemo((): ReportsTargetRow[] => {
     if (!isElevated) return [];
@@ -153,7 +242,29 @@ export function ReportsOverviewTab() {
     })),
   });
 
+  const erpSalesQueries = useQueries({
+    queries: pageRows.map((row) => ({
+      queryKey: [...ERP_USER_SALES_QUERY_KEY, row.userId] as const,
+      queryFn: async (): Promise<number | null> => {
+        try {
+          const res = await getUserSales(client, row.userId);
+          const payload = profileSalesFromResponse(res);
+          return payload?.totalRevenue ?? null;
+        } catch {
+          return null;
+        }
+      },
+      enabled:
+        isTokenReady && isElevated && !!row.userId && row.sales.target > 0,
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+    })),
+  });
+
   const warningQueryStamp = warningQueries
+    .map((q) => `${q.dataUpdatedAt}:${q.status}`)
+    .join('|');
+  const erpSalesQueryStamp = erpSalesQueries
     .map((q) => `${q.dataUpdatedAt}:${q.status}`)
     .join('|');
 
@@ -170,16 +281,52 @@ export function ReportsOverviewTab() {
         };
         next = applyEngagementToRow(next, eng, rangeParams.from, rangeParams.to);
       }
+      if (hoursOverlayReady) {
+        const worked = hoursByUid.get(row.userId) ?? 0;
+        next = applyHoursToRow(
+          next,
+          worked,
+          rangeParams?.from ?? null,
+          rangeParams?.to ?? null
+        );
+      }
+      next = applyErpSalesToRow(next, erpSalesQueries[index]?.data);
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- stamp tracks settled payloads
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stamps track settled payloads
   }, [
     pageRows,
     warningQueryStamp,
+    erpSalesQueryStamp,
     rangeParams,
     engagementByUid,
     engagementQuery.isSuccess,
+    hoursOverlayReady,
+    hoursByUid,
   ]);
+
+  const selfHasSalesTarget = useMemo(() => {
+    const ut = selfTargetQuery.data?.userTarget;
+    if (!ut || typeof ut !== 'object') return false;
+    const personal =
+      'personalTargets' in ut &&
+      ut.personalTargets &&
+      typeof ut.personalTargets === 'object'
+        ? (ut.personalTargets as { sales?: { target?: unknown } })
+        : null;
+    const t = personal?.sales?.target;
+    const n = typeof t === 'number' ? t : Number(t);
+    return Number.isFinite(n) && n > 0;
+  }, [selfTargetQuery.data?.userTarget]);
+
+  const selfErpSalesQuery = useProfileSales({
+    enabled:
+      isTokenReady &&
+      !isSyncing &&
+      !isElevated &&
+      !!selfRef &&
+      selfHasSalesTarget,
+  });
 
   const selfRow = useMemo((): ReportsTargetRow | null => {
     if (isElevated || !backendUserData || !selfRef) return null;
@@ -208,6 +355,18 @@ export function ReportsOverviewTab() {
       };
       row = applyEngagementToRow(row, eng, rangeParams.from, rangeParams.to);
     }
+    if (row && hoursOverlayReady) {
+      const worked = hoursByUid.get(row.userId) ?? 0;
+      row = applyHoursToRow(
+        row,
+        worked,
+        rangeParams?.from ?? null,
+        rangeParams?.to ?? null
+      );
+    }
+    if (row) {
+      row = applyErpSalesToRow(row, selfErpSalesQuery.data?.totalRevenue);
+    }
     return row;
   }, [
     isElevated,
@@ -217,6 +376,9 @@ export function ReportsOverviewTab() {
     rangeParams,
     engagementByUid,
     engagementQuery.isSuccess,
+    hoursOverlayReady,
+    hoursByUid,
+    selfErpSalesQuery.data?.totalRevenue,
   ]);
 
   const displayRows = isElevated
@@ -225,27 +387,59 @@ export function ReportsOverviewTab() {
       ? [selfRow]
       : [];
 
+  const hoursQueryLoading = rangeParams
+    ? attendanceReportQuery.isLoading
+    : useAllTime
+      ? isElevated
+        ? payrollHoursQuery.isLoading
+        : selfAttMetricsQuery.isLoading
+      : false;
+
+  const hoursQueryError = rangeParams
+    ? attendanceReportQuery.isError
+      ? getQueryErrorMessage(attendanceReportQuery.error)
+      : null
+    : useAllTime
+      ? isElevated
+        ? payrollHoursQuery.isError
+          ? getQueryErrorMessage(payrollHoursQuery.error)
+          : null
+        : selfAttMetricsQuery.isError
+          ? getQueryErrorMessage(selfAttMetricsQuery.error)
+          : null
+      : null;
+
+  const hoursQueryFetching = rangeParams
+    ? attendanceReportQuery.isFetching && !attendanceReportQuery.isLoading
+    : useAllTime
+      ? isElevated
+        ? payrollHoursQuery.isFetching && !payrollHoursQuery.isLoading
+        : selfAttMetricsQuery.isFetching && !selfAttMetricsQuery.isLoading
+      : false;
+
   const isLoading = isElevated
     ? !isTokenReady ||
       isSyncing ||
       usersQuery.isLoading ||
-      (!!rangeParams && engagementQuery.isLoading)
+      (!!rangeParams && engagementQuery.isLoading) ||
+      hoursQueryLoading
     : !isTokenReady ||
       isSyncing ||
       selfTargetQuery.isLoading ||
-      (!!rangeParams && engagementQuery.isLoading);
+      (!!rangeParams && engagementQuery.isLoading) ||
+      hoursQueryLoading;
 
   const errorMessage = isElevated
     ? usersQuery.isError
       ? getQueryErrorMessage(usersQuery.error)
       : engagementQuery.isError
         ? getQueryErrorMessage(engagementQuery.error)
-        : null
+        : hoursQueryError
     : selfTargetQuery.isError
       ? getQueryErrorMessage(selfTargetQuery.error)
       : engagementQuery.isError
         ? getQueryErrorMessage(engagementQuery.error)
-        : null;
+        : hoursQueryError;
 
   const reviewStartYmd = useAllTime ? null : formatUtcYmd(startDate);
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
@@ -296,7 +490,14 @@ export function ReportsOverviewTab() {
             onRetry={() => {
               if (isElevated) void usersQuery.refetch();
               else void selfTargetQuery.refetch();
-              if (rangeParams) void engagementQuery.refetch();
+              if (rangeParams) {
+                void engagementQuery.refetch();
+                void attendanceReportQuery.refetch();
+              }
+              if (useAllTime) {
+                if (isElevated) void payrollHoursQuery.refetch();
+                else void selfAttMetricsQuery.refetch();
+              }
             }}
           />
         </div>
@@ -328,7 +529,8 @@ export function ReportsOverviewTab() {
             pageSize={pageSize}
             isFetching={
               (usersQuery.isFetching && !usersQuery.isLoading) ||
-              (engagementQuery.isFetching && !engagementQuery.isLoading)
+              (engagementQuery.isFetching && !engagementQuery.isLoading) ||
+              hoursQueryFetching
             }
             onPageChange={setPage}
             onPageSizeChange={handlePageSizeChange}

@@ -14,23 +14,21 @@ export function useProfileSales(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: async (): Promise<ProfileSalesResult> => {
-      try {
-        const res = await getProfileSales(client);
-        if (res.success && res.data != null) {
-          return {
-            ...res.data,
-            periodStartDate: res.periodStartDate,
-            periodEndDate: res.periodEndDate,
-          };
-        }
-        return null;
-      } catch {
-        return null;
+      const res = await getProfileSales(client);
+      if (res.success && res.data != null) {
+        return {
+          ...res.data,
+          periodStartDate: res.periodStartDate,
+          periodEndDate: res.periodEndDate,
+        };
       }
+      /** Config / empty ERP (no rep code, inactive, etc.) — settled empty, not a thrown error. */
+      return null;
     },
     enabled: options?.enabled ?? true,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

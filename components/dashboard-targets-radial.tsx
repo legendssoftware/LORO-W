@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { useUserTarget, useProfileSales } from '@/api/hooks';
+import {
+  canFetchProfileSales,
+  hasSalesTargetForProfileSales,
+} from '@/lib/dashboard-profile-sales-gate';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -115,15 +119,20 @@ export function DashboardTargetsRadial({
   }, [targetQuery.data?.userTarget]);
 
   const hasSalesTarget = salesMeta != null;
+  const shouldFetchProfileSales = useMemo(() => {
+    const ut = targetQuery.data?.userTarget ?? null;
+    return hasSalesTargetForProfileSales(ut) || canFetchProfileSales(ut);
+  }, [targetQuery.data?.userTarget]);
 
   const profileSalesQuery = useProfileSales({
-    enabled: !!userRef && hasSalesTarget,
+    enabled: !!userRef && shouldFetchProfileSales,
   });
 
   const achieved = useMemo(() => {
     if (!salesMeta) return 0;
     const erp = profileSalesQuery.data;
     if (erp != null) return erp.totalRevenue ?? 0;
+    /** CRM current only after ERP settled empty or failed — not while still loading with no cache. */
     return salesMeta.current;
   }, [salesMeta, profileSalesQuery.data]);
 
@@ -257,6 +266,11 @@ export function DashboardTargetsRadial({
         <p className="mt-1 text-sm text-muted-foreground">Track your performance towards goals</p>
         {periodLabel ? (
           <p className="mt-1 text-xs font-medium text-purple-600">{periodLabel}</p>
+        ) : null}
+        {profileSalesQuery.isError ? (
+          <p className="mt-1 text-xs text-destructive">
+            Could not load live ERP sales. Showing CRM figure until retry.
+          </p>
         ) : null}
       </div>
 
