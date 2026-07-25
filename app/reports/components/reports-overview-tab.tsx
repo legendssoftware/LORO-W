@@ -34,6 +34,7 @@ import { ReportsTargetsToolbar } from '@/app/reports/components/reports-targets-
 import {
   applyEngagementToRow,
   applyErpSalesToRow,
+  applyFilterPeriodLabel,
   applyHoursToRow,
   enrichRowWithTargetDashboard,
   rowFromPersonalTarget,
@@ -291,6 +292,11 @@ export function ReportsOverviewTab() {
         );
       }
       next = applyErpSalesToRow(next, erpSalesQueries[index]?.data);
+      next = applyFilterPeriodLabel(
+        next,
+        rangeParams?.from ?? null,
+        rangeParams?.to ?? null
+      );
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stamps track settled payloads
@@ -366,6 +372,11 @@ export function ReportsOverviewTab() {
     }
     if (row) {
       row = applyErpSalesToRow(row, selfErpSalesQuery.data?.totalRevenue);
+      row = applyFilterPeriodLabel(
+        row,
+        rangeParams?.from ?? null,
+        rangeParams?.to ?? null
+      );
     }
     return row;
   }, [
@@ -386,6 +397,12 @@ export function ReportsOverviewTab() {
     : selfRow
       ? [selfRow]
       : [];
+
+  /** Keep detail dialog in sync when filter overlays update the same user row. */
+  const detailRow = useMemo(() => {
+    if (!selectedRow) return null;
+    return displayRows.find((r) => r.ref === selectedRow.ref) ?? selectedRow;
+  }, [selectedRow, displayRows]);
 
   const hoursQueryLoading = rangeParams
     ? attendanceReportQuery.isLoading
@@ -539,7 +556,7 @@ export function ReportsOverviewTab() {
       </div>
 
       <ReportsTargetDetailDialog
-        row={selectedRow}
+        row={detailRow}
         open={detailOpen}
         onOpenChange={(open) => {
           setDetailOpen(open);
