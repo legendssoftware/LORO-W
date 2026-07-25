@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 import type { LeadsReportDateBasis } from '@/api/types/leads';
-import { utcMonthStartThroughToday } from '@/app/reports/utils/overview-daily-summary';
+import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 
 const mtd = utcMonthStartThroughToday();
 

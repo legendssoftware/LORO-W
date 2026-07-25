@@ -16,7 +16,7 @@ import {
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
   type SearchableOptionRow,
-} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+} from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -45,7 +45,7 @@ import {
   STAFF_DIMENSION_FILTER_ALL,
 } from '@/lib/staff-filter-utils';
 import { cn } from '@/lib/utils';
-import type { StatusFilter } from '@/app/reports/types';
+import type { StatusFilter } from '@/lib/types/staff-report-types';
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';

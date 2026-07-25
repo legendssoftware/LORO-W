@@ -148,7 +148,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
       }
 
       onOpenChange(false);
-      router.push(`/reports/users/${result.user.uid}/settings`);
+      router.push('/staff');
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to create user';

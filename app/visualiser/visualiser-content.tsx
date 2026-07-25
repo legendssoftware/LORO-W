@@ -2,29 +2,12 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useSessionSync, useTokenReady } from '@/api/hooks';
-import { ReportsVisualiserTab } from '@/app/reports/components/reports-visualiser-tab';
-import type { ReportsMode } from '@/app/reports/reports-mode';
-import { useVisualiserPrefetch } from '@/app/visualiser/use-visualiser-prefetch';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { isReportsElevatedViewer } from '@/lib/access';
 
 export function VisualiserContent() {
   const { isSignedIn } = useAuth();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
-  const reportsMode: ReportsMode = isReportsElevatedViewer(
-    profile?.accessLevel
-  )
-    ? 'org'
-    : 'self';
-
-  const ready = Boolean(isSignedIn && isTokenReady && profile);
-
-  useVisualiserPrefetch({
-    enabled: ready,
-    reportsMode,
-    profile,
-  });
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -42,7 +25,17 @@ export function VisualiserContent() {
           {!isSignedIn || !isTokenReady ? (
             <LoadingSpinner wrapperClassName="py-12" />
           ) : profile ? (
-            <ReportsVisualiserTab profile={profile} reportsMode={reportsMode} />
+            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
+              <div className="max-w-md space-y-2">
+                <p className="text-base font-medium text-foreground">
+                  Reports are being rebuilt
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  The competitor map and reporting APIs are temporarily
+                  unavailable while we rewrite them on the server.
+                </p>
+              </div>
+            </div>
           ) : (
             <LoadingSpinner wrapperClassName="py-12" />
           )}

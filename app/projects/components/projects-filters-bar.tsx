@@ -5,7 +5,7 @@ import { Filter, ListFilter } from 'lucide-react';
 import {
   SearchableOptionListPicker,
   type SearchableOptionRow,
-} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+} from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

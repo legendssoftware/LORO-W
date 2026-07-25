@@ -9,7 +9,7 @@ import type { ClientProfileData } from '@/api/types/client-portal';
 import { ProductCard } from '@/app/client-portal/components/product-card';
 import { StoreCartSheet } from '@/app/store/components/store-cart-sheet';
 import { StoreFiltersBar } from '@/app/store/components/store-filters-bar';
-import type { SearchableOptionRow } from '@/app/reports/components/reports-searchable-filter-comboboxes';
+import type { SearchableOptionRow } from '@/components/filters/searchable-filter-comboboxes';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 

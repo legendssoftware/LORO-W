@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { claimBranchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
+import { claimBranchFlagAndLabel } from '@/lib/utils/branch-person-cell';
 import {
   claimPersonDisplayName,
 } from '@/app/claims/components/claim-person-row';

@@ -19,25 +19,11 @@ export {
   useUpdateVisitDetailsMutation,
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
-export { useMapReport, useReportsMapData } from './use-map-report';
-export {
-  useMapGeocodeBackfillMutation,
-  totalCappedPending,
-  totalAlreadyExhausted,
-  totalCompetitorBranchCappedPending,
-  needsMapGeocodeBackfill,
-  needsCompetitorBranchGeocodeBackfill,
-} from './use-map-geocode-backfill';
-export {
-  siteOpportunitiesQueryKey,
-  useSiteOpportunities,
-} from './use-site-opportunities';
 export {
   latestRepLocationsQueryKey,
   useLatestRepLocations,
 } from './use-latest-rep-locations';
 export { useRepLocationStream } from './use-rep-location-stream';
-export { useTargetsProgress } from './use-targets-progress';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export { useBranchMapMarkers } from './use-branch-map-markers';
 export { useCompetitorMapMarkers } from './use-competitor-map-markers';
@@ -168,8 +154,6 @@ export {
   mapStoreProduct,
   useProductsInfinite,
 } from './use-products';
-export { usePerformanceDashboard } from './use-performance-dashboard';
-export { useStoreMonthlyYtd, storeMonthlyYtdQueryKey } from './use-store-monthly-ytd';
 export { useProfileSales } from './use-profile-sales';
 export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
 export { useShopQuotations } from './use-shop-quotations';

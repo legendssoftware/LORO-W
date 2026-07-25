@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { ClientListItem } from '@/api/types/clients';
 import type { BranchListItem } from '@/api/types/branch';
-import { branchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
+import { branchFlagAndLabel } from '@/lib/utils/branch-person-cell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import {

@@ -27,7 +27,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { branchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
+import { branchFlagAndLabel } from '@/lib/utils/branch-person-cell';
 
 export const reportsFilterSelectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';

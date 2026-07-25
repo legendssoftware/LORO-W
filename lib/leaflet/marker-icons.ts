@@ -10,7 +10,7 @@ import {
   MARKER_COLORS,
   resolveCompetitorMarkerColor,
   type MapEntityMarkerType,
-} from '@/app/reports/components/map-report-constants';
+} from '@/lib/leaflet/map-report-constants';
 import {
   MAP_PIN_HEIGHT,
   MAP_PIN_WIDTH,

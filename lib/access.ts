@@ -14,7 +14,6 @@ export const STANDARD_USER_PATHS = [
     "/planning",
     "/claims",
     "/payslips",
-    "/reports",
     "/visualiser",
     "/settings",
 ] as const;
@@ -263,7 +262,6 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/payslips", label: "Payslips" },
     { path: "/competitors", label: "Competitors" },
     { path: "/planning", label: "Planning" },
-    { path: "/reports", label: "Reports" },
     { path: "/visualiser", label: "Competitor Overview" },
 ];
 
@@ -319,7 +317,6 @@ export function getAllowedRoutes(
         { path: "/payslips", label: "Payslips" },
         { path: "/competitors", label: "Competitors" },
         { path: "/planning", label: "Planning" },
-        { path: "/reports", label: "Reports" },
         { path: "/visualiser", label: "Competitor Overview" },
     ];
 

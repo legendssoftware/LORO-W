@@ -1,3 +1,8 @@
+/**
+ * Site opportunity / visualiser types (client-side).
+ * Server DTOs will be reintroduced when the reports API is rebuilt.
+ */
+
 export type HardwareBrandKey =
   | 'BUCO'
   | 'CASHBUILD'
@@ -8,19 +13,11 @@ export type HardwareBrandKey =
   | 'P&L HARDWARE'
   | 'OTHER';
 
-export type CompetitorCategoryKey = 'retailer' | 'sd';
-
 export type SiteOpportunityMode = 'greenfield' | 'catchment' | 'both';
 
 export interface GeoPoint {
   lat: number;
   lng: number;
-}
-
-export interface MapMarkerBuckets {
-  branches: import('@/api/types/map').MapMarkerBase[];
-  competitors: import('@/api/types/map').MapMarkerBase[];
-  clients: import('@/api/types/map').MapMarkerBase[];
 }
 
 export interface SiteOpportunitySettings {
@@ -29,8 +26,6 @@ export interface SiteOpportunitySettings {
   minBranchSeparationKm: number;
   captureLowPct: number;
   captureHighPct: number;
-  /** Monthly sales target per rep for territory sizing (default R 1m). */
-  repTargetMonthlyZAR: number;
 }
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
@@ -39,13 +34,7 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   minBranchSeparationKm: 10,
   captureLowPct: 0.2,
   captureHighPct: 0.2,
-  repTargetMonthlyZAR: 1_000_000,
 };
-
-export interface TurnoverOverrideSettings {
-  brandTurnoverOverrides?: Partial<Record<HardwareBrandKey, number>>;
-  categoryTurnoverOverrides?: Partial<Record<CompetitorCategoryKey, number>>;
-}
 
 export interface BrandCount {
   brand: HardwareBrandKey;
@@ -53,10 +42,26 @@ export interface BrandCount {
   turnoverZAR: number;
 }
 
+export type CompetitorCategoryKey = 'retailer' | 'sd';
+
 export interface CategoryCount {
   category: CompetitorCategoryKey;
   count: number;
   turnoverZAR: number;
+}
+
+export interface CaptureTimelinePoint {
+  month: number;
+  captureMidPct: number;
+  revenueLowZAR: number;
+  revenueMidZAR: number;
+  revenueHighZAR: number;
+}
+
+export interface MapGeocodingSummary {
+  clients?: Record<string, number>;
+  competitors?: Record<string, number>;
+  branches?: Record<string, number>;
 }
 
 export interface DataQualitySummary {
@@ -76,7 +81,6 @@ export interface BranchCatchmentOpportunity {
   rank: number;
   branchId: string | number;
   branchName: string;
-  /** Branch postal address or reverse-geocoded centroid. */
   address: string | null;
   lat: number;
   lng: number;
@@ -101,7 +105,6 @@ export interface GreenfieldOpportunityZone {
   id: string;
   rank: number;
   label: string;
-  /** Google reverse-geocoded street address for the cluster centroid. */
   address: string | null;
   lat: number;
   lng: number;
@@ -122,15 +125,7 @@ export interface GreenfieldOpportunityZone {
   monthsToTargetMid: number | null;
 }
 
-export interface MapGeocodingSummary {
-  clients?: Record<string, number>;
-  competitors?: Record<string, number>;
-  branches?: Record<string, number>;
-}
-
-export type SiteOpportunityZone =
-  | BranchCatchmentOpportunity
-  | GreenfieldOpportunityZone;
+export type SiteOpportunityZone = BranchCatchmentOpportunity | GreenfieldOpportunityZone;
 
 export interface SiteOpportunityResult {
   catchments: BranchCatchmentOpportunity[];
@@ -141,19 +136,18 @@ export interface SiteOpportunityResult {
   geocodingSummary?: MapGeocodingSummary | null;
 }
 
-export interface CapturePhasePoint {
-  phase: string;
-  monthStart: number;
-  monthEnd: number;
-  captureLowPct: number;
-  captureHighPct: number;
-  captureMidPct: number;
+export interface MapMarkerBuckets {
+  branches: import('./map').MapMarkerBase[];
+  competitors: import('./map').MapMarkerBase[];
+  clients: import('./map').MapMarkerBase[];
 }
 
-export interface CaptureTimelinePoint {
+export interface CapturePhasePoint {
   month: number;
-  revenueLowZAR: number;
-  revenueMidZAR: number;
-  revenueHighZAR: number;
-  captureMidPct: number;
+  capturePct: number;
+}
+
+export interface TurnoverOverrideSettings {
+  competitorTurnoverMultiplier?: number;
+  branchTurnoverMultiplier?: number;
 }

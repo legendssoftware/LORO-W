@@ -4,13 +4,13 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { format, subDays } from 'date-fns';
 import { useMonthlyAttendance } from '@/api/hooks';
-import { ReportProgressBar, getProgressColorClasses } from '@/app/reports/tabs/report-progress-bar';
+import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedMonthlyHoursWeekdaysOnly,
   HOURS_BEHIND_BADGE_THRESHOLD,
-} from '@/app/reports/tabs/constants';
-import type { ReportCardUser } from '@/app/reports/types';
+} from '@/app/staff/lib/staff-report-constants';
+import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import type { ClockInOptionKey } from '@/api/types/attendance';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -24,7 +24,7 @@ import {
   resolveDisplayedClockInModeKey,
 } from '@/lib/clock-in-options';
 import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van } from 'lucide-react';
-import { formatLastSeen } from '@/app/reports/format-last-seen';
+import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatEnumLabel } from '@/lib/format-enum-label';
@@ -434,7 +434,7 @@ export function ReportUserCard({
                 </button>
               )}
               <Link
-                href={`/reports/users/${user.ref}/settings`}
+                href="/staff"
                 {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
                 className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
                 aria-label="User settings"
@@ -637,7 +637,7 @@ export function ReportUserCard({
                 </button>
               )}
               <Link
-                href={`/reports/users/${user.ref}/settings`}
+                href="/staff"
                 {...(onSettingsClick ? { onClick: onSettingsClick } : {})}
                 className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
                 aria-label="User settings"

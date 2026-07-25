@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ATT_CHART_HSL } from '@/app/reports/components/reports-chart-palette';
+import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import {
   Card,

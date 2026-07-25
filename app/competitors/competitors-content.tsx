@@ -10,7 +10,7 @@ import type { CompetitorListItem } from '@/api/types/competitors';
 import {
   SearchableOptionListPicker,
   type SearchableOptionRow,
-} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+} from '@/components/filters/searchable-filter-comboboxes';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';

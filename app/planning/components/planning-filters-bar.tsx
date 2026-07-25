@@ -11,7 +11,7 @@ import {
   SearchableUserPicker,
   reportsFilterSelectTriggerClass,
   reportsFilterPortalHighZ,
-} from '@/app/reports/components/reports-searchable-filter-comboboxes';
+} from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,7 +37,7 @@ import {
   utcDateFromYmd,
   utcMonthStartThroughToday,
   utcToday,
-} from '@/app/reports/utils/overview-daily-summary';
+} from '@/lib/utils/overview-daily-summary';
 import {
   TASK_STATUS_OPTIONS_WITH_ALL,
   TASK_PRIORITY_OPTIONS_WITH_ALL,

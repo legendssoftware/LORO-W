@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ClaimEditDialog } from '@/app/claims/components/claim-edit-dialog';
 import { ClaimPersonRow } from '@/app/claims/components/claim-person-row';
-import { claimBranchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
+import { claimBranchFlagAndLabel } from '@/lib/utils/branch-person-cell';
 import {
   ArrowLeft,
   Share2,

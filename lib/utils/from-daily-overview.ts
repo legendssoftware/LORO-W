@@ -1,9 +1,9 @@
 import type { DailyOverviewUser, MonthlyMetricsUserItem } from '@/api/types';
-import type { ReportCardUser } from '@/app/reports/types';
+import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import {
   EXPECTED_MONTHLY_HOURS,
   getExpectedMonthlyHoursWeekdaysOnly,
-} from '@/app/reports/tabs/constants';
+} from '@/app/staff/lib/staff-report-constants';
 
 /** Month context for five-day work week expected hours (year, month 1–12). When provided, progress uses weekday-based expected. */
 export type MonthContext = { year: number; month: number };

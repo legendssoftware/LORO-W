@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { formatUtcYmd, utcToday } from '@/app/reports/utils/overview-daily-summary';
+import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import { useTasks, useTasksForUser, useUsers, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';

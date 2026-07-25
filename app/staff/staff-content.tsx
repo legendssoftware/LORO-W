@@ -24,16 +24,16 @@ import {
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { canManageStaffUsers, isStaffDashboardVisible } from '@/lib/access';
-import { fromDailyOverviewMergeMonthly } from '@/app/reports/utils/from-daily-overview';
-import type { ReportCardUser, StatusFilter } from '@/app/reports/types';
+import { fromDailyOverviewMergeMonthly } from '@/lib/utils/from-daily-overview';
+import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-types';
 import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedPayrollHoursByDate,
   HOURS_BEHIND_BADGE_THRESHOLD,
   EXPECTED_MONTHLY_HOURS,
-} from '@/app/reports/tabs/constants';
-import { ReportUserCard, ReportUserCardSkeleton } from '@/app/reports/components/report-user-card';
-import { UserAttendanceRecordsModal } from '@/app/reports/components/user-attendance-records-modal';
+} from '@/app/staff/lib/staff-report-constants';
+import { ReportUserCard, ReportUserCardSkeleton } from '@/app/staff/components/report-user-card';
+import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import { AddUserModal } from '@/app/staff/components/add-user-modal';
 import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-modal';
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
