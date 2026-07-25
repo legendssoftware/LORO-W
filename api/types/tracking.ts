@@ -12,7 +12,22 @@ export interface LatestRepLocation {
   latitude: number;
   longitude: number;
   accuracy?: number | null;
+  altitude?: number | null;
+  altitudeAccuracy?: number | null;
   address?: string | null;
+  heading?: number | null;
+  /** Speed in meters per second (device GPS). */
+  speed?: number | null;
+  batteryLevel?: number | null;
+  batteryState?: number | null;
+  brand?: string | null;
+  manufacturer?: string | null;
+  modelID?: string | null;
+  modelName?: string | null;
+  osName?: string | null;
+  osVersion?: string | null;
+  network?: Record<string, unknown> | null;
+  notes?: string | null;
   timestamp?: number | null;
   recordedAt: string;
 }

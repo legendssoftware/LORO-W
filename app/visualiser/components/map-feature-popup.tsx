@@ -47,7 +47,7 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
         : [];
 
   return (
-    <div className="min-w-52 max-w-72 space-y-2.5 pr-1 font-sans">
+    <div className="min-w-52 max-w-80 space-y-2.5 pr-1 font-sans">
       <div className="flex items-start gap-2.5">
         {point.logoUrl ? (
           <div className="relative size-10 shrink-0 overflow-hidden rounded-md border border-border/60 bg-background/40">
@@ -73,7 +73,7 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
           <h3 className="text-foreground leading-snug font-semibold">
             {point.name}
           </h3>
-          {point.subtitle ? (
+          {point.subtitle && point.subtitle !== point.address ? (
             <p className="text-muted-foreground text-xs">{point.subtitle}</p>
           ) : null}
         </div>
@@ -100,7 +100,7 @@ export function MapFeaturePopupContent({ point }: { point: VisualiserMapPoint })
               <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
                 {item.label}
               </p>
-              <p className="text-foreground text-sm font-semibold tabular-nums">
+              <p className="text-foreground text-sm font-semibold tabular-nums break-words">
                 {item.value}
               </p>
             </div>
