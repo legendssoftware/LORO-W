@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { format } from 'date-fns';
-import { Loader2, MapPin, RefreshCw } from 'lucide-react';
+import { Loader2, MapPin, RefreshCw, ExternalLink } from 'lucide-react';
 import { useCalculateRoutesMutation, useOptimizedRoutes, useUsers } from '@/api/hooks';
 import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
@@ -13,27 +13,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import type { OptimizedRoute, Task } from '@/api/types/tasks';
+import type { OptimizedRoute } from '@/api/types/tasks';
 import { CalendarIcon } from '@/lib/icons';
-
-const PlanningRoutesMapInner = dynamic(
-  () =>
-    import('./planning-routes-map-inner').then((m) => m.PlanningRoutesMapInner),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[420px] items-center justify-center rounded-lg border bg-muted/30">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  }
-);
 
 interface PlanningRoutesMapProps {
   onOpenTask?: (taskId: number) => void;
 }
 
+/**
+ * Route planning list (no embedded map — maps live on /visualiser only).
+ */
 export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
   const [routeDate, setRouteDate] = useState<Date>(() => utcToday());
   const dateYmd = formatUtcYmd(routeDate);
@@ -71,24 +60,32 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             />
           </PopoverContent>
         </Popover>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="gap-2"
-          disabled={calculateMutation.isPending}
-          onClick={() => calculateMutation.mutate(dateYmd)}
-        >
-          {calculateMutation.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <RefreshCw className="size-4" />
-          )}
-          Recalculate routes
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" asChild>
+            <Link href="/visualiser">
+              <ExternalLink className="size-4" />
+              Open visualiser
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="gap-2"
+            disabled={calculateMutation.isPending}
+            onClick={() => calculateMutation.mutate(dateYmd)}
+          >
+            {calculateMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="size-4" />
+            )}
+            Recalculate routes
+          </Button>
+        </div>
       </div>
 
       {routesQuery.isLoading ? (
-        <div className="flex h-[420px] items-center justify-center rounded-lg border">
+        <div className="flex h-[240px] items-center justify-center rounded-lg border">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : routes.length === 0 ? (
@@ -101,19 +98,16 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
           </p>
         </div>
       ) : (
-        <>
-          <PlanningRoutesMapInner routes={routes} onStopClick={onOpenTask} />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {routes.map((route) => (
-              <RouteSummaryCard
-                key={route.userId}
-                route={route}
-                repName={userNameById.get(route.userId) ?? `Rep #${route.userId}`}
-                onOpenTask={onOpenTask}
-              />
-            ))}
-          </div>
-        </>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {routes.map((route) => (
+            <RouteSummaryCard
+              key={route.userId}
+              route={route}
+              repName={userNameById.get(route.userId) ?? `Rep #${route.userId}`}
+              onOpenTask={onOpenTask}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

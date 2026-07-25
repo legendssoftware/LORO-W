@@ -301,3 +301,14 @@ body > [id^="clerk"] {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+/* Visualiser map marker popups — strip MapLibre solid white shell */
+.visualiser-map .maplibregl-popup-content {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border: none;
+}
+
+.visualiser-map .maplibregl-popup-tip {
+  border-top-color: color-mix(in oklab, var(--background) 75%, transparent);
+}

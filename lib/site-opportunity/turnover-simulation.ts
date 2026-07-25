@@ -56,10 +56,10 @@ export const PRODUCT_MIX_PCT: readonly { category: string; pct: number }[] = [
 ];
 
 const MILESTONE_MONTHS: readonly { label: string; month: number }[] = [
-  { label: 'Month 1–5', month: 5 },
-  { label: 'Month 6–12', month: 12 },
-  { label: 'Month 24', month: 24 },
-  { label: 'Mature (30)', month: 30 },
+  { label: 'Start-up (3 mo)', month: 3 },
+  { label: 'Year 1 (12 mo)', month: 12 },
+  { label: 'Mature (24 mo)', month: 24 },
+  { label: 'Market leader (36 mo)', month: 36 },
 ];
 
 function interpolateTimelinePoint(
@@ -178,7 +178,7 @@ export function buildTurnoverSimulation(
   });
 
   const maturePoint =
-    timelinePointAtMonth(captureTimeline, 30) ??
+    timelinePointAtMonth(captureTimeline, 24) ??
     captureTimeline[captureTimeline.length - 1];
   const simulatedMonthlyZAR =
     maturePoint?.revenueMidZAR ?? potentialMidZAR(potentialLowZAR, potentialHighZAR);

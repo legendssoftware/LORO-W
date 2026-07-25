@@ -3,44 +3,75 @@
 import { useAuth } from '@clerk/nextjs';
 import { useSessionSync, useTokenReady } from '@/api/hooks';
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { OverviewMap } from '@/app/visualiser/components/overview-map';
+import { VisualiserHeaderActions } from '@/app/visualiser/components/visualiser-header-actions';
+import { SimulationSidePanel } from '@/app/visualiser/components/simulation-side-panel';
+import { useVisualiserPrefetch } from '@/app/visualiser/use-visualiser-prefetch';
+import { useVisualiserMapLayers } from '@/app/visualiser/hooks/use-visualiser-map-layers';
+import { DEFAULT_LAYER_VISIBILITY } from '@/app/visualiser/hooks/use-visualiser-map-layers';
+import { VisualiserSimulationProvider } from '@/app/visualiser/simulation-context';
 
-export function VisualiserContent() {
+function VisualiserBody() {
   const { isSignedIn } = useAuth();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
 
+  const ready = Boolean(isSignedIn && isTokenReady && profile);
+  const orgRef = profile?.organisationRef ?? profile?.organisation?.ref;
+
+  useVisualiserPrefetch({
+    enabled: ready,
+    visualiserMode: 'org',
+    profile,
+  });
+
+  const { allPoints, counts } = useVisualiserMapLayers({
+    enabled: ready,
+    orgRef,
+    visibility: DEFAULT_LAYER_VISIBILITY,
+  });
+
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <main className="w-full max-w-none px-2 py-3 sm:px-4 sm:py-4 flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="mb-2 shrink-0">
-          <h1 className="text-2xl font-semibold text-foreground">
-            Competitor Overview
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Map competitors, branches, and clients for store planning and
-            territory insight.
-          </p>
+    <div className="flex h-full min-h-0 flex-col">
+      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+        <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold text-foreground">
+              Competitor Overview
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Map branches, HQ, competitors, and clients — simulate catchments,
+              hardware pool turnover, and BitDrywall maturity ramp in the side
+              panel.
+            </p>
+          </div>
+          <VisualiserHeaderActions
+            points={allPoints}
+            counts={counts}
+            disabled={!ready}
+          />
         </div>
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {!isSignedIn || !isTokenReady ? (
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border">
+          {!ready ? (
             <LoadingSpinner wrapperClassName="py-12" />
-          ) : profile ? (
-            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
-              <div className="max-w-md space-y-2">
-                <p className="text-base font-medium text-foreground">
-                  Reports are being rebuilt
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  The competitor map and reporting APIs are temporarily
-                  unavailable while we rewrite them on the server.
-                </p>
-              </div>
-            </div>
           ) : (
-            <LoadingSpinner wrapperClassName="py-12" />
+            <>
+              <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+                <OverviewMap enabled orgRef={orgRef} />
+              </div>
+              <SimulationSidePanel />
+            </>
           )}
         </div>
       </main>
     </div>
+  );
+}
+
+export function VisualiserContent() {
+  return (
+    <VisualiserSimulationProvider>
+      <VisualiserBody />
+    </VisualiserSimulationProvider>
   );
 }
