@@ -24,6 +24,10 @@ export {
   useLatestRepLocations,
 } from './use-latest-rep-locations';
 export { useRepLocationStream } from './use-rep-location-stream';
+export {
+  repJourneyQueryKey,
+  useRepJourney,
+} from './use-rep-journey';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export {
   CLIENTS_QUERY_KEY_PREFIX,
