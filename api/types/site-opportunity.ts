@@ -34,7 +34,9 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   radiusMeters: 5000,
   topN: 5,
   minBranchSeparationKm: 10,
-  captureLowPct: 0.2,
+  /** Low case: 5% of local hardware pool (BitDrywall potential). */
+  captureLowPct: 0.05,
+  /** High case: 20% of local hardware pool (BitDrywall potential). */
   captureHighPct: 0.2,
   repTargetMonthlyZAR: 1_000_000,
 };

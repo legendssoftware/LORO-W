@@ -6,7 +6,7 @@ import {
   type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 
-export const VISUALISER_PREFERENCES_STORAGE_KEY = 'visualiser-preferences-v1';
+export const VISUALISER_PREFERENCES_STORAGE_KEY = 'visualiser-preferences-v3';
 
 export interface VisualiserPreferences {
   selectedCountry: string;

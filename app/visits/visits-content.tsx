@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useMemo, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
 import { format, startOfDay, endOfDay } from 'date-fns';
@@ -54,10 +53,6 @@ import { MapPin, Camera, Upload, Phone, MessageCircle, Mail, Smartphone, MoreHor
 import { CalendarIcon, Loader2Icon, XIcon, UsersIcon } from '@/lib/icons';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
-const VisitsMap = dynamic(
-  () => import('@/components/visits-table/visits-map').then((m) => m.VisitsMap),
-  { ssr: false }
-);
 import {
   filterVisitCheckIns,
   getSortedUniqueBusinessTypes,
@@ -140,7 +135,6 @@ export function VisitsContent({
     setSelectedClient,
     clientSearch,
     setClientSearch,
-    viewMode,
   } = useVisitsStore();
 
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>({
@@ -1354,41 +1348,32 @@ export function VisitsContent({
         onOpenVisitsSummary={handleOpenVisitsSummary}
         sectionHeading={null}
       />
-      {viewMode === 'table' ? (
-        <div
-          data-tour="visits-history-content"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
-        >
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <VisitsTable
-              checkIns={paginatedCheckIns}
-              isLoading={checkInsQuery.isLoading}
-              emptyMessage={
-                checkIns.length === 0
-                  ? 'No visits yet. Start a visit to see it here.'
-                  : 'No visits match your search.'
-              }
-              onVisitUpdated={() => checkInsQuery.refetch()}
-            />
-          </div>
-          <VisitsListPagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            pageSize={pageSize}
-            isFetching={checkInsQuery.isFetching && !checkInsQuery.isLoading}
-            onPageChange={setPage}
-            onPageSizeChange={handlePageSizeChange}
+      <div
+        data-tour="visits-history-content"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+      >
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <VisitsTable
+            checkIns={paginatedCheckIns}
+            isLoading={checkInsQuery.isLoading}
+            emptyMessage={
+              checkIns.length === 0
+                ? 'No visits yet. Start a visit to see it here.'
+                : 'No visits match your search.'
+            }
+            onVisitUpdated={() => checkInsQuery.refetch()}
           />
         </div>
-      ) : (
-        <div
-          data-tour="visits-history-content"
-          className="flex min-h-[500px] h-[70vh] flex-col overflow-hidden"
-        >
-          <VisitsMap visits={filteredCheckIns} className="min-h-0 flex-1" />
-        </div>
-      )}
+        <VisitsListPagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          isFetching={checkInsQuery.isFetching && !checkInsQuery.isLoading}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      </div>
       </main>
     </div>
   );

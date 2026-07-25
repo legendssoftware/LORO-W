@@ -283,8 +283,8 @@ export function ImportCompetitorsModal({
                     `Imported ${lastResult.imported}, updated ${lastResult.updated}${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Addresses are geocoded after import. Open the Visualiser and use Re-geocode map
-                  if any competitors still show as not mapped.
+                  Addresses are geocoded after import. Open the Visualiser to review mapped
+                  competitors; any still missing coordinates will show as not mapped.
                 </p>
               </div>
             </div>

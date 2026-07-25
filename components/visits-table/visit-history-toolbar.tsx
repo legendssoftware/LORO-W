@@ -4,8 +4,6 @@ import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import {
-  Map as MapIcon,
-  List,
   Table2,
   MoreHorizontal,
   CalendarIcon,
@@ -73,8 +71,6 @@ export interface VisitHistoryToolbarProps {
   branches?: BranchListItem[];
   /** When false, hides the visits summary (grid) button — e.g. if parent has no modal. */
   showVisitsSummaryButton?: boolean;
-  /** When false, hides the table/map toggle (e.g. Reports Visualiser is map-only). Default true. */
-  showMapTableToggle?: boolean;
   /** Optional section heading above the toolbar. Default: none. */
   sectionHeading?: ReactNode | null;
   /** When false, hides the user filter (e.g. self-scoped Reports visualiser). Default true. */
@@ -91,31 +87,6 @@ export interface VisitHistoryToolbarProps {
   extraFilters?: ReactNode;
   /** Extra controls pinned to the far-right action cluster (e.g. Summary / Info). */
   extraActions?: ReactNode;
-}
-
-function VisitMapTableToggleButton() {
-  const viewMode = useVisitsStore((s) => s.viewMode);
-  const setViewMode = useVisitsStore((s) => s.setViewMode);
-  return (
-    <Button
-      variant={viewMode === 'map' ? 'default' : 'outline'}
-      size="sm"
-      className="h-9 shrink-0 gap-1.5 border-border bg-background text-foreground"
-      onClick={() => setViewMode(viewMode === 'map' ? 'table' : 'map')}
-    >
-      {viewMode === 'map' ? (
-        <>
-          <List className="size-4" />
-          View table
-        </>
-      ) : (
-        <>
-          <MapIcon className="size-4" />
-          Visualiser
-        </>
-      )}
-    </Button>
-  );
 }
 
 interface VisitDateRangePickerProps {
@@ -435,7 +406,7 @@ function VisitFilterControls({
 }
 
 /**
- * Shared filter bar for Visit History: date range, region, business type, user, search, table/map toggle.
+ * Shared filter bar for Visit History: date range, region, business type, user, search.
  */
 export function VisitHistoryToolbar({
   uniqueRegions,
@@ -447,7 +418,6 @@ export function VisitHistoryToolbar({
   onOpenVisitsSummary,
   branches = [],
   showVisitsSummaryButton = true,
-  showMapTableToggle = true,
   sectionHeading = null,
   showUserFilter = true,
   showDateRange = true,
@@ -512,7 +482,6 @@ export function VisitHistoryToolbar({
   const actionButtons = (
     <>
       {extraActions}
-      {showMapTableToggle ? <VisitMapTableToggleButton /> : null}
       {showVisitsSummaryButton && onOpenVisitsSummary ? (
         <Tooltip>
           <TooltipTrigger asChild>

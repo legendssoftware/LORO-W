@@ -27,7 +27,6 @@ import { useState } from 'react';
 import { CompetitorFormDialog } from '../components/competitor-form-dialog';
 import { canDeleteCompetitors, canManageCompetitors } from '@/lib/access';
 import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
-import { CompetitorMapPreview } from '../components/competitor-map-preview';
 
 function Row({
   label,
@@ -178,7 +177,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
 
           <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Address & map</CardTitle>
+              <CardTitle className="text-base font-semibold">Address</CardTitle>
             </CardHeader>
             <CardContent>
               {addr ? (
@@ -205,12 +204,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                 }
               />
               {hasStoredCoordinates(competitor.latitude, competitor.longitude) ? (
-                <div className="space-y-2 pt-2">
-                  <CompetitorMapPreview
-                    latitude={Number(competitor.latitude)}
-                    longitude={Number(competitor.longitude)}
-                    name={competitor.name}
-                  />
+                <div className="pt-2">
                   <Button variant="outline" size="sm" className="gap-1.5" asChild>
                     <Link href="/visualiser">
                       <ExternalLink className="size-4" />

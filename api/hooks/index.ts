@@ -25,8 +25,6 @@ export {
 } from './use-latest-rep-locations';
 export { useRepLocationStream } from './use-rep-location-stream';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
-export { useBranchMapMarkers } from './use-branch-map-markers';
-export { useCompetitorMapMarkers } from './use-competitor-map-markers';
 export {
   CLIENTS_QUERY_KEY_PREFIX,
   invalidateClientQueries,
@@ -48,6 +46,12 @@ export {
   useDeleteCompetitorMutation,
   useImportCompetitorsMutation,
 } from './use-competitors';
+export {
+  COMPETITORS_MAP_DATA_QUERY_KEY,
+  useCompetitorsMapData,
+} from './use-competitors-map-data';
+export { useStoresSales, STORES_SALES_QUERY_KEY } from './use-stores-sales';
+export { useOrganisationProfile } from './use-organisation-profile';
 export { useUsers } from './use-users';
 export {
   useUser,
