@@ -8,8 +8,9 @@ import type {
 } from '@/api/endpoints/user';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
-  calcOverallAchievement,
+  calcOverallAchievementWithEngagement,
   calcTargetProgress,
+  resolveCallsLeadsCellProgress,
   targetNum,
 } from '@/lib/utils/target-progress';
 import { formatUtcYmd } from '@/lib/utils/overview-daily-summary';
@@ -38,6 +39,8 @@ export interface ReportsTargetRow {
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;
   achievement: number;
+  /** Calls+leads engagement gate met (combined / full-either rule). */
+  engagementMet: boolean;
   targetWarnings: TargetWarningsPayload | null;
   periodLabel?: string | null;
   /** ISO/date string from user target period — used for date-range overlap filter. */
@@ -79,7 +82,26 @@ function metricFromPersonal(
   };
 }
 
-function formatPeriodLabel(
+/** Apply combined calls+leads engagement progress to both cells. */
+function withEngagementAwareCallsLeads(
+  calls: ReportsTargetMetricCell,
+  leads: ReportsTargetMetricCell
+): { calls: ReportsTargetMetricCell; leads: ReportsTargetMetricCell; engagementMet: boolean } {
+  const resolved = resolveCallsLeadsCellProgress({
+    actualCalls: calls.current,
+    actualLeads: leads.current,
+    targetCalls: calls.target,
+    targetLeads: leads.target,
+  });
+  return {
+    calls: { ...calls, progress: resolved.callsProgress },
+    leads: { ...leads, progress: resolved.leadsProgress },
+    engagementMet: resolved.engagementMet,
+  };
+}
+
+/** Human-readable period for table/dialog (e.g. "May 1, 2026 – Jun 30, 2026"). */
+export function formatPeriodLabel(
   start: string | Date | null | undefined,
   end: string | Date | null | undefined
 ): string | null {
@@ -92,6 +114,7 @@ function formatPeriodLabel(
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+        timeZone: 'UTC',
       });
     } catch {
       return String(v);
@@ -103,13 +126,61 @@ function formatPeriodLabel(
   return null;
 }
 
+/**
+ * When the toolbar date filter is active, show that range on the row.
+ * When all-time, keep the target period label (or "All time").
+ */
+export function applyFilterPeriodLabel(
+  row: ReportsTargetRow,
+  rangeFromYmd: string | null,
+  rangeToYmd: string | null
+): ReportsTargetRow {
+  if (rangeFromYmd && rangeToYmd) {
+    return {
+      ...row,
+      periodLabel: formatPeriodLabel(rangeFromYmd, rangeToYmd),
+    };
+  }
+  return {
+    ...row,
+    periodLabel: row.periodLabel ?? 'All time',
+  };
+}
+
 function achievementFromCells(
   calls: ReportsTargetMetricCell,
   leads: ReportsTargetMetricCell,
   sales: ReportsTargetMetricCell,
   hours: ReportsTargetMetricCell
 ): number {
-  return calcOverallAchievement([calls, leads, sales, hours]);
+  return calcOverallAchievementWithEngagement({ calls, leads, sales, hours });
+}
+
+function buildRowMetrics(
+  callsIn: ReportsTargetMetricCell,
+  leadsIn: ReportsTargetMetricCell,
+  sales: ReportsTargetMetricCell,
+  hours: ReportsTargetMetricCell
+): {
+  calls: ReportsTargetMetricCell;
+  leads: ReportsTargetMetricCell;
+  sales: ReportsTargetMetricCell;
+  hours: ReportsTargetMetricCell;
+  achievement: number;
+  engagementMet: boolean;
+} {
+  const { calls, leads, engagementMet } = withEngagementAwareCallsLeads(
+    callsIn,
+    leadsIn
+  );
+  return {
+    calls,
+    leads,
+    sales,
+    hours,
+    achievement: achievementFromCells(calls, leads, sales, hours),
+    engagementMet,
+  };
 }
 
 /** Inclusive calendar-day count between two yyyy-MM-dd (or ISO) strings. */
@@ -171,10 +242,12 @@ export function prorateTargetForRange(params: {
 export function rowFromUserListItem(user: UserListItem): ReportsTargetRow {
   const ut = (user.userTarget ?? null) as UserTargetListFields | null;
   const currency = ut?.targetCurrency ?? null;
-  const calls = metricFromList(ut?.currentCalls, ut?.targetCalls);
-  const leads = metricFromList(ut?.currentNewLeads, ut?.targetNewLeads);
-  const sales = metricFromList(ut?.currentSalesAmount, ut?.targetSalesAmount, currency);
-  const hours = metricFromList(ut?.currentHoursWorked, ut?.targetHoursWorked);
+  const metrics = buildRowMetrics(
+    metricFromList(ut?.currentCalls, ut?.targetCalls),
+    metricFromList(ut?.currentNewLeads, ut?.targetNewLeads),
+    metricFromList(ut?.currentSalesAmount, ut?.targetSalesAmount, currency),
+    metricFromList(ut?.currentHoursWorked, ut?.targetHoursWorked)
+  );
   const ref = user.clerkUserId?.trim() || String(user.uid);
   const name = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
   const branchLabel = getBranchDisplayLabel(user.branch) || null;
@@ -187,11 +260,7 @@ export function rowFromUserListItem(user: UserListItem): ReportsTargetRow {
     email: user.email,
     photoURL: user.photoURL ?? user.avatar ?? null,
     branch: branchLabel,
-    calls,
-    leads,
-    sales,
-    hours,
-    achievement: achievementFromCells(calls, leads, sales, hours),
+    ...metrics,
     targetWarnings: null,
     periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
     periodStartDate: ut?.periodStartDate ?? null,
@@ -232,6 +301,7 @@ export function rowFromPersonalTarget(params: {
   const leads = metricFromPersonal(personal.newLeads);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = metricFromPersonal(personal.hours);
+  const metrics = buildRowMetrics(calls, leads, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
       ? personal.targetWarnings
@@ -245,11 +315,7 @@ export function rowFromPersonalTarget(params: {
     email: params.email,
     photoURL: params.photoURL ?? null,
     branch: params.branch ?? null,
-    calls,
-    leads,
-    sales,
-    hours,
-    achievement: achievementFromCells(calls, leads, sales, hours),
+    ...metrics,
     targetWarnings: warnings,
     periodLabel: formatPeriodLabel(
       personal.periodStartDate as string | Date | null | undefined,
@@ -308,6 +374,7 @@ export function enrichRowWithTargetDashboard(
   const leads = metricFromPersonal(personal.newLeads);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = metricFromPersonal(personal.hours);
+  const metrics = buildRowMetrics(calls, leads, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
       ? personal.targetWarnings
@@ -321,11 +388,7 @@ export function enrichRowWithTargetDashboard(
 
   return {
     ...row,
-    calls,
-    leads,
-    sales,
-    hours,
-    achievement: achievementFromCells(calls, leads, sales, hours),
+    ...metrics,
     targetWarnings: warnings,
     periodLabel:
       formatPeriodLabel(
@@ -352,10 +415,10 @@ export function applyErpSalesToRow(
     current,
     progress: calcTargetProgress(current, row.sales.target),
   };
+  const metrics = buildRowMetrics(row.calls, row.leads, sales, row.hours);
   return {
     ...row,
-    sales,
-    achievement: achievementFromCells(row.calls, row.leads, sales, row.hours),
+    ...metrics,
   };
 }
 
@@ -397,11 +460,10 @@ export function applyEngagementToRow(
     progress: calcTargetProgress(engagement.leadCount, leadTarget),
   };
 
+  const metrics = buildRowMetrics(calls, leads, row.sales, row.hours);
   return {
     ...row,
-    calls,
-    leads,
-    achievement: achievementFromCells(calls, leads, row.sales, row.hours),
+    ...metrics,
   };
 }
 
@@ -436,9 +498,9 @@ export function applyHoursToRow(
     progress: calcTargetProgress(current, target),
   };
 
+  const metrics = buildRowMetrics(row.calls, row.leads, row.sales, hours);
   return {
     ...row,
-    hours,
-    achievement: achievementFromCells(row.calls, row.leads, row.sales, hours),
+    ...metrics,
   };
 }
