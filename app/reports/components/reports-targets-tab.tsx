@@ -48,12 +48,15 @@ import {
 import { branchFlagAndLabel } from '@/app/reports/utils/branch-person-cell';
 import { OverviewFilterControls } from '@/app/reports/components/reports-overview-filters-bar';
 import {
+  countCallsByOwnerUid,
   countVisitsByOwnerUid,
   formatUtcYmd,
-  getThresholdReferenceUtcDay,
   mapLeadsByUserFromReport,
   normalizeOwnerDisplayLabel,
+  orderUtcCalendarRange,
+  resolveTargetsUtcCalendarRange,
   utcMonthStartThroughToday,
+  utcRangeIsoFromUtcCalendarStoredRange,
 } from '@/app/reports/utils/overview-daily-summary';
 import { TargetWarningDetailDialog } from '@/app/reports/components/target-warning-detail-dialog';
 import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
@@ -159,6 +162,28 @@ function targetWarningsFromUserResponse(
     u.userTarget as { personalTargets?: { targetWarnings?: TargetWarningsPayload | null } }
   ).personalTargets;
   return pt?.targetWarnings ?? undefined;
+}
+
+function buildElevatedOwnerSubThresholdRow(
+  uid: number,
+  listUser: UserListItem | undefined,
+  detail: UserResponse | null | undefined,
+  callCount: number,
+  leadCount: number
+): SubThresholdDailyCallUserRow {
+  const fullName =
+    listUser != null
+      ? [listUser.name, listUser.surname].filter(Boolean).join(' ').trim()
+      : [detail?.name, detail?.surname].filter(Boolean).join(' ').trim();
+  return {
+    uid,
+    clerkUserId: listUser?.clerkUserId ?? detail?.clerkUserId ?? null,
+    fullName: fullName || `User ${uid}`,
+    email: listUser?.email ?? detail?.email ?? '',
+    callCount,
+    leadCount,
+    targetWarnings: targetWarningsFromUserResponse(detail) ?? null,
+  };
 }
 
 function buildSelfSubThresholdRow(
@@ -345,35 +370,66 @@ export function ReportsTargetsTab({
       : 'all';
   }, [elevated, selectedOwnerUid, reportingUsers]);
 
+  const elevatedOwnerScoped =
+    elevated && resolvedOwnerUid !== 'all' && Number.isFinite(Number(resolvedOwnerUid));
+  const elevatedOwnerUid = elevatedOwnerScoped ? Number(resolvedOwnerUid) : null;
+
+  const { data: elevatedOwnerDetail, isLoading: elevatedOwnerDetailLoading } = useUser(
+    elevatedOwnerScoped ? resolvedOwnerUid : null,
+    { enabled: Boolean(elevatedOwnerScoped && isActive) }
+  );
+
   const reportingUidSet = useMemo(() => {
     if (selfScoped && selfUid != null) return new Set<number>([selfUid]);
     return buildReportingUserUidSet(reportingUsers);
   }, [selfScoped, selfUid, reportingUsers]);
 
-  const thresholdUtcDay = useMemo(
-    () => getThresholdReferenceUtcDay(rangeStart, rangeEnd),
+  const resolvedRange = useMemo(
+    () => resolveTargetsUtcCalendarRange(rangeStart, rangeEnd),
     [rangeStart, rangeEnd]
   );
-  const thresholdYmd = formatUtcYmd(thresholdUtcDay);
+  const {
+    start: rangeStartUtc,
+    end: rangeEndUtc,
+    fromYmd: rangeFromYmd,
+    toYmd: rangeToYmd,
+    referenceDayYmd,
+  } = resolvedRange;
 
-  const callsBelowBranchId =
-    selectedBranchId !== 'all' ? Number(selectedBranchId) : undefined;
+  const subThresholdParams = useMemo(
+    () =>
+      elevated && !elevatedOwnerScoped
+        ? {
+            date: referenceDayYmd,
+            branchId:
+              selectedBranchId !== 'all' ? Number(selectedBranchId) : undefined,
+          }
+        : null,
+    [elevated, elevatedOwnerScoped, referenceDayYmd, selectedBranchId]
+  );
+
   const {
     data: callsBelowData,
     isLoading: callsBelowLoading,
+    isFetching: callsBelowFetching,
     isError: callsBelowError,
     error: callsBelowQueryError,
   } = useSubThresholdDailyCalls(
-    elevated ? { date: thresholdYmd, branchId: callsBelowBranchId } : null,
-    { enabled: elevated && isActive && !!thresholdYmd }
+    subThresholdParams,
+    {
+      enabled:
+        elevated && !elevatedOwnerScoped && isActive && Boolean(referenceDayYmd),
+    }
   );
 
-  const thresholdCheckInsParams = useMemo(() => {
-    const startIso = `${thresholdYmd}T00:00:00.000Z`;
-    const endIso = `${thresholdYmd}T23:59:59.999Z`;
+  const rangeCheckInsParams = useMemo(() => {
+    const { startDate, endDate } = utcRangeIsoFromUtcCalendarStoredRange(
+      rangeStartUtc,
+      rangeEndUtc
+    );
     return {
-      startDate: startIso,
-      endDate: endIso,
+      startDate,
+      endDate,
       ...(selfScoped && selfUid != null ? { userUid: String(selfUid) } : {}),
       ...(elevated && resolvedOwnerUid !== 'all'
         ? { userUid: resolvedOwnerUid }
@@ -383,7 +439,8 @@ export function ReportsTargetsTab({
         : {}),
     };
   }, [
-    thresholdYmd,
+    rangeStartUtc,
+    rangeEndUtc,
     elevated,
     selfScoped,
     selfUid,
@@ -391,24 +448,25 @@ export function ReportsTargetsTab({
     selectedBranchId,
   ]);
 
-  const thresholdCheckInsEnabled =
+  const rangeCheckInsEnabled =
     isActive &&
-    Boolean(thresholdCheckInsParams.startDate && thresholdCheckInsParams.endDate) &&
-    selfScoped;
+    Boolean(rangeCheckInsParams.startDate && rangeCheckInsParams.endDate) &&
+    showOverviewTable;
 
   const {
-    data: thresholdCheckInsData,
-    isLoading: thresholdCheckInsLoading,
-    isError: thresholdCheckInsError,
-    error: thresholdCheckInsQueryError,
-  } = useCheckIns(thresholdCheckInsParams, {
-    enabled: thresholdCheckInsEnabled,
+    data: rangeCheckInsData,
+    isLoading: rangeCheckInsLoading,
+    isFetching: rangeCheckInsFetching,
+    isError: rangeCheckInsError,
+    error: rangeCheckInsQueryError,
+  } = useCheckIns(rangeCheckInsParams, {
+    enabled: rangeCheckInsEnabled,
   });
 
-  const thresholdLeadsParams = useMemo(
+  const rangeLeadsParams = useMemo(
     () => ({
-      from: thresholdYmd,
-      to: thresholdYmd,
+      from: rangeFromYmd,
+      to: rangeToYmd,
       dateBasis: 'activity' as const,
       ...(elevated && selectedBranchId !== 'all'
         ? { branchId: Number(selectedBranchId) }
@@ -419,7 +477,8 @@ export function ReportsTargetsTab({
       ...(selfScoped && selfUid != null ? { ownerId: selfUid } : {}),
     }),
     [
-      thresholdYmd,
+      rangeFromYmd,
+      rangeToYmd,
       elevated,
       selfScoped,
       selfUid,
@@ -428,112 +487,235 @@ export function ReportsTargetsTab({
     ]
   );
 
+  const rangeLeadsEnabled =
+    isActive && Boolean(rangeFromYmd && rangeToYmd) && showOverviewTable;
+
   const {
-    data: thresholdLeadsData,
-    isLoading: thresholdLeadsLoading,
-    isError: thresholdLeadsError,
-    error: thresholdLeadsQueryError,
-  } = useLeadsReport(thresholdLeadsParams, {
-    enabled: isActive && selfScoped && Boolean(thresholdYmd),
+    data: rangeLeadsData,
+    isLoading: rangeLeadsLoading,
+    isFetching: rangeLeadsFetching,
+    isError: rangeLeadsError,
+    error: rangeLeadsQueryError,
+  } = useLeadsReport(rangeLeadsParams, {
+    enabled: rangeLeadsEnabled,
+    keepPreviousData: false,
   });
 
-  const thresholdCheckInsForTable = useMemo(() => {
-    const raw = thresholdCheckInsData?.checkIns ?? [];
+  const rangeCheckInsForTable = useMemo(() => {
+    const raw = rangeCheckInsData?.checkIns ?? [];
     return filterVisitListItemsByOwnerUids(
       raw,
       reportingUidSet,
       elevated && resolvedOwnerUid === 'all'
     );
   }, [
-    thresholdCheckInsData?.checkIns,
+    rangeCheckInsData?.checkIns,
     reportingUidSet,
     elevated,
     resolvedOwnerUid,
   ]);
 
   const visitsByUid = useMemo(
-    () => countVisitsByOwnerUid(thresholdCheckInsForTable),
-    [thresholdCheckInsForTable]
+    () => countVisitsByOwnerUid(rangeCheckInsForTable),
+    [rangeCheckInsForTable]
+  );
+
+  const callsByUid = useMemo(
+    () => countCallsByOwnerUid(rangeCheckInsData?.checkIns ?? []),
+    [rangeCheckInsData?.checkIns]
   );
 
   const leadByDisplayName = useMemo(
-    () => mapLeadsByUserFromReport(thresholdLeadsData?.byUser),
-    [thresholdLeadsData?.byUser]
+    () => mapLeadsByUserFromReport(rangeLeadsData?.byUser),
+    [rangeLeadsData?.byUser]
   );
 
   const filteredThresholdUsers = useMemo(() => {
-    if (!elevated || usersListLoading) return [];
+    if (!elevated || elevatedOwnerScoped) return [];
     const raw = callsBelowData?.users ?? [];
-    return raw.filter((u) => {
-      if (!reportingUidSet.has(u.uid)) return false;
-      if (resolvedOwnerUid !== 'all' && u.uid !== Number(resolvedOwnerUid)) return false;
-      return true;
-    });
+    return raw.filter((u) => reportingUidSet.has(u.uid));
+  }, [elevated, elevatedOwnerScoped, callsBelowData?.users, reportingUidSet]);
+
+  /** Org-wide rows: below-threshold on reference day + reps with activity in the picker range. */
+  const elevatedAllUserRows = useMemo(() => {
+    if (!elevated || elevatedOwnerScoped) return [];
+
+    const rows: SubThresholdDailyCallUserRow[] = filteredThresholdUsers.map((u) => ({
+      ...u,
+      callCount: callsByUid.get(u.uid) ?? u.callCount,
+      leadCount:
+        leadsCountForListUser(
+          reportingUsers.find((ru) => ru.uid === u.uid),
+          leadByDisplayName
+        ) || u.leadCount,
+    }));
+
+    const seen = new Set(rows.map((r) => r.uid));
+    for (const listUser of reportingUsers) {
+      if (seen.has(listUser.uid)) continue;
+      const callCount = callsByUid.get(listUser.uid) ?? 0;
+      const leadCount = leadsCountForListUser(listUser, leadByDisplayName);
+      if (callCount + leadCount <= 0) continue;
+      seen.add(listUser.uid);
+      rows.push(
+        buildElevatedOwnerSubThresholdRow(
+          listUser.uid,
+          listUser,
+          undefined,
+          callCount,
+          leadCount
+        )
+      );
+    }
+
+    return rows;
   }, [
     elevated,
-    usersListLoading,
-    callsBelowData?.users,
-    reportingUidSet,
-    resolvedOwnerUid,
+    elevatedOwnerScoped,
+    filteredThresholdUsers,
+    reportingUsers,
+    callsByUid,
+    leadByDisplayName,
+  ]);
+
+  const elevatedOwnerRow = useMemo(() => {
+    if (!elevatedOwnerScoped || elevatedOwnerUid == null) return null;
+    const listUser = usersList.find((u) => u.uid === elevatedOwnerUid);
+    const callCount = callsByUid.get(elevatedOwnerUid) ?? 0;
+    const leadCount = leadsCountForListUser(listUser, leadByDisplayName);
+    return buildElevatedOwnerSubThresholdRow(
+      elevatedOwnerUid,
+      listUser,
+      elevatedOwnerDetail ?? undefined,
+      callCount,
+      leadCount
+    );
+  }, [
+    elevatedOwnerScoped,
+    elevatedOwnerUid,
+    usersList,
+    callsByUid,
+    leadByDisplayName,
+    elevatedOwnerDetail,
   ]);
 
   const tableRows = useMemo(() => {
-    if (elevated) return filteredThresholdUsers;
+    if (elevatedOwnerScoped) {
+      return elevatedOwnerRow != null ? [elevatedOwnerRow] : [];
+    }
+    if (elevated) return elevatedAllUserRows;
     if (selfScoped && profile != null) {
       return [buildSelfSubThresholdRow(profile, userDetail ?? undefined)];
     }
     return [];
-  }, [elevated, selfScoped, profile, userDetail, filteredThresholdUsers]);
+  }, [
+    elevatedOwnerScoped,
+    elevatedOwnerRow,
+    elevated,
+    selfScoped,
+    profile,
+    userDetail,
+    elevatedAllUserRows,
+  ]);
 
-  const isThresholdTableLoading = elevated
-    ? callsBelowLoading || usersListLoading
-    : thresholdCheckInsLoading || thresholdLeadsLoading;
+  const isThresholdTableLoading = elevatedOwnerScoped
+    ? rangeCheckInsLoading ||
+      rangeCheckInsFetching ||
+      rangeLeadsLoading ||
+      rangeLeadsFetching ||
+      elevatedOwnerDetailLoading
+    : elevated
+      ? callsBelowLoading ||
+        callsBelowFetching ||
+        rangeCheckInsLoading ||
+        rangeCheckInsFetching ||
+        rangeLeadsLoading ||
+        rangeLeadsFetching ||
+        (usersListLoading && elevatedAllUserRows.length === 0)
+      : rangeCheckInsLoading ||
+        rangeCheckInsFetching ||
+        rangeLeadsLoading ||
+        rangeLeadsFetching;
 
-  const tableLoadError = elevated
-    ? callsBelowError
+  const tableLoadError = elevatedOwnerScoped
+    ? rangeCheckInsError
       ? getQueryErrorMessage(
-          callsBelowQueryError,
-          'Failed to load reps below threshold. Try again or contact support.'
+          rangeCheckInsQueryError,
+          'Failed to load call data for this period.'
         )
-      : null
-    : thresholdCheckInsError
-      ? getQueryErrorMessage(
-          thresholdCheckInsQueryError,
-          'Failed to load visit data for this day.'
-        )
-      : thresholdLeadsError
+      : rangeLeadsError
         ? getQueryErrorMessage(
-            thresholdLeadsQueryError,
-            'Failed to load lead activity for this day.'
+            rangeLeadsQueryError,
+            'Failed to load lead activity for this period.'
           )
-        : null;
+        : null
+    : elevated
+      ? callsBelowError
+        ? getQueryErrorMessage(
+            callsBelowQueryError,
+            'Failed to load reps below threshold. Try again or contact support.'
+          )
+        : rangeCheckInsError
+          ? getQueryErrorMessage(
+              rangeCheckInsQueryError,
+              'Failed to load call data for this period.'
+            )
+          : rangeLeadsError
+            ? getQueryErrorMessage(
+                rangeLeadsQueryError,
+                'Failed to load lead activity for this period.'
+              )
+            : null
+      : rangeCheckInsError
+        ? getQueryErrorMessage(
+            rangeCheckInsQueryError,
+            'Failed to load visit data for this period.'
+          )
+        : rangeLeadsError
+          ? getQueryErrorMessage(
+              rangeLeadsQueryError,
+              'Failed to load lead activity for this period.'
+            )
+          : null;
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
-          <OverviewFilterControls
-            layout="row"
-            rangeStart={rangeStart}
-            rangeEnd={rangeEnd}
-            rangePopoverOpen={rangePopoverOpen}
-            onRangePopoverOpenChange={setRangePopoverOpen}
-            onRangeChange={({ start, end }) => {
-              setRangeStart(start);
-              setRangeEnd(end);
-            }}
-            elevated={elevated}
-            branches={branches}
-            reportingUsers={reportingUsers}
-            selectedBranchId={selectedBranchId}
-            onBranchChange={(v) => {
-              setSelectedBranchId(v);
-              setSelectedOwnerUid('all');
-            }}
-            selectedOwnerUid={resolvedOwnerUid}
-            onOwnerChange={setSelectedOwnerUid}
-          />
+      <div className="flex flex-col gap-1.5">
+        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
+            <OverviewFilterControls
+              layout="row"
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              rangePopoverOpen={rangePopoverOpen}
+              onRangePopoverOpenChange={setRangePopoverOpen}
+              onRangeChange={({ start, end }) => {
+                const ordered = orderUtcCalendarRange(start, end);
+                setRangeStart(ordered.start);
+                setRangeEnd(ordered.end);
+              }}
+              elevated={elevated}
+              branches={branches}
+              reportingUsers={reportingUsers}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={(v) => {
+                setSelectedBranchId(v);
+                setSelectedOwnerUid('all');
+              }}
+              selectedOwnerUid={resolvedOwnerUid}
+              onOwnerChange={setSelectedOwnerUid}
+            />
+          </div>
         </div>
+        <p className="text-muted-foreground text-xs leading-snug">
+          Calls and leads totals use the full picker range{' '}
+          <span className="font-mono tabular-nums">
+            {rangeFromYmd} – {rangeToYmd}
+          </span>{' '}
+          (UTC). Below-threshold status uses reference day{' '}
+          <span className="font-mono tabular-nums">{referenceDayYmd}</span> (range end, capped
+          at today).
+        </p>
       </div>
 
       {showOverviewTable ? (
@@ -541,11 +723,25 @@ export function ReportsTargetsTab({
           <CardHeader>
             <CardTitle className="text-base">Overview</CardTitle>
             <CardDescription>
-              {elevated ? (
+              {elevatedOwnerScoped ? (
                 <>
-                  Sales reps below {callsBelowData?.minCalls ?? 60} combined calls + leads on{' '}
-                  <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC).
-                  Branch filter applies.{' '}
+                  Calls and leads for the selected rep from{' '}
+                  <span className="font-mono tabular-nums">
+                    {rangeFromYmd} – {rangeToYmd}
+                  </span>{' '}
+                  (UTC, activity).
+                </>
+              ) : elevated ? (
+                <>
+                  Calls and leads totals for{' '}
+                  <span className="font-mono tabular-nums">
+                    {rangeFromYmd} – {rangeToYmd}
+                  </span>{' '}
+                  (UTC). Reps below {callsBelowData?.minCalls ?? 60} combined calls + leads on
+                  reference day{' '}
+                  <span className="font-mono tabular-nums">{referenceDayYmd}</span> (org-local
+                  on server) are listed, plus reps with activity in the range. Branch filter
+                  applies.{' '}
                   <Link
                     href="/staff"
                     className="text-violet-600 underline-offset-2 hover:underline"
@@ -556,9 +752,11 @@ export function ReportsTargetsTab({
                 </>
               ) : (
                 <>
-                  Your visits, leads, and performance warnings for{' '}
-                  <span className="font-mono tabular-nums">{thresholdYmd}</span> (UTC), derived
-                  from the selected date range.
+                  Your visits, leads, and performance warnings from{' '}
+                  <span className="font-mono tabular-nums">
+                    {rangeFromYmd} – {rangeToYmd}
+                  </span>{' '}
+                  (UTC).
                 </>
               )}
             </CardDescription>
@@ -572,9 +770,14 @@ export function ReportsTargetsTab({
               <div className="flex justify-center py-6">
                 <LoadingSpinner className="min-h-0" wrapperClassName="py-0" />
               </div>
-            ) : elevated && tableRows.length === 0 ? (
+            ) : elevated && !elevatedOwnerScoped && tableRows.length === 0 ? (
               <p className="text-muted-foreground text-center py-6 text-sm">
-                No sales reps below threshold for this day.
+                No sales reps below threshold on {referenceDayYmd} and no call/lead activity in{' '}
+                {rangeFromYmd} – {rangeToYmd}.
+              </p>
+            ) : elevatedOwnerScoped && tableRows.length === 0 ? (
+              <p className="text-muted-foreground text-center py-6 text-sm">
+                No data for the selected rep in {rangeFromYmd} – {rangeToYmd}.
               </p>
             ) : (
               <Table>
@@ -609,10 +812,14 @@ export function ReportsTargetsTab({
                         ? displayName.slice(0, 2).toUpperCase()
                         : '—';
                     const callsOrVisits = elevated
-                      ? u.callCount
+                      ? elevatedOwnerScoped
+                        ? (callsByUid.get(u.uid) ?? u.callCount)
+                        : u.callCount
                       : (visitsByUid.get(u.uid) ?? 0);
                     const leads = elevated
-                      ? u.leadCount
+                      ? elevatedOwnerScoped
+                        ? leadsCountForListUser(listUser, leadByDisplayName) || u.leadCount
+                        : u.leadCount
                       : leadsCountForListUser(listUser, leadByDisplayName);
                     const { flag: branchFlag, label: branchLabel } = branchFlagAndLabel(
                       listUser,
@@ -650,7 +857,7 @@ export function ReportsTargetsTab({
                           <TargetWarningsBreakdown tw={u.targetWarnings} />
                         </TableCell>
                         <TableCell className="align-middle">
-                          <TargetWarningStatusIndicator tw={u.targetWarnings} thresholdYmd={thresholdYmd} />
+                          <TargetWarningStatusIndicator tw={u.targetWarnings} thresholdYmd={referenceDayYmd} />
                         </TableCell>
                         <TableCell className="w-10 p-2 text-right align-middle">
                           <TargetWarningDetailDialog

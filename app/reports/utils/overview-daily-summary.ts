@@ -98,23 +98,62 @@ export function utcCalendarDateFromLocalPickerDate(d: Date): Date {
 }
 
 /**
- * Reference day for Targets “below threshold” table: today (UTC) if it lies in the
- * selected inclusive range, otherwise the range start.
+ * Reference day for Targets “below threshold” table: the inclusive range end (UTC),
+ * capped at today so future picker values never request tomorrow’s data.
+ * Single-day selections resolve to that day.
  */
 export function getThresholdReferenceUtcDay(
   rangeStart: Date,
   rangeEnd: Date
 ): Date {
-  const fromYmd = formatUtcYmd(rangeStart);
-  const toYmd = formatUtcYmd(rangeEnd);
-  const ty = formatUtcYmd(utcToday());
-  if (ty >= fromYmd && ty <= toYmd) return utcToday();
-  return rangeStart;
+  const { start, end } = orderUtcCalendarRange(rangeStart, rangeEnd);
+  const endYmd = formatUtcYmd(end);
+  const todayYmd = formatUtcYmd(utcToday());
+  if (endYmd > todayYmd) return utcToday();
+  return end;
+}
+
+/** Inclusive UTC picker range with end capped at today — used for Targets tab API params. */
+export function resolveTargetsUtcCalendarRange(rangeStart: Date, rangeEnd: Date): {
+  start: Date;
+  end: Date;
+  fromYmd: string;
+  toYmd: string;
+  referenceDayYmd: string;
+  isSingleDay: boolean;
+} {
+  const { start, end } = orderUtcCalendarRange(rangeStart, rangeEnd);
+  const today = utcToday();
+  const cappedEnd = formatUtcYmd(end) > formatUtcYmd(today) ? today : end;
+  const fromYmd = formatUtcYmd(start);
+  const toYmd = formatUtcYmd(cappedEnd);
+  return {
+    start,
+    end: cappedEnd,
+    fromYmd,
+    toYmd,
+    referenceDayYmd: formatUtcYmd(getThresholdReferenceUtcDay(start, cappedEnd)),
+    isSingleDay: fromYmd === toYmd,
+  };
 }
 
 /** Matches server `leadOwnerDisplayName` join for merging GET /leads/report `byUser` keys. */
 export function normalizeOwnerDisplayLabel(name: string, surname: string): string {
   return [name, surname].filter(Boolean).join(' ').trim();
+}
+
+/** Non-physical check-ins per owner uid (matches sub-threshold “Calls” column). */
+export function countCallsByOwnerUid(checkIns: VisitListItem[]): Map<number, number> {
+  const m = new Map<number, number>();
+  for (const c of checkIns) {
+    const uid = c.owner?.uid;
+    if (uid == null || !Number.isFinite(Number(uid))) continue;
+    const method = (c.methodOfContact ?? '').trim().toUpperCase();
+    if (method === 'PHYSICAL') continue;
+    const n = Number(uid);
+    m.set(n, (m.get(n) ?? 0) + 1);
+  }
+  return m;
 }
 
 /**
