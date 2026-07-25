@@ -8,7 +8,6 @@ import {
   MapControls,
   MapMarker,
   MapPopup,
-  MapRoute,
   MarkerContent,
   MarkerLabel,
   useMap,
@@ -17,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { MapLayerToggles } from '@/app/visualiser/components/map-layer-toggles';
 import { MapFeaturePopupContent } from '@/app/visualiser/components/map-feature-popup';
+import { JourneyPointsLayer } from '@/app/visualiser/components/journey-points-layer';
 import { LayeredLogoClusters } from '@/app/visualiser/components/logo-cluster-layer';
 import { SimulationOverlayLayer } from '@/app/visualiser/components/simulation-overlay-layer';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
@@ -37,7 +37,11 @@ import {
 } from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getRepJourney } from '@/api/endpoints/tracking';
-import type { RepJourneyRange } from '@/api/types/tracking';
+import type {
+  RepJourneyPoint,
+  RepJourneyRange,
+  RepJourneySummary,
+} from '@/api/types/tracking';
 
 /** Johannesburg fallback — MapLibre uses [lng, lat]. */
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
@@ -53,8 +57,8 @@ type JourneyRouteState = {
   repUid: number;
   range: RepJourneyRange;
   repName: string;
-  coordinates: [number, number][];
-  totalPoints: number;
+  points: RepJourneyPoint[];
+  summary: RepJourneySummary;
 };
 
 function FlyToPoint({ point }: { point: VisualiserMapPoint | null }) {
@@ -83,7 +87,17 @@ function FitJourneyBounds({
   const { map, isLoaded } = useMap();
 
   useEffect(() => {
-    if (!map || !isLoaded || !routeKey || coordinates.length < 2) return;
+    if (!map || !isLoaded || !routeKey || coordinates.length === 0) return;
+
+    if (coordinates.length === 1) {
+      map.flyTo({
+        center: coordinates[0],
+        zoom: Math.max(map.getZoom(), 14),
+        duration: 800,
+        essential: true,
+      });
+      return;
+    }
 
     let minLng = coordinates[0][0];
     let maxLng = coordinates[0][0];
@@ -211,6 +225,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     null
   );
   const [isTracing, setIsTracing] = useState(false);
+  const [selectedJourneyPoint, setSelectedJourneyPoint] =
+    useState<RepJourneyPoint | null>(null);
 
   const { isActive, selectedZone, clearSimulation, panelOpen } =
     useVisualiserSimulation();
@@ -289,6 +305,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
   const handleClearRoute = useCallback(() => {
     setJourneyRoute(null);
+    setSelectedJourneyPoint(null);
   }, []);
 
   const handleLayerChange = useCallback(
@@ -297,6 +314,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setSelected((cur) => (cur?.layer === layer && !visible ? null : cur));
       if (layer === 'reps' && !visible) {
         setJourneyRoute(null);
+        setSelectedJourneyPoint(null);
       }
     },
     []
@@ -309,35 +327,30 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           ? selected.name
           : `Rep #${repUid}`;
       setIsTracing(true);
+      setSelectedJourneyPoint(null);
       const toastId = 'rep-journey-trace';
-      toast.loading(`Loading ${RANGE_LABELS[range]} route…`, { id: toastId });
+      toast.loading(`Loading ${RANGE_LABELS[range]} points…`, { id: toastId });
       try {
         const response = await getRepJourney(client, repUid, range);
         const data = response.data;
-        if (!data || data.points.length < 2) {
+        if (!data || data.points.length < 1) {
           setJourneyRoute(null);
           toast.error(
-            data?.points.length === 1
-              ? 'Only one GPS point in that window — need at least two to draw a route.'
-              : `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
+            `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
             { id: toastId }
           );
           return;
         }
 
-        const coordinates: [number, number][] = data.points.map((p) => [
-          p.longitude,
-          p.latitude,
-        ]);
         setJourneyRoute({
           repUid,
           range,
           repName,
-          coordinates,
-          totalPoints: data.totalPoints,
+          points: data.points,
+          summary: data.summary,
         });
         toast.success(
-          `${repName}: ${data.totalPoints} points · ${RANGE_LABELS[range]}`,
+          `${repName}: ${data.summary.totalPoints} points · ${data.summary.totalDistanceKm.toFixed(1)} km · ${RANGE_LABELS[range]}`,
           { id: toastId }
         );
       } catch (error) {
@@ -356,9 +369,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       ? journeyRoute.range
       : null;
 
+  const journeyCoordinates = useMemo(
+    (): [number, number][] =>
+      (journeyRoute?.points ?? []).map((p) => [p.longitude, p.latitude]),
+    [journeyRoute]
+  );
+
   const journeyRouteKey = journeyRoute
-    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.totalPoints}`
+    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}`
     : null;
+
+  const activeJourneySummary =
+    journeyRoute && selected?.repUid === journeyRoute.repUid
+      ? journeyRoute.summary
+      : null;
 
   if (!center) {
     return <LoadingSpinner wrapperClassName="h-full min-h-[240px]" />;
@@ -421,8 +445,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             <div className="min-w-0">
               <p className="truncate font-medium">{journeyRoute.repName}</p>
               <p className="text-muted-foreground mt-0.5">
-                {RANGE_LABELS[journeyRoute.range]} · {journeyRoute.totalPoints}{' '}
-                points
+                {RANGE_LABELS[journeyRoute.range]} ·{' '}
+                {journeyRoute.summary.totalPoints} points ·{' '}
+                {journeyRoute.summary.totalDistanceKm.toFixed(1)} km
               </p>
             </div>
             <button
@@ -447,7 +472,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         <Map3DController />
         <FlyToPoint point={selected} />
         <FitJourneyBounds
-          coordinates={journeyRoute?.coordinates ?? []}
+          coordinates={journeyCoordinates}
           routeKey={journeyRouteKey}
         />
         {selectedZone ? (
@@ -460,20 +485,19 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
         <SimulationOverlayLayer />
 
-        {journeyRoute && journeyRoute.coordinates.length >= 2 ? (
-          <MapRoute
-            id={`rep-journey-${journeyRoute.repUid}`}
-            coordinates={journeyRoute.coordinates}
-            color={LAYER_META.reps.color}
-            width={4}
-            opacity={0.85}
-            interactive={false}
+        {journeyRoute && journeyRoute.points.length > 0 ? (
+          <JourneyPointsLayer
+            points={journeyRoute.points}
+            onPointClick={(point) => setSelectedJourneyPoint(point)}
           />
         ) : null}
 
         <LayeredLogoClusters
           pointsByLayer={pointsByLayer}
-          onPointClick={(point) => setSelected(point)}
+          onPointClick={(point) => {
+            setSelectedJourneyPoint(null);
+            setSelected(point);
+          }}
         />
 
         {isUserLocation ? (
@@ -488,7 +512,49 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           </MapMarker>
         ) : null}
 
-        {selected ? (
+        {selectedJourneyPoint ? (
+          <MapPopup
+            key={`journey-${selectedJourneyPoint.latitude}-${selectedJourneyPoint.longitude}-${selectedJourneyPoint.recordedAt}`}
+            longitude={selectedJourneyPoint.longitude}
+            latitude={selectedJourneyPoint.latitude}
+            offset={18}
+            closeButton
+            closeOnClick={false}
+            focusAfterOpen={false}
+            onClose={() => setSelectedJourneyPoint(null)}
+            className="min-w-44 border-border/50 bg-background/75 font-sans shadow-none backdrop-blur-md"
+          >
+            <div className="space-y-1.5 pr-1 font-sans text-xs">
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+                {selectedJourneyPoint.isStop ? 'Stop' : 'Key point'}
+              </p>
+              {selectedJourneyPoint.isStop &&
+              selectedJourneyPoint.stopDurationFormatted ? (
+                <p className="text-foreground text-sm font-semibold">
+                  Stopped {selectedJourneyPoint.stopDurationFormatted}
+                </p>
+              ) : null}
+              {selectedJourneyPoint.address ? (
+                <p className="text-muted-foreground break-words">
+                  {selectedJourneyPoint.address}
+                </p>
+              ) : null}
+              <p className="text-muted-foreground text-[11px]">
+                {(() => {
+                  try {
+                    return new Date(
+                      selectedJourneyPoint.recordedAt
+                    ).toLocaleString();
+                  } catch {
+                    return selectedJourneyPoint.recordedAt;
+                  }
+                })()}
+              </p>
+            </div>
+          </MapPopup>
+        ) : null}
+
+        {selected && !selectedJourneyPoint ? (
           <MapPopup
             key={selected.id}
             longitude={selected.longitude}
@@ -504,6 +570,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
               point={selected}
               activeTraceRange={activeTraceRange}
               isTracing={isTracing}
+              journeySummary={activeJourneySummary}
               onTraceRoute={handleTraceRoute}
               onClearRoute={handleClearRoute}
             />
@@ -514,7 +581,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       <div className="bg-background/90 text-muted-foreground absolute right-3 bottom-3 z-10 hidden rounded-md border px-2 py-1 text-[10px] backdrop-blur sm:block">
         {visiblePoints.length} mapped ·{' '}
         {isActive ? 'simulation on · ' : ''}
-        {journeyRoute ? 'route on · ' : ''}
+        {journeyRoute ? 'trail on · ' : ''}
         {Object.entries(LAYER_META)
           .filter(([id]) => visibility[id as VisualiserLayerId])
           .map(([id, meta]) => `${meta.label} ${counts[id as VisualiserLayerId]}`)
