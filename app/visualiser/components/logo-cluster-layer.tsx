@@ -489,11 +489,16 @@ export function LogoClusterLayer({
     }
 
     return () => {
+      if (!map) return;
       for (const id of clickable) {
-        if (!map.getLayer(id)) continue;
-        map.off('click', id, handleClick);
-        map.off('mouseenter', id, handleEnter);
-        map.off('mouseleave', id, handleLeave);
+        try {
+          if (!map.getLayer(id)) continue;
+          map.off('click', id, handleClick);
+          map.off('mouseenter', id, handleEnter);
+          map.off('mouseleave', id, handleLeave);
+        } catch {
+          /* map may already be removed */
+        }
       }
     };
   }, [

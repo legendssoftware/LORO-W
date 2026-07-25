@@ -174,7 +174,11 @@ function Sidebar({
           data-slot="sidebar"
           side={side}
           showCloseButton={false}
-          className="bg-sidebar text-sidebar-foreground w-full max-w-full p-0 [&>button]:hidden"
+          overlayClassName={zAboveLeafletFullscreen}
+          className={cn(
+            "bg-sidebar text-sidebar-foreground w-full max-w-full p-0 [&>button]:hidden",
+            zAboveLeafletFullscreenPanel,
+          )}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -192,7 +196,8 @@ function Sidebar({
     <div
       className={cn(
         "group peer text-sidebar-foreground hidden md:block",
-        "transition-[margin,width] duration-200 ease-linear"
+        "transition-[margin,width] duration-200 ease-linear",
+        zAboveLeafletFullscreenPanel,
       )}
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}

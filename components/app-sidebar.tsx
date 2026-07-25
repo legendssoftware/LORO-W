@@ -28,6 +28,7 @@ import {
   VapiSupportCallIcon,
 } from "@/lib/icons";
 import {
+  BarChart3,
   Building2,
   FileText,
   FolderKanban,
@@ -72,6 +73,7 @@ const ROUTE_ICONS: Record<
   "/planning": CheckSquareIcon,
   "/claims": Receipt,
   "/payslips": FileText,
+  "/reports": BarChart3,
   "/staff": UsersIcon,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,

@@ -26,7 +26,7 @@ export interface UserResponse {
   businesscardURL?: string | null;
   departmentId?: number | null;
   assignedClientIds?: number[];
-  userTarget?: Record<string, unknown> | null;
+  userTarget?: UserTargetListFields | Record<string, unknown> | null;
   isDeleted?: boolean;
   clerkUserId?: string | null;
   [key: string]: unknown;
@@ -35,6 +35,35 @@ export interface UserResponse {
 export interface GetUserByRefResponse {
   message: string;
   user: UserResponse | null;
+}
+
+/**
+ * Nested userTarget fields selected by GET /user (findAll).
+ * Does not include targetWarnings or precomputed progress.
+ */
+export interface UserTargetListFields {
+  uid?: number;
+  targetSalesAmount?: number | null;
+  currentSalesAmount?: number | null;
+  targetQuotationsAmount?: number | null;
+  currentQuotationsAmount?: number | null;
+  currentOrdersAmount?: number | null;
+  targetCurrency?: string | null;
+  targetHoursWorked?: number | null;
+  currentHoursWorked?: number | null;
+  targetNewClients?: number | null;
+  currentNewClients?: number | null;
+  targetNewLeads?: number | null;
+  currentNewLeads?: number | null;
+  targetCheckIns?: number | null;
+  currentCheckIns?: number | null;
+  targetCalls?: number | null;
+  currentCalls?: number | null;
+  targetPeriod?: string | null;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Minimal user for list/dropdown (from GET /user findAll). */
@@ -47,6 +76,8 @@ export interface UserListItem {
   photoURL?: string | null;
   avatar?: string | null;
   workforceType?: string | null;
+  branch?: { uid: number; name?: string; alias?: string | null } | null;
+  userTarget?: UserTargetListFields | null;
   [key: string]: unknown;
 }
 
@@ -180,7 +211,29 @@ export interface PatchUserTargetBody {
   targetWarnings?: TargetWarningsPayload | null;
 }
 
+export interface UserTargetMetricProgress {
+  name?: string;
+  target?: number | null;
+  current?: number | null;
+  remaining?: number | null;
+  progress?: number | null;
+  currency?: string | null;
+  unit?: string | null;
+}
+
 export interface UserTargetPersonalTargets {
+  uid?: number;
+  sales?: UserTargetMetricProgress;
+  quotations?: UserTargetMetricProgress;
+  hours?: UserTargetMetricProgress;
+  newClients?: UserTargetMetricProgress;
+  newLeads?: UserTargetMetricProgress;
+  checkIns?: UserTargetMetricProgress;
+  calls?: UserTargetMetricProgress;
+  targetPeriod?: string | null;
+  periodStartDate?: string | Date | null;
+  periodEndDate?: string | Date | null;
+  targetCurrency?: string | null;
   targetWarnings?: TargetWarningsPayload | null;
   [key: string]: unknown;
 }
@@ -207,6 +260,22 @@ export interface GetSubThresholdDailyCallsResponse {
   date: string;
   minCalls: number;
   users: SubThresholdDailyCallUserRow[];
+}
+
+/** GET /user/performance/engagement-range */
+export interface EngagementRangeUserRow {
+  uid: number;
+  clerkUserId: string | null;
+  callCount: number;
+  visitCount: number;
+  leadCount: number;
+}
+
+export interface GetEngagementRangeResponse {
+  message: string;
+  from: string;
+  to: string;
+  users: EngagementRangeUserRow[];
 }
 
 export interface GetUserTargetResponse {
@@ -428,6 +497,27 @@ export async function getSubThresholdDailyCalls(
         date: params.date,
         ...(params.branchId != null ? { branchId: params.branchId } : {}),
         ...(params.minCalls != null ? { minCalls: params.minCalls } : {}),
+      },
+      timeout: 120_000,
+    }
+  );
+  return data;
+}
+
+/**
+ * GET /user/performance/engagement-range — org calls/visits/leads for [from, to].
+ */
+export async function getEngagementRange(
+  client: AxiosInstance,
+  params: { from: string; to: string; branchId?: number }
+): Promise<GetEngagementRangeResponse> {
+  const { data } = await client.get<GetEngagementRangeResponse>(
+    '/user/performance/engagement-range',
+    {
+      params: {
+        from: params.from,
+        to: params.to,
+        ...(params.branchId != null ? { branchId: params.branchId } : {}),
       },
       timeout: 120_000,
     }
