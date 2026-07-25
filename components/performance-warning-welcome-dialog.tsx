@@ -11,12 +11,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAcknowledgePerformanceWarning } from '@/api/hooks';
 import type { TargetWarningsPayload } from '@/api/endpoints/user';
 import {
   getPerformanceWarningCopy,
   type PerformanceWarningLevel,
 } from '@/lib/performance-warning-content';
+import { formatWarningDateTime } from '@/lib/format-warning-datetime';
 import { cn } from '@/lib/utils';
 
 const tierAccent: Record<
@@ -83,6 +85,7 @@ export function PerformanceWarningWelcomeDialog({
     employeeName,
     targetWarnings?.lastMiss ?? null
   );
+  const issuedLabel = formatWarningDateTime(targetWarnings?.issuedAt);
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
@@ -119,6 +122,26 @@ export function PerformanceWarningWelcomeDialog({
               {copy.intro}
             </DialogDescription>
           </DialogHeader>
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              Issued:{' '}
+              <span className="font-medium text-foreground">{issuedLabel}</span>
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-[10px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+              >
+                Still pending
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-[10px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+              >
+                Needs attention
+              </Badge>
+            </div>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">

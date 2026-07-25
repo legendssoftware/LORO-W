@@ -18,39 +18,54 @@ import { SettingsTour } from '@/components/settings-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { useSessionSync } from '@/api/hooks';
 import { isClientPortalUser } from '@/lib/access';
+import { cn } from '@/lib/utils';
 
 export function ConditionalLayoutShellInner({ children }: { children: ReactNode }) {
   const { pendingBlockingWarning } = usePerformanceWarningPendingSafe();
   const { backendUserData: profile } = useSessionSync();
   const isClient = isClientPortalUser(profile?.accessLevel);
-  const blockChrome = pendingBlockingWarning ? 'pointer-events-none select-none' : '';
+  const blockChrome = pendingBlockingWarning;
 
   return (
     <div className="flex h-svh w-full">
-      <div className={blockChrome}>
+      <div
+        className={cn(blockChrome && 'pointer-events-none select-none')}
+        inert={blockChrome || undefined}
+        aria-hidden={blockChrome || undefined}
+      >
         <AppSidebar />
       </div>
-      <div className={`flex flex-1 flex-col min-w-0 min-h-0 bg-sidebar ${blockChrome}`}>
-        <ConditionalAppHeader />
-        {!isClient && (
-          <>
-            <SalesWelcomeFlow />
-            <DashboardAttendanceTour />
-            <LeadsTour />
-            <VisitsTour />
-            <StaffTour />
-            <ClientsTour />
-            <PipelineTour />
-            <PlanningTour />
-            <SettingsTour />
-          </>
-        )}
-        <PostAuthRouteHandler />
-        <ErrorBoundary>
-          <AccessGuard>
-            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">{children}</div>
-          </AccessGuard>
-        </ErrorBoundary>
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-sidebar">
+        {/* Warning dialog must stay outside inert so the acknowledge CTA remains usable. */}
+        {!isClient && <SalesWelcomeFlow />}
+        <div
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 flex-col',
+            blockChrome && 'pointer-events-none select-none'
+          )}
+          inert={blockChrome || undefined}
+          aria-hidden={blockChrome || undefined}
+        >
+          <ConditionalAppHeader />
+          {!isClient && (
+            <>
+              <DashboardAttendanceTour />
+              <LeadsTour />
+              <VisitsTour />
+              <StaffTour />
+              <ClientsTour />
+              <PipelineTour />
+              <PlanningTour />
+              <SettingsTour />
+            </>
+          )}
+          <PostAuthRouteHandler />
+          <ErrorBoundary>
+            <AccessGuard>
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+            </AccessGuard>
+          </ErrorBoundary>
+        </div>
       </div>
     </div>
   );

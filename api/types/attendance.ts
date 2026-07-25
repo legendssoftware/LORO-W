@@ -190,25 +190,35 @@ export interface AttendanceReportUserMetric {
     metrics: AttendanceReportUserMetricMetrics;
 }
 
+/** Numeric hours worked in selected report period (`reportPeriod`), with legacy fallbacks. */
+export function resolveAttendanceReportPeriodHours(
+    metrics: AttendanceReportUserMetricMetrics | undefined
+): number {
+    const th = metrics?.totalHours;
+    if (typeof th === 'number' && Number.isFinite(th)) return th;
+    if (th != null && typeof th === 'object') {
+        const o = th as AttendanceReportHoursBuckets;
+        if (typeof o.reportPeriod === 'number' && Number.isFinite(o.reportPeriod)) {
+            return o.reportPeriod;
+        }
+        if (typeof o.thisMonth === 'number' && Number.isFinite(o.thisMonth)) {
+            return o.thisMonth;
+        }
+        if (typeof o.thisWeek === 'number' && Number.isFinite(o.thisWeek)) {
+            return o.thisWeek;
+        }
+    }
+    return 0;
+}
+
 /** Hours worked in selected report period (`reportPeriod`), with legacy fallbacks. */
 export function resolveAttendanceReportPeriodHoursDisplay(
     metrics: AttendanceReportUserMetricMetrics | undefined
 ): string {
     const th = metrics?.totalHours;
-    if (typeof th === 'number' && Number.isFinite(th)) return `${th}h`;
-    if (th != null && typeof th === 'object') {
-        const o = th as AttendanceReportHoursBuckets;
-        if (typeof o.reportPeriod === 'number' && Number.isFinite(o.reportPeriod)) {
-            return `${o.reportPeriod}h`;
-        }
-        if (typeof o.thisMonth === 'number' && Number.isFinite(o.thisMonth)) {
-            return `${o.thisMonth}h`;
-        }
-        if (typeof o.thisWeek === 'number' && Number.isFinite(o.thisWeek)) {
-            return `${o.thisWeek}h`;
-        }
-    }
-    return '—';
+    if (th == null) return '—';
+    const hours = resolveAttendanceReportPeriodHours(metrics);
+    return `${hours}h`;
 }
 
 /** Formats GET /att/report `metrics.breakTimeTotal` (minutes). */

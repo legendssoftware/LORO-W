@@ -8,6 +8,7 @@ import {
   useTokenReady,
   useSessionSync,
   useAttStatus,
+  useAttMetrics,
   useAttCheckInMutation,
   useAttCheckOutMutation,
   useBreakMutation,
@@ -20,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { showSuccessToast } from '@/lib/utils/toast-helpers';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
+import { DashboardMetricsCard } from '@/components/dashboard-metrics-card';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
@@ -65,6 +67,9 @@ export function DashboardContent() {
   const staffAttendanceEnabled = isTokenReady && !isClient;
 
   const attQuery = useAttStatus({
+    enabled: staffAttendanceEnabled,
+  });
+  const attMetricsQuery = useAttMetrics({
     enabled: staffAttendanceEnabled,
   });
 
@@ -265,6 +270,12 @@ export function DashboardContent() {
               onEndBreak={handleEndBreak}
               startTime={attStatus?.startTime ?? null}
               breakStartTime={attStatus?.breakStartTime ?? null}
+            />
+            <DashboardMetricsCard
+              metrics={attMetricsQuery.data}
+              isLoading={attMetricsQuery.isLoading || attMetricsQuery.isPending}
+              userRef={profile?.uid != null ? String(profile.uid) : null}
+              accessLevel={profile?.accessLevel}
             />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}
