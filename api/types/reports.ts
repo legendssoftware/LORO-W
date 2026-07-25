@@ -41,6 +41,7 @@ export interface CheckInContactAddress {
   state?: string;
   country?: string;
   postalCode?: string;
+  formattedAddress?: string;
 }
 
 /** Visit row shape for tables, export, and map (normalized from VisitListItem). */
@@ -49,6 +50,8 @@ export interface VisitExportItem extends VisitListItem {
   checkOutLocation?: string | null;
   fullAddress?: CheckInContactAddress | null;
   checkOutFullAddress?: CheckInContactAddress | null;
+  contactAddress?: CheckInContactAddress | null;
+  createdAt?: string | null;
   followUp?: string | null;
   contactEmail?: string | null;
   contactCellPhone?: string | null;
@@ -65,6 +68,7 @@ export interface VisitExportItem extends VisitListItem {
   leadUid?: number | null;
   salesCurrency?: string | null;
   media?: string[] | null;
+  organisation?: { uid?: number; name?: string } | null;
   owner?: VisitListItem['owner'] & {
     photoURL?: string | null;
     avatar?: string | null;
@@ -95,16 +99,18 @@ export interface ApprovalsListResponse {
 
 export interface ProductsListResponse {
   message?: string;
-  products?: unknown[];
-  data?: {
-    products?: unknown[];
-    page?: number;
-    totalPages?: number;
-    [key: string]: unknown;
+  /** Paginated product rows from GET /products */
+  data?: unknown[];
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
   };
+  /** Legacy / alternate shapes */
+  products?: unknown[];
   page?: number;
   totalPages?: number;
-  [key: string]: unknown;
 }
 
 export interface ResellersListResponse {

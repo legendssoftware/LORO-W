@@ -4,7 +4,6 @@ import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon, CircleDot, Eye, Filter, LayoutGrid, Send } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
-import type { BranchListItem } from '@/api/types/branch';
 import {
   SearchableOptionListPicker,
   SearchableUserPicker,
@@ -36,6 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { XIcon } from '@/lib/icons';
 import { PAYSLIP_STATUS_FILTER_OPTIONS } from '@/lib/payslips-scope';
 import { cn } from '@/lib/utils';
 
@@ -44,18 +44,13 @@ const selectTriggerClass =
 
 export function resetPayslipsDateRangeToDefault(
   onStartDateChange: (v: string) => void,
-  onEndDateChange: (v: string) => void
+  onEndDateChange: (v: string) => void,
+  onSetUseAllTime: (v: boolean) => void
 ) {
   const { start, end } = utcMonthStartThroughToday();
   onStartDateChange(formatUtcYmd(start));
   onEndDateChange(formatUtcYmd(end));
-}
-
-function formatRangeButtonLabel(start: Date, end: Date): string {
-  if (formatUtcYmd(start) === formatUtcYmd(end)) {
-    return formatUtcCalendarLabel(start);
-  }
-  return `${formatUtcCalendarLabel(start)} – ${formatUtcCalendarLabel(end)}`;
+  onSetUseAllTime(true);
 }
 
 function statusIconFor(value: string): React.ReactNode {
@@ -69,7 +64,6 @@ function statusIconFor(value: string): React.ReactNode {
 export interface PayslipsFiltersBarProps {
   canViewOrg: boolean;
   users: UserListItem[];
-  branches: BranchListItem[];
   startDate: Date;
   endDate: Date;
   useAllTime: boolean;
@@ -86,7 +80,6 @@ function PayslipsFilterControls({
   layout,
   canViewOrg,
   users,
-  branches,
   startDate,
   endDate,
   useAllTime,
@@ -99,7 +92,20 @@ function PayslipsFilterControls({
   onSelectedUserIdChange,
 }: PayslipsFiltersBarProps & { layout: 'row' | 'stack' }) {
   const row = layout === 'row';
-  const [datePopoverOpen, setDatePopoverOpen] = React.useState(false);
+  const rangeBtnWidth = row
+    ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
+    : 'h-9 w-full shrink-0 justify-start text-left font-normal';
+
+  const wrapClass = row
+    ? 'flex flex-nowrap items-center gap-2'
+    : 'flex w-full flex-col gap-4';
+
+  const [dateRangePopoverOpen, setDateRangePopoverOpen] = React.useState(false);
+  const [draft, setDraft] = React.useState<DateRange | undefined>({
+    from: startDate,
+    to: endDate,
+  });
+  const skipApplyOnCloseRef = React.useRef(false);
 
   const statusOptions: SearchableOptionRow[] = PAYSLIP_STATUS_FILTER_OPTIONS.map((o) => ({
     value: o.value,
@@ -109,102 +115,176 @@ function PayslipsFilterControls({
 
   const statusVal = selectedStatus || 'all';
 
-  const calendarSelected: DateRange | undefined = useAllTime
-    ? undefined
-    : { from: startDate, to: endDate };
+  const rangeLabel = useAllTime
+    ? 'All time'
+    : formatUtcYmd(startDate) === formatUtcYmd(endDate)
+      ? formatUtcCalendarLabel(startDate)
+      : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
+
+  function handleDatePopoverOpenChange(open: boolean) {
+    if (open) {
+      skipApplyOnCloseRef.current = false;
+      setDraft({ from: startDate, to: endDate });
+      setDateRangePopoverOpen(true);
+      return;
+    }
+    if (!skipApplyOnCloseRef.current && !useAllTime) {
+      const from = draft?.from ?? startDate;
+      const to = draft?.to ?? draft?.from ?? endDate;
+      const ordered = orderUtcCalendarRange(from, to);
+      onRangeChange({
+        start: utcCalendarDateFromLocalPickerDate(ordered.start),
+        end: utcCalendarDateFromLocalPickerDate(ordered.end),
+      });
+    }
+    skipApplyOnCloseRef.current = false;
+    setDateRangePopoverOpen(false);
+  }
+
+  const handleShortcutToday = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const t = utcToday();
+    onSetUseAllTime(false);
+    onRangeChange({ start: t, end: t });
+    setDateRangePopoverOpen(false);
+  }, [onRangeChange, onSetUseAllTime]);
+
+  const handleShortcutThisMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { start, end } = utcMonthStartThroughToday();
+    onSetUseAllTime(false);
+    onRangeChange({ start, end });
+    setDateRangePopoverOpen(false);
+  }, [onRangeChange, onSetUseAllTime]);
+
+  const handleShortcutWholeMonth = React.useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const { from, to } = getUtcMonthRange(utcToday());
+    onSetUseAllTime(false);
+    onRangeChange({
+      start: utcDateFromYmd(from),
+      end: utcDateFromYmd(to),
+    });
+    setDateRangePopoverOpen(false);
+  }, [onRangeChange, onSetUseAllTime]);
 
   return (
-    <div
-      className={cn(
-        row
-          ? 'flex min-w-0 flex-wrap items-center gap-2'
-          : 'flex flex-col gap-3'
-      )}
-    >
-      <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(selectTriggerClass, row ? 'w-auto' : 'w-full justify-start')}
+    <div className={wrapClass}>
+      <div className={cn('flex items-center gap-0', !row && 'w-full min-w-0')}>
+        <Popover open={dateRangePopoverOpen} onOpenChange={handleDatePopoverOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(rangeBtnWidth, reportsFilterSelectTriggerClass)}
+            >
+              <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
+              {rangeLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className={cn(
+              'w-[95vw] max-w-lg p-0 sm:w-auto',
+              reportsFilterPortalHighZ
+            )}
+            align="center"
           >
-            <CalendarIcon className="mr-2 size-4 shrink-0" />
-            {useAllTime ? 'All time' : formatRangeButtonLabel(startDate, endDate)}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={cn('w-auto p-0', reportsFilterPortalHighZ)} align="start">
-          <Calendar
-            mode="range"
-            selected={calendarSelected}
-            onSelect={(range) => {
-              if (!range?.from) return;
-              const end = range.to ?? range.from;
-              const ordered = orderUtcCalendarRange(range.from, end);
-              onSetUseAllTime(false);
-              onRangeChange({
-                start: utcCalendarDateFromLocalPickerDate(ordered.start),
-                end: utcCalendarDateFromLocalPickerDate(ordered.end),
-              });
-            }}
-            numberOfMonths={1}
-          />
-          <div className="flex flex-wrap gap-2 border-t border-border p-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                const { start, end } = utcMonthStartThroughToday();
+            <div className="flex flex-col gap-3 border-b p-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={useAllTime ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onSetUseAllTime(true)}
+                >
+                  All time
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  or pick a UTC range below
+                </span>
+              </div>
+            </div>
+            <Calendar
+              mode="range"
+              selected={draft}
+              disabled={useAllTime}
+              onSelect={(range) => {
+                if (useAllTime) return;
+                if (!range) {
+                  setDraft(undefined);
+                  return;
+                }
                 onSetUseAllTime(false);
-                onRangeChange({ start, end });
-                setDatePopoverOpen(false);
+                setDraft({
+                  from: range.from
+                    ? utcCalendarDateFromLocalPickerDate(range.from)
+                    : undefined,
+                  to: range.to
+                    ? utcCalendarDateFromLocalPickerDate(range.to)
+                    : undefined,
+                });
               }}
-            >
-              This month
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                const { from, to } = getUtcMonthRange(utcToday());
-                onSetUseAllTime(false);
-                onRangeChange(payslipsDateStateFromYmd(from, to));
-                setDatePopoverOpen(false);
-              }}
-            >
-              Full month
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                onSetUseAllTime(true);
-                setDatePopoverOpen(false);
-              }}
-            >
-              All time
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                onResetDateRange();
-                onSetUseAllTime(false);
-                setDatePopoverOpen(false);
-              }}
-            >
-              Reset
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+              initialFocus
+              numberOfMonths={layout === 'stack' ? 1 : 2}
+            />
+            <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutToday}
+                >
+                  Today (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutThisMonth}
+                >
+                  This month (UTC)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={useAllTime}
+                  onClick={handleShortcutWholeMonth}
+                >
+                  Whole month (UTC)
+                </Button>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={useAllTime}
+                className={cn(
+                  'bg-violet-600 text-white shadow-sm border-transparent',
+                  'hover:bg-violet-700 hover:text-white',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+                  useAllTime && 'pointer-events-none opacity-50'
+                )}
+                onClick={() => handleDatePopoverOpenChange(false)}
+              >
+                Done
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {!useAllTime ? (
+          <button
+            type="button"
+            onClick={onResetDateRange}
+            className="ml-0.5 shrink-0 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Reset to all time"
+          >
+            <XIcon className="size-4 text-red-600" />
+          </button>
+        ) : null}
+      </div>
 
       <SearchableOptionListPicker
         selectedValue={statusVal}
@@ -220,9 +300,10 @@ function PayslipsFilterControls({
       {canViewOrg ? (
         <SearchableUserPicker
           users={users}
-          branches={branches}
+          branches={[]}
           selectedUid={selectedUserId === '' ? 'all' : selectedUserId}
           onUidChange={onSelectedUserIdChange}
+          showBranchSubtitle={false}
           triggerClassName={cn(reportsFilterSelectTriggerClass, row ? 'w-auto' : 'w-full')}
         />
       ) : null}

@@ -26,6 +26,8 @@ export interface SiteOpportunitySettings {
   minBranchSeparationKm: number;
   captureLowPct: number;
   captureHighPct: number;
+  /** Monthly revenue target per sales rep (ZAR) for staffing estimates. */
+  repTargetMonthlyZAR?: number;
 }
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
@@ -34,6 +36,7 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   minBranchSeparationKm: 10,
   captureLowPct: 0.2,
   captureHighPct: 0.2,
+  repTargetMonthlyZAR: 1_000_000,
 };
 
 export interface BrandCount {
@@ -143,11 +146,17 @@ export interface MapMarkerBuckets {
 }
 
 export interface CapturePhasePoint {
-  month: number;
-  capturePct: number;
+  phase: string;
+  monthStart: number;
+  monthEnd: number;
+  captureLowPct: number;
+  captureHighPct: number;
+  captureMidPct: number;
 }
 
 export interface TurnoverOverrideSettings {
   competitorTurnoverMultiplier?: number;
   branchTurnoverMultiplier?: number;
+  brandTurnoverOverrides?: Partial<Record<HardwareBrandKey, number>>;
+  categoryTurnoverOverrides?: Partial<Record<CompetitorCategoryKey, number>>;
 }

@@ -132,6 +132,7 @@ export {
   PAYSLIPS_QUERY_KEY_PREFIX,
   type PayslipsListHookOptions,
   usePayslips,
+  useUserPayslips,
   usePayslipDocument,
 } from './use-payslips';
 export {
