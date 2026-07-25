@@ -42,3 +42,26 @@ export interface LatestRepLocationsResponse {
   message: string;
   data: LatestRepLocationsData | null;
 }
+
+export type RepJourneyRange = 'hour' | 'day' | 'week';
+
+export interface RepJourneyPoint {
+  latitude: number;
+  longitude: number;
+  recordedAt: string;
+  accuracy?: number | null;
+  speed?: number | null;
+}
+
+export interface RepJourneyData {
+  userId: number;
+  range: RepJourneyRange;
+  period: { start: string; end: string };
+  totalPoints: number;
+  points: RepJourneyPoint[];
+}
+
+export interface RepJourneyResponse {
+  message: string;
+  data: RepJourneyData | null;
+}

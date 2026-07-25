@@ -50,6 +50,8 @@ export interface VisualiserMapPoint {
   recordedAt?: string | null;
   /** Competitor uid for PATCH updates from the map popup. */
   competitorUid?: number;
+  /** Sales rep user uid for journey/trail requests from the map popup. */
+  repUid?: number;
   /** Hardware brand key for group revenue updates (e.g. CASHBUILD). */
   brandKey?: string | null;
   /** Raw estimated annual revenue (ZAR) for competitor popup editing. */
@@ -418,6 +420,7 @@ export function repLocationToMapPoint(loc: LatestRepLocation): VisualiserMapPoin
     positionLabel: 'Sales rep',
     subtitle: decodedAddress ?? 'Last known phone GPS',
     recordedAt: loc.recordedAt,
+    repUid: loc.user.uid,
   };
 }
 
