@@ -50,9 +50,8 @@ export function useProductsInfinite(options?: {
       return res;
     },
     getNextPageParam: (lastPage) => {
-      const meta = lastPage.meta;
-      if (!meta) return undefined;
-      const { page, totalPages } = meta;
+      const page = lastPage.meta?.page ?? lastPage.page ?? 1;
+      const totalPages = lastPage.meta?.totalPages ?? lastPage.totalPages ?? 0;
       return page < totalPages ? page + 1 : undefined;
     },
     initialPageParam: 1,

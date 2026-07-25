@@ -73,3 +73,39 @@ export function buildPayslipFileName(
   const period = payslip.period?.trim() || 'unknown';
   return `${base}-${period}.pdf`;
 }
+
+/** Client-side filters for user-scoped payslip lists (APK parity). */
+export function filterPayslipListItems<
+  T extends { issueDate: string; status: string },
+>(
+  items: T[],
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }
+): T[] {
+  return items.filter((payslip) => {
+    if (filters.status && filters.status !== 'all' && payslip.status !== filters.status) {
+      return false;
+    }
+    if (!filters.startDate && !filters.endDate) {
+      return true;
+    }
+    const issueDate = new Date(payslip.issueDate);
+    if (Number.isNaN(issueDate.getTime())) {
+      return true;
+    }
+    if (filters.startDate) {
+      const start = new Date(filters.startDate);
+      start.setHours(0, 0, 0, 0);
+      if (issueDate < start) return false;
+    }
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      if (issueDate > end) return false;
+    }
+    return true;
+  });
+}

@@ -1,5 +1,7 @@
 /** ERP performance types — will align with rebuilt server reports API. */
 
+import type { MasterBranchRow, SalesPerStoreRow } from '@/lib/utils/sales-per-store-match';
+
 export interface BranchMonthlySalesPoint {
   month: string;
   totalRevenue: number | null;
@@ -7,9 +9,9 @@ export interface BranchMonthlySalesPoint {
 }
 
 export interface PerformanceDashboardResponse {
-  salesPerStore?: Array<Record<string, unknown>>;
+  salesPerStore?: SalesPerStoreRow[];
   masterData?: {
-    branches?: Array<Record<string, unknown>>;
+    branches?: MasterBranchRow[];
   };
   [key: string]: unknown;
 }
