@@ -10,6 +10,8 @@ import {
 } from 'recharts';
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -77,6 +79,7 @@ export function SimulationTrendChart({ timeline }: SimulationTrendChartProps) {
             />
           }
         />
+        <ChartLegend content={<ChartLegendContent />} />
         <Line
           type="monotone"
           dataKey="low"

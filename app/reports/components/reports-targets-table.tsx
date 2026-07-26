@@ -6,6 +6,7 @@ import {
   ReportProgressBar,
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
+import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetMetricCell, ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,10 @@ const WARNING_BADGE: Record<1 | 2 | 3, string> = {
   3: 'bg-red-100 text-red-800 border-red-200/80',
 };
 
-const COL_COUNT = 8;
+const COL_COUNT = 9;
+
+const PRODUCTIVITY_COLUMN_HINT =
+  'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
 
 function initials(name: string): string {
   return name
@@ -44,15 +48,14 @@ function formatCount(value: number): string {
 }
 
 function formatSales(cell: ReportsTargetMetricCell): string {
-  const currency = cell.currency?.trim() || '';
+  const currency = formatReportCurrencyCode(cell.currency);
   const cur = cell.current.toLocaleString(undefined, {
     maximumFractionDigits: 0,
   });
   const tgt = cell.target.toLocaleString(undefined, {
     maximumFractionDigits: 0,
   });
-  if (currency) return `${currency} ${cur} / ${tgt}`;
-  return `${cur} / ${tgt}`;
+  return `${currency} ${cur} / ${tgt}`;
 }
 
 function MetricCell({
@@ -121,6 +124,35 @@ function AcknowledgedCell({ row }: { row: ReportsTargetRow }) {
   );
 }
 
+function ProductivityCell({ row }: { row: ReportsTargetRow }) {
+  const { score, isLoading } = row.productivity;
+  if (isLoading) {
+    return <Skeleton className="h-10 w-16" />;
+  }
+  if (score == null) {
+    return (
+      <span
+        className="text-xs text-muted-foreground"
+        title={PRODUCTIVITY_COLUMN_HINT}
+      >
+        —
+      </span>
+    );
+  }
+  const colors = getProgressColorClasses(score);
+  return (
+    <div
+      className="min-w-[5rem] space-y-1.5"
+      title={PRODUCTIVITY_COLUMN_HINT}
+    >
+      <ReportProgressBar value={score} />
+      <p className={cn('text-sm font-semibold tabular-nums', colors.text)}>
+        {score}%
+      </p>
+    </div>
+  );
+}
+
 function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
     <>
@@ -146,6 +178,9 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           </TableCell>
           <TableCell className="hidden lg:table-cell">
             <Skeleton className="h-10 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-10 w-16" />
           </TableCell>
           <TableCell>
             <Skeleton className="h-10 w-16" />
@@ -192,6 +227,11 @@ export function ReportsTargetsTable({
           <TableHead>Leads</TableHead>
           <TableHead className="hidden md:table-cell">Sales</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
+          <TableHead
+            title={PRODUCTIVITY_COLUMN_HINT}
+          >
+            Productivity
+          </TableHead>
           <TableHead>Achievement</TableHead>
           <TableHead>Warnings</TableHead>
           <TableHead>Acknowledged</TableHead>
@@ -265,6 +305,9 @@ export function ReportsTargetsTable({
                     cell={row.hours}
                     formatValue={(c) => `${formatCount(c.current)}h / ${formatCount(c.target)}h`}
                   />
+                </TableCell>
+                <TableCell>
+                  <ProductivityCell row={row} />
                 </TableCell>
                 <TableCell>
                   <div className="min-w-[5rem] space-y-1.5">

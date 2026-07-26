@@ -1,6 +1,6 @@
 /**
  * Role-based access: allowed routes and route guards for loro-web.
- * Standard users can only access dashboard.
+ * Standard users get operational paths + role-scoped reports; no competitors / competitor overview.
  */
 
 /** Paths any signed-in user with "standard" role can access (view-only scope) */
@@ -10,20 +10,20 @@ export const STANDARD_USER_PATHS = [
     "/leads",
     "/pipeline",
     "/clients",
-    "/competitors",
     "/planning",
     "/claims",
     "/payslips",
     "/reports",
-    "/visualiser",
     "/settings",
 ] as const;
 
-/** Matches server ReportsController.getAccessScope `isElevated` (org-wide reports / map). */
-const REPORTS_ELEVATED_LEVELS = new Set<string>([
+/** Reports data visibility: org = everyone, team = self+managedStaff, self = authenticated user only. */
+export type ReportsDataScope = "org" | "team" | "self";
+
+/** Admin / owner (+ ops roles) see full organisation reports. */
+const REPORTS_ORG_LEVELS = new Set<string>([
     "admin",
     "owner",
-    "manager",
     "developer",
     "support",
     "hr",
@@ -32,13 +32,59 @@ const REPORTS_ELEVATED_LEVELS = new Set<string>([
 ]);
 
 /**
- * True when the user sees org-wide report filters and data (vs self-scoped).
- * Keep in sync with server `getAccessScope` / reports map clamp logic.
+ * True when the user may open `/reports`.
+ * All staff (non-client) — Overview + Targets scoped by getReportsDataScope.
  */
-export function isReportsElevatedViewer(accessLevel: string | undefined): boolean {
+export function canAccessReports(accessLevel: string | undefined): boolean {
     const level = normalize(accessLevel);
     if (!level) return false;
-    return REPORTS_ELEVATED_LEVELS.has(level);
+    if (level === "client") return false;
+    return true;
+}
+
+/**
+ * Three-tier reports data scope (mirrors server reports-access.util).
+ * - org: admin/owner (+ developer, support, hr, supervisor, executive)
+ * - team: manager (self + managedStaff)
+ * - self: everyone else
+ */
+export function getReportsDataScope(
+    accessLevel: string | undefined
+): ReportsDataScope {
+    const level = normalize(accessLevel);
+    if (!level) return "self";
+    if (REPORTS_ORG_LEVELS.has(level)) return "org";
+    if (level === "manager") return "team";
+    return "self";
+}
+
+/**
+ * True when the user can see multi-user Targets / Overview filters (org or team).
+ */
+export function canViewMultiUserReports(
+    accessLevel: string | undefined
+): boolean {
+    return getReportsDataScope(accessLevel) !== "self";
+}
+
+/**
+ * @deprecated Prefer getReportsDataScope / canViewMultiUserReports.
+ * True for org or team scope (not pure self).
+ */
+export function isReportsElevatedViewer(
+    accessLevel: string | undefined
+): boolean {
+    return canViewMultiUserReports(accessLevel);
+}
+
+/**
+ * Competitors list + Competitor Overview (`/visualiser`).
+ * Restricted (standard) users are denied via STANDARD_USER_PATHS; this gates the routes for clarity.
+ */
+export function canAccessCompetitors(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level || level === "client") return false;
+    return !RESTRICTED_ACCESS_LEVELS.has(level);
 }
 
 export type StandardUserPath = (typeof STANDARD_USER_PATHS)[number];
@@ -203,8 +249,10 @@ function isClientPortalPath(pathNormalized: string): boolean {
  * Returns whether the given path is allowed for the given access level.
  * - Public/auth paths are always allowed.
  * - `/settings` is allowed for all staff (calendar tab); org tabs gated in the page UI.
+ * - `/reports` is all staff (Overview + Targets scoped by role).
+ * - `/competitors` and `/visualiser` are not available to restricted (standard) users.
  * - Restricted roles only get STANDARD_USER_PATHS.
- * - Non-restricted roles (e.g. owner, admin, manager) can access any path.
+ * - Non-restricted roles (e.g. owner, admin, manager) can access other paths.
  */
 export function canAccess(
     path: string,
@@ -223,6 +271,22 @@ export function canAccess(
 
     if (isSettingsPath(pathNormalized)) {
         return canAccessUserSettings(accessLevel);
+    }
+
+    if (
+        pathNormalized === "/reports" ||
+        pathNormalized.startsWith("/reports/")
+    ) {
+        return canAccessReports(accessLevel);
+    }
+
+    if (
+        pathNormalized === "/competitors" ||
+        pathNormalized.startsWith("/competitors/") ||
+        pathNormalized === "/visualiser" ||
+        pathNormalized.startsWith("/visualiser/")
+    ) {
+        return canAccessCompetitors(accessLevel);
     }
 
     if (isClientPortalUser(accessLevel)) {
@@ -298,7 +362,8 @@ export function getClientSidebarRoutes(): AllowedRoute[] {
 
 /**
  * Returns nav items (path + label) to show for the given access level.
- * Standard users see only Dashboard.
+ * Standard users get operational paths + Reports (self-scoped); no Competitors / Competitor Overview.
+ * Reports Overview + Targets are available to all staff; data scope is org | team | self.
  */
 export function getAllowedRoutes(
     accessLevel: string | undefined
@@ -318,10 +383,18 @@ export function getAllowedRoutes(
         { path: "/claims", label: "Claims" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
-        { path: "/reports", label: "Reports" },
-        { path: "/competitors", label: "Competitors" },
-        { path: "/visualiser", label: "Competitor Overview" },
     ];
+
+    if (canAccessReports(accessLevel)) {
+        fullNav.push({ path: "/reports", label: "Reports" });
+    }
+
+    if (canAccessCompetitors(accessLevel)) {
+        fullNav.push(
+            { path: "/competitors", label: "Competitors" },
+            { path: "/visualiser", label: "Competitor Overview" }
+        );
+    }
 
     if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {
         return fullNav;

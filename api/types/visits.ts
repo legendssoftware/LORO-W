@@ -156,6 +156,8 @@ export interface VisitListItem {
     surname?: string;
     email?: string;
     phone?: string;
+    photoURL?: string | null;
+    avatar?: string | null;
     branch?: { uid?: number; name?: string; alias?: string | null } | null;
   } | null;
   /** Branch snapshot on the check-in; may be partial; merged with owner.branch in visitListItemToExportItem. */

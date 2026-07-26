@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getSessionSyncQueryKey } from '@/api/hooks/use-session-sync';
+import { DAILY_OVERVIEW_QUERY_KEY_PREFIX } from '@/api/hooks/use-daily-overview';
 import { useSessionStore } from '@/store/session-store';
 import {
   getUserByRef,
@@ -14,19 +15,26 @@ import {
   getDailyProductivity,
   getBonusStatus,
   patchUserTarget,
+  clearSelectedPerformanceWarnings,
   getUserPreferences,
+  patchUserPreferences,
   postAcknowledgePerformanceWarning,
   getSubThresholdDailyCalls,
   getEngagementRange,
   type PatchUserBody,
   type PatchUserTargetBody,
   type UserResponse,
+  type ClearSelectedPerformanceWarningsBody,
+  type ReportsDashboardPreferences,
 } from '@/api/endpoints/user';
 
 const QUERY_KEY_PREFIX = ['user'] as const;
 export const USER_TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
 const TARGET_QUERY_KEY_PREFIX = USER_TARGET_QUERY_KEY_PREFIX;
-const DAILY_PRODUCTIVITY_KEY_PREFIX = ['user', 'daily-productivity'] as const;
+export const DAILY_PRODUCTIVITY_KEY_PREFIX = [
+  'user',
+  'daily-productivity',
+] as const;
 const BONUS_STATUS_KEY_PREFIX = ['user', 'bonus-status'] as const;
 
 export function useUser(
@@ -211,6 +219,27 @@ export function useUserPreferences(ref: string | null, options?: { enabled?: boo
   });
 }
 
+export function usePatchUserPreferences(ref: string | null) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      reportsDashboard?: ReportsDashboardPreferences;
+      [key: string]: unknown;
+    }) => {
+      if (!ref) throw new Error('User ref required');
+      return patchUserPreferences(client, ref, body);
+    },
+    onSuccess: () => {
+      if (ref) {
+        queryClient.invalidateQueries({
+          queryKey: [...PREFERENCES_QUERY_KEY_PREFIX, ref],
+        });
+      }
+    },
+  });
+}
+
 export function usePatchUserTarget(ref: string | null) {
   const client = useApiClient();
   const queryClient = useQueryClient();
@@ -224,6 +253,26 @@ export function usePatchUserTarget(ref: string | null) {
         queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
         queryClient.invalidateQueries({ queryKey: [...TARGET_QUERY_KEY_PREFIX, ref] });
       }
+    },
+  });
+}
+
+export function useClearSelectedPerformanceWarnings(ref: string | null) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: ClearSelectedPerformanceWarningsBody) => {
+      if (!ref) throw new Error('User ref required');
+      return clearSelectedPerformanceWarnings(client, ref, body);
+    },
+    onSuccess: () => {
+      if (ref) {
+        queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
+        queryClient.invalidateQueries({ queryKey: [...TARGET_QUERY_KEY_PREFIX, ref] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: getSessionSyncQueryKey() });
     },
   });
 }

@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Loader2, MapPin, RefreshCw, ExternalLink } from 'lucide-react';
-import { useCalculateRoutesMutation, useOptimizedRoutes, useUsers } from '@/api/hooks';
+import { useCalculateRoutesMutation, useOptimizedRoutes, useSessionSync, useUsers } from '@/api/hooks';
+import { canAccessCompetitors } from '@/lib/access';
 import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -24,6 +25,8 @@ interface PlanningRoutesMapProps {
  * Route planning list (no embedded map — maps live on /visualiser only).
  */
 export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
+  const { backendUserData } = useSessionSync();
+  const showVisualiserLink = canAccessCompetitors(backendUserData?.accessLevel);
   const [routeDate, setRouteDate] = useState<Date>(() => utcToday());
   const dateYmd = formatUtcYmd(routeDate);
   const routesQuery = useOptimizedRoutes(dateYmd);
@@ -61,12 +64,14 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
           </PopoverContent>
         </Popover>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" asChild>
-            <Link href="/visualiser">
-              <ExternalLink className="size-4" />
-              Open visualiser
-            </Link>
-          </Button>
+          {showVisualiserLink ? (
+            <Button variant="outline" size="sm" className="gap-1.5" asChild>
+              <Link href="/visualiser">
+                <ExternalLink className="size-4" />
+                Open visualiser
+              </Link>
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="secondary"

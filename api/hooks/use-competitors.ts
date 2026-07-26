@@ -47,6 +47,9 @@ export function invalidateCompetitorQueries(
   queryClient.invalidateQueries({ queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'list'] });
   queryClient.invalidateQueries({ queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'infinite'] });
   queryClient.invalidateQueries({ queryKey: COMPETITORS_MAP_DATA_QUERY_KEY });
+  queryClient.invalidateQueries({
+    queryKey: ['competitors', 'missing-geocode'],
+  });
   if (opts?.detailId != null) {
     queryClient.invalidateQueries({
       queryKey: [...COMPETITORS_QUERY_KEY_PREFIX, 'detail', opts.detailId],

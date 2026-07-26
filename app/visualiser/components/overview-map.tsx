@@ -19,6 +19,7 @@ import { MapFeaturePopupContent } from '@/app/visualiser/components/map-feature-
 import { JourneyPointsLayer } from '@/app/visualiser/components/journey-points-layer';
 import { LayeredLogoClusters } from '@/app/visualiser/components/logo-cluster-layer';
 import { SimulationOverlayLayer } from '@/app/visualiser/components/simulation-overlay-layer';
+import { RepTrackerControl } from '@/app/visualiser/components/rep-tracker-control';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import {
   DEFAULT_LAYER_VISIBILITY,
@@ -36,6 +37,7 @@ import {
   branchSimulationTextClass,
 } from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
+import { useBranches, useUsers } from '@/api/hooks';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
   RepJourneyPoint,
@@ -205,6 +207,23 @@ function Map3DController() {
   );
 }
 
+function resolveRepDisplayName(
+  repUid: number,
+  selected: VisualiserMapPoint | null,
+  users: { uid: number; name?: string | null; surname?: string | null; email?: string | null }[],
+  override?: string
+): string {
+  if (override) return override;
+  if (selected?.repUid === repUid && selected.name) return selected.name;
+  const user = users.find((u) => u.uid === repUid);
+  if (user) {
+    const fromParts = [user.name, user.surname].filter(Boolean).join(' ').trim();
+    if (fromParts) return fromParts;
+    if (user.email) return user.email;
+  }
+  return `Rep #${repUid}`;
+}
+
 interface OverviewMapProps {
   orgRef?: string | null;
   enabled?: boolean;
@@ -227,11 +246,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const [isTracing, setIsTracing] = useState(false);
   const [selectedJourneyPoint, setSelectedJourneyPoint] =
     useState<RepJourneyPoint | null>(null);
+  const [trackedRepUid, setTrackedRepUid] = useState('all');
+  const [activeTraceRange, setActiveTraceRange] =
+    useState<RepJourneyRange | null>(null);
+  const [trackStatusMessage, setTrackStatusMessage] = useState<string | null>(
+    null
+  );
 
   const { isActive, selectedZone, clearSimulation, panelOpen } =
     useVisualiserSimulation();
 
-  const { visiblePoints, counts, isLoading } = useVisualiserMapLayers({
+  const { data: users = [] } = useUsers({ enabled, limit: 200 });
+  const { data: branches = [] } = useBranches({ enabled });
+
+  const { allPoints, visiblePoints, counts, isLoading } = useVisualiserMapLayers({
     enabled,
     orgRef,
     visibility,
@@ -306,7 +334,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const handleClearRoute = useCallback(() => {
     setJourneyRoute(null);
     setSelectedJourneyPoint(null);
+    setActiveTraceRange(null);
+    setTrackStatusMessage(null);
   }, []);
+
+  const handleClearTracking = useCallback(() => {
+    setTrackedRepUid('all');
+    handleClearRoute();
+    setSelected((cur) => (cur?.layer === 'reps' ? null : cur));
+  }, [handleClearRoute]);
 
   const handleLayerChange = useCallback(
     (layer: VisualiserLayerId, visible: boolean) => {
@@ -315,19 +351,32 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       if (layer === 'reps' && !visible) {
         setJourneyRoute(null);
         setSelectedJourneyPoint(null);
+        setTrackedRepUid('all');
+        setActiveTraceRange(null);
+        setTrackStatusMessage(null);
       }
     },
     []
   );
 
   const handleTraceRoute = useCallback(
-    async (repUid: number, range: RepJourneyRange) => {
-      const repName =
-        selected?.repUid === repUid
-          ? selected.name
-          : `Rep #${repUid}`;
+    async (
+      repUid: number,
+      range: RepJourneyRange,
+      repNameOverride?: string,
+      options?: { quiet?: boolean }
+    ): Promise<boolean> => {
+      const quiet = options?.quiet === true;
+      const repName = resolveRepDisplayName(
+        repUid,
+        selected,
+        users,
+        repNameOverride
+      );
       setIsTracing(true);
       setSelectedJourneyPoint(null);
+      setActiveTraceRange(range);
+      setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
       toast.loading(`Loading ${RANGE_LABELS[range]} points…`, { id: toastId });
       try {
@@ -335,11 +384,16 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         const data = response.data;
         if (!data || data.points.length < 1) {
           setJourneyRoute(null);
-          toast.error(
-            `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
-            { id: toastId }
+          setTrackStatusMessage(
+            `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`
           );
-          return;
+          if (!quiet) {
+            toast.error(
+              `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
+              { id: toastId }
+            );
+          }
+          return false;
         }
 
         setJourneyRoute({
@@ -349,25 +403,64 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           points: data.points,
           summary: data.summary,
         });
+        setTrackStatusMessage(
+          `${data.summary.totalPoints} points · ${data.summary.totalDistanceKm.toFixed(1)} km · ${RANGE_LABELS[range]}`
+        );
         toast.success(
           `${repName}: ${data.summary.totalPoints} points · ${data.summary.totalDistanceKm.toFixed(1)} km · ${RANGE_LABELS[range]}`,
           { id: toastId }
         );
+        return true;
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to load journey';
-        toast.error(message, { id: toastId });
+        setJourneyRoute(null);
+        setTrackStatusMessage(message);
+        if (!quiet) {
+          toast.error(message, { id: toastId });
+        }
+        return false;
       } finally {
         setIsTracing(false);
       }
     },
-    [client, selected]
+    [client, selected, users]
   );
 
-  const activeTraceRange =
-    journeyRoute && selected?.repUid === journeyRoute.repUid
-      ? journeyRoute.range
-      : null;
+  const handleTrackedRepChange = useCallback(
+    async (uid: string) => {
+      if (uid === 'all') {
+        handleClearTracking();
+        return;
+      }
+
+      setTrackedRepUid(uid);
+      const repUid = Number(uid);
+      if (!Number.isFinite(repUid)) return;
+
+      setVisibility((prev) =>
+        prev.reps ? prev : { ...prev, reps: true }
+      );
+      setSelectedJourneyPoint(null);
+
+      const pin = allPoints.find(
+        (p) => p.layer === 'reps' && p.repUid === repUid
+      );
+      setSelected(pin ?? null);
+
+      const repName = resolveRepDisplayName(repUid, pin ?? null, users);
+      const dayLoaded = await handleTraceRoute(repUid, 'day', repName, {
+        quiet: true,
+      });
+      if (!dayLoaded) {
+        await handleTraceRoute(repUid, 'week', repName);
+      }
+    },
+    [allPoints, handleClearTracking, handleTraceRoute, users]
+  );
+
+  const trackedUidNum =
+    trackedRepUid === 'all' ? null : Number(trackedRepUid);
 
   const journeyCoordinates = useMemo(
     (): [number, number][] =>
@@ -380,7 +473,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     : null;
 
   const activeJourneySummary =
-    journeyRoute && selected?.repUid === journeyRoute.repUid
+    journeyRoute &&
+    (selected?.repUid === journeyRoute.repUid ||
+      trackedUidNum === journeyRoute.repUid)
       ? journeyRoute.summary
       : null;
 
@@ -430,14 +525,34 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         </div>
       ) : null}
 
-      <MapLayerToggles
-        visibility={visibility}
-        counts={counts}
-        onChange={handleLayerChange}
-        className={
-          isActive && selectedZone && !panelOpen ? 'top-28' : undefined
-        }
-      />
+      <div
+        className={`absolute left-3 z-10 flex w-[min(100%-1.5rem,16rem)] flex-col gap-2 ${
+          isActive && selectedZone && !panelOpen ? 'top-28' : 'top-3'
+        }`}
+      >
+        <MapLayerToggles
+          visibility={visibility}
+          counts={counts}
+          onChange={handleLayerChange}
+        />
+
+        <RepTrackerControl
+          users={users}
+          branches={branches}
+          selectedUid={trackedRepUid}
+          onUidChange={(uid) => {
+            void handleTrackedRepChange(uid);
+          }}
+          activeRange={activeTraceRange}
+          isTracing={isTracing}
+          statusMessage={trackStatusMessage}
+          onClear={handleClearTracking}
+          onTraceRange={(range) => {
+            if (trackedUidNum == null) return;
+            void handleTraceRoute(trackedUidNum, range);
+          }}
+        />
+      </div>
 
       {journeyRoute ? (
         <div className="bg-background/95 absolute bottom-3 left-3 z-10 max-w-xs rounded-md border px-3 py-2 text-xs shadow-sm backdrop-blur">
@@ -453,7 +568,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             <button
               type="button"
               className="text-muted-foreground hover:text-foreground shrink-0 text-[10px] underline"
-              onClick={handleClearRoute}
+              onClick={handleClearTracking}
             >
               Clear
             </button>
@@ -571,8 +686,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
               activeTraceRange={activeTraceRange}
               isTracing={isTracing}
               journeySummary={activeJourneySummary}
-              onTraceRoute={handleTraceRoute}
-              onClearRoute={handleClearRoute}
+              onTraceRoute={(repUid, range) => {
+                setTrackedRepUid(String(repUid));
+                void handleTraceRoute(repUid, range);
+              }}
+              onClearRoute={handleClearTracking}
             />
           </MapPopup>
         ) : null}

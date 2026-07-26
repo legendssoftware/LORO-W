@@ -9,6 +9,7 @@ import {
   Loader2,
   MapPin,
   RotateCcw,
+  Save,
   Settings2,
   Sparkles,
   Store,
@@ -22,10 +23,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useBranches, useClientsMapData } from '@/api/hooks';
-import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
+import { useBranches, useClientsMapData, useSessionSync, useUserPreferences } from '@/api/hooks';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { useTokenReady } from '@/api/hooks/use-token-ready';
+import { patchUserPreferences } from '@/api/endpoints/user';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useCompetitorsMapData,
+  useCompetitorsMissingGeocode,
+} from '@/api/hooks/use-competitors-map-data';
 import { useStoresSales } from '@/api/hooks/use-stores-sales';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
+import { CompetitorsBreakdownChart } from '@/app/visualiser/components/competitors-breakdown-chart';
+import { CompetitorsDetailModalButton } from '@/app/visualiser/components/competitors-detail-modal';
+import { MissingCompetitorsList } from '@/app/visualiser/components/missing-competitors-list';
 import { SimulationTrendChart } from '@/app/visualiser/components/simulation-trend-chart';
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import {
@@ -49,8 +60,9 @@ import { matureShareByCompetition } from '@/lib/site-opportunity/compute/capture
 import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
 import { listCompetitorsInZone } from '@/lib/site-opportunity/zone-competitors';
 import {
-  loadVisualiserPreferences,
+  resolveVisualiserPreferences,
   saveVisualiserPreferences,
+  toVisualiserUserPreferencePayload,
 } from '@/lib/visualiser-preferences';
 import {
   currentMonthLabel,
@@ -98,6 +110,30 @@ function ZoneDetailBody({
   >;
 }) {
   const monthLabel = detailSim.actualRevenueMonthLabel ?? currentMonthLabel();
+  const zoneTitle =
+    zone.kind === 'catchment' ? zone.branchName : zone.label;
+  const explainPayload = {
+    kind: (zone.kind === 'catchment' ? 'catchment' : 'greenfield') as
+      | 'catchment'
+      | 'greenfield',
+    title: zoneTitle,
+    rank: zone.rank,
+    radiusKm: zone.radiusMeters / 1000,
+    competitorCount: zone.competitorCount,
+    clientCount: zone.clientCount,
+    addressablePoolZAR: zone.addressablePoolZAR,
+    potentialLowZAR: zone.potentialLowZAR,
+    potentialHighZAR: zone.potentialHighZAR,
+    simulatedMonthlyZAR: detailSim.simulatedMonthlyZAR,
+    actualMonthlyZAR: detailSim.actualMonthlyZAR ?? null,
+    actualMonthLabel: monthLabel,
+    competitionLabel: matureShareByCompetition(zone.competitorCount).label,
+    competitorNames: [...competitorsByBrand.values()]
+      .flat()
+      .map((s) => s.name)
+      .slice(0, 12),
+    monthsToMature: zone.monthsToTargetMid ?? null,
+  };
 
   return (
     <div className="space-y-3 border-t px-2.5 py-2.5">
@@ -142,40 +178,60 @@ function ZoneDetailBody({
       </div>
 
       <div>
-        <p className="mb-1 text-xs font-medium">Competitors in radius</p>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <p className="text-xs font-medium">Competitors in radius</p>
+          {competitorsByBrand.size > 0 ? (
+            <CompetitorsDetailModalButton
+              title={zoneTitle}
+              competitorsByBrand={competitorsByBrand}
+              explainPayload={explainPayload}
+            />
+          ) : null}
+        </div>
         {competitorsByBrand.size === 0 ? (
           <p className="text-muted-foreground text-[11px]">
             No geocoded competitors in this bubble.
           </p>
         ) : (
-          <div className="max-h-36 space-y-2 overflow-y-auto">
-            {[...competitorsByBrand.entries()].map(([brand, stores]) => (
-              <div key={brand}>
-                <p className="text-muted-foreground text-[10px] font-medium">
-                  {brand} ({stores.length})
-                </p>
-                <ul className="mt-0.5 space-y-1">
-                  {stores.map((store) => (
-                    <li
-                      key={String(store.id)}
-                      className="border-border/60 border-b border-dashed pb-1 text-[11px] last:border-0"
-                    >
-                      <p className="font-medium leading-snug">{store.name}</p>
-                      {store.address ? (
-                        <p className="text-muted-foreground leading-snug">
-                          {store.address}
-                        </p>
-                      ) : (
-                        <p className="text-muted-foreground italic">
-                          No address on record
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <>
+            <CompetitorsBreakdownChart
+              competitorsByBrand={competitorsByBrand}
+              compact
+            />
+            <div className="mt-2 max-h-28 space-y-2 overflow-y-auto">
+              {[...competitorsByBrand.entries()].map(([brand, stores]) => (
+                <div key={brand}>
+                  <p className="text-muted-foreground text-[10px] font-medium">
+                    {brand} ({stores.length})
+                  </p>
+                  <ul className="mt-0.5 space-y-1">
+                    {stores.slice(0, 3).map((store) => (
+                      <li
+                        key={String(store.id)}
+                        className="border-border/60 border-b border-dashed pb-1 text-[11px] last:border-0"
+                      >
+                        <p className="font-medium leading-snug">{store.name}</p>
+                        {store.address ? (
+                          <p className="text-muted-foreground line-clamp-1 leading-snug">
+                            {store.address}
+                          </p>
+                        ) : (
+                          <p className="text-muted-foreground italic">
+                            No address on record
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                    {stores.length > 3 ? (
+                      <li className="text-muted-foreground text-[10px]">
+                        +{stores.length - 3} more — view in detail
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -198,30 +254,7 @@ function ZoneDetailBody({
         </ul>
       </div>
 
-      <ZoneExplainAiButton
-        payload={{
-          kind: zone.kind === 'catchment' ? 'catchment' : 'greenfield',
-          title:
-            zone.kind === 'catchment' ? zone.branchName : zone.label,
-          rank: zone.rank,
-          radiusKm: zone.radiusMeters / 1000,
-          competitorCount: zone.competitorCount,
-          clientCount: zone.clientCount,
-          addressablePoolZAR: zone.addressablePoolZAR,
-          potentialLowZAR: zone.potentialLowZAR,
-          potentialHighZAR: zone.potentialHighZAR,
-          simulatedMonthlyZAR: detailSim.simulatedMonthlyZAR,
-          actualMonthlyZAR: detailSim.actualMonthlyZAR ?? null,
-          actualMonthLabel: monthLabel,
-          competitionLabel: matureShareByCompetition(zone.competitorCount)
-            .label,
-          competitorNames: [...competitorsByBrand.values()]
-            .flat()
-            .map((s) => s.name)
-            .slice(0, 12),
-          monthsToMature: zone.monthsToTargetMid ?? null,
-        }}
-      />
+      <ZoneExplainAiButton payload={explainPayload} />
     </div>
   );
 }
@@ -315,6 +348,28 @@ export function SimulationSidePanel() {
     runMarkers,
   } = useVisualiserSimulation();
 
+  const { isTokenReady } = useTokenReady();
+  const { backendUserData } = useSessionSync();
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  const userRef =
+    backendUserData?.uid?.toString() ?? backendUserData?.clerkUserId ?? null;
+
+  const { data: prefsData, isFetched: prefsFetched } = useUserPreferences(
+    userRef,
+    { enabled: !!userRef && isTokenReady },
+  );
+
+  const savePrefsMutation = useMutation({
+    mutationFn: (body: Record<string, unknown>) => {
+      if (!userRef) throw new Error('User not loaded');
+      return patchUserPreferences(client, userRef, body);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'preferences'] });
+    },
+  });
+
   const [isRunning, setIsRunning] = useState(false);
   const [settings, setSettings] = useState<SiteOpportunitySettings>(
     DEFAULT_SITE_OPPORTUNITY_SETTINGS,
@@ -326,22 +381,91 @@ export function SimulationSidePanel() {
 
   const branchesQuery = useBranches({ enabled: panelOpen });
   const competitorsQuery = useCompetitorsMapData({ enabled: panelOpen });
+  const missingGeocodeQuery = useCompetitorsMissingGeocode({
+    enabled: panelOpen && isActive,
+  });
   const clientsQuery = useClientsMapData({ enabled: panelOpen });
   const storesSalesQuery = useStoresSales(undefined, { enabled: panelOpen });
 
   useEffect(() => {
     if (!panelOpen) return;
-    const prefs = loadVisualiserPreferences();
+    // Wait for server prefs when we have a user so we don't flash localStorage then overwrite
+    if (userRef && isTokenReady && !prefsFetched) return;
+    const prefs = resolveVisualiserPreferences(
+      prefsData?.preferences?.visualiser,
+    );
     setSettings({
       ...DEFAULT_SITE_OPPORTUNITY_SETTINGS,
       ...prefs.opportunitySettings,
     });
     setBrandTurnovers(seedBrandTurnovers(prefs.turnoverOverrides));
     setMode(prefs.opportunityMode);
-  }, [panelOpen]);
+  }, [
+    panelOpen,
+    userRef,
+    isTokenReady,
+    prefsFetched,
+    prefsData?.preferences?.visualiser,
+  ]);
 
   const monthRange = monthlyDateRange();
   const monthLabel = currentMonthLabel();
+
+  function buildCurrentTurnoverOverrides(): TurnoverOverrideSettings {
+    return {
+      brandTurnoverOverrides: Object.fromEntries(
+        EDITABLE_BRANDS.map((brand) => [brand, brandTurnovers[brand]]),
+      ) as Partial<Record<HardwareBrandKey, number>>,
+    };
+  }
+
+  function persistLocalAndBuildPayload() {
+    const turnoverOverrides = buildCurrentTurnoverOverrides();
+    const localPatch = {
+      opportunitySettings: settings,
+      opportunityMode: mode,
+      turnoverOverrides,
+    };
+    saveVisualiserPreferences(localPatch);
+    return toVisualiserUserPreferencePayload(localPatch);
+  }
+
+  async function handleSaveSettings() {
+    if (!userRef) {
+      toast.error('Sign in required to save settings');
+      return;
+    }
+    const visualiser = persistLocalAndBuildPayload();
+    try {
+      await savePrefsMutation.mutateAsync({ visualiser });
+      toast.success('Simulation settings saved to your profile');
+    } catch {
+      toast.error('Could not save settings to your profile');
+    }
+  }
+
+  function resetDefaults() {
+    setSettings({ ...DEFAULT_SITE_OPPORTUNITY_SETTINGS });
+    setBrandTurnovers(seedBrandTurnovers());
+    setMode('both');
+    const visualiser = toVisualiserUserPreferencePayload({
+      opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+      opportunityMode: 'both',
+      turnoverOverrides: { brandTurnoverOverrides: {} },
+    });
+    saveVisualiserPreferences(visualiser);
+    if (userRef) {
+      savePrefsMutation.mutate(
+        { visualiser },
+        {
+          onSuccess: () => toast.success('Defaults restored and synced'),
+          onError: () => toast.success('Defaults restored locally'),
+        },
+      );
+    } else {
+      toast.success('Defaults restored');
+    }
+  }
 
   const detailSim = useMemo(() => {
     if (!selectedZone) return null;
@@ -374,18 +498,6 @@ export function SimulationSidePanel() {
     return map;
   }, [competitorsInZone]);
 
-  function resetDefaults() {
-    setSettings({ ...DEFAULT_SITE_OPPORTUNITY_SETTINGS });
-    setBrandTurnovers(seedBrandTurnovers());
-    setMode('both');
-    saveVisualiserPreferences({
-      opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
-      opportunityMode: 'both',
-      turnoverOverrides: { brandTurnoverOverrides: {} },
-    });
-    toast.success('Defaults restored');
-  }
-
   async function handleRunSimulation() {
     if (isRunning) return;
     setIsRunning(true);
@@ -403,17 +515,19 @@ export function SimulationSidePanel() {
         return;
       }
 
-      const turnoverOverrides: TurnoverOverrideSettings = {
-        brandTurnoverOverrides: Object.fromEntries(
-          EDITABLE_BRANDS.map((brand) => [brand, brandTurnovers[brand]]),
-        ) as Partial<Record<HardwareBrandKey, number>>,
-      };
-
-      saveVisualiserPreferences({
+      const turnoverOverrides = buildCurrentTurnoverOverrides();
+      const visualiser = toVisualiserUserPreferencePayload({
         opportunitySettings: settings,
         opportunityMode: mode,
         turnoverOverrides,
       });
+      saveVisualiserPreferences(visualiser);
+      // Persist to profile in background when signed in (non-blocking)
+      if (userRef) {
+        void savePrefsMutation.mutateAsync({ visualiser }).catch(() => {
+          /* local cache already saved */
+        });
+      }
 
       toast.loading('Counting hardwares in catchments…', { id: 'map-simulate' });
       await new Promise((r) => setTimeout(r, 40));
@@ -741,16 +855,34 @@ export function SimulationSidePanel() {
               </div>
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={resetDefaults}
-            >
-              <RotateCcw className="size-3.5" />
-              Reset defaults
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                disabled={!userRef || savePrefsMutation.isPending}
+                onClick={() => void handleSaveSettings()}
+              >
+                {savePrefsMutation.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Save className="size-3.5" />
+                )}
+                {savePrefsMutation.isPending ? 'Saving…' : 'Save settings'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={resetDefaults}
+                disabled={savePrefsMutation.isPending}
+              >
+                <RotateCcw className="size-3.5" />
+                Reset defaults
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4 text-sm">
@@ -765,6 +897,25 @@ export function SimulationSidePanel() {
                     <li key={w}>{w}</li>
                   ))}
                 </ul>
+                {missingGeocodeQuery.data &&
+                missingGeocodeQuery.data.length > 0 ? (
+                  <div className="mt-2 border-t border-amber-500/20 pt-2">
+                    <MissingCompetitorsList
+                      items={missingGeocodeQuery.data}
+                      compact
+                      maxVisible={8}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : missingGeocodeQuery.data &&
+              missingGeocodeQuery.data.length > 0 ? (
+              <div className="rounded-md border border-amber-500/30 bg-amber-50/50 px-2.5 py-2 text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
+                <MissingCompetitorsList
+                  items={missingGeocodeQuery.data}
+                  compact
+                  maxVisible={8}
+                />
               </div>
             ) : null}
 

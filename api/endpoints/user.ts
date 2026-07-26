@@ -284,6 +284,37 @@ export interface GetUserTargetResponse {
 }
 
 /** GET /user/:ref/preferences - user preferences (theme, language, notifications, etc.). */
+export interface ReportsDashboardPreferences {
+  rememberSettings?: boolean;
+  startDate?: string;
+  endDate?: string;
+  branchId?: string;
+  userId?: string;
+  country?: string;
+}
+
+/** Competitor Overview / map simulation prefs persisted on the user. */
+export interface VisualiserUserPreferences {
+  opportunityMode?: 'both' | 'catchment' | 'greenfield';
+  opportunitySettings?: {
+    radiusMeters?: number;
+    topN?: number;
+    minBranchSeparationKm?: number;
+    captureLowPct?: number;
+    captureHighPct?: number;
+    repTargetMonthlyZAR?: number;
+  };
+  turnoverOverrides?: {
+    brandTurnoverOverrides?: Record<string, number>;
+    categoryTurnoverOverrides?: Record<string, number>;
+  };
+  selectedCountry?: string;
+  selectedProvince?: string;
+  showOpportunities?: boolean;
+  showSalesRepLocations?: boolean;
+  repLocationsMaxAgeHours?: number;
+}
+
 export interface GetUserPreferencesResponse {
   preferences: {
     theme?: string;
@@ -303,6 +334,8 @@ export interface GetUserPreferencesResponse {
       preferredProvider?: 'google' | 'microsoft' | 'auto';
       defaultDurationMinutes?: number;
     };
+    reportsDashboard?: ReportsDashboardPreferences;
+    visualiser?: VisualiserUserPreferences;
   };
   message: string;
 }
@@ -479,6 +512,32 @@ export async function postAcknowledgePerformanceWarning(
   const { data } = await client.post<AcknowledgePerformanceWarningResponse>(
     `/user/${ref}/target/performance-warning/acknowledge`,
     {}
+  );
+  return data;
+}
+
+export interface ClearSelectedPerformanceWarningsBody {
+  clearActive?: boolean;
+  removeHistoryIndexes?: number[];
+}
+
+export interface ClearSelectedPerformanceWarningsResponse {
+  message: string;
+  targetWarnings: TargetWarningsPayload | null;
+}
+
+/**
+ * POST /user/:ref/target/performance-warning/clear — admin/manager/owner.
+ * Clears active tier and/or selected history indexes; unselected history stays.
+ */
+export async function clearSelectedPerformanceWarnings(
+  client: AxiosInstance,
+  ref: string,
+  body: ClearSelectedPerformanceWarningsBody
+): Promise<ClearSelectedPerformanceWarningsResponse> {
+  const { data } = await client.post<ClearSelectedPerformanceWarningsResponse>(
+    `/user/${ref}/target/performance-warning/clear`,
+    body
   );
   return data;
 }

@@ -4,8 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
-import { getAttStatus, getAttMetrics } from '@/api/endpoints/attendance';
-import type { AttStatusResponse, AttendanceMetrics } from '@/api/types';
+import { getAttStatus } from '@/api/endpoints/attendance';
+import type { AttStatusResponse } from '@/api/types';
 
 function normalizeAttStatus(data: AttStatusResponse): AttStatusResponse {
   return {
@@ -19,7 +19,7 @@ function normalizeAttStatus(data: AttStatusResponse): AttStatusResponse {
 const PREFETCH_COOLDOWN_MS = 2000;
 
 /**
- * Hover/intent prefetch for dashboard attendance queries (matches useAttStatus / useAttMetrics keys and transforms).
+ * Hover/intent prefetch for dashboard attendance status (matches useAttStatus).
  */
 export function usePrefetchDashboardQueries() {
   const queryClient = useQueryClient();
@@ -40,15 +40,6 @@ export function usePrefetchDashboardQueries() {
         return normalizeAttStatus(data);
       },
       staleTime: 30 * 1000,
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ['att', 'metrics'],
-      queryFn: async () => {
-        const response = await getAttMetrics(client, { scope: 'dashboard' });
-        return response.metrics as AttendanceMetrics;
-      },
-      staleTime: 60 * 1000,
     });
   }, [queryClient, client, isTokenReady]);
 }

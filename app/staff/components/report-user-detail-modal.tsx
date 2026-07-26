@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { useUser, useUserTarget, useUserPreferences } from '@/api/hooks';
+import { useSessionSync, useUser, useUserTarget, useUserPreferences } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import { getExpectedHoursByDate, EXPECTED_MONTHLY_HOURS, HOURS_BEHIND_BADGE_THRESHOLD } from '@/app/staff/lib/staff-report-constants';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
@@ -21,6 +21,8 @@ import { SettingsIcon } from '@/lib/icons';
 import { Smartphone, Laptop } from 'lucide-react';
 import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { cn } from '@/lib/utils';
+import { canManageStaffUsers } from '@/lib/access';
+import { PerformanceWarningsCard } from '@/app/staff/users/[ref]/settings/performance-warnings-card';
 
 function ModalRow({
   label,
@@ -60,6 +62,8 @@ export function ReportUserDetailModal({
   onClose: () => void;
 }) {
   const open = !!user;
+  const { backendUserData } = useSessionSync();
+  const canManageWarnings = canManageStaffUsers(backendUserData?.accessLevel);
   const expectedByNow = getExpectedHoursByDate(endDate);
   const hoursBehind = user ? expectedByNow - user.hoursThisMonth : 0;
   const isBehindBadge = user ? hoursBehind > HOURS_BEHIND_BADGE_THRESHOLD : false;
@@ -115,6 +119,14 @@ export function ReportUserDetailModal({
                 </div>
               </div>
             </ModalSection>
+
+            <div className="rounded-lg border border-border p-3">
+              <PerformanceWarningsCard
+                userRef={user.ref}
+                canManage={canManageWarnings}
+                compact
+              />
+            </div>
 
             <ModalSection title="Contact">
               <ModalRow

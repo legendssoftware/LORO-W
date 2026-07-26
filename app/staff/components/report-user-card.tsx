@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format, subDays } from 'date-fns';
-import { useMonthlyAttendance } from '@/api/hooks';
+import { useMonthlyAttendance, useSessionSync } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
+import { PerformanceWarningsDialog } from '@/app/staff/components/performance-warnings-dialog';
 import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedMonthlyHoursWeekdaysOnly,
@@ -28,6 +29,8 @@ import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatEnumLabel } from '@/lib/format-enum-label';
+import { canManageStaffUsers } from '@/lib/access';
+import { Button } from '@/components/ui/button';
 
 const CLOCK_IN_MODE_BADGE: Record<
   ClockInOptionKey,
@@ -204,6 +207,9 @@ export function ReportUserCard({
   onClockClick?: (e: React.MouseEvent) => void;
 }) {
   const isMobile = useIsMobile();
+  const { backendUserData } = useSessionSync();
+  const canManageWarnings = canManageStaffUsers(backendUserData?.accessLevel);
+  const [warningsOpen, setWarningsOpen] = useState(false);
   const usePayroll =
     user.payrollHours != null &&
     user.payrollTargetHours != null &&
@@ -276,8 +282,19 @@ export function ReportUserCard({
       ? PERFORMANCE_WARNING_CHIP[performanceWarningLevel]
       : null;
 
+  const warningsDialog = (
+    <PerformanceWarningsDialog
+      open={warningsOpen}
+      onOpenChange={setWarningsOpen}
+      userRef={user.ref}
+      userName={user.name}
+      canManage={canManageWarnings}
+    />
+  );
+
   if (isMobile) {
     return (
+      <>
       <Card
         className={cn(
           'relative gap-0 py-0 rounded-lg min-h-[220px]',
@@ -332,18 +349,23 @@ export function ReportUserCard({
               {performanceWarningChip ? (
                 <HoverCard openDelay={200}>
                   <HoverCardTrigger asChild>
-                    <span
+                    <button
+                      type="button"
                       className={cn(
-                        'inline-flex size-6 shrink-0 items-center justify-center rounded-full cursor-default',
+                        'inline-flex size-6 shrink-0 items-center justify-center rounded-full',
                         performanceWarningChip.className
                       )}
-                      title={`Performance warning: Level ${performanceWarningLevel}`}
-                      aria-label={`Performance warning: Level ${performanceWarningLevel}`}
+                      title={`Performance warning: Level ${performanceWarningLevel}. Click to manage.`}
+                      aria-label={`Performance warning: Level ${performanceWarningLevel}. Open to view and clear.`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWarningsOpen(true);
+                      }}
                     >
                       <span className="text-[12px] leading-none select-none" aria-hidden>
                         ⚠️
                       </span>
-                    </span>
+                    </button>
                   </HoverCardTrigger>
                   <HoverCardContent
                     side="bottom"
@@ -357,6 +379,18 @@ export function ReportUserCard({
                     <p className="text-xs text-muted-foreground">
                       {performanceWarningChip.shortLabel}
                     </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWarningsOpen(true);
+                      }}
+                    >
+                      View / clear warnings
+                    </Button>
                   </HoverCardContent>
                 </HoverCard>
               ) : null}
@@ -448,10 +482,13 @@ export function ReportUserCard({
           </div>
         </CardContent>
       </Card>
+      {warningsDialog}
+      </>
     );
   }
 
   return (
+    <>
     <Card
       className={cn(
         'relative rounded-lg min-h-[220px]',
@@ -484,20 +521,27 @@ export function ReportUserCard({
         {performanceWarningChip ? (
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
-              <span
+              <button
+                type="button"
                 className={cn(
-                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full cursor-default',
+                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full',
                   performanceWarningChip.className
                 )}
                 title={
-                  isMobile ? `Performance warning: Level ${performanceWarningLevel}` : undefined
+                  isMobile
+                    ? `Performance warning: Level ${performanceWarningLevel}. Click to manage.`
+                    : undefined
                 }
-                aria-label={`Performance warning: Level ${performanceWarningLevel}`}
+                aria-label={`Performance warning: Level ${performanceWarningLevel}. Open to view and clear.`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWarningsOpen(true);
+                }}
               >
                 <span className="text-[13px] leading-none select-none" aria-hidden>
                   ⚠️
                 </span>
-              </span>
+              </button>
             </HoverCardTrigger>
             <HoverCardContent
               side="bottom"
@@ -509,6 +553,18 @@ export function ReportUserCard({
                 Performance warning: Level {performanceWarningLevel}
               </p>
               <p className="text-xs text-muted-foreground">{performanceWarningChip.shortLabel}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWarningsOpen(true);
+                }}
+              >
+                View / clear warnings
+              </Button>
             </HoverCardContent>
           </HoverCard>
         ) : null}
@@ -747,5 +803,7 @@ export function ReportUserCard({
         </div>
       </CardContent>
     </Card>
+    {warningsDialog}
+    </>
   );
 }

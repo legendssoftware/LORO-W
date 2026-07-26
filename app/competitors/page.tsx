@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
@@ -15,5 +16,9 @@ export default async function CompetitorsPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  return <CompetitorsContent />;
+  return (
+    <Suspense fallback={null}>
+      <CompetitorsContent />
+    </Suspense>
+  );
 }

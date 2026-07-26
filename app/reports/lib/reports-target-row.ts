@@ -26,6 +26,13 @@ export interface ReportsTargetMetricCell {
   currency?: string | null;
 }
 
+/** Average daily productivity score (0–100) for the selected date range. */
+export interface ReportsTargetProductivityCell {
+  /** Averaged score across days with a score; null when unavailable. */
+  score: number | null;
+  isLoading?: boolean;
+}
+
 export interface ReportsTargetRow {
   key: string;
   userId: number;
@@ -38,6 +45,8 @@ export interface ReportsTargetRow {
   leads: ReportsTargetMetricCell;
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;
+  /** Target-based productivity (0–100); null when no range / no samples. */
+  productivity: ReportsTargetProductivityCell;
   achievement: number;
   /** Calls+leads engagement gate met (combined / full-either rule). */
   engagementMet: boolean;
@@ -261,6 +270,7 @@ export function rowFromUserListItem(user: UserListItem): ReportsTargetRow {
     photoURL: user.photoURL ?? user.avatar ?? null,
     branch: branchLabel,
     ...metrics,
+    productivity: { score: null },
     targetWarnings: null,
     periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
     periodStartDate: ut?.periodStartDate ?? null,
@@ -316,6 +326,7 @@ export function rowFromPersonalTarget(params: {
     photoURL: params.photoURL ?? null,
     branch: params.branch ?? null,
     ...metrics,
+    productivity: { score: null },
     targetWarnings: warnings,
     periodLabel: formatPeriodLabel(
       personal.periodStartDate as string | Date | null | undefined,
@@ -465,6 +476,43 @@ export function applyEngagementToRow(
     ...row,
     ...metrics,
   };
+}
+
+/**
+ * Overlay average daily productivity score onto the Productivity cell.
+ * Pass `isLoading: true` while the query is in flight.
+ */
+export function applyProductivityToRow(
+  row: ReportsTargetRow,
+  score: number | null | undefined,
+  options?: { isLoading?: boolean }
+): ReportsTargetRow {
+  return {
+    ...row,
+    productivity: {
+      score:
+        score == null || !Number.isFinite(score)
+          ? null
+          : Math.min(100, Math.max(0, Math.round(score))),
+      isLoading: options?.isLoading === true,
+    },
+  };
+}
+
+/**
+ * Average scored days from GET /user/:ref/daily-productivity.
+ * Returns null when there are no scored days.
+ */
+export function averageProductivityScore(
+  days: Array<{ score: number | null }> | null | undefined
+): number | null {
+  if (!days?.length) return null;
+  const scored = days.filter(
+    (d) => d.score != null && Number.isFinite(d.score)
+  );
+  if (scored.length === 0) return null;
+  const sum = scored.reduce((acc, d) => acc + (d.score as number), 0);
+  return Math.round(sum / scored.length);
 }
 
 /**
