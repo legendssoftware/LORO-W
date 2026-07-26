@@ -22,7 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useBranches, useClientsInfinite } from '@/api/hooks';
+import { useBranches, useClientsMapData } from '@/api/hooks';
 import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
 import { useStoresSales } from '@/api/hooks/use-stores-sales';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
@@ -326,15 +326,8 @@ export function SimulationSidePanel() {
 
   const branchesQuery = useBranches({ enabled: panelOpen });
   const competitorsQuery = useCompetitorsMapData({ enabled: panelOpen });
-  const clientsQuery = useClientsInfinite({ enabled: panelOpen });
+  const clientsQuery = useClientsMapData({ enabled: panelOpen });
   const storesSalesQuery = useStoresSales(undefined, { enabled: panelOpen });
-
-  const {
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: clientsLoading,
-    fetchNextPage,
-  } = clientsQuery;
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -346,11 +339,6 @@ export function SimulationSidePanel() {
     setBrandTurnovers(seedBrandTurnovers(prefs.turnoverOverrides));
     setMode(prefs.opportunityMode);
   }, [panelOpen]);
-
-  useEffect(() => {
-    if (!panelOpen || !hasNextPage || isFetchingNextPage || clientsLoading) return;
-    void fetchNextPage();
-  }, [panelOpen, hasNextPage, isFetchingNextPage, clientsLoading, fetchNextPage]);
 
   const monthRange = monthlyDateRange();
   const monthLabel = currentMonthLabel();

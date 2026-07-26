@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   useBranches,
-  useClientsInfinite,
+  useClientsMapData,
   useLatestRepLocations,
 } from '@/api/hooks';
 import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
@@ -42,20 +42,8 @@ export function useVisualiserMapLayers(options: {
   const branchesQuery = useBranches({ enabled });
   const orgQuery = useOrganisationProfile(orgRef, { enabled });
   const competitorsQuery = useCompetitorsMapData({ enabled });
-  const clientsQuery = useClientsInfinite({ enabled });
+  const clientsQuery = useClientsMapData({ enabled });
   const repsQuery = useLatestRepLocations({ maxAgeHours: 8 }, { enabled });
-
-  const {
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: clientsLoading,
-    fetchNextPage,
-  } = clientsQuery;
-
-  useEffect(() => {
-    if (!enabled || !hasNextPage || isFetchingNextPage || clientsLoading) return;
-    void fetchNextPage();
-  }, [enabled, hasNextPage, isFetchingNextPage, clientsLoading, fetchNextPage]);
 
   const allPoints = useMemo(() => {
     const points: VisualiserMapPoint[] = [];
