@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   useLeads,
   useUnassignedLeads,
-  useUsers,
+  useSearchableUsersList,
   useBranches,
   useDedupeLeadsMutation,
 } from '@/api/hooks';
@@ -100,7 +100,14 @@ export function LeadsContent() {
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
-  const { data: users = [] } = useUsers({ limit: 100 });
+  const {
+    users,
+    baseUsers,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({ limit: 100 });
   const { data: branches = [] } = useBranches();
 
   const onLeadsRangeChange = useCallback(
@@ -115,7 +122,7 @@ export function LeadsContent() {
   const activityActorLookup = useMemo<LeadActivityActorLookup>(() => {
     const byUid = new Map<number, LeadActivityActorProfile>();
     const byClerkId = new Map<string, LeadActivityActorProfile>();
-    for (const u of users) {
+    for (const u of baseUsers) {
       const row: LeadActivityActorProfile = {
         name: u.name,
         surname: u.surname,
@@ -127,7 +134,7 @@ export function LeadsContent() {
       if (cid) byClerkId.set(cid, row);
     }
     return { byUid, byClerkId };
-  }, [users]);
+  }, [baseUsers]);
 
   const profile = useSessionStore((s) => s.profileData);
   const canViewAll = useMemo(
@@ -227,12 +234,12 @@ export function LeadsContent() {
 
   const listError = activeQuery.isError ? activeQuery.error : null;
 
-  function handleSelectedUserIdChange(userId: string) {
+  const handleSelectedUserIdChange = bindUidChange((userId: string) => {
     if (userId !== '' && userId !== 'all') {
       setUnassignedOnly(false);
     }
     setSelectedUserId(userId);
-  }
+  });
 
   function handleUnassignedOnlyChange(value: boolean) {
     if (value) {
@@ -314,6 +321,9 @@ export function LeadsContent() {
           onSelectedUserIdChange={handleSelectedUserIdChange}
           unassignedOnly={unassignedOnly}
           onUnassignedOnlyChange={handleUnassignedOnlyChange}
+          userSearchQuery={userSearchQuery}
+          onUserSearchQueryChange={setUserSearchQuery}
+          isUserSearchLoading={isUserSearchLoading}
           searchInput={searchInput}
           onSearchChange={setSearchInput}
           canDedupe={canDedupe}

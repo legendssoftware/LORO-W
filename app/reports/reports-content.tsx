@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { LayoutDashboard, Target } from 'lucide-react';
 import { useSessionSync } from '@/api/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,13 +41,14 @@ function reportsSubtitle(scope: ReturnType<typeof getReportsDataScope>): string 
 export function ReportsContent() {
   const { backendUserData } = useSessionSync();
   const scope = getReportsDataScope(backendUserData?.accessLevel);
+  const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <div className={appPageScrollWrapClass} data-tour="reports-page">
+    <div className={appPageScrollWrapClass} data-slot="reports-page">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div
           className="mb-6 flex shrink-0 flex-col gap-1"
-          data-tour="reports-page-header"
+          data-slot="reports-page-header"
         >
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
             Reports
@@ -56,8 +58,12 @@ export function ReportsContent() {
           </p>
         </div>
 
-        <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className={reportsTabListClass} data-tour="reports-tabs">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <TabsList className={reportsTabListClass} data-slot="reports-tabs">
             <TabsTrigger value="overview" className={reportsTabTriggerClass}>
               <LayoutDashboard className="size-4 shrink-0" aria-hidden />
               Overview
@@ -72,14 +78,14 @@ export function ReportsContent() {
             value="overview"
             className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
           >
-            <ReportsDashboardTab />
+            {activeTab === 'overview' ? <ReportsDashboardTab /> : null}
           </TabsContent>
 
           <TabsContent
             value="targets"
             className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
           >
-            <ReportsOverviewTab />
+            {activeTab === 'targets' ? <ReportsOverviewTab /> : null}
           </TabsContent>
         </Tabs>
       </main>

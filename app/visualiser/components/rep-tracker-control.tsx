@@ -26,6 +26,9 @@ export interface RepTrackerControlProps {
   isTracing?: boolean;
   statusMessage?: string | null;
   className?: string;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  isSearchLoading?: boolean;
 }
 
 /**
@@ -42,6 +45,9 @@ export function RepTrackerControl({
   isTracing = false,
   statusMessage = null,
   className,
+  searchQuery,
+  onSearchQueryChange,
+  isSearchLoading = false,
 }: RepTrackerControlProps) {
   const isTracking = selectedUid !== 'all';
 
@@ -76,6 +82,9 @@ export function RepTrackerControl({
         searchPlaceholder="Search sales reps…"
         allOptionLabel="All sales reps"
         emptyMessage="No sales rep found."
+        searchQuery={searchQuery}
+        onSearchQueryChange={onSearchQueryChange}
+        isSearchLoading={isSearchLoading}
       />
       {isTracking ? (
         <div className="flex flex-wrap gap-1.5">

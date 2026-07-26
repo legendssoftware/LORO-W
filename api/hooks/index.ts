@@ -72,6 +72,11 @@ export {
 export { useOrganisationProfile } from './use-organisation-profile';
 export { useUsers } from './use-users';
 export {
+  useSearchableUsersList,
+  type SearchableUserSnapshot,
+  type UseSearchableUsersListOptions,
+} from './use-searchable-users-list';
+export {
   useUser,
   useUserTarget,
   USER_TARGET_QUERY_KEY_PREFIX,

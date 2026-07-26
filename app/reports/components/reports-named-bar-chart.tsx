@@ -49,8 +49,13 @@ interface ReportsNamedBarChartProps {
   valueKind?: ReportsChartValueKind;
   /** Override Y-axis title (defaults from valueKind). */
   yAxisLabel?: string;
-  /** Legend series label (defaults from valueKind). */
+  /** Legend series label (defaults from valueKind). Ignored when showLegend is false. */
   seriesLabel?: string;
+  /**
+   * Show bottom series legend. Default false — category names already sit on the
+   * X axis, so a legend repeating "Revenue" looks like a wrong axis title.
+   */
+  showLegend?: boolean;
   maxBarSize?: number;
 }
 
@@ -62,6 +67,7 @@ export function ReportsNamedBarChart({
   valueKind = 'count',
   yAxisLabel,
   seriesLabel,
+  showLegend = false,
   maxBarSize = DEFAULT_MAX_BAR_SIZE,
 }: ReportsNamedBarChartProps) {
   const axisLabel = reportsYAxisLabel(valueKind, yAxisLabel);
@@ -86,7 +92,13 @@ export function ReportsNamedBarChart({
       config={config}
       className={cn('aspect-auto w-full', heightClassName, className)}
     >
-      <BarChart data={data} margin={REPORTS_CHART_MARGIN}>
+      <BarChart
+        data={data}
+        margin={{
+          ...REPORTS_CHART_MARGIN,
+          bottom: showLegend ? REPORTS_CHART_MARGIN.bottom : 8,
+        }}
+      >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis
           dataKey="name"
@@ -126,11 +138,13 @@ export function ReportsNamedBarChart({
             />
           }
         />
-        <ChartLegend
-          verticalAlign="bottom"
-          wrapperStyle={{ paddingTop: 16 }}
-          content={<ChartLegendContent className="gap-5 pt-5" />}
-        />
+        {showLegend ? (
+          <ChartLegend
+            verticalAlign="bottom"
+            wrapperStyle={{ paddingTop: 16 }}
+            content={<ChartLegendContent className="gap-5 pt-5" />}
+          />
+        ) : null}
         <Bar dataKey="value" radius={4} maxBarSize={maxBarSize}>
           {data.map((row, i) => (
             <Cell

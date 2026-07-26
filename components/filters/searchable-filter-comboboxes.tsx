@@ -47,7 +47,11 @@ export const reportsDateRangeCalendarProps = {
 export type ReportsFilterUserPickable = Pick<
   UserListItem,
   'uid' | 'name' | 'surname' | 'email' | 'photoURL' | 'avatar'
-> & { branch?: { uid: number; name?: string } | null; branchUid?: number | null };
+> & {
+  branch?: { uid: number; name?: string } | null;
+  branchUid?: number | null;
+  username?: string | null;
+};
 
 function userDisplayName(u: ReportsFilterUserPickable): string {
   return (
@@ -55,6 +59,29 @@ function userDisplayName(u: ReportsFilterUserPickable): string {
     u.email ||
     `User ${u.uid}`
   );
+}
+
+function userMatchesSearch(
+  u: ReportsFilterUserPickable,
+  query: string,
+  branchLabel: string
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const hay = [
+    u.name,
+    u.surname,
+    userDisplayName(u),
+    u.email,
+    u.username,
+    branchLabel,
+    String(u.uid),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return tokens.every((token) => hay.includes(token));
 }
 
 export interface SearchableBranchPickerProps {
@@ -188,6 +215,14 @@ export interface SearchableUserPickerProps {
   emptyMessage?: string;
   /** When false, list rows omit branch flag/label (e.g. toolbar users without branch). */
   showBranchSubtitle?: boolean;
+  /**
+   * Controlled search text (e.g. for server-backed search).
+   * When omitted, the picker keeps its own query state.
+   */
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  /** Shown while a parent is fetching server search results. */
+  isSearchLoading?: boolean;
 }
 
 export function SearchableUserPicker({
@@ -200,8 +235,19 @@ export function SearchableUserPicker({
   allOptionLabel = 'All users',
   emptyMessage = 'No user found.',
   showBranchSubtitle = true,
+  searchQuery: searchQueryProp,
+  onSearchQueryChange,
+  isSearchLoading = false,
 }: SearchableUserPickerProps) {
   const [open, setOpen] = React.useState(false);
+  const [internalQuery, setInternalQuery] = React.useState('');
+  const isSearchControlled = searchQueryProp !== undefined;
+  const query = isSearchControlled ? searchQueryProp : internalQuery;
+
+  function setQuery(next: string) {
+    if (!isSearchControlled) setInternalQuery(next);
+    onSearchQueryChange?.(next);
+  }
 
   const branchByUid = React.useMemo(
     () => new Map<number, BranchListItem>(branches.map((b) => [b.uid, b])),
@@ -221,8 +267,26 @@ export function SearchableUserPicker({
     [selectedUid, users]
   );
 
+  const filteredUsers = React.useMemo(() => {
+    // Parent owns server search for longer queries — don't double-filter the result set.
+    if (onSearchQueryChange && query.trim().length >= 2) return users;
+    return users.filter((u) => {
+      const listUser = u as UserListItem;
+      const { label: branchLabel } = showBranchSubtitle
+        ? branchFlagAndLabel(listUser, branchByUid)
+        : { label: '' };
+      return userMatchesSearch(u, query, branchLabel);
+    });
+  }, [users, query, showBranchSubtitle, branchByUid, onSearchQueryChange]);
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setQuery('');
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -271,11 +335,25 @@ export function SearchableUserPicker({
           reportsFilterPortalHighZ
         )}
         align="start"
+        onOpenAutoFocus={(e) => {
+          // Keep focus in the search input; map canvases often steal it otherwise.
+          e.preventDefault();
+          const input = (e.currentTarget as HTMLElement).querySelector<HTMLInputElement>(
+            '[data-slot="command-input"]'
+          );
+          input?.focus();
+        }}
       >
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={query}
+            onValueChange={setQuery}
+          />
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandEmpty>
+              {isSearchLoading ? 'Searching…' : emptyMessage}
+            </CommandEmpty>
             <CommandGroup>
               <CommandItem
                 value={`${allOptionLabel} all`}
@@ -295,7 +373,7 @@ export function SearchableUserPicker({
                   {allOptionLabel}
                 </span>
               </CommandItem>
-              {users.map((u) => {
+              {filteredUsers.map((u) => {
                 const displayName = userDisplayName(u);
                 const listUser = u as UserListItem;
                 const { flag: branchFlag, label: branchLabel } = showBranchSubtitle
@@ -306,16 +384,21 @@ export function SearchableUserPicker({
                   displayName.trim().length > 0
                     ? displayName.trim().slice(0, 2).toUpperCase()
                     : '—';
-                const searchBlob = showBranchSubtitle
-                  ? `${displayName} ${u.email ?? ''} ${branchLabel} ${u.uid}`
-                  : `${displayName} ${u.email ?? ''} ${u.uid}`;
                 return (
                   <CommandItem
                     key={u.uid}
                     className={cn(
                       showBranchSubtitle ? 'items-start gap-3 py-2' : 'items-center gap-2'
                     )}
-                    value={searchBlob}
+                    value={`user-${u.uid}`}
+                    keywords={[
+                      displayName,
+                      u.email ?? '',
+                      branchLabel,
+                      String(u.uid),
+                      u.name ?? '',
+                      u.surname ?? '',
+                    ]}
                     onSelect={() => {
                       onUidChange(String(u.uid));
                       setOpen(false);

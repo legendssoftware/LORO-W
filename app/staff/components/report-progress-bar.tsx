@@ -16,16 +16,16 @@ function getSegmentState(
   return { state: 'partial', partialPercent };
 }
 
-/** Progress tier colors: <75% red, ≥75% green (same rule for text and bar). */
+/** Progress tier colors: <70% red, ≥70% green (same rule for text and bar). */
 export function getProgressColorClasses(value: number): { text: string; bg: string } {
-  if (value >= 75) return { text: 'text-green-600', bg: 'bg-green-500' };
+  if (value >= 70) return { text: 'text-green-600', bg: 'bg-green-500' };
   return { text: 'text-red-600', bg: 'bg-red-500' };
 }
 
 const SEGMENT_COUNT = 4;
 const TRACK = 'bg-muted';
 
-/** Four-segment progress bar: quarters of total expected (0–25%, 25–50%, 50–75%, 75–100%). Fill is red when <75%, green when ≥75%. */
+/** Four-segment progress bar: quarters of total expected. Fill is red when <70%, green when ≥70%. */
 export function ReportProgressBar({ value }: { value: number }) {
   const fillClass = getProgressColorClasses(value).bg;
   return (

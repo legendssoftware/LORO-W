@@ -8,7 +8,7 @@ import {
   useClient,
   useCreateClientMutation,
   useUpdateClientMutation,
-  useUsers,
+  useSearchableUsersList,
 } from '@/api/hooks';
 import type { ClientDetail, CreateClientPayload } from '@/api/types/clients';
 import { Button } from '@/components/ui/button';
@@ -28,14 +28,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { SearchableUserPicker } from '@/components/filters/searchable-filter-comboboxes';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { CLIENT_MODAL_CONTENT_CLASS } from './client-dialog-shared';
 import { cn } from '@/lib/utils';
@@ -143,7 +137,13 @@ export function ClientFormDialog({
 }) {
   const createMutation = useCreateClientMutation();
   const updateMutation = useUpdateClientMutation();
-  const { data: users = [] } = useUsers({ limit: 200, enabled: open });
+  const {
+    users,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({ limit: 200, enabled: open });
   const { data: clientDetail, isLoading: detailLoading } = useClient(
     mode === 'edit' ? clientRef : null,
     { enabled: open && mode === 'edit' && clientRef != null }
@@ -341,24 +341,24 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Assigned sales rep (optional)</FormLabel>
-                        <Select
-                          value={field.value || 'none'}
-                          onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-background border-border">
-                              <SelectValue placeholder="None" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {users.map((u) => (
-                              <SelectItem key={u.uid} value={String(u.uid)}>
-                                {[u.name, u.surname].filter(Boolean).join(' ') || u.email || `#${u.uid}`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableUserPicker
+                            users={users}
+                            branches={[]}
+                            selectedUid={field.value || 'all'}
+                            onUidChange={bindUidChange((uid) =>
+                              field.onChange(uid === 'all' ? '' : uid)
+                            )}
+                            showBranchSubtitle={false}
+                            allOptionLabel="None"
+                            searchPlaceholder="Search sales reps…"
+                            emptyMessage="No sales rep found."
+                            triggerClassName="w-full bg-background border-border"
+                            searchQuery={userSearchQuery}
+                            onSearchQueryChange={setUserSearchQuery}
+                            isSearchLoading={isUserSearchLoading}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
