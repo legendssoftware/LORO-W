@@ -19,6 +19,7 @@ import {
 import type { ClientListItem, CreateClientPayload, UpdateClientPayload } from '@/api/types/clients';
 import toast from 'react-hot-toast';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { CLIENTS_MAP_DATA_QUERY_KEY } from '@/api/hooks/use-clients-map-data';
 
 export const CLIENTS_QUERY_KEY_PREFIX = ['clients'] as const;
 
@@ -30,6 +31,7 @@ export function invalidateClientQueries(
 ) {
   queryClient.invalidateQueries({ queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'list'] });
   queryClient.invalidateQueries({ queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'infinite'] });
+  queryClient.invalidateQueries({ queryKey: CLIENTS_MAP_DATA_QUERY_KEY });
   if (opts?.detailRef != null) {
     queryClient.invalidateQueries({
       queryKey: [...CLIENTS_QUERY_KEY_PREFIX, 'detail', opts.detailRef],

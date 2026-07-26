@@ -5,6 +5,7 @@ import type {
   CreateClientPayload,
   UpdateClientPayload,
   ClientMutationMessageResponse,
+  ClientListItem,
 } from '@/api/types/clients';
 
 export type {
@@ -45,6 +46,20 @@ export async function getClients(
   const qs = search.toString();
   const { data } = await client.get<GetClientsResponse>(`/clients${qs ? `?${qs}` : ''}`);
   return data;
+}
+
+/**
+ * GET /clients/map-data — all geocoded clients for the visualiser (unpaginated).
+ */
+export async function getClientsMapData(
+  client: AxiosInstance
+): Promise<ClientListItem[]> {
+  const { data } = await client.get<ClientListItem[] | { data?: ClientListItem[] }>(
+    '/clients/map-data'
+  );
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
 }
 
 /**

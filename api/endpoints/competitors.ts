@@ -94,7 +94,7 @@ export interface CompetitorMapMarker {
 }
 
 /**
- * GET /competitors/map-data — up to 1000 geocoded competitors for the visualiser.
+ * GET /competitors/map-data — all geocoded competitors for the visualiser (unpaginated).
  */
 export async function getCompetitorsMapData(
   client: AxiosInstance
