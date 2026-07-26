@@ -52,7 +52,7 @@ export function MapLayerToggles({
   return (
     <div
       className={cn(
-        'bg-background/95 absolute top-3 left-3 z-10 w-[min(100%-1.5rem,16rem)] rounded-lg border p-3 shadow-sm backdrop-blur',
+        'bg-background/95 w-full rounded-lg border p-3 shadow-sm backdrop-blur',
         className,
       )}
     >

@@ -107,6 +107,29 @@ export async function getCompetitorsMapData(
   return [];
 }
 
+/** Row from GET /competitors/missing-geocode */
+export interface CompetitorMissingGeocodeItem {
+  id: number;
+  name: string;
+  addressLine: string | null;
+  missingCoords: boolean;
+  missingAddress: boolean;
+}
+
+/**
+ * GET /competitors/missing-geocode — competitors needing address / coordinate fixes.
+ */
+export async function getCompetitorsMissingGeocode(
+  client: AxiosInstance
+): Promise<CompetitorMissingGeocodeItem[]> {
+  const { data } = await client.get<
+    CompetitorMissingGeocodeItem[] | { data?: CompetitorMissingGeocodeItem[] }
+  >('/competitors/missing-geocode');
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
 export async function getCompetitor(
   client: AxiosInstance,
   id: number

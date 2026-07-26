@@ -50,6 +50,12 @@ import {
   seriesFromByStatus,
   weeklyTrendFromProductivity,
 } from '@/app/reports/lib/reports-target-detail-aggregates';
+import {
+  formatReportCurrencyCode,
+  getReportsCategoryAxisLayout,
+  REPORTS_CHART_MARGIN,
+  reportsYAxisLabelProps,
+} from '@/app/reports/lib/reports-chart-format';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DialogCloseButton } from '@/components/dialog-close-button';
@@ -117,17 +123,17 @@ function formatCount(value: number): string {
   return Math.round(value).toLocaleString();
 }
 
-function formatMoney(value: number, currency = 'ZAR'): string {
-  if (!Number.isFinite(value)) return `${currency} 0`;
-  return `${currency} ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+function formatMoney(value: number, currency = 'R'): string {
+  const code = formatReportCurrencyCode(currency);
+  if (!Number.isFinite(value)) return `${code} 0`;
+  return `${code} ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
 function formatSales(cell: ReportsTargetMetricCell): string {
-  const currency = cell.currency?.trim() || '';
+  const currency = formatReportCurrencyCode(cell.currency);
   const cur = cell.current.toLocaleString(undefined, { maximumFractionDigits: 0 });
   const tgt = cell.target.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (currency) return `${currency} ${cur} / ${tgt}`;
-  return `${cur} / ${tgt}`;
+  return `${currency} ${cur} / ${tgt}`;
 }
 
 function toYmd(value: string | null | undefined): string | null {
@@ -185,14 +191,16 @@ function NamedBarChart({
   data,
   valueKey = 'value',
   height = 220,
+  yAxisLabel = 'Count',
 }: {
   title: string;
   data: Array<{ name: string; value: number }>;
   valueKey?: string;
   height?: number;
+  yAxisLabel?: string;
 }) {
   const config: ChartConfig = {
-    [valueKey]: { label: title, color: ATT_CHART_HSL.c2 },
+    [valueKey]: { label: yAxisLabel, color: ATT_CHART_HSL.c2 },
   };
   if (data.length === 0) {
     return (
@@ -202,25 +210,39 @@ function NamedBarChart({
       </section>
     );
   }
+  const labels = data.map((row) => humanizeReportLabel(row.name));
+  const xLayout = getReportsCategoryAxisLayout(labels);
   return (
     <section className="space-y-2">
       <h4 className="text-xs font-medium text-muted-foreground">{title}</h4>
       <ChartContainer config={config} className="aspect-auto w-full" style={{ height }}>
-        <BarChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 8 }}>
+        <BarChart data={data} margin={REPORTS_CHART_MARGIN}>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="name"
             tickLine={false}
             axisLine={false}
-            tickMargin={6}
+            tickMargin={14}
             interval={0}
-            angle={data.length > 4 ? -25 : 0}
-            textAnchor={data.length > 4 ? 'end' : 'middle'}
-            height={data.length > 4 ? 56 : 28}
+            angle={xLayout.angle}
+            textAnchor={xLayout.textAnchor}
+            height={xLayout.height}
             tickFormatter={(v) => humanizeReportLabel(String(v))}
           />
-          <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            width={64}
+            tickMargin={12}
+            allowDecimals={false}
+            label={reportsYAxisLabelProps(yAxisLabel)}
+          />
           <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartLegend
+            verticalAlign="bottom"
+            wrapperStyle={{ paddingTop: 16 }}
+            content={<ChartLegendContent className="gap-5 pt-5" />}
+          />
           <Bar dataKey={valueKey} radius={4}>
             {data.map((row, i) => (
               <Cell key={row.name} fill={BAR_PALETTE[i % BAR_PALETTE.length]} />
@@ -451,7 +473,7 @@ export function ReportsTargetDetailDialog({
     leadsPct: { label: 'Leads %', color: ATT_CHART_HSL.c4 },
   };
 
-  const currency = displayRow?.sales.currency?.trim() || 'ZAR';
+  const currency = formatReportCurrencyCode(displayRow?.sales.currency);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -607,11 +629,17 @@ export function ReportsTargetDetailDialog({
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          width={36}
+                          width={64}
+                          tickMargin={12}
                           domain={[0, 100]}
+                          label={reportsYAxisLabelProps('Percent')}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <ChartLegend content={<ChartLegendContent />} />
+                        <ChartLegend
+                          verticalAlign="bottom"
+                          wrapperStyle={{ paddingTop: 16 }}
+                          content={<ChartLegendContent className="gap-5 pt-5" />}
+                        />
                         <Line
                           type="monotone"
                           dataKey="score"

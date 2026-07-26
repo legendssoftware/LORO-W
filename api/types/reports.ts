@@ -27,6 +27,30 @@ export interface DomainReportResponse {
   meta: ReportMeta;
 }
 
+/** Extended GET /check-ins/report chart series. */
+export interface CheckInsReportResponse extends DomainReportResponse {
+  byBranch: ByStatusItem[];
+  byCountry: ByStatusItem[];
+  byRegion: ByStatusItem[];
+  byCustomer: ByStatusItem[];
+  byCustomerType: ByStatusItem[];
+  byEngagement: ByStatusItem[];
+}
+
+export interface CheckInsDispatchBranchRow {
+  name: string;
+  planned: number;
+  completed: number;
+}
+
+export interface CheckInsDispatchSummary {
+  planned: number;
+  completed: number;
+  inProgress: number;
+  byBranch: CheckInsDispatchBranchRow[];
+  meta: ReportMeta;
+}
+
 export interface CheckInsListResponse {
   message: string;
   checkIns: VisitListItem[];

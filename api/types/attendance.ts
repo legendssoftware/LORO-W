@@ -261,8 +261,17 @@ export interface AttendanceReportOrganizationMetrics {
         peakCheckInTime?: string;
         peakCheckOutTime?: string;
     };
-    byBranch?: unknown[];
+    byBranch?: Array<{
+        branchId?: number | null;
+        branchName?: string;
+        employeeCount?: number;
+        totalHours?: number;
+        totalShifts?: number;
+        averageHours?: number;
+    }>;
     byRole?: unknown[];
+    /** Employee-day present vs absent rollup for the report range. */
+    presentVsAbsent?: Array<{ name: string; value: number }>;
 }
 
 export interface AttendanceReportResponse {

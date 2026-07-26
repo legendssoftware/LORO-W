@@ -121,33 +121,75 @@ export function loadVisualiserPreferences(): VisualiserPreferences {
   try {
     const raw = localStorage.getItem(VISUALISER_PREFERENCES_STORAGE_KEY);
     if (!raw) return DEFAULT_PREFERENCES;
-    const parsed = JSON.parse(raw) as Partial<VisualiserPreferences>;
-    return {
-      selectedCountry:
-        typeof parsed.selectedCountry === 'string'
-          ? parsed.selectedCountry
-          : DEFAULT_PREFERENCES.selectedCountry,
-      selectedProvince:
-        typeof parsed.selectedProvince === 'string'
-          ? parsed.selectedProvince
-          : DEFAULT_PREFERENCES.selectedProvince,
-      showOpportunities: parsed.showOpportunities === true,
-      opportunityMode: isSiteOpportunityMode(parsed.opportunityMode)
-        ? parsed.opportunityMode
-        : DEFAULT_PREFERENCES.opportunityMode,
-      opportunitySettings: parseSettings(parsed.opportunitySettings),
-      turnoverOverrides: parseTurnoverOverrides(parsed.turnoverOverrides),
-      showSalesRepLocations: parsed.showSalesRepLocations === true,
-      repLocationsMaxAgeHours:
-        typeof parsed.repLocationsMaxAgeHours === 'number' &&
-        parsed.repLocationsMaxAgeHours >= 1 &&
-        parsed.repLocationsMaxAgeHours <= 24
-          ? parsed.repLocationsMaxAgeHours
-          : DEFAULT_PREFERENCES.repLocationsMaxAgeHours,
-    };
+    return normalizeVisualiserPreferences(JSON.parse(raw));
   } catch {
     return DEFAULT_PREFERENCES;
   }
+}
+
+/**
+ * Normalize a partial prefs object (localStorage or server `preferences.visualiser`).
+ */
+export function normalizeVisualiserPreferences(
+  parsed: unknown,
+): VisualiserPreferences {
+  if (!parsed || typeof parsed !== 'object') return DEFAULT_PREFERENCES;
+  const p = parsed as Partial<VisualiserPreferences>;
+  return {
+    selectedCountry:
+      typeof p.selectedCountry === 'string'
+        ? p.selectedCountry
+        : DEFAULT_PREFERENCES.selectedCountry,
+    selectedProvince:
+      typeof p.selectedProvince === 'string'
+        ? p.selectedProvince
+        : DEFAULT_PREFERENCES.selectedProvince,
+    showOpportunities: p.showOpportunities === true,
+    opportunityMode: isSiteOpportunityMode(p.opportunityMode)
+      ? p.opportunityMode
+      : DEFAULT_PREFERENCES.opportunityMode,
+    opportunitySettings: parseSettings(p.opportunitySettings),
+    turnoverOverrides: parseTurnoverOverrides(p.turnoverOverrides),
+    showSalesRepLocations: p.showSalesRepLocations === true,
+    repLocationsMaxAgeHours:
+      typeof p.repLocationsMaxAgeHours === 'number' &&
+      p.repLocationsMaxAgeHours >= 1 &&
+      p.repLocationsMaxAgeHours <= 24
+        ? p.repLocationsMaxAgeHours
+        : DEFAULT_PREFERENCES.repLocationsMaxAgeHours,
+  };
+}
+
+/**
+ * Resolve prefs: server wins when present, else localStorage.
+ */
+export function resolveVisualiserPreferences(
+  serverVisualiser: unknown | null | undefined,
+): VisualiserPreferences {
+  if (serverVisualiser && typeof serverVisualiser === 'object') {
+    return normalizeVisualiserPreferences(serverVisualiser);
+  }
+  return loadVisualiserPreferences();
+}
+
+/**
+ * Payload shape for PATCH /user/:ref/preferences `{ visualiser }`.
+ */
+export function toVisualiserUserPreferencePayload(
+  prefs: Pick<
+    VisualiserPreferences,
+    'opportunityMode' | 'opportunitySettings' | 'turnoverOverrides'
+  >,
+): {
+  opportunityMode: SiteOpportunityMode;
+  opportunitySettings: SiteOpportunitySettings;
+  turnoverOverrides: TurnoverOverrideSettings;
+} {
+  return {
+    opportunityMode: prefs.opportunityMode,
+    opportunitySettings: prefs.opportunitySettings,
+    turnoverOverrides: prefs.turnoverOverrides,
+  };
 }
 
 export function saveVisualiserPreferences(

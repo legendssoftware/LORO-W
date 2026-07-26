@@ -1,7 +1,8 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  CheckInsDispatchSummary,
   CheckInsListResponse,
-  DomainReportResponse,
+  CheckInsReportResponse,
 } from '@/api/types/reports';
 import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
 
@@ -13,7 +14,7 @@ export interface GetCheckInsParams {
 
 export interface GetCheckInsReportParams {
   from: string; // YYYY-MM-DD
-  to: string;   // YYYY-MM-DD
+  to: string; // YYYY-MM-DD
 }
 
 /**
@@ -35,18 +36,35 @@ export async function getCheckIns(
 }
 
 /**
- * GET /check-ins/report - aggregated report (total, byDay) for date range.
+ * GET /check-ins/report - aggregated visit chart series for date range.
  */
 export async function getCheckInsReport(
   client: AxiosInstance,
   params: GetCheckInsReportParams
-): Promise<DomainReportResponse> {
+): Promise<CheckInsReportResponse> {
   const search = new URLSearchParams({
     from: params.from,
     to: params.to,
   });
-  const { data } = await client.get<DomainReportResponse>(
+  const { data } = await client.get<CheckInsReportResponse>(
     `/check-ins/report?${search.toString()}`
+  );
+  return data;
+}
+
+/**
+ * GET /check-ins/dispatch-summary - planned vs completed visit_plan_batch tasks.
+ */
+export async function getCheckInsDispatchSummary(
+  client: AxiosInstance,
+  params: GetCheckInsReportParams
+): Promise<CheckInsDispatchSummary> {
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  const { data } = await client.get<CheckInsDispatchSummary>(
+    `/check-ins/dispatch-summary?${search.toString()}`
   );
   return data;
 }

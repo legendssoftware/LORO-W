@@ -87,6 +87,8 @@ import { cn } from '@/lib/utils';
 import { canManageStaffUsers } from '@/lib/access';
 import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
 import { ActiveVisitSchedules } from './active-visit-schedules';
+import { UserWarningsCard } from './user-warnings-card';
+import { PerformanceWarningsCard } from './performance-warnings-card';
 import {
   CURRENCY_OPTIONS,
   TARGET_PERIOD_OPTIONS,
@@ -1341,6 +1343,23 @@ export default function UserSettingsPage() {
                 onClientsAssigned={(clientIds) =>
                   form.setValue('assignedClientIds', clientIds, { shouldDirty: true })
                 }
+              />
+            ) : null}
+
+            {/* Performance warnings (staff-card chip) */}
+            {ref ? (
+              <PerformanceWarningsCard
+                userRef={ref}
+                canManage={canInviteOthers}
+              />
+            ) : null}
+
+            {/* Formal HR warnings */}
+            {user.uid != null ? (
+              <UserWarningsCard
+                userRef={user.clerkUserId?.trim() || user.uid}
+                recipientClerkId={user.clerkUserId}
+                canManage={canInviteOthers}
               />
             ) : null}
 
