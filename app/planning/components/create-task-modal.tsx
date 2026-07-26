@@ -32,7 +32,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { useCreateTaskMutation, useUsers, useClients, useBranches } from '@/api/hooks';
+import { useCreateTaskMutation, useSearchableUsersList, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
 import {
@@ -120,7 +120,13 @@ export function CreateTaskModal({
     endDate,
   } = usePlanningStore();
 
-  const { data: users = [] } = useUsers({
+  const {
+    users,
+    searchQuery: assigneeSearchQuery,
+    setSearchQuery: setAssigneeSearchQuery,
+    isSearchLoading: isAssigneeSearchLoading,
+    rememberUser,
+  } = useSearchableUsersList({
     page: 1,
     limit: 100,
     enabled: open,
@@ -255,9 +261,12 @@ export function CreateTaskModal({
   };
 
   const toggleAssignee = (uid: number) => {
-    setSelectedAssigneeUids((prev) =>
-      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
-    );
+    setSelectedAssigneeUids((prev) => {
+      if (prev.includes(uid)) return prev.filter((id) => id !== uid);
+      const u = users.find((x) => x.uid === uid);
+      if (u) rememberUser(u);
+      return [...prev, uid];
+    });
   };
 
   const toggleClient = (uid: number) => {
@@ -595,6 +604,9 @@ export function CreateTaskModal({
                       branches={branches}
                       selectedUids={selectedAssigneeUids}
                       onToggleUid={toggleAssignee}
+                      searchQuery={assigneeSearchQuery}
+                      onSearchQueryChange={setAssigneeSearchQuery}
+                      isSearchLoading={isAssigneeSearchLoading}
                     />
                   </PopoverContent>
                 </Popover>

@@ -16,6 +16,7 @@ import {
   EXPECTED_HOURS_PER_DAY,
   workingDaysInPeriod,
 } from '@/app/staff/lib/staff-report-constants';
+import { parseDurationToMinutes } from '@/lib/duration';
 
 const DONUT_PALETTE = [
   ATT_CHART_HSL.c1,
@@ -277,4 +278,63 @@ export function branchSalesTrendFromMonthly(
     data,
     series: series.map(({ key, label }) => ({ key, label })),
   };
+}
+
+export type AvgVisitDurationByUserRow = {
+  name: string;
+  value: number;
+  visitCount: number;
+};
+
+/**
+ * Average visit duration (minutes) per user from check-in list.
+ * Only visits with a parseable duration contribute to the average.
+ */
+export function avgVisitDurationByUser(
+  checkIns: Array<{
+    duration?: string | null;
+    owner?: {
+      uid?: number;
+      name?: string;
+      surname?: string;
+      email?: string;
+    } | null;
+  }> | null | undefined,
+  topN = 10
+): AvgVisitDurationByUserRow[] {
+  const byUser = new Map<
+    string,
+    { name: string; totalMinutes: number; count: number }
+  >();
+
+  for (const c of checkIns ?? []) {
+    const mins = parseDurationToMinutes(c.duration);
+    if (mins <= 0) continue;
+    const owner = c.owner;
+    const fullName = [owner?.name, owner?.surname]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const name =
+      fullName ||
+      owner?.email?.trim() ||
+      (owner?.uid != null ? `User ${owner.uid}` : 'Unknown');
+    const key =
+      owner?.uid != null
+        ? `uid:${owner.uid}`
+        : `name:${name.toLowerCase()}`;
+    const prev = byUser.get(key) ?? { name, totalMinutes: 0, count: 0 };
+    prev.totalMinutes += mins;
+    prev.count += 1;
+    byUser.set(key, prev);
+  }
+
+  return [...byUser.values()]
+    .map((row) => ({
+      name: row.name,
+      value: Math.round(row.totalMinutes / row.count),
+      visitCount: row.count,
+    }))
+    .sort((a, b) => b.value - a.value || b.visitCount - a.visitCount)
+    .slice(0, topN);
 }

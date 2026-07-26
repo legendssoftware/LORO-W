@@ -74,6 +74,10 @@ export interface PayslipsFiltersBarProps {
   onResetDateRange: () => void;
   onSelectedStatusChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
+  /** Controlled user-picker search (server-backed when parent wires useSearchableUsersList). */
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
 }
 
 function PayslipsFilterControls({
@@ -90,6 +94,9 @@ function PayslipsFilterControls({
   onResetDateRange,
   onSelectedStatusChange,
   onSelectedUserIdChange,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
 }: PayslipsFiltersBarProps & { layout: 'row' | 'stack' }) {
   const row = layout === 'row';
   const rangeBtnWidth = row
@@ -305,6 +312,9 @@ function PayslipsFilterControls({
           onUidChange={onSelectedUserIdChange}
           showBranchSubtitle={false}
           triggerClassName={cn(reportsFilterSelectTriggerClass, row ? 'w-auto' : 'w-full')}
+          searchQuery={userSearchQuery}
+          onSearchQueryChange={onUserSearchQueryChange}
+          isSearchLoading={isUserSearchLoading}
         />
       ) : null}
     </div>

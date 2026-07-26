@@ -89,7 +89,7 @@ import {
   useCompleteSubtaskMutation,
   useDeleteSubtaskMutation,
   useUpdateSubtaskMutation,
-  useUsers,
+  useSearchableUsersList,
   useClients,
   useBranches,
 } from '@/api/hooks';
@@ -205,7 +205,13 @@ export function TaskDetailDialog({
   const completeSubtaskMutation = useCompleteSubtaskMutation();
   const deleteSubtaskMutation = useDeleteSubtaskMutation();
   const updateSubtaskMutation = useUpdateSubtaskMutation();
-  const { data: users = [] } = useUsers({ page: 1, limit: 100, enabled: open });
+  const {
+    users,
+    searchQuery: assigneeSearchQuery,
+    setSearchQuery: setAssigneeSearchQuery,
+    isSearchLoading: isAssigneeSearchLoading,
+    rememberUser,
+  } = useSearchableUsersList({ page: 1, limit: 100, enabled: open });
   const { data: clientsList = [] } = useClients({
     page: 1,
     limit: 100,
@@ -395,6 +401,10 @@ export function TaskDetailDialog({
   const toggleAssignee = (uid: number) => {
     const current = editForm.assignees ?? [];
     const has = current.some((a) => a.uid === uid);
+    if (!has) {
+      const u = users.find((x) => x.uid === uid);
+      if (u) rememberUser(u);
+    }
     setEditForm((f) => ({
       ...f,
       assignees: has
@@ -850,6 +860,9 @@ export function TaskDetailDialog({
                           branches={branches}
                           selectedUids={selectedAssigneeUids}
                           onToggleUid={toggleAssignee}
+                          searchQuery={assigneeSearchQuery}
+                          onSearchQueryChange={setAssigneeSearchQuery}
+                          isSearchLoading={isAssigneeSearchLoading}
                         />
                       </PopoverContent>
                     </Popover>

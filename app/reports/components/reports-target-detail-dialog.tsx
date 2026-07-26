@@ -332,7 +332,7 @@ export function ReportsTargetDetailDialog({
       from: reportFrom ?? '',
       to: reportTo ?? '',
       ownerId: row?.userId,
-      dateBasis: 'created',
+      dateBasis: 'activity',
     },
     { enabled: open && !!row?.userId && hasReportRange }
   );

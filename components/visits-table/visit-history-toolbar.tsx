@@ -79,10 +79,16 @@ export interface VisitHistoryToolbarProps {
   showDateRange?: boolean;
   /** When false, hides the visit search field. Default true. */
   showSearch?: boolean;
-  /** When false, hides the flat region picker (e.g. Visualiser uses country/province). Default true. */
+  /** When false, hides region filter. Default true. */
   showRegionFilter?: boolean;
-  /** When false, hides the business type picker (e.g. Visualiser). Default true. */
+  /** When false, hides business type filter. Default true. */
   showBusinessTypeFilter?: boolean;
+  /** Controlled user-picker search (server-backed when parent wires useSearchableUsersList). */
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
+  /** When set, replaces the store setter for user filter selection (e.g. snapshot + server search). */
+  onUserUidChange?: (uid: string) => void;
   /** Extra controls rendered inline with region/business filters (e.g. Visualiser suggested areas). */
   extraFilters?: ReactNode;
   /** Extra controls pinned to the far-right action cluster (e.g. Summary / Info). */
@@ -312,6 +318,11 @@ interface VisitFilterControlsProps {
   showDateRange: boolean;
   showRegionFilter: boolean;
   showBusinessTypeFilter: boolean;
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
+  /** When set, replaces the store setter for user filter selection (e.g. snapshot + server search). */
+  onUserUidChange?: (uid: string) => void;
 }
 
 function VisitFilterControls({
@@ -326,6 +337,10 @@ function VisitFilterControls({
   showDateRange,
   showRegionFilter,
   showBusinessTypeFilter,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
+  onUserUidChange,
 }: VisitFilterControlsProps) {
   const { selectedRegion, selectedBusinessType, selectedUserUid, setSelectedRegion, setSelectedBusinessType, setSelectedUserUid } =
     useVisitsStore();
@@ -396,9 +411,15 @@ function VisitFilterControls({
           users={usersList}
           branches={branches}
           selectedUid={selectedUserUid || 'all'}
-          onUidChange={(v) => setSelectedUserUid(v === 'all' ? '' : v)}
+          onUidChange={
+            onUserUidChange ??
+            ((v) => setSelectedUserUid(v === 'all' ? '' : v))
+          }
           triggerClassName={cn(pickerTriggerClass, 'justify-between gap-2')}
           searchPlaceholder="Search users…"
+          searchQuery={userSearchQuery}
+          onSearchQueryChange={onUserSearchQueryChange}
+          isSearchLoading={isUserSearchLoading}
         />
       ) : null}
     </div>
@@ -424,6 +445,10 @@ export function VisitHistoryToolbar({
   showSearch = true,
   showRegionFilter = true,
   showBusinessTypeFilter = true,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
+  onUserUidChange,
   extraFilters = null,
   extraActions = null,
 }: VisitHistoryToolbarProps) {
@@ -514,6 +539,10 @@ export function VisitHistoryToolbar({
     showDateRange,
     showRegionFilter,
     showBusinessTypeFilter,
+    userSearchQuery,
+    onUserSearchQueryChange,
+    isUserSearchLoading,
+    onUserUidChange,
   };
 
   const mobileFilterDescription = showDateRange

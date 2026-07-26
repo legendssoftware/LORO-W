@@ -294,10 +294,11 @@ interface ReportsVisitsMapProps {
 
 export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
   const [selected, setSelected] = useState<VisitMapPoint | null>(null);
+  const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
 
   const visiblePoints = useMemo(() => points.slice(0, 200), [points]);
 
-  const center = useMemo((): [number, number] => {
+  const pointsCenter = useMemo((): [number, number] => {
     if (visiblePoints.length === 0) return FALLBACK_CENTER;
     const lng =
       visiblePoints.reduce((s, p) => s + p.longitude, 0) / visiblePoints.length;
@@ -305,6 +306,28 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
       visiblePoints.reduce((s, p) => s + p.latitude, 0) / visiblePoints.length;
     return [lng, lat];
   }, [visiblePoints]);
+
+  /** Prefer browser geolocation; fall back to visit centroid / Joburg. */
+  const center = userCenter ?? pointsCenter;
+  const zoom = userCenter ? 11 : visiblePoints.length === 1 ? 12 : 5;
+
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        setUserCenter([pos.coords.longitude, pos.coords.latitude]);
+      },
+      () => {
+        /* permission denied / timeout — keep points center */
+      },
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setSelected((prev) => {
@@ -334,11 +357,23 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
       )}
     >
       <Map
+        key={
+          userCenter
+            ? `loc-${userCenter[0].toFixed(4)}-${userCenter[1].toFixed(4)}`
+            : 'points'
+        }
         center={center}
-        zoom={visiblePoints.length === 1 ? 12 : 5}
+        zoom={zoom}
         className="size-full"
       >
-        <MapControls showZoom showLocate={false} showFullscreen />
+        <MapControls
+          showZoom
+          showLocate
+          showFullscreen
+          onLocate={(coords) => {
+            setUserCenter([coords.longitude, coords.latitude]);
+          }}
+        />
         {visiblePoints.map((p) => (
           <MapMarker
             key={p.id}

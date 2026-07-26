@@ -71,6 +71,10 @@ export interface PlanningFilterControlsProps {
   onFilterOverdueChange: (overdue: boolean) => void;
   onSelectedClientIdChange: (v: string) => void;
   onSelectedAssigneeIdChange: (v: string) => void;
+  /** Controlled assignee-picker search (server-backed when parent wires useSearchableUsersList). */
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
 }
 
 export function PlanningFilterControls({
@@ -96,6 +100,9 @@ export function PlanningFilterControls({
   onFilterOverdueChange,
   onSelectedClientIdChange,
   onSelectedAssigneeIdChange,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
 }: PlanningFilterControlsProps) {
   const row = layout === 'row';
   const rangeBtnWidth = row
@@ -403,6 +410,9 @@ export function PlanningFilterControls({
         triggerClassName={userWidth}
         searchPlaceholder="Search users…"
         allOptionLabel="All users"
+        searchQuery={userSearchQuery}
+        onSearchQueryChange={onUserSearchQueryChange}
+        isSearchLoading={isUserSearchLoading}
       />
     </div>
   );

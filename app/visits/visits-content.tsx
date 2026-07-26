@@ -10,7 +10,7 @@ import {
   useCheckInMutation,
   useCheckOutMutation,
   useClientsInfinite,
-  useUsers,
+  useSearchableUsersList,
   useBranches,
   useTokenReady,
   useSessionSync,
@@ -135,6 +135,7 @@ export function VisitsContent({
     setSelectedClient,
     clientSearch,
     setClientSearch,
+    setSelectedUserUid,
   } = useVisitsStore();
 
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>({
@@ -183,8 +184,17 @@ export function VisitsContent({
     return inList ? clientsFromApi : [selectedClient, ...clientsFromApi];
   }, [clientsFromApi, selectedClient]);
 
-  const usersQuery = useUsers({ limit: 200, enabled: mounted });
-  const usersList = usersQuery.data ?? [];
+  const {
+    users: pickerUsers,
+    baseUsers: usersList,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({ limit: 200, enabled: mounted });
+  const handleSelectedUserUidChange = bindUidChange((uid: string) => {
+    setSelectedUserUid(uid === 'all' ? '' : uid);
+  });
   const branchesQuery = useBranches({ enabled: mounted });
 
   const statusQuery = useCheckInStatus({ enabled: mounted });
@@ -1342,11 +1352,15 @@ export function VisitsContent({
         uniqueBusinessTypes={uniqueBusinessTypes}
         businessTypeLabelMap={businessTypeLabelMap}
         businessTypeIconMap={businessTypeIconMap}
-        usersList={usersList}
+        usersList={pickerUsers}
         branches={branchesQuery.data ?? []}
         visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
         onOpenVisitsSummary={handleOpenVisitsSummary}
         sectionHeading={null}
+        userSearchQuery={userSearchQuery}
+        onUserSearchQueryChange={setUserSearchQuery}
+        isUserSearchLoading={isUserSearchLoading}
+        onUserUidChange={handleSelectedUserUidChange}
       />
       <div
         data-tour="visits-history-content"

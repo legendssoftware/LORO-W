@@ -48,6 +48,8 @@ import {
 import { normalizeCountryToken } from '@/lib/utils/country-flags';
 import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
 import {
+  REPORTS_USERS_PAGE_LIMIT,
+  REPORTS_USERS_QUERY_KEY,
   resolveReportsAllowlistUids,
   userUidInAllowlist,
 } from '../lib/reports-scope-allowlist';
@@ -61,6 +63,7 @@ import { cn } from '@/lib/utils';
 import { ReportsHoursTargetCard } from './reports-hours-target-card';
 import { ReportsNamedBarChart } from './reports-named-bar-chart';
 import { ReportsSalesTargetRadialChart } from './reports-sales-target-radial-chart';
+import { ReportsConversionRateRadialChart } from './reports-conversion-rate-radial-chart';
 import { ReportsSection } from './reports-section';
 import { ReportsTrendLineChart } from './reports-trend-line-chart';
 import { ReportsUserTargetBars } from './reports-user-target-bars';
@@ -70,6 +73,7 @@ import {
 } from './reports-visits-map';
 import { formatReportMoney } from '@/app/reports/lib/reports-chart-format';
 import {
+  avgVisitDurationByUser,
   branchSalesTrendFromMonthly,
   countryFlagLabel,
   engagementTotals,
@@ -85,12 +89,7 @@ import {
   trailingMonthRanges,
 } from '../lib/reports-dashboard-chart-helpers';
 
-const REPORTS_OVERVIEW_USERS_QUERY_KEY = [
-  'users',
-  'reports-overview',
-  'all',
-] as const;
-const USERS_PAGE_LIMIT = 100;
+const USERS_PAGE_LIMIT = REPORTS_USERS_PAGE_LIMIT;
 
 async function fetchAllOrgUsers(
   client: Parameters<typeof getUsers>[0]
@@ -141,6 +140,16 @@ function visitCountryCanon(c: VisitListItem): string | null {
     normalizeCountryToken(fullAddress?.country) ??
     null
   );
+}
+
+function visitCustomerType(c: VisitListItem): string {
+  const client = c.client as { type?: string } | null | undefined;
+  const type = client?.type?.trim();
+  if (type) return type;
+  if (typeof c.businessType === 'string' && c.businessType.trim()) {
+    return c.businessType.trim();
+  }
+  return 'Unknown';
 }
 
 function filterCheckInsForOverview(
@@ -410,10 +419,11 @@ export function ReportsDashboardTab() {
     enabled: enabled && isMultiUser,
   });
   const usersQuery = useQuery({
-    queryKey: [...REPORTS_OVERVIEW_USERS_QUERY_KEY, scope] as const,
+    queryKey: [...REPORTS_USERS_QUERY_KEY, scope] as const,
     queryFn: () => fetchAllOrgUsers(client),
     enabled: enabled && isMultiUser,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const scopedUsers = useMemo(
@@ -442,6 +452,11 @@ export function ReportsDashboardTab() {
     scopedUsers,
   ]);
 
+  const hasVisitClientFilters =
+    branchIdFilter != null ||
+    userIdFilter != null ||
+    countryCodeFilter != null;
+
   const engagementQuery = useEngagementRange(rangeParams, { enabled });
   const leadsQuery = useLeadsReport(
     {
@@ -451,9 +466,10 @@ export function ReportsDashboardTab() {
     },
     { enabled }
   );
+  /** Skip aggregate report when UI filters require client-side re-agg from the list. */
   const visitsQuery = useCheckInsReport(
     { from, to },
-    { enabled }
+    { enabled: enabled && !hasVisitClientFilters }
   );
   const visitsListQuery = useCheckIns(
     {
@@ -534,12 +550,6 @@ export function ReportsDashboardTab() {
     ]
   );
 
-  const hasVisitClientFilters =
-    branchIdFilter != null ||
-    userIdFilter != null ||
-    countryCodeFilter != null ||
-    allowlistUids != null;
-
   const productivityGrouped = useMemo(() => {
     let users = engagementQuery.data?.users ?? [];
     if (allowlistUids != null) {
@@ -550,6 +560,15 @@ export function ReportsDashboardTab() {
     }
     return engagementTotals(users);
   }, [engagementQuery.data?.users, userIdFilter, allowlistUids]);
+
+  const conversionTotals = useMemo(() => {
+    const row = productivityGrouped[0];
+    return {
+      calls: row?.calls ?? 0,
+      visits: row?.visits ?? 0,
+      leads: row?.leads ?? 0,
+    };
+  }, [productivityGrouped]);
 
   const salesByCountryDonut = useMemo(() => {
     const rows = storesSalesQuery.data?.salesPerStore ?? [];
@@ -723,6 +742,7 @@ export function ReportsDashboardTab() {
     const byCountry = new Map<string, number>();
     const byRegion = new Map<string, number>();
     const byCustomer = new Map<string, number>();
+    const byCustomerType = new Map<string, number>();
     let worked = 0;
     let notWorked = 0;
     for (const c of filteredCheckIns) {
@@ -750,6 +770,12 @@ export function ReportsDashboardTab() {
         c.client?.name?.trim() || c.companyName?.trim() || 'Unknown';
       byCustomer.set(customer, (byCustomer.get(customer) ?? 0) + 1);
 
+      const customerType = visitCustomerType(c);
+      byCustomerType.set(
+        customerType,
+        (byCustomerType.get(customerType) ?? 0) + 1
+      );
+
       if (visitIsWorked(c)) worked += 1;
       else notWorked += 1;
     }
@@ -758,6 +784,7 @@ export function ReportsDashboardTab() {
       byCountry: seriesFromCountMap(byCountry),
       byRegion: seriesFromCountMap(byRegion),
       byCustomer: seriesFromCountMap(byCustomer),
+      byCustomerType: seriesFromCountMap(byCustomerType),
       byEngagement: [
         { name: 'Worked', value: worked },
         { name: 'Not worked', value: notWorked },
@@ -772,13 +799,6 @@ export function ReportsDashboardTab() {
       ),
     [filteredVisitSeries?.byBranch, visitsQuery.data?.byBranch]
   );
-  const visitsCountryDonut = useMemo(
-    () =>
-      toDonutSlices(
-        filteredVisitSeries?.byCountry ?? visitsQuery.data?.byCountry
-      ),
-    [filteredVisitSeries?.byCountry, visitsQuery.data?.byCountry]
-  );
   const visitsEngagementDonut = useMemo(
     () =>
       toDonutSlices(
@@ -786,6 +806,11 @@ export function ReportsDashboardTab() {
         [REPORTS_CHART_GREEN, REPORTS_CHART_AMBER]
       ),
     [filteredVisitSeries?.byEngagement, visitsQuery.data?.byEngagement]
+  );
+
+  const avgDurationByUser = useMemo(
+    () => avgVisitDurationByUser(filteredCheckIns, 10),
+    [filteredCheckIns]
   );
 
   const visitMapPoints = useMemo(
@@ -985,7 +1010,7 @@ export function ReportsDashboardTab() {
         title="Productivity"
         description="Calls, visits, leads, and sales target progress across the selected period."
       >
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <ChartCard
             title="Engagement totals"
             description="Combined calls, visits, and leads"
@@ -1014,6 +1039,19 @@ export function ReportsDashboardTab() {
                   color: REPORTS_CHART_AMBER,
                 },
               ]}
+            />
+          </ChartCard>
+          <ChartCard
+            title="Conversion rate"
+            description="Leads as a share of visits + calls"
+            isLoading={engagementQuery.isLoading}
+            isError={engagementQuery.isError}
+            onRetry={() => void engagementQuery.refetch()}
+          >
+            <ReportsConversionRateRadialChart
+              leads={conversionTotals.leads}
+              visits={conversionTotals.visits}
+              calls={conversionTotals.calls}
             />
           </ChartCard>
           {showTeamCharts ? (
@@ -1317,16 +1355,17 @@ export function ReportsDashboardTab() {
             />
           </ChartCard>
           <ChartCard
-            title="Allocation by country"
-            isLoading={visitsQuery.isLoading}
-            isError={visitsQuery.isError}
-            onRetry={() => void visitsQuery.refetch()}
+            title="Duration per visit by user"
+            description="Average visit length (checked-out visits with duration)"
+            isLoading={visitsListQuery.isLoading}
+            isError={visitsListQuery.isError}
+            onRetry={() => void visitsListQuery.refetch()}
           >
-            <ReportDonutChart
-              config={visitsCountryDonut.config}
-              data={visitsCountryDonut.slices}
-              centerPrimary={String(visitsCountryDonut.total)}
-              centerSecondary="Visits"
+            <ReportsNamedBarChart
+              data={avgDurationByUser}
+              fill={REPORTS_CHART_BLUE}
+              valueKind="duration"
+              yAxisLabel="Avg duration"
             />
           </ChartCard>
           <ChartCard
@@ -1425,12 +1464,26 @@ export function ReportsDashboardTab() {
           </ChartCard>
           <ChartCard
             title="By customer type"
-            isLoading={visitsQuery.isLoading}
-            isError={visitsQuery.isError}
-            onRetry={() => void visitsQuery.refetch()}
+            isLoading={
+              hasVisitClientFilters
+                ? visitsListQuery.isLoading
+                : visitsQuery.isLoading
+            }
+            isError={
+              hasVisitClientFilters
+                ? visitsListQuery.isError
+                : visitsQuery.isError
+            }
+            onRetry={() => {
+              if (hasVisitClientFilters) void visitsListQuery.refetch();
+              else void visitsQuery.refetch();
+            }}
           >
             <ReportsNamedBarChart
-              data={toNamedBars(visitsQuery.data?.byCustomerType)}
+              data={toNamedBars(
+                filteredVisitSeries?.byCustomerType ??
+                  visitsQuery.data?.byCustomerType
+              )}
               fill={REPORTS_CHART_RED}
               yAxisLabel="Visits"
               seriesLabel="Visits"
