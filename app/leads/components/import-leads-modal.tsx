@@ -24,7 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   useImportLeadsMutation,
-  useUsers,
+  useSearchableUsersList,
   useBranches,
   useApiClient,
   getBranchDisplayLabel,
@@ -106,7 +106,6 @@ export function ImportLeadsModal({
   const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>('users');
   const [branchPoolIds, setBranchPoolIds] = useState<number[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [rowCount, setRowCount] = useState<number | null>(null);
   const [rowCountStatus, setRowCountStatus] = useState<RowCountStatus>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,7 +114,12 @@ export function ImportLeadsModal({
 
   const importMutation = useImportLeadsMutation();
   const apiClient = useApiClient();
-  const { data: teamUsers = [] } = useUsers({
+  const {
+    users: teamUsers,
+    searchQuery: assigneeSearch,
+    setSearchQuery: setAssigneeSearch,
+    isSearchLoading: isAssigneeSearchLoading,
+  } = useSearchableUsersList({
     limit: 100,
     enabled: open && assignmentMode === 'users',
   });
@@ -158,6 +162,8 @@ export function ImportLeadsModal({
   const { data: branches = [] } = useBranches({ enabled: open });
 
   const filteredUsers = useMemo(() => {
+    // Server search owns filtering once query is long enough.
+    if (assigneeSearch.trim().length >= 2) return teamUsers;
     const q = assigneeSearch.trim().toLowerCase();
     if (!q) return teamUsers;
     return teamUsers.filter((u) => {
@@ -703,7 +709,11 @@ export function ImportLeadsModal({
                   />
                   <ScrollArea className="h-[min(240px,40vh)] rounded-md border border-input">
                     <div className="space-y-0 p-2">
-                      {teamUsers.length === 0 ? (
+                      {isAssigneeSearchLoading && filteredUsers.length === 0 ? (
+                        <p className="text-muted-foreground px-2 py-3 text-sm">
+                          Searching…
+                        </p>
+                      ) : teamUsers.length === 0 ? (
                         <p className="text-muted-foreground px-2 py-3 text-sm">
                           No users loaded.
                         </p>

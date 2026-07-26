@@ -1,4 +1,13 @@
 /**
+ * Shared React Query key for org user list used by Reports Overview + Targets.
+ * Keep identical so both tabs reuse one cache entry.
+ */
+export const REPORTS_USERS_QUERY_KEY = ['users', 'reports', 'all'] as const;
+
+/** Server `MAX_PAGE_LIMIT` on GET /user is 100. */
+export const REPORTS_USERS_PAGE_LIMIT = 100;
+
+/**
  * Resolve the UID allowlist for reports team scope.
  * Always includes the signed-in user; merges managedStaff from profile when present.
  */

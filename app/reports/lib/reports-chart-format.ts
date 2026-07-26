@@ -31,7 +31,7 @@ export function formatReportMoney(value: number): string {
   return `R${compact}`;
 }
 
-export type ReportsChartValueKind = 'count' | 'money' | 'hours';
+export type ReportsChartValueKind = 'count' | 'money' | 'hours' | 'duration';
 
 export function formatReportChartValue(
   value: number,
@@ -39,6 +39,13 @@ export function formatReportChartValue(
 ): string {
   if (!Number.isFinite(value) || value === 0) return '';
   if (kind === 'money') return formatReportMoney(value);
+  if (kind === 'duration') {
+    const mins = Math.max(0, Math.round(value));
+    if (mins < 60) return `${mins}m`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  }
   return formatReportCompact(value);
 }
 
@@ -53,6 +60,8 @@ export function reportsYAxisLabel(
       return 'Revenue';
     case 'hours':
       return 'Hours';
+    case 'duration':
+      return 'Duration';
     case 'count':
       return 'Count';
     default: {
@@ -69,6 +78,8 @@ export function reportsYAxisWidth(kind: ReportsChartValueKind = 'count'): number
       return 78;
     case 'hours':
       return 64;
+    case 'duration':
+      return 72;
     case 'count':
       return 64;
     default: {

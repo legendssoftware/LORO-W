@@ -7,41 +7,46 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { formatReportMoney } from '@/app/reports/lib/reports-chart-format';
+import { formatReportCompact } from '@/app/reports/lib/reports-chart-format';
 import { reportsTooltipRow } from '@/app/reports/lib/reports-chart-tooltip';
 import {
+  REPORTS_CHART_AMBER,
   REPORTS_CHART_GREEN,
-  REPORTS_CHART_RED,
 } from '@/app/reports/lib/reports-dashboard-chart-helpers';
 import { getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import { cn } from '@/lib/utils';
 
-interface ReportsSalesTargetRadialChartProps {
-  target: number;
-  achieved: number;
+interface ReportsConversionRateRadialChartProps {
+  leads: number;
+  visits: number;
+  calls: number;
   className?: string;
 }
 
 /**
- * Stacked radial (semicircle) for team sales target vs achieved —
- * LTR arc: green = achieved (from left), red = remaining.
+ * Lead conversion vs visits + calls — green = converted (leads), amber = remaining activity.
+ * Rate = leads / (visits + calls).
  */
-export function ReportsSalesTargetRadialChart({
-  target,
-  achieved,
+export function ReportsConversionRateRadialChart({
+  leads,
+  visits,
+  calls,
   className,
-}: ReportsSalesTargetRadialChartProps) {
-  const safeTarget = Math.max(0, Math.round(target));
-  const safeAchieved = Math.max(0, Math.round(achieved));
-  const remaining = Math.max(0, safeTarget - safeAchieved);
-  const progress =
-    safeTarget > 0
-      ? Math.round(Math.min(999, Math.max(0, (safeAchieved / safeTarget) * 100)))
-      : safeAchieved > 0
+}: ReportsConversionRateRadialChartProps) {
+  const safeLeads = Math.max(0, Math.round(leads));
+  const safeVisits = Math.max(0, Math.round(visits));
+  const safeCalls = Math.max(0, Math.round(calls));
+  const activity = safeVisits + safeCalls;
+  const converted = Math.min(safeLeads, activity > 0 ? activity : safeLeads);
+  const remaining = Math.max(0, activity - converted);
+  const rate =
+    activity > 0
+      ? Math.round(Math.min(100, Math.max(0, (safeLeads / activity) * 100)))
+      : safeLeads > 0
         ? 100
         : 0;
 
-  if (safeTarget <= 0 && safeAchieved <= 0) {
+  if (activity <= 0 && safeLeads <= 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
     );
@@ -49,36 +54,34 @@ export function ReportsSalesTargetRadialChart({
 
   const chartData = [
     {
-      name: 'sales',
-      achieved: safeAchieved,
-      remaining,
+      name: 'conversion',
+      converted: activity > 0 ? converted : safeLeads,
+      remaining: activity > 0 ? remaining : 0,
     },
   ];
 
   const config: ChartConfig = {
-    achieved: {
-      label: 'Achieved',
+    converted: {
+      label: 'Leads',
       color: REPORTS_CHART_GREEN,
     },
     remaining: {
-      label: 'Remaining to target',
-      color: REPORTS_CHART_RED,
+      label: 'Visits + calls',
+      color: REPORTS_CHART_AMBER,
     },
   };
 
   const legendItems = [
-    { key: 'achieved', label: 'Achieved', color: REPORTS_CHART_GREEN },
+    { key: 'converted', label: 'Leads', color: REPORTS_CHART_GREEN },
     {
       key: 'remaining',
-      label: 'Remaining to target',
-      color: REPORTS_CHART_RED,
+      label: 'Visits + calls (no lead)',
+      color: REPORTS_CHART_AMBER,
     },
   ] as const;
 
-  const progressFillClass = getProgressColorClasses(Math.min(100, progress)).text;
-  // SVG tspan needs fill-* not text-*
-  const progressFill =
-    progress >= 70 ? 'fill-green-600' : 'fill-red-600';
+  const progressFill = rate >= 70 ? 'fill-green-600' : 'fill-red-600';
+  const progressText = getProgressColorClasses(rate).text;
 
   return (
     <div className={cn('flex flex-col items-center gap-4', className)}>
@@ -100,12 +103,12 @@ export function ReportsSalesTargetRadialChart({
                 hideLabel
                 formatter={(value, name, item) =>
                   reportsTooltipRow(value, name, item, {
-                    formatValue: (n) => formatReportMoney(n) || 'R0',
+                    formatValue: (n) => formatReportCompact(n) || '0',
                     label:
-                      name === 'achieved'
-                        ? 'Achieved'
+                      name === 'converted'
+                        ? 'Leads'
                         : name === 'remaining'
-                          ? 'Remaining to target'
+                          ? 'Visits + calls without lead'
                           : undefined,
                   })
                 }
@@ -123,14 +126,14 @@ export function ReportsSalesTargetRadialChart({
                         y={(viewBox.cy || 0) - 16}
                         className={cn('text-2xl font-bold', progressFill)}
                       >
-                        {progress}%
+                        {rate}%
                       </tspan>
                       <tspan
                         x={viewBox.cx}
                         y={(viewBox.cy || 0) + 4}
                         className="fill-muted-foreground text-sm"
                       >
-                        Of target
+                        Conversion
                       </tspan>
                     </text>
                   );
@@ -140,24 +143,26 @@ export function ReportsSalesTargetRadialChart({
             />
           </PolarRadiusAxis>
           <RadialBar
-            dataKey="achieved"
+            dataKey="converted"
             stackId="a"
             cornerRadius={5}
-            fill="var(--color-achieved)"
+            fill="var(--color-converted)"
             className="stroke-transparent stroke-2"
           />
-          <RadialBar
-            dataKey="remaining"
-            stackId="a"
-            cornerRadius={5}
-            fill="var(--color-remaining)"
-            className="stroke-transparent stroke-2"
-          />
+          {activity > 0 ? (
+            <RadialBar
+              dataKey="remaining"
+              stackId="a"
+              cornerRadius={5}
+              fill="var(--color-remaining)"
+              className="stroke-transparent stroke-2"
+            />
+          ) : null}
         </RadialBarChart>
       </ChartContainer>
 
-      <div className="flex flex-wrap items-center justify-center gap-5 pt-1">
-        {legendItems.map((item) => (
+      <div className="flex flex-wrap items-center justify-center gap-4 pt-1">
+        {legendItems.slice(0, activity > 0 ? 2 : 1).map((item) => (
           <div
             key={item.key}
             className="flex items-center gap-1.5 text-sm text-foreground"
@@ -172,12 +177,12 @@ export function ReportsSalesTargetRadialChart({
         ))}
       </div>
 
-      <p className="text-center text-xs tabular-nums text-muted-foreground">
-        <span className={progressFillClass}>
-          {formatReportMoney(safeAchieved) || 'R0'}
+      <p className="text-center text-xs text-muted-foreground tabular-nums">
+        <span className={progressText}>
+          {formatReportCompact(safeLeads) || '0'} leads
         </span>
         <span className="mx-1">/</span>
-        {formatReportMoney(safeTarget) || 'R0'}
+        {formatReportCompact(activity) || '0'} visits+calls
       </p>
     </div>
   );

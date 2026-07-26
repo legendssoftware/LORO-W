@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
-import { useTasks, useTasksForUser, useUsers, useClients, useBranches } from '@/api/hooks';
+import { useTasks, useTasksForUser, useSearchableUsersList, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
 import { TaskDetailDialog } from '@/components/planning-table/task-detail-dialog';
@@ -112,12 +112,20 @@ export function PlanningContent() {
     }
   };
 
-  const { data: users = [] } = useUsers({ page: 1, limit: 100 });
+  const {
+    users,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({ page: 1, limit: 100 });
   const { data: branches = [] } = useBranches();
   const { data: clientsList = [] } = useClients({
     page: 1,
     limit: 200,
   });
+
+  const handleSelectedAssigneeIdChange = bindUidChange(setSelectedAssigneeId);
 
   const todayYmd = formatUtcYmd(utcToday());
   const effectiveUseAllTime = planningTab === 'my-day' ? false : useAllTime;
@@ -291,7 +299,10 @@ export function PlanningContent() {
                   onSelectedPriorityChange={setSelectedPriority}
                   onFilterOverdueChange={setFilterOverdueOnly}
                   onSelectedClientIdChange={setSelectedClientId}
-                  onSelectedAssigneeIdChange={setSelectedAssigneeId}
+                  onSelectedAssigneeIdChange={handleSelectedAssigneeIdChange}
+                  userSearchQuery={userSearchQuery}
+                  onUserSearchQueryChange={setUserSearchQuery}
+                  isUserSearchLoading={isUserSearchLoading}
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
                 />

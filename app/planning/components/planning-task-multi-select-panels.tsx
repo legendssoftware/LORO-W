@@ -25,12 +25,35 @@ function userDisplayName(u: UserListItem): string {
   );
 }
 
+function userMatchesQuery(u: UserListItem, query: string, branchLabel: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const hay = [
+    u.name,
+    u.surname,
+    userDisplayName(u),
+    u.email,
+    typeof u.username === 'string' ? u.username : '',
+    branchLabel,
+    String(u.uid),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return tokens.every((token) => hay.includes(token));
+}
+
 export interface PlanningAssigneesMultiSelectPanelProps {
   users: UserListItem[];
   branches: BranchListItem[];
   selectedUids: number[];
   onToggleUid: (uid: number) => void;
   searchPlaceholder?: string;
+  /** Controlled search (e.g. parent `useSearchableUsersList`). */
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  isSearchLoading?: boolean;
 }
 
 export function PlanningAssigneesMultiSelectPanel({
@@ -39,19 +62,47 @@ export function PlanningAssigneesMultiSelectPanel({
   selectedUids,
   onToggleUid,
   searchPlaceholder = 'Search users…',
+  searchQuery: searchQueryProp,
+  onSearchQueryChange,
+  isSearchLoading = false,
 }: PlanningAssigneesMultiSelectPanelProps) {
+  const [internalQuery, setInternalQuery] = React.useState('');
+  const isSearchControlled = searchQueryProp !== undefined;
+  const query = isSearchControlled ? searchQueryProp : internalQuery;
+
+  function setQuery(next: string) {
+    if (!isSearchControlled) setInternalQuery(next);
+    onSearchQueryChange?.(next);
+  }
+
   const branchByUid = React.useMemo(
     () => new Map<number, BranchListItem>(branches.map((b) => [b.uid, b])),
     [branches]
   );
 
+  const filteredUsers = React.useMemo(() => {
+    // Parent owns server search for longer queries — don't double-filter.
+    if (onSearchQueryChange && query.trim().length >= 2) return users;
+    return users.filter((u) => {
+      const { label: branchLabel } = branchFlagAndLabel(u, branchByUid);
+      return userMatchesQuery(u, query, branchLabel);
+    });
+  }, [users, query, branchByUid, onSearchQueryChange]);
+
   return (
-    <Command className="rounded-lg border-0 shadow-none">
-      <CommandInput placeholder={searchPlaceholder} className="h-9" />
+    <Command shouldFilter={false} className="rounded-lg border-0 shadow-none">
+      <CommandInput
+        placeholder={searchPlaceholder}
+        className="h-9"
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList className="max-h-[240px]">
-        <CommandEmpty>No user found.</CommandEmpty>
+        <CommandEmpty>
+          {isSearchLoading ? 'Searching…' : 'No user found.'}
+        </CommandEmpty>
         <CommandGroup>
-          {users.map((u) => {
+          {filteredUsers.map((u) => {
             const displayName = userDisplayName(u);
             const { flag: branchFlag, label: branchLabel } = branchFlagAndLabel(
               u,
@@ -62,11 +113,10 @@ export function PlanningAssigneesMultiSelectPanel({
               displayName.trim().length > 0
                 ? displayName.trim().slice(0, 2).toUpperCase()
                 : '—';
-            const searchBlob = `${displayName} ${u.email ?? ''} ${branchLabel} ${u.uid}`;
             return (
               <CommandItem
                 key={u.uid}
-                value={searchBlob}
+                value={`user-${u.uid}`}
                 className="cursor-pointer items-start gap-2 py-2"
                 onSelect={() => onToggleUid(u.uid)}
               >
@@ -131,9 +181,7 @@ export function PlanningClientsMultiSelectPanel({
                   aria-hidden
                 />
                 <StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {c.name}
-                </span>
+                <span className="min-w-0 flex-1 truncate">{c.name}</span>
               </CommandItem>
             );
           })}

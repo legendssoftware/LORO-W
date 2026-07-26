@@ -6,7 +6,7 @@ import {
   useUserPayslips,
   useSessionSync,
   useTokenReady,
-  useUsers,
+  useSearchableUsersList,
   useApiClient,
 } from '@/api/hooks';
 import { getPayslipDocument } from '@/api/endpoints/payslips';
@@ -61,10 +61,18 @@ export function PayslipsContent() {
   );
   const currentUserId = profile?.uid != null ? Number(profile.uid) : null;
 
-  const { data: users = [] } = useUsers({
+  const {
+    users,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({
     limit: 100,
     enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
   });
+
+  const handleSelectedUserIdChange = bindUidChange(setSelectedUserId);
 
   const dateFilters = payslipsFilterDatesFromState(useAllTime, startDate, endDate);
 
@@ -240,7 +248,10 @@ export function PayslipsContent() {
             onSetUseAllTime={setUseAllTime}
             onResetDateRange={onResetDateRange}
             onSelectedStatusChange={setSelectedStatus}
-            onSelectedUserIdChange={setSelectedUserId}
+            onSelectedUserIdChange={handleSelectedUserIdChange}
+            userSearchQuery={userSearchQuery}
+            onUserSearchQueryChange={setUserSearchQuery}
+            isUserSearchLoading={isUserSearchLoading}
           />
         </div>
 

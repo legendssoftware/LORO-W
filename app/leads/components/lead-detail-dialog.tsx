@@ -51,6 +51,7 @@ import {
   useEngageDraftMutation,
   useSendLeadEngageMutation,
   useUsers,
+  useSearchableUsersList,
   useLead,
   useApiClient,
 } from '@/api/hooks';
@@ -226,11 +227,16 @@ export function LeadDetailDialog({
   const deleteMutation = useDeleteLeadMutation();
   const reactivateMutation = useReactivateLeadMutation();
   const reassignMutation = useReassignLeadsMutation();
-  const transferUsersQuery = useUsers({
+  const {
+    users: transferUsers,
+    searchQuery: transferSearch,
+    setSearchQuery: setTransferSearch,
+    isSearchLoading: isTransferSearchLoading,
+    isLoading: transferUsersLoading,
+  } = useSearchableUsersList({
     limit: 200,
     enabled: transferOpen,
   });
-  const transferUsers = transferUsersQuery.data ?? [];
   const sendEngageMutation = useSendLeadEngageMutation();
   const client = useApiClient();
   const leadDetailQuery = useLead(leadUid ?? null, {
@@ -808,13 +814,25 @@ export function LeadDetailDialog({
               <p className="text-xs text-muted-foreground">
                 Select a team member to own this lead. Interactions and history stay on the lead.
               </p>
-              {transferUsersQuery.isLoading ? (
+              <Input
+                type="search"
+                placeholder="Search team members…"
+                value={transferSearch}
+                onChange={(e) => setTransferSearch(e.target.value)}
+                className="h-9"
+              />
+              {transferUsersLoading && transferUsers.length === 0 ? (
                 <div className="flex justify-center py-6">
                   <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <div className="max-h-52 overflow-y-auto space-y-1 rounded-md border bg-background p-2">
-                  {transferUsers
+                  {isTransferSearchLoading && transferUsers.length === 0 ? (
+                    <p className="text-muted-foreground px-2 py-3 text-sm">Searching…</p>
+                  ) : transferUsers.filter((u) => u.uid !== lead.owner?.uid).length === 0 ? (
+                    <p className="text-muted-foreground px-2 py-3 text-sm">No matches.</p>
+                  ) : (
+                    transferUsers
                     .filter((u) => u.uid !== lead.owner?.uid)
                     .map((u) => {
                       const fullName =
@@ -860,7 +878,8 @@ export function LeadDetailDialog({
                           <span className="min-w-0 flex-1 truncate font-medium">{fullName}</span>
                         </button>
                       );
-                    })}
+                    })
+                  )}
                 </div>
               )}
               <Button
@@ -869,7 +888,7 @@ export function LeadDetailDialog({
                 disabled={
                   transferTargetUid == null ||
                   reassignMutation.isPending ||
-                  transferUsersQuery.isLoading
+                  transferUsersLoading
                 }
                 onClick={handleTransferConfirm}
               >

@@ -90,6 +90,10 @@ export interface LeadsFilterControlsProps {
   onSelectedPriorityChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
   onUnassignedOnlyChange: (v: boolean) => void;
+  /** Controlled user-picker search (server-backed when parent wires useSearchableUsersList). */
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
 }
 
 export function LeadsFilterControls({
@@ -119,6 +123,9 @@ export function LeadsFilterControls({
   onSelectedPriorityChange,
   onSelectedUserIdChange,
   onUnassignedOnlyChange,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
 }: LeadsFilterControlsProps) {
   const row = layout === 'row';
 
@@ -474,6 +481,9 @@ export function LeadsFilterControls({
           selectedUid={selectedUserId === '' ? 'all' : selectedUserId}
           onUidChange={onSelectedUserIdChange}
           triggerClassName={ownerTrigger}
+          searchQuery={userSearchQuery}
+          onSearchQueryChange={onUserSearchQueryChange}
+          isSearchLoading={isUserSearchLoading}
         />
       ) : null}
 

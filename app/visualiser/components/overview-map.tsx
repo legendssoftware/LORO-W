@@ -37,7 +37,7 @@ import {
   branchSimulationTextClass,
 } from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { useBranches, useUsers } from '@/api/hooks';
+import { useBranches, useSearchableUsersList } from '@/api/hooks';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
   RepJourneyPoint,
@@ -253,10 +253,18 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     null
   );
 
+  const {
+    users,
+    searchQuery: repSearchInput,
+    setSearchQuery: setRepSearchInput,
+    isSearchLoading: isRepSearchLoading,
+    rememberUser,
+    clearSelection: clearRepSelection,
+  } = useSearchableUsersList({ enabled, limit: 100 });
+
   const { isActive, selectedZone, clearSimulation, panelOpen } =
     useVisualiserSimulation();
 
-  const { data: users = [] } = useUsers({ enabled, limit: 200 });
   const { data: branches = [] } = useBranches({ enabled });
 
   const { allPoints, visiblePoints, counts, isLoading } = useVisualiserMapLayers({
@@ -340,9 +348,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
   const handleClearTracking = useCallback(() => {
     setTrackedRepUid('all');
+    clearRepSelection();
+    setRepSearchInput('');
     handleClearRoute();
     setSelected((cur) => (cur?.layer === 'reps' ? null : cur));
-  }, [handleClearRoute]);
+  }, [clearRepSelection, handleClearRoute, setRepSearchInput]);
 
   const handleLayerChange = useCallback(
     (layer: VisualiserLayerId, visible: boolean) => {
@@ -352,11 +362,13 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setJourneyRoute(null);
         setSelectedJourneyPoint(null);
         setTrackedRepUid('all');
+        clearRepSelection();
+        setRepSearchInput('');
         setActiveTraceRange(null);
         setTrackStatusMessage(null);
       }
     },
-    []
+    [clearRepSelection, setRepSearchInput]
   );
 
   const handleTraceRoute = useCallback(
@@ -438,6 +450,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       const repUid = Number(uid);
       if (!Number.isFinite(repUid)) return;
 
+      const fromList = users.find((u) => u.uid === repUid);
+      if (fromList) {
+        rememberUser(fromList);
+      }
+
       setVisibility((prev) =>
         prev.reps ? prev : { ...prev, reps: true }
       );
@@ -456,7 +473,13 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         await handleTraceRoute(repUid, 'week', repName);
       }
     },
-    [allPoints, handleClearTracking, handleTraceRoute, users]
+    [
+      allPoints,
+      handleClearTracking,
+      handleTraceRoute,
+      rememberUser,
+      users,
+    ]
   );
 
   const trackedUidNum =
@@ -547,6 +570,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           isTracing={isTracing}
           statusMessage={trackStatusMessage}
           onClear={handleClearTracking}
+          searchQuery={repSearchInput}
+          onSearchQueryChange={setRepSearchInput}
+          isSearchLoading={isRepSearchLoading}
           onTraceRange={(range) => {
             if (trackedUidNum == null) return;
             void handleTraceRoute(trackedUidNum, range);

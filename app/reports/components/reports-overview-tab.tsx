@@ -39,6 +39,8 @@ import {
   type ReportsTargetsSortMetric,
 } from '@/app/reports/components/reports-targets-toolbar';
 import {
+  REPORTS_USERS_PAGE_LIMIT,
+  REPORTS_USERS_QUERY_KEY,
   resolveReportsAllowlistUids,
   userUidInAllowlist,
 } from '@/app/reports/lib/reports-scope-allowlist';
@@ -67,9 +69,6 @@ import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-p
 
 const SEARCH_DEBOUNCE_MS = 300;
 const ERP_USER_SALES_QUERY_KEY = ['erp', 'user-sales'] as const;
-const REPORTS_TARGETS_USERS_QUERY_KEY = ['users', 'reports-targets', 'all'] as const;
-/** Server `MAX_PAGE_LIMIT` on GET /user is 100. */
-const USERS_PAGE_LIMIT = 100;
 
 async function fetchAllOrgUsers(
   client: Parameters<typeof getUsers>[0]
@@ -78,7 +77,10 @@ async function fetchAllOrgUsers(
   let page = 1;
   let totalPages = 1;
   while (page <= totalPages) {
-    const res = await getUsers(client, { page, limit: USERS_PAGE_LIMIT });
+    const res = await getUsers(client, {
+      page,
+      limit: REPORTS_USERS_PAGE_LIMIT,
+    });
     const chunk = Array.isArray(res?.data) ? res.data : [];
     all.push(...chunk);
     totalPages = Math.max(1, Number(res?.meta?.totalPages) || 1);
@@ -254,7 +256,7 @@ export function ReportsOverviewTab() {
   ]);
 
   const usersQuery = useQuery({
-    queryKey: [...REPORTS_TARGETS_USERS_QUERY_KEY, scope] as const,
+    queryKey: [...REPORTS_USERS_QUERY_KEY, scope] as const,
     queryFn: () => fetchAllOrgUsers(client),
     enabled: isTokenReady && !isSyncing && isMultiUser,
     staleTime: 5 * 60 * 1000,

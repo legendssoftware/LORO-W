@@ -321,6 +321,20 @@ export function engagementRangeQueryKey(
   ] as const;
 }
 
+/** Longer stale time when the range ends before today (immutable historical data). */
+function engagementRangeStaleTimeMs(
+  params: { from: string; to: string; branchId?: number } | null
+): number {
+  if (!params?.to || !/^\d{4}-\d{2}-\d{2}$/.test(params.to)) return 60 * 1000;
+  const now = new Date();
+  const todayYmd = [
+    now.getUTCFullYear(),
+    String(now.getUTCMonth() + 1).padStart(2, '0'),
+    String(now.getUTCDate()).padStart(2, '0'),
+  ].join('-');
+  return params.to < todayYmd ? 10 * 60 * 1000 : 60 * 1000;
+}
+
 export function useEngagementRange(
   params: { from: string; to: string; branchId?: number } | null,
   options?: { enabled?: boolean }
@@ -348,7 +362,8 @@ export function useEngagementRange(
     },
     enabled:
       (options?.enabled !== false && !!params?.from && !!params?.to) ?? false,
-    staleTime: 30 * 1000,
+    staleTime: engagementRangeStaleTimeMs(params),
+    gcTime: 15 * 60 * 1000,
     retry: false,
   });
 }
