@@ -3,8 +3,8 @@
  */
 
 /** e.g. SOCIAL_MEDIA → "Social Media", Unknown → "Unknown" */
-export function humanizeReportLabel(raw: string): string {
-  const t = raw.trim();
+export function humanizeReportLabel(raw: string | null | undefined): string {
+  const t = (raw ?? '').trim();
   if (!t) return 'Unknown';
   const lower = t.toLowerCase();
   if (lower === 'unknown' || lower === 'unassigned') {
@@ -18,9 +18,11 @@ export function humanizeReportLabel(raw: string): string {
 }
 
 /** "Lynette Banda" → "L Banda"; single token unchanged; Unassigned unchanged */
-export function formatOwnerChartName(fullName: string): string {
-  const t = fullName.trim();
-  if (!t) return fullName;
+export function formatOwnerChartName(
+  fullName: string | null | undefined
+): string {
+  const t = (fullName ?? '').trim();
+  if (!t) return fullName ?? '';
   if (t.toLowerCase() === 'unassigned') return t;
   const parts = t.split(/\s+/).filter(Boolean);
   if (parts.length <= 1) return t;
