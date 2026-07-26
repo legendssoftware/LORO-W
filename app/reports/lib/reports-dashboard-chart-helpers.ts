@@ -32,12 +32,15 @@ export const REPORTS_CHART_RED = ATT_CHART_HSL.c5;
 export const REPORTS_CHART_AMBER = ATT_CHART_HSL.c3;
 
 export function toDonutSlices(
-  series: Array<{ name: string; value: number }> | undefined | null,
+  series:
+    | Array<{ name?: string | null; value: number }>
+    | undefined
+    | null,
   palette: readonly string[] = DONUT_PALETTE
 ): { slices: ReportDonutSlice[]; config: ChartConfig; total: number } {
   const rows = (series ?? [])
     .map((r) => ({
-      name: humanizeReportLabel(r.name) || r.name || 'Unknown',
+      name: humanizeReportLabel(r?.name) || 'Unknown',
       value: Number.isFinite(r.value) ? r.value : 0,
     }))
     .filter((r) => r.value > 0);
@@ -62,12 +65,15 @@ export function toDonutSlices(
 }
 
 export function toNamedBars(
-  series: Array<{ name: string; value: number }> | undefined | null,
+  series:
+    | Array<{ name?: string | null; value: number }>
+    | undefined
+    | null,
   topN = 8
 ): Array<{ name: string; value: number }> {
   return takeTopNWithOther(
     (series ?? []).map((r) => ({
-      name: humanizeReportLabel(r.name) || r.name || 'Unknown',
+      name: humanizeReportLabel(r?.name) || 'Unknown',
       value: r.value,
     })),
     topN
