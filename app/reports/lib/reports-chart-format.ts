@@ -123,7 +123,7 @@ export type ReportsCategoryAxisLayout = {
  * characters on a moderate axis. Few short categories stay horizontal.
  */
 export function getReportsCategoryAxisLayout(
-  labels: string[]
+  labels: Array<string | null | undefined>
 ): ReportsCategoryAxisLayout {
   const count = labels.length;
   if (count === 0) {
@@ -131,7 +131,7 @@ export function getReportsCategoryAxisLayout(
   }
 
   const longest = labels.reduce(
-    (max, label) => Math.max(max, label.trim().length),
+    (max, label) => Math.max(max, (label ?? '').trim().length),
     0
   );
   const hasLongLabel = longest > 5;
