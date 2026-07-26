@@ -41,6 +41,10 @@ export {
   useRestoreClientMutation,
 } from './use-clients';
 export {
+  CLIENTS_MAP_DATA_QUERY_KEY,
+  useClientsMapData,
+} from './use-clients-map-data';
+export {
   COMPETITORS_QUERY_KEY_PREFIX,
   invalidateCompetitorQueries,
   useCompetitorsInfinite,
