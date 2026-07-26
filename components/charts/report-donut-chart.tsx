@@ -9,6 +9,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { formatReportCompact } from '@/app/reports/lib/reports-chart-format';
+import { reportsTooltipRow } from '@/app/reports/lib/reports-chart-tooltip';
 import { cn } from '@/lib/utils';
 
 /** Pie legends list only this many entries so the row does not overflow the card. */
@@ -37,6 +39,8 @@ export interface ReportDonutChartProps {
   tooltipClassName?: string;
   /** Field on each pie row used to look up `ChartConfig` (must match slice `id`, mapped as `name`; default `name`). */
   legendNameKey?: string;
+  /** Optional tooltip value formatter (e.g. money). */
+  formatValue?: (value: number) => string;
 }
 
 /**
@@ -51,6 +55,7 @@ export function ReportDonutChart({
   className,
   tooltipClassName,
   legendNameKey = 'name',
+  formatValue,
 }: ReportDonutChartProps) {
   const pieRows = data.map((d) => ({
     name: d.id,
@@ -58,6 +63,19 @@ export function ReportDonutChart({
     value: d.value,
     fill: d.fill,
   }));
+
+  if (pieRows.length === 0) {
+    return (
+      <p
+        className={cn(
+          'flex h-[224px] items-center justify-center text-sm text-muted-foreground',
+          className
+        )}
+      >
+        No data
+      </p>
+    );
+  }
 
   return (
     <ChartContainer
@@ -75,6 +93,21 @@ export function ReportDonutChart({
               hideLabel
               nameKey={legendNameKey}
               className={tooltipClassName ?? 'min-w-[12rem]'}
+              formatter={(value, name, item) => {
+                const id = String(name ?? '');
+                const fromConfig = config[id]?.label;
+                const label =
+                  (typeof fromConfig === 'string' ? fromConfig : undefined) ||
+                  (typeof item.payload?.label === 'string'
+                    ? item.payload.label
+                    : undefined);
+                return reportsTooltipRow(value, name, item, {
+                  label,
+                  formatValue:
+                    formatValue ??
+                    ((n) => formatReportCompact(n) || String(n)),
+                });
+              }}
             />
           }
         />
@@ -122,10 +155,12 @@ export function ReportDonutChart({
             <ChartLegendContent
               nameKey={legendNameKey}
               maxItems={REPORT_PIE_LEGEND_MAX_ITEMS}
+              className="gap-5 pt-5"
             />
           }
           verticalAlign="bottom"
-          className="flex-wrap justify-center gap-2 pt-2"
+          wrapperStyle={{ paddingTop: 12 }}
+          className="flex-wrap justify-center gap-3 pt-3"
         />
       </PieChart>
     </ChartContainer>

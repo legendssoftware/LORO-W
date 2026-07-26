@@ -1,14 +1,26 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { CalendarIcon } from 'lucide-react';
+import { ArrowDownWideNarrow, CalendarIcon, Download } from 'lucide-react';
+import type { BranchListItem } from '@/api/types/branch';
 import {
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
+  SearchableBranchPicker,
+  SearchableOptionListPicker,
+  SearchableUserPicker,
+  type ReportsFilterUserPickable,
+  type SearchableOptionRow,
 } from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Popover,
@@ -28,6 +40,15 @@ import {
 } from '@/lib/utils/overview-daily-summary';
 import { cn } from '@/lib/utils';
 
+export type ReportsTargetsSortMetric =
+  | 'name'
+  | 'achievement'
+  | 'sales'
+  | 'calls'
+  | 'leads'
+  | 'hours'
+  | 'productivity';
+
 export interface ReportsTargetsToolbarProps {
   searchInput: string;
   onSearchInputChange: (value: string) => void;
@@ -38,7 +59,30 @@ export interface ReportsTargetsToolbarProps {
   onSetUseAllTime: (value: boolean) => void;
   onResetDateRange: () => void;
   showSearch?: boolean;
+  showDimensionFilters?: boolean;
+  branches?: BranchListItem[];
+  users?: ReportsFilterUserPickable[];
+  selectedBranchId?: string;
+  onBranchChange?: (branchId: string) => void;
+  selectedUserId?: string;
+  onUserChange?: (uid: string) => void;
+  sortMetric?: ReportsTargetsSortMetric;
+  onSortMetricChange?: (metric: ReportsTargetsSortMetric) => void;
+  /** Export currently visible/filtered table rows. */
+  onExportCsv?: () => void;
+  onExportExcel?: () => void;
+  exportDisabled?: boolean;
 }
+
+const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = [
+  { value: 'name', label: 'Sort: Name' },
+  { value: 'achievement', label: 'Sort: Achievement' },
+  { value: 'sales', label: 'Sort: Sales' },
+  { value: 'calls', label: 'Sort: Calls' },
+  { value: 'leads', label: 'Sort: Leads' },
+  { value: 'hours', label: 'Sort: Hours' },
+  { value: 'productivity', label: 'Sort: Productivity' },
+];
 
 export function ReportsTargetsToolbar({
   searchInput,
@@ -50,6 +94,18 @@ export function ReportsTargetsToolbar({
   onSetUseAllTime,
   onResetDateRange,
   showSearch = true,
+  showDimensionFilters = false,
+  branches = [],
+  users = [],
+  selectedBranchId = 'all',
+  onBranchChange,
+  selectedUserId = 'all',
+  onUserChange,
+  sortMetric = 'name',
+  onSortMetricChange,
+  onExportCsv,
+  onExportExcel,
+  exportDisabled = false,
 }: ReportsTargetsToolbarProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -69,6 +125,16 @@ export function ReportsTargetsToolbar({
     : formatUtcYmd(startDate) === formatUtcYmd(endDate)
       ? formatUtcCalendarLabel(startDate)
       : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
+
+  const sortOptions: SearchableOptionRow[] = useMemo(
+    () =>
+      SORT_OPTIONS.filter((o) => o.value !== 'name').map((o) => ({
+        value: o.value,
+        label: o.label,
+        icon: <ArrowDownWideNarrow className="size-4 shrink-0" />,
+      })),
+    []
+  );
 
   const handleDatePopoverOpenChange = useCallback(
     (open: boolean) => {
@@ -256,13 +322,119 @@ export function ReportsTargetsToolbar({
   );
 
   return (
-    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="reports-targets-toolbar">
-      <div className="flex flex-wrap items-center gap-2">
-        {datePicker}
+    <div
+      className="mb-4 flex shrink-0 flex-wrap items-center gap-2"
+      data-tour="reports-targets-toolbar"
+    >
+      {datePicker}
+      {showDimensionFilters ? (
+        <>
+          <SearchableBranchPicker
+            branches={branches}
+            selectedBranchId={selectedBranchId}
+            onBranchChange={(id) => onBranchChange?.(id)}
+            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+          />
+          <SearchableUserPicker
+            users={users}
+            branches={branches}
+            selectedUid={selectedUserId}
+            onUidChange={(uid) => onUserChange?.(uid)}
+            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+          />
+          <SearchableOptionListPicker
+            options={sortOptions}
+            selectedValue={sortMetric === 'name' ? 'all' : sortMetric}
+            onValueChange={(v) =>
+              onSortMetricChange?.(
+                v === 'all' ? 'name' : (v as ReportsTargetsSortMetric)
+              )
+            }
+            includeAllOption
+            allOptionValue="all"
+            placeholderLabelWhenAll="Sort: Name"
+            triggerIcon={<ArrowDownWideNarrow className="size-4" />}
+            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+            searchPlaceholder="Search sort…"
+          />
+        </>
+      ) : null}
+      {showSearch ? (
         <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+          {onExportCsv || onExportExcel ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0 gap-1.5"
+                  disabled={exportDisabled}
+                  data-tour="reports-targets-export"
+                >
+                  <Download className="size-4" aria-hidden />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
+                {onExportCsv ? (
+                  <DropdownMenuItem
+                    disabled={exportDisabled}
+                    onSelect={() => onExportCsv()}
+                  >
+                    Export CSV
+                  </DropdownMenuItem>
+                ) : null}
+                {onExportExcel ? (
+                  <DropdownMenuItem
+                    disabled={exportDisabled}
+                    onSelect={() => onExportExcel()}
+                  >
+                    Export Excel
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           {renderSearchField()}
         </div>
-      </div>
+      ) : onExportCsv || onExportExcel ? (
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 gap-1.5"
+                disabled={exportDisabled}
+                data-tour="reports-targets-export"
+              >
+                <Download className="size-4" aria-hidden />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
+              {onExportCsv ? (
+                <DropdownMenuItem
+                  disabled={exportDisabled}
+                  onSelect={() => onExportCsv()}
+                >
+                  Export CSV
+                </DropdownMenuItem>
+              ) : null}
+              {onExportExcel ? (
+                <DropdownMenuItem
+                  disabled={exportDisabled}
+                  onSelect={() => onExportExcel()}
+                >
+                  Export Excel
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { useSessionSync } from "@/api/hooks";
 import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard";
 import { usePrefetchStaffQueries } from "@/api/hooks/use-prefetch-staff";
 import {
+  canAccessCompetitors,
+  canAccessReports,
   canAccessUserSettings,
   getAllowedRoutes,
   getClientSidebarRoutes,
@@ -93,8 +95,15 @@ function getSidebarRoutes(accessLevel: string | undefined) {
   }
 
   if (isStaffDashboardVisible(accessLevel)) {
+    const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
+      if (r.path === "/reports") return canAccessReports(accessLevel);
+      if (r.path === "/competitors" || r.path === "/visualiser") {
+        return canAccessCompetitors(accessLevel);
+      }
+      return true;
+    });
     return [
-      ...STAFF_SIDEBAR_ROUTES,
+      ...staffRoutes,
       ...(canAccessUserSettings(accessLevel) ? [STAFF_SETTINGS_ROUTE] : []),
     ];
   }

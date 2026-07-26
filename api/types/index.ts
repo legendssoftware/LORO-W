@@ -10,6 +10,7 @@ export * from './errors';
 export * from './auth';
 export * from './attendance';
 export * from './leave';
+export * from './warnings';
 export * from './reports';
 export * from './branch';
 export * from './map';

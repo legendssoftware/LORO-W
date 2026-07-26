@@ -19,6 +19,9 @@ const COUNTRY_FLAG_MAP: Record<string, CountryFlagInfo> = {
   ZW: { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼' },
   MAL: { code: 'MAL', name: 'Malawi', flag: '🇲🇼' },
   CON: { code: 'CON', name: 'Congo', flag: '🇨🇩' },
+  NAM: { code: 'NAM', name: 'Namibia', flag: '🇳🇦' },
+  LS: { code: 'LS', name: 'Lesotho', flag: '🇱🇸' },
+  SZ: { code: 'SZ', name: 'Eswatini', flag: '🇸🇿' },
 };
 
 /** ISO / legacy aliases → canonical keys used in COUNTRY_FLAG_MAP */
@@ -43,6 +46,16 @@ const ALIAS_TO_CANON: Record<string, string> = {
   CD: 'CON',
   COD: 'CON',
   DRC: 'CON',
+  NAM: 'NAM',
+  NA: 'NAM',
+  NAMIBIA: 'NAM',
+  LS: 'LS',
+  LSO: 'LS',
+  LESOTHO: 'LS',
+  SZ: 'SZ',
+  SWZ: 'SZ',
+  ESWATINI: 'SZ',
+  SWAZILAND: 'SZ',
 };
 
 const FULL_NAME_TO_CANON: Record<string, string> = {
@@ -55,6 +68,10 @@ const FULL_NAME_TO_CANON: Record<string, string> = {
   MALAWI: 'MAL',
   CONGO: 'CON',
   'DEMOCRATIC REPUBLIC OF THE CONGO': 'CON',
+  NAMIBIA: 'NAM',
+  LESOTHO: 'LS',
+  ESWATINI: 'SZ',
+  SWAZILAND: 'SZ',
 };
 
 /**

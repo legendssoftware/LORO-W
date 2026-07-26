@@ -106,7 +106,8 @@ export function useCheckIns(
   };
 }
 
-export function useCheckInsReport(
+/** @deprecated Prefer useCheckIns — kept as alias for list consumers. */
+export function useCheckInsListReport(
   params?: UseCheckInsParams,
   options?: { enabled?: boolean }
 ): UseCheckInsResult {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   useTokenReady,
   useCompetitorsInfinite,
@@ -39,6 +40,8 @@ import {
 const SEARCH_DEBOUNCE_MS = 350;
 
 export function CompetitorsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
   const canEdit = canManageCompetitors(profile?.accessLevel);
@@ -60,6 +63,20 @@ export function CompetitorsContent() {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [formCompetitorId, setFormCompetitorId] = useState<number | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+
+  /** Deep-link: /competitors?edit=123 opens the edit dialog. */
+  useEffect(() => {
+    if (!canEdit || !isTokenReady) return;
+    const raw = searchParams.get('edit');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id) || id <= 0) return;
+    setDetailItem(null);
+    setFormMode('edit');
+    setFormCompetitorId(id);
+    setFormOpen(true);
+    router.replace('/competitors', { scroll: false });
+  }, [searchParams, canEdit, isTokenReady, router]);
 
   const statusParam = statusFilter === 'all' ? undefined : statusFilter;
   const isDirectParam = competitorDirectFilterToBool(directFilter);

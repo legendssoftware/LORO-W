@@ -56,20 +56,33 @@ export {
 } from './use-competitors';
 export {
   COMPETITORS_MAP_DATA_QUERY_KEY,
+  COMPETITORS_MISSING_GEOCODE_QUERY_KEY,
   useCompetitorsMapData,
+  useCompetitorsMissingGeocode,
 } from './use-competitors-map-data';
 export { useStoresSales, STORES_SALES_QUERY_KEY } from './use-stores-sales';
+export {
+  useProductsSales,
+  PRODUCTS_SALES_QUERY_KEY,
+} from './use-products-sales';
+export {
+  useSalesTeamComposition,
+  SALES_TEAM_COMPOSITION_QUERY_KEY,
+} from './use-sales-team-composition';
 export { useOrganisationProfile } from './use-organisation-profile';
 export { useUsers } from './use-users';
 export {
   useUser,
   useUserTarget,
   USER_TARGET_QUERY_KEY_PREFIX,
+  DAILY_PRODUCTIVITY_KEY_PREFIX,
   useDailyProductivity,
   useBonusStatus,
   useUserPreferences,
+  usePatchUserPreferences,
   usePatchUser,
   usePatchUserTarget,
+  useClearSelectedPerformanceWarnings,
   useAcknowledgePerformanceWarning,
   useSubThresholdDailyCalls,
   useEngagementRange,
@@ -96,7 +109,14 @@ export { useMonthlyAttendance } from './use-monthly-attendance';
 export { useAttendanceByDateRange } from './use-attendance-range';
 export { usePayrollHoursAll } from './use-payroll-hours-all';
 export { useDailyOverview, DAILY_OVERVIEW_QUERY_KEY_PREFIX } from './use-daily-overview';
-export { useCheckIns, useCheckInsReport, useCheckInStatus } from './use-check-ins';
+export { useCheckIns, useCheckInsListReport, useCheckInStatus } from './use-check-ins';
+export {
+  useCheckInsReport,
+  useCheckInsDispatchSummary,
+  CHECK_INS_DOMAIN_REPORT_QUERY_KEY,
+  CHECK_INS_DISPATCH_SUMMARY_QUERY_KEY,
+} from './use-check-ins-report';
+export { useTeamTargets, TEAM_TARGETS_QUERY_KEY } from './use-team-targets';
 export {
   LEADS_QUERY_KEY_PREFIX,
   LEADS_LIST_PAGE_SIZE,
@@ -141,6 +161,13 @@ export {
   useUpdateTaskFlagItemMutation,
 } from './use-tasks';
 export { useLeaves } from './use-leaves';
+export {
+  USER_WARNINGS_QUERY_KEY_PREFIX,
+  useUserWarnings,
+  useCreateWarningMutation,
+  useUpdateWarningMutation,
+  useRevokeWarningsMutation,
+} from './use-warnings';
 export {
   PAYSLIPS_QUERY_KEY_PREFIX,
   type PayslipsListHookOptions,

@@ -88,6 +88,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { appPageMainClass } from '@/lib/page-shell';
 import toast from 'react-hot-toast';
 import {
   Building2,
@@ -1216,7 +1217,7 @@ export function SettingsContent() {
 
   if (!canManageOrgSettings) {
     return (
-      <div className="container mx-auto flex w-full flex-col gap-6 px-2 py-8 sm:px-6">
+      <div className={cn(appPageMainClass, 'flex w-full flex-col gap-6')}>
         <div data-tour="settings-page-header">
           <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -1247,7 +1248,7 @@ export function SettingsContent() {
     );
 
   return (
-    <div className="container mx-auto flex w-full flex-col gap-6 px-2 py-8 sm:px-6">
+    <div className={cn(appPageMainClass, 'flex w-full flex-col gap-6')}>
       <div data-tour="settings-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
