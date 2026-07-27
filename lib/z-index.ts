@@ -7,3 +7,13 @@ export const zAboveLeafletFullscreenPanel = 'z-[100001]' as const;
 
 /** Theme toggle in sidebar — above sidebar panel and visualiser map overlays. */
 export const zAboveLeafletFullscreenThemeToggle = 'z-[100002]' as const;
+
+/**
+ * driver.js popovers use z-index 1000000000 — blocking performance-warning
+ * dialogs must sit above them so tours cannot cover the ack modal.
+ */
+export const Z_ABOVE_DRIVER_TOUR = 1_000_000_001;
+
+export const zAboveDriverTourOverlay = 'z-[1000000001]' as const;
+
+export const zAboveDriverTourContent = 'z-[1000000002]' as const;

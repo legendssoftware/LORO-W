@@ -11,6 +11,7 @@ import {
   writeVisitsTourState,
 } from '@/lib/visits-tour-storage';
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
+import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
@@ -138,80 +139,70 @@ export function VisitsTour() {
 
     if (currentState.completedThisMonth) return;
 
-    let pollCount = 0;
-    const maxPollCount = 40;
-    const pollMs = 250;
+    const cancelSchedule = scheduleTourWhenReady({
+      areTargetsReady: areTourTargetsReady,
+      onReady: () => {
+        const boundedStartIndex = Math.min(
+          Math.max(0, currentState.resumeIndex),
+          TOUR_STEPS.length - 1
+        );
 
-    const tryStartTour = () => {
-      if (!areTourTargetsReady()) {
-        pollCount += 1;
-        if (pollCount < maxPollCount) {
-          window.setTimeout(tryStartTour, pollMs);
-        }
-        return;
-      }
+        writeVisitsTourState(userId, {
+          period,
+          resumeIndex: boundedStartIndex,
+          completedThisMonth: false,
+        });
 
-      const boundedStartIndex = Math.min(
-        Math.max(0, currentState.resumeIndex),
-        TOUR_STEPS.length - 1
-      );
-
-      writeVisitsTourState(userId, {
-        period,
-        resumeIndex: boundedStartIndex,
-        completedThisMonth: false,
-      });
-
-      const driverObj = driver({
-        showProgress: true,
-        smoothScroll: true,
-        allowClose: true,
-        popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-        nextBtnText: 'Next',
-        prevBtnText: 'Previous',
-        doneBtnText: 'Done',
-        steps: TOUR_STEPS,
-        onHighlighted: (_element, _step, { driver: activeDriver }) => {
-          const activeIndex = activeDriver.getActiveIndex() ?? 0;
-          writeVisitsTourState(userId, {
-            period: getCurrentYearMonth(),
-            resumeIndex: activeIndex,
-            completedThisMonth: false,
-          });
-        },
-        onNextClick: (_element, _step, { driver: activeDriver }) => {
-          if (activeDriver.isLastStep()) {
-            wasCompletedRef.current = true;
+        const driverObj = driver({
+          showProgress: true,
+          smoothScroll: true,
+          allowClose: true,
+          popoverClass: DRIVER_TOUR_POPOVER_CLASS,
+          nextBtnText: 'Next',
+          prevBtnText: 'Previous',
+          doneBtnText: 'Done',
+          steps: TOUR_STEPS,
+          onHighlighted: (_element, _step, { driver: activeDriver }) => {
+            const activeIndex = activeDriver.getActiveIndex() ?? 0;
+            writeVisitsTourState(userId, {
+              period: getCurrentYearMonth(),
+              resumeIndex: activeIndex,
+              completedThisMonth: false,
+            });
+          },
+          onNextClick: (_element, _step, { driver: activeDriver }) => {
+            if (activeDriver.isLastStep()) {
+              wasCompletedRef.current = true;
+              activeDriver.destroy();
+              return;
+            }
+            activeDriver.moveNext();
+          },
+          onPrevClick: (_element, _step, { driver: activeDriver }) => {
+            activeDriver.movePrevious();
+          },
+          onCloseClick: (_element, _step, { driver: activeDriver }) => {
             activeDriver.destroy();
-            return;
-          }
-          activeDriver.moveNext();
-        },
-        onPrevClick: (_element, _step, { driver: activeDriver }) => {
-          activeDriver.movePrevious();
-        },
-        onCloseClick: (_element, _step, { driver: activeDriver }) => {
-          activeDriver.destroy();
-        },
-        onDestroyed: (_element, _step, { driver: activeDriver }) => {
-          persistAfterDriverDestroyed({
-            userId,
-            write: writeVisitsTourState,
-            boundedStartIndex,
-            getActiveIndex: () => activeDriver.getActiveIndex(),
-            wasCompletedRef,
-            programmaticDestroyRef,
-          });
-        },
-      });
+          },
+          onDestroyed: (_element, _step, { driver: activeDriver }) => {
+            persistAfterDriverDestroyed({
+              userId,
+              write: writeVisitsTourState,
+              boundedStartIndex,
+              getActiveIndex: () => activeDriver.getActiveIndex(),
+              wasCompletedRef,
+              programmaticDestroyRef,
+            });
+          },
+        });
 
-      driverRef.current = driverObj;
-      driverObj.drive(boundedStartIndex);
-    };
-
-    tryStartTour();
+        driverRef.current = driverObj;
+        driverObj.drive(boundedStartIndex);
+      },
+    });
 
     return () => {
+      cancelSchedule();
       programmaticDestroyRef.current = true;
       try {
         driverRef.current?.destroy();

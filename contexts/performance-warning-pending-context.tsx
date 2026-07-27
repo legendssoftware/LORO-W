@@ -24,8 +24,9 @@ export type PerformanceWarningPendingContextValue = {
   /** User must acknowledge server-side warning before using the app chrome. */
   pendingBlockingWarning: boolean;
   /**
-   * True while a blocking warning is active or GET /user/:ref/target has not yet resolved successfully.
-   * Keeps driver.js tours and the sales benchmarks welcome dialog from racing ahead of warning state.
+   * True while a blocking warning is active, GET /user/:ref/target has not yet succeeded,
+   * or the target fetch failed (fail-closed). Keeps driver.js tours and the sales
+   * benchmarks welcome dialog from racing ahead of warning state.
    */
   deferToursAndSalesBenchmarks: boolean;
   targetWarnings: TargetWarningsPayload | null | undefined;
@@ -166,6 +167,7 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
   }, [pendingBlockingWarning, pathname, router]);
 
   const targetQueryEnabled = !!staffUserRef && !!isSignedIn;
+  /** Hold tours/notices until GET /user/:ref/target succeeds (not merely until fetch ends). */
   const deferUntilTargetSettled =
     !isClient &&
     inAppShell &&
@@ -173,11 +175,25 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     !!isSignedIn &&
     sessionOk &&
     targetQueryEnabled &&
-    !targetQuery.isError &&
     !targetResolved;
 
+  /**
+   * Fail closed: on target fetch error, keep deferring tours/notices unless we already
+   * know there is an unacked warning (then pendingBlockingWarning covers it) or we have
+   * a successful target resolution. Prevents notices/tours racing ahead of unknown warning state.
+   */
+  const deferOnUnknownWarningState =
+    !isClient &&
+    inAppShell &&
+    !!staffUserRef &&
+    !!isSignedIn &&
+    sessionOk &&
+    targetQueryEnabled &&
+    targetQuery.isError &&
+    !pendingBlockingWarning;
+
   const deferToursAndSalesBenchmarks =
-    pendingBlockingWarning || deferUntilTargetSettled;
+    pendingBlockingWarning || deferUntilTargetSettled || deferOnUnknownWarningState;
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
@@ -243,6 +259,7 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       pendingBlockingWarning,
       deferToursAndSalesBenchmarks,
       deferUntilTargetSettled,
+      deferOnUnknownWarningState,
       showBlockingDialog: pendingBlockingWarning,
       /** Tier that drives copy when the blocking modal is active. */
       warningTierToShow: pendingBlockingWarning ? (tw?.level ?? null) : null,
@@ -281,7 +298,7 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
       },
       suppressReasons: pendingBlockingWarning ? [] : suppressReasons,
       note:
-        'Tours and Sales Benchmarks defer until user target has settled successfully (no fetch error) or pendingBlockingWarning clears; general workers skip benchmarks only.',
+        'Tours and Sales Benchmarks defer until user target succeeds, while pendingBlockingWarning is set, or on target fetch error (fail-closed); general workers skip benchmarks only.',
     };
 
     console.log('[performance-warning]', payload);
@@ -294,6 +311,7 @@ export function PerformanceWarningGateProvider({ children }: { children: ReactNo
     pendingBlockingWarning,
     deferToursAndSalesBenchmarks,
     deferUntilTargetSettled,
+    deferOnUnknownWarningState,
     targetResolved,
     staffUserRef,
     isClient,

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type * as GeoJSON from 'geojson';
-import type { GeoJSONSource, MapMouseEvent } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import {
   BRANCH_HQ_LOGO_SLUG,
@@ -47,6 +47,31 @@ function isRemoteOrAbsoluteUrl(url: string): boolean {
 
 function safeImageId(prefix: string, key: string): string {
   return `${prefix}-${key.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80)}`;
+}
+
+function isMapStyleReady(m: MapLibreMap | null | undefined): m is MapLibreMap {
+  try {
+    return !!m?.getStyle();
+  } catch {
+    return false;
+  }
+}
+
+function mapHasImage(m: MapLibreMap, id: string): boolean {
+  try {
+    return isMapStyleReady(m) && m.hasImage(id);
+  } catch {
+    return false;
+  }
+}
+
+function mapAddImage(m: MapLibreMap, id: string, bitmap: ImageBitmap): void {
+  try {
+    if (!isMapStyleReady(m) || mapHasImage(m, id)) return;
+    m.addImage(id, bitmap, { sdf: false });
+  } catch {
+    // map torn down or image already registered
+  }
 }
 
 /** Downscale / composite pin bitmaps for MapLibre textures. */
@@ -197,59 +222,67 @@ export function LogoClusterLayer({
     let cancelled = false;
 
     async function ensureImages() {
-      if (!useLogoIcons) return;
+      if (!useLogoIcons || !isMapStyleReady(map) || cancelled) return;
 
       await Promise.all(
         COMPETITOR_LOGO_SLUGS.map(async (slug) => {
+          if (cancelled || !isMapStyleReady(map)) return;
           const imageId = `comp-logo-${slug}`;
-          if (map!.hasImage(imageId)) return;
+          if (mapHasImage(map, imageId)) return;
           try {
             const bitmap = await loadPinBitmap(competitorLogoPublicPath(slug), 64);
-            if (cancelled || !bitmap || map!.hasImage(imageId)) return;
-            map!.addImage(imageId, bitmap, { sdf: false });
+            if (cancelled || !bitmap || !isMapStyleReady(map)) return;
+            mapAddImage(map, imageId, bitmap);
           } catch {
             // skip
           }
         }),
       );
 
-      if (layerId === 'hq' && !map!.hasImage(HQ_BORDERED_IMAGE_ID)) {
+      if (cancelled || !isMapStyleReady(map)) return;
+
+      if (layerId === 'hq' && !mapHasImage(map, HQ_BORDERED_IMAGE_ID)) {
         const bitmap = await loadPinBitmap(
           competitorLogoPublicPath(BRANCH_HQ_LOGO_SLUG),
           64,
           { borderColor: HQ_BORDER_COLOR, circular: true },
         );
-        if (!cancelled && bitmap && !map!.hasImage(HQ_BORDERED_IMAGE_ID)) {
-          map!.addImage(HQ_BORDERED_IMAGE_ID, bitmap, { sdf: false });
+        if (!cancelled && bitmap && isMapStyleReady(map)) {
+          mapAddImage(map, HQ_BORDERED_IMAGE_ID, bitmap);
         }
       }
 
-      if (layerId === 'clients' && !map!.hasImage(CLIENT_HANDSHAKE_IMAGE_ID)) {
+      if (cancelled || !isMapStyleReady(map)) return;
+
+      if (layerId === 'clients' && !mapHasImage(map, CLIENT_HANDSHAKE_IMAGE_ID)) {
         const bitmap = await loadHandshakeBitmap(64);
-        if (!cancelled && bitmap && !map!.hasImage(CLIENT_HANDSHAKE_IMAGE_ID)) {
-          map!.addImage(CLIENT_HANDSHAKE_IMAGE_ID, bitmap, { sdf: false });
+        if (!cancelled && bitmap && isMapStyleReady(map)) {
+          mapAddImage(map, CLIENT_HANDSHAKE_IMAGE_ID, bitmap);
         }
       }
+
+      if (cancelled || !isMapStyleReady(map)) return;
 
       if (layerId === 'reps') {
         await Promise.all(
           points.map(async (p) => {
+            if (cancelled || !isMapStyleReady(map)) return;
             if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) return;
             const imageId = safeImageId('rep-avatar', p.id);
-            if (map!.hasImage(imageId)) return;
+            if (mapHasImage(map, imageId)) return;
             const bitmap = await loadPinBitmap(p.logoUrl, 64, {
               circular: true,
               borderColor: '#ffffff',
             });
-            if (cancelled || !bitmap || map!.hasImage(imageId)) return;
-            map!.addImage(imageId, bitmap, { sdf: false });
+            if (cancelled || !bitmap || !isMapStyleReady(map)) return;
+            mapAddImage(map, imageId, bitmap);
           }),
         );
       }
     }
 
     void ensureImages().then(() => {
-      if (cancelled || !map) return;
+      if (cancelled || !isMapStyleReady(map)) return;
       if (map.getSource(sourceId)) {
         if (!cancelled) setLayersReady(true);
         return;
@@ -342,6 +375,7 @@ export function LogoClusterLayer({
     return () => {
       cancelled = true;
       setLayersReady(false);
+      if (!isMapStyleReady(map)) return;
       try {
         if (map.getLayer(unclusteredSymbolId)) map.removeLayer(unclusteredSymbolId);
         if (map.getLayer(unclusteredCircleId)) map.removeLayer(unclusteredCircleId);
@@ -363,21 +397,22 @@ export function LogoClusterLayer({
 
   /** Reload rep avatars when points change. */
   useEffect(() => {
-    if (!isLoaded || !map || !useLogoIcons || layerId !== 'reps') return;
+    if (!isLoaded || !isMapStyleReady(map) || !useLogoIcons || layerId !== 'reps') return;
     let cancelled = false;
     void (async () => {
       for (const p of points) {
+        if (cancelled || !isMapStyleReady(map)) return;
         if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) continue;
         const imageId = safeImageId('rep-avatar', p.id);
-        if (map.hasImage(imageId)) continue;
+        if (mapHasImage(map, imageId)) continue;
         const bitmap = await loadPinBitmap(p.logoUrl, 64, {
           circular: true,
           borderColor: '#ffffff',
         });
-        if (cancelled || !bitmap || map.hasImage(imageId)) continue;
-        map.addImage(imageId, bitmap, { sdf: false });
+        if (cancelled || !bitmap || !isMapStyleReady(map)) continue;
+        mapAddImage(map, imageId, bitmap);
       }
-      if (!cancelled) {
+      if (!cancelled && isMapStyleReady(map)) {
         const source = map.getSource(sourceId) as GeoJSONSource | undefined;
         source?.setData(data);
       }
