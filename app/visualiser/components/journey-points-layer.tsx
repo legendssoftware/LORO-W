@@ -5,21 +5,30 @@ import type * as GeoJSON from 'geojson';
 import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import type { RepJourneyPoint } from '@/api/types/tracking';
+import { trailBearingAtIndex } from '@/lib/utils/journey-point-format';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 
 const SOURCE_ID = 'rep-journey-points';
 const MOVE_LAYER_ID = 'rep-journey-move';
 const STOP_LAYER_ID = 'rep-journey-stop';
+const TRAIL_END_LAYER_ID = 'rep-journey-trail-end';
 const STOP_LABEL_LAYER_ID = 'rep-journey-stop-label';
+
+export type JourneyPointClickPayload = RepJourneyPoint & {
+  pointIndex: number;
+  bearingDegrees: number | null;
+  isTrailEnd: boolean;
+};
 
 type JourneyPointsLayerProps = {
   points: RepJourneyPoint[];
-  onPointClick?: (point: RepJourneyPoint) => void;
+  onPointClick?: (point: JourneyPointClickPayload) => void;
 };
 
 /**
  * Journey markers on the tracked route polyline.
  * Stops are larger with a dwell-time label; movement samples are smaller dots.
+ * The chronologically last trail point gets a ringed end marker.
  */
 export function JourneyPointsLayer({
   points,
@@ -30,6 +39,7 @@ export function JourneyPointsLayer({
   onPointClickRef.current = onPointClick;
 
   const data = useMemo((): GeoJSON.FeatureCollection => {
+    const lastIndex = points.length > 0 ? points.length - 1 : -1;
     return {
       type: 'FeatureCollection',
       features: points.map((p, index) => ({
@@ -38,6 +48,7 @@ export function JourneyPointsLayer({
         properties: {
           index,
           isStop: p.isStop ? 1 : 0,
+          isLast: index === lastIndex ? 1 : 0,
           stopLabel: p.stopDurationFormatted ?? '',
           address: p.address ?? '',
           recordedAt: p.recordedAt,
@@ -47,6 +58,7 @@ export function JourneyPointsLayer({
           stopDurationFormatted: p.stopDurationFormatted ?? null,
           speed: p.speed ?? null,
           accuracy: p.accuracy ?? null,
+          bearingDegrees: trailBearingAtIndex(points, index),
         },
         geometry: {
           type: 'Point',
@@ -71,7 +83,11 @@ export function JourneyPointsLayer({
         id: MOVE_LAYER_ID,
         type: 'circle',
         source: SOURCE_ID,
-        filter: ['!=', ['get', 'isStop'], 1],
+        filter: [
+          'all',
+          ['!=', ['get', 'isStop'], 1],
+          ['!=', ['get', 'isLast'], 1],
+        ],
         paint: {
           'circle-radius': 5,
           'circle-color': LAYER_META.reps.color,
@@ -87,13 +103,33 @@ export function JourneyPointsLayer({
         id: STOP_LAYER_ID,
         type: 'circle',
         source: SOURCE_ID,
-        filter: ['==', ['get', 'isStop'], 1],
+        filter: [
+          'all',
+          ['==', ['get', 'isStop'], 1],
+          ['!=', ['get', 'isLast'], 1],
+        ],
         paint: {
           'circle-radius': 9,
           'circle-color': '#5b21b6',
           'circle-opacity': 0.95,
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
+        },
+      });
+    }
+
+    if (!map.getLayer(TRAIL_END_LAYER_ID)) {
+      map.addLayer({
+        id: TRAIL_END_LAYER_ID,
+        type: 'circle',
+        source: SOURCE_ID,
+        filter: ['==', ['get', 'isLast'], 1],
+        paint: {
+          'circle-radius': 11,
+          'circle-color': '#6d28d9',
+          'circle-opacity': 1,
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#f5f3ff',
         },
       });
     }
@@ -127,6 +163,7 @@ export function JourneyPointsLayer({
       const feature = e.features?.[0];
       if (!feature?.properties) return;
       const props = feature.properties;
+      const pointIndex = Number(props.index);
       onPointClickRef.current?.({
         latitude: Number(props.latitude),
         longitude: Number(props.longitude),
@@ -142,6 +179,12 @@ export function JourneyPointsLayer({
           : null,
         speed: props.speed != null ? Number(props.speed) : null,
         accuracy: props.accuracy != null ? Number(props.accuracy) : null,
+        pointIndex: Number.isFinite(pointIndex) ? pointIndex : 0,
+        bearingDegrees:
+          props.bearingDegrees != null && props.bearingDegrees !== ''
+            ? Number(props.bearingDegrees)
+            : null,
+        isTrailEnd: Number(props.isLast) === 1,
       });
     };
 
@@ -152,20 +195,22 @@ export function JourneyPointsLayer({
       map.getCanvas().style.cursor = '';
     };
 
-    for (const layerId of [MOVE_LAYER_ID, STOP_LAYER_ID]) {
+    const clickLayers = [MOVE_LAYER_ID, STOP_LAYER_ID, TRAIL_END_LAYER_ID];
+    for (const layerId of clickLayers) {
       map.on('click', layerId, handleClick);
       map.on('mouseenter', layerId, handleEnter);
       map.on('mouseleave', layerId, handleLeave);
     }
 
     return () => {
-      for (const layerId of [MOVE_LAYER_ID, STOP_LAYER_ID]) {
+      for (const layerId of clickLayers) {
         map.off('click', layerId, handleClick);
         map.off('mouseenter', layerId, handleEnter);
         map.off('mouseleave', layerId, handleLeave);
       }
       try {
         if (map.getLayer(STOP_LABEL_LAYER_ID)) map.removeLayer(STOP_LABEL_LAYER_ID);
+        if (map.getLayer(TRAIL_END_LAYER_ID)) map.removeLayer(TRAIL_END_LAYER_ID);
         if (map.getLayer(STOP_LAYER_ID)) map.removeLayer(STOP_LAYER_ID);
         if (map.getLayer(MOVE_LAYER_ID)) map.removeLayer(MOVE_LAYER_ID);
         if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);

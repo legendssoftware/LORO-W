@@ -9,6 +9,14 @@ import {
   hasStoredCoordinates,
 } from '@/lib/utils/address-map-geocode';
 import {
+  formatBattery,
+  formatDevice,
+  formatHeading,
+  formatNetwork,
+  formatOs,
+  formatSpeedMps,
+} from '@/lib/utils/journey-point-format';
+import {
   branchOrHqLogoUrl,
   resolveCompetitorLogoUrl,
 } from '@/lib/utils/map-marker-logos';
@@ -297,78 +305,6 @@ function displayOrDash(
   }
   if (typeof value === 'string' && !value.trim()) return '—';
   return format ? format(value as number | string) : String(value);
-}
-
-/** Device GPS speed is m/s; show km/h for the map popup. */
-function formatSpeedMps(mps: number | null | undefined): string {
-  if (mps == null || !Number.isFinite(mps) || mps < 0) return '—';
-  return `${(mps * 3.6).toFixed(1)} km/h`;
-}
-
-function formatHeading(deg: number | null | undefined): string {
-  if (deg == null || !Number.isFinite(deg) || deg < 0) return '—';
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-  const i = Math.round(deg / 45) % 8;
-  return `${dirs[i]} (${Math.round(deg)}°)`;
-}
-
-const BATTERY_STATE_LABELS: Record<number, string> = {
-  0: 'Unknown',
-  1: 'Unplugged',
-  2: 'Charging',
-  3: 'Full',
-};
-
-function formatBattery(
-  level: number | null | undefined,
-  state: number | null | undefined
-): string {
-  const levelText = displayOrDash(level, (v) => `${Math.round(Number(v))}%`);
-  if (state == null || state < 0) return levelText;
-  const stateLabel = BATTERY_STATE_LABELS[state];
-  if (!stateLabel || levelText === '—') {
-    return stateLabel ? stateLabel : levelText;
-  }
-  return `${levelText} · ${stateLabel}`;
-}
-
-function formatDevice(
-  brand: string | null | undefined,
-  modelName: string | null | undefined,
-  manufacturer: string | null | undefined
-): string {
-  const parts = [brand, modelName].filter((p) => p?.trim());
-  if (parts.length > 0) return parts.join(' ');
-  if (manufacturer?.trim()) return manufacturer.trim();
-  return '—';
-}
-
-function formatOs(
-  osName: string | null | undefined,
-  osVersion: string | null | undefined
-): string {
-  const parts = [osName, osVersion].filter((p) => p?.trim());
-  return parts.length > 0 ? parts.join(' ') : '—';
-}
-
-function formatNetwork(network: Record<string, unknown> | null | undefined): string {
-  if (!network || typeof network !== 'object') return '—';
-  const state =
-    network.state && typeof network.state === 'object'
-      ? (network.state as Record<string, unknown>)
-      : network;
-  const type =
-    (typeof state.type === 'string' && state.type) ||
-    (typeof network.type === 'string' && network.type) ||
-    null;
-  if (!type) return '—';
-  const connected =
-    state.isConnected === true || network.isConnected === true
-      ? 'connected'
-      : state.isConnected === false || network.isConnected === false
-        ? 'offline'
-        : null;
-  return connected ? `${type} · ${connected}` : type;
 }
 
 export function repLocationToMapPoint(loc: LatestRepLocation): VisualiserMapPoint | null {
