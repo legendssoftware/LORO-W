@@ -230,6 +230,10 @@ export function MapFeaturePopupContent({
               value={formatKm(journeySummary.totalDistanceKm)}
             />
             <StatCell
+              label="Travel time"
+              value={journeySummary.totalTravelFormatted || '—'}
+            />
+            <StatCell
               label="Avg speed"
               value={formatSpeed(journeySummary.averageSpeedKmh)}
             />
@@ -238,6 +242,54 @@ export function MapFeaturePopupContent({
               value={journeySummary.totalStopFormatted || '—'}
             />
           </div>
+
+          {(journeySummary.startPlace || journeySummary.endPlace) ? (
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                Route
+              </p>
+              {journeySummary.startPlace ? (
+                <p className="text-muted-foreground text-[11px] leading-snug">
+                  <span className="text-foreground font-medium">Start:</span>{' '}
+                  {journeySummary.startPlace.address?.trim() ||
+                    `${journeySummary.startPlace.latitude.toFixed(4)}, ${journeySummary.startPlace.longitude.toFixed(4)}`}
+                  {journeySummary.startPlace.recordedAt ? (
+                    <span className="text-muted-foreground mt-0.5 block text-[10px] tabular-nums">
+                      {(() => {
+                        try {
+                          return new Date(
+                            journeySummary.startPlace.recordedAt
+                          ).toLocaleString();
+                        } catch {
+                          return journeySummary.startPlace.recordedAt;
+                        }
+                      })()}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+              {journeySummary.endPlace ? (
+                <p className="text-muted-foreground text-[11px] leading-snug">
+                  <span className="text-foreground font-medium">End:</span>{' '}
+                  {journeySummary.endPlace.address?.trim() ||
+                    `${journeySummary.endPlace.latitude.toFixed(4)}, ${journeySummary.endPlace.longitude.toFixed(4)}`}
+                  {journeySummary.endPlace.recordedAt ? (
+                    <span className="text-muted-foreground mt-0.5 block text-[10px] tabular-nums">
+                      {(() => {
+                        try {
+                          return new Date(
+                            journeySummary.endPlace.recordedAt
+                          ).toLocaleString();
+                        } catch {
+                          return journeySummary.endPlace.recordedAt;
+                        }
+                      })()}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="rounded-md border border-border/50 bg-background/40 px-2 py-1.5">
             <p className="text-muted-foreground flex items-center gap-1 text-[10px] tracking-wide uppercase">
@@ -294,7 +346,7 @@ export function MapFeaturePopupContent({
           {journeySummary.prominentLocations.length > 0 ? (
             <div className="space-y-1">
               <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
-                Prominent stops
+                Common visited places
               </p>
               <ul className="max-h-28 space-y-1 overflow-y-auto">
                 {journeySummary.prominentLocations.map((loc) => (

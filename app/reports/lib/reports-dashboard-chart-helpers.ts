@@ -17,6 +17,11 @@ import {
   workingDaysInPeriod,
 } from '@/app/staff/lib/staff-report-constants';
 import { parseDurationToMinutes } from '@/lib/duration';
+import type {
+  RepJourneyProminentLocation,
+  RepJourneyRange,
+  RepJourneySummary,
+} from '@/api/types/tracking';
 
 const DONUT_PALETTE = [
   ATT_CHART_HSL.c1,
@@ -343,4 +348,92 @@ export function avgVisitDurationByUser(
     }))
     .sort((a, b) => b.value - a.value || b.visitCount - a.visitCount)
     .slice(0, topN);
+}
+
+/** Map a UTC calendar YMD span to the closest GPS journey range. */
+export function reportsDateSpanToJourneyRange(
+  fromYmd: string,
+  toYmd: string
+): Exclude<RepJourneyRange, 'hour'> {
+  const start = utcDateFromYmd(fromYmd);
+  const end = utcDateFromYmd(toYmd);
+  const startMs = Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate()
+  );
+  const endMs = Date.UTC(
+    end.getUTCFullYear(),
+    end.getUTCMonth(),
+    end.getUTCDate()
+  );
+  const spanDays = Math.max(0, Math.round((endMs - startMs) / 86_400_000)) + 1;
+  return spanDays <= 1 ? 'day' : 'week';
+}
+
+/**
+ * Avg drive distance bars (km): per-day is primary, with week/month context.
+ * Day avg uses the rolling-day window total; week/month use total÷days.
+ */
+export function journeyDistanceBars(
+  summary: RepJourneySummary | null | undefined
+): Array<{ name: string; value: number }> {
+  if (!summary) return [];
+  return [
+    {
+      name: 'Per day',
+      value: roundKm(summary.periodAverages.day.averageDistanceKm),
+    },
+    {
+      name: 'Per week',
+      value: roundKm(summary.periodAverages.week.averageDistanceKm),
+    },
+    {
+      name: 'Per month',
+      value: roundKm(summary.periodAverages.month.averageDistanceKm),
+    },
+  ].filter((row) => row.value > 0);
+}
+
+/** Common visited places ranked by time spent (minutes). */
+export function journeyPlacesBars(
+  locations: RepJourneyProminentLocation[] | null | undefined,
+  limit = 8
+): Array<{ name: string; value: number }> {
+  return [...(locations ?? [])]
+    .filter((loc) => (loc.timeSpentMinutes ?? 0) > 0)
+    .sort((a, b) => b.timeSpentMinutes - a.timeSpentMinutes)
+    .slice(0, limit)
+    .map((loc) => ({
+      name: truncatePlaceLabel(loc.address),
+      value: Math.round(loc.timeSpentMinutes),
+    }));
+}
+
+/** Travel vs stop duration bars (minutes). */
+export function journeyDurationBars(
+  summary: RepJourneySummary | null | undefined
+): Array<{ name: string; value: number }> {
+  if (!summary) return [];
+  return [
+    {
+      name: 'Travel',
+      value: Math.max(0, Math.round(summary.totalTravelMinutes)),
+    },
+    {
+      name: 'Stop',
+      value: Math.max(0, Math.round(summary.totalStopMinutes)),
+    },
+  ].filter((row) => row.value > 0);
+}
+
+function roundKm(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.round(value * 10) / 10;
+}
+
+function truncatePlaceLabel(address: string, maxLen = 28): string {
+  const trimmed = address.trim() || 'Unknown';
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen - 1)}…`;
 }

@@ -14,6 +14,7 @@ import {
   useLeadsReport,
   usePatchUserPreferences,
   useProductsSales,
+  useRepJourney,
   useSalesTeamComposition,
   useSessionSync,
   useStoresSales,
@@ -38,6 +39,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getReportsDataScope } from '@/lib/access';
+import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import {
   formatUtcYmd,
   getUtcMonthRange,
@@ -79,10 +81,14 @@ import {
   engagementTotals,
   expectedHoursForUtcRange,
   hoursVsTargetDonut,
+  journeyDistanceBars,
+  journeyDurationBars,
+  journeyPlacesBars,
   REPORTS_CHART_AMBER,
   REPORTS_CHART_BLUE,
   REPORTS_CHART_GREEN,
   REPORTS_CHART_RED,
+  reportsDateSpanToJourneyRange,
   teamMemberSalesBars,
   toDonutSlices,
   toNamedBars,
@@ -90,6 +96,14 @@ import {
 } from '../lib/reports-dashboard-chart-helpers';
 
 const USERS_PAGE_LIMIT = REPORTS_USERS_PAGE_LIMIT;
+
+const BRANCH_SALES_TREND_COLORS = [
+  REPORTS_CHART_BLUE,
+  REPORTS_CHART_GREEN,
+  REPORTS_CHART_AMBER,
+  REPORTS_CHART_RED,
+  ATT_CHART_HSL.c4,
+] as const;
 
 async function fetchAllOrgUsers(
   client: Parameters<typeof getUsers>[0]
@@ -505,6 +519,51 @@ export function ReportsDashboardTab() {
     enabled: enabled && showTeamCharts,
   });
 
+  const journeyRange = useMemo(
+    () => reportsDateSpanToJourneyRange(from, to),
+    [from, to]
+  );
+  /**
+   * Journey API is per-user. When the toolbar is "All users", fall back to the
+   * first scoped user so Tracking still shows places + daily drive distance
+   * without narrowing Productivity/Sales filters.
+   */
+  const journeyUserId = useMemo(() => {
+    if (userIdFilter != null) return userIdFilter;
+    if (!isMultiUser) {
+      return backendUserData?.uid != null && Number.isFinite(backendUserData.uid)
+        ? Number(backendUserData.uid)
+        : null;
+    }
+    const firstUid = scopedUsers[0]?.uid;
+    return firstUid != null && Number.isFinite(Number(firstUid))
+      ? Number(firstUid)
+      : null;
+  }, [userIdFilter, isMultiUser, backendUserData?.uid, scopedUsers]);
+  const journeyUserName = useMemo(() => {
+    if (journeyUserId == null) return null;
+    if (!isMultiUser) {
+      const self = backendUserData;
+      if (!self) return null;
+      const name = [self.name, self.surname].filter(Boolean).join(' ').trim();
+      return name || self.email || `User ${journeyUserId}`;
+    }
+    const u = scopedUsers.find((row) => Number(row.uid) === journeyUserId);
+    if (!u) return `User ${journeyUserId}`;
+    const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
+    return name || u.email || `User ${journeyUserId}`;
+  }, [
+    journeyUserId,
+    isMultiUser,
+    backendUserData,
+    scopedUsers,
+  ]);
+  const hasTrackingUser = journeyUserId != null;
+  const trackingUsersLoading = isMultiUser && usersQuery.isLoading;
+  const journeyQuery = useRepJourney(journeyUserId, journeyRange, {
+    enabled: enabled && hasTrackingUser,
+  });
+
   const monthWindows = useMemo(() => trailingMonthRanges(to, 6), [to]);
   const monthlySalesQueries = useQueries({
     queries: monthWindows.map((m) => ({
@@ -612,7 +671,7 @@ export function ReportsDashboardTab() {
       label: m.label,
       salesPerStore: monthlySalesQueries[i]?.data?.salesPerStore ?? [],
     }));
-    return branchSalesTrendFromMonthly(months, 5);
+    return branchSalesTrendFromMonthly(months, 3);
   }, [monthWindows, monthlySalesQueries]);
 
   const salesByProduct = useMemo(() => {
@@ -811,6 +870,19 @@ export function ReportsDashboardTab() {
   const avgDurationByUser = useMemo(
     () => avgVisitDurationByUser(filteredCheckIns, 10),
     [filteredCheckIns]
+  );
+
+  const trackingDistanceBars = useMemo(
+    () => journeyDistanceBars(journeyQuery.data?.summary),
+    [journeyQuery.data?.summary]
+  );
+  const trackingPlacesBars = useMemo(
+    () => journeyPlacesBars(journeyQuery.data?.summary?.prominentLocations, 8),
+    [journeyQuery.data?.summary?.prominentLocations]
+  );
+  const trackingDurationBars = useMemo(
+    () => journeyDurationBars(journeyQuery.data?.summary),
+    [journeyQuery.data?.summary]
   );
 
   const visitMapPoints = useMemo(
@@ -1091,6 +1163,75 @@ export function ReportsDashboardTab() {
         </div>
       </ReportsSection>
 
+      <ReportsSection
+        title="Tracking"
+        description={
+          journeyUserName
+            ? `Common visited places and avg drive distance per day for ${journeyUserName}${
+                isMultiUser && userIdFilter == null
+                  ? ' (pick a user above to switch)'
+                  : ''
+              }.`
+            : 'Common visited places and avg drive distance per day.'
+        }
+      >
+        {trackingUsersLoading ? (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : !hasTrackingUser ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No users available for tracking metrics
+          </p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <ChartCard
+              title="Avg drive distance per day"
+              description={`Daily average with week/month context (${journeyRange})`}
+              isLoading={journeyQuery.isLoading}
+              isError={journeyQuery.isError}
+              onRetry={() => void journeyQuery.refetch()}
+            >
+              <ReportsNamedBarChart
+                data={trackingDistanceBars}
+                fill={REPORTS_CHART_BLUE}
+                yAxisLabel="Distance (km)"
+                seriesLabel="Distance (km)"
+              />
+            </ChartCard>
+            <ChartCard
+              title="Common visited places"
+              description="Stops ranked by time spent"
+              isLoading={journeyQuery.isLoading}
+              isError={journeyQuery.isError}
+              onRetry={() => void journeyQuery.refetch()}
+            >
+              <ReportsNamedBarChart
+                data={trackingPlacesBars}
+                fill={REPORTS_CHART_GREEN}
+                valueKind="duration"
+                yAxisLabel="Time spent"
+              />
+            </ChartCard>
+            <ChartCard
+              title="Travel duration"
+              description="Moving travel vs stop dwell"
+              isLoading={journeyQuery.isLoading}
+              isError={journeyQuery.isError}
+              onRetry={() => void journeyQuery.refetch()}
+            >
+              <ReportsNamedBarChart
+                data={trackingDurationBars}
+                fill={REPORTS_CHART_AMBER}
+                valueKind="duration"
+              />
+            </ChartCard>
+          </div>
+        )}
+      </ReportsSection>
+
       {showOrgErpCharts ? (
       <ReportsSection
         title="Sales"
@@ -1199,17 +1340,23 @@ export function ReportsDashboardTab() {
           </ChartCard>
           <ChartCard
             title="Branch sales trend"
-            description="Top branches by revenue — last 6 months"
+            description="Top 3 branches by revenue — last 6 months"
             isLoading={monthlySalesLoading}
             isError={monthlySalesError}
             onRetry={() => {
               for (const q of monthlySalesQueries) void q.refetch();
             }}
           >
-            <ReportsTrendLineChart
+            <ReportsGroupedBarChart
               data={branchSalesTrend.data}
-              series={branchSalesTrend.series}
+              categoryKey="name"
               valueKind="money"
+              yAxisLabel="Revenue"
+              series={branchSalesTrend.series.map((s, i) => ({
+                key: s.key,
+                label: s.label,
+                color: BRANCH_SALES_TREND_COLORS[i % BRANCH_SALES_TREND_COLORS.length],
+              }))}
             />
           </ChartCard>
         </div>

@@ -7,6 +7,7 @@ import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { readLeadsTourState, writeLeadsTourState, getCurrentYearMonth } from '@/lib/leads-tour-storage';
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
+import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
@@ -244,132 +245,126 @@ export function LeadsTour() {
 
     if (currentState.completedThisMonth) return;
 
-    let pollCount = 0;
-    const maxPollCount = 40;
-    const pollMs = 250;
+    const cancelSchedule = scheduleTourWhenReady({
+      areTargetsReady: () => {
+        const extended = hasNonEmptyLeadList();
+        const steps = extended ? buildDataTourSteps() : buildEmptyTourSteps();
+        return areBaseTargetsReady(steps);
+      },
+      onReady: () => {
+        const extended = hasNonEmptyLeadList();
+        const steps = extended ? buildDataTourSteps() : buildEmptyTourSteps();
 
-    const tryStartTour = () => {
-      const extended = hasNonEmptyLeadList();
-      const steps = extended ? buildDataTourSteps() : buildEmptyTourSteps();
+        const boundedStartIndex = Math.min(
+          Math.max(0, currentState.resumeIndex),
+          steps.length - 1
+        );
 
-      if (!areBaseTargetsReady(steps)) {
-        pollCount += 1;
-        if (pollCount < maxPollCount) {
-          window.setTimeout(tryStartTour, pollMs);
-        }
-        return;
-      }
+        writeLeadsTourState(userId, {
+          period,
+          resumeIndex: boundedStartIndex,
+          completedThisMonth: false,
+        });
 
-      const boundedStartIndex = Math.min(
-        Math.max(0, currentState.resumeIndex),
-        steps.length - 1
-      );
+        const faqIndex = steps.length - 1;
 
-      writeLeadsTourState(userId, {
-        period,
-        resumeIndex: boundedStartIndex,
-        completedThisMonth: false,
-      });
+        const driverObj = driver({
+          showProgress: true,
+          smoothScroll: true,
+          allowClose: true,
+          popoverClass: DRIVER_TOUR_POPOVER_CLASS,
+          nextBtnText: 'Next',
+          prevBtnText: 'Previous',
+          doneBtnText: 'Done',
+          steps,
+          onHighlighted: (element, _step, { driver: activeDriver }) => {
+            const stepEl = getActiveStepElement(activeDriver);
 
-      const faqIndex = steps.length - 1;
-
-      const driverObj = driver({
-        showProgress: true,
-        smoothScroll: true,
-        allowClose: true,
-        popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-        nextBtnText: 'Next',
-        prevBtnText: 'Previous',
-        doneBtnText: 'Done',
-        steps,
-        onHighlighted: (element, _step, { driver: activeDriver }) => {
-          const stepEl = getActiveStepElement(activeDriver);
-
-          if (stepEl === SEL_FIRST_GROUP) {
-            const row =
-              (element as HTMLElement | undefined) ??
-              (document.querySelector(SEL_FIRST_GROUP) as HTMLElement | null);
-            if (row) {
-              const alreadyOpen =
-                row.getAttribute('aria-expanded') === 'true' ||
-                document.querySelector(SEL_FIRST_LEAD) !== null;
-              if (!alreadyOpen) {
-                row.click();
-              }
-              window.setTimeout(() => {
-                activeDriver.refresh();
-              }, 260);
-            }
-          }
-
-          if (stepEl === SEL_FIRST_LEAD && !didAutoOpenFirstLeadRef.current) {
-            const leadRow =
-              (element as HTMLElement | undefined) ??
-              (document.querySelector(SEL_FIRST_LEAD) as HTMLElement | null);
-            if (leadRow) {
-              didAutoOpenFirstLeadRef.current = true;
-              leadRow.click();
-              window.setTimeout(() => {
-                activeDriver.refresh();
-                if (document.querySelector(SEL_LEAD_DIALOG)) {
-                  activeDriver.moveNext();
+            if (stepEl === SEL_FIRST_GROUP) {
+              const row =
+                (element as HTMLElement | undefined) ??
+                (document.querySelector(SEL_FIRST_GROUP) as HTMLElement | null);
+              if (row) {
+                const alreadyOpen =
+                  row.getAttribute('aria-expanded') === 'true' ||
+                  document.querySelector(SEL_FIRST_LEAD) !== null;
+                if (!alreadyOpen) {
+                  row.click();
                 }
-              }, 360);
-            }
-          }
-
-          const activeIndex = activeDriver.getActiveIndex() ?? 0;
-          writeLeadsTourState(userId, {
-            period: getCurrentYearMonth(),
-            resumeIndex: activeIndex,
-            completedThisMonth: false,
-          });
-        },
-        onNextClick: (_element, _step, { driver: activeDriver }) => {
-          if (activeDriver.isLastStep()) {
-            wasCompletedRef.current = true;
-            activeDriver.destroy();
-            return;
-          }
-          const stepEl = getActiveStepElement(activeDriver);
-          if (stepEl === SEL_FIRST_GROUP) {
-            window.setTimeout(() => {
-              if (document.querySelector(SEL_FIRST_LEAD)) {
-                activeDriver.moveNext();
-              } else {
-                activeDriver.moveTo(faqIndex);
+                window.setTimeout(() => {
+                  activeDriver.refresh();
+                }, 260);
               }
-            }, 180);
-            return;
-          }
-          activeDriver.moveNext();
-        },
-        onPrevClick: (_element, _step, { driver: activeDriver }) => {
-          activeDriver.movePrevious();
-        },
-        onCloseClick: (_element, _step, { driver: activeDriver }) => {
-          activeDriver.destroy();
-        },
-        onDestroyed: (_element, _step, { driver: activeDriver }) => {
-          didAutoOpenFirstLeadRef.current = false;
-          persistAfterDriverDestroyed({
-            userId,
-            write: writeLeadsTourState,
-            boundedStartIndex,
-            getActiveIndex: () => activeDriver.getActiveIndex(),
-            wasCompletedRef,
-            programmaticDestroyRef,
-          });
-        },
-      });
+            }
 
-      driverRef.current = driverObj;
-      driverObj.drive(boundedStartIndex);
-    };
+            if (stepEl === SEL_FIRST_LEAD && !didAutoOpenFirstLeadRef.current) {
+              const leadRow =
+                (element as HTMLElement | undefined) ??
+                (document.querySelector(SEL_FIRST_LEAD) as HTMLElement | null);
+              if (leadRow) {
+                didAutoOpenFirstLeadRef.current = true;
+                leadRow.click();
+                window.setTimeout(() => {
+                  activeDriver.refresh();
+                  if (document.querySelector(SEL_LEAD_DIALOG)) {
+                    activeDriver.moveNext();
+                  }
+                }, 360);
+              }
+            }
 
-    tryStartTour();
+            const activeIndex = activeDriver.getActiveIndex() ?? 0;
+            writeLeadsTourState(userId, {
+              period: getCurrentYearMonth(),
+              resumeIndex: activeIndex,
+              completedThisMonth: false,
+            });
+          },
+          onNextClick: (_element, _step, { driver: activeDriver }) => {
+            if (activeDriver.isLastStep()) {
+              wasCompletedRef.current = true;
+              activeDriver.destroy();
+              return;
+            }
+            const stepEl = getActiveStepElement(activeDriver);
+            if (stepEl === SEL_FIRST_GROUP) {
+              window.setTimeout(() => {
+                if (document.querySelector(SEL_FIRST_LEAD)) {
+                  activeDriver.moveNext();
+                } else {
+                  activeDriver.moveTo(faqIndex);
+                }
+              }, 180);
+              return;
+            }
+            activeDriver.moveNext();
+          },
+          onPrevClick: (_element, _step, { driver: activeDriver }) => {
+            activeDriver.movePrevious();
+          },
+          onCloseClick: (_element, _step, { driver: activeDriver }) => {
+            activeDriver.destroy();
+          },
+          onDestroyed: (_element, _step, { driver: activeDriver }) => {
+            didAutoOpenFirstLeadRef.current = false;
+            persistAfterDriverDestroyed({
+              userId,
+              write: writeLeadsTourState,
+              boundedStartIndex,
+              getActiveIndex: () => activeDriver.getActiveIndex(),
+              wasCompletedRef,
+              programmaticDestroyRef,
+            });
+          },
+        });
+
+        driverRef.current = driverObj;
+        driverObj.drive(boundedStartIndex);
+      },
+    });
 
     return () => {
+      cancelSchedule();
       programmaticDestroyRef.current = true;
       try {
         driverRef.current?.destroy();

@@ -19,6 +19,7 @@ import {
   type PerformanceWarningLevel,
 } from '@/lib/performance-warning-content';
 import { formatWarningDateTime } from '@/lib/format-warning-datetime';
+import { zAboveDriverTourContent, zAboveDriverTourOverlay } from '@/lib/z-index';
 import { cn } from '@/lib/utils';
 
 const tierAccent: Record<
@@ -92,10 +93,10 @@ export function PerformanceWarningWelcomeDialog({
       <DialogContent
         showCloseButton={false}
         data-performance-warning-open=""
-        overlayClassName="z-[11000]"
+        overlayClassName={zAboveDriverTourOverlay}
         className={cn(
           '!flex max-h-[min(92vh,760px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg',
-          'z-[11001]',
+          zAboveDriverTourContent,
           'border-2',
           tier.border
         )}

@@ -18,7 +18,7 @@ type JourneyPointsLayerProps = {
 };
 
 /**
- * Discrete journey markers (no continuous polyline).
+ * Journey markers on the tracked route polyline.
  * Stops are larger with a dwell-time label; movement samples are smaller dots.
  */
 export function JourneyPointsLayer({
