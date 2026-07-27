@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Building2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
+import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 import { cn } from '@/lib/utils';
 
 function formatZar(n: unknown): string {
@@ -67,6 +68,7 @@ export function ClientCard({
 
   const status = typeof client.status === 'string' ? client.status : '';
   const category = typeof client.category === 'string' ? client.category : '';
+  const isMapped = hasStoredCoordinates(client.latitude, client.longitude);
 
   return (
     <Card
@@ -121,6 +123,15 @@ export function ClientCard({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
+          <Badge
+            variant={isMapped ? 'secondary' : 'outline'}
+            className={cn(
+              'text-[10px] font-normal',
+              isMapped ? 'text-green-700 border-green-300' : 'text-amber-700 border-amber-300'
+            )}
+          >
+            {isMapped ? 'On map' : 'Not mapped'}
+          </Badge>
           {status ? (
             <Badge variant="secondary" className="text-[10px] font-normal capitalize">
               {status}
