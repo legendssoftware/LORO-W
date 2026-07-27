@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { BarChart3, Info, Sparkles } from 'lucide-react';
+import { BarChart3, Info, Loader2, MapPin, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MapSummaryModal } from '@/app/visualiser/components/map-summary-modal';
 import { MapSimulationInfoModal } from '@/app/visualiser/components/map-simulation-info-modal';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
+import { useGeocodeMapBatchMutation } from '@/api/hooks';
 import type { VisualiserLayerId } from '@/lib/utils/visualiser-map-points';
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 
@@ -24,6 +25,8 @@ export function VisualiserHeaderActions({
 }: VisualiserHeaderActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
   const { openPanel, panelOpen, isActive } = useVisualiserSimulation();
+  const geocodeMutation = useGeocodeMapBatchMutation();
+  const isGeocoding = geocodeMutation.isPending;
 
   return (
     <>
@@ -37,6 +40,23 @@ export function VisualiserHeaderActions({
         >
           <BarChart3 className="size-4" />
           Map data summary
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || isGeocoding}
+          onClick={() =>
+            geocodeMutation.mutate({ resetExhausted: true, maxGeocodes: 500 })
+          }
+          title="Clear exhausted coordinates and re-geocode missing map addresses"
+        >
+          {isGeocoding ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <MapPin className="size-4" />
+          )}
+          {isGeocoding ? 'Geocoding…' : 'Geocode'}
         </Button>
         <Button
           type="button"

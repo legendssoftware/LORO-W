@@ -53,6 +53,7 @@ export {
   useUpdateCompetitorMutation,
   useDeleteCompetitorMutation,
   useImportCompetitorsMutation,
+  useGeocodeMapBatchMutation,
 } from './use-competitors';
 export {
   COMPETITORS_MAP_DATA_QUERY_KEY,

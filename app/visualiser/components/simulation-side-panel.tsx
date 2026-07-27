@@ -23,7 +23,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useBranches, useClientsMapData, useSessionSync, useUserPreferences } from '@/api/hooks';
+import {
+  useBranches,
+  useClientsMapData,
+  useSalesTeamComposition,
+  useSessionSync,
+  useTeamTargets,
+  useUserPreferences,
+} from '@/api/hooks';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { patchUserPreferences } from '@/api/endpoints/user';
@@ -55,6 +62,16 @@ import {
   branchSimulationTextClass,
   type TurnoverSimulation,
 } from '@/lib/site-opportunity/turnover-simulation';
+import {
+  branchGapToModelZAR,
+  branchLabelForId,
+  buildBranchRepRateRows,
+  equalShareMonthlyZAR,
+  filterTeamMembersByBranchLabel,
+  workforceHeadcountFromComposition,
+  type BranchRepRateRow,
+  type WorkforceHeadcount,
+} from '@/lib/site-opportunity/branch-rep-rates';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import { matureShareByCompetition } from '@/lib/site-opportunity/compute/capture-phases';
 import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
@@ -93,12 +110,24 @@ function seedBrandTurnovers(
   return next;
 }
 
+function formatVariancePct(pct: number | null | undefined): string {
+  if (pct == null || !Number.isFinite(pct)) return '—';
+  const sign = pct > 0 ? '+' : '';
+  return `${sign}${pct.toFixed(0)}%`;
+}
+
 function ZoneDetailBody({
   zone,
   detailSim,
   captureLowPctDisplay,
   captureHighPctDisplay,
   competitorsByBrand,
+  workforce,
+  workforceLoading,
+  workforceError,
+  repRows,
+  repsLoading,
+  repsError,
 }: {
   zone: SiteOpportunityZone;
   detailSim: TurnoverSimulation;
@@ -108,10 +137,29 @@ function ZoneDetailBody({
     HardwareBrandKey,
     ReturnType<typeof listCompetitorsInZone>
   >;
+  workforce: WorkforceHeadcount | null;
+  workforceLoading: boolean;
+  workforceError: boolean;
+  repRows: BranchRepRateRow[];
+  repsLoading: boolean;
+  repsError: boolean;
 }) {
   const monthLabel = detailSim.actualRevenueMonthLabel ?? currentMonthLabel();
   const zoneTitle =
     zone.kind === 'catchment' ? zone.branchName : zone.label;
+  const isCatchment = zone.kind === 'catchment';
+  const branchGap = branchGapToModelZAR(
+    detailSim.simulatedMonthlyZAR,
+    detailSim.actualMonthlyZAR,
+  );
+  const repCountForShare =
+    repRows.length > 0
+      ? repRows.length
+      : Math.max(1, workforce?.total ?? 1);
+  const equalShare = equalShareMonthlyZAR(
+    detailSim.simulatedMonthlyZAR,
+    repCountForShare,
+  );
   const explainPayload = {
     kind: (zone.kind === 'catchment' ? 'catchment' : 'greenfield') as
       | 'catchment'
@@ -176,6 +224,140 @@ function ZoneDetailBody({
           </p>
         </div>
       </div>
+
+      {isCatchment ? (
+        <>
+          <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">Needed to match model</p>
+              <p className="text-xs font-semibold">
+                {formatZarShort(detailSim.simulatedMonthlyZAR)}/mo
+              </p>
+            </div>
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">Gap vs actual</p>
+              <p className="text-xs font-semibold">
+                {branchGap != null ? formatZarShort(branchGap) : '—'}
+              </p>
+            </div>
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">Variance vs model</p>
+              <p
+                className={cn(
+                  'text-xs font-semibold',
+                  detailSim.variancePct != null &&
+                    detailSim.variancePct < 0 &&
+                    'text-red-600',
+                  detailSim.variancePct != null &&
+                    detailSim.variancePct >= 0 &&
+                    'text-green-600',
+                )}
+              >
+                {detailSim.varianceZAR != null
+                  ? `${formatZarShort(detailSim.varianceZAR)} (${formatVariancePct(detailSim.variancePct)})`
+                  : '—'}
+              </p>
+            </div>
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">
+                Reps needed
+                {detailSim.repTargetMonthlyZAR != null
+                  ? ` @ ${formatZarShort(detailSim.repTargetMonthlyZAR)}/mo`
+                  : ''}
+              </p>
+              <p className="text-xs font-semibold">
+                {detailSim.repsRequired != null
+                  ? String(detailSim.repsRequired)
+                  : '—'}
+              </p>
+            </div>
+            <div className="bg-muted/40 col-span-2 rounded p-1.5">
+              <p className="text-muted-foreground">
+                Equal share per rep (to match model)
+              </p>
+              <p className="text-xs font-semibold">
+                {formatZarShort(equalShare)}/mo
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-medium">Sales team</p>
+            {workforceLoading ? (
+              <p className="text-muted-foreground text-[10px]">
+                Loading staff counts…
+              </p>
+            ) : workforceError ? (
+              <p className="text-muted-foreground text-[10px]">
+                Staff counts unavailable
+              </p>
+            ) : workforce ? (
+              <p className="text-[11px] leading-snug">
+                Internal {workforce.internal} · External {workforce.external} ·
+                Total {workforce.total}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-[10px]">No staff data</p>
+            )}
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-medium">Sales reps ({monthLabel})</p>
+            {repsLoading ? (
+              <p className="text-muted-foreground text-[10px]">
+                Loading rep sales…
+              </p>
+            ) : repsError ? (
+              <p className="text-muted-foreground text-[10px]">
+                Rep sales unavailable
+              </p>
+            ) : repRows.length === 0 ? (
+              <p className="text-muted-foreground text-[10px]">
+                No sales reps matched for this branch
+              </p>
+            ) : (
+              <ul className="max-h-36 space-y-1.5 overflow-y-auto">
+                {repRows.map((row) => (
+                  <li
+                    key={row.userId ?? row.fullName}
+                    className="border-border/60 border-b border-dashed pb-1.5 text-[11px] last:border-0"
+                  >
+                    <p className="font-medium leading-snug">{row.fullName}</p>
+                    <div className="text-muted-foreground mt-0.5 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+                      <span>
+                        Person{' '}
+                        <span className="text-foreground font-medium">
+                          {formatZarShort(row.personMonthSalesZAR)}
+                        </span>
+                      </span>
+                      <span>
+                        Branch{' '}
+                        <span className="text-foreground font-medium">
+                          {row.branchMonthSalesZAR != null
+                            ? formatZarShort(row.branchMonthSalesZAR)
+                            : '—'}
+                        </span>
+                      </span>
+                      <span>
+                        Needed{' '}
+                        <span className="text-foreground font-medium">
+                          {formatZarShort(row.equalShareZAR)}/mo
+                        </span>
+                      </span>
+                      <span>
+                        Remaining{' '}
+                        <span className="text-foreground font-medium">
+                          {formatZarShort(row.remainingToShareZAR)}
+                        </span>
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      ) : null}
 
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -387,6 +569,24 @@ export function SimulationSidePanel() {
   const clientsQuery = useClientsMapData({ enabled: panelOpen });
   const storesSalesQuery = useStoresSales(undefined, { enabled: panelOpen });
 
+  const selectedCatchmentBranchId = useMemo(() => {
+    if (!selectedZone || selectedZone.kind !== 'catchment') return null;
+    const uid = Number(selectedZone.branchId);
+    return Number.isFinite(uid) ? uid : null;
+  }, [selectedZone]);
+
+  const teamCompositionEnabled =
+    panelOpen && isActive && selectedCatchmentBranchId != null;
+  const teamCompositionQuery = useSalesTeamComposition({
+    enabled: teamCompositionEnabled,
+    ...(selectedCatchmentBranchId != null
+      ? { branchId: selectedCatchmentBranchId }
+      : {}),
+  });
+  const teamTargetsQuery = useTeamTargets({
+    enabled: panelOpen && isActive && selectedCatchmentBranchId != null,
+  });
+
   useEffect(() => {
     if (!panelOpen) return;
     // Wait for server prefs when we have a user so we don't flash localStorage then overwrite
@@ -478,6 +678,39 @@ export function SimulationSidePanel() {
       repTargetMonthlyZAR: settings.repTargetMonthlyZAR,
     });
   }, [selectedZone, settings.repTargetMonthlyZAR, monthLabel]);
+
+  const catchmentWorkforce = useMemo((): WorkforceHeadcount | null => {
+    if (!teamCompositionQuery.data) return null;
+    return workforceHeadcountFromComposition(
+      teamCompositionQuery.data.byWorkforce,
+      teamCompositionQuery.data.total,
+    );
+  }, [teamCompositionQuery.data]);
+
+  const catchmentRepRows = useMemo((): BranchRepRateRow[] => {
+    if (!selectedZone || selectedZone.kind !== 'catchment' || !detailSim) {
+      return [];
+    }
+    const label =
+      branchLabelForId(branchesQuery.data, selectedZone.branchId) ??
+      selectedZone.branchName;
+    const members = filterTeamMembersByBranchLabel(
+      teamTargetsQuery.data?.data?.teamMembers,
+      label,
+    );
+    return buildBranchRepRateRows({
+      members,
+      simulatedMonthlyZAR: detailSim.simulatedMonthlyZAR,
+      actualMonthlyZAR: detailSim.actualMonthlyZAR,
+      compositionTotal: catchmentWorkforce?.total,
+    });
+  }, [
+    selectedZone,
+    detailSim,
+    branchesQuery.data,
+    teamTargetsQuery.data?.data?.teamMembers,
+    catchmentWorkforce?.total,
+  ]);
 
   const competitorsInZone = useMemo(() => {
     if (!selectedZone || runMarkers.length === 0) return [];
@@ -645,6 +878,16 @@ export function SimulationSidePanel() {
         captureLowPctDisplay={captureLowPctDisplay}
         captureHighPctDisplay={captureHighPctDisplay}
         competitorsByBrand={competitorsByBrand}
+        workforce={zone.kind === 'catchment' ? catchmentWorkforce : null}
+        workforceLoading={
+          zone.kind === 'catchment' && teamCompositionQuery.isLoading
+        }
+        workforceError={
+          zone.kind === 'catchment' && teamCompositionQuery.isError
+        }
+        repRows={zone.kind === 'catchment' ? catchmentRepRows : []}
+        repsLoading={zone.kind === 'catchment' && teamTargetsQuery.isLoading}
+        repsError={zone.kind === 'catchment' && teamTargetsQuery.isError}
       />
     );
   }

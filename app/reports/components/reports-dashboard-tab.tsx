@@ -1480,13 +1480,16 @@ export function ReportsDashboardTab() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ChartCard
             title="Visits map"
-            description="Check-in locations in the selected range"
+            description="All check-in locations in the selected range"
             isLoading={visitsListQuery.isLoading}
             isError={visitsListQuery.isError}
             onRetry={() => void visitsListQuery.refetch()}
             contentClassName="pt-0"
           >
-            <ReportsVisitsMap points={visitMapPoints} />
+            <ReportsVisitsMap
+              points={visitMapPoints}
+              totalVisits={filteredCheckIns.length}
+            />
           </ChartCard>
           <ChartCard
             title="Allocation by branch"

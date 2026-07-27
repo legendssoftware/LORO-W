@@ -77,6 +77,42 @@ export interface CreateBranchBody {
   };
 }
 
+export type BranchGeocodeBatchSummary = {
+  total: number;
+  alreadyHadCoords: number;
+  alreadyExhausted?: number;
+  resolvedViaGps: number;
+  resolvedViaGeocode: number;
+  skippedUngeocodable?: number;
+  failed: number;
+  cappedPending: number;
+};
+
+export type GeocodeBranchesBatchResponse = {
+  message: string;
+  summary: BranchGeocodeBatchSummary;
+};
+
+const GEOCODE_BATCH_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * POST /branch/geocode-batch — clear exhausted (0,0) coords by default, then geocode.
+ */
+export async function geocodeBranchesBatch(
+  client: AxiosInstance,
+  options?: { maxGeocodes?: number; resetExhausted?: boolean }
+): Promise<GeocodeBranchesBatchResponse> {
+  const search = new URLSearchParams();
+  search.set('maxGeocodes', String(options?.maxGeocodes ?? 500));
+  search.set('resetExhausted', String(options?.resetExhausted !== false));
+  const { data } = await client.post<GeocodeBranchesBatchResponse>(
+    `/branch/geocode-batch?${search.toString()}`,
+    undefined,
+    { timeout: GEOCODE_BATCH_TIMEOUT_MS }
+  );
+  return data;
+}
+
 export async function postCreateBranch(
   client: AxiosInstance,
   body: CreateBranchBody

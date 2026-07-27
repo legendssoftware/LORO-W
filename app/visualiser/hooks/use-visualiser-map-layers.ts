@@ -31,6 +31,7 @@ export const DEFAULT_LAYER_VISIBILITY: VisualiserLayerVisibility = {
 
 /**
  * Parallel fetch of branches, HQ, clients, competitors, and latest rep GPS for the map.
+ * Layers paint as each query settles — full-map loading only until the first layer succeeds.
  */
 export function useVisualiserMapLayers(options: {
   enabled: boolean;
@@ -116,11 +117,20 @@ export function useVisualiserMapLayers(options: {
     return next;
   }, [allPoints]);
 
-  const isLoading =
-    (enabled && branchesQuery.isLoading) ||
-    (enabled && competitorsQuery.isLoading) ||
-    (enabled && clientsQuery.isLoading) ||
-    (enabled && repsQuery.isLoading);
+  const hasSettledLayer =
+    branchesQuery.isSuccess ||
+    competitorsQuery.isSuccess ||
+    clientsQuery.isSuccess ||
+    repsQuery.isSuccess;
+
+  const isInitialLoadPending =
+    branchesQuery.isLoading ||
+    competitorsQuery.isLoading ||
+    clientsQuery.isLoading ||
+    repsQuery.isLoading;
+
+  // Full-map spinner only until the first layer settles; remaining layers paint as they arrive.
+  const isLoading = enabled && !hasSettledLayer && isInitialLoadPending;
 
   const isFetching =
     branchesQuery.isFetching ||

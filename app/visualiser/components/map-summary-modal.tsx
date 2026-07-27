@@ -616,7 +616,8 @@ export function MapSummaryModal({
                 <div className="rounded-lg border p-3">
                   <MissingCompetitorsList items={missingItems} maxVisible={10} />
                   <p className="text-muted-foreground mt-2 text-[11px]">
-                    Click a row to edit the competitor on the Competitors page.
+                    Open the list for full detail, or click a row to edit on the
+                    Competitors page.
                   </p>
                 </div>
               ) : (

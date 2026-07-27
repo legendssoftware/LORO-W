@@ -8,7 +8,7 @@ import type { ClientListItem } from '@/api/types/clients';
 export const CLIENTS_MAP_DATA_QUERY_KEY = ['clients', 'map-data'] as const;
 
 /**
- * Fast client pins for the visualiser (GET /clients/map-data).
+ * Fast client pins for the visualiser (GET /clients/map-data — already-geocoded only).
  */
 export function useClientsMapData(options?: { enabled?: boolean }) {
   const client = useApiClient();

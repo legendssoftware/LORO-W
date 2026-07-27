@@ -130,6 +130,42 @@ export async function getCompetitorsMissingGeocode(
   return [];
 }
 
+export type MapGeocodeBatchSummary = {
+  total: number;
+  alreadyHadCoords: number;
+  alreadyExhausted?: number;
+  resolvedViaGps: number;
+  resolvedViaGeocode: number;
+  skippedUngeocodable?: number;
+  failed: number;
+  cappedPending: number;
+};
+
+export type GeocodeCompetitorsBatchResponse = {
+  message: string;
+  summary: MapGeocodeBatchSummary;
+};
+
+const GEOCODE_BATCH_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * POST /competitors/geocode-batch — clear exhausted (0,0) coords by default, then geocode.
+ */
+export async function geocodeCompetitorsBatch(
+  client: AxiosInstance,
+  options?: { maxGeocodes?: number; resetExhausted?: boolean }
+): Promise<GeocodeCompetitorsBatchResponse> {
+  const search = new URLSearchParams();
+  search.set('maxGeocodes', String(options?.maxGeocodes ?? 500));
+  search.set('resetExhausted', String(options?.resetExhausted !== false));
+  const { data } = await client.post<GeocodeCompetitorsBatchResponse>(
+    `/competitors/geocode-batch?${search.toString()}`,
+    undefined,
+    { timeout: GEOCODE_BATCH_TIMEOUT_MS }
+  );
+  return data;
+}
+
 export async function getCompetitor(
   client: AxiosInstance,
   id: number

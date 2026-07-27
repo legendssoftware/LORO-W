@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, MapPinOff } from 'lucide-react';
 import type { CompetitorMissingGeocodeItem } from '@/api/endpoints/competitors';
+import { MissingCompetitorsDetailModal } from '@/app/visualiser/components/missing-competitors-detail-modal';
 import { cn } from '@/lib/utils';
 
 type MissingCompetitorsListProps = {
@@ -15,8 +17,8 @@ type MissingCompetitorsListProps = {
 };
 
 /**
- * Clickable list of competitors missing address and/or coordinates.
- * Links open `/competitors?edit={id}` to launch the edit form.
+ * Preview list of competitors missing address and/or coordinates.
+ * Header / “+N more” open a detail dialog; row links still jump to edit.
  */
 export function MissingCompetitorsList({
   items,
@@ -24,6 +26,8 @@ export function MissingCompetitorsList({
   className,
   compact = false,
 }: MissingCompetitorsListProps) {
+  const [detailOpen, setDetailOpen] = useState(false);
+
   if (items.length === 0) return null;
 
   const visible = items.slice(0, maxVisible);
@@ -31,15 +35,24 @@ export function MissingCompetitorsList({
 
   return (
     <div className={cn('space-y-1.5', className)}>
-      <p
+      <button
+        type="button"
+        onClick={() => setDetailOpen(true)}
         className={cn(
-          'flex items-center gap-1 font-medium',
+          'hover:text-foreground flex w-full items-center gap-1 text-left font-medium transition-colors',
           compact ? 'text-[10px]' : 'text-xs',
         )}
+        aria-haspopup="dialog"
+        aria-expanded={detailOpen}
       >
         <MapPinOff className={compact ? 'size-3' : 'size-3.5'} />
-        Missing address / coordinates ({items.length})
-      </p>
+        <span className="underline-offset-2 hover:underline">
+          Missing address / coordinates ({items.length})
+        </span>
+        <span className="text-muted-foreground ml-auto font-normal">
+          View all
+        </span>
+      </button>
       <ul
         className={cn(
           'space-y-1 overflow-y-auto',
@@ -74,10 +87,20 @@ export function MissingCompetitorsList({
         })}
       </ul>
       {remaining > 0 ? (
-        <p className="text-muted-foreground text-[10px]">
-          +{remaining} more — open Competitors to edit
-        </p>
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="text-muted-foreground hover:text-foreground text-left text-[10px] underline-offset-2 hover:underline"
+        >
+          +{remaining} more — view all in detail
+        </button>
       ) : null}
+
+      <MissingCompetitorsDetailModal
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        items={items}
+      />
     </div>
   );
 }
