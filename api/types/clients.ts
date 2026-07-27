@@ -18,6 +18,8 @@ export interface ClientListItem {
   phone?: string;
   alternativePhone?: string;
   address?: ClientAddress;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   status?: string;
   category?: string;
   creditLimit?: number | string | null;
