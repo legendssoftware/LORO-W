@@ -49,7 +49,7 @@ export async function getClients(
 }
 
 /**
- * GET /clients/map-data — all geocoded clients for the visualiser (unpaginated).
+ * GET /clients/map-data — already-geocoded clients for the visualiser (fast, no geocode wait).
  */
 export async function getClientsMapData(
   client: AxiosInstance
@@ -60,6 +60,42 @@ export async function getClientsMapData(
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.data)) return data.data;
   return [];
+}
+
+export type ClientGeocodeBatchSummary = {
+  total: number;
+  alreadyHadCoords: number;
+  alreadyExhausted?: number;
+  resolvedViaGps: number;
+  resolvedViaGeocode: number;
+  skippedUngeocodable?: number;
+  failed: number;
+  cappedPending: number;
+};
+
+export type GeocodeClientsBatchResponse = {
+  message: string;
+  summary: ClientGeocodeBatchSummary;
+};
+
+const GEOCODE_BATCH_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * POST /clients/geocode-batch — clear exhausted (0,0) coords by default, then geocode.
+ */
+export async function geocodeClientsBatch(
+  client: AxiosInstance,
+  options?: { maxGeocodes?: number; resetExhausted?: boolean }
+): Promise<GeocodeClientsBatchResponse> {
+  const search = new URLSearchParams();
+  search.set('maxGeocodes', String(options?.maxGeocodes ?? 500));
+  search.set('resetExhausted', String(options?.resetExhausted !== false));
+  const { data } = await client.post<GeocodeClientsBatchResponse>(
+    `/clients/geocode-batch?${search.toString()}`,
+    undefined,
+    { timeout: GEOCODE_BATCH_TIMEOUT_MS }
+  );
+  return data;
 }
 
 /**
