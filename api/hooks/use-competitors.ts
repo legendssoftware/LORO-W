@@ -16,7 +16,10 @@ import {
   bulkUpdateCompetitors,
   deleteCompetitor,
   importCompetitorsFromCSV,
+  geocodeCompetitorsBatch,
 } from '@/api/endpoints/competitors';
+import { geocodeBranchesBatch } from '@/api/endpoints/branch';
+import { geocodeClientsBatch } from '@/api/endpoints/clients';
 import type {
   BulkUpdateCompetitorsPayload,
   CreateCompetitorPayload,
@@ -25,6 +28,8 @@ import type {
 import toast from 'react-hot-toast';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
 import { COMPETITORS_MAP_DATA_QUERY_KEY } from '@/api/hooks/use-competitors-map-data';
+import { CLIENTS_MAP_DATA_QUERY_KEY } from '@/api/hooks/use-clients-map-data';
+import { BRANCHES_QUERY_KEY } from '@/api/hooks/use-branches';
 
 export const COMPETITORS_QUERY_KEY_PREFIX = ['competitors'] as const;
 
@@ -221,5 +226,59 @@ export function useImportCompetitorsMutation() {
     onSuccess: () => {
       invalidateCompetitorQueries(queryClient);
     },
+  });
+}
+
+/**
+ * Clears exhausted (0,0) coords and re-geocodes competitors, clients, and branches for the map.
+ * Invalidates map layer caches so the visualiser refetches fresh pins.
+ */
+export function useGeocodeMapBatchMutation() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (options?: {
+      maxGeocodes?: number;
+      resetExhausted?: boolean;
+    }) => {
+      const resetExhausted = options?.resetExhausted !== false;
+      const maxGeocodes = options?.maxGeocodes ?? 500;
+      const [competitors, clients, branches] = await Promise.all([
+        geocodeCompetitorsBatch(api, { maxGeocodes, resetExhausted }),
+        geocodeClientsBatch(api, { maxGeocodes, resetExhausted }),
+        geocodeBranchesBatch(api, { maxGeocodes, resetExhausted }),
+      ]);
+      return { competitors, clients, branches };
+    },
+    onSuccess: (data) => {
+      invalidateCompetitorQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: CLIENTS_MAP_DATA_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BRANCHES_QUERY_KEY });
+
+      const resolved =
+        (data.competitors.summary.resolvedViaGeocode ?? 0) +
+        (data.competitors.summary.resolvedViaGps ?? 0) +
+        (data.clients.summary.resolvedViaGeocode ?? 0) +
+        (data.clients.summary.resolvedViaGps ?? 0) +
+        (data.branches.summary.resolvedViaGeocode ?? 0) +
+        (data.branches.summary.resolvedViaGps ?? 0);
+      const pending =
+        (data.competitors.summary.cappedPending ?? 0) +
+        (data.clients.summary.cappedPending ?? 0) +
+        (data.branches.summary.cappedPending ?? 0);
+      if (pending > 0) {
+        toast.success(
+          `Geocoded ${resolved} location${resolved === 1 ? '' : 's'} (${pending} still pending — run again)`
+        );
+        return;
+      }
+      toast.success(
+        resolved > 0
+          ? `Geocoded ${resolved} location${resolved === 1 ? '' : 's'}`
+          : 'Geocode complete — no new coordinates needed'
+      );
+    },
+    onError: (err) =>
+      mutationToastError(err, 'Could not geocode missing map addresses'),
   });
 }

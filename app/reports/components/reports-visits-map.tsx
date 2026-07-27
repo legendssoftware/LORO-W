@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import type * as GeoJSON from 'geojson';
 import {
   Building2,
   CheckCircle2,
@@ -12,7 +13,8 @@ import {
   User,
 } from 'lucide-react';
 import {
-  Map,
+  Map as MapView,
+  MapClusterLayer,
   MapControls,
   MapMarker,
   MapPopup,
@@ -23,6 +25,21 @@ import type { VisitListItem } from '@/api/types/visits';
 import { cn } from '@/lib/utils';
 
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
+
+/** Prefer DOM markers for small sets; cluster GeoJSON for larger ranges. */
+const CLUSTER_THRESHOLD = 40;
+
+const CLUSTER_COLORS: [string, string, string] = [
+  '#059669',
+  '#047857',
+  '#065f46',
+];
+
+type AddressCoords = {
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  formattedAddress?: string;
+};
 
 function parseLatLng(raw: string | null | undefined): { lat: number; lng: number } | null {
   if (!raw || raw === '-') return null;
@@ -40,6 +57,42 @@ function parseLatLng(raw: string | null | undefined): { lat: number; lng: number
     return null;
   }
   return { lat, lng };
+}
+
+function parseStoredCoords(
+  latRaw: number | string | null | undefined,
+  lngRaw: number | string | null | undefined
+): { lat: number; lng: number } | null {
+  const lat = typeof latRaw === 'string' ? Number.parseFloat(latRaw) : Number(latRaw);
+  const lng = typeof lngRaw === 'string' ? Number.parseFloat(lngRaw) : Number(lngRaw);
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+  return { lat, lng };
+}
+
+/**
+ * Resolve map coordinates for a check-in: GPS string first, then geocoded fullAddress.
+ */
+export function resolveVisitCoords(
+  checkIn: VisitListItem
+): { lat: number; lng: number } | null {
+  const fromLocation = parseLatLng(checkIn.checkInLocation);
+  if (fromLocation) return fromLocation;
+
+  const fullAddress = checkIn.fullAddress as AddressCoords | null | undefined;
+  const fromFull = parseStoredCoords(fullAddress?.latitude, fullAddress?.longitude);
+  if (fromFull) return fromFull;
+
+  const contactAddress = checkIn.contactAddress as AddressCoords | null | undefined;
+  return parseStoredCoords(contactAddress?.latitude, contactAddress?.longitude);
 }
 
 function ownerDisplayName(owner: VisitListItem['owner']): string {
@@ -64,9 +117,7 @@ function ownerPhotoUrl(owner: VisitListItem['owner']): string | undefined {
   return url || undefined;
 }
 
-function branchLabel(
-  checkIn: VisitListItem
-): string | undefined {
+function branchLabel(checkIn: VisitListItem): string | undefined {
   const branch = checkIn.branch ?? checkIn.owner?.branch;
   if (!branch) return undefined;
   const name = branch.name?.trim() || branch.alias?.trim();
@@ -94,6 +145,16 @@ function formatCoords(lat: number, lng: number): string {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
+function addressDisplayLabel(
+  checkIn: VisitListItem,
+  coords: { lat: number; lng: number }
+): string {
+  const fullAddress = checkIn.fullAddress as AddressCoords | null | undefined;
+  const formatted = fullAddress?.formattedAddress?.trim();
+  if (formatted) return formatted;
+  return formatCoords(coords.lat, coords.lng);
+}
+
 export type VisitMapPoint = {
   id: number;
   latitude: number;
@@ -119,12 +180,17 @@ export type VisitMapPoint = {
   addressLabel?: string;
 };
 
+type VisitClusterProps = {
+  id: number;
+  label: string;
+};
+
 export function visitMapPointsFromCheckIns(
   checkIns: VisitListItem[] | undefined | null
 ): VisitMapPoint[] {
   const points: VisitMapPoint[] = [];
   for (const c of checkIns ?? []) {
-    const coords = parseLatLng(c.checkInLocation);
+    const coords = resolveVisitCoords(c);
     if (!coords) continue;
     const placeName =
       c.companyName?.trim() ||
@@ -160,7 +226,7 @@ export function visitMapPointsFromCheckIns(
       quotationAmount,
       notes: c.notes?.trim() || undefined,
       resolution: c.resolution?.trim() || undefined,
-      addressLabel: formatCoords(coords.lat, coords.lng),
+      addressLabel: addressDisplayLabel(c, coords),
     });
   }
   return points;
@@ -289,27 +355,66 @@ function VisitMapPopupContent({ point }: { point: VisitMapPoint }) {
 
 interface ReportsVisitsMapProps {
   points: VisitMapPoint[];
+  /** Total check-ins in range (including those without mappable coords). */
+  totalVisits?: number;
   className?: string;
 }
 
-export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
+export function ReportsVisitsMap({
+  points,
+  totalVisits,
+  className,
+}: ReportsVisitsMapProps) {
   const [selected, setSelected] = useState<VisitMapPoint | null>(null);
   const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
 
-  const visiblePoints = useMemo(() => points.slice(0, 200), [points]);
+  const useClustering = points.length > CLUSTER_THRESHOLD;
+
+  const pointsById = useMemo(() => {
+    const map = new Map<number, VisitMapPoint>();
+    for (const p of points) map.set(p.id, p);
+    return map;
+  }, [points]);
+
+  const clusterGeoJson = useMemo((): GeoJSON.FeatureCollection<
+    GeoJSON.Point,
+    VisitClusterProps
+  > => {
+    return {
+      type: 'FeatureCollection',
+      features: points.map((p) => ({
+        type: 'Feature',
+        properties: { id: p.id, label: p.label },
+        geometry: {
+          type: 'Point',
+          coordinates: [p.longitude, p.latitude],
+        },
+      })),
+    };
+  }, [points]);
 
   const pointsCenter = useMemo((): [number, number] => {
-    if (visiblePoints.length === 0) return FALLBACK_CENTER;
-    const lng =
-      visiblePoints.reduce((s, p) => s + p.longitude, 0) / visiblePoints.length;
-    const lat =
-      visiblePoints.reduce((s, p) => s + p.latitude, 0) / visiblePoints.length;
+    if (points.length === 0) return FALLBACK_CENTER;
+    const lng = points.reduce((s, p) => s + p.longitude, 0) / points.length;
+    const lat = points.reduce((s, p) => s + p.latitude, 0) / points.length;
     return [lng, lat];
-  }, [visiblePoints]);
+  }, [points]);
 
   /** Prefer browser geolocation; fall back to visit centroid / Joburg. */
   const center = userCenter ?? pointsCenter;
-  const zoom = userCenter ? 11 : visiblePoints.length === 1 ? 12 : 5;
+  const zoom = userCenter ? 11 : points.length === 1 ? 12 : 5;
+
+  const mappedCount = points.length;
+  const rangeTotal =
+    totalVisits != null && Number.isFinite(totalVisits)
+      ? Math.max(0, Math.round(totalVisits))
+      : mappedCount;
+  const countLabel =
+    mappedCount === 0
+      ? null
+      : rangeTotal > mappedCount
+        ? `${mappedCount.toLocaleString()} of ${rangeTotal.toLocaleString()} visits mapped`
+        : `${mappedCount.toLocaleString()} visit${mappedCount === 1 ? '' : 's'} mapped`;
 
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
@@ -332,20 +437,26 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
   useEffect(() => {
     setSelected((prev) => {
       if (!prev) return null;
-      return visiblePoints.find((p) => p.id === prev.id) ?? null;
+      return pointsById.get(prev.id) ?? null;
     });
-  }, [visiblePoints]);
+  }, [pointsById]);
 
-  if (visiblePoints.length === 0) {
+  if (points.length === 0) {
     return (
-      <p
+      <div
         className={cn(
-          'flex h-[280px] items-center justify-center text-sm text-muted-foreground',
+          'flex h-[280px] flex-col items-center justify-center gap-1 px-4 text-center',
           className
         )}
       >
-        No mapped visits in range
-      </p>
+        <p className="text-sm text-muted-foreground">No mapped visits in range</p>
+        {rangeTotal > 0 ? (
+          <p className="text-muted-foreground text-xs">
+            {rangeTotal.toLocaleString()} visit
+            {rangeTotal === 1 ? '' : 's'} in range lack GPS coordinates
+          </p>
+        ) : null}
+      </div>
     );
   }
 
@@ -356,11 +467,16 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
         className
       )}
     >
-      <Map
+      {countLabel ? (
+        <div className="pointer-events-none absolute top-2 left-2 z-10 rounded-md border border-border/60 bg-background/85 px-2 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-sm">
+          {countLabel}
+        </div>
+      ) : null}
+      <MapView
         key={
           userCenter
             ? `loc-${userCenter[0].toFixed(4)}-${userCenter[1].toFixed(4)}`
-            : 'points'
+            : `points-${points.length}`
         }
         center={center}
         zoom={zoom}
@@ -374,35 +490,52 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
             setUserCenter([coords.longitude, coords.latitude]);
           }}
         />
-        {visiblePoints.map((p) => (
-          <MapMarker
-            key={p.id}
-            longitude={p.longitude}
-            latitude={p.latitude}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelected(p);
+
+        {useClustering ? (
+          <MapClusterLayer<VisitClusterProps>
+            data={clusterGeoJson}
+            clusterColors={CLUSTER_COLORS}
+            pointColor="#059669"
+            clusterMaxZoom={14}
+            clusterRadius={48}
+            onPointClick={(feature) => {
+              const id = Number(feature.properties?.id);
+              if (!Number.isFinite(id)) return;
+              const point = pointsById.get(id);
+              if (point) setSelected(point);
             }}
-          >
-            <MarkerContent>
-              <Avatar
-                className={cn(
-                  'size-8 cursor-pointer border-2 border-white shadow-md ring-1 ring-black/10 transition-transform',
-                  selected?.id === p.id && 'scale-110 ring-2 ring-emerald-500'
-                )}
-                title={p.label}
-                aria-label={`Open visit details for ${p.label}`}
-              >
-                {p.photoURL ? (
-                  <AvatarImage src={p.photoURL} alt="" />
-                ) : null}
-                <AvatarFallback className="bg-emerald-600 text-[10px] font-semibold text-white">
-                  {ownerInitials(p.ownerName)}
-                </AvatarFallback>
-              </Avatar>
-            </MarkerContent>
-          </MapMarker>
-        ))}
+          />
+        ) : (
+          points.map((p) => (
+            <MapMarker
+              key={p.id}
+              longitude={p.longitude}
+              latitude={p.latitude}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelected(p);
+              }}
+            >
+              <MarkerContent>
+                <Avatar
+                  className={cn(
+                    'size-8 cursor-pointer border-2 border-white shadow-md ring-1 ring-black/10 transition-transform',
+                    selected?.id === p.id && 'scale-110 ring-2 ring-emerald-500'
+                  )}
+                  title={p.label}
+                  aria-label={`Open visit details for ${p.label}`}
+                >
+                  {p.photoURL ? (
+                    <AvatarImage src={p.photoURL} alt="" />
+                  ) : null}
+                  <AvatarFallback className="bg-emerald-600 text-[10px] font-semibold text-white">
+                    {ownerInitials(p.ownerName)}
+                  </AvatarFallback>
+                </Avatar>
+              </MarkerContent>
+            </MapMarker>
+          ))
+        )}
 
         {selected ? (
           <MapPopup
@@ -419,7 +552,7 @@ export function ReportsVisitsMap({ points, className }: ReportsVisitsMapProps) {
             <VisitMapPopupContent point={selected} />
           </MapPopup>
         ) : null}
-      </Map>
+      </MapView>
     </div>
   );
 }
