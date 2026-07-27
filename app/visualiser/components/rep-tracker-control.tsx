@@ -16,6 +16,7 @@ import {
   formatVisitActionTime,
   type JourneyVisitAction,
 } from '@/app/visualiser/lib/journey-visit-actions';
+import { formatRelativeRecordedAt } from '@/lib/utils/journey-point-format';
 
 const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
@@ -51,6 +52,15 @@ function formatEndpointTime(place: RepJourneyEndpoint | null | undefined): strin
   });
 }
 
+export type LastKnownLocationSummary = {
+  address: string | null;
+  recordedAt: string | null;
+  batteryLabel?: string | null;
+  deviceLabel?: string | null;
+  latitude: number;
+  longitude: number;
+};
+
 export interface RepTrackerControlProps {
   users: ReportsFilterUserPickable[];
   branches: BranchListItem[];
@@ -63,6 +73,9 @@ export interface RepTrackerControlProps {
   statusMessage?: string | null;
   /** Full journey summary when a route is loaded. */
   journeySummary?: RepJourneySummary | null;
+  /** Live (or fallback) last-known location for the tracked rep. */
+  lastKnownLocation?: LastKnownLocationSummary | null;
+  onLastKnownClick?: () => void;
   /** Check-in / visit actions along the tracked trail. */
   visitActions?: JourneyVisitAction[];
   selectedVisitId?: number | null;
@@ -87,6 +100,8 @@ export function RepTrackerControl({
   isTracing = false,
   statusMessage = null,
   journeySummary = null,
+  lastKnownLocation = null,
+  onLastKnownClick,
   visitActions = [],
   selectedVisitId = null,
   onVisitActionClick,
@@ -190,6 +205,12 @@ export function RepTrackerControl({
               label="End"
               place={journeySummary.endPlace}
             />
+            {lastKnownLocation ? (
+              <LastKnownRow
+                location={lastKnownLocation}
+                onClick={onLastKnownClick}
+              />
+            ) : null}
           </div>
 
           {journeySummary.prominentLocations.length > 0 ? (
@@ -301,6 +322,61 @@ function EndpointRow({
       <p className="text-foreground line-clamp-2 text-[11px] leading-snug break-words">
         {formatEndpoint(place)}
       </p>
+    </div>
+  );
+}
+
+function LastKnownRow({
+  location,
+  onClick,
+}: {
+  location: LastKnownLocationSummary;
+  onClick?: () => void;
+}) {
+  const relative = formatRelativeRecordedAt(location.recordedAt);
+  const address =
+    location.address?.trim() ||
+    `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+  const deviceLine = [location.batteryLabel, location.deviceLabel]
+    .filter((v) => v && v !== '—')
+    .join(' · ');
+
+  const body = (
+    <>
+      <p className="text-muted-foreground text-[9px] tracking-wide uppercase">
+        Last known location
+        {relative ? (
+          <span className="ml-1 font-normal normal-case tabular-nums">
+            · {relative}
+          </span>
+        ) : null}
+      </p>
+      <p className="text-foreground line-clamp-2 text-[11px] leading-snug break-words">
+        {address}
+      </p>
+      {deviceLine ? (
+        <p className="text-muted-foreground mt-0.5 line-clamp-1 text-[10px]">
+          {deviceLine}
+        </p>
+      ) : null}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className="w-full rounded-md border border-violet-500/40 bg-violet-500/5 px-2 py-1.5 text-left transition-colors hover:bg-violet-500/10"
+        onClick={onClick}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-violet-500/40 bg-violet-500/5 px-2 py-1.5">
+      {body}
     </div>
   );
 }

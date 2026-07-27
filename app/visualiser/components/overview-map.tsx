@@ -17,10 +17,18 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { MapLayerToggles } from '@/app/visualiser/components/map-layer-toggles';
 import { MapFeaturePopupContent } from '@/app/visualiser/components/map-feature-popup';
-import { JourneyPointsLayer } from '@/app/visualiser/components/journey-points-layer';
+import {
+  JourneyPointsLayer,
+  type JourneyPointClickPayload,
+} from '@/app/visualiser/components/journey-points-layer';
+import { JourneyPointPopupContent } from '@/app/visualiser/components/journey-point-popup';
+import { JourneyLastKnownPopupContent } from '@/app/visualiser/components/journey-last-known-popup';
 import { LayeredLogoClusters } from '@/app/visualiser/components/logo-cluster-layer';
 import { SimulationOverlayLayer } from '@/app/visualiser/components/simulation-overlay-layer';
-import { RepTrackerControl } from '@/app/visualiser/components/rep-tracker-control';
+import {
+  RepTrackerControl,
+  type LastKnownLocationSummary,
+} from '@/app/visualiser/components/rep-tracker-control';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import {
   DEFAULT_LAYER_VISIBILITY,
@@ -32,6 +40,7 @@ import {
   type VisualiserLayerId,
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
+import { formatRelativeRecordedAt } from '@/lib/utils/journey-point-format';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import {
   buildTurnoverSimulation,
@@ -82,6 +91,28 @@ function FlyToPoint({ point }: { point: VisualiserMapPoint | null }) {
       essential: true,
     });
   }, [map, isLoaded, point]);
+
+  return null;
+}
+
+function FlyToCoords({
+  coords,
+  flyKey,
+}: {
+  coords: { longitude: number; latitude: number } | null;
+  flyKey: string | null;
+}) {
+  const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!map || !isLoaded || !coords || !flyKey) return;
+    map.flyTo({
+      center: [coords.longitude, coords.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+      duration: 800,
+      essential: true,
+    });
+  }, [map, isLoaded, coords, flyKey]);
 
   return null;
 }
@@ -272,7 +303,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   );
   const [isTracing, setIsTracing] = useState(false);
   const [selectedJourneyPoint, setSelectedJourneyPoint] =
-    useState<RepJourneyPoint | null>(null);
+    useState<JourneyPointClickPayload | null>(null);
+  const [showLastKnownPopup, setShowLastKnownPopup] = useState(false);
+  const [lastKnownFlyKey, setLastKnownFlyKey] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [trackedRepUid, setTrackedRepUid] = useState('all');
   const [activeTraceRange, setActiveTraceRange] =
@@ -370,6 +403,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const handleClearRoute = useCallback(() => {
     setJourneyRoute(null);
     setSelectedJourneyPoint(null);
+    setShowLastKnownPopup(false);
+    setLastKnownFlyKey(null);
     setSelectedVisitId(null);
     setActiveTraceRange(null);
     setTrackStatusMessage(null);
@@ -390,6 +425,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       if (layer === 'reps' && !visible) {
         setJourneyRoute(null);
         setSelectedJourneyPoint(null);
+        setShowLastKnownPopup(false);
+        setLastKnownFlyKey(null);
         setSelectedVisitId(null);
         setTrackedRepUid('all');
         clearRepSelection();
@@ -417,6 +454,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       );
       setIsTracing(true);
       setSelectedJourneyPoint(null);
+      setShowLastKnownPopup(false);
       setSelectedVisitId(null);
       setActiveTraceRange(range);
       setTrackStatusMessage(null);
@@ -447,6 +485,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           summary: data.summary,
           period: data.period,
         });
+        setShowLastKnownPopup(true);
+        setSelected(null);
+        setSelectedJourneyPoint(null);
         setTrackStatusMessage(RANGE_LABELS[range]);
         toast.success(
           `${repName}: ${data.summary.totalDistanceKm.toFixed(1)} km · ${data.summary.totalTravelFormatted} travel · ${RANGE_LABELS[range]}`,
@@ -552,11 +593,93 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       ? journeyRoute.summary
       : null;
 
+  const trackedLatestPoint = useMemo(() => {
+    if (!journeyRoute) return null;
+    return (
+      allPoints.find(
+        (p) => p.layer === 'reps' && p.repUid === journeyRoute.repUid
+      ) ?? null
+    );
+  }, [allPoints, journeyRoute]);
+
+  const lastKnownCoords = useMemo((): {
+    latitude: number;
+    longitude: number;
+  } | null => {
+    if (trackedLatestPoint) {
+      return {
+        latitude: trackedLatestPoint.latitude,
+        longitude: trackedLatestPoint.longitude,
+      };
+    }
+    const end = journeyRoute?.summary.endPlace;
+    if (end) {
+      return { latitude: end.latitude, longitude: end.longitude };
+    }
+    const lastPoint = journeyRoute?.points[journeyRoute.points.length - 1];
+    if (lastPoint) {
+      return { latitude: lastPoint.latitude, longitude: lastPoint.longitude };
+    }
+    return null;
+  }, [trackedLatestPoint, journeyRoute]);
+
+  const lastKnownSummary = useMemo((): LastKnownLocationSummary | null => {
+    if (!journeyRoute) return null;
+    if (trackedLatestPoint) {
+      const battery = trackedLatestPoint.highlights?.find(
+        (h) => h.label === 'Battery'
+      )?.value;
+      const device = trackedLatestPoint.highlights?.find(
+        (h) => h.label === 'Device'
+      )?.value;
+      return {
+        address: trackedLatestPoint.address ?? null,
+        recordedAt: trackedLatestPoint.recordedAt ?? null,
+        batteryLabel: battery && battery !== '—' ? battery : null,
+        deviceLabel: device && device !== '—' ? device : null,
+        latitude: trackedLatestPoint.latitude,
+        longitude: trackedLatestPoint.longitude,
+      };
+    }
+    const end = journeyRoute.summary.endPlace;
+    if (!end) return null;
+    return {
+      address: end.address,
+      recordedAt: end.recordedAt,
+      batteryLabel: null,
+      deviceLabel: null,
+      latitude: end.latitude,
+      longitude: end.longitude,
+    };
+  }, [journeyRoute, trackedLatestPoint]);
+
+  const lastKnownRelative = formatRelativeRecordedAt(
+    lastKnownSummary?.recordedAt
+  );
+
+  const openLastKnownPopup = useCallback((options?: { fly?: boolean }) => {
+    setSelected(null);
+    setSelectedJourneyPoint(null);
+    setSelectedVisitId(null);
+    setShowLastKnownPopup(true);
+    if (options?.fly) {
+      setLastKnownFlyKey(`${Date.now()}`);
+    }
+  }, []);
+
   const handleVisitActionClick = useCallback((visit: JourneyVisitAction) => {
     setSelected(null);
     setSelectedJourneyPoint(null);
+    setShowLastKnownPopup(false);
     setSelectedVisitId(visit.id);
   }, []);
+
+  /** Keep last-known popup open when latest pin refreshes while trail is active. */
+  useEffect(() => {
+    if (!journeyRoute) {
+      setShowLastKnownPopup(false);
+    }
+  }, [journeyRoute]);
 
   if (!center) {
     return <LoadingSpinner wrapperClassName="h-full min-h-[240px]" />;
@@ -626,6 +749,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           isTracing={isTracing}
           statusMessage={trackStatusMessage}
           journeySummary={journeyRoute?.summary ?? null}
+          lastKnownLocation={lastKnownSummary}
+          onLastKnownClick={() => openLastKnownPopup({ fly: true })}
           visitActions={journeyRoute ? visitActions : []}
           selectedVisitId={selectedVisitId}
           onVisitActionClick={handleVisitActionClick}
@@ -666,6 +791,19 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
                       : '—')}
                 </p>
               ) : null}
+              {lastKnownSummary ? (
+                <button
+                  type="button"
+                  className="text-violet-700 hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-200 mt-1 line-clamp-2 text-left text-[10px] leading-snug underline-offset-2 hover:underline"
+                  onClick={() => openLastKnownPopup({ fly: true })}
+                >
+                  Last known
+                  {lastKnownRelative ? ` · ${lastKnownRelative}` : ''}
+                  {': '}
+                  {lastKnownSummary.address?.trim() ||
+                    `${lastKnownSummary.latitude.toFixed(3)}, ${lastKnownSummary.longitude.toFixed(3)}`}
+                </button>
+              ) : null}
             </div>
             <button
               type="button"
@@ -688,6 +826,17 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         />
         <Map3DController />
         <FlyToPoint point={selected} />
+        <FlyToCoords
+          coords={
+            lastKnownCoords
+              ? {
+                  longitude: lastKnownCoords.longitude,
+                  latitude: lastKnownCoords.latitude,
+                }
+              : null
+          }
+          flyKey={lastKnownFlyKey}
+        />
         <FitJourneyBounds
           coordinates={journeyCoordinates}
           routeKey={journeyRouteKey}
@@ -726,9 +875,29 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             onPointClick={(point) => {
               setSelectedVisitId(null);
               setSelected(null);
+              setShowLastKnownPopup(false);
               setSelectedJourneyPoint(point);
             }}
           />
+        ) : null}
+
+        {journeyRoute && lastKnownCoords ? (
+          <MapMarker
+            longitude={lastKnownCoords.longitude}
+            latitude={lastKnownCoords.latitude}
+            onClick={(e) => {
+              e.stopPropagation();
+              openLastKnownPopup();
+            }}
+          >
+            <MarkerContent>
+              <span className="relative flex h-5 w-5 cursor-pointer items-center justify-center">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-violet-400 opacity-50" />
+                <span className="relative size-3.5 rounded-full border-2 border-white bg-violet-600 shadow-lg ring-2 ring-violet-300/80" />
+              </span>
+              <MarkerLabel position="top">Last known</MarkerLabel>
+            </MarkerContent>
+          </MapMarker>
         ) : null}
 
         {journeyRoute && visitActions.length > 0 ? (
@@ -744,6 +913,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           pointsByLayer={pointsByLayer}
           onPointClick={(point) => {
             setSelectedJourneyPoint(null);
+            setShowLastKnownPopup(false);
             setSelectedVisitId(null);
             setSelected(point);
           }}
@@ -761,6 +931,34 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           </MapMarker>
         ) : null}
 
+        {showLastKnownPopup && lastKnownCoords ? (
+          <MapPopup
+            key={`last-known-${lastKnownCoords.latitude}-${lastKnownCoords.longitude}-${lastKnownSummary?.recordedAt ?? ''}`}
+            longitude={lastKnownCoords.longitude}
+            latitude={lastKnownCoords.latitude}
+            offset={22}
+            closeButton
+            closeOnClick={false}
+            focusAfterOpen={false}
+            onClose={() => setShowLastKnownPopup(false)}
+            className="min-w-52 border-border/50 bg-background/75 font-sans shadow-none backdrop-blur-md"
+          >
+            <JourneyLastKnownPopupContent
+              point={trackedLatestPoint}
+              fallback={
+                journeyRoute?.summary.endPlace
+                  ? {
+                      address: journeyRoute.summary.endPlace.address,
+                      latitude: journeyRoute.summary.endPlace.latitude,
+                      longitude: journeyRoute.summary.endPlace.longitude,
+                      recordedAt: journeyRoute.summary.endPlace.recordedAt,
+                    }
+                  : null
+              }
+            />
+          </MapPopup>
+        ) : null}
+
         {selectedJourneyPoint ? (
           <MapPopup
             key={`journey-${selectedJourneyPoint.latitude}-${selectedJourneyPoint.longitude}-${selectedJourneyPoint.recordedAt}`}
@@ -771,39 +969,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             closeOnClick={false}
             focusAfterOpen={false}
             onClose={() => setSelectedJourneyPoint(null)}
-            className="min-w-44 border-border/50 bg-background/75 font-sans shadow-none backdrop-blur-md"
+            className="min-w-52 border-border/50 bg-background/75 font-sans shadow-none backdrop-blur-md"
           >
-            <div className="space-y-1.5 pr-1 font-sans text-xs">
-              <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
-                {selectedJourneyPoint.isStop ? 'Stop' : 'Key point'}
-              </p>
-              {selectedJourneyPoint.isStop &&
-              selectedJourneyPoint.stopDurationFormatted ? (
-                <p className="text-foreground text-sm font-semibold">
-                  Stopped {selectedJourneyPoint.stopDurationFormatted}
-                </p>
-              ) : null}
-              {selectedJourneyPoint.address ? (
-                <p className="text-muted-foreground break-words">
-                  {selectedJourneyPoint.address}
-                </p>
-              ) : null}
-              <p className="text-muted-foreground text-[11px]">
-                {(() => {
-                  try {
-                    return new Date(
-                      selectedJourneyPoint.recordedAt
-                    ).toLocaleString();
-                  } catch {
-                    return selectedJourneyPoint.recordedAt;
-                  }
-                })()}
-              </p>
-            </div>
+            <JourneyPointPopupContent
+              point={selectedJourneyPoint}
+              bearingDegrees={selectedJourneyPoint.bearingDegrees}
+              isTrailEnd={selectedJourneyPoint.isTrailEnd}
+            />
           </MapPopup>
         ) : null}
 
-        {selected && !selectedJourneyPoint && selectedVisitId == null ? (
+        {selected &&
+        !selectedJourneyPoint &&
+        !showLastKnownPopup &&
+        selectedVisitId == null ? (
           <MapPopup
             key={selected.id}
             longitude={selected.longitude}
