@@ -8,6 +8,7 @@ import {
   MapControls,
   MapMarker,
   MapPopup,
+  MapRoute,
   MarkerContent,
   MarkerLabel,
   useMap,
@@ -37,13 +38,18 @@ import {
   branchSimulationTextClass,
 } from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { useBranches, useSearchableUsersList } from '@/api/hooks';
+import { useBranches, useCheckIns, useSearchableUsersList } from '@/api/hooks';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
   RepJourneyPoint,
   RepJourneyRange,
   RepJourneySummary,
 } from '@/api/types/tracking';
+import { JourneyVisitsLayer } from '@/app/visualiser/components/journey-visits-layer';
+import {
+  journeyVisitActionsFromCheckIns,
+  type JourneyVisitAction,
+} from '@/app/visualiser/lib/journey-visit-actions';
 
 /** Johannesburg fallback — MapLibre uses [lng, lat]. */
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
@@ -61,6 +67,7 @@ type JourneyRouteState = {
   repName: string;
   points: RepJourneyPoint[];
   summary: RepJourneySummary;
+  period: { start: string; end: string };
 };
 
 function FlyToPoint({ point }: { point: VisualiserMapPoint | null }) {
@@ -144,6 +151,26 @@ function FlyToSimulationZone({
       essential: true,
     });
   }, [map, isLoaded, zoneId, lat, lng]);
+
+  return null;
+}
+
+function FlyToVisitAction({
+  visit,
+}: {
+  visit: JourneyVisitAction | null;
+}) {
+  const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!map || !isLoaded || !visit) return;
+    map.flyTo({
+      center: [visit.longitude, visit.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+      duration: 700,
+      essential: true,
+    });
+  }, [map, isLoaded, visit]);
 
   return null;
 }
@@ -246,6 +273,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const [isTracing, setIsTracing] = useState(false);
   const [selectedJourneyPoint, setSelectedJourneyPoint] =
     useState<RepJourneyPoint | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [trackedRepUid, setTrackedRepUid] = useState('all');
   const [activeTraceRange, setActiveTraceRange] =
     useState<RepJourneyRange | null>(null);
@@ -342,6 +370,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const handleClearRoute = useCallback(() => {
     setJourneyRoute(null);
     setSelectedJourneyPoint(null);
+    setSelectedVisitId(null);
     setActiveTraceRange(null);
     setTrackStatusMessage(null);
   }, []);
@@ -361,6 +390,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       if (layer === 'reps' && !visible) {
         setJourneyRoute(null);
         setSelectedJourneyPoint(null);
+        setSelectedVisitId(null);
         setTrackedRepUid('all');
         clearRepSelection();
         setRepSearchInput('');
@@ -387,6 +417,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       );
       setIsTracing(true);
       setSelectedJourneyPoint(null);
+      setSelectedVisitId(null);
       setActiveTraceRange(range);
       setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
@@ -414,12 +445,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           repName,
           points: data.points,
           summary: data.summary,
+          period: data.period,
         });
-        setTrackStatusMessage(
-          `${data.summary.totalPoints} points · ${data.summary.totalDistanceKm.toFixed(1)} km · ${RANGE_LABELS[range]}`
-        );
+        setTrackStatusMessage(RANGE_LABELS[range]);
         toast.success(
-          `${repName}: ${data.summary.totalPoints} points · ${data.summary.totalDistanceKm.toFixed(1)} km · ${RANGE_LABELS[range]}`,
+          `${repName}: ${data.summary.totalDistanceKm.toFixed(1)} km · ${data.summary.totalTravelFormatted} travel · ${RANGE_LABELS[range]}`,
           { id: toastId }
         );
         return true;
@@ -485,14 +515,34 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const trackedUidNum =
     trackedRepUid === 'all' ? null : Number(trackedRepUid);
 
-  const journeyCoordinates = useMemo(
-    (): [number, number][] =>
-      (journeyRoute?.points ?? []).map((p) => [p.longitude, p.latitude]),
-    [journeyRoute]
+  const journeyCheckInsQuery = useCheckIns(
+    journeyRoute
+      ? {
+          userUid: String(journeyRoute.repUid),
+          startDate: journeyRoute.period.start,
+          endDate: journeyRoute.period.end,
+        }
+      : undefined,
+    { enabled: enabled && journeyRoute != null }
   );
 
+  const visitActions = useMemo(
+    () => journeyVisitActionsFromCheckIns(journeyCheckInsQuery.data?.checkIns),
+    [journeyCheckInsQuery.data?.checkIns]
+  );
+
+  const journeyCoordinates = useMemo((): [number, number][] => {
+    const fromTrail = (journeyRoute?.points ?? []).map(
+      (p): [number, number] => [p.longitude, p.latitude]
+    );
+    const fromVisits = visitActions.map(
+      (v): [number, number] => [v.longitude, v.latitude]
+    );
+    return [...fromTrail, ...fromVisits];
+  }, [journeyRoute, visitActions]);
+
   const journeyRouteKey = journeyRoute
-    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}`
+    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}-${visitActions.length}`
     : null;
 
   const activeJourneySummary =
@@ -501,6 +551,12 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       trackedUidNum === journeyRoute.repUid)
       ? journeyRoute.summary
       : null;
+
+  const handleVisitActionClick = useCallback((visit: JourneyVisitAction) => {
+    setSelected(null);
+    setSelectedJourneyPoint(null);
+    setSelectedVisitId(visit.id);
+  }, []);
 
   if (!center) {
     return <LoadingSpinner wrapperClassName="h-full min-h-[240px]" />;
@@ -549,7 +605,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       ) : null}
 
       <div
-        className={`absolute left-3 z-10 flex w-[min(100%-1.5rem,16rem)] flex-col gap-2 ${
+        className={`absolute left-3 z-10 flex max-h-[min(100%-1.5rem,42rem)] w-[min(100%-1.5rem,18rem)] flex-col gap-2 overflow-y-auto ${
           isActive && selectedZone && !panelOpen ? 'top-28' : 'top-3'
         }`}
       >
@@ -569,6 +625,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           activeRange={activeTraceRange}
           isTracing={isTracing}
           statusMessage={trackStatusMessage}
+          journeySummary={journeyRoute?.summary ?? null}
+          visitActions={journeyRoute ? visitActions : []}
+          selectedVisitId={selectedVisitId}
+          onVisitActionClick={handleVisitActionClick}
           onClear={handleClearTracking}
           searchQuery={repSearchInput}
           onSearchQueryChange={setRepSearchInput}
@@ -587,9 +647,25 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
               <p className="truncate font-medium">{journeyRoute.repName}</p>
               <p className="text-muted-foreground mt-0.5">
                 {RANGE_LABELS[journeyRoute.range]} ·{' '}
-                {journeyRoute.summary.totalPoints} points ·{' '}
-                {journeyRoute.summary.totalDistanceKm.toFixed(1)} km
+                {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
+                {journeyRoute.summary.totalTravelFormatted} travel ·{' '}
+                {journeyRoute.summary.averageSpeedKmh > 0
+                  ? `${journeyRoute.summary.averageSpeedKmh.toFixed(0)} km/h`
+                  : '—'}
               </p>
+              {journeyRoute.summary.startPlace || journeyRoute.summary.endPlace ? (
+                <p className="text-muted-foreground mt-0.5 line-clamp-2 text-[10px] leading-snug">
+                  {journeyRoute.summary.startPlace?.address?.trim() ||
+                    (journeyRoute.summary.startPlace
+                      ? `${journeyRoute.summary.startPlace.latitude.toFixed(3)}, ${journeyRoute.summary.startPlace.longitude.toFixed(3)}`
+                      : '—')}
+                  {' → '}
+                  {journeyRoute.summary.endPlace?.address?.trim() ||
+                    (journeyRoute.summary.endPlace
+                      ? `${journeyRoute.summary.endPlace.latitude.toFixed(3)}, ${journeyRoute.summary.endPlace.longitude.toFixed(3)}`
+                      : '—')}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -623,13 +699,44 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             zoneId={selectedZone.id}
           />
         ) : null}
+        <FlyToVisitAction
+          visit={
+            selectedVisitId != null
+              ? (visitActions.find((v) => v.id === selectedVisitId) ?? null)
+              : null
+          }
+        />
 
         <SimulationOverlayLayer />
+
+        {journeyRoute && journeyCoordinates.length >= 2 ? (
+          <MapRoute
+            id="rep-journey-route"
+            coordinates={journeyCoordinates}
+            color={LAYER_META.reps.color}
+            width={3}
+            opacity={0.85}
+            interactive={false}
+          />
+        ) : null}
 
         {journeyRoute && journeyRoute.points.length > 0 ? (
           <JourneyPointsLayer
             points={journeyRoute.points}
-            onPointClick={(point) => setSelectedJourneyPoint(point)}
+            onPointClick={(point) => {
+              setSelectedVisitId(null);
+              setSelected(null);
+              setSelectedJourneyPoint(point);
+            }}
+          />
+        ) : null}
+
+        {journeyRoute && visitActions.length > 0 ? (
+          <JourneyVisitsLayer
+            visits={visitActions}
+            selectedVisitId={selectedVisitId}
+            onVisitClick={handleVisitActionClick}
+            onVisitClose={() => setSelectedVisitId(null)}
           />
         ) : null}
 
@@ -637,6 +744,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           pointsByLayer={pointsByLayer}
           onPointClick={(point) => {
             setSelectedJourneyPoint(null);
+            setSelectedVisitId(null);
             setSelected(point);
           }}
         />
@@ -695,7 +803,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           </MapPopup>
         ) : null}
 
-        {selected && !selectedJourneyPoint ? (
+        {selected && !selectedJourneyPoint && selectedVisitId == null ? (
           <MapPopup
             key={selected.id}
             longitude={selected.longitude}
@@ -726,6 +834,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         {visiblePoints.length} mapped ·{' '}
         {isActive ? 'simulation on · ' : ''}
         {journeyRoute ? 'trail on · ' : ''}
+        {journeyRoute && visitActions.length > 0
+          ? `${visitActions.length} visits · `
+          : ''}
         {Object.entries(LAYER_META)
           .filter(([id]) => visibility[id as VisualiserLayerId])
           .map(([id, meta]) => `${meta.label} ${counts[id as VisualiserLayerId]}`)

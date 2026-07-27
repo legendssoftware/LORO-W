@@ -74,6 +74,14 @@ export interface RepJourneyProminentLocation {
   timeSpentFormatted: string;
 }
 
+/** First or last point of the tracked journey window. */
+export interface RepJourneyEndpoint {
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  recordedAt: string;
+}
+
 export interface RepJourneyFuelPrice {
   averagePetrolPerLitreZar: number | null;
   grade: string | null;
@@ -86,8 +94,13 @@ export interface RepJourneySummary {
   totalPoints: number;
   totalDistanceKm: number;
   averageSpeedKmh: number;
+  /** Moving duration between GPS points (excludes stop dwell). */
+  totalTravelMinutes: number;
+  totalTravelFormatted: string;
   totalStopMinutes: number;
   totalStopFormatted: string;
+  startPlace: RepJourneyEndpoint | null;
+  endPlace: RepJourneyEndpoint | null;
   prominentLocations: RepJourneyProminentLocation[];
   fuelPrice: RepJourneyFuelPrice;
   periodAverages: {

@@ -281,9 +281,9 @@ export function clientToMapPoint(client: ClientListItem): VisualiserMapPoint | n
     metricValue: revenue,
     highlights,
     branchLabel: branchName ?? null,
-    positionLabel: rep ? `Rep: ${rep}` : (client.category as string) ?? 'Competitor',
+    positionLabel: rep ? `Rep: ${rep}` : (client.category as string) ?? 'Client',
     status: client.status ?? null,
-    subtitle: 'Competitor location',
+    subtitle: 'Client location',
   };
 }
 

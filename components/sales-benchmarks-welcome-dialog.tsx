@@ -180,6 +180,11 @@ export function SalesBenchmarksWelcomeDialog({
       setOpen(next);
       return;
     }
+    /** Do not allow dismiss while warning/target gate still defers this dialog. */
+    if (!next && deferForPendingWarning) {
+      setOpen(false);
+      return;
+    }
     if (!next && sessionId) {
       persistDismiss(sessionId, noticeUid);
     }
@@ -190,8 +195,10 @@ export function SalesBenchmarksWelcomeDialog({
     return null;
   }
 
+  const dialogOpen = forceOpen ? open : open && !deferForPendingWarning;
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={forceOpen}
         className="!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl"

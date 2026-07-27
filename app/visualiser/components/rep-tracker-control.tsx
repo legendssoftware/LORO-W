@@ -1,19 +1,55 @@
 'use client';
 
 import type { BranchListItem } from '@/api/types/branch';
-import type { RepJourneyRange } from '@/api/types/tracking';
+import type {
+  RepJourneyEndpoint,
+  RepJourneyRange,
+  RepJourneySummary,
+} from '@/api/types/tracking';
 import { Button } from '@/components/ui/button';
 import {
   SearchableUserPicker,
   type ReportsFilterUserPickable,
 } from '@/components/filters/searchable-filter-comboboxes';
 import { cn } from '@/lib/utils';
+import {
+  formatVisitActionTime,
+  type JourneyVisitAction,
+} from '@/app/visualiser/lib/journey-visit-actions';
 
 const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
   { range: 'day', label: 'Day' },
   { range: 'week', label: 'Week' },
 ];
+
+function formatKm(km: number): string {
+  if (!Number.isFinite(km) || km <= 0) return '0 km';
+  return `${km.toFixed(1)} km`;
+}
+
+function formatSpeed(kmh: number): string {
+  if (!Number.isFinite(kmh) || kmh <= 0) return '—';
+  return `${kmh.toFixed(0)} km/h`;
+}
+
+function formatEndpoint(place: RepJourneyEndpoint | null | undefined): string {
+  if (!place) return '—';
+  if (place.address?.trim()) return place.address.trim();
+  return `${place.latitude.toFixed(4)}, ${place.longitude.toFixed(4)}`;
+}
+
+function formatEndpointTime(place: RepJourneyEndpoint | null | undefined): string | null {
+  if (!place?.recordedAt) return null;
+  const d = new Date(place.recordedAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export interface RepTrackerControlProps {
   users: ReportsFilterUserPickable[];
@@ -25,6 +61,12 @@ export interface RepTrackerControlProps {
   onClear: () => void;
   isTracing?: boolean;
   statusMessage?: string | null;
+  /** Full journey summary when a route is loaded. */
+  journeySummary?: RepJourneySummary | null;
+  /** Check-in / visit actions along the tracked trail. */
+  visitActions?: JourneyVisitAction[];
+  selectedVisitId?: number | null;
+  onVisitActionClick?: (visit: JourneyVisitAction) => void;
   className?: string;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
@@ -44,12 +86,17 @@ export function RepTrackerControl({
   onClear,
   isTracing = false,
   statusMessage = null,
+  journeySummary = null,
+  visitActions = [],
+  selectedVisitId = null,
+  onVisitActionClick,
   className,
   searchQuery,
   onSearchQueryChange,
   isSearchLoading = false,
 }: RepTrackerControlProps) {
   const isTracking = selectedUid !== 'all';
+  const showSummary = isTracking && journeySummary != null;
 
   return (
     <div
@@ -102,11 +149,158 @@ export function RepTrackerControl({
           ))}
         </div>
       ) : null}
-      {isTracking && statusMessage ? (
+
+      {showSummary ? (
+        <div className="space-y-2 border-t border-border/50 pt-2">
+          <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+            Trip summary
+          </p>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <SummaryCell
+              label="Distance"
+              value={formatKm(journeySummary.totalDistanceKm)}
+            />
+            <SummaryCell
+              label="Travel time"
+              value={journeySummary.totalTravelFormatted || '—'}
+            />
+            <SummaryCell
+              label="Avg drive / day"
+              value={formatKm(
+                journeySummary.periodAverages.day.averageDistanceKm
+              )}
+            />
+            <SummaryCell
+              label="Avg speed"
+              value={formatSpeed(journeySummary.averageSpeedKmh)}
+            />
+            <SummaryCell
+              label="Stop time"
+              value={journeySummary.totalStopFormatted || '—'}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <EndpointRow
+              label="Start"
+              place={journeySummary.startPlace}
+            />
+            <EndpointRow
+              label="End"
+              place={journeySummary.endPlace}
+            />
+          </div>
+
+          {journeySummary.prominentLocations.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                Common visited places
+              </p>
+              <ul className="max-h-24 space-y-1 overflow-y-auto">
+                {journeySummary.prominentLocations.slice(0, 5).map((loc) => (
+                  <li
+                    key={`${loc.latitude}-${loc.longitude}-${loc.address}`}
+                    className="text-muted-foreground rounded-md border border-border/40 bg-background/40 px-2 py-1 text-[11px] leading-snug"
+                  >
+                    <span className="text-foreground font-medium tabular-nums">
+                      {loc.timeSpentFormatted}
+                    </span>
+                    {' · '}
+                    <span className="break-words">{loc.address}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {visitActions.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                Visit actions · {visitActions.length}
+              </p>
+              <ul className="max-h-28 space-y-1 overflow-y-auto">
+                {visitActions.map((visit) => {
+                  const time = formatVisitActionTime(visit.checkInTime);
+                  const isSelected = visit.id === selectedVisitId;
+                  return (
+                    <li key={visit.id}>
+                      <button
+                        type="button"
+                        className={cn(
+                          'w-full rounded-md border px-2 py-1 text-left text-[11px] leading-snug transition-colors',
+                          isSelected
+                            ? 'border-emerald-600/50 bg-emerald-500/10 text-foreground'
+                            : 'border-border/40 bg-background/40 text-muted-foreground hover:border-border hover:bg-muted/40'
+                        )}
+                        onClick={() => onVisitActionClick?.(visit)}
+                      >
+                        <span className="text-foreground font-medium break-words">
+                          {visit.placeName}
+                        </span>
+                        <span className="mt-0.5 block tabular-nums">
+                          {[time, visit.duration].filter(Boolean).join(' · ') ||
+                            'Visit'}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          <p className="text-muted-foreground text-[10px] tabular-nums">
+            {journeySummary.totalPoints} points
+            {visitActions.length > 0
+              ? ` · ${visitActions.length} visit${visitActions.length === 1 ? '' : 's'}`
+              : null}
+            {statusMessage ? ` · ${statusMessage}` : null}
+          </p>
+        </div>
+      ) : isTracking && statusMessage ? (
         <p className="text-muted-foreground text-[11px] leading-snug">
           {statusMessage}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function SummaryCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/50 bg-background/40 px-2 py-1.5">
+      <p className="text-muted-foreground text-[9px] tracking-wide uppercase">
+        {label}
+      </p>
+      <p className="text-foreground text-[12px] font-semibold tabular-nums leading-tight">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function EndpointRow({
+  label,
+  place,
+}: {
+  label: string;
+  place: RepJourneyEndpoint | null;
+}) {
+  const time = formatEndpointTime(place);
+  return (
+    <div className="rounded-md border border-border/40 bg-background/30 px-2 py-1.5">
+      <p className="text-muted-foreground text-[9px] tracking-wide uppercase">
+        {label}
+        {time ? (
+          <span className="ml-1 font-normal normal-case tabular-nums">
+            · {time}
+          </span>
+        ) : null}
+      </p>
+      <p className="text-foreground line-clamp-2 text-[11px] leading-snug break-words">
+        {formatEndpoint(place)}
+      </p>
     </div>
   );
 }
