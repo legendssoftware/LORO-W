@@ -16,6 +16,8 @@ export const ALLOWED_COUNTRIES = [
   'Mozambique',
   'Zambia',
   'Malawi',
+  'Congo',
+  'Tanzania',
 ] as const;
 
 export type AllowedCountry = (typeof ALLOWED_COUNTRIES)[number];
@@ -62,6 +64,17 @@ const COUNTRY_BY_TOKEN: Record<string, AllowedCountry> = {
   ZMB: 'Zambia',
   MALAWI: 'Malawi',
   MW: 'Malawi',
+  MWI: 'Malawi',
+  MAL: 'Malawi',
+  CONGO: 'Congo',
+  CON: 'Congo',
+  CD: 'Congo',
+  COD: 'Congo',
+  DRC: 'Congo',
+  TANZANIA: 'Tanzania',
+  TAN: 'Tanzania',
+  TZ: 'Tanzania',
+  TZA: 'Tanzania',
 };
 
 const SA_PROVINCE_ALIASES: Record<string, SaProvince> = {
@@ -209,6 +222,8 @@ const COUNTRY_BBOX: Record<AllowedCountry, BBox> = {
   Mozambique: { minLat: -26.9, maxLat: -10.4, minLng: 30.0, maxLng: 41.0 },
   Zambia: { minLat: -18.1, maxLat: -8.2, minLng: 21.9, maxLng: 33.7 },
   Malawi: { minLat: -17.2, maxLat: -9.3, minLng: 32.6, maxLng: 36.0 },
+  Congo: { minLat: -13.5, maxLat: 5.5, minLng: 12.0, maxLng: 31.5 },
+  Tanzania: { minLat: -11.8, maxLat: -0.9, minLng: 29.3, maxLng: 40.5 },
 };
 
 /** Rough SA province bounding boxes (approximate; used as last resort). */
@@ -422,6 +437,8 @@ function countryFromBBox(lat: number, lng: number): AllowedCountry | null {
     'Zimbabwe',
     'Zambia',
     'Namibia',
+    'Tanzania',
+    'Congo',
     'Mozambique',
     'South Africa',
   ];
@@ -446,6 +463,8 @@ function countryFromHaystack(haystack: string): AllowedCountry | null {
   if (/\bMAPUTO\b/.test(u)) return 'Mozambique';
   if (/\bMASERU\b/.test(u)) return 'Lesotho';
   if (/\bMBABANE\b|\bMANZINI\b/.test(u)) return 'Eswatini';
+  if (/\bDAR ES SALAAM\b|\bDAR-ES-SALAAM\b|\bDODOMA\b|\bARUSHA\b/.test(u)) return 'Tanzania';
+  if (/\bKINSHASA\b|\bLUBUMBASHI\b/.test(u)) return 'Congo';
   return null;
 }
 

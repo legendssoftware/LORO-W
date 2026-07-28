@@ -109,8 +109,10 @@ export function MapSimulationInfoModal({
             <ol className="text-muted-foreground list-decimal space-y-2 pl-5">
               <li>
                 Open <span className="text-foreground font-medium">Simulate</span>{' '}
-                to open the side panel, review or adjust defaults, then start a
-                run. Toast progress shows while catchments are scored.
+                to open the side panel. Pick country and province (and
+                catchments / opportunities / both), review or adjust defaults,
+                then start a run. Toast progress shows while catchments are
+                scored.
               </li>
               <li>
                 Review ranked branch catchments and opportunity zones. Expand a

@@ -298,7 +298,11 @@ export function ReportsTargetsTable({
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  <MetricCell cell={row.sales} formatValue={formatSales} />
+                  {row.salesLoading ? (
+                    <Skeleton className="h-10 w-28" />
+                  ) : (
+                    <MetricCell cell={row.sales} formatValue={formatSales} />
+                  )}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   <MetricCell

@@ -19,6 +19,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -49,6 +56,7 @@ import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
+  type SiteOpportunityMode,
   type SiteOpportunitySettings,
   type SiteOpportunityZone,
   type TurnoverOverrideSettings,
@@ -57,6 +65,11 @@ import { computeSiteOpportunities } from '@/lib/site-opportunity/compute';
 import { buildOpportunityMarkers } from '@/lib/site-opportunity/build-opportunity-markers';
 import { enrichCatchmentsWithDashboardRevenue } from '@/lib/site-opportunity/enrich-catchment-revenue';
 import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
+import {
+  filterMapMarkers,
+  getSortedUniqueCountriesFromMarkers,
+  getSortedUniqueProvincesFromMarkers,
+} from '@/lib/site-opportunity/map-marker-filters';
 import {
   buildTurnoverSimulation,
   branchSimulationTextClass,
@@ -95,6 +108,30 @@ const EDITABLE_BRANDS: HardwareBrandKey[] = [
   'POWERBUILD',
   'EST',
 ];
+
+const ALL_COUNTRIES = 'all';
+const ALL_PROVINCES = 'all';
+
+const MODE_OPTIONS: { value: SiteOpportunityMode; label: string }[] = [
+  { value: 'both', label: 'Both' },
+  { value: 'catchment', label: 'Catchments' },
+  { value: 'greenfield', label: 'Opportunities' },
+];
+
+function modeLabel(mode: SiteOpportunityMode): string {
+  switch (mode) {
+    case 'both':
+      return 'Both';
+    case 'catchment':
+      return 'Catchments';
+    case 'greenfield':
+      return 'Opportunities';
+    default: {
+      const _exhaustive: never = mode;
+      return _exhaustive;
+    }
+  }
+}
 
 function seedBrandTurnovers(
   overrides?: TurnoverOverrideSettings,
@@ -528,6 +565,7 @@ export function SimulationSidePanel() {
     erpError,
     selectedZone,
     runMarkers,
+    runFilters,
   } = useVisualiserSimulation();
 
   const { isTokenReady } = useTokenReady();
@@ -559,7 +597,9 @@ export function SimulationSidePanel() {
   const [brandTurnovers, setBrandTurnovers] = useState(() =>
     seedBrandTurnovers(),
   );
-  const [mode, setMode] = useState<'both' | 'catchment' | 'greenfield'>('both');
+  const [mode, setMode] = useState<SiteOpportunityMode>('both');
+  const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
+  const [selectedProvince, setSelectedProvince] = useState(ALL_PROVINCES);
 
   const branchesQuery = useBranches({ enabled: panelOpen });
   const competitorsQuery = useCompetitorsMapData({ enabled: panelOpen });
@@ -568,6 +608,29 @@ export function SimulationSidePanel() {
   });
   const clientsQuery = useClientsMapData({ enabled: panelOpen });
   const storesSalesQuery = useStoresSales(undefined, { enabled: panelOpen });
+
+  const allMarkersForFilters = useMemo(
+    () =>
+      buildOpportunityMarkers({
+        branches: branchesQuery.data ?? [],
+        competitors: competitorsQuery.data ?? [],
+        clients: clientsQuery.data ?? [],
+      }),
+    [branchesQuery.data, competitorsQuery.data, clientsQuery.data],
+  );
+
+  const countryOptions = useMemo(
+    () => getSortedUniqueCountriesFromMarkers(allMarkersForFilters),
+    [allMarkersForFilters],
+  );
+
+  const provinceOptions = useMemo(() => {
+    if (!selectedCountry || selectedCountry === ALL_COUNTRIES) return [];
+    return getSortedUniqueProvincesFromMarkers(
+      allMarkersForFilters,
+      selectedCountry,
+    );
+  }, [allMarkersForFilters, selectedCountry]);
 
   const selectedCatchmentBranchId = useMemo(() => {
     if (!selectedZone || selectedZone.kind !== 'catchment') return null;
@@ -600,6 +663,18 @@ export function SimulationSidePanel() {
     });
     setBrandTurnovers(seedBrandTurnovers(prefs.turnoverOverrides));
     setMode(prefs.opportunityMode);
+    const countryPref = prefs.selectedCountry?.trim() ?? '';
+    setSelectedCountry(
+      !countryPref || countryPref.toLowerCase() === ALL_COUNTRIES
+        ? ALL_COUNTRIES
+        : countryPref,
+    );
+    const provincePref = prefs.selectedProvince?.trim() ?? '';
+    setSelectedProvince(
+      !provincePref || provincePref.toLowerCase() === ALL_PROVINCES
+        ? ALL_PROVINCES
+        : provincePref,
+    );
   }, [
     panelOpen,
     userRef,
@@ -621,10 +696,18 @@ export function SimulationSidePanel() {
 
   function persistLocalAndBuildPayload() {
     const turnoverOverrides = buildCurrentTurnoverOverrides();
+    const country =
+      selectedCountry === ALL_COUNTRIES ? ALL_COUNTRIES : selectedCountry;
+    const province =
+      selectedProvince === ALL_PROVINCES || country === ALL_COUNTRIES
+        ? ''
+        : selectedProvince;
     const localPatch = {
       opportunitySettings: settings,
       opportunityMode: mode,
       turnoverOverrides,
+      selectedCountry: country,
+      selectedProvince: province,
     };
     saveVisualiserPreferences(localPatch);
     return toVisualiserUserPreferencePayload(localPatch);
@@ -648,10 +731,14 @@ export function SimulationSidePanel() {
     setSettings({ ...DEFAULT_SITE_OPPORTUNITY_SETTINGS });
     setBrandTurnovers(seedBrandTurnovers());
     setMode('both');
+    setSelectedCountry('South Africa');
+    setSelectedProvince(ALL_PROVINCES);
     const visualiser = toVisualiserUserPreferencePayload({
       opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
       opportunityMode: 'both',
       turnoverOverrides: { brandTurnoverOverrides: {} },
+      selectedCountry: 'South Africa',
+      selectedProvince: '',
     });
     saveVisualiserPreferences(visualiser);
     if (userRef) {
@@ -749,10 +836,18 @@ export function SimulationSidePanel() {
       }
 
       const turnoverOverrides = buildCurrentTurnoverOverrides();
+      const countryFilter =
+        selectedCountry === ALL_COUNTRIES ? undefined : selectedCountry;
+      const provinceFilter =
+        !countryFilter || selectedProvince === ALL_PROVINCES
+          ? undefined
+          : selectedProvince;
       const visualiser = toVisualiserUserPreferencePayload({
         opportunitySettings: settings,
         opportunityMode: mode,
         turnoverOverrides,
+        selectedCountry: countryFilter ?? ALL_COUNTRIES,
+        selectedProvince: provinceFilter ?? '',
       });
       saveVisualiserPreferences(visualiser);
       // Persist to profile in background when signed in (non-blocking)
@@ -771,7 +866,23 @@ export function SimulationSidePanel() {
         clients,
       });
 
-      let computed = computeSiteOpportunities(markers, {
+      const filteredMarkers = filterMapMarkers(markers, {
+        selectedCountry: countryFilter,
+        selectedProvince: provinceFilter,
+      });
+
+      if (filteredMarkers.length === 0) {
+        const scope =
+          [countryFilter, provinceFilter].filter(Boolean).join(' · ') ||
+          'selection';
+        toast.error(
+          `No geocoded sites in ${scope}. Adjust country/province or geocode map data.`,
+          { id: 'map-simulate' },
+        );
+        return;
+      }
+
+      let computed = computeSiteOpportunities(filteredMarkers, {
         mode,
         settings,
         onProgress: (message) => {
@@ -848,11 +959,23 @@ export function SimulationSidePanel() {
       setSimulationResult(computed, {
         erpMatchedStores: matched,
         erpError: erpErr,
-        markers,
+        markers: filteredMarkers,
+        filters: {
+          country: countryFilter ?? ALL_COUNTRIES,
+          province: provinceFilter ?? ALL_PROVINCES,
+          mode,
+        },
       });
 
+      const scopeLabel = [
+        countryFilter ?? 'All countries',
+        provinceFilter,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+
       toast.success(
-        `Simulation ready: ${computed.catchments.length} catchments, ${computed.greenfield.length} opportunities${matched ? ` · ${matched} with ERP (${monthLabel})` : ''}.`,
+        `Simulation ready: ${computed.catchments.length} catchments, ${computed.greenfield.length} opportunities${matched ? ` · ${matched} with ERP (${monthLabel})` : ''}${scopeLabel ? ` · ${scopeLabel}` : ''}.`,
         { id: 'map-simulate', duration: 5000 },
       );
     } catch (error) {
@@ -956,8 +1079,89 @@ export function SimulationSidePanel() {
           <div className="space-y-4 text-sm">
             <p className="text-muted-foreground text-xs leading-relaxed">
               Use defaults or adjust values, then start. Map stays visible beside
-              this panel.
+              this panel. Scope by country and province to run a regional
+              simulation.
             </p>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium">Scope</p>
+              <div className="flex flex-wrap gap-1">
+                {MODE_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    size="sm"
+                    variant={mode === opt.value ? 'default' : 'outline'}
+                    className="h-7 flex-1 text-[11px]"
+                    onClick={() => setMode(opt.value)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="sim-country" className="text-[11px]">
+                    Country
+                  </Label>
+                  <Select
+                    value={selectedCountry}
+                    onValueChange={(value) => {
+                      setSelectedCountry(value);
+                      setSelectedProvince(ALL_PROVINCES);
+                    }}
+                  >
+                    <SelectTrigger
+                      id="sim-country"
+                      size="sm"
+                      className="h-8 w-full text-xs"
+                    >
+                      <SelectValue placeholder="All countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_COUNTRIES}>
+                        All countries
+                      </SelectItem>
+                      {countryOptions.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sim-province" className="text-[11px]">
+                    Province / region
+                  </Label>
+                  <Select
+                    value={selectedProvince}
+                    onValueChange={setSelectedProvince}
+                    disabled={
+                      !selectedCountry || selectedCountry === ALL_COUNTRIES
+                    }
+                  >
+                    <SelectTrigger
+                      id="sim-province"
+                      size="sm"
+                      className="h-8 w-full text-xs"
+                    >
+                      <SelectValue placeholder="All provinces" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_PROVINCES}>
+                        All provinces
+                      </SelectItem>
+                      {provinceOptions.map((province) => (
+                        <SelectItem key={province} value={province}>
+                          {province}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
@@ -1164,6 +1368,25 @@ export function SimulationSidePanel() {
 
             {erpError ? (
               <p className="text-muted-foreground text-[11px]">{erpError}</p>
+            ) : null}
+
+            {runFilters ? (
+              <p className="text-muted-foreground rounded-md border bg-muted/40 px-2.5 py-1.5 text-[11px]">
+                Scoped to{' '}
+                <span className="text-foreground font-medium">
+                  {[
+                    runFilters.country === ALL_COUNTRIES
+                      ? 'All countries'
+                      : runFilters.country,
+                    runFilters.province !== ALL_PROVINCES
+                      ? runFilters.province
+                      : null,
+                    modeLabel(runFilters.mode),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </p>
             ) : null}
 
             {result ? (

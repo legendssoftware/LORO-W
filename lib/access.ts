@@ -20,10 +20,11 @@ export const STANDARD_USER_PATHS = [
 /** Reports data visibility: org = everyone, team = self+managedStaff, self = authenticated user only. */
 export type ReportsDataScope = "org" | "team" | "self";
 
-/** Admin / owner (+ ops roles) see full organisation reports. */
+/** Admin / owner / manager (+ ops roles) see full organisation reports. */
 const REPORTS_ORG_LEVELS = new Set<string>([
     "admin",
     "owner",
+    "manager",
     "developer",
     "support",
     "hr",
@@ -44,9 +45,9 @@ export function canAccessReports(accessLevel: string | undefined): boolean {
 
 /**
  * Three-tier reports data scope (mirrors server reports-access.util).
- * - org: admin/owner (+ developer, support, hr, supervisor, executive)
- * - team: manager (self + managedStaff)
- * - self: everyone else
+ * - org: admin/owner/manager (+ developer, support, hr, supervisor, executive)
+ * - team: reserved for self + managedStaff (unused by current access levels)
+ * - self: everyone else (sales / standard users)
  */
 export function getReportsDataScope(
     accessLevel: string | undefined
@@ -54,7 +55,6 @@ export function getReportsDataScope(
     const level = normalize(accessLevel);
     if (!level) return "self";
     if (REPORTS_ORG_LEVELS.has(level)) return "org";
-    if (level === "manager") return "team";
     return "self";
 }
 

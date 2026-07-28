@@ -38,6 +38,7 @@ import {
   utcMonthStartThroughToday,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
+import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
 import { cn } from '@/lib/utils';
 
 export type ReportsTargetsSortMetric =
@@ -76,12 +77,12 @@ export interface ReportsTargetsToolbarProps {
 
 const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = [
   { value: 'name', label: 'Sort: Name' },
-  { value: 'achievement', label: 'Sort: Achievement' },
-  { value: 'sales', label: 'Sort: Sales' },
+  { value: 'achievement', label: 'Sort: Achievement (page)' },
+  { value: 'sales', label: 'Sort: Sales (page)' },
   { value: 'calls', label: 'Sort: Calls' },
   { value: 'leads', label: 'Sort: Leads' },
   { value: 'hours', label: 'Sort: Hours' },
-  { value: 'productivity', label: 'Sort: Productivity' },
+  { value: 'productivity', label: 'Sort: Productivity (page)' },
 ];
 
 export function ReportsTargetsToolbar({
@@ -135,6 +136,14 @@ export function ReportsTargetsToolbar({
       })),
     []
   );
+
+  /** Keep user picker in sync with branch — same composition as Overview toolbar. */
+  const usersForPicker = useMemo(() => {
+    if (selectedBranchId === 'all') return users;
+    const branchUid = Number(selectedBranchId);
+    if (!Number.isFinite(branchUid)) return users;
+    return users.filter((u) => resolveUserBranchUid(u) === branchUid);
+  }, [users, selectedBranchId]);
 
   const handleDatePopoverOpenChange = useCallback(
     (open: boolean) => {
@@ -336,7 +345,7 @@ export function ReportsTargetsToolbar({
             triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
           />
           <SearchableUserPicker
-            users={users}
+            users={usersForPicker}
             branches={branches}
             selectedUid={selectedUserId}
             onUidChange={(uid) => onUserChange?.(uid)}
