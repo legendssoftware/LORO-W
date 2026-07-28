@@ -88,6 +88,22 @@ export interface AttendanceProductivityMetrics {
     };
 }
 
+/** GET /att/metrics — timing averages and punctuality (full scope). */
+export interface AttendanceTimingPatterns {
+    averageCheckInTime?: string;
+    averageCheckOutTime?: string;
+    punctualityScore?: number;
+    overtimeFrequency?: number;
+}
+
+/** GET /att/metrics — productivity / completion insights (full scope). */
+export interface AttendanceProductivityInsights {
+    workEfficiencyScore?: number;
+    shiftCompletionRate?: number;
+    lateArrivalsCount?: number;
+    earlyDeparturesCount?: number;
+}
+
 /** GET /att/metrics response (self). Used for Total hours card and streak. */
 export interface AttendanceMetrics {
     totalHours: {
@@ -98,6 +114,9 @@ export interface AttendanceMetrics {
         payrollHours: number;
     };
     attendanceStreak?: number;
+    averageHoursPerDay?: number;
+    timingPatterns?: AttendanceTimingPatterns;
+    productivityInsights?: AttendanceProductivityInsights;
     productivity?: AttendanceProductivityMetrics;
 }
 

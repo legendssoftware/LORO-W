@@ -6,13 +6,17 @@ import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import {
   useApiClient,
   useAttendanceReport,
+  useAttMetrics,
+  useAttMetricsByUser,
   useBranches,
   useCheckIns,
   useCheckInsDispatchSummary,
   useCheckInsReport,
   useEngagementRange,
   useLeadsReport,
+  useMonthlyMetrics,
   usePatchUserPreferences,
+  usePayrollHoursAll,
   useProductsSales,
   useRepJourney,
   useSalesTeamComposition,
@@ -62,8 +66,14 @@ import {
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
 import { cn } from '@/lib/utils';
+import { ReportsAttendanceMetricsPanel } from './reports-attendance-metrics-panel';
 import { ReportsHoursTargetCard } from './reports-hours-target-card';
 import { ReportsNamedBarChart } from './reports-named-bar-chart';
+import {
+  EXPECTED_MONTHLY_HOURS,
+  getExpectedMonthlyHoursWeekdaysOnly,
+} from '@/app/staff/lib/staff-report-constants';
+import { formatPayrollPeriodLabel } from '@/lib/payroll-period';
 import { ReportsSalesTargetRadialChart } from './reports-sales-target-radial-chart';
 import { ReportsConversionRateRadialChart } from './reports-conversion-rate-radial-chart';
 import { ReportsSection } from './reports-section';
@@ -502,6 +512,48 @@ export function ReportsDashboardTab() {
     },
     { enabled }
   );
+
+  /** Calendar month of the selected range end — enables looking back via date filter. */
+  const metricsMonth = useMemo(() => {
+    const y = endDate.getUTCFullYear();
+    const m = endDate.getUTCMonth() + 1;
+    return { year: y, month: m };
+  }, [endDate]);
+
+  const metricsMonthIsCurrent = useMemo(() => {
+    const now = utcToday();
+    return (
+      metricsMonth.year === now.getUTCFullYear() &&
+      metricsMonth.month === now.getUTCMonth() + 1
+    );
+  }, [metricsMonth]);
+
+  const payrollHoursQuery = usePayrollHoursAll(
+    {
+      ...(branchIdFilter != null ? { branchId: String(branchIdFilter) } : {}),
+    },
+    { enabled: enabled && isMultiUser }
+  );
+
+  const monthlyMetricsQuery = useMonthlyMetrics(
+    {
+      year: metricsMonth.year,
+      month: metricsMonth.month,
+      includeCheckIns: false,
+      ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
+    },
+    { enabled: enabled && isMultiUser }
+  );
+
+  const selfAttMetricsQuery = useAttMetrics({
+    enabled: enabled && !isMultiUser,
+    scope: 'full',
+  });
+
+  const selectedUserAttMetricsQuery = useAttMetricsByUser(userIdFilter, {
+    enabled: enabled && isMultiUser && userIdFilter != null,
+  });
+
   const dispatchQuery = useCheckInsDispatchSummary({ from, to }, { enabled });
   const storesSalesQuery = useStoresSales(
     { startDate: from, endDate: to, countries: erpCountries },
@@ -1004,6 +1056,186 @@ export function ReportsDashboardTab() {
     allowlistUids,
     userIdFilter,
   ]);
+
+  const singleUserAttMetrics = isMultiUser
+    ? selectedUserAttMetricsQuery.data
+    : selfAttMetricsQuery.data;
+
+  const showLiveHourBuckets =
+    !isMultiUser || userIdFilter != null;
+
+  const attendancePayrollHours = useMemo(() => {
+    if (singleUserAttMetrics?.totalHours?.payrollHours != null) {
+      return Number(singleUserAttMetrics.totalHours.payrollHours) || 0;
+    }
+    const rows = payrollHoursQuery.data?.userMetrics ?? [];
+    return rows.reduce((sum, m) => {
+      if (userIdFilter != null && Number(m.userId) !== userIdFilter) {
+        return sum;
+      }
+      if (!userUidInAllowlist(m.userId, allowlistUids)) return sum;
+      return sum + (Number(m.payrollHours) || 0);
+    }, 0);
+  }, [
+    singleUserAttMetrics?.totalHours?.payrollHours,
+    payrollHoursQuery.data?.userMetrics,
+    userIdFilter,
+    allowlistUids,
+  ]);
+
+  const attendanceMonthHours = useMemo(() => {
+    if (
+      metricsMonthIsCurrent &&
+      singleUserAttMetrics?.totalHours?.thisMonth != null
+    ) {
+      return Number(singleUserAttMetrics.totalHours.thisMonth) || 0;
+    }
+    const rows = monthlyMetricsQuery.data?.data?.userMetrics ?? [];
+    if (rows.length > 0) {
+      return rows.reduce((sum, m) => {
+        if (userIdFilter != null && Number(m.userId) !== userIdFilter) {
+          return sum;
+        }
+        if (!userUidInAllowlist(m.userId, allowlistUids)) return sum;
+        return sum + (Number(m.totalHours) || 0);
+      }, 0);
+    }
+    if (singleUserAttMetrics?.totalHours?.thisMonth != null) {
+      return Number(singleUserAttMetrics.totalHours.thisMonth) || 0;
+    }
+    // Fallback: sum thisMonth buckets from the range report when available
+    return scopedAttendanceMetrics.reduce((sum, m) => {
+      const th = m.metrics?.totalHours;
+      if (th != null && typeof th === 'object') {
+        const month = (th as { thisMonth?: number }).thisMonth;
+        if (typeof month === 'number' && Number.isFinite(month)) {
+          return sum + month;
+        }
+      }
+      return sum + resolveAttendanceReportPeriodHours(m.metrics);
+    }, 0);
+  }, [
+    metricsMonthIsCurrent,
+    singleUserAttMetrics?.totalHours?.thisMonth,
+    monthlyMetricsQuery.data?.data?.userMetrics,
+    userIdFilter,
+    allowlistUids,
+    scopedAttendanceMetrics,
+  ]);
+
+  const attendanceUserCountForTargets = useMemo(() => {
+    if (userIdFilter != null || !isMultiUser) return 1;
+    if (allowlistUids != null) return Math.max(1, allowlistUids.length);
+    const fromMonthly =
+      monthlyMetricsQuery.data?.data?.userMetrics?.length ?? 0;
+    if (fromMonthly > 0) return fromMonthly;
+    return Math.max(
+      1,
+      scopedAttendanceMetrics.length ||
+        (attendanceQuery.data?.report?.organizationMetrics?.totals
+          ?.totalEmployees ?? 1)
+    );
+  }, [
+    userIdFilter,
+    isMultiUser,
+    allowlistUids,
+    monthlyMetricsQuery.data?.data?.userMetrics?.length,
+    scopedAttendanceMetrics.length,
+    attendanceQuery.data?.report?.organizationMetrics?.totals?.totalEmployees,
+  ]);
+
+  const payrollTargetHours =
+    EXPECTED_MONTHLY_HOURS * attendanceUserCountForTargets;
+  const monthTargetHours =
+    getExpectedMonthlyHoursWeekdaysOnly(
+      metricsMonth.year,
+      metricsMonth.month
+    ) * attendanceUserCountForTargets;
+
+  const payrollPeriodLabel = useMemo(() => {
+    const period = payrollHoursQuery.data?.period;
+    if (period?.startDate && period?.endDate) {
+      const start = new Date(period.startDate);
+      const end = new Date(period.endDate);
+      const fmt = (d: Date) =>
+        `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+      return `${fmt(start)} to ${fmt(end)}`;
+    }
+    return formatPayrollPeriodLabel();
+  }, [payrollHoursQuery.data?.period]);
+
+  const monthMetricsLabel = useMemo(() => {
+    const name = new Date(
+      Date.UTC(metricsMonth.year, metricsMonth.month - 1, 1)
+    ).toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    return metricsMonthIsCurrent ? `${name} (MTD)` : name;
+  }, [metricsMonth, metricsMonthIsCurrent]);
+
+  const orgInsights =
+    attendanceQuery.data?.report?.organizationMetrics?.insights;
+  const orgAverageTimes =
+    attendanceQuery.data?.report?.organizationMetrics?.averageTimes;
+
+  const attendanceRate =
+    typeof orgInsights?.attendanceRate === 'number' &&
+    Number.isFinite(orgInsights.attendanceRate)
+      ? orgInsights.attendanceRate
+      : null;
+
+  const punctualityScore = useMemo(() => {
+    if (
+      typeof orgInsights?.punctualityRate === 'number' &&
+      Number.isFinite(orgInsights.punctualityRate)
+    ) {
+      return orgInsights.punctualityRate;
+    }
+    const fromSelf = singleUserAttMetrics?.timingPatterns?.punctualityScore;
+    if (typeof fromSelf === 'number' && Number.isFinite(fromSelf)) {
+      return fromSelf;
+    }
+    return null;
+  }, [orgInsights?.punctualityRate, singleUserAttMetrics?.timingPatterns?.punctualityScore]);
+
+  const averageCheckIn =
+    orgAverageTimes?.startTime?.trim() ||
+    singleUserAttMetrics?.timingPatterns?.averageCheckInTime?.trim() ||
+    orgInsights?.peakCheckInTime?.trim() ||
+    null;
+
+  const averageCheckOut =
+    orgAverageTimes?.endTime?.trim() ||
+    singleUserAttMetrics?.timingPatterns?.averageCheckOutTime?.trim() ||
+    orgInsights?.peakCheckOutTime?.trim() ||
+    null;
+
+  const attendanceMetricsLoading =
+    attendanceQuery.isLoading ||
+    (isMultiUser &&
+      (payrollHoursQuery.isLoading || monthlyMetricsQuery.isLoading)) ||
+    (!isMultiUser && selfAttMetricsQuery.isLoading) ||
+    (isMultiUser &&
+      userIdFilter != null &&
+      selectedUserAttMetricsQuery.isLoading);
+
+  const attendanceMetricsError =
+    attendanceQuery.isError ||
+    (isMultiUser &&
+      (payrollHoursQuery.isError || monthlyMetricsQuery.isError)) ||
+    (!isMultiUser && selfAttMetricsQuery.isError) ||
+    (isMultiUser &&
+      userIdFilter != null &&
+      selectedUserAttMetricsQuery.isError);
+
+  const refetchAttendanceMetrics = () => {
+    void attendanceQuery.refetch();
+    if (isMultiUser) {
+      void payrollHoursQuery.refetch();
+      void monthlyMetricsQuery.refetch();
+      if (userIdFilter != null) void selectedUserAttMetricsQuery.refetch();
+    } else {
+      void selfAttMetricsQuery.refetch();
+    }
+  };
 
   const dispatchPlanned = dispatchQuery.data?.planned ?? 0;
   const dispatchCompleted = dispatchQuery.data?.completed ?? 0;
@@ -1644,8 +1876,36 @@ export function ReportsDashboardTab() {
 
       <ReportsSection
         title="Attendance"
-        description={`Hours worked vs expected ${monthLabel}, plus hours by branch.`}
+        description={`Payroll and month-to-date hours, attendance rate (ACR), and times — plus hours vs expected ${monthLabel}.`}
       >
+        <div className="mb-4">
+          <ChartCard
+            title="Attendance metrics"
+            description={`${payrollPeriodLabel} · ${monthMetricsLabel}`}
+            isLoading={attendanceMetricsLoading}
+            isError={attendanceMetricsError}
+            onRetry={refetchAttendanceMetrics}
+            contentClassName="pt-0"
+          >
+            <ReportsAttendanceMetricsPanel
+              payrollLabel={payrollPeriodLabel}
+              monthLabel={monthMetricsLabel}
+              hours={{
+                today: singleUserAttMetrics?.totalHours?.today,
+                thisWeek: singleUserAttMetrics?.totalHours?.thisWeek,
+                thisMonth: attendanceMonthHours,
+                payrollHours: attendancePayrollHours,
+              }}
+              payrollTargetHours={payrollTargetHours}
+              monthTargetHours={monthTargetHours}
+              attendanceRate={attendanceRate}
+              punctualityScore={punctualityScore}
+              averageCheckIn={averageCheckIn}
+              averageCheckOut={averageCheckOut}
+              showLiveBuckets={showLiveHourBuckets}
+            />
+          </ChartCard>
+        </div>
         <div className="grid gap-4 lg:grid-cols-3">
           <ChartCard
             title={`Hours vs target ${monthLabel}`}
