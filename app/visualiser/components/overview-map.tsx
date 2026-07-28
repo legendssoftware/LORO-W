@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Mountain, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -40,7 +41,6 @@ import {
   type VisualiserLayerId,
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
-import { formatRelativeRecordedAt } from '@/lib/utils/journey-point-format';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import {
   buildTurnoverSimulation,
@@ -48,6 +48,9 @@ import {
 } from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useBranches, useCheckIns, useSearchableUsersList } from '@/api/hooks';
+import {
+  repJourneyQueryKey,
+} from '@/api/hooks/use-rep-journey';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
   RepJourneyPoint,
@@ -293,6 +296,7 @@ interface OverviewMapProps {
  */
 export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const [center, setCenter] = useState<[number, number] | null>(null);
   const [isUserLocation, setIsUserLocation] = useState(false);
   const [visibility, setVisibility] =
@@ -461,18 +465,31 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       const toastId = 'rep-journey-trace';
       toast.loading(`Loading ${RANGE_LABELS[range]} points…`, { id: toastId });
       try {
-        const response = await getRepJourney(client, repUid, range);
-        const data = response.data;
+        const data = await queryClient.fetchQuery({
+          queryKey: repJourneyQueryKey(repUid, range),
+          queryFn: async () => {
+            const response = await getRepJourney(client, repUid, range);
+            return response.data;
+          },
+          staleTime: 60_000,
+          gcTime: 5 * 60 * 1000,
+        });
         if (!data || data.points.length < 1) {
           setJourneyRoute(null);
           setTrackStatusMessage(
-            `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`
+            range === 'day'
+              ? `No GPS points today for ${repName} — try Week`
+              : `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`
           );
           if (!quiet) {
             toast.error(
-              `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
+              range === 'day'
+                ? `No GPS points today — try Week`
+                : `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
               { id: toastId }
             );
+          } else {
+            toast.dismiss(toastId);
           }
           return false;
         }
@@ -501,13 +518,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setTrackStatusMessage(message);
         if (!quiet) {
           toast.error(message, { id: toastId });
+        } else {
+          toast.dismiss(toastId);
         }
         return false;
       } finally {
         setIsTracing(false);
       }
     },
-    [client, selected, users]
+    [client, queryClient, selected, users]
   );
 
   const handleTrackedRepChange = useCallback(
@@ -537,12 +556,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setSelected(pin ?? null);
 
       const repName = resolveRepDisplayName(repUid, pin ?? null, users);
-      const dayLoaded = await handleTraceRoute(repUid, 'day', repName, {
-        quiet: true,
-      });
-      if (!dayLoaded) {
-        await handleTraceRoute(repUid, 'week', repName);
-      }
+      // Load day only — do not auto-swap to week; status prompts the user.
+      await handleTraceRoute(repUid, 'day', repName, { quiet: true });
     },
     [
       allPoints,
@@ -572,26 +587,16 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     [journeyCheckInsQuery.data?.checkIns]
   );
 
+  /** Trail polyline only — visits stay on JourneyVisitsLayer (do not stitch onto the route). */
   const journeyCoordinates = useMemo((): [number, number][] => {
-    const fromTrail = (journeyRoute?.points ?? []).map(
+    return (journeyRoute?.points ?? []).map(
       (p): [number, number] => [p.longitude, p.latitude]
     );
-    const fromVisits = visitActions.map(
-      (v): [number, number] => [v.longitude, v.latitude]
-    );
-    return [...fromTrail, ...fromVisits];
-  }, [journeyRoute, visitActions]);
+  }, [journeyRoute]);
 
   const journeyRouteKey = journeyRoute
-    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}-${visitActions.length}`
+    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}`
     : null;
-
-  const activeJourneySummary =
-    journeyRoute &&
-    (selected?.repUid === journeyRoute.repUid ||
-      trackedUidNum === journeyRoute.repUid)
-      ? journeyRoute.summary
-      : null;
 
   const trackedLatestPoint = useMemo(() => {
     if (!journeyRoute) return null;
@@ -652,10 +657,6 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       longitude: end.longitude,
     };
   }, [journeyRoute, trackedLatestPoint]);
-
-  const lastKnownRelative = formatRelativeRecordedAt(
-    lastKnownSummary?.recordedAt
-  );
 
   const openLastKnownPopup = useCallback((options?: { fly?: boolean }) => {
     setSelected(null);
@@ -768,43 +769,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       {journeyRoute ? (
         <div className="bg-background/95 absolute bottom-3 left-3 z-10 max-w-xs rounded-md border px-3 py-2 text-xs shadow-sm backdrop-blur">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate font-medium">{journeyRoute.repName}</p>
-              <p className="text-muted-foreground mt-0.5">
-                {RANGE_LABELS[journeyRoute.range]} ·{' '}
-                {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
-                {journeyRoute.summary.totalTravelFormatted} travel ·{' '}
-                {journeyRoute.summary.averageSpeedKmh > 0
-                  ? `${journeyRoute.summary.averageSpeedKmh.toFixed(0)} km/h`
-                  : '—'}
-              </p>
-              {journeyRoute.summary.startPlace || journeyRoute.summary.endPlace ? (
-                <p className="text-muted-foreground mt-0.5 line-clamp-2 text-[10px] leading-snug">
-                  {journeyRoute.summary.startPlace?.address?.trim() ||
-                    (journeyRoute.summary.startPlace
-                      ? `${journeyRoute.summary.startPlace.latitude.toFixed(3)}, ${journeyRoute.summary.startPlace.longitude.toFixed(3)}`
-                      : '—')}
-                  {' → '}
-                  {journeyRoute.summary.endPlace?.address?.trim() ||
-                    (journeyRoute.summary.endPlace
-                      ? `${journeyRoute.summary.endPlace.latitude.toFixed(3)}, ${journeyRoute.summary.endPlace.longitude.toFixed(3)}`
-                      : '—')}
-                </p>
-              ) : null}
-              {lastKnownSummary ? (
-                <button
-                  type="button"
-                  className="text-violet-700 hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-200 mt-1 line-clamp-2 text-left text-[10px] leading-snug underline-offset-2 hover:underline"
-                  onClick={() => openLastKnownPopup({ fly: true })}
-                >
-                  Last known
-                  {lastKnownRelative ? ` · ${lastKnownRelative}` : ''}
-                  {': '}
-                  {lastKnownSummary.address?.trim() ||
-                    `${lastKnownSummary.latitude.toFixed(3)}, ${lastKnownSummary.longitude.toFixed(3)}`}
-                </button>
-              ) : null}
-            </div>
+            <p className="text-muted-foreground min-w-0 truncate">
+              <span className="text-foreground font-medium">
+                {journeyRoute.repName}
+              </span>
+              {' · '}
+              {RANGE_LABELS[journeyRoute.range]} ·{' '}
+              {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
+              {journeyRoute.summary.totalTravelFormatted} travel
+            </p>
             <button
               type="button"
               className="text-muted-foreground hover:text-foreground shrink-0 text-[10px] underline"
@@ -892,7 +865,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           >
             <MarkerContent>
               <span className="relative flex h-5 w-5 cursor-pointer items-center justify-center">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-violet-400 opacity-50" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-violet-400 opacity-50 [animation-iteration-count:2]" />
                 <span className="relative size-3.5 rounded-full border-2 border-white bg-violet-600 shadow-lg ring-2 ring-violet-300/80" />
               </span>
               <MarkerLabel position="top">Last known</MarkerLabel>
@@ -998,7 +971,6 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
               point={selected}
               activeTraceRange={activeTraceRange}
               isTracing={isTracing}
-              journeySummary={activeJourneySummary}
               onTraceRoute={(repUid, range) => {
                 setTrackedRepUid(String(repUid));
                 void handleTraceRoute(repUid, range);

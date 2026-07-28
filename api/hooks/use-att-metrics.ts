@@ -10,13 +10,18 @@ const QUERY_KEY = ['att', 'metrics'] as const;
 /**
  * Fetches attendance metrics (total hours, streak) for the current user.
  * Enable only when not a client and profile is loaded.
+ * `scope: 'full'` includes timing / productivity insights (reports Attendance).
  */
-export function useAttMetrics(options?: { enabled?: boolean }) {
+export function useAttMetrics(options?: {
+  enabled?: boolean;
+  scope?: 'full' | 'dashboard';
+}) {
   const client = useApiClient();
+  const scope = options?.scope ?? 'dashboard';
   return useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: [...QUERY_KEY, scope] as const,
     queryFn: async () => {
-      const response = await getAttMetrics(client, { scope: 'dashboard' });
+      const response = await getAttMetrics(client, { scope });
       return response.metrics as AttendanceMetrics;
     },
     enabled: options?.enabled !== false,
