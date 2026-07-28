@@ -19,6 +19,7 @@ const COUNTRY_FLAG_MAP: Record<string, CountryFlagInfo> = {
   ZW: { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼' },
   MAL: { code: 'MAL', name: 'Malawi', flag: '🇲🇼' },
   CON: { code: 'CON', name: 'Congo', flag: '🇨🇩' },
+  TAN: { code: 'TAN', name: 'Tanzania', flag: '🇹🇿' },
   NAM: { code: 'NAM', name: 'Namibia', flag: '🇳🇦' },
   LS: { code: 'LS', name: 'Lesotho', flag: '🇱🇸' },
   SZ: { code: 'SZ', name: 'Eswatini', flag: '🇸🇿' },
@@ -46,6 +47,9 @@ const ALIAS_TO_CANON: Record<string, string> = {
   CD: 'CON',
   COD: 'CON',
   DRC: 'CON',
+  TAN: 'TAN',
+  TZ: 'TAN',
+  TZA: 'TAN',
   NAM: 'NAM',
   NA: 'NAM',
   NAMIBIA: 'NAM',
@@ -68,6 +72,8 @@ const FULL_NAME_TO_CANON: Record<string, string> = {
   MALAWI: 'MAL',
   CONGO: 'CON',
   'DEMOCRATIC REPUBLIC OF THE CONGO': 'CON',
+  TANZANIA: 'TAN',
+  'UNITED REPUBLIC OF TANZANIA': 'TAN',
   NAMIBIA: 'NAM',
   LESOTHO: 'LS',
   ESWATINI: 'SZ',
@@ -75,7 +81,7 @@ const FULL_NAME_TO_CANON: Record<string, string> = {
 };
 
 /**
- * Map a single country string (column or free text) to SA | BOT | ZAM | MOZ | ZW | MAL | CON, or null if unknown.
+ * Map a single country string (column or free text) to SA | BOT | ZAM | MOZ | ZW | MAL | CON | TAN, or null if unknown.
  */
 export function normalizeCountryToken(raw: string | null | undefined): string | null {
   if (raw == null) return null;
@@ -111,6 +117,10 @@ function inferCountryFromBranchLabels(branch: BranchListItem): string | null {
   if (haystack.includes('gaborone')) return 'BOT';
   if (haystack.includes('lusaka')) return 'ZAM';
   if (haystack.includes('harare')) return 'ZW';
+  if (haystack.includes('lilongwe') || haystack.includes('blantyre')) return 'MAL';
+  if (haystack.includes('dar es salaam') || haystack.includes('dar-es-salaam') || haystack.includes('dodoma')) {
+    return 'TAN';
+  }
   return null;
 }
 

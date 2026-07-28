@@ -36,6 +36,10 @@ export function buildOpportunityMarkers(input: {
       longitude: lng,
       markerType: 'branch',
       address: formatAddressLine(branch.address),
+      state:
+        typeof branch.address === 'object' && branch.address
+          ? (branch.address as { state?: string }).state
+          : undefined,
     });
   }
 
@@ -51,6 +55,10 @@ export function buildOpportunityMarkers(input: {
       accountName: competitor.accountName ?? undefined,
       LegalEntity: competitor.LegalEntity ?? undefined,
     });
+    const addr =
+      competitor.address && typeof competitor.address === 'object'
+        ? competitor.address
+        : null;
     markers.push({
       id: competitor.id,
       name: competitor.name,
@@ -64,6 +72,8 @@ export function buildOpportunityMarkers(input: {
       longitude: Number(lng),
       markerType: 'competitor',
       address: competitor.address ?? undefined,
+      country: addr?.country ?? undefined,
+      state: addr?.state ?? undefined,
     });
   }
 
@@ -71,6 +81,10 @@ export function buildOpportunityMarkers(input: {
     const lat = client.latitude as number | string | null | undefined;
     const lng = client.longitude as number | string | null | undefined;
     if (!hasStoredCoordinates(lat, lng)) continue;
+    const addr =
+      client.address && typeof client.address === 'object'
+        ? client.address
+        : null;
     markers.push({
       id: client.uid,
       name: client.name,
@@ -82,6 +96,8 @@ export function buildOpportunityMarkers(input: {
       category: client.category ?? undefined,
       annualRevenue: client.annualRevenue,
       lifetimeValue: client.lifetimeValue,
+      country: addr?.country ?? undefined,
+      state: addr?.state ?? undefined,
     });
   }
 

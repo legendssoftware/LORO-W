@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Mountain, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -169,22 +169,84 @@ function FlyToSimulationZone({
   lat,
   lng,
   zoneId,
+  ranAt,
 }: {
   lat: number;
   lng: number;
   zoneId: string | null;
+  ranAt: string | null;
 }) {
   const { map, isLoaded } = useMap();
+  const lastRanAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!map || !isLoaded || !zoneId) return;
+    // After a fresh run, FitSimulationBounds frames all zones — skip fly.
+    if (ranAt && ranAt !== lastRanAtRef.current) {
+      lastRanAtRef.current = ranAt;
+      return;
+    }
     map.flyTo({
       center: [lng, lat],
       zoom: Math.max(map.getZoom(), 12),
       duration: 700,
       essential: true,
     });
-  }, [map, isLoaded, zoneId, lat, lng]);
+  }, [map, isLoaded, zoneId, lat, lng, ranAt]);
+
+  return null;
+}
+
+/** Fit map to all simulation zones after a run (keyed by ranAt). */
+function FitSimulationBounds({
+  zones,
+  ranAt,
+}: {
+  zones: Array<{ lat: number; lng: number; radiusMeters: number }>;
+  ranAt: string | null;
+}) {
+  const { map, isLoaded } = useMap();
+  const zonesRef = useRef(zones);
+  zonesRef.current = zones;
+
+  useEffect(() => {
+    if (!map || !isLoaded || !ranAt) return;
+    const current = zonesRef.current;
+    if (current.length === 0) return;
+
+    if (current.length === 1) {
+      const z = current[0]!;
+      map.flyTo({
+        center: [z.lng, z.lat],
+        zoom: 11,
+        duration: 900,
+        essential: true,
+      });
+      return;
+    }
+
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    for (const z of current) {
+      const dLat = z.radiusMeters / 111_320;
+      const cosLat = Math.cos((z.lat * Math.PI) / 180);
+      const dLng = z.radiusMeters / (111_320 * Math.max(0.2, cosLat));
+      minLat = Math.min(minLat, z.lat - dLat);
+      maxLat = Math.max(maxLat, z.lat + dLat);
+      minLng = Math.min(minLng, z.lng - dLng);
+      maxLng = Math.max(maxLng, z.lng + dLng);
+    }
+
+    map.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat],
+      ],
+      { padding: 72, maxZoom: 12, duration: 900 },
+    );
+  }, [map, isLoaded, ranAt]);
 
   return null;
 }
@@ -327,7 +389,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     clearSelection: clearRepSelection,
   } = useSearchableUsersList({ enabled, limit: 100 });
 
-  const { isActive, selectedZone, clearSimulation, panelOpen } =
+  const { isActive, selectedZone, clearSimulation, panelOpen, allZones, ranAt } =
     useVisualiserSimulation();
 
   const { data: branches = [] } = useBranches({ enabled });
@@ -814,11 +876,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           coordinates={journeyCoordinates}
           routeKey={journeyRouteKey}
         />
+        <FitSimulationBounds
+          ranAt={ranAt}
+          zones={allZones.map((z) => ({
+            lat: z.lat,
+            lng: z.lng,
+            radiusMeters: z.radiusMeters,
+          }))}
+        />
         {selectedZone ? (
           <FlyToSimulationZone
             lat={selectedZone.lat}
             lng={selectedZone.lng}
             zoneId={selectedZone.id}
+            ranAt={ranAt}
           />
         ) : null}
         <FlyToVisitAction

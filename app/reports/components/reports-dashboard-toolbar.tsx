@@ -28,6 +28,7 @@ import {
   orderUtcCalendarRange,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
+import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
 import { getCountryFlag } from '@/lib/utils/country-flags';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ export const REPORTS_OVERVIEW_ERP_COUNTRIES = [
   'ZW',
   'MAL',
   'CON',
+  'TAN',
 ] as const;
 
 export type ReportsOverviewErpCountry =
@@ -117,15 +119,7 @@ export function ReportsDashboardToolbar({
     if (selectedBranchId === 'all') return users;
     const branchUid = Number(selectedBranchId);
     if (!Number.isFinite(branchUid)) return users;
-    return users.filter((u) => {
-      const uid =
-        u.branch?.uid != null
-          ? Number(u.branch.uid)
-          : u.branchUid != null
-            ? Number(u.branchUid)
-            : null;
-      return uid === branchUid;
-    });
+    return users.filter((u) => resolveUserBranchUid(u) === branchUid);
   }, [users, selectedBranchId]);
 
   const handleDatePopoverOpenChange = useCallback(

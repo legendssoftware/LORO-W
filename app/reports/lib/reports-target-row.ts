@@ -45,6 +45,8 @@ export interface ReportsTargetRow {
   leads: ReportsTargetMetricCell;
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;
+  /** True while ERP sales for this row is queued / in flight. */
+  salesLoading?: boolean;
   /** Target-based productivity (0–100); null when no range / no samples. */
   productivity: ReportsTargetProductivityCell;
   achievement: number;
