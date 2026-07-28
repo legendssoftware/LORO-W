@@ -34,6 +34,20 @@ function formatSpeed(kmh: number): string {
   return `${kmh.toFixed(0)} km/h`;
 }
 
+function formatFuel(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  try {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `R${value.toFixed(2)}`;
+  }
+}
+
 function formatEndpoint(place: RepJourneyEndpoint | null | undefined): string {
   if (!place) return '—';
   if (place.address?.trim()) return place.address.trim();
@@ -181,9 +195,9 @@ export function RepTrackerControl({
               value={journeySummary.totalTravelFormatted || '—'}
             />
             <SummaryCell
-              label="Avg drive / day"
+              label="Today's distance"
               value={formatKm(
-                journeySummary.periodAverages.day.averageDistanceKm
+                journeySummary.periodAverages.day.totalDistanceKm
               )}
             />
             <SummaryCell
@@ -195,6 +209,19 @@ export function RepTrackerControl({
               value={journeySummary.totalStopFormatted || '—'}
             />
           </div>
+
+          {journeySummary.fuelPrice.averagePetrolPerLitreZar != null ? (
+            <p className="text-muted-foreground text-[11px] tabular-nums">
+              Fuel avg{' '}
+              <span className="text-foreground font-medium">
+                {formatFuel(journeySummary.fuelPrice.averagePetrolPerLitreZar)}
+              </span>
+              /L
+              {journeySummary.fuelPrice.grade
+                ? ` · ${journeySummary.fuelPrice.grade}`
+                : ''}
+            </p>
+          ) : null}
 
           <div className="space-y-1.5">
             <EndpointRow
