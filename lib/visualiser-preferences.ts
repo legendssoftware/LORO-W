@@ -178,17 +178,25 @@ export function resolveVisualiserPreferences(
 export function toVisualiserUserPreferencePayload(
   prefs: Pick<
     VisualiserPreferences,
-    'opportunityMode' | 'opportunitySettings' | 'turnoverOverrides'
+    | 'opportunityMode'
+    | 'opportunitySettings'
+    | 'turnoverOverrides'
+    | 'selectedCountry'
+    | 'selectedProvince'
   >,
 ): {
   opportunityMode: SiteOpportunityMode;
   opportunitySettings: SiteOpportunitySettings;
   turnoverOverrides: TurnoverOverrideSettings;
+  selectedCountry: string;
+  selectedProvince: string;
 } {
   return {
     opportunityMode: prefs.opportunityMode,
     opportunitySettings: prefs.opportunitySettings,
     turnoverOverrides: prefs.turnoverOverrides,
+    selectedCountry: prefs.selectedCountry,
+    selectedProvince: prefs.selectedProvince,
   };
 }
 

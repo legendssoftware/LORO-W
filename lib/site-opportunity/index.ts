@@ -9,3 +9,8 @@ export * from './compute';
 export * from './export-csv';
 export * from './format-potential';
 export * from './turnover-simulation';
+export {
+  filterMapMarkers,
+  getSortedUniqueCountriesFromMarkers,
+  getSortedUniqueProvincesFromMarkers,
+} from './map-marker-filters';

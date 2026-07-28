@@ -13,6 +13,12 @@ import type { SiteOpportunityResult, SiteOpportunityZone } from '@/api/types/sit
 
 export type SimulationPanelMode = 'configure' | 'results';
 
+export interface SimulationRunFilters {
+  country: string;
+  province: string;
+  mode: 'both' | 'catchment' | 'greenfield';
+}
+
 export interface VisualiserSimulationState {
   result: SiteOpportunityResult | null;
   selectedZoneId: string | null;
@@ -24,6 +30,8 @@ export interface VisualiserSimulationState {
   panelMode: SimulationPanelMode;
   /** Markers used for the last run (for competitor name/address lists). */
   runMarkers: MapMarkerBase[];
+  /** Geo + mode scope applied on the last successful run. */
+  runFilters: SimulationRunFilters | null;
 }
 
 interface VisualiserSimulationContextValue extends VisualiserSimulationState {
@@ -33,6 +41,7 @@ interface VisualiserSimulationContextValue extends VisualiserSimulationState {
       erpMatchedStores?: number;
       erpError?: string | null;
       markers?: MapMarkerBase[];
+      filters?: SimulationRunFilters | null;
     },
   ) => void;
   selectZone: (zoneId: string | null) => void;
@@ -57,6 +66,7 @@ const EMPTY: VisualiserSimulationState = {
   panelOpen: false,
   panelMode: 'configure',
   runMarkers: [],
+  runFilters: null,
 };
 
 export function VisualiserSimulationProvider({ children }: { children: ReactNode }) {
@@ -69,6 +79,7 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
         erpMatchedStores?: number;
         erpError?: string | null;
         markers?: MapMarkerBase[];
+        filters?: SimulationRunFilters | null;
       },
     ) => {
       setState((prev) => ({
@@ -83,6 +94,8 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
         panelOpen: true,
         panelMode: result != null ? 'results' : prev.panelMode,
         runMarkers: meta?.markers ?? prev.runMarkers,
+        runFilters:
+          result == null ? null : (meta?.filters ?? prev.runFilters),
       }));
     },
     [],

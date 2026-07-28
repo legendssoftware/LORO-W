@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   useSessionSync,
   useTokenReady,
@@ -15,15 +15,9 @@ import {
   useProfileSales,
   useDailyProductivity,
   useBranches,
-  USER_TARGET_QUERY_KEY_PREFIX,
-  DAILY_PRODUCTIVITY_KEY_PREFIX,
 } from '@/api/hooks';
-import { getDailyProductivity, getUserTarget, getUsers } from '@/api/endpoints/user';
+import { getUsers } from '@/api/endpoints/user';
 import type { UserListItem } from '@/api/endpoints/user';
-import {
-  getUserSales,
-  profileSalesFromResponse,
-} from '@/api/endpoints/erp-user-sales';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
@@ -44,6 +38,7 @@ import {
   resolveReportsAllowlistUids,
   userUidInAllowlist,
 } from '@/app/reports/lib/reports-scope-allowlist';
+import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
 import {
   applyEngagementToRow,
   applyErpSalesToRow,
@@ -51,11 +46,14 @@ import {
   applyHoursToRow,
   applyProductivityToRow,
   averageProductivityScore,
-  enrichRowWithTargetDashboard,
   rowFromPersonalTarget,
   rowFromUserListItem,
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
+import {
+  getPageRowEnrichmentKey,
+  usePhasedPageEnrichment,
+} from '@/app/reports/lib/use-phased-page-enrichment';
 import { exportReportsTargets } from '@/app/reports/lib/reports-targets-export';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getReportsDataScope } from '@/lib/access';
@@ -68,7 +66,13 @@ import {
 import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const ERP_USER_SALES_QUERY_KEY = ['erp', 'user-sales'] as const;
+
+/** Metrics that need per-page enrich before a page-local re-sort is meaningful. */
+const PAGE_LOCAL_SORT_METRICS = new Set<ReportsTargetsSortMetric>([
+  'sales',
+  'achievement',
+  'productivity',
+]);
 
 async function fetchAllOrgUsers(
   client: Parameters<typeof getUsers>[0]
@@ -90,24 +94,6 @@ async function fetchAllOrgUsers(
     if (page > 50) break;
   }
   return all;
-}
-
-/** Prefer nested branch.uid; fall back to flat branchUid on list payloads. */
-function resolveUserBranchUid(user: {
-  branch?: { uid?: number | null } | null;
-  branchUid?: unknown;
-}): number | null {
-  if (user.branch?.uid != null && Number.isFinite(Number(user.branch.uid))) {
-    return Number(user.branch.uid);
-  }
-  if (typeof user.branchUid === 'number' && Number.isFinite(user.branchUid)) {
-    return user.branchUid;
-  }
-  if (typeof user.branchUid === 'string' && user.branchUid.trim() !== '') {
-    const n = Number(user.branchUid);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
 }
 
 function sortTargetRows(
@@ -228,11 +214,22 @@ export function ReportsOverviewTab() {
     [scope, backendUserData?.uid, selfProfileQuery.data?.managedStaff]
   );
 
+  const branchIdFilter =
+    isMultiUser &&
+    branchFilter !== 'all' &&
+    Number.isFinite(Number(branchFilter))
+      ? Number(branchFilter)
+      : null;
+
   const rangeParams = useMemo(() => {
     if (useAllTime) return null;
     const resolved = resolveTargetsUtcCalendarRange(startDate, endDate);
-    return { from: resolved.fromYmd, to: resolved.toYmd };
-  }, [useAllTime, startDate, endDate]);
+    return {
+      from: resolved.fromYmd,
+      to: resolved.toYmd,
+      ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
+    };
+  }, [useAllTime, startDate, endDate, branchIdFilter]);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
@@ -276,6 +273,7 @@ export function ReportsOverviewTab() {
       dateFrom: rangeParams?.from,
       dateTo: rangeParams?.to,
       includeUserDetails: false,
+      ...(branchIdFilter != null ? { branchId: String(branchIdFilter) } : {}),
     },
     {
       enabled: isTokenReady && !isSyncing && !!rangeParams,
@@ -283,7 +281,9 @@ export function ReportsOverviewTab() {
   );
 
   const payrollHoursQuery = usePayrollHoursAll(
-    {},
+    {
+      ...(branchIdFilter != null ? { branchId: String(branchIdFilter) } : {}),
+    },
     {
       enabled: isTokenReady && !isSyncing && useAllTime && isMultiUser,
     }
@@ -420,9 +420,12 @@ export function ReportsOverviewTab() {
         return row;
       });
 
-    // Productivity scores load per page — name-sort until then; page re-sorts after enrich.
-    const metricForCohort =
-      sortMetric === 'productivity' ? 'name' : sortMetric;
+    // Cohort sort uses list + engagement/hours overlays (available for all rows).
+    // Sales / achievement / productivity need per-page ERP enrich — those re-sort
+    // the visible page after phased enrich settles.
+    const metricForCohort = PAGE_LOCAL_SORT_METRICS.has(sortMetric)
+      ? 'name'
+      : sortMetric;
     return sortTargetRows(rows, metricForCohort);
   }, [
     isMultiUser,
@@ -447,74 +450,28 @@ export function ReportsOverviewTab() {
     return cohortRows.slice(start, start + pageSize);
   }, [cohortRows, safePage, pageSize]);
 
-  const warningQueries = useQueries({
-    queries: pageRows.map((row) => ({
-      queryKey: [...USER_TARGET_QUERY_KEY_PREFIX, row.ref] as const,
-      queryFn: () => getUserTarget(client, row.ref),
-      enabled: isTokenReady && isMultiUser && !!row.ref,
-      staleTime: 60 * 1000,
-      gcTime: 5 * 60 * 1000,
-    })),
+  const {
+    enrichmentByKey,
+    isEnriching,
+    enrichRow: applyPhasedEnrichment,
+  } = usePhasedPageEnrichment({
+    pageRows,
+    client,
+    enabled: isTokenReady && isMultiUser && pageRows.length > 0,
+    rangeFrom: rangeParams?.from ?? null,
+    rangeTo: rangeParams?.to ?? null,
   });
-
-  const erpSalesQueries = useQueries({
-    queries: pageRows.map((row) => ({
-      queryKey: [...ERP_USER_SALES_QUERY_KEY, row.userId] as const,
-      queryFn: async (): Promise<number | null> => {
-        try {
-          const res = await getUserSales(client, row.userId);
-          const payload = profileSalesFromResponse(res);
-          return payload?.totalRevenue ?? null;
-        } catch {
-          return null;
-        }
-      },
-      enabled:
-        isTokenReady && isMultiUser && !!row.userId && row.sales.target > 0,
-      staleTime: 2 * 60 * 1000,
-      gcTime: 5 * 60 * 1000,
-    })),
-  });
-
-  const productivityQueries = useQueries({
-    queries: pageRows.map((row) => ({
-      queryKey: [
-        ...DAILY_PRODUCTIVITY_KEY_PREFIX,
-        row.ref,
-        rangeParams?.from ?? null,
-        rangeParams?.to ?? null,
-      ] as const,
-      queryFn: () =>
-        getDailyProductivity(client, row.ref, {
-          startDate: rangeParams!.from,
-          endDate: rangeParams!.to,
-        }),
-      enabled:
-        isTokenReady &&
-        isMultiUser &&
-        !!row.ref &&
-        !!rangeParams?.from &&
-        !!rangeParams?.to,
-      staleTime: 60 * 1000,
-      gcTime: 5 * 60 * 1000,
-    })),
-  });
-
-  const warningQueryStamp = warningQueries
-    .map((q) => `${q.dataUpdatedAt}:${q.status}`)
-    .join('|');
-  const erpSalesQueryStamp = erpSalesQueries
-    .map((q) => `${q.dataUpdatedAt}:${q.status}`)
-    .join('|');
-  const productivityQueryStamp = productivityQueries
-    .map((q) => `${q.dataUpdatedAt}:${q.status}`)
-    .join('|');
 
   const enrichedPageRows = useMemo(() => {
     const engagementReady = !!rangeParams && engagementQuery.isSuccess;
-    return pageRows.map((row, index) => {
-      const dashboard = warningQueries[index]?.data?.userTarget ?? null;
-      let next = dashboard ? enrichRowWithTargetDashboard(row, dashboard) : row;
+    return pageRows.map((row) => {
+      let next = applyPhasedEnrichment(row);
+      const enrich = enrichmentByKey.get(getPageRowEnrichmentKey(row));
+      if (enrich?.erpLoading) {
+        next = { ...next, salesLoading: true };
+      } else if (next.salesLoading) {
+        next = { ...next, salesLoading: false };
+      }
       if (engagementReady && rangeParams) {
         const eng = engagementByUid.get(row.userId) ?? {
           callCount: 0,
@@ -532,15 +489,6 @@ export function ReportsOverviewTab() {
           rangeParams?.to ?? null
         );
       }
-      next = applyErpSalesToRow(next, erpSalesQueries[index]?.data);
-      const prodQuery = productivityQueries[index];
-      if (rangeParams) {
-        next = applyProductivityToRow(
-          next,
-          averageProductivityScore(prodQuery?.data?.days),
-          { isLoading: prodQuery?.isLoading === true }
-        );
-      }
       next = applyFilterPeriodLabel(
         next,
         rangeParams?.from ?? null,
@@ -548,12 +496,10 @@ export function ReportsOverviewTab() {
       );
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- stamps track settled payloads
   }, [
     pageRows,
-    warningQueryStamp,
-    erpSalesQueryStamp,
-    productivityQueryStamp,
+    applyPhasedEnrichment,
+    enrichmentByKey,
     rangeParams,
     engagementByUid,
     engagementQuery.isSuccess,
@@ -636,7 +582,14 @@ export function ReportsOverviewTab() {
       );
     }
     if (row) {
-      row = applyErpSalesToRow(row, selfErpSalesQuery.data?.totalRevenue);
+      const erpPending =
+        selfHasSalesTarget &&
+        selfErpSalesQuery.isLoading &&
+        selfErpSalesQuery.data == null;
+      row = {
+        ...applyErpSalesToRow(row, selfErpSalesQuery.data?.totalRevenue),
+        salesLoading: erpPending,
+      };
       if (rangeParams) {
         row = applyProductivityToRow(
           row,
@@ -661,7 +614,9 @@ export function ReportsOverviewTab() {
     engagementQuery.isSuccess,
     hoursOverlayReady,
     hoursByUid,
-    selfErpSalesQuery.data?.totalRevenue,
+    selfHasSalesTarget,
+    selfErpSalesQuery.isLoading,
+    selfErpSalesQuery.data,
     selfProductivityQuery.data?.days,
     selfProductivityQuery.isLoading,
   ]);
@@ -672,9 +627,13 @@ export function ReportsOverviewTab() {
       : selfRow
         ? [selfRow]
         : [];
-    // Re-sort the visible page after per-row enrich (ERP sales, productivity, warnings)
-    // so Achievement / Sales / Productivity match what the table shows.
-    return sortTargetRows(rows, sortMetric);
+    // Page-local re-sort for metrics that depend on phased enrich (sales / ERP /
+    // achievement / productivity). Calls / leads / hours / name already sorted
+    // across the full filtered cohort before pagination.
+    if (PAGE_LOCAL_SORT_METRICS.has(sortMetric)) {
+      return sortTargetRows(rows, sortMetric);
+    }
+    return rows;
   }, [isMultiUser, enrichedPageRows, selfRow, sortMetric]);
 
   /** Keep detail dialog in sync when filter overlays update the same user row. */
@@ -682,14 +641,6 @@ export function ReportsOverviewTab() {
     if (!selectedRow) return null;
     return displayRows.find((r) => r.ref === selectedRow.ref) ?? selectedRow;
   }, [selectedRow, displayRows]);
-
-  const hoursQueryLoading = rangeParams
-    ? attendanceReportQuery.isLoading
-    : useAllTime
-      ? isMultiUser
-        ? payrollHoursQuery.isLoading
-        : selfAttMetricsQuery.isLoading
-      : false;
 
   const hoursQueryError = rangeParams
     ? attendanceReportQuery.isError
@@ -713,17 +664,10 @@ export function ReportsOverviewTab() {
         : selfAttMetricsQuery.isFetching && !selfAttMetricsQuery.isLoading
       : false;
 
+  /** Shell rows render as soon as the user list is ready — overlays enrich in place. */
   const isLoading = isMultiUser
-    ? !isTokenReady ||
-      isSyncing ||
-      usersQuery.isLoading ||
-      (!!rangeParams && engagementQuery.isLoading) ||
-      hoursQueryLoading
-    : !isTokenReady ||
-      isSyncing ||
-      selfTargetQuery.isLoading ||
-      (!!rangeParams && engagementQuery.isLoading) ||
-      hoursQueryLoading;
+    ? !isTokenReady || isSyncing || usersQuery.isLoading
+    : !isTokenReady || isSyncing || selfTargetQuery.isLoading;
 
   const errorMessage = isMultiUser
     ? usersQuery.isError
@@ -739,6 +683,32 @@ export function ReportsOverviewTab() {
 
   const reviewStartYmd = useAllTime ? null : formatUtcYmd(startDate);
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
+
+  const scopedUsersForPicker = useMemo(
+    () =>
+      (usersQuery.data ?? [])
+        .filter(userListItemInLeadsVisitsReportingCohort)
+        .filter((u) => userUidInAllowlist(u.uid, allowlistUids)),
+    [usersQuery.data, allowlistUids]
+  );
+
+  const emptyMessage = useMemo(() => {
+    if (!isMultiUser) return 'You do not have personal performance targets set.';
+    if (debouncedSearch) return 'No matching users with performance targets.';
+    if (branchFilter !== 'all' && userFilter !== 'all') {
+      return 'No matching user in the selected branch with performance targets.';
+    }
+    if (branchFilter !== 'all') {
+      return 'No users with performance targets in this branch.';
+    }
+    if (userFilter !== 'all') {
+      return 'Selected user has no performance targets in this cohort.';
+    }
+    if (scope === 'team') {
+      return 'No managed team members with performance targets found.';
+    }
+    return 'No users with performance targets found.';
+  }, [isMultiUser, debouncedSearch, branchFilter, userFilter, scope]);
 
   function handlePageSizeChange(size: ReportsPageSize) {
     setPageSize(size);
@@ -777,7 +747,7 @@ export function ReportsOverviewTab() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" data-tour="reports-targets-tab">
+    <div className="flex min-h-0 flex-1 flex-col" data-slot="reports-targets-tab">
       <ReportsTargetsToolbar
         searchInput={searchInput}
         onSearchInputChange={setSearchInput}
@@ -794,11 +764,12 @@ export function ReportsOverviewTab() {
         showSearch={isMultiUser}
         showDimensionFilters={isMultiUser}
         branches={branchesQuery.data ?? []}
-        users={(usersQuery.data ?? [])
-          .filter(userListItemInLeadsVisitsReportingCohort)
-          .filter((u) => userUidInAllowlist(u.uid, allowlistUids))}
+        users={scopedUsersForPicker}
         selectedBranchId={branchFilter}
-        onBranchChange={setBranchFilter}
+        onBranchChange={(id) => {
+          setBranchFilter(id);
+          setUserFilter('all');
+        }}
         selectedUserId={userFilter}
         onUserChange={setUserFilter}
         sortMetric={sortMetric}
@@ -830,22 +801,14 @@ export function ReportsOverviewTab() {
 
       <div
         className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
-        data-tour="reports-targets-panel"
+        data-slot="reports-targets-panel"
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ReportsTargetsTable
             rows={displayRows}
             isLoading={isLoading}
             onRowClick={handleRowClick}
-            emptyMessage={
-              isMultiUser
-                ? debouncedSearch
-                  ? 'No matching users with performance targets.'
-                  : scope === 'team'
-                    ? 'No managed team members with performance targets found.'
-                    : 'No users with performance targets found.'
-                : 'You do not have personal performance targets set.'
-            }
+            emptyMessage={emptyMessage}
           />
         </div>
         {isMultiUser ? (
@@ -857,7 +820,8 @@ export function ReportsOverviewTab() {
             isFetching={
               (usersQuery.isFetching && !usersQuery.isLoading) ||
               (engagementQuery.isFetching && !engagementQuery.isLoading) ||
-              hoursQueryFetching
+              hoursQueryFetching ||
+              isEnriching
             }
             onPageChange={setPage}
             onPageSizeChange={handlePageSizeChange}

@@ -59,6 +59,12 @@ import {
   resolveReportsAllowlistUids,
   userUidInAllowlist,
 } from '../lib/reports-scope-allowlist';
+import {
+  buildOwnerBranchUidMap,
+  filterUsersByBranch,
+  resolveUserBranchUid,
+  userIdsMatchingBranch,
+} from '../lib/reports-user-branch';
 import { ReportsDashboardToolbar } from './reports-dashboard-toolbar';
 import { ReportsGroupedBarChart } from './reports-grouped-bar-chart';
 import {
@@ -144,14 +150,23 @@ function visitIsWorked(c: VisitListItem): boolean {
   return false;
 }
 
-function visitBranchUid(c: VisitListItem): number | null {
+function visitBranchUid(
+  c: VisitListItem,
+  ownerBranchByUid?: Map<number, number>
+): number | null {
   const fromVisit = c.branch?.uid;
   if (fromVisit != null && Number.isFinite(Number(fromVisit))) {
-    return Number(fromVisit);
+    const n = Number(fromVisit);
+    if (n > 0) return n;
   }
-  const fromOwner = c.owner?.branch?.uid;
-  if (fromOwner != null && Number.isFinite(Number(fromOwner))) {
-    return Number(fromOwner);
+  const fromOwnerNested = resolveUserBranchUid({
+    branch: c.owner?.branch ?? null,
+    branchUid: (c.owner as { branchUid?: unknown } | null | undefined)?.branchUid,
+  });
+  if (fromOwnerNested != null) return fromOwnerNested;
+  const ownerUid = c.owner?.uid;
+  if (ownerUid != null && ownerBranchByUid?.has(Number(ownerUid))) {
+    return ownerBranchByUid.get(Number(ownerUid)) ?? null;
   }
   return null;
 }
@@ -182,6 +197,7 @@ function filterCheckInsForOverview(
     branchId: number | null;
     userId: number | null;
     country: string | null;
+    ownerBranchByUid?: Map<number, number>;
   }
 ): VisitListItem[] {
   let rows = checkIns ?? [];
@@ -189,12 +205,29 @@ function filterCheckInsForOverview(
     rows = rows.filter((c) => Number(c.owner?.uid) === opts.userId);
   }
   if (opts.branchId != null) {
-    rows = rows.filter((c) => visitBranchUid(c) === opts.branchId);
+    rows = rows.filter(
+      (c) => visitBranchUid(c, opts.ownerBranchByUid) === opts.branchId
+    );
   }
   if (opts.country) {
     rows = rows.filter((c) => visitCountryCanon(c) === opts.country);
   }
   return rows;
+}
+
+/** Match dispatch byBranch row names against alias or legal name of selected branch. */
+function dispatchBranchRowMatches(
+  rowName: string,
+  branch: { name?: string; alias?: string | null } | null | undefined
+): boolean {
+  if (!branch) return false;
+  const n = rowName.trim().toLowerCase();
+  if (!n) return false;
+  const alias = branch.alias?.trim().toLowerCase();
+  const name = branch.name?.trim().toLowerCase();
+  if (alias && n === alias) return true;
+  if (name && n === name) return true;
+  return false;
 }
 
 function seriesFromCountMap(
@@ -458,6 +491,37 @@ export function ReportsDashboardTab() {
     [usersQuery.data, allowlistUids]
   );
 
+  /** Users attached to the selected branch (or full scoped set when All branches). */
+  const branchScopedUsers = useMemo(
+    () => filterUsersByBranch(scopedUsers, branchIdFilter),
+    [scopedUsers, branchIdFilter]
+  );
+
+  const branchScopedUserIds = useMemo(
+    () => userIdsMatchingBranch(scopedUsers, branchIdFilter),
+    [scopedUsers, branchIdFilter]
+  );
+
+  const ownerBranchByUid = useMemo(
+    () => buildOwnerBranchUidMap(usersQuery.data ?? []),
+    [usersQuery.data]
+  );
+
+  const selectedBranch = useMemo(
+    () =>
+      branchIdFilter != null
+        ? (branchesQuery.data ?? []).find((b) => b.uid === branchIdFilter) ??
+          null
+        : null,
+    [branchesQuery.data, branchIdFilter]
+  );
+
+  /** When a branch is selected but the branches/users list has not resolved yet, avoid unfiltered charts. */
+  const branchFilterPending =
+    branchIdFilter != null &&
+    ((branchesQuery.isLoading && selectedBranch == null) ||
+      (!usersQuery.isSuccess && usersQuery.data == null));
+
   const selectedUserClerkId = useMemo(() => {
     if (!isMultiUser) {
       return (
@@ -577,8 +641,8 @@ export function ReportsDashboardTab() {
   );
   /**
    * Journey API is per-user. When the toolbar is "All users", fall back to the
-   * first scoped user so Tracking still shows places + daily drive distance
-   * without narrowing Productivity/Sales filters.
+   * first branch-scoped user so Tracking still shows places + daily drive distance
+   * without narrowing Productivity/Sales filters incorrectly across branches.
    */
   const journeyUserId = useMemo(() => {
     if (userIdFilter != null) return userIdFilter;
@@ -587,11 +651,11 @@ export function ReportsDashboardTab() {
         ? Number(backendUserData.uid)
         : null;
     }
-    const firstUid = scopedUsers[0]?.uid;
+    const firstUid = branchScopedUsers[0]?.uid;
     return firstUid != null && Number.isFinite(Number(firstUid))
       ? Number(firstUid)
       : null;
-  }, [userIdFilter, isMultiUser, backendUserData?.uid, scopedUsers]);
+  }, [userIdFilter, isMultiUser, backendUserData?.uid, branchScopedUsers]);
   const journeyUserName = useMemo(() => {
     if (journeyUserId == null) return null;
     if (!isMultiUser) {
@@ -600,7 +664,8 @@ export function ReportsDashboardTab() {
       const name = [self.name, self.surname].filter(Boolean).join(' ').trim();
       return name || self.email || `User ${journeyUserId}`;
     }
-    const u = scopedUsers.find((row) => Number(row.uid) === journeyUserId);
+    const u = branchScopedUsers.find((row) => Number(row.uid) === journeyUserId)
+      ?? scopedUsers.find((row) => Number(row.uid) === journeyUserId);
     if (!u) return `User ${journeyUserId}`;
     const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
     return name || u.email || `User ${journeyUserId}`;
@@ -608,6 +673,7 @@ export function ReportsDashboardTab() {
     journeyUserId,
     isMultiUser,
     backendUserData,
+    branchScopedUsers,
     scopedUsers,
   ]);
   const hasTrackingUser = journeyUserId != null;
@@ -646,6 +712,7 @@ export function ReportsDashboardTab() {
         branchId: branchIdFilter,
         userId: userIdFilter,
         country: countryCodeFilter,
+        ownerBranchByUid,
       });
       if (allowlistUids == null) return base;
       return base.filter((c) =>
@@ -657,6 +724,7 @@ export function ReportsDashboardTab() {
       branchIdFilter,
       userIdFilter,
       countryCodeFilter,
+      ownerBranchByUid,
       allowlistUids,
     ]
   );
@@ -666,6 +734,7 @@ export function ReportsDashboardTab() {
     if (allowlistUids != null) {
       users = users.filter((u) => userUidInAllowlist(u.uid, allowlistUids));
     }
+    // Branch scope comes from engagement-range `branchId` (rangeParams).
     if (userIdFilter != null) {
       users = users.filter((u) => u.uid === userIdFilter);
     }
@@ -760,23 +829,18 @@ export function ReportsDashboardTab() {
   const teamTargetGrouped = useMemo(() => {
     const members = teamTargetsQuery.data?.data?.teamMembers ?? [];
     let filtered = members;
-    if (userIdFilter != null) {
+    if (branchFilterPending) {
+      filtered = [];
+    } else if (userIdFilter != null) {
       filtered = members.filter((m) => Number(m.userId) === userIdFilter);
-    } else if (branchIdFilter != null) {
-      const branchLabel = getBranchDisplayLabel(
-        (branchesQuery.data ?? []).find((b) => b.uid === branchIdFilter) ?? null
+    } else if (branchScopedUserIds != null) {
+      filtered = members.filter((m) =>
+        branchScopedUserIds.has(Number(m.userId))
       );
-      if (branchLabel) {
-        filtered = members.filter(
-          (m) =>
-            (m.branchName ?? '').trim().toLowerCase() ===
-            branchLabel.trim().toLowerCase()
-        );
-      }
     }
     if (filtered.length === 0 && members.length === 0) {
       const summary = teamTargetsQuery.data?.data?.summary;
-      if (!summary) return [];
+      if (!summary || branchIdFilter != null || userIdFilter != null) return [];
       return [
         {
           name: 'Team',
@@ -806,32 +870,28 @@ export function ReportsDashboardTab() {
     teamTargetsQuery.data?.data?.teamMembers,
     teamTargetsQuery.data?.data?.summary,
     userIdFilter,
+    branchScopedUserIds,
+    branchFilterPending,
     branchIdFilter,
-    branchesQuery.data,
   ]);
 
   const userSalesBars = useMemo(() => {
     let members = teamTargetsQuery.data?.data?.teamMembers;
-    if (userIdFilter != null && members) {
+    if (branchFilterPending) {
+      members = [];
+    } else if (userIdFilter != null && members) {
       members = members.filter((m) => Number(m.userId) === userIdFilter);
-    } else if (branchIdFilter != null && members) {
-      const branchLabel = getBranchDisplayLabel(
-        (branchesQuery.data ?? []).find((b) => b.uid === branchIdFilter) ?? null
+    } else if (branchScopedUserIds != null && members) {
+      members = members.filter((m) =>
+        branchScopedUserIds.has(Number(m.userId))
       );
-      if (branchLabel) {
-        members = members.filter(
-          (m) =>
-            (m.branchName ?? '').trim().toLowerCase() ===
-            branchLabel.trim().toLowerCase()
-        );
-      }
     }
     return teamMemberSalesBars(members, 8);
   }, [
     teamTargetsQuery.data?.data?.teamMembers,
     userIdFilter,
-    branchIdFilter,
-    branchesQuery.data,
+    branchScopedUserIds,
+    branchFilterPending,
   ]);
 
   const leadsStatusDonut = useMemo(
@@ -944,9 +1004,24 @@ export function ReportsDashboardTab() {
 
   const scopedAttendanceMetrics = useMemo(() => {
     const metrics = attendanceQuery.data?.report?.userMetrics ?? [];
-    if (allowlistUids == null && userIdFilter == null) return metrics;
+    if (
+      allowlistUids == null &&
+      userIdFilter == null &&
+      branchScopedUserIds == null
+    ) {
+      return metrics;
+    }
     return metrics.filter((m) => {
       if (userIdFilter != null && Number(m.userId) !== userIdFilter) {
+        return false;
+      }
+      // Only apply user-list branch UID filter once the list is ready; API also
+      // receives branchId. Avoid wiping metrics while users are still loading.
+      if (
+        branchScopedUserIds != null &&
+        usersQuery.data != null &&
+        !branchScopedUserIds.has(Number(m.userId))
+      ) {
         return false;
       }
       return userUidInAllowlist(m.userId, allowlistUids);
@@ -955,10 +1030,16 @@ export function ReportsDashboardTab() {
     attendanceQuery.data?.report?.userMetrics,
     allowlistUids,
     userIdFilter,
+    branchScopedUserIds,
+    usersQuery.data,
   ]);
 
   const attendanceHours = useMemo(() => {
-    if (allowlistUids != null || userIdFilter != null) {
+    if (
+      allowlistUids != null ||
+      userIdFilter != null ||
+      branchIdFilter != null
+    ) {
       return scopedAttendanceMetrics.reduce(
         (s, m) => s + resolveAttendanceReportPeriodHours(m.metrics),
         0
@@ -977,6 +1058,7 @@ export function ReportsDashboardTab() {
     scopedAttendanceMetrics,
     allowlistUids,
     userIdFilter,
+    branchIdFilter,
     attendanceQuery.data?.report?.organizationMetrics?.totals?.totalHours,
   ]);
 
@@ -984,7 +1066,7 @@ export function ReportsDashboardTab() {
     const userCount = Math.max(
       1,
       scopedAttendanceMetrics.length ||
-        (allowlistUids != null || userIdFilter != null
+        (allowlistUids != null || userIdFilter != null || branchIdFilter != null
           ? 1
           : (attendanceQuery.data?.report?.organizationMetrics?.totals
               ?.totalEmployees ?? 1))
@@ -996,6 +1078,7 @@ export function ReportsDashboardTab() {
     scopedAttendanceMetrics.length,
     allowlistUids,
     userIdFilter,
+    branchIdFilter,
     attendanceQuery.data?.report?.organizationMetrics?.totals?.totalEmployees,
   ]);
 
@@ -1005,7 +1088,11 @@ export function ReportsDashboardTab() {
   );
 
   const attendanceByBranchHours = useMemo(() => {
-    if (allowlistUids != null || userIdFilter != null) {
+    if (
+      allowlistUids != null ||
+      userIdFilter != null ||
+      branchIdFilter != null
+    ) {
       const byBranch = new Map<string, number>();
       for (const m of scopedAttendanceMetrics) {
         const label = m.userInfo?.branch?.trim() || 'Unassigned';
@@ -1055,6 +1142,7 @@ export function ReportsDashboardTab() {
     scopedAttendanceMetrics,
     allowlistUids,
     userIdFilter,
+    branchIdFilter,
   ]);
 
   const singleUserAttMetrics = isMultiUser
@@ -1073,6 +1161,13 @@ export function ReportsDashboardTab() {
       if (userIdFilter != null && Number(m.userId) !== userIdFilter) {
         return sum;
       }
+      if (
+        branchScopedUserIds != null &&
+        usersQuery.data != null &&
+        !branchScopedUserIds.has(Number(m.userId))
+      ) {
+        return sum;
+      }
       if (!userUidInAllowlist(m.userId, allowlistUids)) return sum;
       return sum + (Number(m.payrollHours) || 0);
     }, 0);
@@ -1080,6 +1175,8 @@ export function ReportsDashboardTab() {
     singleUserAttMetrics?.totalHours?.payrollHours,
     payrollHoursQuery.data?.userMetrics,
     userIdFilter,
+    branchScopedUserIds,
+    usersQuery.data,
     allowlistUids,
   ]);
 
@@ -1094,6 +1191,13 @@ export function ReportsDashboardTab() {
     if (rows.length > 0) {
       return rows.reduce((sum, m) => {
         if (userIdFilter != null && Number(m.userId) !== userIdFilter) {
+          return sum;
+        }
+        if (
+          branchScopedUserIds != null &&
+          usersQuery.data != null &&
+          !branchScopedUserIds.has(Number(m.userId))
+        ) {
           return sum;
         }
         if (!userUidInAllowlist(m.userId, allowlistUids)) return sum;
@@ -1119,12 +1223,20 @@ export function ReportsDashboardTab() {
     singleUserAttMetrics?.totalHours?.thisMonth,
     monthlyMetricsQuery.data?.data?.userMetrics,
     userIdFilter,
+    branchScopedUserIds,
+    usersQuery.data,
     allowlistUids,
     scopedAttendanceMetrics,
   ]);
 
   const attendanceUserCountForTargets = useMemo(() => {
     if (userIdFilter != null || !isMultiUser) return 1;
+    if (branchIdFilter != null) {
+      return Math.max(
+        1,
+        branchScopedUsers.length || scopedAttendanceMetrics.length || 1
+      );
+    }
     if (allowlistUids != null) return Math.max(1, allowlistUids.length);
     const fromMonthly =
       monthlyMetricsQuery.data?.data?.userMetrics?.length ?? 0;
@@ -1138,6 +1250,8 @@ export function ReportsDashboardTab() {
   }, [
     userIdFilter,
     isMultiUser,
+    branchIdFilter,
+    branchScopedUsers.length,
     allowlistUids,
     monthlyMetricsQuery.data?.data?.userMetrics?.length,
     scopedAttendanceMetrics.length,
@@ -1237,9 +1351,50 @@ export function ReportsDashboardTab() {
     }
   };
 
-  const dispatchPlanned = dispatchQuery.data?.planned ?? 0;
-  const dispatchCompleted = dispatchQuery.data?.completed ?? 0;
-  const dispatchInProgress = dispatchQuery.data?.inProgress ?? 0;
+  const dispatchPlanned = useMemo(() => {
+    if (branchFilterPending) return 0;
+    if (branchIdFilter == null || !selectedBranch) {
+      return dispatchQuery.data?.planned ?? 0;
+    }
+    const rows = (dispatchQuery.data?.byBranch ?? []).filter((r) =>
+      dispatchBranchRowMatches(r.name, selectedBranch)
+    );
+    return rows.reduce((s, r) => s + (Number(r.planned) || 0), 0);
+  }, [
+    dispatchQuery.data?.planned,
+    dispatchQuery.data?.byBranch,
+    branchIdFilter,
+    selectedBranch,
+    branchFilterPending,
+  ]);
+  const dispatchCompleted = useMemo(() => {
+    if (branchFilterPending) return 0;
+    if (branchIdFilter == null || !selectedBranch) {
+      return dispatchQuery.data?.completed ?? 0;
+    }
+    const rows = (dispatchQuery.data?.byBranch ?? []).filter((r) =>
+      dispatchBranchRowMatches(r.name, selectedBranch)
+    );
+    return rows.reduce((s, r) => s + (Number(r.completed) || 0), 0);
+  }, [
+    dispatchQuery.data?.completed,
+    dispatchQuery.data?.byBranch,
+    branchIdFilter,
+    selectedBranch,
+    branchFilterPending,
+  ]);
+  const dispatchInProgress = useMemo(() => {
+    if (branchFilterPending) return 0;
+    if (branchIdFilter == null) {
+      return dispatchQuery.data?.inProgress ?? 0;
+    }
+    // byBranch rows do not expose in-progress; keep 0 when branch-scoped
+    return 0;
+  }, [
+    dispatchQuery.data?.inProgress,
+    branchIdFilter,
+    branchFilterPending,
+  ]);
   const dispatchRemaining = Math.max(
     0,
     dispatchPlanned - dispatchCompleted - dispatchInProgress
@@ -1262,15 +1417,29 @@ export function ReportsDashboardTab() {
     [dispatchCompleted, dispatchInProgress, dispatchRemaining]
   );
 
-  const dispatchByBranch = useMemo(
-    () =>
-      (dispatchQuery.data?.byBranch ?? []).map((r) => ({
+  const dispatchByBranch = useMemo(() => {
+    const rows = dispatchQuery.data?.byBranch ?? [];
+    if (branchFilterPending) return [];
+    if (branchIdFilter == null || !selectedBranch) {
+      return rows.map((r) => ({
         branch: r.name,
         planned: r.planned,
         completed: r.completed,
-      })),
-    [dispatchQuery.data?.byBranch]
-  );
+      }));
+    }
+    return rows
+      .filter((r) => dispatchBranchRowMatches(r.name, selectedBranch))
+      .map((r) => ({
+        branch: r.name,
+        planned: r.planned,
+        completed: r.completed,
+      }));
+  }, [
+    dispatchQuery.data?.byBranch,
+    branchIdFilter,
+    selectedBranch,
+    branchFilterPending,
+  ]);
 
   if (!isTokenReady) {
     return (
@@ -1362,7 +1531,11 @@ export function ReportsDashboardTab() {
             <ChartCard
               title="Sales target vs achieved"
               description="Team sales targets rollup"
-              isLoading={teamTargetsQuery.isLoading}
+              isLoading={
+                teamTargetsQuery.isLoading ||
+                branchFilterPending ||
+                (branchIdFilter != null && usersQuery.isLoading)
+              }
               isError={teamTargetsQuery.isError}
               onRetry={() => void teamTargetsQuery.refetch()}
             >
@@ -1384,7 +1557,11 @@ export function ReportsDashboardTab() {
             <ChartCard
               title="Revenue vs target by user"
               description="Sales achievement against personal targets"
-              isLoading={teamTargetsQuery.isLoading}
+              isLoading={
+                teamTargetsQuery.isLoading ||
+                branchFilterPending ||
+                (branchIdFilter != null && usersQuery.isLoading)
+              }
               isError={teamTargetsQuery.isError}
               onRetry={() => void teamTargetsQuery.refetch()}
               contentClassName="pt-0 max-h-[280px] overflow-y-auto"
