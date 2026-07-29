@@ -116,6 +116,9 @@ export interface RepJourneyData {
   period: { start: string; end: string };
   totalPoints: number;
   points: RepJourneyPoint[];
+  /** Road-snapped polyline for map rendering — [longitude, latitude][]. */
+  routeCoordinates?: [number, number][];
+  routeGeometrySource?: 'roads' | 'raw-gps' | 'none';
   summary: RepJourneySummary;
 }
 

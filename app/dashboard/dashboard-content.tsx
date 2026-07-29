@@ -23,7 +23,8 @@ import { AttendanceStreakCalendar } from '@/components/attendance-streak-calenda
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
-import { buildClockInNotes } from '@/lib/clock-in-options';
+import { buildClockInNotes, locationContextFailureMessage } from '@/lib/clock-in-options';
+import { getBrowserPosition, geolocationFailureMessage } from '@/lib/browser-geolocation';
 import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientDashboardHome } from '@/app/client-portal/components/client-dashboard-home';
@@ -40,6 +41,7 @@ export function DashboardContent() {
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
+  const [clockInContextError, setClockInContextError] = useState<string | null>(null);
 
   const currentUserForModal = useMemo((): ReportCardUser | null => {
     if (!profile?.uid) return null;
@@ -99,9 +101,11 @@ export function DashboardContent() {
 
   const refreshClockInContext = useCallback(async () => {
     setClockInContextLoading(true);
-    const position = await getPosition();
-    if (!position) {
+    setClockInContextError(null);
+    const position = await getBrowserPosition();
+    if (!position.ok) {
       setClockInContext(null);
+      setClockInContextError(geolocationFailureMessage(position.reason));
       setClockInContextLoading(false);
       return;
     }
@@ -119,12 +123,15 @@ export function DashboardContent() {
           distanceFromBranchMeters: ctx.distanceFromBranchMeters ?? null,
           outsideBranchRadiusMessage: ctx.outsideBranchRadiusMessage ?? null,
         });
+        setClockInContextError(null);
       } else {
         setClockInContext(null);
+        setClockInContextError(locationContextFailureMessage('missing_context'));
       }
       setClockInContextLoading(false);
     } catch {
       setClockInContext(null);
+      setClockInContextError(locationContextFailureMessage('api_error'));
       setClockInContextLoading(false);
     }
   }, [apiClient]);
@@ -133,6 +140,7 @@ export function DashboardContent() {
   useEffect(() => {
     if (!staffAttendanceEnabled || checkedIn) {
       setClockInContext(null);
+      setClockInContextError(null);
       setClockInContextLoading(false);
       return;
     }
@@ -141,16 +149,16 @@ export function DashboardContent() {
 
   const handleClockInWithNote = async (modeLabel: string, additionalNote?: string) => {
     const combined = buildClockInNotes(modeLabel, additionalNote);
-    const position = await getPosition();
+    const position = await getBrowserPosition();
     const noLocationSuffix =
-      position === null ? ' (browser location not granted)' : '';
+      !position.ok ? ' (browser location not granted)' : '';
     attCheckInMutation.mutate(
       {
         status: 'present',
         checkIn: new Date().toISOString(),
         checkInNotes:
-          position !== null ? combined : `${combined}${noLocationSuffix}`,
-        ...(position !== null && {
+          position.ok ? combined : `${combined}${noLocationSuffix}`,
+        ...(position.ok && {
           checkInLatitude: position.lat,
           checkInLongitude: position.lng,
         }),
@@ -165,13 +173,13 @@ export function DashboardContent() {
   };
 
   const handleCheckOut = async () => {
-    const position = await getPosition();
+    const position = await getBrowserPosition();
     const noLocationNote = 'Clocked out without location (browser location not granted).';
     attCheckOutMutation.mutate(
       {
         checkOut: new Date().toISOString(),
-        checkOutNotes: position !== null ? '' : noLocationNote,
-        ...(position !== null && {
+        checkOutNotes: position.ok ? '' : noLocationNote,
+        ...(position.ok && {
           checkOutLatitude: position.lat,
           checkOutLongitude: position.lng,
         }),
@@ -185,12 +193,12 @@ export function DashboardContent() {
   };
 
   const handleStartBreak = async () => {
-    const position = await getPosition();
+    const position = await getBrowserPosition();
     breakMutation.mutate(
       {
         isStartingBreak: true,
         breakNotes: '',
-        ...(position !== null && {
+        ...(position.ok && {
           breakLatitude: position.lat,
           breakLongitude: position.lng,
         }),
@@ -204,12 +212,12 @@ export function DashboardContent() {
   };
 
   const handleEndBreak = async () => {
-    const position = await getPosition();
+    const position = await getBrowserPosition();
     breakMutation.mutate(
       {
         isStartingBreak: false,
         breakNotes: '',
-        ...(position !== null && {
+        ...(position.ok && {
           breakLatitude: position.lat,
           breakLongitude: position.lng,
         }),
@@ -259,6 +267,7 @@ export function DashboardContent() {
               onClockInWithNote={handleClockInWithNote}
               clockInContext={clockInContext}
               clockInContextLoading={clockInContextLoading}
+              clockInContextError={clockInContextError}
               onRetryClockInContext={() => void refreshClockInContext()}
               onCheckOut={handleCheckOut}
               onStartBreak={handleStartBreak}
@@ -292,17 +301,4 @@ export function DashboardContent() {
       </main>
     </div>
   );
-}
-
-function getPosition(): Promise<{ lat: number; lng: number } | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => resolve(null)
-    );
-  });
 }

@@ -39,6 +39,8 @@ export interface AttendanceStatusButtonProps {
   clockInContext?: AttCheckInContext | null;
   /** While fetching location + status for clock-in context */
   clockInContextLoading?: boolean;
+  /** Specific message when location context could not be loaded (permission, API, etc.). */
+  clockInContextError?: string | null;
   /** Retry fetching GET /att/status?lat=&lng= when location context is unavailable. */
   onRetryClockInContext?: () => void;
   onCheckOut: () => void;
@@ -82,9 +84,10 @@ const soloStartShiftButtonClass =
 function clockInModalDescription(
   ctx: AttCheckInContext | null | undefined,
   loading: boolean,
+  locationError?: string | null,
 ): string {
   if (isLocationContextUnavailable(ctx, loading)) {
-    return LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
+    return locationError?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
   }
   const raw = ctx?.outsideBranchRadiusMessage?.trim() || OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK;
   const withPeriod = /[.!?]\s*$/.test(raw) ? raw : `${raw}.`;
@@ -123,6 +126,7 @@ export function AttendanceStatusButton({
   onClockInWithNote,
   clockInContext = null,
   clockInContextLoading = false,
+  clockInContextError = null,
   onRetryClockInContext,
   onCheckOut,
   onStartBreak,
@@ -290,7 +294,7 @@ export function AttendanceStatusButton({
                 <>
                   <p className="text-center text-[0.7rem] text-muted-foreground">
                     {locationUnavailable
-                      ? LOCATION_CONTEXT_UNAVAILABLE_MESSAGE
+                      ? (clockInContextError?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE)
                       : clockInContext?.outsideBranchRadiusMessage?.trim() ||
                         OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK}
                   </p>
@@ -328,7 +332,7 @@ export function AttendanceStatusButton({
                             Start your shift
                           </DialogTitle>
                           <DialogDescription className="text-center text-xs text-muted-foreground">
-                            {clockInModalDescription(clockInContext, clockInContextLoading)}
+                            {clockInModalDescription(clockInContext, clockInContextLoading, clockInContextError)}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-2 pt-2">
