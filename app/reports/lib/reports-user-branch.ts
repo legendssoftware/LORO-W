@@ -1,21 +1,22 @@
 /**
  * Resolve a user's primary attached branch UID for reports filtering.
- * Prefer nested `branch.uid`; fall back to flat `branchUid` on list payloads.
+ * Prefer flat `branchUid` (matches session auth / users.branchUid column);
+ * fall back to nested `branch.uid` on list payloads when the column is absent.
  */
 export function resolveUserBranchUid(user: {
   branch?: { uid?: number | null } | null;
   branchUid?: unknown;
 }): number | null {
-  if (user.branch?.uid != null && Number.isFinite(Number(user.branch.uid))) {
-    const n = Number(user.branch.uid);
-    return n > 0 ? n : null;
-  }
   if (typeof user.branchUid === 'number' && Number.isFinite(user.branchUid)) {
     return user.branchUid > 0 ? user.branchUid : null;
   }
   if (typeof user.branchUid === 'string' && user.branchUid.trim() !== '') {
     const n = Number(user.branchUid);
     return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  if (user.branch?.uid != null && Number.isFinite(Number(user.branch.uid))) {
+    const n = Number(user.branch.uid);
+    return n > 0 ? n : null;
   }
   return null;
 }

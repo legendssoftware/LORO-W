@@ -28,7 +28,7 @@ import {
   useUserPreferences,
 } from '@/api/hooks';
 import { getStoresSales } from '@/api/endpoints/erp-stores-sales';
-import { getUsers, type UserListItem } from '@/api/endpoints/user';
+import type { UserListItem } from '@/api/endpoints/user';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import type { VisitListItem } from '@/api/types/visits';
@@ -52,12 +52,11 @@ import {
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { normalizeCountryToken } from '@/lib/utils/country-flags';
-import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
 import {
-  REPORTS_USERS_PAGE_LIMIT,
   REPORTS_USERS_QUERY_KEY,
   resolveReportsAllowlistUids,
   userUidInAllowlist,
+  fetchReportsOrgUsers,
 } from '../lib/reports-scope-allowlist';
 import {
   buildOwnerBranchUidMap,
@@ -111,8 +110,6 @@ import {
   trailingMonthRanges,
 } from '../lib/reports-dashboard-chart-helpers';
 
-const USERS_PAGE_LIMIT = REPORTS_USERS_PAGE_LIMIT;
-
 const BRANCH_SALES_TREND_COLORS = [
   REPORTS_CHART_BLUE,
   REPORTS_CHART_GREEN,
@@ -120,24 +117,6 @@ const BRANCH_SALES_TREND_COLORS = [
   REPORTS_CHART_RED,
   ATT_CHART_HSL.c4,
 ] as const;
-
-async function fetchAllOrgUsers(
-  client: Parameters<typeof getUsers>[0]
-): Promise<UserListItem[]> {
-  const all: UserListItem[] = [];
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    const res = await getUsers(client, { page, limit: USERS_PAGE_LIMIT });
-    const chunk = Array.isArray(res?.data) ? res.data : [];
-    all.push(...chunk);
-    totalPages = Math.max(1, Number(res?.meta?.totalPages) || 1);
-    if (chunk.length === 0) break;
-    page += 1;
-    if (page > 50) break;
-  }
-  return all;
-}
 
 function visitIsWorked(c: VisitListItem): boolean {
   const sales = Number(c.salesValue ?? 0);
@@ -477,29 +456,30 @@ export function ReportsDashboardTab() {
   });
   const usersQuery = useQuery({
     queryKey: [...REPORTS_USERS_QUERY_KEY, scope] as const,
-    queryFn: () => fetchAllOrgUsers(client),
+    queryFn: () => fetchReportsOrgUsers(client),
     enabled: enabled && isMultiUser,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
-  const scopedUsers = useMemo(
+  /** All allowlisted org users — used for branch/user pickers and branch UID scoping. */
+  const allowlistedUsers = useMemo(
     () =>
-      (usersQuery.data ?? [])
-        .filter(userListItemInLeadsVisitsReportingCohort)
-        .filter((u) => userUidInAllowlist(u.uid, allowlistUids)),
+      (usersQuery.data ?? []).filter((u) =>
+        userUidInAllowlist(u.uid, allowlistUids)
+      ),
     [usersQuery.data, allowlistUids]
   );
 
-  /** Users attached to the selected branch (or full scoped set when All branches). */
+  /** Users attached to the selected branch (or full allowlisted set when All branches). */
   const branchScopedUsers = useMemo(
-    () => filterUsersByBranch(scopedUsers, branchIdFilter),
-    [scopedUsers, branchIdFilter]
+    () => filterUsersByBranch(allowlistedUsers, branchIdFilter),
+    [allowlistedUsers, branchIdFilter]
   );
 
   const branchScopedUserIds = useMemo(
-    () => userIdsMatchingBranch(scopedUsers, branchIdFilter),
-    [scopedUsers, branchIdFilter]
+    () => userIdsMatchingBranch(allowlistedUsers, branchIdFilter),
+    [allowlistedUsers, branchIdFilter]
   );
 
   const ownerBranchByUid = useMemo(
@@ -530,14 +510,14 @@ export function ReportsDashboardTab() {
       );
     }
     if (userIdFilter == null) return undefined;
-    const u = scopedUsers.find((row) => row.uid === userIdFilter);
+    const u = allowlistedUsers.find((row) => row.uid === userIdFilter);
     return u?.clerkUserId?.trim() || String(userIdFilter);
   }, [
     isMultiUser,
     backendUserData?.clerkUserId,
     backendUserData?.uid,
     userIdFilter,
-    scopedUsers,
+    allowlistedUsers,
   ]);
 
   const hasVisitClientFilters =
@@ -665,7 +645,7 @@ export function ReportsDashboardTab() {
       return name || self.email || `User ${journeyUserId}`;
     }
     const u = branchScopedUsers.find((row) => Number(row.uid) === journeyUserId)
-      ?? scopedUsers.find((row) => Number(row.uid) === journeyUserId);
+      ?? allowlistedUsers.find((row) => Number(row.uid) === journeyUserId);
     if (!u) return `User ${journeyUserId}`;
     const name = [u.name, u.surname].filter(Boolean).join(' ').trim();
     return name || u.email || `User ${journeyUserId}`;
@@ -674,7 +654,7 @@ export function ReportsDashboardTab() {
     isMultiUser,
     backendUserData,
     branchScopedUsers,
-    scopedUsers,
+    allowlistedUsers,
   ]);
   const hasTrackingUser = journeyUserId != null;
   const trackingUsersLoading = isMultiUser && usersQuery.isLoading;
@@ -1464,7 +1444,7 @@ export function ReportsDashboardTab() {
         }}
         showDimensionFilters={isMultiUser}
         branches={branchesQuery.data ?? []}
-        users={scopedUsers}
+        users={allowlistedUsers}
         selectedBranchId={branchFilter}
         onBranchChange={(id) => {
           setBranchFilter(id);

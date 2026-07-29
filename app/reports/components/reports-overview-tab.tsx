@@ -16,9 +16,6 @@ import {
   useDailyProductivity,
   useBranches,
 } from '@/api/hooks';
-import { getUsers } from '@/api/endpoints/user';
-import type { UserListItem } from '@/api/endpoints/user';
-import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
   ReportsListPagination,
@@ -33,12 +30,13 @@ import {
   type ReportsTargetsSortMetric,
 } from '@/app/reports/components/reports-targets-toolbar';
 import {
-  REPORTS_USERS_PAGE_LIMIT,
   REPORTS_USERS_QUERY_KEY,
   resolveReportsAllowlistUids,
   userUidInAllowlist,
+  fetchReportsOrgUsers,
 } from '@/app/reports/lib/reports-scope-allowlist';
 import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
+import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import {
   applyEngagementToRow,
   applyErpSalesToRow,
@@ -73,28 +71,6 @@ const PAGE_LOCAL_SORT_METRICS = new Set<ReportsTargetsSortMetric>([
   'achievement',
   'productivity',
 ]);
-
-async function fetchAllOrgUsers(
-  client: Parameters<typeof getUsers>[0]
-): Promise<UserListItem[]> {
-  const all: UserListItem[] = [];
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    const res = await getUsers(client, {
-      page,
-      limit: REPORTS_USERS_PAGE_LIMIT,
-    });
-    const chunk = Array.isArray(res?.data) ? res.data : [];
-    all.push(...chunk);
-    totalPages = Math.max(1, Number(res?.meta?.totalPages) || 1);
-    if (chunk.length === 0) break;
-    page += 1;
-    // Safety cap: 50 pages × 100 = 5000 users
-    if (page > 50) break;
-  }
-  return all;
-}
 
 function sortTargetRows(
   rows: ReportsTargetRow[],
@@ -254,7 +230,7 @@ export function ReportsOverviewTab() {
 
   const usersQuery = useQuery({
     queryKey: [...REPORTS_USERS_QUERY_KEY, scope] as const,
-    queryFn: () => fetchAllOrgUsers(client),
+    queryFn: () => fetchReportsOrgUsers(client),
     enabled: isTokenReady && !isSyncing && isMultiUser,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -684,11 +660,11 @@ export function ReportsOverviewTab() {
   const reviewStartYmd = useAllTime ? null : formatUtcYmd(startDate);
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
 
-  const scopedUsersForPicker = useMemo(
+  const allowlistedUsers = useMemo(
     () =>
-      (usersQuery.data ?? [])
-        .filter(userListItemInLeadsVisitsReportingCohort)
-        .filter((u) => userUidInAllowlist(u.uid, allowlistUids)),
+      (usersQuery.data ?? []).filter((u) =>
+        userUidInAllowlist(u.uid, allowlistUids)
+      ),
     [usersQuery.data, allowlistUids]
   );
 
@@ -699,6 +675,13 @@ export function ReportsOverviewTab() {
       return 'No matching user in the selected branch with performance targets.';
     }
     if (branchFilter !== 'all') {
+      const branchUid = Number(branchFilter);
+      const assignedOnBranch =
+        Number.isFinite(branchUid) &&
+        allowlistedUsers.some((u) => resolveUserBranchUid(u) === branchUid);
+      if (assignedOnBranch) {
+        return 'Users are assigned to this branch, but none have performance targets (calls, visits, or leads).';
+      }
       return 'No users with performance targets in this branch.';
     }
     if (userFilter !== 'all') {
@@ -708,7 +691,14 @@ export function ReportsOverviewTab() {
       return 'No managed team members with performance targets found.';
     }
     return 'No users with performance targets found.';
-  }, [isMultiUser, debouncedSearch, branchFilter, userFilter, scope]);
+  }, [
+    isMultiUser,
+    debouncedSearch,
+    branchFilter,
+    userFilter,
+    scope,
+    allowlistedUsers,
+  ]);
 
   function handlePageSizeChange(size: ReportsPageSize) {
     setPageSize(size);
@@ -764,7 +754,7 @@ export function ReportsOverviewTab() {
         showSearch={isMultiUser}
         showDimensionFilters={isMultiUser}
         branches={branchesQuery.data ?? []}
-        users={scopedUsersForPicker}
+        users={allowlistedUsers}
         selectedBranchId={branchFilter}
         onBranchChange={(id) => {
           setBranchFilter(id);

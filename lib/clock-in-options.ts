@@ -23,9 +23,36 @@ export const OPTION_KEY_TO_LABEL: Record<ClockInOptionKey, ClockInOptionLabel> =
 export const OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK =
   'You are outside the office check-in radius.';
 
-/** Shown when location context could not be loaded. */
+/** Shown when location context could not be loaded (generic fallback). */
 export const LOCATION_CONTEXT_UNAVAILABLE_MESSAGE =
   'Could not verify your location. Choose how you are starting your shift, or retry location.';
+
+export type LocationContextFailureReason =
+  | 'permission_denied'
+  | 'position_unavailable'
+  | 'api_unreachable'
+  | 'api_error'
+  | 'missing_context';
+
+/** User-facing copy when clock-in context could not be loaded. */
+export function locationContextFailureMessage(reason: LocationContextFailureReason): string {
+  switch (reason) {
+    case 'permission_denied':
+      return 'Location access is denied. Enable location for LORO in your browser settings, then retry.';
+    case 'position_unavailable':
+      return 'Could not read your location. Check that location services are on, then retry.';
+    case 'api_unreachable':
+      return 'Could not reach the server to verify your location. Check your connection and API URL, then retry.';
+    case 'api_error':
+      return 'The server could not verify your location. Try again in a moment, or choose how you are starting.';
+    case 'missing_context':
+      return LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
+    default: {
+      const _exhaustive: never = reason;
+      return _exhaustive;
+    }
+  }
+}
 
 /** Remote options when server context is unavailable (never default to at-office). */
 export const FALLBACK_REMOTE_CLOCK_IN_OPTION_KEYS: ClockInOptionKey[] = [
