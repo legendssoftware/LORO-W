@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getSessionSyncQueryKey } from '@/api/hooks/use-session-sync';
 import { DAILY_OVERVIEW_QUERY_KEY_PREFIX } from '@/api/hooks/use-daily-overview';
+import { REPORTS_USERS_QUERY_KEY_PREFIX } from '@/api/query-keys';
 import { useSessionStore } from '@/store/session-store';
 import {
   getUserByRef,
@@ -36,6 +37,13 @@ export const DAILY_PRODUCTIVITY_KEY_PREFIX = [
   'daily-productivity',
 ] as const;
 const BONUS_STATUS_KEY_PREFIX = ['user', 'bonus-status'] as const;
+
+function invalidateOrgUserListCaches(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+  queryClient.invalidateQueries({ queryKey: ['users'] });
+  queryClient.invalidateQueries({ queryKey: [...REPORTS_USERS_QUERY_KEY_PREFIX] });
+  queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+}
 
 export function useUser(
   ref: string | null,
@@ -105,7 +113,7 @@ export function useDeleteUser(ref: string | null) {
       return deleteUser(client, ref);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateOrgUserListCaches(queryClient);
       if (ref) {
         queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
       }
@@ -122,7 +130,7 @@ export function useRestoreUser(ref: string | null) {
       return restoreUser(client, ref);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateOrgUserListCaches(queryClient);
       if (ref) {
         queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
       }
@@ -139,7 +147,7 @@ export function useDeleteUserPermanently(ref: string | null) {
       return deleteUserPermanently(client, ref);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      invalidateOrgUserListCaches(queryClient);
       if (ref) {
         queryClient.removeQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
       }

@@ -78,6 +78,8 @@ type JourneyRouteState = {
   range: RepJourneyRange;
   repName: string;
   points: RepJourneyPoint[];
+  routeCoordinates: [number, number][];
+  routeGeometrySource: 'roads' | 'raw-gps' | 'none';
   summary: RepJourneySummary;
   period: { start: string; end: string };
 };
@@ -525,7 +527,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setActiveTraceRange(range);
       setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
-      toast.loading(`Loading ${RANGE_LABELS[range]} points…`, { id: toastId });
+      toast.loading(`Loading ${RANGE_LABELS[range]} route…`, { id: toastId });
       try {
         const data = await queryClient.fetchQuery({
           queryKey: repJourneyQueryKey(repUid, range),
@@ -561,6 +563,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           range,
           repName,
           points: data.points,
+          routeCoordinates: data.routeCoordinates ?? [],
+          routeGeometrySource: data.routeGeometrySource ?? 'none',
           summary: data.summary,
           period: data.period,
         });
@@ -649,8 +653,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     [journeyCheckInsQuery.data?.checkIns]
   );
 
-  /** Trail polyline only — visits stay on JourneyVisitsLayer (do not stitch onto the route). */
+  /** Trail polyline — road-snapped when available; falls back to key-point line. */
   const journeyCoordinates = useMemo((): [number, number][] => {
+    if ((journeyRoute?.routeCoordinates?.length ?? 0) >= 2) {
+      return journeyRoute!.routeCoordinates;
+    }
     return (journeyRoute?.points ?? []).map(
       (p): [number, number] => [p.longitude, p.latitude]
     );
@@ -839,6 +846,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
               {RANGE_LABELS[journeyRoute.range]} ·{' '}
               {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
               {journeyRoute.summary.totalTravelFormatted} travel
+              {journeyRoute.routeGeometrySource === 'roads'
+                ? ' · roads'
+                : journeyRoute.routeGeometrySource === 'raw-gps'
+                  ? ' · GPS'
+                  : ''}
             </p>
             <button
               type="button"

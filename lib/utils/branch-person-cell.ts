@@ -16,7 +16,6 @@ export function branchUidFromListUser(u: UserListItem | undefined): number | nul
   if (typeof bu === 'number' && bu > 0) return bu;
   return null;
 }
-
 export function branchFlagAndLabel(
   listUser: UserListItem | undefined,
   branchByUid: Map<number, BranchListItem>

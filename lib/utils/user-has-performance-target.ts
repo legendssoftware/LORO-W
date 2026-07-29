@@ -30,8 +30,17 @@ export function userListItemHasPerformanceTarget(user: UserListItem): boolean {
   return userHasPerformanceTarget(ut as Record<string, unknown>);
 }
 
+/** Matches Staff + server reporting scope: not soft-deleted and account status active. */
+export function userListItemIsActiveForReporting(user: UserListItem): boolean {
+  const row = user as { isDeleted?: boolean; status?: string | null };
+  if (row.isDeleted === true) return false;
+  const status = (row.status ?? 'active').toLowerCase();
+  return status === 'active';
+}
+
 /** Org leads/visits/targets reporting cohort: performance targets required, general workers excluded (matches server rollups). */
 export function userListItemInLeadsVisitsReportingCohort(user: UserListItem): boolean {
+  if (!userListItemIsActiveForReporting(user)) return false;
   if (isGeneralWorkerWorkforce(user.workforceType)) return false;
   return userListItemHasPerformanceTarget(user);
 }
