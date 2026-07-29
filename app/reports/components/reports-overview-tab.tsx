@@ -35,7 +35,7 @@ import {
   userUidInAllowlist,
   fetchReportsOrgUsers,
 } from '@/app/reports/lib/reports-scope-allowlist';
-import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
+import { filterUsersByBranch } from '@/app/reports/lib/reports-user-branch';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import {
   applyEngagementToRow,
@@ -336,23 +336,50 @@ export function ReportsOverviewTab() {
         : selfAttMetricsQuery.isSuccess
       : false;
 
+  const allowlistedUsers = useMemo(
+    () =>
+      (usersQuery.data ?? []).filter((u) =>
+        userUidInAllowlist(u.uid, allowlistUids)
+      ),
+    [usersQuery.data, allowlistUids]
+  );
+
+  const branchScopedUsers = useMemo(
+    () => filterUsersByBranch(allowlistedUsers, branchIdFilter),
+    [allowlistedUsers, branchIdFilter]
+  );
+
+  const selectedBranch = useMemo(
+    () =>
+      branchIdFilter != null
+        ? (branchesQuery.data ?? []).find((b) => b.uid === branchIdFilter) ??
+          null
+        : null,
+    [branchesQuery.data, branchIdFilter]
+  );
+
+  /** When a branch is selected but the branches/users list has not resolved yet, avoid unfiltered rows. */
+  const branchFilterPending =
+    branchIdFilter != null &&
+    ((branchesQuery.isLoading && selectedBranch == null) ||
+      (!usersQuery.isSuccess && usersQuery.data == null));
+
+  const cohortUsersForToolbar = useMemo(
+    () =>
+      branchScopedUsers.filter(userListItemInLeadsVisitsReportingCohort),
+    [branchScopedUsers]
+  );
+
   const cohortRows = useMemo((): ReportsTargetRow[] => {
-    if (!isMultiUser) return [];
-    const users = usersQuery.data ?? [];
+    if (!isMultiUser || branchFilterPending) return [];
+    const users = branchScopedUsers;
     const engagementReady = !!rangeParams && engagementQuery.isSuccess;
 
     let rows = users
       .filter(userListItemInLeadsVisitsReportingCohort)
-      .filter((user) => userUidInAllowlist(user.uid, allowlistUids))
       .filter((user) => {
         if (userFilter !== 'all' && String(user.uid) !== userFilter) {
           return false;
-        }
-        if (branchFilter !== 'all') {
-          const branchUid = resolveUserBranchUid(user);
-          if (branchUid == null || String(branchUid) !== branchFilter) {
-            return false;
-          }
         }
         if (!debouncedSearch) return true;
         const branchLabel = getBranchDisplayLabel(user.branch) || '';
@@ -405,10 +432,9 @@ export function ReportsOverviewTab() {
     return sortTargetRows(rows, metricForCohort);
   }, [
     isMultiUser,
-    usersQuery.data,
-    allowlistUids,
+    branchFilterPending,
+    branchScopedUsers,
     debouncedSearch,
-    branchFilter,
     userFilter,
     sortMetric,
     rangeParams,
@@ -642,7 +668,10 @@ export function ReportsOverviewTab() {
 
   /** Shell rows render as soon as the user list is ready — overlays enrich in place. */
   const isLoading = isMultiUser
-    ? !isTokenReady || isSyncing || usersQuery.isLoading
+    ? !isTokenReady ||
+      isSyncing ||
+      usersQuery.isLoading ||
+      branchFilterPending
     : !isTokenReady || isSyncing || selfTargetQuery.isLoading;
 
   const errorMessage = isMultiUser
@@ -660,26 +689,17 @@ export function ReportsOverviewTab() {
   const reviewStartYmd = useAllTime ? null : formatUtcYmd(startDate);
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
 
-  const allowlistedUsers = useMemo(
-    () =>
-      (usersQuery.data ?? []).filter((u) =>
-        userUidInAllowlist(u.uid, allowlistUids)
-      ),
-    [usersQuery.data, allowlistUids]
-  );
-
   const emptyMessage = useMemo(() => {
     if (!isMultiUser) return 'You do not have personal performance targets set.';
+    if (branchFilterPending) return 'Loading branch users…';
     if (debouncedSearch) return 'No matching users with performance targets.';
     if (branchFilter !== 'all' && userFilter !== 'all') {
       return 'No matching user in the selected branch with performance targets.';
     }
     if (branchFilter !== 'all') {
-      const branchUid = Number(branchFilter);
-      const assignedOnBranch =
-        Number.isFinite(branchUid) &&
-        allowlistedUsers.some((u) => resolveUserBranchUid(u) === branchUid);
-      if (assignedOnBranch) {
+      const assignedOnBranch = branchScopedUsers.length > 0;
+      const withTargets = cohortUsersForToolbar.length > 0;
+      if (assignedOnBranch && !withTargets) {
         return 'Users are assigned to this branch, but none have performance targets (calls, visits, or leads).';
       }
       return 'No users with performance targets in this branch.';
@@ -693,11 +713,13 @@ export function ReportsOverviewTab() {
     return 'No users with performance targets found.';
   }, [
     isMultiUser,
+    branchFilterPending,
     debouncedSearch,
     branchFilter,
     userFilter,
     scope,
-    allowlistedUsers,
+    branchScopedUsers.length,
+    cohortUsersForToolbar.length,
   ]);
 
   function handlePageSizeChange(size: ReportsPageSize) {
@@ -754,7 +776,7 @@ export function ReportsOverviewTab() {
         showSearch={isMultiUser}
         showDimensionFilters={isMultiUser}
         branches={branchesQuery.data ?? []}
-        users={allowlistedUsers}
+        users={cohortUsersForToolbar}
         selectedBranchId={branchFilter}
         onBranchChange={(id) => {
           setBranchFilter(id);
