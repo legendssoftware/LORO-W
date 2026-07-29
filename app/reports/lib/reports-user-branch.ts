@@ -1,24 +1,26 @@
+function positiveUid(value: unknown): number | null {
+  if (value == null) return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 /**
  * Resolve a user's primary attached branch UID for reports filtering.
- * Prefer flat `branchUid` (matches session auth / users.branchUid column);
- * fall back to nested `branch.uid` on list payloads when the column is absent.
+ * Prefer nested `branch.uid` when the relation is loaded (matches table labels,
+ * GET /user branch joins, and engagement-range filters). Fall back to flat
+ * `branchUid` when the relation is absent (e.g. session auth payloads).
  */
 export function resolveUserBranchUid(user: {
   branch?: { uid?: number | null } | null;
   branchUid?: unknown;
 }): number | null {
-  if (typeof user.branchUid === 'number' && Number.isFinite(user.branchUid)) {
-    return user.branchUid > 0 ? user.branchUid : null;
+  const fromRelation = positiveUid(user.branch?.uid);
+  if (fromRelation != null) return fromRelation;
+
+  if (typeof user.branchUid === 'string' && user.branchUid.trim() === '') {
+    return null;
   }
-  if (typeof user.branchUid === 'string' && user.branchUid.trim() !== '') {
-    const n = Number(user.branchUid);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }
-  if (user.branch?.uid != null && Number.isFinite(Number(user.branch.uid))) {
-    const n = Number(user.branch.uid);
-    return n > 0 ? n : null;
-  }
-  return null;
+  return positiveUid(user.branchUid);
 }
 
 /** True when no branch filter is active, or the user belongs to that branch. */
