@@ -77,7 +77,7 @@ export interface UserListItem {
   avatar?: string | null;
   workforceType?: string | null;
   branchUid?: number | null;
-  branch?: { uid: number; name?: string; alias?: string | null } | null;
+  branch?: { uid: number; name?: string; alias?: string | null; country?: string | null } | null;
   userTarget?: UserTargetListFields | null;
   [key: string]: unknown;
 }

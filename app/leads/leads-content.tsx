@@ -7,14 +7,20 @@ import {
   useSearchableUsersList,
   useBranches,
   useDedupeLeadsMutation,
+  useCheckInStatus,
 } from '@/api/hooks';
 import type { BranchListItem } from '@/api/types/branch';
 import { useLeadsStore } from '@/store/leads-store';
 import type { LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import {
+  leadToEndVisitInitialForm,
+  parseActiveCallFromStatus,
+} from '@/lib/check-in-utils';
+import { EndVisitDialog } from '@/components/visits/end-visit-dialog';
 import {
   LeadsTable,
   type LeadActivityActorLookup,
@@ -99,6 +105,12 @@ export function LeadsContent() {
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
+  const [listEndCallOpen, setListEndCallOpen] = useState(false);
+  const [openEndCallInDialog, setOpenEndCallInDialog] = useState(false);
+
+  const checkInStatusQuery = useCheckInStatus({ enabled: true });
+  const { hasActiveCall, activeCallLeadUid, activeCheckInMethod } =
+    parseActiveCallFromStatus(checkInStatusQuery.data);
 
   const {
     users,
@@ -234,6 +246,36 @@ export function LeadsContent() {
 
   const listError = activeQuery.isError ? activeQuery.error : null;
 
+  const activeCallLead = useMemo(() => {
+    if (activeCallLeadUid == null) return null;
+    return leads.find((l) => l.uid === activeCallLeadUid) ?? null;
+  }, [leads, activeCallLeadUid]);
+
+  const activeCallLeadName =
+    activeCallLead?.name?.trim() ||
+    activeCallLead?.companyName?.trim() ||
+    (activeCallLeadUid != null ? `Lead #${activeCallLeadUid}` : '');
+
+  const listEndCallInitialForm = useMemo(
+    () => (activeCallLead ? leadToEndVisitInitialForm(activeCallLead) : undefined),
+    [activeCallLead],
+  );
+
+  function openLead(lead: LeadListItem) {
+    setSelectedLead(lead);
+    setLeadDialogOpen(true);
+  }
+
+  function handleEndCallFromList(lead: LeadListItem) {
+    setSelectedLead(lead);
+    setLeadDialogOpen(true);
+    setOpenEndCallInDialog(true);
+  }
+
+  function handleListEndCallHandled() {
+    setOpenEndCallInDialog(false);
+  }
+
   const handleSelectedUserIdChange = bindUidChange((userId: string) => {
     if (userId !== '' && userId !== 'all') {
       setUnassignedOnly(false);
@@ -331,6 +373,45 @@ export function LeadsContent() {
           onImportClick={() => setImportModalOpen(true)}
           onDedupeClick={() => setDedupeDialogOpen(true)}
         />
+        {hasActiveCall && activeCallLeadUid != null ? (
+          <div className="mb-4 flex shrink-0 flex-col gap-3 rounded-lg border-4 border-green-500 bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-900">
+              <Phone className="size-4 shrink-0" aria-hidden />
+              <span>
+                Call in progress
+                {activeCallLeadName ? ` with ${activeCallLeadName}` : ''}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {activeCallLead ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-green-600 text-green-800 hover:bg-green-100"
+                  onClick={() => openLead(activeCallLead)}
+                >
+                  View lead
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 bg-red-600 text-white hover:bg-red-700"
+                onClick={() => {
+                  if (activeCallLead) {
+                    handleEndCallFromList(activeCallLead);
+                  } else {
+                    setListEndCallOpen(true);
+                  }
+                }}
+              >
+                <Phone className="size-4" />
+                End call
+              </Button>
+            </div>
+          </div>
+        ) : null}
         {canDedupe ? (
           <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
             <DialogContent className="sm:max-w-md">
@@ -399,11 +480,10 @@ export function LeadsContent() {
                 isLoading={listLoading}
                 emptyMessage="No leads match your filters."
                 selectedLeadUid={selectedLead?.uid ?? null}
+                activeCallLeadUid={hasActiveCall ? activeCallLeadUid : null}
                 activityActorLookup={activityActorLookup}
-                onLeadClick={(lead) => {
-                  setSelectedLead(lead);
-                  setLeadDialogOpen(true);
-                }}
+                onLeadClick={openLead}
+                onEndActiveCall={handleEndCallFromList}
               />
             </div>
             <div className="lg:hidden">
@@ -411,11 +491,10 @@ export function LeadsContent() {
                 leads={leads}
                 isLoading={listLoading}
                 emptyMessage="No leads match your filters."
+                activeCallLeadUid={hasActiveCall ? activeCallLeadUid : null}
                 activityActorLookup={activityActorLookup}
-                onLeadClick={(lead) => {
-                  setSelectedLead(lead);
-                  setLeadDialogOpen(true);
-                }}
+                onLeadClick={openLead}
+                onEndActiveCall={handleEndCallFromList}
               />
             </div>
           </div>
@@ -433,10 +512,39 @@ export function LeadsContent() {
           open={leadDialogOpen}
           onOpenChange={(open) => {
             setLeadDialogOpen(open);
-            if (!open) setSelectedLead(null);
+            if (!open) {
+              setSelectedLead(null);
+              setOpenEndCallInDialog(false);
+            }
           }}
           lead={selectedLead}
           onActionSuccess={() => refetchLeads()}
+          openEndCall={openEndCallInDialog}
+          onOpenEndCallHandled={handleListEndCallHandled}
+        />
+        <EndVisitDialog
+          open={listEndCallOpen}
+          onOpenChange={setListEndCallOpen}
+          activeVisit={{
+            methodOfContact: activeCheckInMethod ?? 'Telephone',
+            buildingType:
+              typeof checkInStatusQuery.data?.buildingType === 'string'
+                ? checkInStatusQuery.data.buildingType
+                : 'other',
+            businessType:
+              typeof checkInStatusQuery.data?.businessType === 'string'
+                ? checkInStatusQuery.data.businessType
+                : null,
+          }}
+          initialFormValues={listEndCallInitialForm}
+          title="End call"
+          description="Add call notes and outcomes."
+          submitLabel="End call"
+          successMessage="Call ended"
+          onSuccess={() => {
+            checkInStatusQuery.refetch();
+            refetchLeads();
+          }}
         />
         <ImportLeadsModal
           open={importModalOpen}

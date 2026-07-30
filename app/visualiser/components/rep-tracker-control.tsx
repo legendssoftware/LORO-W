@@ -6,6 +6,7 @@ import type {
   RepJourneyRange,
   RepJourneySummary,
 } from '@/api/types/tracking';
+import { UtcDateRangePicker } from '@/components/filters/utc-date-range-picker';
 import { Button } from '@/components/ui/button';
 import {
   SearchableUserPicker,
@@ -22,6 +23,7 @@ const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
   { range: 'day', label: 'Day' },
   { range: 'week', label: 'Week' },
+  { range: 'custom', label: 'Custom' },
 ];
 
 function formatKm(km: number): string {
@@ -82,6 +84,9 @@ export interface RepTrackerControlProps {
   onUidChange: (uid: string) => void;
   activeRange: RepJourneyRange | null;
   onTraceRange: (range: RepJourneyRange) => void;
+  customRange?: { start: Date; end: Date } | null;
+  onCustomRangeChange?: (range: { start: Date; end: Date }) => void;
+  onResetCustomRange?: () => void;
   onClear: () => void;
   isTracing?: boolean;
   statusMessage?: string | null;
@@ -110,6 +115,9 @@ export function RepTrackerControl({
   onUidChange,
   activeRange,
   onTraceRange,
+  customRange = null,
+  onCustomRangeChange,
+  onResetCustomRange,
   onClear,
   isTracing = false,
   statusMessage = null,
@@ -126,6 +134,8 @@ export function RepTrackerControl({
 }: RepTrackerControlProps) {
   const isTracking = selectedUid !== 'all';
   const showSummary = isTracking && journeySummary != null;
+  const isCustomActive = activeRange === 'custom';
+  const distanceLabel = isCustomActive ? 'Day distance' : "Today's distance";
 
   return (
     <div
@@ -179,6 +189,17 @@ export function RepTrackerControl({
         </div>
       ) : null}
 
+      {isTracking && isCustomActive && customRange && onCustomRangeChange ? (
+        <UtcDateRangePicker
+          startDate={customRange.start}
+          endDate={customRange.end}
+          onRangeChange={onCustomRangeChange}
+          onReset={onResetCustomRange}
+          compact
+          disabled={isTracing}
+        />
+      ) : null}
+
       {showSummary ? (
         <div className="space-y-2 border-t border-border/50 pt-2">
           <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
@@ -195,7 +216,7 @@ export function RepTrackerControl({
               value={journeySummary.totalTravelFormatted || '—'}
             />
             <SummaryCell
-              label="Today's distance"
+              label={distanceLabel}
               value={formatKm(
                 journeySummary.periodAverages.day.totalDistanceKm
               )}

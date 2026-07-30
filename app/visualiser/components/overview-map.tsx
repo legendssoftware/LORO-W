@@ -53,10 +53,17 @@ import {
 } from '@/api/hooks/use-rep-journey';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
+  RepJourneyCustomRangeParams,
   RepJourneyPoint,
   RepJourneyRange,
   RepJourneySummary,
 } from '@/api/types/tracking';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  utcRangeIsoFromUtcCalendarStoredRange,
+  utcToday,
+} from '@/lib/utils/overview-daily-summary';
 import { JourneyVisitsLayer } from '@/app/visualiser/components/journey-visits-layer';
 import {
   journeyVisitActionsFromCheckIns,
@@ -67,18 +74,47 @@ import {
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
 const DEFAULT_ZOOM = 11;
 
-const RANGE_LABELS: Record<RepJourneyRange, string> = {
+const RANGE_LABELS: Record<Exclude<RepJourneyRange, 'custom'>, string> = {
   hour: 'past hour',
   day: 'past day',
   week: 'past week',
 };
 
+function formatCustomRangeLabel(start: Date, end: Date): string {
+  return formatUtcYmd(start) === formatUtcYmd(end)
+    ? formatUtcCalendarLabel(start)
+    : `${formatUtcCalendarLabel(start)} – ${formatUtcCalendarLabel(end)}`;
+}
+
+function formatJourneyRangeLabel(
+  range: RepJourneyRange,
+  customRange?: { start: Date; end: Date } | null
+): string {
+  if (range === 'custom' && customRange) {
+    return formatCustomRangeLabel(customRange.start, customRange.end);
+  }
+  return RANGE_LABELS[range as Exclude<RepJourneyRange, 'custom'>];
+}
+
+function customRangeToApiParams(range: {
+  start: Date;
+  end: Date;
+}): RepJourneyCustomRangeParams {
+  const { startDate, endDate } = utcRangeIsoFromUtcCalendarStoredRange(
+    range.start,
+    range.end
+  );
+  return { startDate, endDate };
+}
+
 type JourneyRouteState = {
   repUid: number;
   range: RepJourneyRange;
+  rangeLabel: string;
   repName: string;
   points: RepJourneyPoint[];
   routeCoordinates: [number, number][];
+  routeSegments: [number, number][][];
   routeGeometrySource: 'roads' | 'raw-gps' | 'none';
   summary: RepJourneySummary;
   period: { start: string; end: string };
@@ -378,6 +414,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const [trackedRepUid, setTrackedRepUid] = useState('all');
   const [activeTraceRange, setActiveTraceRange] =
     useState<RepJourneyRange | null>(null);
+  const [customTraceRange, setCustomTraceRange] = useState(() => {
+    const today = utcToday();
+    return { start: today, end: today };
+  });
   const [trackStatusMessage, setTrackStatusMessage] = useState<string | null>(
     null
   );
@@ -511,9 +551,17 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       repUid: number,
       range: RepJourneyRange,
       repNameOverride?: string,
-      options?: { quiet?: boolean }
+      options?: {
+        quiet?: boolean;
+        customRange?: { start: Date; end: Date };
+      }
     ): Promise<boolean> => {
       const quiet = options?.quiet === true;
+      const customRange =
+        range === 'custom'
+          ? (options?.customRange ?? customTraceRange)
+          : undefined;
+      const rangeLabel = formatJourneyRangeLabel(range, customRange);
       const repName = resolveRepDisplayName(
         repUid,
         selected,
@@ -525,14 +573,26 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setShowLastKnownPopup(false);
       setSelectedVisitId(null);
       setActiveTraceRange(range);
+      if (range === 'custom' && customRange) {
+        setCustomTraceRange(customRange);
+      }
       setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
-      toast.loading(`Loading ${RANGE_LABELS[range]} route…`, { id: toastId });
+      toast.loading(`Loading ${rangeLabel} route…`, { id: toastId });
       try {
+        const apiCustomRange =
+          range === 'custom' && customRange
+            ? customRangeToApiParams(customRange)
+            : undefined;
         const data = await queryClient.fetchQuery({
-          queryKey: repJourneyQueryKey(repUid, range),
+          queryKey: repJourneyQueryKey(repUid, range, apiCustomRange),
           queryFn: async () => {
-            const response = await getRepJourney(client, repUid, range);
+            const response = await getRepJourney(
+              client,
+              repUid,
+              range,
+              apiCustomRange
+            );
             return response.data;
           },
           staleTime: 60_000,
@@ -543,13 +603,13 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           setTrackStatusMessage(
             range === 'day'
               ? `No GPS points today for ${repName} — try Week`
-              : `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`
+              : `No GPS points for ${repName} in ${rangeLabel}.`
           );
           if (!quiet) {
             toast.error(
               range === 'day'
                 ? `No GPS points today — try Week`
-                : `No GPS points for ${repName} in the ${RANGE_LABELS[range]}.`,
+                : `No GPS points for ${repName} in ${rangeLabel}.`,
               { id: toastId }
             );
           } else {
@@ -561,9 +621,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setJourneyRoute({
           repUid,
           range,
+          rangeLabel,
           repName,
           points: data.points,
           routeCoordinates: data.routeCoordinates ?? [],
+          routeSegments: data.routeSegments ?? [],
           routeGeometrySource: data.routeGeometrySource ?? 'none',
           summary: data.summary,
           period: data.period,
@@ -571,9 +633,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setShowLastKnownPopup(true);
         setSelected(null);
         setSelectedJourneyPoint(null);
-        setTrackStatusMessage(RANGE_LABELS[range]);
+        setTrackStatusMessage(rangeLabel);
         toast.success(
-          `${repName}: ${data.summary.totalDistanceKm.toFixed(1)} km · ${data.summary.totalTravelFormatted} travel · ${RANGE_LABELS[range]}`,
+          `${repName}: ${data.summary.totalDistanceKm.toFixed(1)} km · ${data.summary.totalTravelFormatted} travel · ${rangeLabel}`,
           { id: toastId }
         );
         return true;
@@ -592,8 +654,24 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setIsTracing(false);
       }
     },
-    [client, queryClient, selected, users]
+    [client, customTraceRange, queryClient, selected, users]
   );
+
+  const handleCustomRangeChange = useCallback(
+    (range: { start: Date; end: Date }) => {
+      setCustomTraceRange(range);
+      if (trackedRepUid === 'all' || activeTraceRange !== 'custom') return;
+      const repUid = Number(trackedRepUid);
+      if (!Number.isFinite(repUid)) return;
+      void handleTraceRoute(repUid, 'custom', undefined, { customRange: range });
+    },
+    [activeTraceRange, handleTraceRoute, trackedRepUid]
+  );
+
+  const handleResetCustomRange = useCallback(() => {
+    const today = utcToday();
+    handleCustomRangeChange({ start: today, end: today });
+  }, [handleCustomRangeChange]);
 
   const handleTrackedRepChange = useCallback(
     async (uid: string) => {
@@ -653,18 +731,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     [journeyCheckInsQuery.data?.checkIns]
   );
 
-  /** Trail polyline — road-snapped when available; falls back to key-point line. */
-  const journeyCoordinates = useMemo((): [number, number][] => {
-    if ((journeyRoute?.routeCoordinates?.length ?? 0) >= 2) {
-      return journeyRoute!.routeCoordinates;
-    }
-    return (journeyRoute?.points ?? []).map(
-      (p): [number, number] => [p.longitude, p.latitude]
-    );
+  /** Trail polylines — one per continuous GPS cluster; never bridged across gaps. */
+  const journeySegments = useMemo((): [number, number][][] => {
+    const segs = journeyRoute?.routeSegments?.filter((s) => s.length >= 2);
+    if (segs?.length) return segs;
+    return [];
   }, [journeyRoute]);
 
+  const journeyBoundsCoordinates = useMemo(
+    (): [number, number][] => journeySegments.flat(),
+    [journeySegments]
+  );
+
   const journeyRouteKey = journeyRoute
-    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.summary.totalPoints}`
+    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.period.start}-${journeyRoute.period.end}-${journeyRoute.summary.totalPoints}`
     : null;
 
   const trackedLatestPoint = useMemo(() => {
@@ -830,8 +910,17 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           isSearchLoading={isRepSearchLoading}
           onTraceRange={(range) => {
             if (trackedUidNum == null) return;
+            if (range === 'custom') {
+              void handleTraceRoute(trackedUidNum, 'custom', undefined, {
+                customRange: customTraceRange,
+              });
+              return;
+            }
             void handleTraceRoute(trackedUidNum, range);
           }}
+          customRange={customTraceRange}
+          onCustomRangeChange={handleCustomRangeChange}
+          onResetCustomRange={handleResetCustomRange}
         />
       </div>
 
@@ -843,7 +932,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
                 {journeyRoute.repName}
               </span>
               {' · '}
-              {RANGE_LABELS[journeyRoute.range]} ·{' '}
+              {journeyRoute.rangeLabel} ·{' '}
               {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
               {journeyRoute.summary.totalTravelFormatted} travel
               {journeyRoute.routeGeometrySource === 'roads'
@@ -885,7 +974,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           flyKey={lastKnownFlyKey}
         />
         <FitJourneyBounds
-          coordinates={journeyCoordinates}
+          coordinates={journeyBoundsCoordinates}
           routeKey={journeyRouteKey}
         />
         <FitSimulationBounds
@@ -914,16 +1003,19 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
         <SimulationOverlayLayer />
 
-        {journeyRoute && journeyCoordinates.length >= 2 ? (
-          <MapRoute
-            id="rep-journey-route"
-            coordinates={journeyCoordinates}
-            color={LAYER_META.reps.color}
-            width={3}
-            opacity={0.85}
-            interactive={false}
-          />
-        ) : null}
+        {journeySegments.map((segment, index) =>
+          segment.length >= 2 ? (
+            <MapRoute
+              key={`rep-journey-route-${index}`}
+              id={`rep-journey-route-${index}`}
+              coordinates={segment}
+              color={LAYER_META.reps.color}
+              width={3}
+              opacity={0.85}
+              interactive={false}
+            />
+          ) : null
+        )}
 
         {journeyRoute && journeyRoute.points.length > 0 ? (
           <JourneyPointsLayer

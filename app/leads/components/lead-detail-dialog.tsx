@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode, MouseEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import type { LeadListItem } from '@/api/types/leads';
@@ -17,6 +17,7 @@ import {
   DetailFieldRow,
   DetailSectionHeading,
   DETAIL_DIALOG_CONTENT_CLASS,
+  LEAD_DETAIL_DIALOG_CONTENT_CLASS,
   DETAIL_DIALOG_SMALL_CONTENT_CLASS,
   DETAIL_FIELD_GRID_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
@@ -54,6 +55,8 @@ import {
   useSearchableUsersList,
   useLead,
   useApiClient,
+  useCheckInStatus,
+  useCheckInMutation,
 } from '@/api/hooks';
 import { uploadFile } from '@/api/endpoints/upload';
 import type { UpdateLeadPayload } from '@/api/types/leads';
@@ -73,6 +76,7 @@ import {
   LEAD_TEMPERATURE_OPTIONS,
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
+import { buildLeadMailtoUrl, buildLeadWhatsAppUrl } from '@/lib/lead-engage-utils';
 import { Loader2Icon } from '@/lib/icons';
 import { CreateTaskModal } from '@/app/planning/components/create-task-modal';
 import type { CreateTaskPayload } from '@/api/types/tasks';
@@ -121,7 +125,8 @@ import {
 } from '@/lib/lead-activity-display';
 import { LeadHistoryEntry } from './lead-history-entry';
 import { LeadTeamChat } from './lead-team-chat';
-import { buildLeadMailtoUrl, buildLeadWhatsAppUrl } from '@/lib/lead-engage-utils';
+import { buildLeadCallCheckInPayload, leadToEndVisitInitialForm, parseActiveCallFromStatus } from '@/lib/check-in-utils';
+import { EndVisitDialog } from '@/components/visits/end-visit-dialog';
 
 function getOptionLabel(
   options: { value: string; label: string }[],
@@ -184,6 +189,9 @@ export interface LeadDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   lead: LeadListItem | null;
   onActionSuccess?: () => void;
+  /** When true, opens the end-call dialog for the current lead (e.g. from list row). */
+  openEndCall?: boolean;
+  onOpenEndCallHandled?: () => void;
 }
 
 export function LeadDetailDialog({
@@ -191,6 +199,8 @@ export function LeadDetailDialog({
   onOpenChange,
   lead,
   onActionSuccess,
+  openEndCall = false,
+  onOpenEndCallHandled,
 }: LeadDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [scheduleTaskOpen, setScheduleTaskOpen] = useState(false);
@@ -219,6 +229,7 @@ export function LeadDetailDialog({
   const [engageDraft, setEngageDraft] = useState('');
   const [engageTone, setEngageTone] = useState<'professional' | 'friendly' | 'formal'>('professional');
   const [engageCasualness, setEngageCasualness] = useState<'casual' | 'neutral' | 'formal'>('neutral');
+  const [endCallOpen, setEndCallOpen] = useState(false);
 
   const leadUid = lead?.uid;
 
@@ -239,6 +250,12 @@ export function LeadDetailDialog({
   });
   const sendEngageMutation = useSendLeadEngageMutation();
   const client = useApiClient();
+  const checkInStatusQuery = useCheckInStatus({ enabled: true });
+  const checkInMutation = useCheckInMutation();
+  const { checkedIn, activeCheckInMethod, hasActiveCall, activeCallLeadUid } =
+    parseActiveCallFromStatus(checkInStatusQuery.data);
+  const hasActiveCallForLead =
+    hasActiveCall && leadUid != null && activeCallLeadUid === leadUid;
   const leadDetailQuery = useLead(leadUid ?? null, {
     enabled: open && leadUid != null,
   });
@@ -290,8 +307,15 @@ export function LeadDetailDialog({
       setEditImageFile(null);
       setEditImagePreview(null);
       setEditAttachmentFiles([]);
+      setEndCallOpen(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !openEndCall || !hasActiveCallForLead) return;
+    setEndCallOpen(true);
+    onOpenEndCallHandled?.();
+  }, [open, openEndCall, hasActiveCallForLead, onOpenEndCallHandled]);
 
   useEffect(() => {
     if (!editImageFile) {
@@ -693,6 +717,40 @@ export function LeadDetailDialog({
     };
   }, [lead]);
 
+  const endCallInitialForm = useMemo(
+    () => (lead ? leadToEndVisitInitialForm(lead) : undefined),
+    [lead],
+  );
+
+  const handleStartCall = async (e: MouseEvent) => {
+    e.stopPropagation();
+    if (checkedIn) {
+      if (hasActiveCallForLead) {
+        toast.error('Call already in progress — use End call when you are ready');
+        return;
+      }
+      toast.error('End your current visit before starting a call');
+      return;
+    }
+    if (!lead?.phone?.trim()) {
+      toast.error('This lead has no phone number');
+      return;
+    }
+    try {
+      const payload = await buildLeadCallCheckInPayload(lead);
+      await checkInMutation.mutateAsync(payload);
+      toast.success('Call started');
+      checkInStatusQuery.refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start call');
+    }
+  };
+
+  const handleOpenEndCall = (e: MouseEvent) => {
+    e.stopPropagation();
+    setEndCallOpen(true);
+  };
+
   if (!lead) return null;
 
   const ownerFullName = lead.owner
@@ -705,12 +763,14 @@ export function LeadDetailDialog({
           data-tour="lead-detail-dialog"
           showCloseButton={false}
           className={cn(
-            DETAIL_DIALOG_CONTENT_CLASS,
+            LEAD_DETAIL_DIALOG_CONTENT_CLASS,
             'flex flex-col overflow-hidden gap-0',
+            hasActiveCallForLead && !endCallOpen && 'border-4 border-green-500 ring-2 ring-green-500/25',
+            endCallOpen && 'border-4 border-red-500 ring-2 ring-red-500/25',
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+          <div className="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2 z-10 max-w-[85%]">
             <Button
               size="sm"
               className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
@@ -723,6 +783,35 @@ export function LeadDetailDialog({
               <Pencil className="size-4" />
               Edit
             </Button>
+            {hasActiveCallForLead ? (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-red-600 text-white hover:bg-red-700"
+                onClick={handleOpenEndCall}
+              >
+                <Phone className="size-4" />
+                End call
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-green-600 text-white hover:bg-green-700"
+                onClick={handleStartCall}
+                disabled={
+                  !leadUid ||
+                  !lead.phone?.trim() ||
+                  checkInMutation.isPending ||
+                  checkedIn
+                }
+              >
+                {checkInMutation.isPending ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  <Phone className="size-4" />
+                )}
+                Start Call
+              </Button>
+            )}
             <Button
               size="sm"
               variant={chatOpen ? 'destructive' : 'outline'}
@@ -796,7 +885,7 @@ export function LeadDetailDialog({
             )}
             <DetailDialogCloseButton />
           </div>
-          <DialogHeader className="pr-24 pt-12 mt-2 gap-2 sm:pt-14 shrink-0">
+          <DialogHeader className="pr-32 pt-12 mt-2 gap-2 sm:pt-14 shrink-0">
             <DialogTitle>
               {lead.name?.trim() || lead.companyName?.trim() || `Lead #${lead.uid}`}
             </DialogTitle>
@@ -804,6 +893,12 @@ export function LeadDetailDialog({
               {ownerFullName} · {formatDateTime(lead.updatedAt)}
             </DialogDescription>
           </DialogHeader>
+
+          {hasActiveCallForLead ? (
+            <div className="rounded-lg border-2 border-green-500 bg-green-50 px-4 py-2 text-sm font-medium text-green-900 shrink-0">
+              Call in progress with {lead.name?.trim() || lead.companyName?.trim() || `Lead #${lead.uid}`}
+            </div>
+          ) : null}
 
           <div className="min-h-0 flex-1 overflow-y-auto space-y-4">
           {chatOpen && leadUid != null ? <LeadTeamChat leadRef={leadUid} /> : null}
@@ -1548,6 +1643,32 @@ export function LeadDetailDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EndVisitDialog
+        open={endCallOpen}
+        onOpenChange={setEndCallOpen}
+        activeVisit={{
+          methodOfContact: activeCheckInMethod ?? 'Telephone',
+          buildingType:
+            typeof checkInStatusQuery.data?.buildingType === 'string'
+              ? checkInStatusQuery.data.buildingType
+              : 'other',
+          businessType:
+            typeof checkInStatusQuery.data?.businessType === 'string'
+              ? checkInStatusQuery.data.businessType
+              : null,
+        }}
+        initialFormValues={endCallInitialForm}
+        title="End call"
+        description="Add call notes and outcomes."
+        submitLabel="End call"
+        successMessage="Call ended"
+        onSuccess={() => {
+          checkInStatusQuery.refetch();
+          void leadDetailQuery.refetch();
+          onActionSuccess?.();
+        }}
+      />
 
       <CreateTaskModal
         open={scheduleTaskOpen}

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type * as GeoJSON from 'geojson';
-import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, ExpressionSpecification } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import {
   BRANCH_HQ_LOGO_SLUG,
@@ -16,6 +16,20 @@ import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 const CLIENT_HANDSHAKE_IMAGE_ID = 'client-handshake-icon';
 const HQ_BORDERED_IMAGE_ID = 'comp-logo-bitdrywall-hq';
 const HQ_BORDER_COLOR = '#22c55e';
+
+/** Logical pin texture size — high-res logos are composited here before MapLibre upload. */
+const PIN_TEXTURE_SIZE = 256;
+/** Target on-screen pin diameter in CSS px. */
+const PIN_DISPLAY_SIZE = 72;
+/** MapLibre icon-size = display / texture (pixelRatio on addImage is handled separately). */
+const PIN_ICON_SIZE = PIN_DISPLAY_SIZE / PIN_TEXTURE_SIZE;
+/** Slightly smaller pins for client handshake + rep avatars (preserves prior relative sizing). */
+const PIN_ICON_SIZE_COMPACT = PIN_ICON_SIZE * (0.95 / 1.1);
+
+function getPinPixelRatio(): number {
+  if (typeof window === 'undefined') return 1;
+  return Math.min(window.devicePixelRatio || 1, 2);
+}
 
 type LogoClusterLayerProps = {
   points: VisualiserMapPoint[];
@@ -65,34 +79,45 @@ function mapHasImage(m: MapLibreMap, id: string): boolean {
   }
 }
 
-function mapAddImage(m: MapLibreMap, id: string, bitmap: ImageBitmap): void {
+type PinBitmapResult = { bitmap: ImageBitmap; pixelRatio: number };
+
+function mapAddImage(
+  m: MapLibreMap,
+  id: string,
+  bitmap: ImageBitmap,
+  pixelRatio = 1,
+): void {
   try {
     if (!isMapStyleReady(m) || mapHasImage(m, id)) return;
-    m.addImage(id, bitmap, { sdf: false });
+    m.addImage(id, bitmap, { sdf: false, pixelRatio });
   } catch {
     // map torn down or image already registered
   }
 }
 
-/** Downscale / composite pin bitmaps for MapLibre textures. */
+/** Composite pin bitmaps for MapLibre — preserves aspect ratio, no upscaling. */
 async function loadPinBitmap(
   url: string,
-  size = 64,
+  size = PIN_TEXTURE_SIZE,
   options?: { borderColor?: string; circular?: boolean },
-): Promise<ImageBitmap | null> {
+): Promise<PinBitmapResult | null> {
   try {
+    const pixelRatio = getPinPixelRatio();
+    const physicalSize = Math.round(size * pixelRatio);
+
     const res = await fetch(url, { mode: 'cors' });
     if (!res.ok) return null;
     const blob = await res.blob();
     const bitmap = await createImageBitmap(blob);
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = physicalSize;
+    canvas.height = physicalSize;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       bitmap.close();
       return null;
     }
+    ctx.scale(pixelRatio, pixelRatio);
     ctx.clearRect(0, 0, size, size);
     if (options?.circular) {
       ctx.beginPath();
@@ -100,7 +125,16 @@ async function loadPinBitmap(
       ctx.closePath();
       ctx.clip();
     }
-    ctx.drawImage(bitmap, 0, 0, size, size);
+
+    const fitScale = Math.min(size / bitmap.width, size / bitmap.height, 1);
+    const drawW = bitmap.width * fitScale;
+    const drawH = bitmap.height * fitScale;
+    const drawX = (size - drawW) / 2;
+    const drawY = (size - drawH) / 2;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, drawX, drawY, drawW, drawH);
     bitmap.close();
 
     if (options?.borderColor || options?.circular) {
@@ -110,14 +144,38 @@ async function loadPinBitmap(
       ctx.lineWidth = options.borderColor ? 5 : 3;
       ctx.stroke();
     }
-    return createImageBitmap(canvas);
+    const result = await createImageBitmap(canvas);
+    return { bitmap: result, pixelRatio };
   } catch {
     return null;
   }
 }
 
+function iconSizeForLayer(layerId?: keyof typeof LAYER_META): number {
+  return layerId === 'clients' || layerId === 'reps'
+    ? PIN_ICON_SIZE_COMPACT
+    : PIN_ICON_SIZE;
+}
+
+/** Zoom-aware icon size — grows when zoomed in without upscaling the texture. */
+function iconSizeExpression(baseSize: number): ExpressionSpecification {
+  return [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    10,
+    baseSize * 0.75,
+    14,
+    baseSize,
+    18,
+    baseSize * 1.25,
+  ];
+}
+
 /** Blue circle + white handshake (Lucide-style) for client pins. */
-async function loadHandshakeBitmap(size = 64): Promise<ImageBitmap | null> {
+async function loadHandshakeBitmap(
+  size = PIN_TEXTURE_SIZE,
+): Promise<PinBitmapResult | null> {
   const svg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="11" fill="#2563eb"/>
@@ -230,9 +288,9 @@ export function LogoClusterLayer({
           const imageId = `comp-logo-${slug}`;
           if (mapHasImage(map, imageId)) return;
           try {
-            const bitmap = await loadPinBitmap(competitorLogoPublicPath(slug), 64);
-            if (cancelled || !bitmap || !isMapStyleReady(map)) return;
-            mapAddImage(map, imageId, bitmap);
+            const loaded = await loadPinBitmap(competitorLogoPublicPath(slug));
+            if (cancelled || !loaded || !isMapStyleReady(map)) return;
+            mapAddImage(map, imageId, loaded.bitmap, loaded.pixelRatio);
           } catch {
             // skip
           }
@@ -242,22 +300,22 @@ export function LogoClusterLayer({
       if (cancelled || !isMapStyleReady(map)) return;
 
       if (layerId === 'hq' && !mapHasImage(map, HQ_BORDERED_IMAGE_ID)) {
-        const bitmap = await loadPinBitmap(
+        const loaded = await loadPinBitmap(
           competitorLogoPublicPath(BRANCH_HQ_LOGO_SLUG),
-          64,
+          PIN_TEXTURE_SIZE,
           { borderColor: HQ_BORDER_COLOR, circular: true },
         );
-        if (!cancelled && bitmap && isMapStyleReady(map)) {
-          mapAddImage(map, HQ_BORDERED_IMAGE_ID, bitmap);
+        if (!cancelled && loaded && isMapStyleReady(map)) {
+          mapAddImage(map, HQ_BORDERED_IMAGE_ID, loaded.bitmap, loaded.pixelRatio);
         }
       }
 
       if (cancelled || !isMapStyleReady(map)) return;
 
       if (layerId === 'clients' && !mapHasImage(map, CLIENT_HANDSHAKE_IMAGE_ID)) {
-        const bitmap = await loadHandshakeBitmap(64);
-        if (!cancelled && bitmap && isMapStyleReady(map)) {
-          mapAddImage(map, CLIENT_HANDSHAKE_IMAGE_ID, bitmap);
+        const loaded = await loadHandshakeBitmap();
+        if (!cancelled && loaded && isMapStyleReady(map)) {
+          mapAddImage(map, CLIENT_HANDSHAKE_IMAGE_ID, loaded.bitmap, loaded.pixelRatio);
         }
       }
 
@@ -270,12 +328,12 @@ export function LogoClusterLayer({
             if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) return;
             const imageId = safeImageId('rep-avatar', p.id);
             if (mapHasImage(map, imageId)) return;
-            const bitmap = await loadPinBitmap(p.logoUrl, 64, {
+            const loaded = await loadPinBitmap(p.logoUrl, PIN_TEXTURE_SIZE, {
               circular: true,
               borderColor: '#ffffff',
             });
-            if (cancelled || !bitmap || !isMapStyleReady(map)) return;
-            mapAddImage(map, imageId, bitmap);
+            if (cancelled || !loaded || !isMapStyleReady(map)) return;
+            mapAddImage(map, imageId, loaded.bitmap, loaded.pixelRatio);
           }),
         );
       }
@@ -362,7 +420,7 @@ export function LogoClusterLayer({
           ],
           layout: {
             'icon-image': ['get', 'iconId'],
-            'icon-size': layerId === 'clients' || layerId === 'reps' ? 0.95 : 1.1,
+            'icon-size': iconSizeExpression(iconSizeForLayer(layerId)),
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
           },
@@ -405,12 +463,12 @@ export function LogoClusterLayer({
         if (!p.logoUrl || !isRemoteOrAbsoluteUrl(p.logoUrl)) continue;
         const imageId = safeImageId('rep-avatar', p.id);
         if (mapHasImage(map, imageId)) continue;
-        const bitmap = await loadPinBitmap(p.logoUrl, 64, {
+        const loaded = await loadPinBitmap(p.logoUrl, PIN_TEXTURE_SIZE, {
           circular: true,
           borderColor: '#ffffff',
         });
-        if (cancelled || !bitmap || !isMapStyleReady(map)) continue;
-        mapAddImage(map, imageId, bitmap);
+        if (cancelled || !loaded || !isMapStyleReady(map)) continue;
+        mapAddImage(map, imageId, loaded.bitmap, loaded.pixelRatio);
       }
       if (!cancelled && isMapStyleReady(map)) {
         const source = map.getSource(sourceId) as GeoJSONSource | undefined;

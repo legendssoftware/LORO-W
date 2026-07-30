@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
   LatestRepLocationsResponse,
+  RepJourneyCustomRangeParams,
   RepJourneyRange,
   RepJourneyResponse,
 } from '@/api/types/tracking';
@@ -63,11 +64,18 @@ function isRepJourneyResponse(value: unknown): value is RepJourneyResponse {
 export async function getRepJourney(
   client: AxiosInstance,
   userId: number,
-  range: RepJourneyRange
+  range: RepJourneyRange,
+  customRange?: RepJourneyCustomRangeParams
 ): Promise<RepJourneyResponse> {
+  const search = new URLSearchParams();
+  search.set('range', range);
+  if (range === 'custom' && customRange) {
+    search.set('startDate', customRange.startDate);
+    search.set('endDate', customRange.endDate);
+  }
   const { data } = await client.get<
     RepJourneyResponse | { data: RepJourneyResponse }
-  >(`/gps/user/${userId}/journey?range=${encodeURIComponent(range)}`);
+  >(`/gps/user/${userId}/journey?${search.toString()}`);
 
   if (isRepJourneyResponse(data)) return data;
   if (

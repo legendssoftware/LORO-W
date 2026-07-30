@@ -5,6 +5,7 @@
 
 import type { ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
+import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
 import { exportToCsv, exportToExcel } from '@/lib/utils/report-export';
 
@@ -32,7 +33,14 @@ export const REPORTS_TARGETS_EXPORT_HEADERS = [
   'Warning level',
   'Warnings acknowledged',
   'Warnings issued',
+  'Currency view',
 ] as const;
+
+const CURRENCY_VIEW_LABEL: Record<ReportsTargetsCurrencyView, string> = {
+  set: 'Target (set)',
+  branch: 'Branch (ERP)',
+  zar: 'ZAR (consolidated)',
+};
 
 function roundNum(value: number): string {
   if (!Number.isFinite(value)) return '0';
@@ -42,7 +50,10 @@ function roundNum(value: number): string {
 /**
  * Build a single export row; column order matches REPORTS_TARGETS_EXPORT_HEADERS.
  */
-export function reportsTargetRowToExportRow(row: ReportsTargetRow): string[] {
+export function reportsTargetRowToExportRow(
+  row: ReportsTargetRow,
+  currencyView: ReportsTargetsCurrencyView = 'set'
+): string[] {
   const warnings = summarizeTargetWarnings(row.targetWarnings);
   const warningLevel =
     warnings.currentLevel === 1 ||
@@ -75,6 +86,7 @@ export function reportsTargetRowToExportRow(row: ReportsTargetRow): string[] {
     warningLevel,
     String(warnings.totalAcknowledged),
     String(warnings.totalIssued),
+    CURRENCY_VIEW_LABEL[currencyView],
   ];
 }
 
@@ -85,10 +97,11 @@ export function reportsTargetRowToExportRow(row: ReportsTargetRow): string[] {
 export function exportReportsTargets(
   rows: ReportsTargetRow[],
   exportFormat: 'csv' | 'excel',
-  baseName: string
+  baseName: string,
+  currencyView: ReportsTargetsCurrencyView = 'set'
 ): void {
   const headers = [...REPORTS_TARGETS_EXPORT_HEADERS];
-  const body = rows.map(reportsTargetRowToExportRow);
+  const body = rows.map((row) => reportsTargetRowToExportRow(row, currencyView));
   if (exportFormat === 'csv') exportToCsv(headers, body, baseName);
   else exportToExcel(headers, body, baseName);
 }

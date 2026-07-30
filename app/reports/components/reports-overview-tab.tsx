@@ -15,6 +15,7 @@ import {
   useProfileSales,
   useDailyProductivity,
   useBranches,
+  useExchangeRates,
 } from '@/api/hooks';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
@@ -46,8 +47,15 @@ import {
   averageProductivityScore,
   rowFromPersonalTarget,
   rowFromUserListItem,
+  branchCountryMapFromList,
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
+import {
+  applyCurrencyViewToRow,
+  buildExchangeRateMap,
+  currencyViewNeedsRates,
+  type ReportsTargetsCurrencyView,
+} from '@/app/reports/lib/reports-target-currency';
 import {
   getPageRowEnrichmentKey,
   usePhasedPageEnrichment,
@@ -145,6 +153,8 @@ export function ReportsOverviewTab() {
   const [userFilter, setUserFilter] = useState('all');
   const [sortMetric, setSortMetric] =
     useState<ReportsTargetsSortMetric>('name');
+  const [currencyView, setCurrencyView] =
+    useState<ReportsTargetsCurrencyView>('set');
 
   useEffect(() => {
     setPageSize(readStoredReportsPageSize());
@@ -169,11 +179,17 @@ export function ReportsOverviewTab() {
     branchFilter,
     userFilter,
     sortMetric,
+    currencyView,
   ]);
 
   const branchesQuery = useBranches({
-    enabled: isTokenReady && !isSyncing && isMultiUser,
+    enabled: isTokenReady && !isSyncing,
   });
+
+  const branchCountryByUid = useMemo(
+    () => branchCountryMapFromList(branchesQuery.data ?? []),
+    [branchesQuery.data]
+  );
 
   const selfProfileQuery = useUser(selfRef, {
     enabled: isTokenReady && !isSyncing && scope === 'team' && !!selfRef,
@@ -206,6 +222,11 @@ export function ReportsOverviewTab() {
       ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
     };
   }, [useAllTime, startDate, endDate, branchIdFilter]);
+
+  const forexDate = useMemo(() => {
+    if (rangeParams?.to) return rangeParams.to;
+    return formatUtcYmd(today);
+  }, [rangeParams?.to, today]);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
@@ -397,7 +418,7 @@ export function ReportsOverviewTab() {
         return hay.includes(debouncedSearch);
       })
       .map((user) => {
-        let row = rowFromUserListItem(user);
+        let row = rowFromUserListItem(user, branchCountryByUid);
         if (engagementReady && rangeParams) {
           const eng = engagementByUid.get(row.userId) ?? {
             callCount: 0,
@@ -442,6 +463,7 @@ export function ReportsOverviewTab() {
     engagementQuery.isSuccess,
     hoursOverlayReady,
     hoursByUid,
+    branchCountryByUid,
   ]);
 
   const total = cohortRows.length;
@@ -557,6 +579,12 @@ export function ReportsOverviewTab() {
       getBranchDisplayLabel(
         backendUserData.branch as { name?: string; alias?: string | null } | null
       ) || null;
+    const selfBranchUid =
+      backendUserData.branch?.uid ?? backendUserData.branchUid ?? null;
+    const branchCountryCode =
+      selfBranchUid != null
+        ? branchCountryByUid.get(Number(selfBranchUid)) ?? null
+        : null;
     let row = rowFromPersonalTarget({
       userId: backendUserData.uid,
       ref: selfRef,
@@ -564,6 +592,7 @@ export function ReportsOverviewTab() {
       email: backendUserData.email ?? '',
       photoURL: backendUserData.photoURL ?? backendUserData.avatar ?? null,
       branch: branchLabel,
+      branchCountryCode,
       dashboard: selfTargetQuery.data?.userTarget ?? null,
     });
     if (row && rangeParams && engagementQuery.isSuccess) {
@@ -621,6 +650,7 @@ export function ReportsOverviewTab() {
     selfErpSalesQuery.data,
     selfProductivityQuery.data?.days,
     selfProductivityQuery.isLoading,
+    branchCountryByUid,
   ]);
 
   const displayRows = useMemo(() => {
@@ -638,11 +668,54 @@ export function ReportsOverviewTab() {
     return rows;
   }, [isMultiUser, enrichedPageRows, selfRow, sortMetric]);
 
+  const needsForex = useMemo(
+    () => currencyViewNeedsRates(displayRows, currencyView),
+    [displayRows, currencyView]
+  );
+
+  const exchangeRatesQuery = useExchangeRates(forexDate, {
+    enabled: isTokenReady && !isSyncing && needsForex,
+  });
+
+  const exchangeRateMap = useMemo(
+    () => buildExchangeRateMap(exchangeRatesQuery.data?.rates),
+    [exchangeRatesQuery.data?.rates]
+  );
+
+  const displayRowsWithCurrency = useMemo(() => {
+    let rows: ReportsTargetRow[];
+    if (!needsForex) {
+      rows = displayRows.map((row) =>
+        applyCurrencyViewToRow(row, currencyView, exchangeRateMap)
+      );
+    } else if (exchangeRatesQuery.isLoading && !exchangeRatesQuery.data) {
+      rows = displayRows;
+    } else {
+      rows = displayRows.map((row) =>
+        applyCurrencyViewToRow(row, currencyView, exchangeRateMap)
+      );
+    }
+    if (PAGE_LOCAL_SORT_METRICS.has(sortMetric)) {
+      return sortTargetRows(rows, sortMetric);
+    }
+    return rows;
+  }, [
+    displayRows,
+    currencyView,
+    exchangeRateMap,
+    needsForex,
+    exchangeRatesQuery.isLoading,
+    exchangeRatesQuery.data,
+    sortMetric,
+  ]);
+
   /** Keep detail dialog in sync when filter overlays update the same user row. */
   const detailRow = useMemo(() => {
     if (!selectedRow) return null;
-    return displayRows.find((r) => r.ref === selectedRow.ref) ?? selectedRow;
-  }, [selectedRow, displayRows]);
+    return (
+      displayRowsWithCurrency.find((r) => r.ref === selectedRow.ref) ?? selectedRow
+    );
+  }, [selectedRow, displayRowsWithCurrency]);
 
   const hoursQueryError = rangeParams
     ? attendanceReportQuery.isError
@@ -749,13 +822,13 @@ export function ReportsOverviewTab() {
   }
 
   function handleExportCsv() {
-    if (displayRows.length === 0) return;
-    exportReportsTargets(displayRows, 'csv', exportFileBaseName());
+    if (displayRowsWithCurrency.length === 0) return;
+    exportReportsTargets(displayRowsWithCurrency, 'csv', exportFileBaseName(), currencyView);
   }
 
   function handleExportExcel() {
-    if (displayRows.length === 0) return;
-    exportReportsTargets(displayRows, 'excel', exportFileBaseName());
+    if (displayRowsWithCurrency.length === 0) return;
+    exportReportsTargets(displayRowsWithCurrency, 'excel', exportFileBaseName(), currencyView);
   }
 
   return (
@@ -786,9 +859,11 @@ export function ReportsOverviewTab() {
         onUserChange={setUserFilter}
         sortMetric={sortMetric}
         onSortMetricChange={setSortMetric}
+        currencyView={currencyView}
+        onCurrencyViewChange={setCurrencyView}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
-        exportDisabled={isLoading || displayRows.length === 0}
+        exportDisabled={isLoading || displayRowsWithCurrency.length === 0}
       />
 
       {errorMessage ? (
@@ -817,10 +892,11 @@ export function ReportsOverviewTab() {
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ReportsTargetsTable
-            rows={displayRows}
+            rows={displayRowsWithCurrency}
             isLoading={isLoading}
             onRowClick={handleRowClick}
             emptyMessage={emptyMessage}
+            currencyView={currencyView}
           />
         </div>
         {isMultiUser ? (
@@ -850,6 +926,8 @@ export function ReportsOverviewTab() {
         }}
         reviewStartYmd={reviewStartYmd}
         reviewEndYmd={reviewEndYmd}
+        currencyView={currencyView}
+        exchangeRateMap={exchangeRateMap}
       />
     </div>
   );
