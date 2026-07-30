@@ -43,6 +43,11 @@ import {
   enrichRowWithTargetDashboard,
 } from '@/app/reports/lib/reports-target-row';
 import {
+  applyCurrencyViewToRow,
+  type ExchangeRateMap,
+  type ReportsTargetsCurrencyView,
+} from '@/app/reports/lib/reports-target-currency';
+import {
   aggregateLeadActions,
   aggregateLeadDurations,
   aggregateVisits,
@@ -261,6 +266,8 @@ export interface ReportsTargetDetailDialogProps {
   /** Toolbar date range for calls/leads review strip. Null when all-time. */
   reviewStartYmd: string | null;
   reviewEndYmd: string | null;
+  currencyView?: ReportsTargetsCurrencyView;
+  exchangeRateMap?: ExchangeRateMap;
 }
 
 export function ReportsTargetDetailDialog({
@@ -269,6 +276,8 @@ export function ReportsTargetDetailDialog({
   onOpenChange,
   reviewStartYmd,
   reviewEndYmd,
+  currencyView = 'set',
+  exchangeRateMap,
 }: ReportsTargetDetailDialogProps) {
   const client = useApiClient();
   const targetQuery = useUserTarget(row?.ref ?? null, {
@@ -349,7 +358,7 @@ export function ReportsTargetDetailDialog({
     { enabled: open && !!row?.userId && hasReportRange }
   );
 
-  const displayRow = (() => {
+  const displayRow = useMemo(() => {
     if (!row) return null;
     const enriched = targetQuery.data?.userTarget
       ? enrichRowWithTargetDashboard(row, targetQuery.data.userTarget)
@@ -362,10 +371,13 @@ export function ReportsTargetDetailDialog({
         hours: row.hours,
         engagementMet: row.engagementMet,
         periodLabel: row.periodLabel,
+        setCurrency: row.setCurrency ?? enriched.setCurrency,
+        branchCountryCode: row.branchCountryCode ?? enriched.branchCountryCode,
+        erpCurrency: row.erpCurrency ?? enriched.erpCurrency,
       },
       erpSalesQuery.data ?? row.sales.current
     );
-    return {
+    const merged = {
       ...withSales,
       calls: row.calls,
       leads: row.leads,
@@ -373,7 +385,18 @@ export function ReportsTargetDetailDialog({
       engagementMet: row.engagementMet,
       periodLabel: row.periodLabel,
     };
-  })();
+    return applyCurrencyViewToRow(
+      merged,
+      currencyView,
+      exchangeRateMap ?? new Map()
+    );
+  }, [
+    row,
+    targetQuery.data?.userTarget,
+    erpSalesQuery.data,
+    currencyView,
+    exchangeRateMap,
+  ]);
 
   const hasReviewRange = !!reviewStartYmd && !!reviewEndYmd;
   const productivityQuery = useDailyProductivity(

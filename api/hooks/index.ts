@@ -202,6 +202,7 @@ export {
   useProductsInfinite,
 } from './use-products';
 export { useProfileSales } from './use-profile-sales';
+export { useExchangeRates } from './use-exchange-rates';
 export { useProfileQuotations, type ProfileQuotationsQueryData } from './use-profile-quotations';
 export { useShopQuotations } from './use-shop-quotations';
 export {

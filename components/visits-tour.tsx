@@ -18,21 +18,21 @@ import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
 const TOUR_INTRO_DESCRIPTION =
-  'This is the Visits page: start or end a field visit, log how it went, and review your history in one place. The next steps walk through the header action, filters, and your visit list or map.';
+  'This is the Calls page: start or end a call or field visit, log how it went, and review your history in one place. The next steps walk through the header action, filters, and your activity list or map.';
 
 const TOUR_STEPS: DriveStep[] = [
   {
     popover: {
-      title: 'Welcome to Visits',
+      title: 'Welcome to Calls',
       description: TOUR_INTRO_DESCRIPTION,
     },
   },
   {
     element: '[data-tour="visits-page-header"]',
     popover: {
-      title: 'Visits overview',
+      title: 'Calls overview',
       description:
-        'The heading reminds you that this page is for live visit actions and for looking back at what you have already done.',
+        'The heading reminds you that this page is for live call and visit actions and for looking back at what you have already done.',
       side: 'bottom',
       align: 'start',
     },

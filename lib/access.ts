@@ -319,7 +319,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
     { path: "/staff", label: "Staff" },
     { path: "/iot", label: "IoT" },
-    { path: "/visits", label: "Visits" },
+    { path: "/visits", label: "Calls" },
     { path: "/leads", label: "Leads" },
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
@@ -376,7 +376,7 @@ export function getAllowedRoutes(
 
     const fullNav: AllowedRoute[] = [
         { path: "/dashboard", label: "Home" },
-        { path: "/visits", label: "Visits" },
+        { path: "/visits", label: "Calls" },
         { path: "/leads", label: "Leads" },
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },

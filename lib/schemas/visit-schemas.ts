@@ -14,28 +14,28 @@ import {
   PHONE_REGEX,
 } from '@/lib/visit-form-utils';
 
-/** Optional string with max length; empty string passes. */
+/** Optional string with max length; empty string passes. Accepts null from API payloads. */
 const optionalString = (max: number) =>
   z
     .string()
-    .optional()
+    .nullish()
     .refine((v) => !v || v.length <= max, `Must be ${max} characters or less`);
 
-/** Optional phone; empty/undefined passes, otherwise must match format. */
+/** Optional phone; empty/undefined/null passes, otherwise must match format. */
 const optionalPhone = () =>
   z
     .string()
-    .optional()
+    .nullish()
     .refine(
       (v) => !v || (v.length <= MAX_PHONE && PHONE_REGEX.test(v)),
       'May only contain digits, spaces, +, -, ., or parentheses'
     );
 
-/** Optional email; empty/undefined passes, otherwise must be valid. */
+/** Optional email; empty/undefined/null passes, otherwise must be valid. */
 const optionalEmail = () =>
   z
     .string()
-    .optional()
+    .nullish()
     .refine(
       (v) =>
         !v ||
@@ -47,7 +47,7 @@ const optionalEmail = () =>
 const optionalFollowUpNotPast = () =>
   z
     .string()
-    .optional()
+    .nullish()
     .refine(
       (v) => {
         if (!v || !v.trim()) return true;
@@ -68,20 +68,20 @@ const visitFormBaseSchema = z.object({
   contactCellPhone: optionalPhone().optional(),
   contactLandline: optionalPhone().optional(),
   contactEmail: optionalEmail().optional(),
-  notes: z.string().optional(),
-  resolution: z.string().optional(),
+  notes: z.string().nullish(),
+  resolution: z.string().nullish(),
   followUp: optionalFollowUpNotPast().optional(),
-  quotationNumber: z.string().optional(),
-  quotationStatus: z.string().optional(),
+  quotationNumber: z.string().nullish(),
+  quotationStatus: z.string().nullish(),
   salesValue: z.preprocess(
     (v) => (v === '' || v === null ? undefined : v),
     z.number().optional()
   ),
-  salesCurrency: z.string().optional(),
+  salesCurrency: z.string().nullish(),
   contactMade: z.boolean().optional(),
-  methodOfContact: z.string().optional(),
-  buildingType: z.string().optional(),
-  businessType: z.string().optional(),
+  methodOfContact: z.string().nullish(),
+  buildingType: z.string().nullish(),
+  businessType: z.string().nullish(),
   client: z.object({ uid: z.number() }).optional(),
   contactAddress: z.record(z.string(), z.string()).optional(),
   media: z.array(z.string()).optional(),
