@@ -8,6 +8,10 @@ import type {
 } from '@/api/endpoints/user';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import {
+  getErpSalesCurrencyForCountry,
+  normalizeErpCountryCode,
+} from '@/lib/utils/erp-currency';
+import {
   calcOverallAchievementWithEngagement,
   calcTargetProgress,
   resolveCallsLeadsCellProgress,
@@ -57,6 +61,65 @@ export interface ReportsTargetRow {
   /** ISO/date string from user target period — used for date-range overlap filter. */
   periodStartDate?: string | null;
   periodEndDate?: string | null;
+  /** HR-set target currency (userTarget.targetCurrency). */
+  setCurrency?: string | null;
+  /** Branch ERP country code (SA, BOT, ZW, …). */
+  branchCountryCode?: string | null;
+  /** Native ERP sales currency for the branch (ZW → USD). */
+  erpCurrency?: string | null;
+}
+
+function resolveBranchCountryCode(
+  user: {
+    branch?: { country?: string | null; uid?: number | null } | null;
+    branchUid?: unknown;
+  },
+  branchCountryByUid?: Map<number, string>
+): string | null {
+  const fromUser = user.branch?.country?.trim();
+  if (fromUser) return normalizeErpCountryCode(fromUser);
+  const uid =
+    user.branch?.uid != null
+      ? Number(user.branch.uid)
+      : user.branchUid != null
+        ? Number(user.branchUid)
+        : null;
+  if (uid != null && branchCountryByUid?.has(uid)) {
+    return branchCountryByUid.get(uid) ?? null;
+  }
+  return null;
+}
+
+export function branchCountryMapFromList(
+  branches: Array<{ uid: number; country?: string | null }>
+): Map<number, string> {
+  const map = new Map<number, string>();
+  for (const b of branches) {
+    if (b.country?.trim()) {
+      map.set(b.uid, normalizeErpCountryCode(b.country));
+    }
+  }
+  return map;
+}
+
+function attachCurrencyMetadata(
+  row: ReportsTargetRow,
+  params: {
+    setCurrency?: string | null;
+    branchCountryCode?: string | null;
+  }
+): ReportsTargetRow {
+  const branchCountryCode = params.branchCountryCode ?? null;
+  const setCurrency = params.setCurrency ?? row.sales.currency ?? null;
+  const erpCurrency = branchCountryCode
+    ? getErpSalesCurrencyForCountry(branchCountryCode)
+    : null;
+  return {
+    ...row,
+    setCurrency,
+    branchCountryCode,
+    erpCurrency,
+  };
 }
 
 function metricFromList(
@@ -250,9 +313,13 @@ export function prorateTargetForRange(params: {
 }
 
 /** Build a row from GET /user list item + nested userTarget. */
-export function rowFromUserListItem(user: UserListItem): ReportsTargetRow {
+export function rowFromUserListItem(
+  user: UserListItem,
+  branchCountryByUid?: Map<number, string>
+): ReportsTargetRow {
   const ut = (user.userTarget ?? null) as UserTargetListFields | null;
   const currency = ut?.targetCurrency ?? null;
+  const branchCountryCode = resolveBranchCountryCode(user, branchCountryByUid);
   const metrics = buildRowMetrics(
     metricFromList(ut?.currentCalls, ut?.targetCalls),
     metricFromList(ut?.currentNewLeads, ut?.targetNewLeads),
@@ -263,21 +330,24 @@ export function rowFromUserListItem(user: UserListItem): ReportsTargetRow {
   const name = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
   const branchLabel = getBranchDisplayLabel(user.branch) || null;
 
-  return {
-    key: ref,
-    userId: user.uid,
-    ref,
-    name,
-    email: user.email,
-    photoURL: user.photoURL ?? user.avatar ?? null,
-    branch: branchLabel,
-    ...metrics,
-    productivity: { score: null },
-    targetWarnings: null,
-    periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
-    periodStartDate: ut?.periodStartDate ?? null,
-    periodEndDate: ut?.periodEndDate ?? null,
-  };
+  return attachCurrencyMetadata(
+    {
+      key: ref,
+      userId: user.uid,
+      ref,
+      name,
+      email: user.email,
+      photoURL: user.photoURL ?? user.avatar ?? null,
+      branch: branchLabel,
+      ...metrics,
+      productivity: { score: null },
+      targetWarnings: null,
+      periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
+      periodStartDate: ut?.periodStartDate ?? null,
+      periodEndDate: ut?.periodEndDate ?? null,
+    },
+    { setCurrency: currency, branchCountryCode }
+  );
 }
 
 function personalTargetsFromDashboard(
@@ -300,6 +370,7 @@ export function rowFromPersonalTarget(params: {
   email: string;
   photoURL?: string | null;
   branch?: string | null;
+  branchCountryCode?: string | null;
   dashboard: UserTargetDashboardShape | Record<string, unknown> | null;
 }): ReportsTargetRow | null {
   const personal = personalTargetsFromDashboard(params.dashboard);
@@ -319,24 +390,27 @@ export function rowFromPersonalTarget(params: {
       ? personal.targetWarnings
       : null;
 
-  return {
-    key: params.ref,
-    userId: params.userId,
-    ref: params.ref,
-    name: params.name,
-    email: params.email,
-    photoURL: params.photoURL ?? null,
-    branch: params.branch ?? null,
-    ...metrics,
-    productivity: { score: null },
-    targetWarnings: warnings,
-    periodLabel: formatPeriodLabel(
-      personal.periodStartDate as string | Date | null | undefined,
-      personal.periodEndDate as string | Date | null | undefined
-    ),
-    periodStartDate: toPeriodDateString(personal.periodStartDate),
-    periodEndDate: toPeriodDateString(personal.periodEndDate),
-  };
+  return attachCurrencyMetadata(
+    {
+      key: params.ref,
+      userId: params.userId,
+      ref: params.ref,
+      name: params.name,
+      email: params.email,
+      photoURL: params.photoURL ?? null,
+      branch: params.branch ?? null,
+      ...metrics,
+      productivity: { score: null },
+      targetWarnings: warnings,
+      periodLabel: formatPeriodLabel(
+        personal.periodStartDate as string | Date | null | undefined,
+        personal.periodEndDate as string | Date | null | undefined
+      ),
+      periodStartDate: toPeriodDateString(personal.periodStartDate),
+      periodEndDate: toPeriodDateString(personal.periodEndDate),
+    },
+    { setCurrency: currency, branchCountryCode: params.branchCountryCode ?? null }
+  );
 }
 
 function toPeriodDateString(
@@ -399,18 +473,24 @@ export function enrichRowWithTargetDashboard(
     personal.periodEndDate as string | Date | null | undefined
   );
 
-  return {
-    ...row,
-    ...metrics,
-    targetWarnings: warnings,
-    periodLabel:
-      formatPeriodLabel(
-        personal.periodStartDate as string | Date | null | undefined,
-        personal.periodEndDate as string | Date | null | undefined
-      ) ?? row.periodLabel,
-    periodStartDate: periodStart ?? row.periodStartDate ?? null,
-    periodEndDate: periodEnd ?? row.periodEndDate ?? null,
-  };
+  return attachCurrencyMetadata(
+    {
+      ...row,
+      ...metrics,
+      targetWarnings: warnings,
+      periodLabel:
+        formatPeriodLabel(
+          personal.periodStartDate as string | Date | null | undefined,
+          personal.periodEndDate as string | Date | null | undefined
+        ) ?? row.periodLabel,
+      periodStartDate: periodStart ?? row.periodStartDate ?? null,
+      periodEndDate: periodEnd ?? row.periodEndDate ?? null,
+    },
+    {
+      setCurrency: currency ?? row.setCurrency ?? null,
+      branchCountryCode: row.branchCountryCode ?? null,
+    }
+  );
 }
 
 /**

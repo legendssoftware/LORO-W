@@ -72,6 +72,14 @@ export function leadActivityActionPresentation(action: string | undefined): {
       label: 'Engage',
       className: 'border-pink-200 bg-pink-50 text-pink-950',
     },
+    call_started: {
+      label: 'Call started',
+      className: 'border-green-200 bg-green-50 text-green-900',
+    },
+    call_ended: {
+      label: 'Call ended',
+      className: 'border-green-300 bg-green-100 text-green-950',
+    },
   };
   if (table[a]) return table[a];
   const words = a.replace(/_/g, ' ').trim();

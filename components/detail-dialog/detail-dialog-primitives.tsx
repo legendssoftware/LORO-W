@@ -8,6 +8,10 @@ import { DialogCloseButton } from '@/components/dialog-close-button';
 export const DETAIL_DIALOG_CONTENT_CLASS =
   'max-w-[calc(100%-3rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';
 
+/** Wider variant for lead detail (70% viewport on sm+). */
+export const LEAD_DETAIL_DIALOG_CONTENT_CLASS =
+  'max-w-[calc(100%-3rem)] sm:max-w-[70vw] max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';
+
 /** Narrower variant for nested edit/confirm dialogs. */
 export const DETAIL_DIALOG_SMALL_CONTENT_CLASS =
   'max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';

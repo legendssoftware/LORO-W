@@ -43,7 +43,12 @@ export interface LatestRepLocationsResponse {
   data: LatestRepLocationsData | null;
 }
 
-export type RepJourneyRange = 'hour' | 'day' | 'week';
+export type RepJourneyRange = 'hour' | 'day' | 'week' | 'custom';
+
+export interface RepJourneyCustomRangeParams {
+  startDate: string;
+  endDate: string;
+}
 
 export interface RepJourneyPoint {
   uid?: number;
@@ -118,6 +123,8 @@ export interface RepJourneyData {
   points: RepJourneyPoint[];
   /** Road-snapped polyline for map rendering — [longitude, latitude][]. */
   routeCoordinates?: [number, number][];
+  /** Independent polylines per continuous GPS cluster — preferred for map rendering. */
+  routeSegments?: [number, number][][];
   routeGeometrySource?: 'roads' | 'raw-gps' | 'none';
   summary: RepJourneySummary;
 }

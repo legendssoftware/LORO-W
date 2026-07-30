@@ -15,6 +15,8 @@ export interface CreateCheckInPayload {
   contactCellPhone?: string;
   contactLandline?: string;
   companyName?: string;
+  /** Existing lead UID to link this check-in to (skips auto-lead creation). */
+  leadUid?: number;
   [key: string]: unknown;
 }
 

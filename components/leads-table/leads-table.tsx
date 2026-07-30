@@ -9,7 +9,7 @@ import {
   isToday,
   startOfDay,
 } from 'date-fns';
-import { ChevronRight, Users } from 'lucide-react';
+import { ChevronRight, Phone, Users } from 'lucide-react';
 import type { LeadActivityLogItem, LeadListItem } from '@/api/types/leads';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Loader2Icon, CircleIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -388,6 +389,10 @@ export interface LeadsTableProps {
   emptyMessage?: string;
   /** Called when a lead row is clicked. */
   onLeadClick?: (lead: LeadListItem) => void;
+  /** Lead UID with an active call in progress. */
+  activeCallLeadUid?: number | null;
+  /** End the active call for a lead from the table row. */
+  onEndActiveCall?: (lead: LeadListItem) => void;
   /** Org users (e.g. from useUsers) keyed by uid and clerkUserId for activity actor avatars. */
   activityActorLookup?: LeadActivityActorLookup;
 }
@@ -397,6 +402,8 @@ export function LeadsTable({
   isLoading = false,
   emptyMessage = 'No leads match your filters.',
   onLeadClick,
+  activeCallLeadUid = null,
+  onEndActiveCall,
   activityActorLookup,
 }: LeadsTableProps) {
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
@@ -517,6 +524,8 @@ export function LeadsTable({
                             isStaleRed,
                             isStaleAmber,
                           } = leadTouchRecency(touch);
+                          const isActiveCall =
+                            activeCallLeadUid != null && lead.uid === activeCallLeadUid;
                           return (
                           <TableRow
                             key={lead.uid}
@@ -527,20 +536,29 @@ export function LeadsTable({
                               : {})}
                             className={cn(
                               'border-b-0 bg-transparent',
+                              isActiveCall &&
+                                '!border-l-4 !border-l-green-500 !bg-green-50/60 dark:!bg-green-950/30',
                               isTodayTouch &&
+                                !isActiveCall &&
                                 '!bg-emerald-50/50 dark:!bg-emerald-950/30',
                               isStaleRed && '!bg-red-50/50 dark:!bg-red-950/30',
                               isStaleAmber &&
+                                !isActiveCall &&
                                 '!bg-amber-50/50 dark:!bg-amber-950/30',
                               onLeadClick &&
                                 'cursor-pointer transition-colors hover:bg-muted/50',
+                              isActiveCall &&
+                                onLeadClick &&
+                                'hover:!bg-green-50/80 dark:hover:!bg-green-950/40',
                               isTodayTouch &&
+                                !isActiveCall &&
                                 onLeadClick &&
                                 'hover:!bg-emerald-50/70 dark:hover:!bg-emerald-950/40',
                               isStaleRed &&
                                 onLeadClick &&
                                 'hover:!bg-red-50/70 dark:hover:!bg-red-950/40',
                               isStaleAmber &&
+                                !isActiveCall &&
                                 onLeadClick &&
                                 'hover:!bg-amber-50/70 dark:hover:!bg-amber-950/40'
                             )}
@@ -573,6 +591,12 @@ export function LeadsTable({
                                 >
                                   {lead.name?.trim() || '-'}
                                 </span>
+                                {isActiveCall ? (
+                                  <Badge className="shrink-0 gap-1 border-green-600 bg-green-600 text-[10px] text-white hover:bg-green-600">
+                                    <Phone className="size-3" aria-hidden />
+                                    Call
+                                  </Badge>
+                                ) : null}
                               </span>
                             </TableCell>
                             <TableCell
@@ -617,7 +641,22 @@ export function LeadsTable({
                                 : '-'}
                             </TableCell>
                             <TableCell className="min-w-0 max-w-[200px] text-sm md:max-w-[240px]">
-                              {lastEditedCell(lead, activityActorLookup)}
+                              {isActiveCall && onEndActiveCall ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="h-7 gap-1 bg-red-600 px-2 text-xs text-white hover:bg-red-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEndActiveCall(lead);
+                                  }}
+                                >
+                                  <Phone className="size-3" />
+                                  End
+                                </Button>
+                              ) : (
+                                lastEditedCell(lead, activityActorLookup)
+                              )}
                             </TableCell>
                           </TableRow>
                           );

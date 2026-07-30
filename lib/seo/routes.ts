@@ -181,9 +181,9 @@ export const PAGE_COPY = {
       'Explore field activity on a live map with date filters and influence layers. See where your team went and what surrounds each account.',
   },
   visits: {
-    title: 'Visits - Prove field work, sync quotes & outcomes',
+    title: 'Calls - Log calls, field visits & outcomes',
     description:
-      'Log visits with evidence reps can stand behind. Turn miles into measurable pipeline—fewer disputed activities, cleaner handoffs.',
+      'Start and end calls and field visits with notes and outcomes. Track phone, email, WhatsApp, and in-person activity in one place.',
   },
   settings: {
     title: 'Settings - Brand, branches & defaults under your control',

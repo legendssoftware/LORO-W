@@ -8,6 +8,12 @@ import {
 } from '@/app/staff/components/report-progress-bar';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetMetricCell, ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
+import {
+  applyCurrencyViewToRow,
+  salesColumnLabel,
+  type ExchangeRateMap,
+  type ReportsTargetsCurrencyView,
+} from '@/app/reports/lib/reports-target-currency';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -202,6 +208,7 @@ export interface ReportsTargetsTableProps {
   isLoading?: boolean;
   emptyMessage?: string;
   onRowClick?: (row: ReportsTargetRow) => void;
+  currencyView?: ReportsTargetsCurrencyView;
 }
 
 export function ReportsTargetsTable({
@@ -209,6 +216,7 @@ export function ReportsTargetsTable({
   isLoading = false,
   emptyMessage = 'No users with performance targets found.',
   onRowClick,
+  currencyView = 'set',
 }: ReportsTargetsTableProps) {
   function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, row: ReportsTargetRow) {
     if (!onRowClick) return;
@@ -225,7 +233,7 @@ export function ReportsTargetsTable({
           <TableHead className="min-w-[12rem]">User</TableHead>
           <TableHead>Calls</TableHead>
           <TableHead>Leads</TableHead>
-          <TableHead className="hidden md:table-cell">Sales</TableHead>
+          <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
           <TableHead
             title={PRODUCTIVITY_COLUMN_HINT}
