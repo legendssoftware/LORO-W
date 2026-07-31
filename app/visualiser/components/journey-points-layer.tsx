@@ -8,11 +8,7 @@ import type { RepJourneyPoint } from '@/api/types/tracking';
 import { trailBearingAtIndex } from '@/lib/utils/journey-point-format';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 
-const SOURCE_ID = 'rep-journey-points';
-const MOVE_LAYER_ID = 'rep-journey-move';
-const STOP_LAYER_ID = 'rep-journey-stop';
-const TRAIL_END_LAYER_ID = 'rep-journey-trail-end';
-const STOP_LABEL_LAYER_ID = 'rep-journey-stop-label';
+const DEFAULT_LAYER_PREFIX = 'rep-journey';
 
 export type JourneyPointClickPayload = RepJourneyPoint & {
   pointIndex: number;
@@ -22,6 +18,10 @@ export type JourneyPointClickPayload = RepJourneyPoint & {
 
 type JourneyPointsLayerProps = {
   points: RepJourneyPoint[];
+  /** Unique prefix for MapLibre source/layer ids (required when tracing multiple reps). */
+  layerIdPrefix?: string;
+  /** When false, only stop markers and the trail-end marker are shown (route lines carry movement). */
+  showMovementDots?: boolean;
   onPointClick?: (point: JourneyPointClickPayload) => void;
 };
 
@@ -32,11 +32,19 @@ type JourneyPointsLayerProps = {
  */
 export function JourneyPointsLayer({
   points,
+  layerIdPrefix = DEFAULT_LAYER_PREFIX,
+  showMovementDots = false,
   onPointClick,
 }: JourneyPointsLayerProps) {
   const { map, isLoaded } = useMap();
   const onPointClickRef = useRef(onPointClick);
   onPointClickRef.current = onPointClick;
+
+  const sourceId = `${layerIdPrefix}-points`;
+  const moveLayerId = `${layerIdPrefix}-move`;
+  const stopLayerId = `${layerIdPrefix}-stop`;
+  const trailEndLayerId = `${layerIdPrefix}-trail-end`;
+  const stopLabelLayerId = `${layerIdPrefix}-stop-label`;
 
   const data = useMemo((): GeoJSON.FeatureCollection => {
     const lastIndex = points.length > 0 ? points.length - 1 : -1;
@@ -71,18 +79,18 @@ export function JourneyPointsLayer({
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    if (!map.getSource(SOURCE_ID)) {
-      map.addSource(SOURCE_ID, {
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, {
         type: 'geojson',
         data,
       });
     }
 
-    if (!map.getLayer(MOVE_LAYER_ID)) {
+    if (showMovementDots && !map.getLayer(moveLayerId)) {
       map.addLayer({
-        id: MOVE_LAYER_ID,
+        id: moveLayerId,
         type: 'circle',
-        source: SOURCE_ID,
+        source: sourceId,
         filter: [
           'all',
           ['!=', ['get', 'isStop'], 1],
@@ -98,11 +106,11 @@ export function JourneyPointsLayer({
       });
     }
 
-    if (!map.getLayer(STOP_LAYER_ID)) {
+    if (!map.getLayer(stopLayerId)) {
       map.addLayer({
-        id: STOP_LAYER_ID,
+        id: stopLayerId,
         type: 'circle',
-        source: SOURCE_ID,
+        source: sourceId,
         filter: [
           'all',
           ['==', ['get', 'isStop'], 1],
@@ -118,11 +126,11 @@ export function JourneyPointsLayer({
       });
     }
 
-    if (!map.getLayer(TRAIL_END_LAYER_ID)) {
+    if (!map.getLayer(trailEndLayerId)) {
       map.addLayer({
-        id: TRAIL_END_LAYER_ID,
+        id: trailEndLayerId,
         type: 'circle',
-        source: SOURCE_ID,
+        source: sourceId,
         filter: ['==', ['get', 'isLast'], 1],
         paint: {
           'circle-radius': 11,
@@ -134,11 +142,11 @@ export function JourneyPointsLayer({
       });
     }
 
-    if (!map.getLayer(STOP_LABEL_LAYER_ID)) {
+    if (!map.getLayer(stopLabelLayerId)) {
       map.addLayer({
-        id: STOP_LABEL_LAYER_ID,
+        id: stopLabelLayerId,
         type: 'symbol',
-        source: SOURCE_ID,
+        source: sourceId,
         filter: [
           'all',
           ['==', ['get', 'isStop'], 1],
@@ -195,7 +203,9 @@ export function JourneyPointsLayer({
       map.getCanvas().style.cursor = '';
     };
 
-    const clickLayers = [MOVE_LAYER_ID, STOP_LAYER_ID, TRAIL_END_LAYER_ID];
+    const clickLayers = showMovementDots
+      ? [moveLayerId, stopLayerId, trailEndLayerId]
+      : [stopLayerId, trailEndLayerId];
     for (const layerId of clickLayers) {
       map.on('click', layerId, handleClick);
       map.on('mouseenter', layerId, handleEnter);
@@ -209,24 +219,24 @@ export function JourneyPointsLayer({
         map.off('mouseleave', layerId, handleLeave);
       }
       try {
-        if (map.getLayer(STOP_LABEL_LAYER_ID)) map.removeLayer(STOP_LABEL_LAYER_ID);
-        if (map.getLayer(TRAIL_END_LAYER_ID)) map.removeLayer(TRAIL_END_LAYER_ID);
-        if (map.getLayer(STOP_LAYER_ID)) map.removeLayer(STOP_LAYER_ID);
-        if (map.getLayer(MOVE_LAYER_ID)) map.removeLayer(MOVE_LAYER_ID);
-        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+        if (map.getLayer(stopLabelLayerId)) map.removeLayer(stopLabelLayerId);
+        if (map.getLayer(trailEndLayerId)) map.removeLayer(trailEndLayerId);
+        if (map.getLayer(stopLayerId)) map.removeLayer(stopLayerId);
+        if (map.getLayer(moveLayerId)) map.removeLayer(moveLayerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
       } catch {
         // ignore
       }
     };
     // Mount once; data updates via separate effect
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, isLoaded]);
+  }, [map, isLoaded, showMovementDots, layerIdPrefix]);
 
   useEffect(() => {
     if (!map || !isLoaded) return;
-    const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+    const source = map.getSource(sourceId) as GeoJSONSource | undefined;
     source?.setData(data);
-  }, [map, isLoaded, data]);
+  }, [map, isLoaded, data, sourceId]);
 
   return null;
 }

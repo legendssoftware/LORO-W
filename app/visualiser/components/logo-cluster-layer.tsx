@@ -39,6 +39,8 @@ type LogoClusterLayerProps = {
   useLogoIcons?: boolean;
   /** Layer id — drives HQ green border + client handshake. */
   layerId?: keyof typeof LAYER_META;
+  /** When false each point renders as its own marker (used for sales reps). */
+  enableClustering?: boolean;
   onPointClick?: (point: VisualiserMapPoint, coordinates: [number, number]) => void;
 };
 
@@ -236,6 +238,7 @@ export function LogoClusterLayer({
   pointColor,
   useLogoIcons = true,
   layerId,
+  enableClustering = true,
   onPointClick,
 }: LogoClusterLayerProps) {
   const { map, isLoaded } = useMap();
@@ -249,7 +252,17 @@ export function LogoClusterLayer({
   onPointClickRef.current = onPointClick;
   const pointsByIdRef = useRef(new Map<string, VisualiserMapPoint>());
   pointsByIdRef.current = new Map(points.map((p) => [p.id, p]));
+  const isRepLayer = layerId === 'reps';
+  const shouldCluster = enableClustering && !isRepLayer;
   const [layersReady, setLayersReady] = useState(false);
+
+  const unclusteredCircleFilter: ExpressionSpecification = isRepLayer
+    ? ['!', ['has', 'point_count']]
+    : [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['!=', ['get', 'hasIcon'], 1],
+      ];
 
   const data = useMemo((): GeoJSON.FeatureCollection => {
     return {
@@ -349,62 +362,61 @@ export function LogoClusterLayer({
       map.addSource(sourceId, {
         type: 'geojson',
         data,
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 52,
+        ...(shouldCluster
+          ? { cluster: true, clusterMaxZoom: 14, clusterRadius: 52 }
+          : { cluster: false }),
       });
 
-      map.addLayer({
-        id: clusterLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': clusterColor,
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            36,
-            25,
-            48,
-            80,
-            64,
-          ],
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.9,
-        },
-      });
+      if (shouldCluster) {
+        map.addLayer({
+          id: clusterLayerId,
+          type: 'circle',
+          source: sourceId,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': clusterColor,
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              36,
+              25,
+              48,
+              80,
+              64,
+            ],
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff',
+            'circle-opacity': 0.9,
+          },
+        });
 
-      map.addLayer({
-        id: clusterCountId,
-        type: 'symbol',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-size': 14,
-          'text-allow-overlap': true,
-        },
-        paint: {
-          'text-color': '#ffffff',
-        },
-      });
+        map.addLayer({
+          id: clusterCountId,
+          type: 'symbol',
+          source: sourceId,
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': '{point_count_abbreviated}',
+            'text-size': 14,
+            'text-allow-overlap': true,
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        });
+      }
 
       map.addLayer({
         id: unclusteredCircleId,
         type: 'circle',
         source: sourceId,
-        filter: [
-          'all',
-          ['!', ['has', 'point_count']],
-          ['!=', ['get', 'hasIcon'], 1],
-        ],
+        filter: unclusteredCircleFilter,
         paint: {
           'circle-color': pointColor,
-          'circle-radius': 14,
+          'circle-radius': isRepLayer ? 16 : 14,
           'circle-stroke-width': layerId === 'hq' ? 3 : 2,
           'circle-stroke-color': layerId === 'hq' ? HQ_BORDER_COLOR : '#ffffff',
+          'circle-opacity': isRepLayer ? 0.35 : 1,
         },
       });
 
@@ -635,6 +647,7 @@ export function LayeredLogoClusters({
             pointColor={meta.color}
             useLogoIcons={useLogos}
             layerId={layer}
+            enableClustering={layer !== 'reps'}
             onPointClick={onPointClick}
           />
         );
