@@ -2,11 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  usePayslips,
   useUserPayslips,
   useSessionSync,
   useTokenReady,
-  useSearchableUsersList,
   useApiClient,
 } from '@/api/hooks';
 import { getPayslipDocument } from '@/api/endpoints/payslips';
@@ -15,7 +13,6 @@ import { PayslipsTable } from '@/components/payslips-table/payslips-table';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
-import { canViewOrgPayslips } from '@/lib/payslips-scope';
 import {
   buildPayslipFileName,
   filterPayslipListItems,
@@ -45,7 +42,6 @@ export function PayslipsContent() {
   const [endDate, setEndDate] = useState(defaultRange.end);
   const [useAllTime, setUseAllTime] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedUserId, setSelectedUserId] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PayslipsPageSize>(() =>
     readStoredPayslipsPageSize()
@@ -55,62 +51,18 @@ export function PayslipsContent() {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   const profile = useSessionStore((s) => s.profileData);
-  const canViewOrg = useMemo(
-    () => canViewOrgPayslips(profile?.accessLevel, profile?.role),
-    [profile?.accessLevel, profile?.role]
-  );
   const currentUserId = profile?.uid != null ? Number(profile.uid) : null;
-
-  const {
-    users,
-    searchQuery: userSearchQuery,
-    setSearchQuery: setUserSearchQuery,
-    isSearchLoading: isUserSearchLoading,
-    bindUidChange,
-  } = useSearchableUsersList({
-    limit: 100,
-    enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
-  });
-
-  const handleSelectedUserIdChange = bindUidChange(setSelectedUserId);
 
   const dateFilters = payslipsFilterDatesFromState(useAllTime, startDate, endDate);
 
-  const orgListParams = {
-    page,
-    limit: pageSize,
-    ...dateFilters,
-    ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
-    ...(canViewOrg &&
-    selectedUserId &&
-    selectedUserId !== 'all' &&
-    !Number.isNaN(Number(selectedUserId))
-      ? { userId: Number(selectedUserId) }
-      : {}),
-  };
-
   useEffect(() => {
     setPage(1);
-  }, [
-    useAllTime,
-    startDate,
-    endDate,
-    selectedStatus,
-    selectedUserId,
-    pageSize,
-    canViewOrg,
-  ]);
-
-  const orgPayslipsQuery = usePayslips(orgListParams, {
-    enabled: isTokenReady && !sessionSyncLoading && canViewOrg,
-    skipErrorToast: true,
-  });
+  }, [useAllTime, startDate, endDate, selectedStatus, pageSize]);
 
   const userPayslipsQuery = useUserPayslips(currentUserId, {
     enabled:
       isTokenReady &&
       !sessionSyncLoading &&
-      !canViewOrg &&
       currentUserId != null &&
       !Number.isNaN(currentUserId),
     skipErrorToast: true,
@@ -136,16 +88,9 @@ export function PayslipsContent() {
     };
   }, [userFilteredPayslips, page, pageSize]);
 
-  const payslipsQuery = canViewOrg ? orgPayslipsQuery : userPayslipsQuery;
-  const payslips = canViewOrg
-    ? (orgPayslipsQuery.data?.data ?? [])
-    : userPagination.payslips;
-  const total = canViewOrg
-    ? (orgPayslipsQuery.data?.meta?.total ?? 0)
-    : userPagination.total;
-  const totalPages = canViewOrg
-    ? (orgPayslipsQuery.data?.meta?.totalPages ?? 0)
-    : userPagination.totalPages;
+  const payslips = userPagination.payslips;
+  const total = userPagination.total;
+  const totalPages = userPagination.totalPages;
 
   const onRangeChange = useCallback((range: { start: Date; end: Date }) => {
     setStartDate(range.start);
@@ -206,7 +151,7 @@ export function PayslipsContent() {
     return <LoadingSpinner wrapperClassName="py-12" />;
   }
 
-  const listError = payslipsQuery.isError ? payslipsQuery.error : null;
+  const listError = userPayslipsQuery.isError ? userPayslipsQuery.error : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -217,9 +162,7 @@ export function PayslipsContent() {
               Payslips
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              {canViewOrg
-                ? 'View and download payslip documents for your organisation.'
-                : 'View and download your payslip documents.'}
+              View and download your payslip documents.
             </p>
           </div>
         </div>
@@ -231,35 +174,28 @@ export function PayslipsContent() {
               listError,
               'Could not load payslips. Try again.'
             )}
-            onRetry={() => void payslipsQuery.refetch()}
+            onRetry={() => void userPayslipsQuery.refetch()}
           />
         ) : null}
 
         <div className="mb-4 shrink-0">
           <PayslipsFiltersBar
-            canViewOrg={canViewOrg}
-            users={users}
             startDate={startDate}
             endDate={endDate}
             useAllTime={useAllTime}
             selectedStatus={selectedStatus}
-            selectedUserId={selectedUserId}
             onRangeChange={onRangeChange}
             onSetUseAllTime={setUseAllTime}
             onResetDateRange={onResetDateRange}
             onSelectedStatusChange={setSelectedStatus}
-            onSelectedUserIdChange={handleSelectedUserIdChange}
-            userSearchQuery={userSearchQuery}
-            onUserSearchQueryChange={setUserSearchQuery}
-            isUserSearchLoading={isUserSearchLoading}
           />
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
           <PayslipsTable
             payslips={payslips}
-            isLoading={payslipsQuery.isLoading}
-            showEmployeeColumn={canViewOrg}
+            isLoading={userPayslipsQuery.isLoading}
+            showEmployeeColumn={false}
             downloadingId={downloadingId}
             onView={handleView}
             onDownload={handleDownload}
@@ -269,7 +205,7 @@ export function PayslipsContent() {
             totalPages={totalPages}
             total={total}
             pageSize={pageSize}
-            isFetching={payslipsQuery.isFetching}
+            isFetching={userPayslipsQuery.isFetching}
             onPageChange={setPage}
             onPageSizeChange={handlePageSizeChange}
           />
@@ -280,7 +216,7 @@ export function PayslipsContent() {
         payslip={selectedPayslip}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        showEmployee={canViewOrg}
+        showEmployee={false}
       />
     </div>
   );
