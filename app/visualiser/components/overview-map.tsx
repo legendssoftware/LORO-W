@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AxiosInstance } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { Mountain, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -69,6 +70,11 @@ import {
   journeyVisitActionsFromCheckIns,
   type JourneyVisitAction,
 } from '@/app/visualiser/lib/journey-visit-actions';
+import {
+  repRouteColor,
+  resolveJourneySegments,
+} from '@/lib/utils/journey-route-segments';
+import { logVisualiserPolylineDebug } from '@/lib/utils/visualiser-polyline-debug';
 
 /** Johannesburg fallback — MapLibre uses [lng, lat]. */
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
@@ -119,6 +125,41 @@ type JourneyRouteState = {
   summary: RepJourneySummary;
   period: { start: string; end: string };
 };
+
+async function fetchJourneyRouteState(
+  client: AxiosInstance,
+  queryClient: ReturnType<typeof useQueryClient>,
+  repUid: number,
+  range: RepJourneyRange,
+  rangeLabel: string,
+  repName: string,
+  customRange?: RepJourneyCustomRangeParams
+): Promise<JourneyRouteState | null> {
+  const data = await queryClient.fetchQuery({
+    queryKey: repJourneyQueryKey(repUid, range, customRange),
+    queryFn: async () => {
+      const response = await getRepJourney(client, repUid, range, customRange);
+      return response.data;
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  if (!data || (data.summary?.totalPoints ?? 0) < 2) return null;
+
+  return {
+    repUid,
+    range,
+    rangeLabel,
+    repName,
+    points: data.points,
+    routeCoordinates: data.routeCoordinates ?? [],
+    routeSegments: data.routeSegments ?? [],
+    routeGeometrySource: data.routeGeometrySource ?? 'none',
+    summary: data.summary,
+    period: data.period,
+  };
+}
 
 function FlyToPoint({ point }: { point: VisualiserMapPoint | null }) {
   const { map, isLoaded } = useMap();
@@ -402,9 +443,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const [visibility, setVisibility] =
     useState<VisualiserLayerVisibility>(DEFAULT_LAYER_VISIBILITY);
   const [selected, setSelected] = useState<VisualiserMapPoint | null>(null);
-  const [journeyRoute, setJourneyRoute] = useState<JourneyRouteState | null>(
-    null
-  );
+  const [journeyRoutes, setJourneyRoutes] = useState<JourneyRouteState[]>([]);
   const [isTracing, setIsTracing] = useState(false);
   const [selectedJourneyPoint, setSelectedJourneyPoint] =
     useState<JourneyPointClickPayload | null>(null);
@@ -508,8 +547,18 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     return grouped;
   }, [visiblePoints]);
 
+  /** Hide actively traced reps from cluster pins — last-known avatar marker replaces them. */
+  const clusterPointsByLayer = useMemo(() => {
+    if (journeyRoutes.length === 0) return pointsByLayer;
+    const tracedUids = new Set(journeyRoutes.map((route) => route.repUid));
+    const reps = pointsByLayer.reps?.filter(
+      (p) => p.repUid == null || !tracedUids.has(p.repUid)
+    );
+    return { ...pointsByLayer, reps: reps ?? [] };
+  }, [pointsByLayer, journeyRoutes]);
+
   const handleClearRoute = useCallback(() => {
-    setJourneyRoute(null);
+    setJourneyRoutes([]);
     setSelectedJourneyPoint(null);
     setShowLastKnownPopup(false);
     setLastKnownFlyKey(null);
@@ -531,7 +580,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setVisibility((prev) => ({ ...prev, [layer]: visible }));
       setSelected((cur) => (cur?.layer === layer && !visible ? null : cur));
       if (layer === 'reps' && !visible) {
-        setJourneyRoute(null);
+        setJourneyRoutes([]);
         setSelectedJourneyPoint(null);
         setShowLastKnownPopup(false);
         setLastKnownFlyKey(null);
@@ -554,6 +603,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       options?: {
         quiet?: boolean;
         customRange?: { start: Date; end: Date };
+        /** When true, merge into existing routes instead of replacing (multi-rep). */
+        append?: boolean;
       }
     ): Promise<boolean> => {
       const quiet = options?.quiet === true;
@@ -578,28 +629,27 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       }
       setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
-      toast.loading(`Loading ${rangeLabel} route…`, { id: toastId });
+      if (!quiet) {
+        toast.loading(`Loading ${rangeLabel} route…`, { id: toastId });
+      }
       try {
         const apiCustomRange =
           range === 'custom' && customRange
             ? customRangeToApiParams(customRange)
             : undefined;
-        const data = await queryClient.fetchQuery({
-          queryKey: repJourneyQueryKey(repUid, range, apiCustomRange),
-          queryFn: async () => {
-            const response = await getRepJourney(
-              client,
-              repUid,
-              range,
-              apiCustomRange
-            );
-            return response.data;
-          },
-          staleTime: 60_000,
-          gcTime: 5 * 60 * 1000,
-        });
-        if (!data || data.points.length < 1) {
-          setJourneyRoute(null);
+        const routeState = await fetchJourneyRouteState(
+          client,
+          queryClient,
+          repUid,
+          range,
+          rangeLabel,
+          repName,
+          apiCustomRange
+        );
+        if (!routeState) {
+          if (!options?.append) {
+            setJourneyRoutes([]);
+          }
           setTrackStatusMessage(
             range === 'day'
               ? `No GPS points today for ${repName} — try Week`
@@ -618,31 +668,32 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           return false;
         }
 
-        setJourneyRoute({
-          repUid,
-          range,
-          rangeLabel,
-          repName,
-          points: data.points,
-          routeCoordinates: data.routeCoordinates ?? [],
-          routeSegments: data.routeSegments ?? [],
-          routeGeometrySource: data.routeGeometrySource ?? 'none',
-          summary: data.summary,
-          period: data.period,
+        setJourneyRoutes((prev) => {
+          if (options?.append) {
+            const without = prev.filter((r) => r.repUid !== repUid);
+            return [...without, routeState];
+          }
+          return [routeState];
         });
         setShowLastKnownPopup(true);
         setSelected(null);
         setSelectedJourneyPoint(null);
         setTrackStatusMessage(rangeLabel);
-        toast.success(
-          `${repName}: ${data.summary.totalDistanceKm.toFixed(1)} km · ${data.summary.totalTravelFormatted} travel · ${rangeLabel}`,
-          { id: toastId }
-        );
+        if (!quiet) {
+          toast.success(
+            `${repName}: ${routeState.summary.totalDistanceKm.toFixed(1)} km · ${routeState.summary.totalTravelFormatted} travel · ${rangeLabel}`,
+            { id: toastId }
+          );
+        } else {
+          toast.dismiss(toastId);
+        }
         return true;
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to load journey';
-        setJourneyRoute(null);
+        if (!options?.append) {
+          setJourneyRoutes([]);
+        }
         setTrackStatusMessage(message);
         if (!quiet) {
           toast.error(message, { id: toastId });
@@ -657,15 +708,122 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     [client, customTraceRange, queryClient, selected, users]
   );
 
+  const visibleRepUids = useMemo(() => {
+    const uids = new Set<number>();
+    for (const p of allPoints) {
+      if (p.layer === 'reps' && p.repUid != null) uids.add(p.repUid);
+    }
+    return [...uids];
+  }, [allPoints]);
+
+  const handleTraceAllVisibleReps = useCallback(
+    async (
+      range: RepJourneyRange,
+      options?: {
+        quiet?: boolean;
+        customRange?: { start: Date; end: Date };
+      }
+    ) => {
+      const repUids =
+        visibleRepUids.length > 0
+          ? visibleRepUids
+          : users.map((u) => u.uid).filter((uid) => Number.isFinite(uid));
+
+      if (repUids.length === 0) {
+        setTrackStatusMessage('No sales reps with GPS to trace.');
+        return;
+      }
+
+      const quiet = options?.quiet === true;
+      const customRange =
+        range === 'custom'
+          ? (options?.customRange ?? customTraceRange)
+          : undefined;
+      const rangeLabel = formatJourneyRangeLabel(range, customRange);
+      setIsTracing(true);
+      setSelectedJourneyPoint(null);
+      setSelectedVisitId(null);
+      setActiveTraceRange(range);
+      if (range === 'custom' && customRange) {
+        setCustomTraceRange(customRange);
+      }
+      const toastId = 'rep-journey-trace-all';
+      toast.loading(
+        `Loading ${rangeLabel} routes for ${repUids.length} rep${repUids.length === 1 ? '' : 's'}…`,
+        { id: toastId }
+      );
+
+      try {
+        const apiCustomRange =
+          range === 'custom' && customRange
+            ? customRangeToApiParams(customRange)
+            : undefined;
+
+        const results = await Promise.all(
+          repUids.map(async (repUid) => {
+            const repName = resolveRepDisplayName(repUid, null, users);
+            const routeState = await fetchJourneyRouteState(
+              client,
+              queryClient,
+              repUid,
+              range,
+              rangeLabel,
+              repName,
+              apiCustomRange
+            );
+            return routeState;
+          })
+        );
+
+        const routes = results.filter(
+          (route): route is JourneyRouteState => route != null
+        );
+
+        if (routes.length === 0) {
+          setJourneyRoutes([]);
+          setTrackStatusMessage(`No GPS points in ${rangeLabel} for any rep.`);
+          toast.error(`No GPS points in ${rangeLabel}.`, { id: toastId });
+          return;
+        }
+
+        setJourneyRoutes(routes);
+        setShowLastKnownPopup(routes.length === 1);
+        setSelected(null);
+        setTrackStatusMessage(
+          routes.length === repUids.length
+            ? `${rangeLabel} · ${routes.length} reps`
+            : `${rangeLabel} · ${routes.length}/${repUids.length} reps with GPS`
+        );
+        toast.success(
+          `${routes.length} rep route${routes.length === 1 ? '' : 's'} · ${rangeLabel}`,
+          { id: toastId }
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load journeys';
+        setJourneyRoutes([]);
+        setTrackStatusMessage(message);
+        toast.error(message, { id: toastId });
+      } finally {
+        setIsTracing(false);
+      }
+    },
+    [client, customTraceRange, queryClient, users, visibleRepUids]
+  );
+
   const handleCustomRangeChange = useCallback(
     (range: { start: Date; end: Date }) => {
       setCustomTraceRange(range);
-      if (trackedRepUid === 'all' || activeTraceRange !== 'custom') return;
+      if (activeTraceRange !== 'custom') return;
+      if (trackedRepUid === 'all') {
+        void handleTraceAllVisibleReps('custom', { customRange: range });
+        return;
+      }
       const repUid = Number(trackedRepUid);
       if (!Number.isFinite(repUid)) return;
       void handleTraceRoute(repUid, 'custom', undefined, { customRange: range });
     },
-    [activeTraceRange, handleTraceRoute, trackedRepUid]
+    [activeTraceRange, handleTraceAllVisibleReps, handleTraceRoute, trackedRepUid]
   );
 
   const handleResetCustomRange = useCallback(() => {
@@ -676,7 +834,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const handleTrackedRepChange = useCallback(
     async (uid: string) => {
       if (uid === 'all') {
-        handleClearTracking();
+        setTrackedRepUid('all');
+        clearRepSelection();
+        setRepSearchInput('');
+        setSelected(null);
+        setSelectedJourneyPoint(null);
+        setVisibility((prev) =>
+          prev.reps ? prev : { ...prev, reps: true }
+        );
+        await handleTraceAllVisibleReps('week', { quiet: true });
         return;
       }
 
@@ -700,14 +866,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       setSelected(pin ?? null);
 
       const repName = resolveRepDisplayName(repUid, pin ?? null, users);
-      // Load day only — do not auto-swap to week; status prompts the user.
-      await handleTraceRoute(repUid, 'day', repName, { quiet: true });
+      await handleTraceRoute(repUid, 'week', repName, { quiet: true });
     },
     [
       allPoints,
-      handleClearTracking,
+      clearRepSelection,
+      handleTraceAllVisibleReps,
       handleTraceRoute,
       rememberUser,
+      setRepSearchInput,
       users,
     ]
   );
@@ -715,15 +882,26 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
   const trackedUidNum =
     trackedRepUid === 'all' ? null : Number(trackedRepUid);
 
+  const primaryJourneyRoute = useMemo(() => {
+    if (journeyRoutes.length === 0) return null;
+    if (trackedUidNum != null && Number.isFinite(trackedUidNum)) {
+      return (
+        journeyRoutes.find((route) => route.repUid === trackedUidNum) ??
+        journeyRoutes[0]
+      );
+    }
+    return journeyRoutes[0];
+  }, [journeyRoutes, trackedUidNum]);
+
   const journeyCheckInsQuery = useCheckIns(
-    journeyRoute
+    primaryJourneyRoute
       ? {
-          userUid: String(journeyRoute.repUid),
-          startDate: journeyRoute.period.start,
-          endDate: journeyRoute.period.end,
+          userUid: String(primaryJourneyRoute.repUid),
+          startDate: primaryJourneyRoute.period.start,
+          endDate: primaryJourneyRoute.period.end,
         }
       : undefined,
-    { enabled: enabled && journeyRoute != null }
+    { enabled: enabled && primaryJourneyRoute != null }
   );
 
   const visitActions = useMemo(
@@ -731,30 +909,61 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     [journeyCheckInsQuery.data?.checkIns]
   );
 
-  /** Trail polylines — one per continuous GPS cluster; never bridged across gaps. */
+  /** Trail polylines — one segment list per rep route; falls back when road snap is empty. */
   const journeySegments = useMemo((): [number, number][][] => {
-    const segs = journeyRoute?.routeSegments?.filter((s) => s.length >= 2);
-    if (segs?.length) return segs;
-    return [];
-  }, [journeyRoute]);
+    return journeyRoutes.flatMap((route) => resolveJourneySegments(route));
+  }, [journeyRoutes]);
+
+  useEffect(() => {
+    if (journeyRoutes.length === 0) return;
+    logVisualiserPolylineDebug(
+      journeyRoutes.map((route) => ({
+        repUid: route.repUid,
+        repName: route.repName,
+        range: route.range,
+        rangeLabel: route.rangeLabel,
+        routeGeometrySource: route.routeGeometrySource,
+        period: route.period,
+        routeSegments: route.routeSegments,
+        routeCoordinates: route.routeCoordinates,
+        points: route.points,
+        summary: {
+          totalPoints: route.summary.totalPoints,
+          totalDistanceKm: route.summary.totalDistanceKm,
+          totalTravelFormatted: route.summary.totalTravelFormatted,
+          startPlace: route.summary.startPlace,
+          endPlace: route.summary.endPlace,
+        },
+        keyPointsCount: route.points.length,
+        stopKeyPointsCount: route.points.filter((p) => p.isStop).length,
+      }))
+    );
+  }, [journeyRoutes]);
 
   const journeyBoundsCoordinates = useMemo(
     (): [number, number][] => journeySegments.flat(),
     [journeySegments]
   );
 
-  const journeyRouteKey = journeyRoute
-    ? `${journeyRoute.repUid}-${journeyRoute.range}-${journeyRoute.period.start}-${journeyRoute.period.end}-${journeyRoute.summary.totalPoints}`
-    : null;
+  const journeyRouteKey =
+    journeyRoutes.length > 0
+      ? journeyRoutes
+          .map(
+            (route) =>
+              `${route.repUid}-${route.range}-${route.period.start}-${route.period.end}-${route.summary.totalPoints}`
+          )
+          .join('|')
+      : null;
 
   const trackedLatestPoint = useMemo(() => {
-    if (!journeyRoute) return null;
+    if (!primaryJourneyRoute) return null;
     return (
       allPoints.find(
-        (p) => p.layer === 'reps' && p.repUid === journeyRoute.repUid
+        (p) =>
+          p.layer === 'reps' && p.repUid === primaryJourneyRoute.repUid
       ) ?? null
     );
-  }, [allPoints, journeyRoute]);
+  }, [allPoints, primaryJourneyRoute]);
 
   const lastKnownCoords = useMemo((): {
     latitude: number;
@@ -766,19 +975,20 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         longitude: trackedLatestPoint.longitude,
       };
     }
-    const end = journeyRoute?.summary.endPlace;
+    const end = primaryJourneyRoute?.summary.endPlace;
     if (end) {
       return { latitude: end.latitude, longitude: end.longitude };
     }
-    const lastPoint = journeyRoute?.points[journeyRoute.points.length - 1];
+    const lastPoint =
+      primaryJourneyRoute?.points[primaryJourneyRoute.points.length - 1];
     if (lastPoint) {
       return { latitude: lastPoint.latitude, longitude: lastPoint.longitude };
     }
     return null;
-  }, [trackedLatestPoint, journeyRoute]);
+  }, [trackedLatestPoint, primaryJourneyRoute]);
 
   const lastKnownSummary = useMemo((): LastKnownLocationSummary | null => {
-    if (!journeyRoute) return null;
+    if (!primaryJourneyRoute) return null;
     if (trackedLatestPoint) {
       const battery = trackedLatestPoint.highlights?.find(
         (h) => h.label === 'Battery'
@@ -795,7 +1005,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         longitude: trackedLatestPoint.longitude,
       };
     }
-    const end = journeyRoute.summary.endPlace;
+    const end = primaryJourneyRoute.summary.endPlace;
     if (!end) return null;
     return {
       address: end.address,
@@ -805,7 +1015,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       latitude: end.latitude,
       longitude: end.longitude,
     };
-  }, [journeyRoute, trackedLatestPoint]);
+  }, [primaryJourneyRoute, trackedLatestPoint]);
 
   const openLastKnownPopup = useCallback((options?: { fly?: boolean }) => {
     setSelected(null);
@@ -826,10 +1036,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
   /** Keep last-known popup open when latest pin refreshes while trail is active. */
   useEffect(() => {
-    if (!journeyRoute) {
+    if (journeyRoutes.length === 0) {
       setShowLastKnownPopup(false);
     }
-  }, [journeyRoute]);
+  }, [journeyRoutes.length]);
 
   if (!center) {
     return <LoadingSpinner wrapperClassName="h-full min-h-[240px]" />;
@@ -898,18 +1108,28 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           activeRange={activeTraceRange}
           isTracing={isTracing}
           statusMessage={trackStatusMessage}
-          journeySummary={journeyRoute?.summary ?? null}
+          journeySummary={primaryJourneyRoute?.summary ?? null}
           lastKnownLocation={lastKnownSummary}
           onLastKnownClick={() => openLastKnownPopup({ fly: true })}
-          visitActions={journeyRoute ? visitActions : []}
+          visitActions={primaryJourneyRoute ? visitActions : []}
           selectedVisitId={selectedVisitId}
           onVisitActionClick={handleVisitActionClick}
           onClear={handleClearTracking}
           searchQuery={repSearchInput}
           onSearchQueryChange={setRepSearchInput}
           isSearchLoading={isRepSearchLoading}
+          hasActiveTrail={journeyRoutes.length > 0}
           onTraceRange={(range) => {
-            if (trackedUidNum == null) return;
+            if (trackedRepUid === 'all' || trackedUidNum == null) {
+              if (range === 'custom') {
+                void handleTraceAllVisibleReps('custom', {
+                  customRange: customTraceRange,
+                });
+                return;
+              }
+              void handleTraceAllVisibleReps(range);
+              return;
+            }
             if (range === 'custom') {
               void handleTraceRoute(trackedUidNum, 'custom', undefined, {
                 customRange: customTraceRange,
@@ -924,22 +1144,34 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         />
       </div>
 
-      {journeyRoute ? (
+      {journeyRoutes.length > 0 ? (
         <div className="bg-background/95 absolute bottom-3 left-3 z-10 max-w-xs rounded-md border px-3 py-2 text-xs shadow-sm backdrop-blur">
           <div className="flex items-start justify-between gap-2">
             <p className="text-muted-foreground min-w-0 truncate">
-              <span className="text-foreground font-medium">
-                {journeyRoute.repName}
-              </span>
-              {' · '}
-              {journeyRoute.rangeLabel} ·{' '}
-              {journeyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
-              {journeyRoute.summary.totalTravelFormatted} travel
-              {journeyRoute.routeGeometrySource === 'roads'
-                ? ' · roads'
-                : journeyRoute.routeGeometrySource === 'raw-gps'
-                  ? ' · GPS'
-                  : ''}
+              {journeyRoutes.length > 1 ? (
+                <>
+                  <span className="text-foreground font-medium">
+                    {journeyRoutes.length} reps
+                  </span>
+                  {' · '}
+                  {primaryJourneyRoute?.rangeLabel ?? activeTraceRange}
+                </>
+              ) : primaryJourneyRoute ? (
+                <>
+                  <span className="text-foreground font-medium">
+                    {primaryJourneyRoute.repName}
+                  </span>
+                  {' · '}
+                  {primaryJourneyRoute.rangeLabel} ·{' '}
+                  {primaryJourneyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
+                  {primaryJourneyRoute.summary.totalTravelFormatted} travel
+                  {primaryJourneyRoute.routeGeometrySource === 'roads'
+                    ? ' · roads'
+                    : primaryJourneyRoute.routeGeometrySource === 'raw-gps'
+                      ? ' · GPS'
+                      : ''}
+                </>
+              ) : null}
             </p>
             <button
               type="button"
@@ -1003,33 +1235,42 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
         <SimulationOverlayLayer />
 
-        {journeySegments.map((segment, index) =>
-          segment.length >= 2 ? (
-            <MapRoute
-              key={`rep-journey-route-${index}`}
-              id={`rep-journey-route-${index}`}
-              coordinates={segment}
-              color={LAYER_META.reps.color}
-              width={3}
-              opacity={0.85}
-              interactive={false}
+        {journeyRoutes.flatMap((route, routeIndex) => {
+          const segments = resolveJourneySegments(route);
+          const color = repRouteColor(routeIndex);
+          return segments.map((segment, segIndex) =>
+            segment.length >= 2 ? (
+              <MapRoute
+                key={`rep-journey-route-${route.repUid}-${segIndex}`}
+                id={`rep-journey-route-${route.repUid}-${segIndex}`}
+                coordinates={segment}
+                color={color}
+                width={4}
+                opacity={0.9}
+                interactive={false}
+              />
+            ) : null
+          );
+        })}
+
+        {journeyRoutes.map((route) =>
+          route.points.length > 0 ? (
+            <JourneyPointsLayer
+              key={`journey-points-${route.repUid}-${route.period.start}`}
+              layerIdPrefix={`rep-journey-${route.repUid}`}
+              points={route.points}
+              showMovementDots={false}
+              onPointClick={(point) => {
+                setSelectedVisitId(null);
+                setSelected(null);
+                setShowLastKnownPopup(false);
+                setSelectedJourneyPoint(point);
+              }}
             />
           ) : null
         )}
 
-        {journeyRoute && journeyRoute.points.length > 0 ? (
-          <JourneyPointsLayer
-            points={journeyRoute.points}
-            onPointClick={(point) => {
-              setSelectedVisitId(null);
-              setSelected(null);
-              setShowLastKnownPopup(false);
-              setSelectedJourneyPoint(point);
-            }}
-          />
-        ) : null}
-
-        {journeyRoute && lastKnownCoords ? (
+        {primaryJourneyRoute && lastKnownCoords ? (
           <MapMarker
             longitude={lastKnownCoords.longitude}
             latitude={lastKnownCoords.latitude}
@@ -1039,16 +1280,28 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             }}
           >
             <MarkerContent>
-              <span className="relative flex h-5 w-5 cursor-pointer items-center justify-center">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-violet-400 opacity-50 [animation-iteration-count:2]" />
-                <span className="relative size-3.5 rounded-full border-2 border-white bg-violet-600 shadow-lg ring-2 ring-violet-300/80" />
-              </span>
+              {trackedLatestPoint?.logoUrl ? (
+                <span className="relative flex cursor-pointer items-center justify-center">
+                  <span className="absolute inline-flex size-10 animate-ping rounded-full bg-violet-400/40 [animation-iteration-count:2]" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={trackedLatestPoint.logoUrl}
+                    alt={trackedLatestPoint.name}
+                    className="relative size-9 rounded-full border-2 border-white object-cover shadow-lg ring-2 ring-violet-400/80"
+                  />
+                </span>
+              ) : (
+                <span className="relative flex h-5 w-5 cursor-pointer items-center justify-center">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-violet-400 opacity-50 [animation-iteration-count:2]" />
+                  <span className="relative size-3.5 rounded-full border-2 border-white bg-violet-600 shadow-lg ring-2 ring-violet-300/80" />
+                </span>
+              )}
               <MarkerLabel position="top">Last known</MarkerLabel>
             </MarkerContent>
           </MapMarker>
         ) : null}
 
-        {journeyRoute && visitActions.length > 0 ? (
+        {primaryJourneyRoute && visitActions.length > 0 ? (
           <JourneyVisitsLayer
             visits={visitActions}
             selectedVisitId={selectedVisitId}
@@ -1058,7 +1311,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         ) : null}
 
         <LayeredLogoClusters
-          pointsByLayer={pointsByLayer}
+          pointsByLayer={clusterPointsByLayer}
           onPointClick={(point) => {
             setSelectedJourneyPoint(null);
             setShowLastKnownPopup(false);
@@ -1094,12 +1347,12 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
             <JourneyLastKnownPopupContent
               point={trackedLatestPoint}
               fallback={
-                journeyRoute?.summary.endPlace
+                primaryJourneyRoute?.summary.endPlace
                   ? {
-                      address: journeyRoute.summary.endPlace.address,
-                      latitude: journeyRoute.summary.endPlace.latitude,
-                      longitude: journeyRoute.summary.endPlace.longitude,
-                      recordedAt: journeyRoute.summary.endPlace.recordedAt,
+                      address: primaryJourneyRoute.summary.endPlace.address,
+                      latitude: primaryJourneyRoute.summary.endPlace.latitude,
+                      longitude: primaryJourneyRoute.summary.endPlace.longitude,
+                      recordedAt: primaryJourneyRoute.summary.endPlace.recordedAt,
                     }
                   : null
               }
@@ -1159,8 +1412,8 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
       <div className="bg-background/90 text-muted-foreground absolute right-3 bottom-3 z-10 hidden rounded-md border px-2 py-1 text-[10px] backdrop-blur sm:block">
         {visiblePoints.length} mapped ·{' '}
         {isActive ? 'simulation on · ' : ''}
-        {journeyRoute ? 'trail on · ' : ''}
-        {journeyRoute && visitActions.length > 0
+        {journeyRoutes.length > 0 ? 'trail on · ' : ''}
+        {primaryJourneyRoute && visitActions.length > 0
           ? `${visitActions.length} visits · `
           : ''}
         {Object.entries(LAYER_META)

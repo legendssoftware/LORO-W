@@ -99,6 +99,8 @@ export interface RepTrackerControlProps {
   visitActions?: JourneyVisitAction[];
   selectedVisitId?: number | null;
   onVisitActionClick?: (visit: JourneyVisitAction) => void;
+  /** True when one or more rep routes are drawn on the map. */
+  hasActiveTrail?: boolean;
   className?: string;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
@@ -127,13 +129,15 @@ export function RepTrackerControl({
   visitActions = [],
   selectedVisitId = null,
   onVisitActionClick,
+  hasActiveTrail = false,
   className,
   searchQuery,
   onSearchQueryChange,
   isSearchLoading = false,
 }: RepTrackerControlProps) {
-  const isTracking = selectedUid !== 'all';
-  const showSummary = isTracking && journeySummary != null;
+  const isSingleRep = selectedUid !== 'all';
+  const showSummary = isSingleRep && journeySummary != null;
+  const showClear = isSingleRep || hasActiveTrail || activeRange != null;
   const isCustomActive = activeRange === 'custom';
   const distanceLabel = isCustomActive ? 'Day distance' : "Today's distance";
 
@@ -148,7 +152,7 @@ export function RepTrackerControl({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Track sales rep
         </p>
-        {isTracking ? (
+        {showClear ? (
           <button
             type="button"
             className="text-muted-foreground hover:text-foreground shrink-0 text-[10px] underline disabled:opacity-50"
@@ -172,24 +176,22 @@ export function RepTrackerControl({
         onSearchQueryChange={onSearchQueryChange}
         isSearchLoading={isSearchLoading}
       />
-      {isTracking ? (
-        <div className="flex flex-wrap gap-1.5">
-          {TRACE_RANGES.map(({ range, label }) => (
-            <Button
-              key={range}
-              type="button"
-              size="xs"
-              variant={activeRange === range ? 'default' : 'outline'}
-              disabled={isTracing}
-              onClick={() => onTraceRange(range)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+      <div className="flex flex-wrap gap-1.5">
+        {TRACE_RANGES.map(({ range, label }) => (
+          <Button
+            key={range}
+            type="button"
+            size="xs"
+            variant={activeRange === range ? 'default' : 'outline'}
+            disabled={isTracing}
+            onClick={() => onTraceRange(range)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
 
-      {isTracking && isCustomActive && customRange && onCustomRangeChange ? (
+      {activeRange === 'custom' && customRange && onCustomRangeChange ? (
         <UtcDateRangePicker
           startDate={customRange.start}
           endDate={customRange.end}
@@ -327,7 +329,7 @@ export function RepTrackerControl({
             {statusMessage ? ` · ${statusMessage}` : null}
           </p>
         </div>
-      ) : isTracking && statusMessage ? (
+      ) : statusMessage ? (
         <p className="text-muted-foreground text-[11px] leading-snug">
           {statusMessage}
         </p>
