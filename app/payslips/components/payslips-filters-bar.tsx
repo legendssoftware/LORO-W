@@ -3,10 +3,8 @@
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon, CircleDot, Eye, Filter, LayoutGrid, Send } from 'lucide-react';
-import type { UserListItem } from '@/api/endpoints/user';
 import {
   SearchableOptionListPicker,
-  SearchableUserPicker,
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
   type SearchableOptionRow,
@@ -62,41 +60,26 @@ function statusIconFor(value: string): React.ReactNode {
 }
 
 export interface PayslipsFiltersBarProps {
-  canViewOrg: boolean;
-  users: UserListItem[];
   startDate: Date;
   endDate: Date;
   useAllTime: boolean;
   selectedStatus: string;
-  selectedUserId: string;
   onRangeChange: (range: { start: Date; end: Date }) => void;
   onSetUseAllTime: (v: boolean) => void;
   onResetDateRange: () => void;
   onSelectedStatusChange: (v: string) => void;
-  onSelectedUserIdChange: (v: string) => void;
-  /** Controlled user-picker search (server-backed when parent wires useSearchableUsersList). */
-  userSearchQuery?: string;
-  onUserSearchQueryChange?: (query: string) => void;
-  isUserSearchLoading?: boolean;
 }
 
 function PayslipsFilterControls({
   layout,
-  canViewOrg,
-  users,
   startDate,
   endDate,
   useAllTime,
   selectedStatus,
-  selectedUserId,
   onRangeChange,
   onSetUseAllTime,
   onResetDateRange,
   onSelectedStatusChange,
-  onSelectedUserIdChange,
-  userSearchQuery,
-  onUserSearchQueryChange,
-  isUserSearchLoading = false,
 }: PayslipsFiltersBarProps & { layout: 'row' | 'stack' }) {
   const row = layout === 'row';
   const rangeBtnWidth = row
@@ -303,20 +286,6 @@ function PayslipsFilterControls({
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={cn(reportsFilterSelectTriggerClass, row ? 'w-auto' : 'w-full')}
       />
-
-      {canViewOrg ? (
-        <SearchableUserPicker
-          users={users}
-          branches={[]}
-          selectedUid={selectedUserId === '' ? 'all' : selectedUserId}
-          onUidChange={onSelectedUserIdChange}
-          showBranchSubtitle={false}
-          triggerClassName={cn(reportsFilterSelectTriggerClass, row ? 'w-auto' : 'w-full')}
-          searchQuery={userSearchQuery}
-          onSearchQueryChange={onUserSearchQueryChange}
-          isSearchLoading={isUserSearchLoading}
-        />
-      ) : null}
     </div>
   );
 }
@@ -357,7 +326,7 @@ export function PayslipsFiltersBar(props: PayslipsFiltersBarProps) {
           <DialogHeader>
             <DialogTitle>Payslip filters</DialogTitle>
             <DialogDescription>
-              Filter by issue date, status, or employee.
+              Filter by issue date or status.
             </DialogDescription>
           </DialogHeader>
           <PayslipsFilterControls layout="stack" {...props} />
