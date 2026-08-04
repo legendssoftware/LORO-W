@@ -53,6 +53,15 @@ export function exportToCsv(
 
 const EXCEL_COLUMN_WIDTH = 18;
 
+export type ExportToExcelOptions = {
+    /** Bold the first header row (best-effort; depends on SheetJS build). */
+    boldHeader?: boolean;
+    /** Worksheet tab name (defaults to "Report"). */
+    sheetName?: string;
+    /** Freeze the header row when scrolling. */
+    freezeHeader?: boolean;
+};
+
 /**
  * Export table data to Excel (.xlsx) using SheetJS.
  * All columns use equal width for consistent layout.
@@ -60,7 +69,8 @@ const EXCEL_COLUMN_WIDTH = 18;
 export function exportToExcel(
     headers: string[],
     rows: string[][],
-    filename: string
+    filename: string,
+    options?: ExportToExcelOptions
 ): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const XLSX = require('xlsx');
@@ -70,8 +80,24 @@ export function exportToExcel(
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const columnCount = headers.length;
     ws['!cols'] = Array.from({ length: columnCount }, () => ({ wch: EXCEL_COLUMN_WIDTH }));
+
+    if (options?.boldHeader) {
+        for (let c = 0; c < columnCount; c++) {
+            const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+            const cell = ws[cellRef];
+            if (cell) {
+                cell.s = { font: { bold: true } };
+            }
+        }
+    }
+
+    if (options?.freezeHeader) {
+        ws['!views'] = [{ state: 'frozen', ySplit: 1, activeCell: 'A2' }];
+    }
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    const sheetName = options?.sheetName?.trim() || 'Report';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
     XLSX.writeFile(wb, name);
 }
 

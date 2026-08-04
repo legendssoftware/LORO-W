@@ -8,7 +8,9 @@ import {
   buildActivityDetailRows,
   formatVisitDurationTotal,
 } from '@/app/reports/lib/reports-target-detail-aggregates';
+import { toDonutSlices } from '@/app/reports/lib/reports-dashboard-chart-helpers';
 import { formatVisitActionTime } from '@/app/visualiser/lib/journey-visit-actions';
+import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -64,6 +66,11 @@ export function ReportsTargetActivityAnalysis({
   );
 
   const rows = useMemo(() => buildActivityDetailRows(checkIns), [checkIns]);
+
+  const outcomeChart = useMemo(
+    () => toDonutSlices(summary.byOutcome),
+    [summary.byOutcome]
+  );
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />;
@@ -123,13 +130,20 @@ export function ReportsTargetActivityAnalysis({
         />
       </div>
 
-      {summary.byOutcome.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {summary.byOutcome.map((item) => (
-            <Badge key={item.name} variant="secondary" className="text-xs font-normal">
-              {humanizeReportLabel(item.name)}: {item.value}
-            </Badge>
-          ))}
+      {outcomeChart.slices.length > 0 ? (
+        <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Outcomes
+          </p>
+          <ReportDonutChart
+            config={outcomeChart.config}
+            data={outcomeChart.slices}
+            centerPrimary={String(outcomeChart.total)}
+            centerSecondary="Activities"
+            legendMaxItems={outcomeChart.slices.length}
+            tooltipClassName="min-w-[14rem]"
+            className="max-h-[260px]"
+          />
         </div>
       ) : null}
 
