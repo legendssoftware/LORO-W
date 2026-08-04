@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { branchFlagAndLabel } from '@/lib/utils/branch-person-cell';
+import { groupBranchesByProvince } from '@/app/reports/lib/reports-branch-geo';
 
 export const reportsFilterSelectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -94,6 +95,45 @@ export interface SearchableBranchPickerProps {
   withAllOption?: boolean;
   /** When `withAllOption` is false and no branch matches `selectedBranchId`. */
   emptySelectionLabel?: string;
+  /** When true, list branches under province / region headings. */
+  groupByProvince?: boolean;
+}
+
+function BranchPickerItems({
+  branches,
+  selectedBranchId,
+  onBranchChange,
+  onSelect,
+}: {
+  branches: BranchListItem[];
+  selectedBranchId: string;
+  onBranchChange: (branchId: string) => void;
+  onSelect: () => void;
+}) {
+  return branches.map((b) => {
+    const label = getBranchDisplayLabel(b);
+    return (
+      <CommandItem
+        key={b.uid}
+        value={`${label} ${b.uid}`}
+        onSelect={() => {
+          onBranchChange(String(b.uid));
+          onSelect();
+        }}
+      >
+        <Check
+          className={cn(
+            'size-4 shrink-0',
+            selectedBranchId === String(b.uid) ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+        <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+          <MapPinned className="size-4 shrink-0 text-muted-foreground" />
+          {label}
+        </span>
+      </CommandItem>
+    );
+  });
 }
 
 export function SearchableBranchPicker({
@@ -104,8 +144,14 @@ export function SearchableBranchPicker({
   searchPlaceholder = 'Search branches…',
   withAllOption = true,
   emptySelectionLabel = 'Select branch',
+  groupByProvince = false,
 }: SearchableBranchPickerProps) {
   const [open, setOpen] = React.useState(false);
+
+  const provinceGroups = React.useMemo(
+    () => (groupByProvince ? groupBranchesByProvince(branches) : []),
+    [branches, groupByProvince]
+  );
 
   const triggerLabel = React.useMemo(() => {
     if (withAllOption && selectedBranchId === 'all') return 'All branches';
@@ -151,8 +197,8 @@ export function SearchableBranchPicker({
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>No branch found.</CommandEmpty>
-            <CommandGroup>
-              {withAllOption ? (
+            {withAllOption ? (
+              <CommandGroup>
                 <CommandItem
                   value="all branches"
                   onSelect={() => {
@@ -171,32 +217,49 @@ export function SearchableBranchPicker({
                     All branches
                   </span>
                 </CommandItem>
-              ) : null}
-              {branches.map((b) => {
-                const label = getBranchDisplayLabel(b);
-                return (
-                  <CommandItem
-                    key={b.uid}
-                    value={`${label} ${b.uid}`}
-                    onSelect={() => {
-                      onBranchChange(String(b.uid));
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        'size-4 shrink-0',
-                        selectedBranchId === String(b.uid) ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                      <MapPinned className="size-4 shrink-0 text-muted-foreground" />
-                      {label}
-                    </span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+              </CommandGroup>
+            ) : null}
+            {groupByProvince ? (
+              provinceGroups.map((group) => (
+                <CommandGroup key={group.province} heading={group.province}>
+                  {group.branches.map((b) => {
+                    const label = getBranchDisplayLabel(b);
+                    return (
+                      <CommandItem
+                        key={b.uid}
+                        value={`${group.province} ${label} ${b.uid}`}
+                        onSelect={() => {
+                          onBranchChange(String(b.uid));
+                          setOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'size-4 shrink-0',
+                            selectedBranchId === String(b.uid)
+                              ? 'opacity-100'
+                              : 'opacity-0'
+                          )}
+                        />
+                        <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                          <MapPinned className="size-4 shrink-0 text-muted-foreground" />
+                          {label}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              ))
+            ) : (
+              <CommandGroup>
+                <BranchPickerItems
+                  branches={branches}
+                  selectedBranchId={selectedBranchId}
+                  onBranchChange={onBranchChange}
+                  onSelect={() => setOpen(false)}
+                />
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

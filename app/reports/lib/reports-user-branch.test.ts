@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   filterUsersByBranch,
+  filterUsersByBranchUids,
   resolveUserBranchUid,
   userMatchesBranchFilter,
 } from './reports-user-branch';
@@ -53,5 +54,24 @@ describe('filterUsersByBranch', () => {
   it('filters by nested branch.uid', () => {
     expect(filterUsersByBranch(users, 5)).toEqual([users[0]]);
     expect(filterUsersByBranch(users, 7)).toEqual([users[1]]);
+  });
+});
+
+describe('filterUsersByBranchUids', () => {
+  const users = [
+    { uid: 1, branch: { uid: 5 }, branchUid: 9 },
+    { uid: 2, branch: { uid: 7 }, branchUid: 7 },
+    { uid: 3, branch: null, branchUid: 12 },
+  ];
+
+  it('returns all users when branchUids is null', () => {
+    expect(filterUsersByBranchUids(users, null)).toHaveLength(3);
+  });
+
+  it('filters users whose branch uid is in the set', () => {
+    expect(filterUsersByBranchUids(users, new Set([5, 12]))).toEqual([
+      users[0],
+      users[2],
+    ]);
   });
 });

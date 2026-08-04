@@ -53,6 +53,7 @@ const TARGET_PATCH_FIELD_KEYS = [
   'carInstalment',
   'carInsurance',
   'fuel',
+  'primaryVehicleAssetUid',
   'cellPhoneAllowance',
   'carMaintenance',
   'cgicCosts',
@@ -162,6 +163,11 @@ export function buildUserTargetPatchBody(
     if (k === 'erpSalesRepCode') {
       body.erpSalesRepCode =
         v == null || v === '' ? null : String(v).trim();
+      continue;
+    }
+    if (k === 'primaryVehicleAssetUid') {
+      body.primaryVehicleAssetUid =
+        v == null || v === '' ? null : Number(v);
       continue;
     }
     if (v !== undefined && v !== null && v !== '') {
@@ -425,6 +431,7 @@ export function getDefaultTargetValues(
       carInstalment: null,
       carInsurance: null,
       fuel: null,
+      primaryVehicleAssetUid: null,
       cellPhoneAllowance: null,
       carMaintenance: null,
       cgicCosts: null,
@@ -457,6 +464,10 @@ export function getDefaultTargetValues(
     carInstalment: num(src.carInstalment),
     carInsurance: num(src.carInsurance),
     fuel: num(src.fuel),
+    primaryVehicleAssetUid: num(
+      src.primaryVehicleAssetUid ??
+        (ut as { primaryVehicleAssetUid?: unknown }).primaryVehicleAssetUid
+    ),
     cellPhoneAllowance: num(src.cellPhoneAllowance),
     carMaintenance: num(src.carMaintenance),
     cgicCosts: num(src.cgicCosts),

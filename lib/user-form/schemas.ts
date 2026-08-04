@@ -44,6 +44,7 @@ export const targetFormSchema = z.object({
   carInstalment: z.number().optional().nullable(),
   carInsurance: z.number().optional().nullable(),
   fuel: z.number().optional().nullable(),
+  primaryVehicleAssetUid: z.number().optional().nullable(),
   cellPhoneAllowance: z.number().optional().nullable(),
   carMaintenance: z.number().optional().nullable(),
   cgicCosts: z.number().optional().nullable(),
