@@ -106,7 +106,7 @@ export function LeadsContent() {
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
   const [listEndCallOpen, setListEndCallOpen] = useState(false);
-  const [openEndCallInDialog, setOpenEndCallInDialog] = useState(false);
+  const [listEndCallLead, setListEndCallLead] = useState<LeadListItem | null>(null);
 
   const checkInStatusQuery = useCheckInStatus({ enabled: true });
   const { hasActiveCall, activeCallLeadUid, activeCheckInMethod } =
@@ -256,9 +256,37 @@ export function LeadsContent() {
     activeCallLead?.companyName?.trim() ||
     (activeCallLeadUid != null ? `Lead #${activeCallLeadUid}` : '');
 
+  const endCallLeadForForm = listEndCallLead ?? activeCallLead;
+
   const listEndCallInitialForm = useMemo(
-    () => (activeCallLead ? leadToEndVisitInitialForm(activeCallLead) : undefined),
-    [activeCallLead],
+    () => (endCallLeadForForm ? leadToEndVisitInitialForm(endCallLeadForForm) : undefined),
+    [
+      endCallLeadForForm?.uid,
+      endCallLeadForForm?.name,
+      endCallLeadForForm?.phone,
+      endCallLeadForForm?.secondaryPhoneNumber,
+      endCallLeadForForm?.email,
+      endCallLeadForForm?.companyName,
+    ],
+  );
+
+  const endCallActiveVisit = useMemo(
+    () => ({
+      methodOfContact: activeCheckInMethod ?? 'Telephone',
+      buildingType:
+        typeof checkInStatusQuery.data?.buildingType === 'string'
+          ? checkInStatusQuery.data.buildingType
+          : 'other',
+      businessType:
+        typeof checkInStatusQuery.data?.businessType === 'string'
+          ? checkInStatusQuery.data.businessType
+          : null,
+    }),
+    [
+      activeCheckInMethod,
+      checkInStatusQuery.data?.buildingType,
+      checkInStatusQuery.data?.businessType,
+    ],
   );
 
   function openLead(lead: LeadListItem) {
@@ -266,15 +294,15 @@ export function LeadsContent() {
     setLeadDialogOpen(true);
   }
 
-  function handleEndCallFromList(lead: LeadListItem) {
-    setSelectedLead(lead);
-    setLeadDialogOpen(true);
-    setOpenEndCallInDialog(true);
-  }
+  const handleEndCallFromList = useCallback((lead: LeadListItem) => {
+    setListEndCallLead(lead);
+    setListEndCallOpen(true);
+  }, []);
 
-  function handleListEndCallHandled() {
-    setOpenEndCallInDialog(false);
-  }
+  const handleListEndCallOpenChange = useCallback((open: boolean) => {
+    setListEndCallOpen(open);
+    if (!open) setListEndCallLead(null);
+  }, []);
 
   const handleSelectedUserIdChange = bindUidChange((userId: string) => {
     if (userId !== '' && userId !== 'all') {
@@ -402,6 +430,7 @@ export function LeadsContent() {
                   if (activeCallLead) {
                     handleEndCallFromList(activeCallLead);
                   } else {
+                    setListEndCallLead(null);
                     setListEndCallOpen(true);
                   }
                 }}
@@ -514,28 +543,15 @@ export function LeadsContent() {
             setLeadDialogOpen(open);
             if (!open) {
               setSelectedLead(null);
-              setOpenEndCallInDialog(false);
             }
           }}
           lead={selectedLead}
           onActionSuccess={() => refetchLeads()}
-          openEndCall={openEndCallInDialog}
-          onOpenEndCallHandled={handleListEndCallHandled}
         />
         <EndVisitDialog
           open={listEndCallOpen}
-          onOpenChange={setListEndCallOpen}
-          activeVisit={{
-            methodOfContact: activeCheckInMethod ?? 'Telephone',
-            buildingType:
-              typeof checkInStatusQuery.data?.buildingType === 'string'
-                ? checkInStatusQuery.data.buildingType
-                : 'other',
-            businessType:
-              typeof checkInStatusQuery.data?.businessType === 'string'
-                ? checkInStatusQuery.data.businessType
-                : null,
-          }}
+          onOpenChange={handleListEndCallOpenChange}
+          activeVisit={endCallActiveVisit}
           initialFormValues={listEndCallInitialForm}
           title="End call"
           description="Add call notes and outcomes."

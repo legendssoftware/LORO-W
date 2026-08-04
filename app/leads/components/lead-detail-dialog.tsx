@@ -189,9 +189,6 @@ export interface LeadDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   lead: LeadListItem | null;
   onActionSuccess?: () => void;
-  /** When true, opens the end-call dialog for the current lead (e.g. from list row). */
-  openEndCall?: boolean;
-  onOpenEndCallHandled?: () => void;
 }
 
 export function LeadDetailDialog({
@@ -199,8 +196,6 @@ export function LeadDetailDialog({
   onOpenChange,
   lead,
   onActionSuccess,
-  openEndCall = false,
-  onOpenEndCallHandled,
 }: LeadDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [scheduleTaskOpen, setScheduleTaskOpen] = useState(false);
@@ -310,12 +305,6 @@ export function LeadDetailDialog({
       setEndCallOpen(false);
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !openEndCall || !hasActiveCallForLead) return;
-    setEndCallOpen(true);
-    onOpenEndCallHandled?.();
-  }, [open, openEndCall, hasActiveCallForLead, onOpenEndCallHandled]);
 
   useEffect(() => {
     if (!editImageFile) {
@@ -719,7 +708,26 @@ export function LeadDetailDialog({
 
   const endCallInitialForm = useMemo(
     () => (lead ? leadToEndVisitInitialForm(lead) : undefined),
-    [lead],
+    [lead?.uid, lead?.name, lead?.phone, lead?.secondaryPhoneNumber, lead?.email, lead?.companyName],
+  );
+
+  const endCallActiveVisit = useMemo(
+    () => ({
+      methodOfContact: activeCheckInMethod ?? 'Telephone',
+      buildingType:
+        typeof checkInStatusQuery.data?.buildingType === 'string'
+          ? checkInStatusQuery.data.buildingType
+          : 'other',
+      businessType:
+        typeof checkInStatusQuery.data?.businessType === 'string'
+          ? checkInStatusQuery.data.businessType
+          : null,
+    }),
+    [
+      activeCheckInMethod,
+      checkInStatusQuery.data?.buildingType,
+      checkInStatusQuery.data?.businessType,
+    ],
   );
 
   const handleStartCall = async (e: MouseEvent) => {
@@ -1647,17 +1655,7 @@ export function LeadDetailDialog({
       <EndVisitDialog
         open={endCallOpen}
         onOpenChange={setEndCallOpen}
-        activeVisit={{
-          methodOfContact: activeCheckInMethod ?? 'Telephone',
-          buildingType:
-            typeof checkInStatusQuery.data?.buildingType === 'string'
-              ? checkInStatusQuery.data.buildingType
-              : 'other',
-          businessType:
-            typeof checkInStatusQuery.data?.businessType === 'string'
-              ? checkInStatusQuery.data.businessType
-              : null,
-        }}
+        activeVisit={endCallActiveVisit}
         initialFormValues={endCallInitialForm}
         title="End call"
         description="Add call notes and outcomes."
