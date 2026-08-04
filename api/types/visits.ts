@@ -175,6 +175,42 @@ export interface VisitListItem {
   } | null;
   /** Site type: office, shop, etc. (for time breakdown: client vs office). */
   buildingType?: string | null;
+  followUp?: string | null;
+  followUpAt?: string | null;
+  contactMade?: boolean | string | null;
+  fullAddress?: {
+    formattedAddress?: string;
+    street?: string;
+    streetNumber?: string;
+    suburb?: string;
+    city?: string;
+    province?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  } | null;
+  contactAddress?: {
+    formattedAddress?: string;
+    street?: string;
+    streetNumber?: string;
+    suburb?: string;
+    city?: string;
+    province?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  } | null;
+  checkOutFullAddress?: {
+    formattedAddress?: string;
+    street?: string;
+    streetNumber?: string;
+    suburb?: string;
+    city?: string;
+    province?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  } | null;
   [key: string]: unknown;
 }
 

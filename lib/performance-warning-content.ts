@@ -79,6 +79,11 @@ export function buildDailyRequirementLines(
       `• Or combined calls+leads engagement of at least ${formatQuota(combined)} (full either quota also counts)`
     );
   }
+  if (hasCalls || hasLeads || hasVisits) {
+    lines.push(
+      '• Meeting any one daily minimum above (calls, leads, combined calls+leads, or visits) satisfies the requirement for that day'
+    );
+  }
 
   if (quotas.missedVisits || quotas.missedCallsLeadsEngagement) {
     const actualBits: string[] = [];

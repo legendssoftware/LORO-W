@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -22,6 +22,7 @@ import {
   useLeadsReport,
   useUserTarget,
 } from '@/api/hooks';
+import { useUserVisitPlanSchedules } from '@/api/hooks/use-user-visit-plan-schedules';
 import {
   getUserSales,
   profileSalesFromResponse,
@@ -51,10 +52,17 @@ import {
   aggregateLeadActions,
   aggregateLeadDurations,
   aggregateVisits,
+  filterVisitPlanSlotsInRange,
   formatVisitDurationTotal,
   seriesFromByStatus,
   weeklyTrendFromProductivity,
 } from '@/app/reports/lib/reports-target-detail-aggregates';
+import { ReportsTargetActivityAnalysis } from '@/app/reports/components/reports-target-activity-analysis';
+import { ReportsTargetLeadsChangedTable } from '@/app/reports/components/reports-target-leads-changed-table';
+import {
+  readStoredReportsPageSize,
+  type ReportsPageSize,
+} from '@/app/reports/components/reports-list-pagination';
 import {
   formatReportCurrencyCode,
   getReportsCategoryAxisLayout,
@@ -280,6 +288,11 @@ export function ReportsTargetDetailDialog({
   exchangeRateMap,
 }: ReportsTargetDetailDialogProps) {
   const client = useApiClient();
+  const [leadsPage, setLeadsPage] = useState(1);
+  const [leadsPageSize, setLeadsPageSize] = useState<ReportsPageSize>(
+    readStoredReportsPageSize
+  );
+
   const targetQuery = useUserTarget(row?.ref ?? null, {
     enabled: open && !!row?.ref,
   });
@@ -288,6 +301,10 @@ export function ReportsTargetDetailDialog({
     reviewStartYmd ?? toYmd(row?.periodStartDate) ?? null;
   const reportTo = reviewEndYmd ?? toYmd(row?.periodEndDate) ?? null;
   const hasReportRange = !!reportFrom && !!reportTo;
+
+  useEffect(() => {
+    setLeadsPage(1);
+  }, [row?.userId, reportFrom, reportTo]);
 
   const erpSalesQuery = useQuery({
     queryKey: ['erp', 'user-sales', row?.userId] as const,
@@ -351,12 +368,17 @@ export function ReportsTargetDetailDialog({
       ownerId: row?.userId,
       startDate: reportFrom ?? undefined,
       endDate: reportTo ?? undefined,
+      dateBasis: 'activity',
       scope: 'all',
-      limit: 200,
-      page: 1,
+      limit: leadsPageSize,
+      page: leadsPage,
     },
     { enabled: open && !!row?.userId && hasReportRange }
   );
+
+  const visitPlanQuery = useUserVisitPlanSchedules(row?.ref, {
+    enabled: open && !!row?.ref && hasReportRange,
+  });
 
   const displayRow = useMemo(() => {
     if (!row) return null;
@@ -461,6 +483,16 @@ export function ReportsTargetDetailDialog({
     () => seriesFromByStatus(leadsReportQuery.data?.byRegion),
     [leadsReportQuery.data?.byRegion]
   );
+
+  const planSlotsInRange = useMemo(
+    () =>
+      reportFrom && reportTo
+        ? filterVisitPlanSlotsInRange(visitPlanQuery.data?.slots, reportFrom, reportTo)
+        : [],
+    [visitPlanQuery.data?.slots, reportFrom, reportTo]
+  );
+
+  const leadsChangedMeta = leadsListQuery.data?.meta;
 
   const commissionBars = useMemo(
     () =>
@@ -719,6 +751,14 @@ export function ReportsTargetDetailDialog({
                   )}
                 </ModalSection>
 
+                <ModalSection title="Activity analysis">
+                  <ReportsTargetActivityAnalysis
+                    checkIns={visitsQuery.data?.checkIns ?? []}
+                    planSlotsInRange={planSlotsInRange}
+                    isLoading={visitsQuery.isLoading || visitPlanQuery.isLoading}
+                  />
+                </ModalSection>
+
                 <ModalSection title="Leads">
                   <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>
@@ -736,6 +776,25 @@ export function ReportsTargetDetailDialog({
                       </span>
                     ) : null}
                   </div>
+                  {reportFrom && reportTo ? (
+                    <ReportsTargetLeadsChangedTable
+                      leads={leadsListQuery.data?.data ?? []}
+                      total={leadsChangedMeta?.total ?? 0}
+                      page={leadsPage}
+                      pageSize={leadsPageSize}
+                      totalPages={leadsChangedMeta?.totalPages ?? 0}
+                      isLoading={leadsListQuery.isLoading}
+                      isFetching={leadsListQuery.isFetching}
+                      fromYmd={reportFrom}
+                      toYmd={reportTo}
+                      currency={currency}
+                      onPageChange={setLeadsPage}
+                      onPageSizeChange={(size) => {
+                        setLeadsPageSize(size);
+                        setLeadsPage(1);
+                      }}
+                    />
+                  ) : null}
                   {leadsReportQuery.isLoading || leadsListQuery.isLoading ? (
                     <Skeleton className="h-[220px] w-full" />
                   ) : (
