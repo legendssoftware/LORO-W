@@ -41,6 +41,8 @@ export interface ReportDonutChartProps {
   legendNameKey?: string;
   /** Optional tooltip value formatter (e.g. money). */
   formatValue?: (value: number) => string;
+  /** Max legend entries (default REPORT_PIE_LEGEND_MAX_ITEMS). */
+  legendMaxItems?: number;
 }
 
 /**
@@ -56,6 +58,7 @@ export function ReportDonutChart({
   tooltipClassName,
   legendNameKey = 'name',
   formatValue,
+  legendMaxItems = REPORT_PIE_LEGEND_MAX_ITEMS,
 }: ReportDonutChartProps) {
   const pieRows = data.map((d) => ({
     name: d.id,
@@ -154,7 +157,7 @@ export function ReportDonutChart({
           content={
             <ChartLegendContent
               nameKey={legendNameKey}
-              maxItems={REPORT_PIE_LEGEND_MAX_ITEMS}
+              maxItems={legendMaxItems}
               className="gap-5 pt-5"
             />
           }
