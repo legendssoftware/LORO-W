@@ -102,6 +102,8 @@ export function TripBreakdownPanel({
     distanceAdjustment?.billableDistanceKm ?? journeySummary.totalDistanceKm;
   const hasCommuteDeduction =
     distanceAdjustment != null && distanceAdjustment.workCommuteDeductionKm > 0;
+  const competitorViolations = journeySummary.competitorViolations ?? [];
+  const hasCompetitorViolations = competitorViolations.length > 0;
 
   const paceBadgeClass =
     consumption?.paceLabel === 'below_budget'
@@ -121,6 +123,12 @@ export function TripBreakdownPanel({
             <span className="ml-1 font-normal normal-case">· {rangeLabel}</span>
           ) : null}
         </p>
+        {hasCompetitorViolations ? (
+          <p className="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400">
+            {competitorViolations.length} competitor stop
+            {competitorViolations.length === 1 ? '' : 's'} flagged
+          </p>
+        ) : null}
       </div>
 
       <BreakdownSection title="Trip window">
@@ -185,6 +193,27 @@ export function TripBreakdownPanel({
           value={journeySummary.averageStopFormatted || '—'}
         />
       </BreakdownSection>
+
+      {hasCompetitorViolations ? (
+        <BreakdownSection title="Competitor alerts">
+          <ul className="max-h-32 space-y-1 overflow-y-auto">
+            {competitorViolations.map((violation) => (
+              <li
+                key={`${violation.competitorUid}-${violation.startTime}-${violation.latitude}`}
+                className="rounded-md border border-red-500/50 bg-red-500/10 px-2 py-1.5 text-[11px] leading-snug text-red-800 dark:text-red-300"
+              >
+                <span className="font-semibold">{violation.competitorName}</span>
+                <span className="mt-0.5 block tabular-nums">
+                  {violation.dwellFormatted} · {violation.startTime}–{violation.endTime}
+                </span>
+                <span className="mt-0.5 block break-words opacity-90">
+                  {violation.address}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </BreakdownSection>
+      ) : null}
 
       {vehicleProfile ? (
         <BreakdownSection title="Vehicle">
@@ -328,11 +357,28 @@ export function TripBreakdownPanel({
             {journeySummary.prominentLocations.slice(0, 5).map((loc) => (
               <li
                 key={`${loc.latitude}-${loc.longitude}-${loc.address}`}
-                className="text-muted-foreground rounded-md border border-border/40 bg-background/40 px-2 py-1 text-[11px] leading-snug"
+                className={cn(
+                  'rounded-md border px-2 py-1 text-[11px] leading-snug',
+                  loc.isCompetitorViolation
+                    ? 'border-red-500/50 bg-red-500/10 text-red-800 dark:text-red-300'
+                    : 'border-border/40 bg-background/40 text-muted-foreground'
+                )}
               >
-                <span className="text-foreground font-medium tabular-nums">
+                <span
+                  className={cn(
+                    'font-medium tabular-nums',
+                    loc.isCompetitorViolation ? 'text-red-900 dark:text-red-200' : 'text-foreground'
+                  )}
+                >
+                  {loc.isCompetitorViolation ? 'Competitor · ' : ''}
                   {loc.timeSpentFormatted}
                 </span>
+                {loc.competitorName ? (
+                  <>
+                    {' · '}
+                    <span className="font-medium">{loc.competitorName}</span>
+                  </>
+                ) : null}
                 {' · '}
                 <span className="break-words">{loc.address}</span>
               </li>

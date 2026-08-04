@@ -474,6 +474,7 @@ export type GeoMarkerLike = {
   longitude?: number | string | null;
   position?: [number, number] | number[] | null;
   name?: string | null;
+  country?: string | null;
 };
 
 function markerLatLng(marker: GeoMarkerLike): { lat: number; lng: number } | null {
@@ -530,10 +531,13 @@ export function resolveMarkerAddressParts(marker: GeoMarkerLike): ResolvedAddres
 
 export function getMarkerCountryKey(marker: GeoMarkerLike): string {
   const parts = resolveMarkerAddressParts(marker);
-  const direct = parseCountryAllowlist(parts.country);
+  const countryFromMarker =
+    typeof marker.country === 'string' ? marker.country.trim() : '';
+  const countryCandidate = parts.country || countryFromMarker;
+  const direct = parseCountryAllowlist(countryCandidate);
   if (direct) return direct;
 
-  const haystack = [parts.country, parts.state, parts.city, parts.suburb, marker.name ?? '']
+  const haystack = [countryCandidate, parts.state, parts.city, parts.suburb, marker.name ?? '']
     .filter(Boolean)
     .join(' ');
   const fromText = countryFromHaystack(haystack);
