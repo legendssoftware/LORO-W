@@ -179,29 +179,10 @@ export function MapLayerToggles({
 
           const meta = LAYER_META[layer];
           const id = `layer-${layer}`;
-          const Icon = LAYER_ICONS[layer];
           return (
             <li key={layer} className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className={cn(
-                    'flex size-5 shrink-0 items-center justify-center rounded-full',
-                    layer === 'hq' && 'ring-2 ring-green-500 ring-offset-1',
-                  )}
-                  style={{
-                    backgroundColor:
-                      layer === 'clients' || layer === 'reps'
-                        ? meta.color
-                        : `${meta.color}22`,
-                    color:
-                      layer === 'clients' || layer === 'reps'
-                        ? '#fff'
-                        : meta.color,
-                  }}
-                  aria-hidden
-                >
-                  <Icon className="size-3" />
-                </span>
+                <LayerIcon layer={layer} meta={meta} />
                 <Label htmlFor={id} className="truncate text-sm font-normal">
                   {meta.label}
                   <span className="text-muted-foreground ml-1 tabular-nums">
