@@ -133,6 +133,7 @@ export function EndVisitDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
   const originalClientRef = useRef<ClientListItem | null>(null);
+  const prevOpenRef = useRef(false);
 
   const clientsInfinite = useClientsInfinite({
     enabled: open,
@@ -150,7 +151,9 @@ export function EndVisitDialog({
     typeof document !== 'undefined' ? document.getElementById('end-visit-dialog-content') : null;
 
   useEffect(() => {
-    if (!open) return;
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (!justOpened) return;
     setFollowUpPickerOpen(false);
     setSelectedClient(null);
     setClientSearch('');
