@@ -77,6 +77,22 @@ export interface RepJourneyProminentLocation {
   longitude: number;
   timeSpentMinutes: number;
   timeSpentFormatted: string;
+  isCompetitorViolation?: boolean;
+  competitorName?: string;
+  matchedEntityType?: 'competitor' | 'client' | 'branch' | null;
+}
+
+export interface RepJourneyCompetitorViolation {
+  competitorUid: number;
+  competitorName: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  dwellMinutes: number;
+  dwellFormatted: string;
+  startTime: string;
+  endTime: string;
+  geofenceType: string;
 }
 
 /** First or last point of the tracked journey window. */
@@ -161,6 +177,7 @@ export interface RepJourneySummary {
   startPlace: RepJourneyEndpoint | null;
   endPlace: RepJourneyEndpoint | null;
   prominentLocations: RepJourneyProminentLocation[];
+  competitorViolations?: RepJourneyCompetitorViolation[];
   fuelPrice: RepJourneyFuelPrice;
   fuelEstimate?: RepJourneyFuelEstimate | null;
   vehicleProfile?: RepJourneyVehicleProfile | null;
