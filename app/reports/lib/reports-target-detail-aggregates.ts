@@ -502,7 +502,7 @@ export function aggregateActivitySummary(
     plannedVisitCount: countPlannedVisitsInSlots(planSlotsInRange),
     avgDurationMinutes:
       durationCount > 0 ? Math.round(totalMinutes / durationCount) : 0,
-    byOutcome: mapToSortedCounts(outcomeMap, 6),
+    byOutcome: mapToSortedCounts(outcomeMap, 8),
     byLocation: mapToSortedCounts(locationMap, 5),
   };
 }
