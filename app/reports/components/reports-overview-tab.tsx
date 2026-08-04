@@ -36,7 +36,14 @@ import {
   userUidInAllowlist,
   fetchReportsOrgUsers,
 } from '@/app/reports/lib/reports-scope-allowlist';
-import { filterUsersByBranch } from '@/app/reports/lib/reports-user-branch';
+import { filterUsersByBranch, filterUsersByBranchUids } from '@/app/reports/lib/reports-user-branch';
+import {
+  branchUidsMatchingGeo,
+  filterBranchesByGeo,
+  getSortedUniqueCountriesFromBranches,
+  getSortedUniqueProvincesFromBranches,
+  hasActiveGeoFilters,
+} from '@/app/reports/lib/reports-branch-geo';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import {
   applyEngagementToRow,
@@ -151,6 +158,8 @@ export function ReportsOverviewTab() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [branchFilter, setBranchFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
+  const [countryFilter, setCountryFilter] = useState('all');
+  const [provinceFilter, setProvinceFilter] = useState('all');
   const [sortMetric, setSortMetric] =
     useState<ReportsTargetsSortMetric>('name');
   const [currencyView, setCurrencyView] =
@@ -178,6 +187,8 @@ export function ReportsOverviewTab() {
     pageSize,
     branchFilter,
     userFilter,
+    countryFilter,
+    provinceFilter,
     sortMetric,
     currencyView,
   ]);
@@ -185,6 +196,50 @@ export function ReportsOverviewTab() {
   const branchesQuery = useBranches({
     enabled: isTokenReady && !isSyncing,
   });
+
+  const allBranches = branchesQuery.data ?? [];
+
+  const countryOptions = useMemo(
+    () =>
+      getSortedUniqueCountriesFromBranches(allBranches).map((country) => ({
+        value: country,
+        label: country,
+        searchExtra: country,
+      })),
+    [allBranches]
+  );
+
+  const provinceOptions = useMemo(
+    () =>
+      getSortedUniqueProvincesFromBranches(allBranches, countryFilter).map(
+        (province) => ({
+          value: province,
+          label: province,
+          searchExtra: province,
+        })
+      ),
+    [allBranches, countryFilter]
+  );
+
+  const geoFilters = useMemo(
+    () => ({
+      country: countryFilter,
+      province: provinceFilter,
+    }),
+    [countryFilter, provinceFilter]
+  );
+
+  const geoScopedBranches = useMemo(
+    () => filterBranchesByGeo(allBranches, geoFilters),
+    [allBranches, geoFilters]
+  );
+
+  const geoScopedBranchUids = useMemo(
+    () => branchUidsMatchingGeo(allBranches, geoFilters),
+    [allBranches, geoFilters]
+  );
+
+  const geoFiltersActive = hasActiveGeoFilters(geoFilters);
 
   const branchCountryByUid = useMemo(
     () => branchCountryMapFromList(branchesQuery.data ?? []),
@@ -365,10 +420,20 @@ export function ReportsOverviewTab() {
     [usersQuery.data, allowlistUids]
   );
 
-  const branchScopedUsers = useMemo(
-    () => filterUsersByBranch(allowlistedUsers, branchIdFilter),
-    [allowlistedUsers, branchIdFilter]
-  );
+  const branchScopedUsers = useMemo(() => {
+    let users = allowlistedUsers;
+    if (branchIdFilter != null) {
+      users = filterUsersByBranch(users, branchIdFilter);
+    } else if (geoFiltersActive) {
+      users = filterUsersByBranchUids(users, geoScopedBranchUids);
+    }
+    return users;
+  }, [
+    allowlistedUsers,
+    branchIdFilter,
+    geoFiltersActive,
+    geoScopedBranchUids,
+  ]);
 
   const selectedBranch = useMemo(
     () =>
@@ -383,7 +448,8 @@ export function ReportsOverviewTab() {
   const branchFilterPending =
     branchIdFilter != null &&
     ((branchesQuery.isLoading && selectedBranch == null) ||
-      (!usersQuery.isSuccess && usersQuery.data == null));
+      (!usersQuery.isSuccess && usersQuery.data == null)) ||
+    (geoFiltersActive && branchesQuery.isLoading);
 
   const cohortUsersForToolbar = useMemo(
     () =>
@@ -765,6 +831,9 @@ export function ReportsOverviewTab() {
   const emptyMessage = useMemo(() => {
     if (!isMultiUser) return 'You do not have personal performance targets set.';
     if (branchFilterPending) return 'Loading branch users…';
+    if (geoFiltersActive && geoScopedBranches.length === 0) {
+      return 'No branches in this region.';
+    }
     if (debouncedSearch) return 'No matching users with performance targets.';
     if (branchFilter !== 'all' && userFilter !== 'all') {
       return 'No matching user in the selected branch with performance targets.';
@@ -790,6 +859,10 @@ export function ReportsOverviewTab() {
     debouncedSearch,
     branchFilter,
     userFilter,
+    countryFilter,
+    provinceFilter,
+    geoFiltersActive,
+    geoScopedBranches.length,
     scope,
     branchScopedUsers.length,
     cohortUsersForToolbar.length,
@@ -848,8 +921,23 @@ export function ReportsOverviewTab() {
         onResetDateRange={resetDateToToday}
         showSearch={isMultiUser}
         showDimensionFilters={isMultiUser}
-        branches={branchesQuery.data ?? []}
+        branches={geoScopedBranches}
         users={cohortUsersForToolbar}
+        selectedCountry={countryFilter}
+        onCountryChange={(country) => {
+          setCountryFilter(country);
+          setProvinceFilter('all');
+          setBranchFilter('all');
+          setUserFilter('all');
+        }}
+        selectedProvince={provinceFilter}
+        onProvinceChange={(province) => {
+          setProvinceFilter(province);
+          setBranchFilter('all');
+          setUserFilter('all');
+        }}
+        countryOptions={countryOptions}
+        provinceOptions={provinceOptions}
         selectedBranchId={branchFilter}
         onBranchChange={(id) => {
           setBranchFilter(id);

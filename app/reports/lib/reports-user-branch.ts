@@ -44,6 +44,18 @@ export function filterUsersByBranch<T extends {
   return users.filter((u) => userMatchesBranchFilter(u, branchId));
 }
 
+/** Narrow a user list to those attached to any branch in `branchUids` (or all when null). */
+export function filterUsersByBranchUids<T extends {
+  branch?: { uid?: number | null } | null;
+  branchUid?: unknown;
+}>(users: T[], branchUids: Set<number> | null | undefined): T[] {
+  if (branchUids == null) return users;
+  return users.filter((u) => {
+    const uid = resolveUserBranchUid(u);
+    return uid != null && branchUids.has(uid);
+  });
+}
+
 /** UID set for users attached to the selected branch (empty when branchId is null). */
 export function userIdsMatchingBranch(
   users: Array<{

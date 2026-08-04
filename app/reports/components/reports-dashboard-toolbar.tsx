@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { CalendarIcon, Globe2 } from 'lucide-react';
+import { CalendarIcon, Filter, Globe2 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
 import {
   reportsFilterPortalHighZ,
+  reportsFilterSelectTriggerClass,
   SearchableBranchPicker,
   SearchableOptionListPicker,
   SearchableUserPicker,
@@ -14,6 +15,13 @@ import {
 } from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -67,7 +75,13 @@ export interface ReportsDashboardToolbarProps {
   rememberSettingsDisabled?: boolean;
 }
 
-export function ReportsDashboardToolbar({
+interface ReportsDashboardFilterControlsProps
+  extends ReportsDashboardToolbarProps {
+  layout: 'row' | 'stack';
+}
+
+function ReportsDashboardFilterControls({
+  layout,
   startDate,
   endDate,
   onRangeChange,
@@ -83,7 +97,7 @@ export function ReportsDashboardToolbar({
   rememberSettings = false,
   onRememberSettingsChange,
   rememberSettingsDisabled = false,
-}: ReportsDashboardToolbarProps) {
+}: ReportsDashboardFilterControlsProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
     from: startDate,
@@ -141,10 +155,18 @@ export function ReportsDashboardToolbar({
     [draft, onRangeChange, startDate, endDate]
   );
 
+  const isStack = layout === 'stack';
+  const pickerTriggerClass = isStack
+    ? cn(reportsFilterSelectTriggerClass, 'w-full')
+    : 'min-w-[10rem] sm:min-w-[12rem]';
+
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
-      data-slot="reports-dashboard-toolbar"
+      className={cn(
+        isStack
+          ? 'flex flex-col gap-3'
+          : 'flex flex-wrap items-center gap-2'
+      )}
     >
       <Popover
         open={dateRangePopoverOpen}
@@ -157,6 +179,7 @@ export function ReportsDashboardToolbar({
             size="sm"
             className={cn(
               'h-9 gap-2 font-normal',
+              isStack && 'w-full justify-start',
               !isCurrentMonth && 'border-violet-300'
             )}
           >
@@ -172,7 +195,7 @@ export function ReportsDashboardToolbar({
             mode="range"
             selected={draft}
             onSelect={setDraft}
-            numberOfMonths={2}
+            numberOfMonths={isStack ? 1 : 2}
             defaultMonth={startDate}
           />
           <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
@@ -211,14 +234,14 @@ export function ReportsDashboardToolbar({
             branches={branches}
             selectedBranchId={selectedBranchId}
             onBranchChange={(id) => onBranchChange?.(id)}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+            triggerClassName={pickerTriggerClass}
           />
           <SearchableUserPicker
             users={usersForPicker}
             branches={branches}
             selectedUid={selectedUserId}
             onUidChange={(uid) => onUserChange?.(uid)}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+            triggerClassName={pickerTriggerClass}
           />
           <SearchableOptionListPicker
             options={countryOptions}
@@ -227,28 +250,81 @@ export function ReportsDashboardToolbar({
             placeholderLabelWhenAll="All countries"
             searchPlaceholder="Search countries…"
             triggerIcon={<Globe2 className="size-4 shrink-0 text-muted-foreground" />}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
+            triggerClassName={pickerTriggerClass}
           />
         </>
       ) : null}
 
       {onRememberSettingsChange ? (
-        <div className="ml-auto flex items-center gap-2">
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            !isStack && 'ml-auto'
+          )}
+        >
           <Switch
-            id="reports-remember-settings"
+            id={isStack ? 'reports-remember-settings-dialog' : 'reports-remember-settings'}
             checked={rememberSettings}
             disabled={rememberSettingsDisabled}
             onCheckedChange={onRememberSettingsChange}
             aria-label="remember my settings"
           />
           <Label
-            htmlFor="reports-remember-settings"
+            htmlFor={
+              isStack ? 'reports-remember-settings-dialog' : 'reports-remember-settings'
+            }
             className="cursor-pointer text-sm font-normal text-muted-foreground"
           >
             remember my settings
           </Label>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
+  const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
+
+  useEffect(() => {
+    function onResize() {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setFiltersDialogOpen(false);
+      }
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return (
+    <div data-slot="reports-dashboard-toolbar">
+      <div className="flex md:hidden">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 w-full justify-center gap-2"
+          onClick={() => setFiltersDialogOpen(true)}
+        >
+          <Filter className="size-4 shrink-0" aria-hidden />
+          Filter
+        </Button>
+      </div>
+
+      <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+            <DialogDescription>
+              Date range, branch, user, and country for overview metrics.
+            </DialogDescription>
+          </DialogHeader>
+          <ReportsDashboardFilterControls layout="stack" {...props} />
+        </DialogContent>
+      </Dialog>
+
+      <div className="hidden md:flex flex-wrap items-center gap-2">
+        <ReportsDashboardFilterControls layout="row" {...props} />
+      </div>
     </div>
   );
 }

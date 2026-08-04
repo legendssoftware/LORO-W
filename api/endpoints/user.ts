@@ -59,6 +59,7 @@ export interface UserTargetListFields {
   currentCheckIns?: number | null;
   targetCalls?: number | null;
   currentCalls?: number | null;
+  primaryVehicleAssetUid?: number | null;
   targetPeriod?: string | null;
   periodStartDate?: string | null;
   periodEndDate?: string | null;
@@ -204,6 +205,7 @@ export interface PatchUserTargetBody {
   carInstalment?: number;
   carInsurance?: number;
   fuel?: number;
+  primaryVehicleAssetUid?: number | null;
   cellPhoneAllowance?: number;
   carMaintenance?: number;
   cgicCosts?: number;

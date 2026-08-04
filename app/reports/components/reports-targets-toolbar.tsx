@@ -1,7 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
-import { ArrowDownWideNarrow, Coins, Download } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowDownWideNarrow,
+  Coins,
+  Download,
+  Filter,
+  Globe2,
+  MapPinned,
+} from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
 import {
   reportsFilterPortalHighZ,
@@ -14,6 +21,13 @@ import {
 } from '@/components/filters/searchable-filter-comboboxes';
 import { UtcDateRangePicker } from '@/components/filters/utc-date-range-picker';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +66,12 @@ export interface ReportsTargetsToolbarProps {
   onBranchChange?: (branchId: string) => void;
   selectedUserId?: string;
   onUserChange?: (uid: string) => void;
+  selectedCountry?: string;
+  onCountryChange?: (country: string) => void;
+  selectedProvince?: string;
+  onProvinceChange?: (province: string) => void;
+  countryOptions?: SearchableOptionRow[];
+  provinceOptions?: SearchableOptionRow[];
   sortMetric?: ReportsTargetsSortMetric;
   onSortMetricChange?: (metric: ReportsTargetsSortMetric) => void;
   /** Export currently visible/filtered table rows. */
@@ -78,16 +98,22 @@ const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; label: s
   { value: 'zar', label: 'Currency: ZAR (consolidated)' },
 ];
 
-export function ReportsTargetsToolbar({
-  searchInput,
-  onSearchInputChange,
+interface ReportsTargetsFilterControlsProps
+  extends Omit<
+    ReportsTargetsToolbarProps,
+    'searchInput' | 'onSearchInputChange' | 'showSearch' | 'onExportCsv' | 'onExportExcel' | 'exportDisabled'
+  > {
+  layout: 'row' | 'stack';
+}
+
+function ReportsTargetsFilterControls({
+  layout,
   startDate,
   endDate,
   useAllTime,
   onRangeChange,
   onSetUseAllTime,
   onResetDateRange,
-  showSearch = true,
   showDimensionFilters = false,
   branches = [],
   users = [],
@@ -95,14 +121,17 @@ export function ReportsTargetsToolbar({
   onBranchChange,
   selectedUserId = 'all',
   onUserChange,
+  selectedCountry = 'all',
+  onCountryChange,
+  selectedProvince = 'all',
+  onProvinceChange,
+  countryOptions = [],
+  provinceOptions = [],
   sortMetric = 'name',
   onSortMetricChange,
-  onExportCsv,
-  onExportExcel,
-  exportDisabled = false,
   currencyView = 'set',
   onCurrencyViewChange,
-}: ReportsTargetsToolbarProps) {
+}: ReportsTargetsFilterControlsProps) {
   const sortOptions: SearchableOptionRow[] = useMemo(
     () =>
       SORT_OPTIONS.filter((o) => o.value !== 'name').map((o) => ({
@@ -123,13 +152,126 @@ export function ReportsTargetsToolbar({
     []
   );
 
-  /** Keep user picker in sync with branch — same composition as Overview toolbar. */
   const usersForPicker = useMemo(() => {
     if (selectedBranchId === 'all') return users;
     const branchUid = Number(selectedBranchId);
     if (!Number.isFinite(branchUid)) return users;
     return users.filter((u) => resolveUserBranchUid(u) === branchUid);
   }, [users, selectedBranchId]);
+
+  const isStack = layout === 'stack';
+  const pickerTriggerClass = isStack
+    ? cn(reportsFilterSelectTriggerClass, 'w-full')
+    : 'min-w-[10rem] sm:min-w-[12rem]';
+
+  return (
+    <div
+      className={cn(
+        isStack
+          ? 'flex flex-col gap-3'
+          : 'flex flex-wrap items-center gap-2'
+      )}
+    >
+      <UtcDateRangePicker
+        startDate={startDate}
+        endDate={endDate}
+        onRangeChange={onRangeChange}
+        onReset={onResetDateRange}
+        showAllTime
+        useAllTime={useAllTime}
+        onSetUseAllTime={onSetUseAllTime}
+        dataTour="reports-targets-date-filter"
+        triggerClassName={isStack ? 'w-full' : undefined}
+      />
+      {onCurrencyViewChange ? (
+        <SearchableOptionListPicker
+          options={currencyOptions}
+          selectedValue={currencyView}
+          onValueChange={(v) =>
+            onCurrencyViewChange(v as ReportsTargetsCurrencyView)
+          }
+          placeholderLabelWhenAll="Currency: Target (set)"
+          triggerIcon={<Coins className="size-4" />}
+          triggerClassName={pickerTriggerClass}
+          searchPlaceholder="Search currency…"
+        />
+      ) : null}
+      {showDimensionFilters ? (
+        <>
+          <SearchableOptionListPicker
+            options={countryOptions}
+            selectedValue={selectedCountry}
+            onValueChange={(v) => onCountryChange?.(v)}
+            placeholderLabelWhenAll="All countries"
+            searchPlaceholder="Search countries…"
+            triggerIcon={<Globe2 className="size-4 shrink-0 text-muted-foreground" />}
+            triggerClassName={pickerTriggerClass}
+          />
+          <SearchableOptionListPicker
+            options={provinceOptions}
+            selectedValue={selectedProvince}
+            onValueChange={(v) => onProvinceChange?.(v)}
+            placeholderLabelWhenAll="All provinces"
+            searchPlaceholder="Search provinces…"
+            triggerIcon={<MapPinned className="size-4 shrink-0 text-muted-foreground" />}
+            triggerClassName={pickerTriggerClass}
+            disabled={selectedCountry === 'all'}
+          />
+          <SearchableBranchPicker
+            branches={branches}
+            selectedBranchId={selectedBranchId}
+            onBranchChange={(id) => onBranchChange?.(id)}
+            groupByProvince={selectedCountry !== 'all'}
+            triggerClassName={pickerTriggerClass}
+          />
+          <SearchableUserPicker
+            users={usersForPicker}
+            branches={branches}
+            selectedUid={selectedUserId}
+            onUidChange={(uid) => onUserChange?.(uid)}
+            triggerClassName={pickerTriggerClass}
+          />
+          <SearchableOptionListPicker
+            options={sortOptions}
+            selectedValue={sortMetric === 'name' ? 'all' : sortMetric}
+            onValueChange={(v) =>
+              onSortMetricChange?.(
+                v === 'all' ? 'name' : (v as ReportsTargetsSortMetric)
+              )
+            }
+            includeAllOption
+            allOptionValue="all"
+            placeholderLabelWhenAll="Sort: Name"
+            triggerIcon={<ArrowDownWideNarrow className="size-4" />}
+            triggerClassName={pickerTriggerClass}
+            searchPlaceholder="Search sort…"
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+export function ReportsTargetsToolbar({
+  searchInput,
+  onSearchInputChange,
+  showSearch = true,
+  onExportCsv,
+  onExportExcel,
+  exportDisabled = false,
+  ...filterProps
+}: ReportsTargetsToolbarProps) {
+  const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
+
+  useEffect(() => {
+    function onResize() {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setFiltersDialogOpen(false);
+      }
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   function renderSearchField(className?: string) {
     if (!showSearch) return null;
@@ -157,146 +299,93 @@ export function ReportsTargetsToolbar({
     );
   }
 
-  const datePicker = (
-    <UtcDateRangePicker
-      startDate={startDate}
-      endDate={endDate}
-      onRangeChange={onRangeChange}
-      onReset={onResetDateRange}
-      showAllTime
-      useAllTime={useAllTime}
-      onSetUseAllTime={onSetUseAllTime}
-      dataTour="reports-targets-date-filter"
-    />
-  );
+  function renderExportButton() {
+    if (!onExportCsv && !onExportExcel) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 gap-1.5"
+            disabled={exportDisabled}
+            data-tour="reports-targets-export"
+          >
+            <Download className="size-4" aria-hidden />
+            Export
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
+          {onExportCsv ? (
+            <DropdownMenuItem
+              disabled={exportDisabled}
+              onSelect={() => onExportCsv()}
+            >
+              Export CSV
+            </DropdownMenuItem>
+          ) : null}
+          {onExportExcel ? (
+            <DropdownMenuItem
+              disabled={exportDisabled}
+              onSelect={() => onExportExcel()}
+            >
+              Export Excel
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  const hasExport = Boolean(onExportCsv || onExportExcel);
+  const hasMobileActions = showSearch || hasExport;
 
   return (
-    <div
-      className="mb-4 flex shrink-0 flex-wrap items-center gap-2"
-      data-tour="reports-targets-toolbar"
-    >
-      {datePicker}
-      {onCurrencyViewChange ? (
-        <SearchableOptionListPicker
-          options={currencyOptions}
-          selectedValue={currencyView}
-          onValueChange={(v) =>
-            onCurrencyViewChange(v as ReportsTargetsCurrencyView)
-          }
-          placeholderLabelWhenAll="Currency: Target (set)"
-          triggerIcon={<Coins className="size-4" />}
-          triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
-          searchPlaceholder="Search currency…"
-        />
-      ) : null}
-      {showDimensionFilters ? (
-        <>
-          <SearchableBranchPicker
-            branches={branches}
-            selectedBranchId={selectedBranchId}
-            onBranchChange={(id) => onBranchChange?.(id)}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
-          />
-          <SearchableUserPicker
-            users={usersForPicker}
-            branches={branches}
-            selectedUid={selectedUserId}
-            onUidChange={(uid) => onUserChange?.(uid)}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
-          />
-          <SearchableOptionListPicker
-            options={sortOptions}
-            selectedValue={sortMetric === 'name' ? 'all' : sortMetric}
-            onValueChange={(v) =>
-              onSortMetricChange?.(
-                v === 'all' ? 'name' : (v as ReportsTargetsSortMetric)
-              )
-            }
-            includeAllOption
-            allOptionValue="all"
-            placeholderLabelWhenAll="Sort: Name"
-            triggerIcon={<ArrowDownWideNarrow className="size-4" />}
-            triggerClassName="min-w-[10rem] sm:min-w-[12rem]"
-            searchPlaceholder="Search sort…"
-          />
-        </>
-      ) : null}
-      {showSearch ? (
-        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
-          {onExportCsv || onExportExcel ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 shrink-0 gap-1.5"
-                  disabled={exportDisabled}
-                  data-tour="reports-targets-export"
-                >
-                  <Download className="size-4" aria-hidden />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
-                {onExportCsv ? (
-                  <DropdownMenuItem
-                    disabled={exportDisabled}
-                    onSelect={() => onExportCsv()}
-                  >
-                    Export CSV
-                  </DropdownMenuItem>
-                ) : null}
-                {onExportExcel ? (
-                  <DropdownMenuItem
-                    disabled={exportDisabled}
-                    onSelect={() => onExportExcel()}
-                  >
-                    Export Excel
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-          {renderSearchField()}
-        </div>
-      ) : onExportCsv || onExportExcel ? (
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 shrink-0 gap-1.5"
-                disabled={exportDisabled}
-                data-tour="reports-targets-export"
-              >
-                <Download className="size-4" aria-hidden />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
-              {onExportCsv ? (
-                <DropdownMenuItem
-                  disabled={exportDisabled}
-                  onSelect={() => onExportCsv()}
-                >
-                  Export CSV
-                </DropdownMenuItem>
-              ) : null}
-              {onExportExcel ? (
-                <DropdownMenuItem
-                  disabled={exportDisabled}
-                  onSelect={() => onExportExcel()}
-                >
-                  Export Excel
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ) : null}
+    <div data-tour="reports-targets-toolbar">
+      <div className="mb-4 flex shrink-0 flex-col gap-2 md:hidden">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 w-full justify-center gap-2"
+          onClick={() => setFiltersDialogOpen(true)}
+        >
+          <Filter className="size-4 shrink-0" aria-hidden />
+          Filter
+        </Button>
+        {hasMobileActions ? (
+          <div className="flex min-w-0 items-center gap-2">
+            {renderExportButton()}
+            {renderSearchField('min-w-0 flex-1')}
+          </div>
+        ) : null}
+      </div>
+
+      <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+            <DialogDescription>
+              Date range, currency, location, and sort for the targets table.
+            </DialogDescription>
+          </DialogHeader>
+          <ReportsTargetsFilterControls layout="stack" {...filterProps} />
+        </DialogContent>
+      </Dialog>
+
+      <div className="mb-4 hidden shrink-0 flex-wrap items-center gap-2 md:flex">
+        <ReportsTargetsFilterControls layout="row" {...filterProps} />
+        {showSearch ? (
+          <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+            {renderExportButton()}
+            {renderSearchField()}
+          </div>
+        ) : hasExport ? (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {renderExportButton()}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

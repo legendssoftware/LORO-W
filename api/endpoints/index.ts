@@ -23,4 +23,5 @@ export * from './products';
 export * from './resellers';
 export * from './competitors';
 export * from './tracking';
+export * from './assets';
 export * from './iot';

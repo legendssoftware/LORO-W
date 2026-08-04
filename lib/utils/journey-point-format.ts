@@ -111,6 +111,24 @@ export function bearingDegrees(
   return (brng + 360) % 360;
 }
 
+/** GPS recorded within this window is treated as "live" on the visualiser map. */
+export const REP_GPS_LIVE_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+
+export type RepGpsFreshness = 'live' | 'stale' | 'unknown';
+
+/** Classify rep GPS freshness for map layer list badges. */
+export function classifyRepGpsFreshness(
+  iso: string | null | undefined,
+  nowMs: number = Date.now()
+): RepGpsFreshness {
+  if (!iso) return 'unknown';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  const ageMs = nowMs - d.getTime();
+  if (ageMs < 0) return 'live';
+  return ageMs <= REP_GPS_LIVE_THRESHOLD_MS ? 'live' : 'stale';
+}
+
 /** Relative “5 minutes ago” label for a recordedAt ISO string. */
 export function formatRelativeRecordedAt(
   iso: string | null | undefined
