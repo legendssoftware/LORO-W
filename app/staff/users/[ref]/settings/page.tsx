@@ -89,6 +89,7 @@ import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
 import { ActiveVisitSchedules } from './active-visit-schedules';
 import { UserWarningsCard } from './user-warnings-card';
 import { PerformanceWarningsCard } from './performance-warnings-card';
+import { PrimaryVehicleSection } from './primary-vehicle-section';
 import {
   CURRENCY_OPTIONS,
   TARGET_PERIOD_OPTIONS,
@@ -1672,7 +1673,18 @@ export default function UserSettingsPage() {
                     </div>
                     <div className="border-t pt-4">
                       <p className="text-sm font-medium text-muted-foreground mb-3">Cost breakdown (ZAR)</p>
-                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                      <PrimaryVehicleSection
+                        control={targetForm.control}
+                        userUid={user.uid}
+                        clerkUserId={user.clerkUserId}
+                        branchUid={normalizePrimaryBranchUid(
+                          (user as { branchUid?: number | null }).branchUid ??
+                            user.branch?.uid ??
+                            form.getValues('branchUid')
+                        )}
+                        selectedAssetUid={targetForm.watch('primaryVehicleAssetUid')}
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 mt-3">
                         <FormField
                           control={targetForm.control}
                           name="baseSalary"

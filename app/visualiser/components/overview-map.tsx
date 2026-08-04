@@ -75,6 +75,7 @@ import {
   resolveJourneySegments,
 } from '@/lib/utils/journey-route-segments';
 import { logVisualiserPolylineDebug } from '@/lib/utils/visualiser-polyline-debug';
+import { formatJourneyDistanceLabel } from '@/lib/utils/trip-fuel-estimate';
 
 /** Johannesburg fallback — MapLibre uses [lng, lat]. */
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
@@ -539,6 +540,11 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     setCenter([first.longitude, first.latitude]);
   }, [isUserLocation, visiblePoints, center]);
 
+  const repPoints = useMemo(
+    () => allPoints.filter((p) => p.layer === 'reps'),
+    [allPoints]
+  );
+
   const pointsByLayer = useMemo(() => {
     const grouped: Partial<Record<VisualiserLayerId, VisualiserMapPoint[]>> = {};
     for (const p of visiblePoints) {
@@ -594,6 +600,14 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     },
     [clearRepSelection, setRepSearchInput]
   );
+
+  const handlePlottedRepClick = useCallback((point: VisualiserMapPoint) => {
+    setVisibility((prev) => (prev.reps ? prev : { ...prev, reps: true }));
+    setSelectedJourneyPoint(null);
+    setShowLastKnownPopup(false);
+    setSelectedVisitId(null);
+    setSelected(point);
+  }, []);
 
   const handleTraceRoute = useCallback(
     async (
@@ -681,7 +695,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setTrackStatusMessage(rangeLabel);
         if (!quiet) {
           toast.success(
-            `${repName}: ${routeState.summary.totalDistanceKm.toFixed(1)} km · ${routeState.summary.totalTravelFormatted} travel · ${rangeLabel}`,
+            `${repName}: ${formatJourneyDistanceLabel(routeState.summary)} · ${routeState.summary.totalTravelFormatted} travel · ${rangeLabel}`,
             { id: toastId }
           );
         } else {
@@ -1096,6 +1110,9 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           visibility={visibility}
           counts={counts}
           onChange={handleLayerChange}
+          repPoints={repPoints}
+          selectedRepUid={selected?.repUid ?? null}
+          onRepClick={handlePlottedRepClick}
         />
 
         <RepTrackerControl
@@ -1109,6 +1126,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           isTracing={isTracing}
           statusMessage={trackStatusMessage}
           journeySummary={primaryJourneyRoute?.summary ?? null}
+          rangeLabel={primaryJourneyRoute?.rangeLabel ?? null}
           lastKnownLocation={lastKnownSummary}
           onLastKnownClick={() => openLastKnownPopup({ fly: true })}
           visitActions={primaryJourneyRoute ? visitActions : []}
@@ -1163,7 +1181,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
                   </span>
                   {' · '}
                   {primaryJourneyRoute.rangeLabel} ·{' '}
-                  {primaryJourneyRoute.summary.totalDistanceKm.toFixed(1)} km ·{' '}
+                  {formatJourneyDistanceLabel(primaryJourneyRoute.summary)} ·{' '}
                   {primaryJourneyRoute.summary.totalTravelFormatted} travel
                   {primaryJourneyRoute.routeGeometrySource === 'roads'
                     ? ' · roads'

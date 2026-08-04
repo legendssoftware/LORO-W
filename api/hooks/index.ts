@@ -28,6 +28,11 @@ export {
   repJourneyQueryKey,
   useRepJourney,
 } from './use-rep-journey';
+export {
+  ASSETS_QUERY_KEY_PREFIX,
+  useUserVehicleAssets,
+  useCreateAssetMutation,
+} from './use-assets';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export {
   CLIENTS_QUERY_KEY_PREFIX,

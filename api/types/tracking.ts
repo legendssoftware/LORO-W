@@ -93,6 +93,54 @@ export interface RepJourneyFuelPrice {
   region: string | null;
   asOf: string | null;
   source: 'fuel-sa' | null;
+  province?: string | null;
+  fuelZone?: 'Reef' | 'Coast' | null;
+  refillBasis?: 'journey-start' | null;
+}
+
+export interface RepJourneyFuelEstimate {
+  assumedKmPerLitre: number;
+  estimatedLitres: number;
+  estimatedCostZar: number;
+}
+
+export type RepJourneyVehicleProfileSource = 'user-vehicle' | 'fleet-default';
+
+export interface RepJourneyVehicleProfile {
+  assetUid: number | null;
+  displayName: string | null;
+  make: string | null;
+  model: string | null;
+  sizeClass: string | null;
+  fuelType: string | null;
+  ratedKmPerLitre: number;
+  source: RepJourneyVehicleProfileSource;
+}
+
+export type RepJourneyPaceLabel =
+  | 'below_budget'
+  | 'on_pace'
+  | 'above_budget'
+  | 'unknown';
+
+export interface RepJourneyConsumptionComparison {
+  periodDistanceKm: number;
+  ratedKmPerLitre: number;
+  tripEstimatedLitres: number;
+  tripEstimatedCostZar: number;
+  monthlyFuelAllowanceZar: number | null;
+  monthlyKmBudget: number | null;
+  dailyKmBudget: number | null;
+  budgetPacePercent: number | null;
+  paceLabel: RepJourneyPaceLabel;
+}
+
+export interface RepJourneyDistanceAdjustment {
+  workCommuteKmPerDay: number;
+  calendarDaysInRange: number;
+  workCommuteDeductionKm: number;
+  recordedDistanceKm: number;
+  billableDistanceKm: number;
 }
 
 export interface RepJourneySummary {
@@ -104,10 +152,20 @@ export interface RepJourneySummary {
   totalTravelFormatted: string;
   totalStopMinutes: number;
   totalStopFormatted: string;
+  stopCount?: number;
+  averageStopMinutes?: number;
+  averageStopFormatted?: string;
+  /** Wall-clock span from first to last GPS point in the window. */
+  totalDurationMinutes?: number;
+  totalDurationFormatted?: string;
   startPlace: RepJourneyEndpoint | null;
   endPlace: RepJourneyEndpoint | null;
   prominentLocations: RepJourneyProminentLocation[];
   fuelPrice: RepJourneyFuelPrice;
+  fuelEstimate?: RepJourneyFuelEstimate | null;
+  vehicleProfile?: RepJourneyVehicleProfile | null;
+  consumptionComparison?: RepJourneyConsumptionComparison | null;
+  distanceAdjustment?: RepJourneyDistanceAdjustment | null;
   periodAverages: {
     day: RepJourneyPeriodAverages;
     week: RepJourneyPeriodAverages;
