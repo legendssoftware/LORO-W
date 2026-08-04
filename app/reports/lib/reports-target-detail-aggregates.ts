@@ -1,7 +1,14 @@
 import type { VisitListItem } from '@/api/types/visits';
 import type { LeadListItem, LeadActivityLogItem } from '@/api/types/leads';
-import type { DailyProductivityDay } from '@/api/endpoints/user';
+import type {
+  DailyProductivityDay,
+  VisitPlanScheduleSlot,
+} from '@/api/endpoints/user';
 import type { ByStatusItem } from '@/api/types/reports';
+import {
+  formatAddressForDisplay,
+  parseCoordString,
+} from '@/components/visits-table/visits-table-utils';
 import {
   formatMinutesToDuration,
   parseDurationToMinutes,
@@ -264,4 +271,238 @@ function leadDurationBucket(minutes: number): string {
   if (days < 7) return '3–7d';
   if (days < 14) return '1–2w';
   return '2w+';
+}
+
+const PHYSICAL_METHOD = 'physical';
+
+/** Physical or missing method = visit; otherwise call (aligned with targets-progress). */
+export function isPhysicalCheckIn(checkIn: VisitListItem): boolean {
+  const method = checkIn.methodOfContact?.trim().toLowerCase() ?? '';
+  return method === '' || method === PHYSICAL_METHOD;
+}
+
+export function splitCheckInsByKind(checkIns: VisitListItem[]): {
+  calls: VisitListItem[];
+  visits: VisitListItem[];
+} {
+  const calls: VisitListItem[] = [];
+  const visits: VisitListItem[] = [];
+  for (const checkIn of checkIns) {
+    if (isPhysicalCheckIn(checkIn)) visits.push(checkIn);
+    else calls.push(checkIn);
+  }
+  return { calls, visits };
+}
+
+function ymdToRangeMs(fromYmd: string, toYmd: string): { start: number; end: number } {
+  const start = new Date(`${fromYmd.slice(0, 10)}T00:00:00`).getTime();
+  const end = new Date(`${toYmd.slice(0, 10)}T23:59:59.999`).getTime();
+  return { start, end };
+}
+
+/** Filter lead activity log entries whose timestamp falls within [from, to] (inclusive). */
+export function filterActivityEntriesInRange(
+  lead: LeadListItem,
+  fromYmd: string,
+  toYmd: string
+): LeadActivityLogItem[] {
+  const { start, end } = ymdToRangeMs(fromYmd, toYmd);
+  const rows = Array.isArray(lead.activity) ? lead.activity : [];
+  return rows.filter((entry) => {
+    const t = Date.parse(entry.at);
+    return Number.isFinite(t) && t >= start && t <= end;
+  });
+}
+
+export function filterVisitPlanSlotsInRange(
+  slots: VisitPlanScheduleSlot[] | undefined,
+  fromYmd: string,
+  toYmd: string
+): VisitPlanScheduleSlot[] {
+  if (!slots?.length) return [];
+  const from = fromYmd.slice(0, 10);
+  const to = toYmd.slice(0, 10);
+  return slots.filter((slot) => {
+    const d = slot.visitDate?.slice(0, 10);
+    if (!d) return false;
+    return d >= from && d <= to;
+  });
+}
+
+export function countPlannedVisitsInSlots(slots: VisitPlanScheduleSlot[]): number {
+  return slots.reduce((sum, slot) => sum + (slot.tasks?.length ?? 0), 0);
+}
+
+export type ActivityDetailRow = {
+  id: number;
+  kind: 'call' | 'visit';
+  methodOfContact: string;
+  checkInTime: string;
+  checkOutTime: string | null;
+  durationMinutes: number;
+  durationLabel: string;
+  contactLabel: string;
+  outcome: string | null;
+  locationLabel: string;
+  locationHref: string | null;
+  followUp: string | null;
+  contactMade: string | null;
+};
+
+function locationFromCheckIn(checkIn: VisitListItem): {
+  label: string;
+  href: string | null;
+} {
+  const full = checkIn.fullAddress;
+  const contact = checkIn.contactAddress;
+  const checkout = checkIn.checkOutFullAddress;
+  const formatted =
+    full?.formattedAddress?.trim() ||
+    contact?.formattedAddress?.trim() ||
+    checkout?.formattedAddress?.trim() ||
+    null;
+  if (formatted) return { label: formatted, href: null };
+
+  const addressParts = formatAddressForDisplay(
+    contact ?? full ?? checkout,
+    undefined
+  );
+  if (addressParts && addressParts !== '-') {
+    return { label: addressParts, href: null };
+  }
+
+  const coords = parseCoordString(checkIn.checkInLocation);
+  if (coords) {
+    const label = `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`;
+    return {
+      label,
+      href: `https://www.google.com/maps?q=${encodeURIComponent(label)}`,
+    };
+  }
+
+  return { label: '—', href: null };
+}
+
+function contactLabelFromCheckIn(checkIn: VisitListItem): string {
+  return (
+    checkIn.contactFullName?.trim() ||
+    checkIn.companyName?.trim() ||
+    checkIn.client?.name?.trim() ||
+    `Activity #${checkIn.uid}`
+  );
+}
+
+function outcomeFromCheckIn(checkIn: VisitListItem): string | null {
+  const resolution = checkIn.resolution?.trim();
+  if (resolution) return resolution;
+  if (checkIn.contactMade === true || checkIn.contactMade === 'YES') {
+    return 'Contact made';
+  }
+  if (checkIn.contactMade === false || checkIn.contactMade === 'NO') {
+    return 'No contact';
+  }
+  return null;
+}
+
+function contactMadeLabel(checkIn: VisitListItem): string | null {
+  if (checkIn.contactMade === true || checkIn.contactMade === 'YES') return 'Yes';
+  if (checkIn.contactMade === false || checkIn.contactMade === 'NO') return 'No';
+  return null;
+}
+
+/** Build sorted activity rows (newest check-in first) for the detail table. */
+export function buildActivityDetailRows(checkIns: VisitListItem[]): ActivityDetailRow[] {
+  const sorted = [...checkIns].sort(
+    (a, b) => Date.parse(b.checkInTime) - Date.parse(a.checkInTime)
+  );
+
+  return sorted.map((checkIn) => {
+    const kind = isPhysicalCheckIn(checkIn) ? 'visit' : 'call';
+    const durationMinutes = parseDurationToMinutes(checkIn.duration);
+    const location = locationFromCheckIn(checkIn);
+    const method =
+      typeof checkIn.methodOfContact === 'string' && checkIn.methodOfContact.trim()
+        ? checkIn.methodOfContact.trim()
+        : kind === 'visit'
+          ? 'Physical'
+          : 'Unknown';
+
+    return {
+      id: checkIn.uid,
+      kind,
+      methodOfContact: method,
+      checkInTime: checkIn.checkInTime,
+      checkOutTime: checkIn.checkOutTime ?? null,
+      durationMinutes,
+      durationLabel:
+        durationMinutes > 0 ? formatMinutesToDuration(durationMinutes) : '—',
+      contactLabel: contactLabelFromCheckIn(checkIn),
+      outcome: outcomeFromCheckIn(checkIn),
+      locationLabel: location.label,
+      locationHref: location.href,
+      followUp: checkIn.followUp?.trim() || null,
+      contactMade: contactMadeLabel(checkIn),
+    };
+  });
+}
+
+export type ActivitySummary = {
+  callCount: number;
+  callTotalMinutes: number;
+  visitCount: number;
+  visitTotalMinutes: number;
+  plannedVisitCount: number;
+  avgDurationMinutes: number;
+  byOutcome: NamedCount[];
+  byLocation: NamedCount[];
+};
+
+export function aggregateActivitySummary(
+  checkIns: VisitListItem[],
+  planSlotsInRange: VisitPlanScheduleSlot[]
+): ActivitySummary {
+  const { calls, visits } = splitCheckInsByKind(checkIns);
+  let callTotalMinutes = 0;
+  let visitTotalMinutes = 0;
+  let totalMinutes = 0;
+  let durationCount = 0;
+
+  for (const checkIn of checkIns) {
+    const mins = parseDurationToMinutes(checkIn.duration);
+    if (mins > 0) {
+      totalMinutes += mins;
+      durationCount += 1;
+    }
+  }
+
+  for (const checkIn of calls) {
+    callTotalMinutes += parseDurationToMinutes(checkIn.duration);
+  }
+  for (const checkIn of visits) {
+    visitTotalMinutes += parseDurationToMinutes(checkIn.duration);
+  }
+
+  const outcomeMap = new Map<string, number>();
+  for (const checkIn of checkIns) {
+    const outcome = outcomeFromCheckIn(checkIn) ?? 'No outcome';
+    outcomeMap.set(outcome, (outcomeMap.get(outcome) ?? 0) + 1);
+  }
+
+  const locationMap = new Map<string, number>();
+  for (const checkIn of checkIns) {
+    const region = regionFromVisit(checkIn);
+    locationMap.set(region, (locationMap.get(region) ?? 0) + 1);
+  }
+
+  return {
+    callCount: calls.length,
+    callTotalMinutes,
+    visitCount: visits.length,
+    visitTotalMinutes,
+    plannedVisitCount: countPlannedVisitsInSlots(planSlotsInRange),
+    avgDurationMinutes:
+      durationCount > 0 ? Math.round(totalMinutes / durationCount) : 0,
+    byOutcome: mapToSortedCounts(outcomeMap, 6),
+    byLocation: mapToSortedCounts(locationMap, 5),
+  };
 }
