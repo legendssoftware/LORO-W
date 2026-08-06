@@ -49,6 +49,10 @@ import {
   type ReportsTargetsCurrencyView,
 } from '@/app/reports/lib/reports-target-currency';
 import {
+  utcDateFromYmd,
+  utcRangeIsoFromUtcCalendarStoredRange,
+} from '@/lib/utils/overview-daily-summary';
+import {
   aggregateLeadActions,
   aggregateLeadDurations,
   aggregateVisits,
@@ -302,6 +306,14 @@ export function ReportsTargetDetailDialog({
   const reportTo = reviewEndYmd ?? toYmd(row?.periodEndDate) ?? null;
   const hasReportRange = !!reportFrom && !!reportTo;
 
+  const checkInsIsoRange = useMemo(() => {
+    if (!reportFrom || !reportTo) return null;
+    return utcRangeIsoFromUtcCalendarStoredRange(
+      utcDateFromYmd(reportFrom),
+      utcDateFromYmd(reportTo)
+    );
+  }, [reportFrom, reportTo]);
+
   useEffect(() => {
     setLeadsPage(1);
   }, [row?.userId, reportFrom, reportTo]);
@@ -347,8 +359,7 @@ export function ReportsTargetDetailDialog({
   const visitsQuery = useCheckIns(
     {
       userUid: row?.ref,
-      startDate: reportFrom ?? undefined,
-      endDate: reportTo ?? undefined,
+      ...(checkInsIsoRange ?? {}),
     },
     { enabled: open && !!row?.ref && hasReportRange }
   );
