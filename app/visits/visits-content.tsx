@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
-import { startOfDay, endOfDay } from 'date-fns';
+import { utcRangeIsoFromUtcCalendarStoredRange } from '@/lib/utils/overview-daily-summary';
 import {
   useCheckIns,
   useCheckInStatus,
@@ -104,15 +104,16 @@ export function VisitsContent({
   });
   const branchesQuery = useBranches({ enabled: mounted });
 
+  const checkInsDateRange = useMemo(
+    () =>
+      useAllTime ? null : utcRangeIsoFromUtcCalendarStoredRange(startDate, endDate),
+    [useAllTime, startDate, endDate]
+  );
+
   const statusQuery = useCheckInStatus({ enabled: mounted });
   const checkInsQuery = useCheckIns(
     {
-      ...(useAllTime
-        ? {}
-        : {
-            startDate: startOfDay(startDate).toISOString(),
-            endDate: endOfDay(endDate).toISOString(),
-          }),
+      ...(checkInsDateRange ?? {}),
       ...(selectedUserUid ? { userUid: selectedUserUid } : {}),
     },
     { enabled: mounted }

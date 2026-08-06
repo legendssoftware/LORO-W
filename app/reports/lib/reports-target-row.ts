@@ -519,13 +519,23 @@ export function applyErpSalesToRow(
  * Overlay range engagement counts onto Calls/Leads (Sales/Hours unchanged).
  * Targets for calls/leads are prorated to the selected date range.
  */
+/** Total check-ins in range (all contact methods) — matches GET /check-ins list / Visits page. */
+export function totalEngagementCheckIns(engagement: {
+  callCount: number;
+  visitCount?: number;
+}): number {
+  return (engagement.callCount ?? 0) + (engagement.visitCount ?? 0);
+}
+
 export function applyEngagementToRow(
   row: ReportsTargetRow,
-  engagement: { callCount: number; leadCount: number } | undefined,
+  engagement: { callCount: number; leadCount: number; visitCount?: number } | undefined,
   rangeFromYmd: string,
   rangeToYmd: string
 ): ReportsTargetRow {
   if (!engagement) return row;
+
+  const totalCheckIns = totalEngagementCheckIns(engagement);
 
   const callTarget = prorateTargetForRange({
     periodTarget: row.calls.target,
@@ -543,9 +553,9 @@ export function applyEngagementToRow(
   });
 
   const calls: ReportsTargetMetricCell = {
-    current: engagement.callCount,
+    current: totalCheckIns,
     target: callTarget,
-    progress: calcTargetProgress(engagement.callCount, callTarget),
+    progress: calcTargetProgress(totalCheckIns, callTarget),
   };
   const leads: ReportsTargetMetricCell = {
     current: engagement.leadCount,
