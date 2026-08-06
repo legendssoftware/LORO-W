@@ -182,6 +182,7 @@ function ReportsTargetsFilterControls({
         onSetUseAllTime={onSetUseAllTime}
         dataTour="reports-targets-date-filter"
         triggerClassName={isStack ? 'w-full' : undefined}
+        stackLayout={isStack}
       />
       {onCurrencyViewChange ? (
         <SearchableOptionListPicker
@@ -362,7 +363,7 @@ export function ReportsTargetsToolbar({
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-x-hidden overflow-y-auto p-4 sm:max-w-md sm:p-6">
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>

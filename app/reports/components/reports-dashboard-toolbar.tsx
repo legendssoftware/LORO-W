@@ -188,7 +188,11 @@ function ReportsDashboardFilterControls({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className={cn('w-auto p-0', reportsFilterPortalHighZ)}
+          className={cn(
+            'w-auto max-w-[calc(100vw-2rem)] p-0',
+            isStack && 'w-[min(100%,20rem)]',
+            reportsFilterPortalHighZ
+          )}
           align="start"
         >
           <Calendar
@@ -197,6 +201,16 @@ function ReportsDashboardFilterControls({
             onSelect={setDraft}
             numberOfMonths={isStack ? 1 : 2}
             defaultMonth={startDate}
+            className={isStack ? 'w-full [--cell-size:2.25rem]' : undefined}
+            classNames={
+              isStack
+                ? {
+                    root: 'w-full',
+                    months: 'relative flex w-full flex-col',
+                    month: 'flex w-full flex-col gap-3',
+                  }
+                : undefined
+            }
           />
           <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
             <Button
@@ -311,7 +325,7 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-x-hidden overflow-y-auto p-4 sm:max-w-md sm:p-6">
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>

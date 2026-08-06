@@ -36,7 +36,7 @@ export const reportsFilterSelectTriggerClass =
 export const reportsFilterPortalHighZ = 'z-[10001]';
 
 export const reportsDateRangePopoverContentClass =
-  'w-[95vw] max-w-fit p-0 sm:w-auto';
+  'w-[min(100vw-2rem,42rem)] max-w-full p-0 sm:w-auto';
 
 export const reportsDateRangeCalendarProps = {
   numberOfMonths: 2,
