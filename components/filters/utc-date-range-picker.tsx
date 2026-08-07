@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon } from 'lucide-react';
 import {
@@ -45,6 +45,8 @@ export interface UtcDateRangePickerProps {
   disabled?: boolean;
   /** Optional data-tour attribute for the trigger button. */
   dataTour?: string;
+  /** Mobile filter sheet: inline single-month calendar instead of a popover. */
+  stackLayout?: boolean;
 }
 
 export function UtcDateRangePicker({
@@ -59,6 +61,7 @@ export function UtcDateRangePicker({
   compact = false,
   disabled = false,
   dataTour,
+  stackLayout = false,
 }: UtcDateRangePickerProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -66,6 +69,11 @@ export function UtcDateRangePicker({
     to: endDate,
   });
   const skipApplyOnCloseRef = useRef(false);
+
+  useEffect(() => {
+    if (!stackLayout) return;
+    setDraft({ from: startDate, to: endDate });
+  }, [stackLayout, startDate, endDate]);
 
   const today = utcToday();
   const isDefaultRange =
@@ -124,6 +132,171 @@ export function UtcDateRangePicker({
 
   const calendarDisabled = useAllTime || disabled;
 
+  const applyDraft = useCallback(() => {
+    if (useAllTime) return;
+    const from = draft?.from ?? startDate;
+    const to = draft?.to ?? draft?.from ?? endDate;
+    onRangeChange(orderUtcCalendarRange(from, to));
+  }, [draft, useAllTime, startDate, endDate, onRangeChange]);
+
+  const handleCalendarSelect = useCallback(
+    (r: DateRange | undefined) => {
+      if (calendarDisabled) return;
+      if (!r) {
+        setDraft(undefined);
+        return;
+      }
+      onSetUseAllTime?.(false);
+      setDraft({
+        from: r.from ? utcCalendarDateFromLocalPickerDate(r.from) : undefined,
+        to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
+      });
+    },
+    [calendarDisabled, onSetUseAllTime]
+  );
+
+  const calendarProps = stackLayout
+    ? {
+        numberOfMonths: 1,
+        className: 'w-full [--cell-size:2.25rem]',
+        classNames: {
+          root: 'w-full',
+          months: 'relative flex w-full flex-col',
+          month: 'flex w-full flex-col gap-3',
+        },
+      }
+    : reportsDateRangeCalendarProps;
+
+  const allTimeSection = showAllTime ? (
+    <div className="flex flex-col gap-2 border-b p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Button
+          type="button"
+          variant={useAllTime ? 'default' : 'outline'}
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={() => onSetUseAllTime?.(true)}
+        >
+          All time
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          or pick a UTC range below
+        </span>
+      </div>
+    </div>
+  ) : null;
+
+  const shortcutsFooter = (
+    <div className="flex flex-col gap-2 border-t px-3 py-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={calendarDisabled}
+          className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
+          onClick={shortcutToday}
+        >
+          Today (UTC)
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={calendarDisabled}
+          className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
+          onClick={shortcutThisMonth}
+        >
+          This month (UTC)
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={calendarDisabled}
+          className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
+          onClick={shortcutWholeMonth}
+        >
+          Whole month (UTC)
+        </Button>
+      </div>
+      {!stackLayout ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            disabled={calendarDisabled}
+            className={cn(
+              'w-full border-transparent bg-violet-600 text-white shadow-sm sm:w-auto',
+              'hover:bg-violet-700 hover:text-white',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+              calendarDisabled && 'pointer-events-none opacity-50'
+            )}
+            onClick={() => handleDatePopoverOpenChange(false)}
+          >
+            Done
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const calendarPanel = (
+    <>
+      {allTimeSection}
+      <Calendar
+        mode="range"
+        selected={draft}
+        disabled={calendarDisabled}
+        onSelect={handleCalendarSelect}
+        defaultMonth={startDate}
+        initialFocus={!stackLayout}
+        {...calendarProps}
+      />
+      {shortcutsFooter}
+    </>
+  );
+
+  if (stackLayout) {
+    return (
+      <div className="w-full min-w-0 space-y-2" data-tour={dataTour}>
+        <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+            <CalendarIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="truncate font-medium">{rangeLabel}</span>
+          </div>
+          {onReset && (useAllTime || !isDefaultRange) ? (
+            <button
+              type="button"
+              onClick={onReset}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Reset to today"
+            >
+              <XIcon className="size-4 text-muted-foreground" />
+            </button>
+          ) : null}
+        </div>
+        <div className="w-full min-w-0 overflow-hidden rounded-md border">
+          {calendarPanel}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={calendarDisabled}
+          className={cn(
+            'h-9 w-full border-transparent bg-violet-600 text-white shadow-sm',
+            'hover:bg-violet-700 hover:text-white',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+            calendarDisabled && 'pointer-events-none opacity-50'
+          )}
+          onClick={applyDraft}
+        >
+          Apply date range
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-0">
       <Popover open={dateRangePopoverOpen} onOpenChange={handleDatePopoverOpenChange}>
@@ -154,89 +327,7 @@ export function UtcDateRangePicker({
           className={cn(reportsDateRangePopoverContentClass, reportsFilterPortalHighZ)}
           align="start"
         >
-          {showAllTime ? (
-            <div className="flex flex-col gap-3 border-b p-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant={useAllTime ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onSetUseAllTime?.(true)}
-                >
-                  All time
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  or pick a UTC range below
-                </span>
-              </div>
-            </div>
-          ) : null}
-          <Calendar
-            mode="range"
-            selected={draft}
-            disabled={calendarDisabled}
-            onSelect={(r) => {
-              if (calendarDisabled) return;
-              if (!r) {
-                setDraft(undefined);
-                return;
-              }
-              onSetUseAllTime?.(false);
-              setDraft({
-                from: r.from
-                  ? utcCalendarDateFromLocalPickerDate(r.from)
-                  : undefined,
-                to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
-              });
-            }}
-            initialFocus
-            {...reportsDateRangeCalendarProps}
-          />
-          <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={calendarDisabled}
-                onClick={shortcutToday}
-              >
-                Today (UTC)
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={calendarDisabled}
-                onClick={shortcutThisMonth}
-              >
-                This month (UTC)
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={calendarDisabled}
-                onClick={shortcutWholeMonth}
-              >
-                Whole month (UTC)
-              </Button>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              disabled={calendarDisabled}
-              className={cn(
-                'border-transparent bg-violet-600 text-white shadow-sm',
-                'hover:bg-violet-700 hover:text-white',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
-                calendarDisabled && 'pointer-events-none opacity-50'
-              )}
-              onClick={() => handleDatePopoverOpenChange(false)}
-            >
-              Done
-            </Button>
-          </div>
+          {calendarPanel}
         </PopoverContent>
       </Popover>
       {onReset && (useAllTime || !isDefaultRange) ? (

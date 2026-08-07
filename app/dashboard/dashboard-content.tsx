@@ -274,6 +274,7 @@ export function DashboardContent() {
               onEndBreak={handleEndBreak}
               startTime={attStatus?.startTime ?? null}
               breakStartTime={attStatus?.breakStartTime ?? null}
+              orgTimezone={attStatus?.schedule?.timezone ?? null}
             />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}

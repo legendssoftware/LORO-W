@@ -28,6 +28,8 @@ export interface ReportsTargetMetricCell {
   target: number;
   progress: number;
   currency?: string | null;
+  /** Monetary total for count-based metrics (e.g. quotation value in range). */
+  amountCurrent?: number | null;
 }
 
 /** Average daily productivity score (0–100) for the selected date range. */
@@ -46,7 +48,9 @@ export interface ReportsTargetRow {
   photoURL?: string | null;
   branch?: string | null;
   calls: ReportsTargetMetricCell;
+  visits: ReportsTargetMetricCell;
   leads: ReportsTargetMetricCell;
+  quotations: ReportsTargetMetricCell;
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;
   /** True while ERP sales for this row is queued / in flight. */
@@ -122,6 +126,23 @@ function attachCurrencyMetadata(
   };
 }
 
+function quotationsMetricFromList(
+  countCurrent: unknown,
+  amountCurrent: unknown,
+  amountTarget: unknown,
+  currency?: string | null
+): ReportsTargetMetricCell {
+  const count = targetNum(countCurrent);
+  const amount = targetNum(amountCurrent);
+  const target = targetNum(amountTarget);
+  return {
+    current: count,
+    target,
+    amountCurrent: amount,
+    progress: calcTargetProgress(amount, target),
+    ...(currency != null ? { currency } : {}),
+  };
+}
 function metricFromList(
   current: unknown,
   target: unknown,
@@ -133,6 +154,22 @@ function metricFromList(
     current: c,
     target: t,
     progress: calcTargetProgress(c, t),
+    ...(currency != null ? { currency } : {}),
+  };
+}
+
+function quotationsFromPersonal(
+  metric: UserTargetMetricProgress | undefined,
+  currencyFallback?: string | null
+): ReportsTargetMetricCell {
+  const amount = targetNum(metric?.current);
+  const target = targetNum(metric?.target);
+  const currency = metric?.currency ?? currencyFallback ?? null;
+  return {
+    current: 0,
+    target,
+    amountCurrent: amount,
+    progress: calcTargetProgress(amount, target),
     ...(currency != null ? { currency } : {}),
   };
 }
@@ -233,11 +270,15 @@ function achievementFromCells(
 function buildRowMetrics(
   callsIn: ReportsTargetMetricCell,
   leadsIn: ReportsTargetMetricCell,
+  visits: ReportsTargetMetricCell,
+  quotations: ReportsTargetMetricCell,
   sales: ReportsTargetMetricCell,
   hours: ReportsTargetMetricCell
 ): {
   calls: ReportsTargetMetricCell;
+  visits: ReportsTargetMetricCell;
   leads: ReportsTargetMetricCell;
+  quotations: ReportsTargetMetricCell;
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;
   achievement: number;
@@ -249,7 +290,9 @@ function buildRowMetrics(
   );
   return {
     calls,
+    visits,
     leads,
+    quotations,
     sales,
     hours,
     achievement: achievementFromCells(calls, leads, sales, hours),
@@ -323,6 +366,13 @@ export function rowFromUserListItem(
   const metrics = buildRowMetrics(
     metricFromList(ut?.currentCalls, ut?.targetCalls),
     metricFromList(ut?.currentNewLeads, ut?.targetNewLeads),
+    metricFromList(ut?.currentCheckIns, ut?.targetCheckIns),
+    quotationsMetricFromList(
+      0,
+      ut?.currentQuotationsAmount,
+      ut?.targetQuotationsAmount,
+      currency
+    ),
     metricFromList(ut?.currentSalesAmount, ut?.targetSalesAmount, currency),
     metricFromList(ut?.currentHoursWorked, ut?.targetHoursWorked)
   );
@@ -381,10 +431,12 @@ export function rowFromPersonalTarget(params: {
     personal.sales?.currency ??
     null;
   const calls = metricFromPersonal(personal.calls);
+  const visits = metricFromPersonal(personal.checkIns);
   const leads = metricFromPersonal(personal.newLeads);
+  const quotations = quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = metricFromPersonal(personal.hours);
-  const metrics = buildRowMetrics(calls, leads, sales, hours);
+  const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
       ? personal.targetWarnings
@@ -458,10 +510,12 @@ export function enrichRowWithTargetDashboard(
     row.sales.currency ??
     null;
   const calls = metricFromPersonal(personal.calls);
+  const visits = metricFromPersonal(personal.checkIns);
   const leads = metricFromPersonal(personal.newLeads);
+  const quotations = quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = metricFromPersonal(personal.hours);
-  const metrics = buildRowMetrics(calls, leads, sales, hours);
+  const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
       ? personal.targetWarnings
@@ -508,7 +562,7 @@ export function applyErpSalesToRow(
     current,
     progress: calcTargetProgress(current, row.sales.target),
   };
-  const metrics = buildRowMetrics(row.calls, row.leads, sales, row.hours);
+  const metrics = buildRowMetrics(row.calls, row.leads, row.visits, row.quotations, sales, row.hours);
   return {
     ...row,
     ...metrics,
@@ -516,8 +570,8 @@ export function applyErpSalesToRow(
 }
 
 /**
- * Overlay range engagement counts onto Calls/Leads (Sales/Hours unchanged).
- * Targets for calls/leads are prorated to the selected date range.
+ * Overlay range engagement counts onto Calls/Visits/Leads (Sales/Hours/Quotations current unchanged).
+ * Targets for calls/leads/visits/quotations are prorated to the selected date range.
  */
 /** Total check-ins in range (all contact methods) — matches GET /check-ins list / Visits page. */
 export function totalEngagementCheckIns(engagement: {
@@ -529,16 +583,29 @@ export function totalEngagementCheckIns(engagement: {
 
 export function applyEngagementToRow(
   row: ReportsTargetRow,
-  engagement: { callCount: number; leadCount: number; visitCount?: number } | undefined,
+  engagement:
+    | {
+        callCount: number;
+        leadCount: number;
+        visitCount?: number;
+        quotationCount?: number;
+        quotationAmount?: number;
+      }
+    | undefined,
   rangeFromYmd: string,
   rangeToYmd: string
 ): ReportsTargetRow {
   if (!engagement) return row;
 
-  const totalCheckIns = totalEngagementCheckIns(engagement);
-
   const callTarget = prorateTargetForRange({
     periodTarget: row.calls.target,
+    periodStartDate: row.periodStartDate,
+    periodEndDate: row.periodEndDate,
+    rangeFromYmd,
+    rangeToYmd,
+  });
+  const visitTarget = prorateTargetForRange({
+    periodTarget: row.visits.target,
     periodStartDate: row.periodStartDate,
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
@@ -551,19 +618,43 @@ export function applyEngagementToRow(
     rangeFromYmd,
     rangeToYmd,
   });
+  const quotationsTarget = prorateTargetForRange({
+    periodTarget: row.quotations.target,
+    periodStartDate: row.periodStartDate,
+    periodEndDate: row.periodEndDate,
+    rangeFromYmd,
+    rangeToYmd,
+  });
+
+  const callCount = engagement.callCount ?? 0;
+  const visitCount = engagement.visitCount ?? 0;
+  const quotationCount = engagement.quotationCount ?? 0;
+  const quotationAmount = engagement.quotationAmount ?? 0;
 
   const calls: ReportsTargetMetricCell = {
-    current: totalCheckIns,
+    current: callCount,
     target: callTarget,
-    progress: calcTargetProgress(totalCheckIns, callTarget),
+    progress: calcTargetProgress(callCount, callTarget),
+  };
+  const visits: ReportsTargetMetricCell = {
+    current: visitCount,
+    target: visitTarget,
+    progress: calcTargetProgress(visitCount, visitTarget),
   };
   const leads: ReportsTargetMetricCell = {
     current: engagement.leadCount,
     target: leadTarget,
     progress: calcTargetProgress(engagement.leadCount, leadTarget),
   };
+  const quotations: ReportsTargetMetricCell = {
+    ...row.quotations,
+    current: quotationCount,
+    amountCurrent: quotationAmount,
+    target: quotationsTarget,
+    progress: calcTargetProgress(quotationAmount, quotationsTarget),
+  };
 
-  const metrics = buildRowMetrics(calls, leads, row.sales, row.hours);
+  const metrics = buildRowMetrics(calls, leads, visits, quotations, row.sales, row.hours);
   return {
     ...row,
     ...metrics,
@@ -638,7 +729,7 @@ export function applyHoursToRow(
     progress: calcTargetProgress(current, target),
   };
 
-  const metrics = buildRowMetrics(row.calls, row.leads, row.sales, hours);
+  const metrics = buildRowMetrics(row.calls, row.leads, row.visits, row.quotations, row.sales, hours);
   return {
     ...row,
     ...metrics,

@@ -272,6 +272,8 @@ export interface EngagementRangeUserRow {
   callCount: number;
   visitCount: number;
   leadCount: number;
+  quotationCount: number;
+  quotationAmount: number;
 }
 
 export interface GetEngagementRangeResponse {
