@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { parseAttendanceInstant, isUsableShiftStartInstant } from '@/lib/attendance-time';
 
 /**
  * Live elapsed time since check-in. Updates every second when checked in.
- * checkInTime: ISO string or parseable date from attendance.checkIn or startTime.
+ * checkInTime: UTC ISO instant from attendance.checkIn or GET /att/status startTime.
  */
 export function DashboardTimeWorking({
   checkedIn,
   checkInTime,
+  orgTimezone = null,
 }: {
   checkedIn: boolean;
   checkInTime?: string | null;
+  orgTimezone?: string | null;
 }) {
   const [elapsed, setElapsed] = useState<string>('—');
 
@@ -20,11 +23,12 @@ export function DashboardTimeWorking({
       setElapsed('—');
       return;
     }
-    const start = new Date(checkInTime).getTime();
-    if (Number.isNaN(start)) {
+    const startDate = parseAttendanceInstant(checkInTime, orgTimezone);
+    if (!startDate || !isUsableShiftStartInstant(startDate)) {
       setElapsed('—');
       return;
     }
+    const start = startDate.getTime();
     const tick = () => {
       const now = Date.now();
       const totalMs = Math.max(0, now - start);
@@ -39,7 +43,7 @@ export function DashboardTimeWorking({
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [checkedIn, checkInTime]);
+  }, [checkedIn, checkInTime, orgTimezone]);
 
   if (!checkedIn) return null;
   return (

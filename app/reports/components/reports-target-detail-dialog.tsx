@@ -140,6 +140,12 @@ function formatCount(value: number): string {
   return Math.round(value).toLocaleString();
 }
 
+function formatQuoteCount(count: number): string {
+  const n = Math.round(count);
+  if (!Number.isFinite(n) || n <= 0) return '0 quotes';
+  return n === 1 ? '1 quote' : `${n.toLocaleString()} quotes`;
+}
+
 function formatMoney(value: number, currency = 'R'): string {
   const code = formatReportCurrencyCode(currency);
   if (!Number.isFinite(value)) return `${code} 0`;
@@ -400,6 +406,7 @@ export function ReportsTargetDetailDialog({
       {
         ...enriched,
         calls: row.calls,
+        visits: row.visits,
         leads: row.leads,
         hours: row.hours,
         engagementMet: row.engagementMet,
@@ -413,6 +420,7 @@ export function ReportsTargetDetailDialog({
     const merged = {
       ...withSales,
       calls: row.calls,
+      visits: row.visits,
       leads: row.leads,
       hours: row.hours,
       engagementMet: row.engagementMet,
@@ -609,12 +617,38 @@ export function ReportsTargetDetailDialog({
                 />
               </ModalSection>
 
-              <ModalSection title="Calls & leads">
-                <div className="grid gap-2 sm:grid-cols-2">
+              <ModalSection title="Quotations">
+                <MetricDetail
+                  label="Quotes in period"
+                  cell={{
+                    ...displayRow.quotations,
+                    current: displayRow.quotations.current,
+                    progress: displayRow.quotations.progress,
+                  }}
+                  formatValue={(c) => formatQuoteCount(c.current)}
+                />
+                <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+                  {formatSales({
+                    ...displayRow.quotations,
+                    current: displayRow.quotations.amountCurrent ?? 0,
+                    target: displayRow.quotations.target,
+                  })}
+                </p>
+              </ModalSection>
+
+              <ModalSection title="Calls, visits & leads">
+                <div className="grid gap-2 sm:grid-cols-3">
                   <MetricDetail
                     label="Calls"
                     cell={displayRow.calls}
                     done={displayRow.engagementMet && displayRow.calls.target > 0}
+                    formatValue={(c) =>
+                      `${formatCount(c.current)} / ${formatCount(c.target)}`
+                    }
+                  />
+                  <MetricDetail
+                    label="Visits"
+                    cell={displayRow.visits}
                     formatValue={(c) =>
                       `${formatCount(c.current)} / ${formatCount(c.target)}`
                     }

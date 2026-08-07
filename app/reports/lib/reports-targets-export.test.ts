@@ -18,7 +18,9 @@ function minimalRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow
     branch: 'BitGeorge',
     periodLabel: 'Aug 4, 2026 - Aug 4, 2026',
     calls: { current: 85, target: 500, progress: 17 },
+    visits: { current: 12, target: 160, progress: 8 },
     leads: { current: 6, target: 50, progress: 12 },
+    quotations: { current: 2, target: 50000, amountCurrent: 5000, progress: 10, currency: 'ZAR' },
     sales: { current: 10327, target: 500000, progress: 2, currency: 'ZAR' },
     hours: { current: 4, target: 8, progress: 50 },
     productivity: { score: 72 },
@@ -34,7 +36,7 @@ describe('buildReportsTargetsExportHeaders', () => {
     const headers = buildReportsTargetsExportHeaders('set');
     expect(headers).not.toContain('Email');
     expect(headers).not.toContain('Sales currency');
-    expect(headers).toHaveLength(22);
+    expect(headers).toHaveLength(29);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -74,7 +76,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(22);
+    expect(row).toHaveLength(29);
   });
 
   it('formats sales with currency prefix in set view', () => {

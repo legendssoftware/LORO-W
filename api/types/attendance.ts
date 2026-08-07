@@ -26,9 +26,21 @@ export interface AttStatusResponse {
     message?: string;
     checkedIn: boolean;
     nextAction?: string | null;
+    /** Check-in instant (UTC ISO-8601). Use schedule.timezone for org wall-clock display. */
     startTime?: string | null;
+    /** Check-out instant (UTC ISO-8601). */
     endTime?: string | null;
+    /** Active break start instant (UTC ISO-8601). */
     breakStartTime?: string | null;
+    schedule?: {
+        timezone: string;
+        date: string;
+        isWorkingDay: boolean;
+        startTime: string | null;
+        endTime: string | null;
+        expectedWorkMinutes: number;
+        holidayMode: boolean;
+    } | null;
     checkInContext?: AttCheckInContext;
     attendance?: {
         checkIn?: string;

@@ -83,6 +83,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 /** Metrics that need per-page enrich before a page-local re-sort is meaningful. */
 const PAGE_LOCAL_SORT_METRICS = new Set<ReportsTargetsSortMetric>([
   'sales',
+  'quotations',
   'achievement',
   'productivity',
 ]);
@@ -101,10 +102,22 @@ function sortTargetRows(
           b.sales.current - a.sales.current ||
           a.name.localeCompare(b.name)
         );
+      case 'quotations':
+        return (
+          b.quotations.progress - a.quotations.progress ||
+          b.quotations.current - a.quotations.current ||
+          a.name.localeCompare(b.name)
+        );
       case 'calls':
         return (
           b.calls.progress - a.calls.progress ||
           b.calls.current - a.calls.current ||
+          a.name.localeCompare(b.name)
+        );
+      case 'visits':
+        return (
+          b.visits.progress - a.visits.progress ||
+          b.visits.current - a.visits.current ||
           a.name.localeCompare(b.name)
         );
       case 'leads':
@@ -354,12 +367,23 @@ export function ReportsOverviewTab() {
   );
 
   const engagementByUid = useMemo(() => {
-    const map = new Map<number, { callCount: number; leadCount: number; visitCount: number }>();
+    const map = new Map<
+      number,
+      {
+        callCount: number;
+        leadCount: number;
+        visitCount: number;
+        quotationCount: number;
+        quotationAmount: number;
+      }
+    >();
     for (const u of engagementQuery.data?.users ?? []) {
       map.set(u.uid, {
         callCount: u.callCount,
         leadCount: u.leadCount,
         visitCount: u.visitCount,
+        quotationCount: u.quotationCount ?? 0,
+        quotationAmount: u.quotationAmount ?? 0,
       });
     }
     return map;
@@ -490,6 +514,8 @@ export function ReportsOverviewTab() {
             callCount: 0,
             leadCount: 0,
             visitCount: 0,
+            quotationCount: 0,
+            quotationAmount: 0,
           };
           row = applyEngagementToRow(row, eng, rangeParams.from, rangeParams.to);
         }
@@ -567,6 +593,8 @@ export function ReportsOverviewTab() {
           callCount: 0,
           leadCount: 0,
           visitCount: 0,
+          quotationCount: 0,
+          quotationAmount: 0,
         };
         next = applyEngagementToRow(next, eng, rangeParams.from, rangeParams.to);
       }
@@ -666,6 +694,8 @@ export function ReportsOverviewTab() {
         callCount: 0,
         leadCount: 0,
         visitCount: 0,
+        quotationCount: 0,
+        quotationAmount: 0,
       };
       row = applyEngagementToRow(row, eng, rangeParams.from, rangeParams.to);
     }
