@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Car, Home, Laptop, MapPin, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  parseAttendanceInstant,
+  isUsableShiftStartInstant,
+} from '@/lib/attendance-time';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -48,9 +52,11 @@ export interface AttendanceStatusButtonProps {
   onBreak?: boolean;
   onStartBreak?: () => void;
   onEndBreak?: () => void;
-  /** For timer: shift start (work) or break start. Server format e.g. yyyy-MM-dd HH:mm:ss. */
+  /** For timer: shift start (work) or break start. UTC ISO-8601 instant from GET /att/status. */
   startTime?: string | null;
   breakStartTime?: string | null;
+  /** Org timezone from GET /att/status schedule — used to parse legacy wall-clock strings. */
+  orgTimezone?: string | null;
 }
 
 function formatElapsed(ms: number): string {
@@ -133,6 +139,7 @@ export function AttendanceStatusButton({
   onEndBreak,
   startTime = null,
   breakStartTime = null,
+  orgTimezone = null,
 }: AttendanceStatusButtonProps) {
   const [currentTimer, setCurrentTimer] = useState('00:00:00');
   const [remoteModalOpen, setRemoteModalOpen] = useState(false);
@@ -185,29 +192,24 @@ export function AttendanceStatusButton({
       setCurrentTimer('00:00:00');
       return;
     }
-    const parseDate = (s: string | null | undefined): Date | null => {
-      if (s == null || s === '') return null;
-      const normalized =
-        typeof s === 'string' && s.includes(' ') && !s.includes('T')
-          ? s.replace(' ', 'T')
-          : s;
-      const d = new Date(normalized);
-      return Number.isNaN(d.getTime()) ? null : d;
-    };
     const interval = setInterval(() => {
       const now = Date.now();
       if (onBreak && breakStartTime) {
-        const start = parseDate(breakStartTime);
-        if (start) setCurrentTimer(formatElapsed(now - start.getTime()));
+        const start = parseAttendanceInstant(breakStartTime, orgTimezone);
+        if (start && isUsableShiftStartInstant(start)) {
+          setCurrentTimer(formatElapsed(Math.max(0, now - start.getTime())));
+        }
       } else if (!onBreak && startTime) {
-        const start = parseDate(startTime);
-        if (start) setCurrentTimer(formatElapsed(now - start.getTime()));
+        const start = parseAttendanceInstant(startTime, orgTimezone);
+        if (start && isUsableShiftStartInstant(start)) {
+          setCurrentTimer(formatElapsed(Math.max(0, now - start.getTime())));
+        }
       } else {
         setCurrentTimer('00:00:00');
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [checkedIn, onBreak, startTime, breakStartTime]);
+  }, [checkedIn, onBreak, startTime, breakStartTime, orgTimezone]);
 
   const showShiftTimer = checkedIn && !onBreak && startTime;
   const showBreakCounter = checkedIn && onBreak && breakStartTime;

@@ -44,7 +44,9 @@ export type ReportsTargetsSortMetric =
   | 'name'
   | 'achievement'
   | 'sales'
+  | 'quotations'
   | 'calls'
+  | 'visits'
   | 'leads'
   | 'hours'
   | 'productivity';
@@ -86,7 +88,9 @@ const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = 
   { value: 'name', label: 'Sort: Name' },
   { value: 'achievement', label: 'Sort: Achievement (page)' },
   { value: 'sales', label: 'Sort: Sales (page)' },
+  { value: 'quotations', label: 'Sort: Quotations' },
   { value: 'calls', label: 'Sort: Calls' },
+  { value: 'visits', label: 'Sort: Visits' },
   { value: 'leads', label: 'Sort: Leads' },
   { value: 'hours', label: 'Sort: Hours' },
   { value: 'productivity', label: 'Sort: Productivity (page)' },
@@ -208,16 +212,17 @@ function ReportsTargetsFilterControls({
             triggerIcon={<Globe2 className="size-4 shrink-0 text-muted-foreground" />}
             triggerClassName={pickerTriggerClass}
           />
-          <SearchableOptionListPicker
-            options={provinceOptions}
-            selectedValue={selectedProvince}
-            onValueChange={(v) => onProvinceChange?.(v)}
-            placeholderLabelWhenAll="All provinces"
-            searchPlaceholder="Search provinces…"
-            triggerIcon={<MapPinned className="size-4 shrink-0 text-muted-foreground" />}
-            triggerClassName={pickerTriggerClass}
-            disabled={selectedCountry === 'all'}
-          />
+          {selectedCountry !== 'all' ? (
+            <SearchableOptionListPicker
+              options={provinceOptions}
+              selectedValue={selectedProvince}
+              onValueChange={(v) => onProvinceChange?.(v)}
+              placeholderLabelWhenAll="All provinces"
+              searchPlaceholder="Search provinces…"
+              triggerIcon={<MapPinned className="size-4 shrink-0 text-muted-foreground" />}
+              triggerClassName={pickerTriggerClass}
+            />
+          ) : null}
           <SearchableBranchPicker
             branches={branches}
             selectedBranchId={selectedBranchId}

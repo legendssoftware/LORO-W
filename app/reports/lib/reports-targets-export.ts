@@ -41,11 +41,39 @@ function salesExportHeaderLabels(view: ReportsTargetsCurrencyView): {
   }
 }
 
+function quotationsExportHeaderLabels(view: ReportsTargetsCurrencyView): {
+  current: string;
+  target: string;
+} {
+  switch (view) {
+    case 'zar':
+      return {
+        current: 'Quotations (current) R',
+        target: 'Quotations (target) R',
+      };
+    case 'branch':
+      return {
+        current: 'Quotations (current, branch)',
+        target: 'Quotations (target, branch)',
+      };
+    case 'set':
+      return {
+        current: 'Quotations (current, set)',
+        target: 'Quotations (target, set)',
+      };
+    default: {
+      const _exhaustive: never = view;
+      return _exhaustive;
+    }
+  }
+}
+
 /** Build export column headers for the active currency view. */
 export function buildReportsTargetsExportHeaders(
   currencyView: ReportsTargetsCurrencyView = 'set'
 ): string[] {
   const salesHeaders = salesExportHeaderLabels(currencyView);
+  const quotationsHeaders = quotationsExportHeaderLabels(currencyView);
   return [
     'User',
     'Branch',
@@ -53,9 +81,16 @@ export function buildReportsTargetsExportHeaders(
     'Calls (current)',
     'Calls (target)',
     'Calls %',
+    'Visits (current)',
+    'Visits (target)',
+    'Visits %',
     'Leads (current)',
     'Leads (target)',
     'Leads %',
+    'Quotations (count)',
+    quotationsHeaders.current,
+    quotationsHeaders.target,
+    'Quotations %',
     salesHeaders.current,
     salesHeaders.target,
     'Sales %',
@@ -121,9 +156,20 @@ export function reportsTargetRowToExportRow(
     formatExportCount(row.calls.current),
     formatExportCount(row.calls.target),
     formatExportPercent(row.engagementMet ? 100 : row.calls.progress),
+    formatExportCount(row.visits.current),
+    formatExportCount(row.visits.target),
+    formatExportPercent(row.visits.progress),
     formatExportCount(row.leads.current),
     formatExportCount(row.leads.target),
     formatExportPercent(row.engagementMet ? 100 : row.leads.progress),
+    formatExportCount(row.quotations.current),
+    formatExportMoney(
+      row.quotations.amountCurrent ?? 0,
+      row.quotations.currency,
+      includeSalesCurrencyPrefix
+    ),
+    formatExportMoney(row.quotations.target, row.quotations.currency, includeSalesCurrencyPrefix),
+    formatExportPercent(row.quotations.progress),
     formatExportMoney(row.sales.current, row.sales.currency, includeSalesCurrencyPrefix),
     formatExportMoney(row.sales.target, row.sales.currency, includeSalesCurrencyPrefix),
     formatExportPercent(row.sales.progress),

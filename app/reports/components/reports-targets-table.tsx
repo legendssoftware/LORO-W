@@ -9,9 +9,8 @@ import {
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetMetricCell, ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
 import {
-  applyCurrencyViewToRow,
+  quotationsColumnLabel,
   salesColumnLabel,
-  type ExchangeRateMap,
   type ReportsTargetsCurrencyView,
 } from '@/app/reports/lib/reports-target-currency';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,7 +33,7 @@ const WARNING_BADGE: Record<1 | 2 | 3, string> = {
   3: 'bg-red-100 text-red-800 border-red-200/80',
 };
 
-const COL_COUNT = 9;
+const COL_COUNT = 11;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -62,6 +61,42 @@ function formatSales(cell: ReportsTargetMetricCell): string {
     maximumFractionDigits: 0,
   });
   return `${currency} ${cur} / ${tgt}`;
+}
+
+function formatQuotationsAmount(cell: ReportsTargetMetricCell): string {
+  const amount = cell.amountCurrent ?? 0;
+  const currency = formatReportCurrencyCode(cell.currency);
+  return `${currency} ${Math.round(amount).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function formatQuoteCount(count: number): string {
+  const n = Math.round(count);
+  if (!Number.isFinite(n) || n <= 0) return '0 quotes';
+  return n === 1 ? '1 quote' : `${n.toLocaleString()} quotes`;
+}
+
+function QuotationsMetricCell({ cell }: { cell: ReportsTargetMetricCell }) {
+  const colors = getProgressColorClasses(cell.progress);
+  return (
+    <div className="min-w-[7.5rem] space-y-1.5">
+      <p className="text-xs font-medium text-foreground tabular-nums">
+        {formatQuoteCount(cell.current)}
+      </p>
+      <p className="text-[10px] tabular-nums text-muted-foreground">
+        {formatQuotationsAmount(cell)}
+      </p>
+      <ReportProgressBar value={cell.progress} />
+      {cell.target > 0 ? (
+        <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
+          {cell.progress}%
+        </p>
+      ) : (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
+      )}
+    </div>
+  );
 }
 
 function MetricCell({
@@ -179,6 +214,12 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           <TableCell>
             <Skeleton className="h-10 w-24" />
           </TableCell>
+          <TableCell>
+            <Skeleton className="h-10 w-24" />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-10 w-28" />
+          </TableCell>
           <TableCell className="hidden md:table-cell">
             <Skeleton className="h-10 w-28" />
           </TableCell>
@@ -232,7 +273,9 @@ export function ReportsTargetsTable({
         <TableRow>
           <TableHead className="min-w-[12rem]">User</TableHead>
           <TableHead>Calls</TableHead>
+          <TableHead>Visits</TableHead>
           <TableHead>Leads</TableHead>
+          <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
           <TableHead
@@ -300,10 +343,19 @@ export function ReportsTargetsTable({
                 </TableCell>
                 <TableCell>
                   <MetricCell
+                    cell={row.visits}
+                    formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <MetricCell
                     cell={row.leads}
                     done={row.engagementMet && row.leads.target > 0}
                     formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                   />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <QuotationsMetricCell cell={row.quotations} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {row.salesLoading ? (

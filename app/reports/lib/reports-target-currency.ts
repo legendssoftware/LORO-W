@@ -6,6 +6,7 @@ import {
   calcTargetProgress,
   calcOverallAchievementWithEngagement,
   resolveCallsLeadsCellProgress,
+  targetNum,
 } from '@/lib/utils/target-progress';
 import type {
   ReportsTargetMetricCell,
@@ -139,7 +140,7 @@ function rebuildAchievement(
 }
 
 /**
- * Apply currency view to sales amounts (target + ERP current) and recompute achievement.
+ * Apply currency view to sales and quotations amounts and recompute achievement.
  */
 export function applyCurrencyViewToRow(
   row: ReportsTargetRow,
@@ -149,42 +150,87 @@ export function applyCurrencyViewToRow(
   const setCurrency = resolveRowSetCurrency(row);
   const erpCurrency = resolveRowErpCurrency(row);
 
-  let sales: ReportsTargetMetricCell;
-
-  switch (view) {
-    case 'set': {
-      if (setCurrency === erpCurrency) {
-        sales = { ...row.sales, currency: setCurrency };
-      } else {
-        const current = convertAmount(row.sales.current, erpCurrency, setCurrency, rates);
-        const target = row.sales.target;
-        sales = {
+  function convertMonetaryCell(
+    cell: ReportsTargetMetricCell,
+    erpCurrent: number,
+    setTarget: number
+  ): ReportsTargetMetricCell {
+    switch (view) {
+      case 'set': {
+        if (setCurrency === erpCurrency) {
+          return { ...cell, current: erpCurrent, target: setTarget, currency: setCurrency };
+        }
+        const current = convertAmount(erpCurrent, erpCurrency, setCurrency, rates);
+        return {
           current,
-          target,
-          progress: calcTargetProgress(current, target),
+          target: setTarget,
+          progress: calcTargetProgress(current, setTarget),
           currency: setCurrency,
         };
       }
-      break;
+      case 'branch': {
+        const target = convertAmount(setTarget, setCurrency, erpCurrency, rates);
+        return {
+          current: erpCurrent,
+          target,
+          progress: calcTargetProgress(erpCurrent, target),
+          currency: erpCurrency,
+        };
+      }
+      case 'zar': {
+        const current = amountToZar(erpCurrent, erpCurrency, rates);
+        const target = amountToZar(setTarget, setCurrency, rates);
+        return {
+          current,
+          target,
+          progress: calcTargetProgress(current, target),
+          currency: 'ZAR',
+        };
+      }
+      default: {
+        const _exhaustive: never = view;
+        return _exhaustive;
+      }
     }
+  }
+
+  const sales = convertMonetaryCell(row.sales, row.sales.current, row.sales.target);
+
+  let quotations: ReportsTargetMetricCell;
+  const qCount = row.quotations.current;
+  const qAmount = targetNum(row.quotations.amountCurrent);
+  const qTarget = row.quotations.target;
+  switch (view) {
+    case 'set':
+      quotations = {
+        ...row.quotations,
+        current: qCount,
+        amountCurrent: qAmount,
+        target: qTarget,
+        progress: calcTargetProgress(qAmount, qTarget),
+        currency: setCurrency,
+      };
+      break;
     case 'branch': {
-      const current = row.sales.current;
-      const target = convertAmount(row.sales.target, setCurrency, erpCurrency, rates);
-      sales = {
-        current,
+      const amount = convertAmount(qAmount, setCurrency, erpCurrency, rates);
+      const target = convertAmount(qTarget, setCurrency, erpCurrency, rates);
+      quotations = {
+        current: qCount,
+        amountCurrent: amount,
         target,
-        progress: calcTargetProgress(current, target),
+        progress: calcTargetProgress(amount, target),
         currency: erpCurrency,
       };
       break;
     }
     case 'zar': {
-      const current = amountToZar(row.sales.current, erpCurrency, rates);
-      const target = amountToZar(row.sales.target, setCurrency, rates);
-      sales = {
-        current,
+      const amount = amountToZar(qAmount, setCurrency, rates);
+      const target = amountToZar(qTarget, setCurrency, rates);
+      quotations = {
+        current: qCount,
+        amountCurrent: amount,
         target,
-        progress: calcTargetProgress(current, target),
+        progress: calcTargetProgress(amount, target),
         currency: 'ZAR',
       };
       break;
@@ -195,7 +241,7 @@ export function applyCurrencyViewToRow(
     }
   }
 
-  const next = { ...row, sales };
+  const next = { ...row, sales, quotations };
   return { ...next, ...rebuildAchievement(next) };
 }
 
@@ -203,10 +249,15 @@ export function currencyViewNeedsRates(
   rows: ReportsTargetRow[],
   view: ReportsTargetsCurrencyView
 ): boolean {
-  if (view === 'zar') return rows.some((r) => r.sales.target > 0 || r.sales.current > 0);
-  if (view === 'branch') return rows.some((r) => r.sales.target > 0 || r.sales.current > 0);
+  const hasMonetary = (r: ReportsTargetRow) =>
+    r.sales.target > 0 ||
+    r.sales.current > 0 ||
+    r.quotations.target > 0 ||
+    (r.quotations.amountCurrent ?? 0) > 0;
+  if (view === 'zar') return rows.some(hasMonetary);
+  if (view === 'branch') return rows.some(hasMonetary);
   return rows.some((r) => {
-    if (r.sales.target <= 0 && r.sales.current <= 0) return false;
+    if (!hasMonetary(r)) return false;
     return resolveRowSetCurrency(r) !== resolveRowErpCurrency(r);
   });
 }
@@ -219,6 +270,21 @@ export function salesColumnLabel(view: ReportsTargetsCurrencyView): string {
       return 'Sales (branch)';
     case 'zar':
       return 'Sales (ZAR)';
+    default: {
+      const _exhaustive: never = view;
+      return _exhaustive;
+    }
+  }
+}
+
+export function quotationsColumnLabel(view: ReportsTargetsCurrencyView): string {
+  switch (view) {
+    case 'set':
+      return 'Quotations';
+    case 'branch':
+      return 'Quotations (branch)';
+    case 'zar':
+      return 'Quotations (ZAR)';
     default: {
       const _exhaustive: never = view;
       return _exhaustive;
