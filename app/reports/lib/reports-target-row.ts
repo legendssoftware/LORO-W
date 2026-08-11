@@ -17,7 +17,7 @@ import {
   resolveCallsLeadsCellProgress,
   targetNum,
 } from '@/lib/utils/target-progress';
-import { formatUtcYmd } from '@/lib/utils/overview-daily-summary';
+import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
 import {
   TARGET_WORKING_DAYS_PER_MONTH,
   workingDaysInclusiveYmd,
@@ -315,6 +315,39 @@ function formatPeriodYmd(value: string): string {
   return formatUtcYmd(d);
 }
 
+export type EngagementRangeParams = {
+  from: string;
+  to: string;
+  branchId?: number;
+};
+
+/** Resolve [from, to] for engagement-range in all-time mode (target period, end capped at today). */
+export function resolveTargetPeriodEngagementParams(
+  sources: Array<{
+    periodStartDate?: string | Date | null;
+    periodEndDate?: string | Date | null;
+  }>,
+  opts?: { branchId?: number; today?: Date }
+): EngagementRangeParams | null {
+  const todayYmd = formatUtcYmd(opts?.today ?? utcToday());
+  for (const source of sources) {
+    if (!source.periodStartDate || !source.periodEndDate) continue;
+    const from = formatPeriodYmd(String(source.periodStartDate));
+    const endRaw = formatPeriodYmd(String(source.periodEndDate));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(endRaw)) {
+      continue;
+    }
+    const to = endRaw > todayYmd ? todayYmd : endRaw;
+    if (from > to) continue;
+    return {
+      from,
+      to,
+      ...(opts?.branchId != null ? { branchId: opts.branchId } : {}),
+    };
+  }
+  return null;
+}
+
 /**
  * Prorate a period (monthly) calls/leads target onto the selected filter range.
  * Daily rate = periodTarget ÷ 20 working days (so 1200 → 60/day).
@@ -398,6 +431,102 @@ export function rowFromUserListItem(
     },
     { setCurrency: currency, branchCountryCode }
   );
+}
+
+export type EngagementOverlay = {
+  callCount: number;
+  leadCount: number;
+  visitCount: number;
+  quotationCount: number;
+  quotationAmount: number;
+};
+
+const EMPTY_ENGAGEMENT_OVERLAY: EngagementOverlay = {
+  callCount: 0,
+  leadCount: 0,
+  visitCount: 0,
+  quotationCount: 0,
+  quotationAmount: 0,
+};
+
+/** Apply engagement + hours overlays and period label to a list-derived row. */
+export function overlayTargetRowFilters(
+  row: ReportsTargetRow,
+  opts: {
+    rangeParams?: { from: string; to: string } | null;
+    engagement?: EngagementOverlay | null;
+    engagementReady?: boolean;
+    /** Full range overlay (date filter) vs quotation count/amount only (all-time). */
+    engagementMode?: 'full' | 'quotationsOnly';
+    /** Range passed to engagement-range (date filter or target period in all-time). */
+    engagementRangeParams?: EngagementRangeParams | null;
+    hoursWorked?: number;
+    hoursOverlayReady?: boolean;
+  }
+): ReportsTargetRow {
+  let next = row;
+  const engagementRange =
+    opts.engagementRangeParams ??
+    (opts.rangeParams
+      ? {
+          from: opts.rangeParams.from,
+          to: opts.rangeParams.to,
+        }
+      : null);
+  if (opts.engagementReady && engagementRange) {
+    const engagement = opts.engagement ?? EMPTY_ENGAGEMENT_OVERLAY;
+    if (opts.engagementMode === 'quotationsOnly') {
+      next = applyQuotationsEngagementToRow(next, engagement);
+    } else if (opts.rangeParams) {
+      next = applyEngagementToRow(
+        next,
+        engagement,
+        opts.rangeParams.from,
+        opts.rangeParams.to
+      );
+    }
+  }
+  if (opts.hoursOverlayReady && opts.hoursWorked != null) {
+    next = applyHoursToRow(
+      next,
+      opts.hoursWorked,
+      opts.rangeParams?.from ?? null,
+      opts.rangeParams?.to ?? null
+    );
+  }
+  return applyFilterPeriodLabel(
+    next,
+    opts.rangeParams?.from ?? null,
+    opts.rangeParams?.to ?? null
+  );
+}
+
+/** Build a fully overlaid row from GET /user list item (engagement / hours when ready). */
+export function targetRowFromUserListItem(
+  user: UserListItem,
+  opts: {
+    branchCountryByUid?: Map<number, string>;
+    rangeParams?: { from: string; to: string } | null;
+    engagementByUid?: Map<number, EngagementOverlay>;
+    engagementReady?: boolean;
+    engagementMode?: 'full' | 'quotationsOnly';
+    engagementRangeParams?: EngagementRangeParams | null;
+    hoursByUid?: Map<number, number>;
+    hoursOverlayReady?: boolean;
+  }
+): ReportsTargetRow {
+  const row = rowFromUserListItem(user, opts.branchCountryByUid);
+  const engagement = opts.engagementByUid?.get(row.userId) ?? EMPTY_ENGAGEMENT_OVERLAY;
+  const hoursWorked = opts.hoursByUid?.get(row.userId);
+  return overlayTargetRowFilters(row, {
+    rangeParams: opts.rangeParams,
+    engagement,
+    engagementReady: opts.engagementReady,
+    engagementMode: opts.engagementMode,
+    engagementRangeParams: opts.engagementRangeParams,
+    hoursWorked,
+    hoursOverlayReady: opts.hoursOverlayReady,
+  });
 }
 
 function personalTargetsFromDashboard(
@@ -499,7 +628,8 @@ export function rowPeriodOverlapsRange(
 /** Merge warning + preferred progress from GET /user/:ref/target onto a list-derived row. */
 export function enrichRowWithTargetDashboard(
   row: ReportsTargetRow,
-  dashboard: UserTargetDashboardShape | Record<string, unknown> | null
+  dashboard: UserTargetDashboardShape | Record<string, unknown> | null,
+  options?: { preserveRangeMetrics?: boolean }
 ): ReportsTargetRow {
   const personal = personalTargetsFromDashboard(dashboard);
   if (!personal) return row;
@@ -509,10 +639,13 @@ export function enrichRowWithTargetDashboard(
     personal.sales?.currency ??
     row.sales.currency ??
     null;
-  const calls = metricFromPersonal(personal.calls);
-  const visits = metricFromPersonal(personal.checkIns);
-  const leads = metricFromPersonal(personal.newLeads);
-  const quotations = quotationsFromPersonal(personal.quotations, currency);
+  const preserve = options?.preserveRangeMetrics === true;
+  const calls = preserve ? row.calls : metricFromPersonal(personal.calls);
+  const visits = preserve ? row.visits : metricFromPersonal(personal.checkIns);
+  const leads = preserve ? row.leads : metricFromPersonal(personal.newLeads);
+  const quotations = preserve
+    ? row.quotations
+    : quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = metricFromPersonal(personal.hours);
   const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
@@ -655,6 +788,40 @@ export function applyEngagementToRow(
   };
 
   const metrics = buildRowMetrics(calls, leads, visits, quotations, row.sales, row.hours);
+  return {
+    ...row,
+    ...metrics,
+  };
+}
+
+/** Overlay LORO quotation count + amount from engagement-range without changing calls/visits/leads. */
+export function applyQuotationsEngagementToRow(
+  row: ReportsTargetRow,
+  engagement:
+    | {
+        quotationCount?: number;
+        quotationAmount?: number;
+      }
+    | undefined
+): ReportsTargetRow {
+  if (!engagement) return row;
+
+  const quotationCount = engagement.quotationCount ?? 0;
+  const quotationAmount = engagement.quotationAmount ?? 0;
+  const quotations: ReportsTargetMetricCell = {
+    ...row.quotations,
+    current: quotationCount,
+    amountCurrent: quotationAmount,
+    progress: calcTargetProgress(quotationAmount, row.quotations.target),
+  };
+  const metrics = buildRowMetrics(
+    row.calls,
+    row.leads,
+    row.visits,
+    quotations,
+    row.sales,
+    row.hours
+  );
   return {
     ...row,
     ...metrics,

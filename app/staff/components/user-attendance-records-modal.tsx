@@ -16,6 +16,7 @@ import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
 import { getPayrollPeriodRange } from '@/lib/payroll-period';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { DialogCloseButton } from '@/components/dialog-close-button';
-import { cn } from '@/lib/utils';
+import { formatAttendanceClockTime } from '@/lib/attendance-time';
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
 
@@ -315,11 +316,8 @@ export function UserAttendanceRecordsModal({
 
   const formatTime = (iso?: string | null): string => {
     if (!iso) return '—';
-    try {
-      return format(new Date(iso), 'HH:mm');
-    } catch {
-      return '—';
-    }
+    const formatted = formatAttendanceClockTime(iso);
+    return formatted || '—';
   };
 
   const getRowClassName = (index: number, status: RowStatus, shiftType: ShiftType): string => {

@@ -1,4 +1,5 @@
 import { parseISO, isValid } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const LEGACY_WALL_CLOCK_PATTERN = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/;
 const HAS_TZ_OFFSET_PATTERN = /(?:Z|[+-]\d{2}:?\d{2})$/i;
@@ -82,4 +83,26 @@ export function isUsableShiftStartInstant(
 ): boolean {
   if (!serverInstant) return false;
   return serverInstant.getTime() <= Date.now() + skewMs;
+}
+
+/** Format check-in/out for display in org wall clock (HH:mm). */
+export function formatAttendanceClockTime(
+  value: string | Date | null | undefined,
+  orgTimezone?: string | null,
+): string {
+  const instant = parseAttendanceInstant(value, orgTimezone);
+  if (!instant) return '';
+  const zone = orgTimezone?.trim() || DEFAULT_ORG_TIMEZONE;
+  return formatInTimeZone(instant, zone, 'HH:mm');
+}
+
+/** Format check-in/out for display in org wall clock (h:mm a). */
+export function formatAttendanceClockTime12h(
+  value: string | Date | null | undefined,
+  orgTimezone?: string | null,
+): string {
+  const instant = parseAttendanceInstant(value, orgTimezone);
+  if (!instant) return '';
+  const zone = orgTimezone?.trim() || DEFAULT_ORG_TIMEZONE;
+  return formatInTimeZone(instant, zone, 'h:mm a');
 }

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyEngagementToRow,
+  applyQuotationsEngagementToRow,
+  enrichRowWithTargetDashboard,
+  overlayTargetRowFilters,
+  resolveTargetPeriodEngagementParams,
   rowFromUserListItem,
+  targetRowFromUserListItem,
   totalEngagementCheckIns,
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
@@ -114,5 +119,137 @@ describe('rowFromUserListItem', () => {
     expect(row.quotations.current).toBe(0);
     expect(row.quotations.amountCurrent).toBe(12000);
     expect(row.quotations.currency).toBe('ZAR');
+  });
+});
+
+describe('overlayTargetRowFilters', () => {
+  it('skips engagement overlay when engagement is not ready', () => {
+    const row = baseRow({ calls: { current: 99, target: 1200, progress: 8 } });
+    const next = overlayTargetRowFilters(row, {
+      rangeParams: { from: '2026-08-07', to: '2026-08-07' },
+      engagement: { callCount: 0, visitCount: 1, leadCount: 0, quotationCount: 0, quotationAmount: 0 },
+      engagementReady: false,
+    });
+    expect(next.calls.current).toBe(99);
+  });
+
+  it('applies engagement when ready', () => {
+    const row = baseRow();
+    const next = overlayTargetRowFilters(row, {
+      rangeParams: { from: '2026-08-07', to: '2026-08-07' },
+      engagement: { callCount: 2, visitCount: 1, leadCount: 3, quotationCount: 1, quotationAmount: 500 },
+      engagementReady: true,
+    });
+    expect(next.calls.current).toBe(2);
+    expect(next.visits.current).toBe(1);
+    expect(next.quotations.current).toBe(1);
+  });
+});
+
+describe('targetRowFromUserListItem', () => {
+  it('builds shell row without engagement when not ready', () => {
+    const user = {
+      uid: 7,
+      name: 'A',
+      surname: 'B',
+      email: 'a@b.com',
+      userTarget: { targetCalls: 100, currentCalls: 5 },
+    } as UserListItem;
+    const row = targetRowFromUserListItem(user, {
+      rangeParams: { from: '2026-08-07', to: '2026-08-07' },
+      engagementReady: false,
+    });
+    expect(row.calls.current).toBe(5);
+    expect(row.periodLabel).toContain('2026');
+  });
+});
+
+describe('resolveTargetPeriodEngagementParams', () => {
+  it('caps end at today and returns from/to', () => {
+    const result = resolveTargetPeriodEngagementParams(
+      [{ periodStartDate: '2026-08-01', periodEndDate: '2026-08-31' }],
+      { today: new Date('2026-08-07T12:00:00.000Z') }
+    );
+    expect(result).toEqual({ from: '2026-08-01', to: '2026-08-07' });
+  });
+
+  it('returns null when period dates are missing', () => {
+    expect(resolveTargetPeriodEngagementParams([{}])).toBeNull();
+  });
+});
+
+describe('applyQuotationsEngagementToRow', () => {
+  it('updates quotation count and amount without changing calls', () => {
+    const row = baseRow({
+      calls: { current: 10, target: 1200, progress: 1 },
+      quotations: { current: 0, target: 50000, amountCurrent: 12000, progress: 24, currency: 'ZAR' },
+    });
+    const next = applyQuotationsEngagementToRow(row, {
+      quotationCount: 3,
+      quotationAmount: 15000,
+    });
+    expect(next.calls.current).toBe(10);
+    expect(next.quotations.current).toBe(3);
+    expect(next.quotations.amountCurrent).toBe(15000);
+    expect(next.quotations.progress).toBe(30);
+  });
+});
+
+describe('overlayTargetRowFilters quotationsOnly', () => {
+  it('applies quotation overlay in all-time mode without changing calls', () => {
+    const row = baseRow({
+      calls: { current: 10, target: 1200, progress: 1 },
+      quotations: { current: 0, target: 50000, amountCurrent: 12000, progress: 24, currency: 'ZAR' },
+    });
+    const next = overlayTargetRowFilters(row, {
+      rangeParams: null,
+      engagement: {
+        callCount: 99,
+        visitCount: 5,
+        leadCount: 8,
+        quotationCount: 2,
+        quotationAmount: 8000,
+      },
+      engagementReady: true,
+      engagementMode: 'quotationsOnly',
+      engagementRangeParams: { from: '2026-08-01', to: '2026-08-07' },
+    });
+    expect(next.calls.current).toBe(10);
+    expect(next.quotations.current).toBe(2);
+    expect(next.quotations.amountCurrent).toBe(8000);
+  });
+});
+
+describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
+  it('keeps engagement quotation count when preserveRangeMetrics is true', () => {
+    const row = baseRow({
+      calls: { current: 2, target: 1200, progress: 0 },
+      visits: { current: 1, target: 160, progress: 1 },
+      leads: { current: 3, target: 1200, progress: 0 },
+      quotations: {
+        current: 4,
+        target: 50000,
+        amountCurrent: 9000,
+        progress: 18,
+        currency: 'ZAR',
+      },
+    });
+    const next = enrichRowWithTargetDashboard(
+      row,
+      {
+        personalTargets: {
+          calls: { current: 99, target: 1200, progress: 8 },
+          checkIns: { current: 88, target: 160, progress: 55 },
+          newLeads: { current: 77, target: 1200, progress: 6 },
+          quotations: { current: 66000, target: 50000, progress: 100, currency: 'ZAR' },
+        },
+      },
+      { preserveRangeMetrics: true }
+    );
+    expect(next.calls.current).toBe(2);
+    expect(next.visits.current).toBe(1);
+    expect(next.leads.current).toBe(3);
+    expect(next.quotations.current).toBe(4);
+    expect(next.quotations.amountCurrent).toBe(9000);
   });
 });
