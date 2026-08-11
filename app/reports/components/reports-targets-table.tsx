@@ -77,13 +77,31 @@ function formatQuoteCount(count: number): string {
   return n === 1 ? '1 quote' : `${n.toLocaleString()} quotes`;
 }
 
-function QuotationsMetricCell({ cell }: { cell: ReportsTargetMetricCell }) {
+function QuotationsMetricCell({
+  cell,
+  quotationCountAvailable = true,
+  engagementError = false,
+}: {
+  cell: ReportsTargetMetricCell;
+  quotationCountAvailable?: boolean;
+  engagementError?: boolean;
+}) {
   const colors = getProgressColorClasses(cell.progress);
   return (
     <div className="min-w-[7.5rem] space-y-1.5">
-      <p className="text-xs font-medium text-foreground tabular-nums">
-        {formatQuoteCount(cell.current)}
-      </p>
+      {engagementError ? (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground" title="Could not load quote count">
+          —
+        </p>
+      ) : quotationCountAvailable ? (
+        <p className="text-xs font-medium text-foreground tabular-nums">
+          {formatQuoteCount(cell.current)}
+        </p>
+      ) : (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground" title="Quote count unavailable">
+          —
+        </p>
+      )}
       <p className="text-[10px] tabular-nums text-muted-foreground">
         {formatQuotationsAmount(cell)}
       </p>
@@ -250,6 +268,20 @@ export interface ReportsTargetsTableProps {
   emptyMessage?: string;
   onRowClick?: (row: ReportsTargetRow) => void;
   currencyView?: ReportsTargetsCurrencyView;
+  /** Skeleton Calls/Visits/Leads/Quotations while engagement-range is in flight (date filter). */
+  engagementOverlayPending?: boolean;
+  /** Skeleton Quotations only while target-period engagement loads (all-time). */
+  quotationEngagementPending?: boolean;
+  /** Engagement-range failed — avoid showing misleading 0 quote count. */
+  quotationEngagementError?: boolean;
+  /** Skeleton Hours while attendance overlay is in flight. */
+  hoursOverlayPending?: boolean;
+  /** True when engagement-range succeeded and quote count is available. */
+  quotationCountAvailable?: boolean;
+}
+
+function MetricCellSkeleton() {
+  return <Skeleton className="h-10 w-24" />;
 }
 
 export function ReportsTargetsTable({
@@ -258,6 +290,11 @@ export function ReportsTargetsTable({
   emptyMessage = 'No users with performance targets found.',
   onRowClick,
   currencyView = 'set',
+  engagementOverlayPending = false,
+  quotationEngagementPending = false,
+  quotationEngagementError = false,
+  hoursOverlayPending = false,
+  quotationCountAvailable = true,
 }: ReportsTargetsTableProps) {
   function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, row: ReportsTargetRow) {
     if (!onRowClick) return;
@@ -335,27 +372,47 @@ export function ReportsTargetsTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <MetricCell
-                    cell={row.calls}
-                    done={row.engagementMet && row.calls.target > 0}
-                    formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
-                  />
+                  {engagementOverlayPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <MetricCell
+                      cell={row.calls}
+                      done={row.engagementMet && row.calls.target > 0}
+                      formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
+                    />
+                  )}
                 </TableCell>
                 <TableCell>
-                  <MetricCell
-                    cell={row.visits}
-                    formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
-                  />
+                  {engagementOverlayPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <MetricCell
+                      cell={row.visits}
+                      formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
+                    />
+                  )}
                 </TableCell>
                 <TableCell>
-                  <MetricCell
-                    cell={row.leads}
-                    done={row.engagementMet && row.leads.target > 0}
-                    formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
-                  />
+                  {engagementOverlayPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <MetricCell
+                      cell={row.leads}
+                      done={row.engagementMet && row.leads.target > 0}
+                      formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
+                    />
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  <QuotationsMetricCell cell={row.quotations} />
+                  {engagementOverlayPending || quotationEngagementPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <QuotationsMetricCell
+                      cell={row.quotations}
+                      quotationCountAvailable={quotationCountAvailable}
+                      engagementError={quotationEngagementError}
+                    />
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {row.salesLoading ? (
@@ -365,10 +422,14 @@ export function ReportsTargetsTable({
                   )}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
-                  <MetricCell
-                    cell={row.hours}
-                    formatValue={(c) => `${formatCount(c.current)}h / ${formatCount(c.target)}h`}
-                  />
+                  {hoursOverlayPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <MetricCell
+                      cell={row.hours}
+                      formatValue={(c) => `${formatCount(c.current)}h / ${formatCount(c.target)}h`}
+                    />
+                  )}
                 </TableCell>
                 <TableCell>
                   <ProductivityCell row={row} />

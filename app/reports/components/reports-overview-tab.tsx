@@ -45,15 +45,15 @@ import {
   hasActiveGeoFilters,
 } from '@/app/reports/lib/reports-branch-geo';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
+import type { UserListItem, UserTargetListFields } from '@/api/endpoints/user';
 import {
-  applyEngagementToRow,
   applyErpSalesToRow,
-  applyFilterPeriodLabel,
-  applyHoursToRow,
   applyProductivityToRow,
   averageProductivityScore,
+  overlayTargetRowFilters,
+  resolveTargetPeriodEngagementParams,
   rowFromPersonalTarget,
-  rowFromUserListItem,
+  targetRowFromUserListItem,
   branchCountryMapFromList,
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
@@ -87,6 +87,34 @@ const PAGE_LOCAL_SORT_METRICS = new Set<ReportsTargetsSortMetric>([
   'achievement',
   'productivity',
 ]);
+
+function userDisplayName(user: UserListItem): string {
+  return [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
+}
+
+function compareUsersByName(a: UserListItem, b: UserListItem): number {
+  return userDisplayName(a).localeCompare(userDisplayName(b));
+}
+
+function periodDatesFromUserTarget(
+  userTarget: UserTargetListFields | Record<string, unknown> | null | undefined
+): { periodStartDate?: string | null; periodEndDate?: string | null } {
+  if (!userTarget || typeof userTarget !== 'object') return {};
+  const ut = userTarget as UserTargetListFields & {
+    personalTargets?: { periodStartDate?: string | null; periodEndDate?: string | null };
+  };
+  const personal = ut.personalTargets;
+  if (personal && typeof personal === 'object') {
+    return {
+      periodStartDate: personal.periodStartDate ?? ut.periodStartDate ?? null,
+      periodEndDate: personal.periodEndDate ?? ut.periodEndDate ?? null,
+    };
+  }
+  return {
+    periodStartDate: ut.periodStartDate ?? null,
+    periodEndDate: ut.periodEndDate ?? null,
+  };
+}
 
 function sortTargetRows(
   rows: ReportsTargetRow[],
@@ -329,8 +357,47 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && !isSyncing && !isMultiUser && !!selfRef,
   });
 
-  const engagementQuery = useEngagementRange(rangeParams, {
-    enabled: isTokenReady && !isSyncing && !!rangeParams,
+  const usersForPeriodDates = useMemo(
+    () =>
+      (usersQuery.data ?? []).filter((u) =>
+        userUidInAllowlist(u.uid, allowlistUids)
+      ),
+    [usersQuery.data, allowlistUids]
+  );
+
+  const targetPeriodRangeParams = useMemo(() => {
+    if (!useAllTime) return null;
+    const branchOpt =
+      branchIdFilter != null ? { branchId: branchIdFilter } : undefined;
+    if (!isMultiUser) {
+      const dates = periodDatesFromUserTarget(selfTargetQuery.data?.userTarget);
+      return resolveTargetPeriodEngagementParams([dates], {
+        ...branchOpt,
+        today,
+      });
+    }
+    const sources = usersForPeriodDates
+      .filter(userListItemInLeadsVisitsReportingCohort)
+      .map((user) => periodDatesFromUserTarget(user.userTarget));
+    return resolveTargetPeriodEngagementParams(sources, {
+      ...branchOpt,
+      today,
+    });
+  }, [
+    useAllTime,
+    isMultiUser,
+    selfTargetQuery.data?.userTarget,
+    usersForPeriodDates,
+    branchIdFilter,
+    today,
+  ]);
+
+  const engagementQueryParams = rangeParams ?? targetPeriodRangeParams;
+
+  const engagementMode = useAllTime ? ('quotationsOnly' as const) : ('full' as const);
+
+  const engagementQuery = useEngagementRange(engagementQueryParams, {
+    enabled: isTokenReady && !isSyncing && !!engagementQueryParams,
   });
 
   const attendanceReportQuery = useAttendanceReport(
@@ -481,12 +548,9 @@ export function ReportsOverviewTab() {
     [branchScopedUsers]
   );
 
-  const cohortRows = useMemo((): ReportsTargetRow[] => {
+  const filteredCohortUsers = useMemo((): UserListItem[] => {
     if (!isMultiUser || branchFilterPending) return [];
-    const users = branchScopedUsers;
-    const engagementReady = !!rangeParams && engagementQuery.isSuccess;
-
-    let rows = users
+    return branchScopedUsers
       .filter(userListItemInLeadsVisitsReportingCohort)
       .filter((user) => {
         if (userFilter !== 'all' && String(user.uid) !== userFilter) {
@@ -506,39 +570,47 @@ export function ReportsOverviewTab() {
           .join(' ')
           .toLowerCase();
         return hay.includes(debouncedSearch);
-      })
-      .map((user) => {
-        let row = rowFromUserListItem(user, branchCountryByUid);
-        if (engagementReady && rangeParams) {
-          const eng = engagementByUid.get(row.userId) ?? {
-            callCount: 0,
-            leadCount: 0,
-            visitCount: 0,
-            quotationCount: 0,
-            quotationAmount: 0,
-          };
-          row = applyEngagementToRow(row, eng, rangeParams.from, rangeParams.to);
-        }
-        if (hoursOverlayReady) {
-          const worked = hoursByUid.get(row.userId) ?? 0;
-          row = applyHoursToRow(
-            row,
-            worked,
-            rangeParams?.from ?? null,
-            rangeParams?.to ?? null
-          );
-        }
-        row = applyFilterPeriodLabel(
-          row,
-          rangeParams?.from ?? null,
-          rangeParams?.to ?? null
-        );
-        return row;
       });
+  }, [
+    isMultiUser,
+    branchFilterPending,
+    branchScopedUsers,
+    debouncedSearch,
+    userFilter,
+  ]);
 
-    // Cohort sort uses list + engagement/hours overlays (available for all rows).
-    // Sales / achievement / productivity need per-page ERP enrich — those re-sort
-    // the visible page after phased enrich settles.
+  const engagementReady = !!engagementQueryParams && engagementQuery.isSuccess;
+  /** Date-filtered engagement columns stay in skeleton until range API succeeds. */
+  const engagementOverlayPending =
+    !!rangeParams && !engagementReady && !engagementQuery.isError;
+  /** All-time: quotations column skeleton while target-period engagement loads. */
+  const quotationEngagementPending =
+    useAllTime &&
+    !!engagementQueryParams &&
+    !engagementReady &&
+    !engagementQuery.isError;
+  const quotationEngagementError =
+    !!engagementQueryParams && engagementQuery.isError;
+  const hoursOverlayPending =
+    !!rangeParams && !hoursOverlayReady && !attendanceReportQuery.isError;
+  const quotationCountAvailable = engagementReady;
+
+  const cohortRows = useMemo((): ReportsTargetRow[] => {
+    if (!isMultiUser || branchFilterPending || engagementOverlayPending) return [];
+
+    const rows = filteredCohortUsers.map((user) =>
+      targetRowFromUserListItem(user, {
+        branchCountryByUid,
+        rangeParams,
+        engagementByUid,
+        engagementReady,
+        engagementMode,
+        engagementRangeParams: engagementQueryParams,
+        hoursByUid,
+        hoursOverlayReady,
+      })
+    );
+
     const metricForCohort = PAGE_LOCAL_SORT_METRICS.has(sortMetric)
       ? 'name'
       : sortMetric;
@@ -546,25 +618,50 @@ export function ReportsOverviewTab() {
   }, [
     isMultiUser,
     branchFilterPending,
-    branchScopedUsers,
-    debouncedSearch,
-    userFilter,
+    engagementOverlayPending,
+    filteredCohortUsers,
     sortMetric,
     rangeParams,
     engagementByUid,
-    engagementQuery.isSuccess,
+    engagementReady,
+    engagementMode,
+    engagementQueryParams,
     hoursOverlayReady,
     hoursByUid,
     branchCountryByUid,
   ]);
 
-  const total = cohortRows.length;
+  const total = filteredCohortUsers.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
   const pageRows = useMemo(() => {
+    if (!isMultiUser || branchFilterPending) return [];
     const start = (safePage - 1) * pageSize;
+
+    if (engagementOverlayPending) {
+      const users = [...filteredCohortUsers].sort(compareUsersByName);
+      return users.slice(start, start + pageSize).map((user) =>
+        targetRowFromUserListItem(user, {
+          branchCountryByUid,
+          rangeParams,
+          engagementReady: false,
+          hoursOverlayReady: false,
+        })
+      );
+    }
+
     return cohortRows.slice(start, start + pageSize);
-  }, [cohortRows, safePage, pageSize]);
+  }, [
+    isMultiUser,
+    branchFilterPending,
+    engagementOverlayPending,
+    filteredCohortUsers,
+    cohortRows,
+    safePage,
+    pageSize,
+    branchCountryByUid,
+    rangeParams,
+  ]);
 
   const {
     enrichmentByKey,
@@ -576,10 +673,10 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && isMultiUser && pageRows.length > 0,
     rangeFrom: rangeParams?.from ?? null,
     rangeTo: rangeParams?.to ?? null,
+    preserveRangeMetrics: engagementReady,
   });
 
   const enrichedPageRows = useMemo(() => {
-    const engagementReady = !!rangeParams && engagementQuery.isSuccess;
     return pageRows.map((row) => {
       let next = applyPhasedEnrichment(row);
       const enrich = enrichmentByKey.get(getPageRowEnrichmentKey(row));
@@ -588,39 +685,29 @@ export function ReportsOverviewTab() {
       } else if (next.salesLoading) {
         next = { ...next, salesLoading: false };
       }
-      if (engagementReady && rangeParams) {
-        const eng = engagementByUid.get(row.userId) ?? {
-          callCount: 0,
-          leadCount: 0,
-          visitCount: 0,
-          quotationCount: 0,
-          quotationAmount: 0,
-        };
-        next = applyEngagementToRow(next, eng, rangeParams.from, rangeParams.to);
+      if (!engagementOverlayPending) {
+        next = overlayTargetRowFilters(next, {
+          rangeParams,
+          engagement: engagementByUid.get(row.userId),
+          engagementReady,
+          engagementMode,
+          engagementRangeParams: engagementQueryParams,
+          hoursWorked: hoursByUid.get(row.userId),
+          hoursOverlayReady,
+        });
       }
-      if (hoursOverlayReady) {
-        const worked = hoursByUid.get(row.userId) ?? 0;
-        next = applyHoursToRow(
-          next,
-          worked,
-          rangeParams?.from ?? null,
-          rangeParams?.to ?? null
-        );
-      }
-      next = applyFilterPeriodLabel(
-        next,
-        rangeParams?.from ?? null,
-        rangeParams?.to ?? null
-      );
       return next;
     });
   }, [
     pageRows,
     applyPhasedEnrichment,
     enrichmentByKey,
+    engagementOverlayPending,
     rangeParams,
     engagementByUid,
-    engagementQuery.isSuccess,
+    engagementReady,
+    engagementMode,
+    engagementQueryParams,
     hoursOverlayReady,
     hoursByUid,
   ]);
@@ -689,26 +776,16 @@ export function ReportsOverviewTab() {
       branchCountryCode,
       dashboard: selfTargetQuery.data?.userTarget ?? null,
     });
-    if (row && rangeParams && engagementQuery.isSuccess) {
-      const eng = engagementByUid.get(row.userId) ?? {
-        callCount: 0,
-        leadCount: 0,
-        visitCount: 0,
-        quotationCount: 0,
-        quotationAmount: 0,
-      };
-      row = applyEngagementToRow(row, eng, rangeParams.from, rangeParams.to);
-    }
-    if (row && hoursOverlayReady) {
-      const worked = hoursByUid.get(row.userId) ?? 0;
-      row = applyHoursToRow(
-        row,
-        worked,
-        rangeParams?.from ?? null,
-        rangeParams?.to ?? null
-      );
-    }
     if (row) {
+      row = overlayTargetRowFilters(row, {
+        rangeParams,
+        engagement: engagementByUid.get(row.userId),
+        engagementReady,
+        engagementMode,
+        engagementRangeParams: engagementQueryParams,
+        hoursWorked: hoursByUid.get(row.userId),
+        hoursOverlayReady,
+      });
       const erpPending =
         selfHasSalesTarget &&
         selfErpSalesQuery.isLoading &&
@@ -724,11 +801,6 @@ export function ReportsOverviewTab() {
           { isLoading: selfProductivityQuery.isLoading }
         );
       }
-      row = applyFilterPeriodLabel(
-        row,
-        rangeParams?.from ?? null,
-        rangeParams?.to ?? null
-      );
     }
     return row;
   }, [
@@ -738,7 +810,9 @@ export function ReportsOverviewTab() {
     selfTargetQuery.data?.userTarget,
     rangeParams,
     engagementByUid,
-    engagementQuery.isSuccess,
+    engagementReady,
+    engagementMode,
+    engagementQueryParams,
     hoursOverlayReady,
     hoursByUid,
     selfHasSalesTarget,
@@ -991,9 +1065,9 @@ export function ReportsOverviewTab() {
             onRetry={() => {
               if (isMultiUser) void usersQuery.refetch();
               else void selfTargetQuery.refetch();
-              if (rangeParams) {
+              if (rangeParams || engagementQueryParams) {
                 void engagementQuery.refetch();
-                void attendanceReportQuery.refetch();
+                if (rangeParams) void attendanceReportQuery.refetch();
               }
               if (useAllTime) {
                 if (isMultiUser) void payrollHoursQuery.refetch();
@@ -1015,6 +1089,11 @@ export function ReportsOverviewTab() {
             onRowClick={handleRowClick}
             emptyMessage={emptyMessage}
             currencyView={currencyView}
+            engagementOverlayPending={engagementOverlayPending}
+            quotationEngagementPending={quotationEngagementPending}
+            quotationEngagementError={quotationEngagementError}
+            hoursOverlayPending={hoursOverlayPending}
+            quotationCountAvailable={quotationCountAvailable}
           />
         </div>
         {isMultiUser ? (

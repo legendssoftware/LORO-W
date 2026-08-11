@@ -322,7 +322,7 @@ export function engagementRangeQueryKey(
 ) {
   return [
     ...QUERY_KEY_PREFIX,
-    'engagement-range',
+    'engagement-range-v3',
     params?.from,
     params?.to,
     params?.branchId,

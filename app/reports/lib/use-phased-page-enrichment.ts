@@ -82,11 +82,14 @@ function resolveSalesTarget(
 
 function mergeEnrichment(
   row: ReportsTargetRow,
-  enrich: PageRowEnrichment | undefined
+  enrich: PageRowEnrichment | undefined,
+  options?: { preserveRangeMetrics?: boolean }
 ): ReportsTargetRow {
   if (!enrich) return row;
   let next = enrich.dashboard
-    ? enrichRowWithTargetDashboard(row, enrich.dashboard)
+    ? enrichRowWithTargetDashboard(row, enrich.dashboard, {
+        preserveRangeMetrics: options?.preserveRangeMetrics,
+      })
     : row;
   if (enrich.erpRevenue != null) {
     next = applyErpSalesToRow(next, enrich.erpRevenue);
@@ -111,12 +114,14 @@ export function usePhasedPageEnrichment(opts: {
   enabled: boolean;
   rangeFrom: string | null;
   rangeTo: string | null;
+  /** Keep engagement-range values on calls/visits/leads/quotations during dashboard enrich. */
+  preserveRangeMetrics?: boolean;
 }): {
   enrichmentByKey: Map<string, PageRowEnrichment>;
   isEnriching: boolean;
   enrichRow: (row: ReportsTargetRow) => ReportsTargetRow;
 } {
-  const { pageRows, client, enabled, rangeFrom, rangeTo } = opts;
+  const { pageRows, client, enabled, rangeFrom, rangeTo, preserveRangeMetrics } = opts;
   const queryClient = useQueryClient();
   const [enrichmentByKey, setEnrichmentByKey] = useState(
     () => new Map<string, PageRowEnrichment>()
@@ -322,8 +327,10 @@ export function usePhasedPageEnrichment(opts: {
 
   const enrichRow = useMemo(() => {
     return (row: ReportsTargetRow) =>
-      mergeEnrichment(row, enrichmentByKey.get(getPageRowEnrichmentKey(row)));
-  }, [enrichmentByKey]);
+      mergeEnrichment(row, enrichmentByKey.get(getPageRowEnrichmentKey(row)), {
+        preserveRangeMetrics,
+      });
+  }, [enrichmentByKey, preserveRangeMetrics]);
 
   return { enrichmentByKey, isEnriching, enrichRow };
 }
