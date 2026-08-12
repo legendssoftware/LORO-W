@@ -57,6 +57,43 @@ describe('applyEngagementToRow', () => {
     expect(next.quotations.amountCurrent).toBe(12500);
   });
 
+  it('prorates calls to 60/day when period target is 1200 (single weekday)', () => {
+    const row = baseRow({
+      calls: { current: 0, target: 1200, progress: 0 },
+      periodStartDate: '2026-03-01',
+      periodEndDate: '2026-03-31',
+    });
+    const next = applyEngagementToRow(
+      row,
+      { callCount: 5, leadCount: 0, visitCount: 0 },
+      '2026-03-02',
+      '2026-03-02'
+    );
+    expect(next.calls.target).toBe(60);
+  });
+
+  it('must not apply engagement overlay twice (1200 → 60 → 3)', () => {
+    const row = baseRow({
+      calls: { current: 0, target: 1200, progress: 0 },
+      periodStartDate: '2026-03-01',
+      periodEndDate: '2026-03-31',
+    });
+    const once = applyEngagementToRow(
+      row,
+      { callCount: 0, leadCount: 0, visitCount: 0 },
+      '2026-03-02',
+      '2026-03-02'
+    );
+    const twice = applyEngagementToRow(
+      once,
+      { callCount: 0, leadCount: 0, visitCount: 0 },
+      '2026-03-02',
+      '2026-03-02'
+    );
+    expect(once.calls.target).toBe(60);
+    expect(twice.calls.target).toBe(3);
+  });
+
   it('prorates visit and quotation targets for a single-day range', () => {
     const row = baseRow({
       visits: { current: 0, target: 160, progress: 0 },
