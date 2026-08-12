@@ -685,32 +685,9 @@ export function ReportsOverviewTab() {
       } else if (next.salesLoading) {
         next = { ...next, salesLoading: false };
       }
-      if (!engagementOverlayPending) {
-        next = overlayTargetRowFilters(next, {
-          rangeParams,
-          engagement: engagementByUid.get(row.userId),
-          engagementReady,
-          engagementMode,
-          engagementRangeParams: engagementQueryParams,
-          hoursWorked: hoursByUid.get(row.userId),
-          hoursOverlayReady,
-        });
-      }
       return next;
     });
-  }, [
-    pageRows,
-    applyPhasedEnrichment,
-    enrichmentByKey,
-    engagementOverlayPending,
-    rangeParams,
-    engagementByUid,
-    engagementReady,
-    engagementMode,
-    engagementQueryParams,
-    hoursOverlayReady,
-    hoursByUid,
-  ]);
+  }, [pageRows, applyPhasedEnrichment, enrichmentByKey]);
 
   const selfHasSalesTarget = useMemo(() => {
     const ut = selfTargetQuery.data?.userTarget;
