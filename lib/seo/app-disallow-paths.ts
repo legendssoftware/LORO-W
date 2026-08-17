@@ -2,6 +2,7 @@
 export const APP_DISALLOW_PATHS = [
   '/dashboard',
   '/visits',
+  '/calls',
   '/leads',
   '/pipeline',
   '/planning',

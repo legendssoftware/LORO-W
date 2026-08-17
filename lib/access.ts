@@ -7,6 +7,7 @@
 export const STANDARD_USER_PATHS = [
     "/dashboard",
     "/visits",
+    "/calls",
     "/leads",
     "/pipeline",
     "/clients",
@@ -319,7 +320,8 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
     { path: "/staff", label: "Staff" },
     { path: "/iot", label: "IoT" },
-    { path: "/visits", label: "Calls" },
+    { path: "/visits", label: "Visits" },
+    { path: "/calls", label: "Call recordings" },
     { path: "/leads", label: "Leads" },
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
@@ -376,7 +378,8 @@ export function getAllowedRoutes(
 
     const fullNav: AllowedRoute[] = [
         { path: "/dashboard", label: "Home" },
-        { path: "/visits", label: "Calls" },
+        { path: "/visits", label: "Visits" },
+        { path: "/calls", label: "Call recordings" },
         { path: "/leads", label: "Leads" },
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },

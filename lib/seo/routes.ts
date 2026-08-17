@@ -181,9 +181,14 @@ export const PAGE_COPY = {
       'Explore field activity on a live map with date filters and influence layers. See where your team went and what surrounds each account.',
   },
   visits: {
-    title: 'Calls - Log calls, field visits & outcomes',
+    title: 'Visits - Log field visits & outcomes',
     description:
-      'Start and end calls and field visits with notes and outcomes. Track phone, email, WhatsApp, and in-person activity in one place.',
+      'Start and end field visits with notes and outcomes. Track phone, email, WhatsApp, and in-person activity in one place.',
+  },
+  calls: {
+    title: 'Call recordings — Transcripts from PBX audio',
+    description:
+      'Listen to ingested Yeastar call recordings and read the speaker-labelled dialogue for coaching and follow-up.',
   },
   settings: {
     title: 'Settings - Brand, branches & defaults under your control',
