@@ -57,6 +57,7 @@ import {
   useApiClient,
   useCheckInStatus,
   useCheckInMutation,
+  useStartCompanyCallMutation,
 } from '@/api/hooks';
 import { uploadFile } from '@/api/endpoints/upload';
 import type { UpdateLeadPayload } from '@/api/types/leads';
@@ -119,6 +120,7 @@ import {
   Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
   type ActivityActorLookupUser,
   isLeadActivityLoroRow,
@@ -247,6 +249,7 @@ export function LeadDetailDialog({
   const client = useApiClient();
   const checkInStatusQuery = useCheckInStatus({ enabled: true });
   const checkInMutation = useCheckInMutation();
+  const startCompanyCallMutation = useStartCompanyCallMutation();
   const { checkedIn, activeCheckInMethod, hasActiveCall, activeCallLeadUid } =
     parseActiveCallFromStatus(checkInStatusQuery.data);
   const hasActiveCallForLead =
@@ -746,8 +749,22 @@ export function LeadDetailDialog({
     }
     try {
       const payload = await buildLeadCallCheckInPayload(lead);
-      await checkInMutation.mutateAsync(payload);
-      toast.success('Call started');
+      const checkIn = await checkInMutation.mutateAsync(payload);
+      try {
+        await startCompanyCallMutation.mutateAsync({
+          toNumber: lead.phone.trim(),
+          leadUid: lead.uid,
+          checkInUid: checkIn.checkInId,
+        });
+        toast.success('Call started on the company line');
+      } catch (pbxErr) {
+        toast.error(
+          getQueryErrorMessage(
+            pbxErr,
+            'Visit logged, but the company-line call failed. Set your PBX extension and try again.',
+          ),
+        );
+      }
       checkInStatusQuery.refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start call');
@@ -809,10 +826,11 @@ export function LeadDetailDialog({
                   !leadUid ||
                   !lead.phone?.trim() ||
                   checkInMutation.isPending ||
+                  startCompanyCallMutation.isPending ||
                   checkedIn
                 }
               >
-                {checkInMutation.isPending ? (
+                {checkInMutation.isPending || startCompanyCallMutation.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
                   <Phone className="size-4" />

@@ -41,6 +41,7 @@ import {
   ShoppingBag,
   Swords,
   UserCircle,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
@@ -68,6 +69,7 @@ const ROUTE_ICONS: Record<
   "/dashboard": LayoutDashboardIcon,
   "/visualiser": Map,
   "/visits": MapPinIcon,
+  "/calls": Phone,
   "/leads": HandshakeIcon,
   "/pipeline": GitBranch,
   "/clients": Building2,

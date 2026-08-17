@@ -1,0 +1,95 @@
+export type TranscriptStatus = 'pending' | 'processing' | 'ready' | 'failed' | 'skipped';
+export type SpeakerRole = 'agent' | 'client' | 'unknown';
+export type CallOrigin = 'in_app' | 'company_phone' | 'personal_mobile';
+
+export type DialogueTurn = {
+  speaker: string;
+  speakerRole: SpeakerRole;
+  text: string;
+  startedAtMs?: number;
+};
+
+export type CallRecordingLinkedParty = {
+  uid: number;
+  name: string | null;
+};
+
+export type CallRecordingListItem = {
+  uid: string;
+  cdrUid: string;
+  startedAt: string | null;
+  durationSeconds: number | null;
+  callType: string | null;
+  fromNumber: string | null;
+  toNumber: string | null;
+  fromName: string | null;
+  toName: string | null;
+  origin: CallOrigin;
+  companyCallerId: string | null;
+  pbxExtension: string | null;
+  transcriptStatus: TranscriptStatus;
+  transcriptError: string | null;
+  hasAudio: boolean;
+  ownerClerkUserId: string | null;
+  ownerName: string | null;
+  client: CallRecordingLinkedParty | null;
+  lead: CallRecordingLinkedParty | null;
+};
+
+export type CallRecordingDetail = CallRecordingListItem & {
+  dialogue: DialogueTurn[] | null;
+  audioUrl: string | null;
+  fileName: string | null;
+  checkInUid: number | null;
+  scoreOverall: number | null;
+  localCallId: string | null;
+  srcExt: string | null;
+  dstExt: string | null;
+  callId: string | null;
+  recordingId: number | null;
+};
+
+export type CallRecordingListResponse = {
+  data: CallRecordingListItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export type CallRecordingDetailResponse = {
+  call: CallRecordingDetail;
+};
+
+export type CallRetryTranscriptResponse = {
+  message: string;
+  uid: string;
+  transcriptStatus: TranscriptStatus;
+};
+
+export type CallStartPayload = {
+  toNumber: string;
+  clientUid?: number;
+  leadUid?: number;
+  checkInUid?: number;
+};
+
+export type CallStartResponse = {
+  message: string;
+  call: CallRecordingListItem;
+};
+
+export type GetCallsParams = {
+  page?: number;
+  limit?: number;
+  status?: TranscriptStatus | '';
+  search?: string;
+  origin?: CallOrigin | '';
+  ownerClerkUserId?: string;
+  callType?: 'inbound' | 'outbound' | '';
+  startDate?: string;
+  endDate?: string;
+  branchId?: number;
+};

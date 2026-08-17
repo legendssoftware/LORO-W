@@ -284,6 +284,7 @@ export default function UserSettingsPage() {
       surname: '',
       email: '',
       phone: null,
+      pbxExtension: null,
       userref: null,
       hrID: null,
       role: '',
@@ -322,6 +323,7 @@ export default function UserSettingsPage() {
         surname: user.surname ?? '',
         email: primaryEmail,
         phone: primaryPhone,
+        pbxExtension: user.pbxExtension ?? null,
         userref: (user as { userref?: string }).userref ?? null,
         hrID: (user as { hrID?: number }).hrID ?? null,
         role: (user.role as string) ?? '',
@@ -576,6 +578,27 @@ export default function UserSettingsPage() {
                           }
                           placeholder="+27 64 123 4567"
                           autoComplete="tel"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pbxExtension"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PBX extension</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ''}
+                          onChange={(e) =>
+                            field.onChange(e.target.value || null)
+                          }
+                          placeholder="2007"
+                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage />

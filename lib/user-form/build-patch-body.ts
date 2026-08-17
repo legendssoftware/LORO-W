@@ -197,6 +197,7 @@ export type UserBaseline = {
   surname?: string | null;
   email?: string | null;
   phone?: string | null;
+  pbxExtension?: string | null;
   userref?: string | null;
   hrID?: number | null;
   role?: string | null;
@@ -239,6 +240,8 @@ export function buildPatchBody(
   if (!sameStr(user.email, values.email)) body.email = values.email;
   if (norm(user.phone) !== norm(values.phone ?? null))
     body.phone = values.phone ?? undefined;
+  if (norm(user.pbxExtension) !== norm(values.pbxExtension ?? null))
+    body.pbxExtension = values.pbxExtension?.trim() || null;
   if (norm(user.userref) !== norm(values.userref ?? null))
     body.userref = values.userref ?? undefined;
   if (!sameNum(user.hrID, values.hrID)) body.hrID = values.hrID ?? undefined;
