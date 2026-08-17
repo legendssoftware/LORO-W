@@ -8,6 +8,7 @@ export interface UserResponse {
   surname: string;
   email: string;
   phone?: string | null;
+  pbxExtension?: string | null;
   photoURL?: string | null;
   avatar?: string | null;
   role: string;
@@ -77,6 +78,7 @@ export interface UserListItem {
   photoURL?: string | null;
   avatar?: string | null;
   workforceType?: string | null;
+  pbxExtension?: string | null;
   branchUid?: number | null;
   branch?: { uid: number; name?: string; alias?: string | null; country?: string | null } | null;
   userTarget?: UserTargetListFields | null;
@@ -95,6 +97,7 @@ export interface PatchUserBody {
   surname?: string;
   email?: string;
   phone?: string | null;
+  pbxExtension?: string | null;
   photoURL?: string | null;
   avatar?: string | null;
   businesscardURL?: string | null;
