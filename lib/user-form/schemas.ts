@@ -24,8 +24,8 @@ export const employmentProfileSchema = z.object({
   contactNumber: z.string().optional().nullable(),
 });
 
-/** User targets form schema (PATCH /user/:ref with userTarget). */
-export const targetFormSchema = z.object({
+/** User targets form fields (PATCH /user/:ref with userTarget). */
+export const targetFormFieldsSchema = z.object({
   targetSalesAmount: z.number().optional().nullable(),
   targetQuotationsAmount: z.number().optional().nullable(),
   targetCurrency: z.string().optional().nullable(),
@@ -45,6 +45,7 @@ export const targetFormSchema = z.object({
   carInsurance: z.number().optional().nullable(),
   fuel: z.number().optional().nullable(),
   primaryVehicleAssetUid: z.number().optional().nullable(),
+  secondaryVehicleAssetUid: z.number().optional().nullable(),
   cellPhoneAllowance: z.number().optional().nullable(),
   carMaintenance: z.number().optional().nullable(),
   cgicCosts: z.number().optional().nullable(),
@@ -52,6 +53,20 @@ export const targetFormSchema = z.object({
   erpSalesRepCode: z.string().optional().nullable(),
   performanceWarningLevel: z.enum(['none', '1', '2', '3']).optional().nullable(),
 });
+
+/** User targets form schema (PATCH /user/:ref with userTarget). */
+export const targetFormSchema = targetFormFieldsSchema.refine(
+  (v) => {
+    const p = v.primaryVehicleAssetUid;
+    const s = v.secondaryVehicleAssetUid;
+    if (p == null || s == null) return true;
+    return p !== s;
+  },
+  {
+    message: 'Primary and secondary vehicles must be different',
+    path: ['secondaryVehicleAssetUid'],
+  }
+);
 
 export type TargetFormValues = z.infer<typeof targetFormSchema>;
 
@@ -81,7 +96,7 @@ export type UserFormValues = z.infer<typeof userFormSchema>;
 
 /** Combined wizard schema (user fields + targets, no performance warning on create). */
 export const addUserWizardSchema = userFormSchema.merge(
-  targetFormSchema.omit({ performanceWarningLevel: true })
+  targetFormFieldsSchema.omit({ performanceWarningLevel: true })
 );
 
 export type AddUserWizardValues = z.infer<typeof addUserWizardSchema>;
@@ -104,7 +119,7 @@ export const wizardAccessStepSchema = addUserWizardSchema.pick({
   branchUid: true,
 });
 
-export const wizardTargetsStepSchema = targetFormSchema.omit({
+export const wizardTargetsStepSchema = targetFormFieldsSchema.omit({
   performanceWarningLevel: true,
 });
 
@@ -229,6 +244,8 @@ export function getDefaultAddUserWizardValues(): AddUserWizardValues {
     carInstalment: null,
     carInsurance: null,
     fuel: null,
+    primaryVehicleAssetUid: null,
+    secondaryVehicleAssetUid: null,
     cellPhoneAllowance: null,
     carMaintenance: null,
     cgicCosts: null,

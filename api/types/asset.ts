@@ -57,4 +57,5 @@ export interface AssetsByUserResponse {
 
 export interface CreateAssetResponse {
   message: string;
+  asset: AssetRecord;
 }

@@ -354,7 +354,7 @@ export function avgVisitDurationByUser(
 export function reportsDateSpanToJourneyRange(
   fromYmd: string,
   toYmd: string
-): Exclude<RepJourneyRange, 'hour'> {
+): Exclude<RepJourneyRange, 'hour' | 'today'> {
   const start = utcDateFromYmd(fromYmd);
   const end = utcDateFromYmd(toYmd);
   const startMs = Date.UTC(

@@ -14,6 +14,18 @@ function isAssetsByUserResponse(value: unknown): value is AssetsByUserResponse {
   );
 }
 
+function isCreateAssetResponse(value: unknown): value is CreateAssetResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value &&
+    'asset' in value &&
+    typeof (value as CreateAssetResponse).asset === 'object' &&
+    (value as CreateAssetResponse).asset != null &&
+    typeof (value as CreateAssetResponse).asset.uid === 'number'
+  );
+}
+
 /** GET /assets/for/:userUid — assets assigned to a user. */
 export async function getAssetsByUser(
   client: AxiosInstance,
@@ -40,6 +52,18 @@ export async function createAsset(
   client: AxiosInstance,
   payload: CreateAssetPayload
 ): Promise<CreateAssetResponse> {
-  const { data } = await client.post<CreateAssetResponse>('/assets', payload);
-  return data;
+  const { data } = await client.post<
+    CreateAssetResponse | { data: CreateAssetResponse }
+  >('/assets', payload);
+
+  if (isCreateAssetResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isCreateAssetResponse((data as { data: CreateAssetResponse }).data)
+  ) {
+    return (data as { data: CreateAssetResponse }).data;
+  }
+  throw new Error('Invalid create-asset response');
 }

@@ -109,6 +109,7 @@ export function CallDetailDialog({
   const { backendUserData } = useSessionSync();
   const { data, isLoading, isError, refetch } = useCall(uid, {
     enabled: open && Boolean(uid),
+    pollWhileTranscribing: open,
   });
   const retryMutation = useRetryCallTranscriptMutation();
   const call = data?.call;
@@ -238,7 +239,7 @@ export function CallDetailDialog({
                 ) : (
                   <RotateCcw className="size-4" aria-hidden />
                 )}
-                {retryMutation.isPending ? 'Queueing…' : 'Retry transcript'}
+                {retryMutation.isPending ? 'Queueing…' : 'Transcribe'}
               </Button>
             ) : null}
           </div>
@@ -619,9 +620,11 @@ function DialogueThread({
     );
   }
   if (status === 'skipped') {
+    const isDeferred = Boolean(error?.toLowerCase().includes('deferred'));
     return (
       <p className="text-sm text-muted-foreground">
-        Transcription skipped{error ? `: ${error}` : '.'}
+        Click Transcribe to generate audio-to-text.
+        {!isDeferred && error ? ` ${error}` : ''}
       </p>
     );
   }

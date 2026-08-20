@@ -43,7 +43,7 @@ export interface LatestRepLocationsResponse {
   data: LatestRepLocationsData | null;
 }
 
-export type RepJourneyRange = 'hour' | 'day' | 'week' | 'custom';
+export type RepJourneyRange = 'hour' | 'today' | 'day' | 'week' | 'custom';
 
 export interface RepJourneyCustomRangeParams {
   startDate: string;
