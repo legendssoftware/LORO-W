@@ -28,6 +28,7 @@ function Row({
 
 const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
+  { range: 'today', label: 'Today' },
   { range: 'day', label: 'Day' },
   { range: 'week', label: 'Week' },
 ];
@@ -42,7 +43,7 @@ export type MapFeaturePopupContentProps = {
 
 /**
  * Rich popup body for a visualiser map feature.
- * Rep popups expose Trace Hour/Day/Week + Clear only — trip detail lives in RepTrackerControl.
+ * Rep popups expose Trace Hour/Today/Day/Week + Clear only — trip detail lives in RepTrackerControl.
  */
 export function MapFeaturePopupContent({
   point,

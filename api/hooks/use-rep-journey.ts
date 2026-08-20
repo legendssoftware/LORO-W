@@ -62,7 +62,7 @@ export function useRepJourney(
       return response.data;
     },
     enabled,
-    staleTime: 60_000,
+    staleTime: range === 'today' ? 0 : 60_000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
