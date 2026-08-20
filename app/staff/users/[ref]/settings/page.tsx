@@ -365,6 +365,7 @@ export default function UserSettingsPage() {
     resolver: zodResolver(targetFormSchema),
     defaultValues: getDefaultTargetValues(null),
   });
+  const { dirtyFields: targetDirtyFields } = targetForm.formState;
 
   useEffect(() => {
     const ut = (user as { userTarget?: Record<string, unknown> | null })?.userTarget ?? null;
@@ -379,7 +380,7 @@ export default function UserSettingsPage() {
     const targetPayload = buildUserTargetPatchBody(
       targetBaseline,
       targetForm.getValues(),
-      targetForm.formState.dirtyFields
+      targetDirtyFields
     );
     if (targetPayload) {
       body.userTarget = targetPayload;
@@ -1705,7 +1706,6 @@ export default function UserSettingsPage() {
                             user.branch?.uid ??
                             form.getValues('branchUid')
                         )}
-                        selectedAssetUid={targetForm.watch('primaryVehicleAssetUid')}
                       />
                       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 mt-3">
                         <FormField

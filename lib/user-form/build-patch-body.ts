@@ -54,6 +54,7 @@ const TARGET_PATCH_FIELD_KEYS = [
   'carInsurance',
   'fuel',
   'primaryVehicleAssetUid',
+  'secondaryVehicleAssetUid',
   'cellPhoneAllowance',
   'carMaintenance',
   'cgicCosts',
@@ -63,6 +64,12 @@ const TARGET_PATCH_FIELD_KEYS = [
   keyof TargetFormValues)[];
 
 type TargetPatchFieldKey = (typeof TARGET_PATCH_FIELD_KEYS)[number];
+
+function isVehicleAssetUidKey(
+  key: string
+): key is 'primaryVehicleAssetUid' | 'secondaryVehicleAssetUid' {
+  return key === 'primaryVehicleAssetUid' || key === 'secondaryVehicleAssetUid';
+}
 
 function sameTargetStr(
   a: string | null | undefined,
@@ -150,6 +157,12 @@ export function buildUserTargetPatchBody(
   const body: PatchUserTargetBody = {};
 
   const shouldInclude = (key: keyof TargetFormValues): boolean => {
+    if (isVehicleAssetUidKey(key)) {
+      return (
+        Boolean(dirtyFields?.[key]) ||
+        targetFieldChanged(key, baseline, values)
+      );
+    }
     if (dirtyFields) return Boolean(dirtyFields[key]);
     if (key === 'performanceWarningLevel') {
       return values.performanceWarningLevel !== baseline.performanceWarningLevel;
@@ -165,9 +178,8 @@ export function buildUserTargetPatchBody(
         v == null || v === '' ? null : String(v).trim();
       continue;
     }
-    if (k === 'primaryVehicleAssetUid') {
-      body.primaryVehicleAssetUid =
-        v == null || v === '' ? null : Number(v);
+    if (isVehicleAssetUidKey(k)) {
+      body[k] = v == null || v === '' ? null : Number(v);
       continue;
     }
     if (v !== undefined && v !== null && v !== '') {
@@ -435,6 +447,7 @@ export function getDefaultTargetValues(
       carInsurance: null,
       fuel: null,
       primaryVehicleAssetUid: null,
+      secondaryVehicleAssetUid: null,
       cellPhoneAllowance: null,
       carMaintenance: null,
       cgicCosts: null,
@@ -470,6 +483,10 @@ export function getDefaultTargetValues(
     primaryVehicleAssetUid: num(
       src.primaryVehicleAssetUid ??
         (ut as { primaryVehicleAssetUid?: unknown }).primaryVehicleAssetUid
+    ),
+    secondaryVehicleAssetUid: num(
+      src.secondaryVehicleAssetUid ??
+        (ut as { secondaryVehicleAssetUid?: unknown }).secondaryVehicleAssetUid
     ),
     cellPhoneAllowance: num(src.cellPhoneAllowance),
     carMaintenance: num(src.carMaintenance),

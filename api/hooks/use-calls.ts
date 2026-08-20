@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { getCall, getCalls, retryCallTranscript, startCompanyCall, ensureCallAudio } from '@/api/endpoints/calls';
-import type { CallStartPayload, GetCallsParams } from '@/api/types/calls';
+import type { CallRecordingDetailResponse, CallStartPayload, GetCallsParams } from '@/api/types/calls';
 
 export const CALLS_QUERY_KEY_PREFIX = ['calls'] as const;
 
@@ -18,13 +18,26 @@ export function useCalls(params: GetCallsParams = {}, options?: { enabled?: bool
   });
 }
 
-export function useCall(uid: string | null, options?: { enabled?: boolean }) {
+export function useCall(
+  uid: string | null,
+  options?: {
+    enabled?: boolean;
+    /** Poll every 2.5s while the dialog is open and transcription is queued or running. */
+    pollWhileTranscribing?: boolean;
+  },
+) {
   const client = useApiClient();
-  return useQuery({
+  return useQuery<CallRecordingDetailResponse>({
     queryKey: [...CALLS_QUERY_KEY_PREFIX, 'detail', uid],
     queryFn: () => getCall(client, uid as string),
     enabled: Boolean(uid) && options?.enabled !== false,
     staleTime: 15 * 1000,
+    refetchInterval: (query) => {
+      if (!options?.pollWhileTranscribing) return false;
+      const status = query.state.data?.call?.transcriptStatus;
+      if (status === 'pending' || status === 'processing') return 2500;
+      return false;
+    },
   });
 }
 

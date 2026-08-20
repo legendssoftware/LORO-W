@@ -17,6 +17,7 @@ export type { LastKnownLocationSummary };
 
 const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
   { range: 'hour', label: 'Hour' },
+  { range: 'today', label: 'Today' },
   { range: 'day', label: 'Day' },
   { range: 'week', label: 'Week' },
   { range: 'custom', label: 'Custom' },
@@ -55,7 +56,7 @@ export interface RepTrackerControlProps {
 }
 
 /**
- * Searchable sales-rep picker + Hour/Day/Week chips for map journey tracking.
+ * Searchable sales-rep picker + Hour/Today/Day/Week chips for map journey tracking.
  */
 export function RepTrackerControl({
   users,

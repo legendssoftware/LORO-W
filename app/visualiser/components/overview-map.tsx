@@ -83,9 +83,12 @@ const DEFAULT_ZOOM = 11;
 
 const RANGE_LABELS: Record<Exclude<RepJourneyRange, 'custom'>, string> = {
   hour: 'past hour',
+  today: 'today',
   day: 'past day',
   week: 'past week',
 };
+
+const TODAY_TRACE_REFRESH_MS = 30_000;
 
 function formatCustomRangeLabel(start: Date, end: Date): string {
   return formatUtcYmd(start) === formatUtcYmd(end)
@@ -142,7 +145,7 @@ async function fetchJourneyRouteState(
       const response = await getRepJourney(client, repUid, range, customRange);
       return response.data;
     },
-    staleTime: 60_000,
+    staleTime: range === 'today' ? 0 : 60_000,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -633,15 +636,17 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         users,
         repNameOverride
       );
-      setIsTracing(true);
-      setSelectedJourneyPoint(null);
-      setShowLastKnownPopup(false);
-      setSelectedVisitId(null);
+      if (!quiet) {
+        setIsTracing(true);
+        setSelectedJourneyPoint(null);
+        setShowLastKnownPopup(false);
+        setSelectedVisitId(null);
+        setTrackStatusMessage(null);
+      }
       setActiveTraceRange(range);
       if (range === 'custom' && customRange) {
         setCustomTraceRange(customRange);
       }
-      setTrackStatusMessage(null);
       const toastId = 'rep-journey-trace';
       if (!quiet) {
         toast.loading(`Loading ${rangeLabel} route…`, { id: toastId });
@@ -661,19 +666,26 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           apiCustomRange
         );
         if (!routeState) {
-          if (!options?.append) {
+          if (!options?.append && !quiet) {
             setJourneyRoutes([]);
           }
+          if (quiet) {
+            return false;
+          }
           setTrackStatusMessage(
-            range === 'day'
-              ? `No GPS points today for ${repName} — try Week`
-              : `No GPS points for ${repName} in ${rangeLabel}.`
+            range === 'today'
+              ? `No GPS points today for ${repName} — try Day or Week`
+              : range === 'day'
+                ? `No GPS points in the past day for ${repName} — try Week`
+                : `No GPS points for ${repName} in ${rangeLabel}.`
           );
           if (!quiet) {
             toast.error(
-              range === 'day'
-                ? `No GPS points today — try Week`
-                : `No GPS points for ${repName} in ${rangeLabel}.`,
+              range === 'today'
+                ? `No GPS points today — try Day or Week`
+                : range === 'day'
+                  ? `No GPS points in the past day — try Week`
+                  : `No GPS points for ${repName} in ${rangeLabel}.`,
               { id: toastId }
             );
           } else {
@@ -689,24 +701,25 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           }
           return [routeState];
         });
-        setShowLastKnownPopup(true);
-        setSelected(null);
-        setSelectedJourneyPoint(null);
-        setTrackStatusMessage(rangeLabel);
         if (!quiet) {
+          setShowLastKnownPopup(true);
+          setSelected(null);
+          setSelectedJourneyPoint(null);
+          setTrackStatusMessage(rangeLabel);
           toast.success(
             `${repName}: ${formatJourneyDistanceLabel(routeState.summary)} · ${routeState.summary.totalTravelFormatted} travel · ${rangeLabel}`,
             { id: toastId }
           );
-        } else {
-          toast.dismiss(toastId);
         }
         return true;
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to load journey';
-        if (!options?.append) {
+        if (!options?.append && !quiet) {
           setJourneyRoutes([]);
+        }
+        if (quiet) {
+          return false;
         }
         setTrackStatusMessage(message);
         if (!quiet) {
@@ -716,11 +729,39 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         }
         return false;
       } finally {
-        setIsTracing(false);
+        if (!quiet) {
+          setIsTracing(false);
+        }
       }
     },
     [client, customTraceRange, queryClient, selected, users]
   );
+
+  const journeyRoutesRef = useRef(journeyRoutes);
+  journeyRoutesRef.current = journeyRoutes;
+  const handleTraceRouteRef = useRef(handleTraceRoute);
+  handleTraceRouteRef.current = handleTraceRoute;
+  const isTracingRef = useRef(isTracing);
+  isTracingRef.current = isTracing;
+
+  useEffect(() => {
+    if (activeTraceRange !== 'today') return;
+
+    const interval = window.setInterval(() => {
+      if (isTracingRef.current) return;
+      const routes = journeyRoutesRef.current;
+      if (routes.length === 0) return;
+      const append = routes.length > 1;
+      for (const route of routes) {
+        void handleTraceRouteRef.current(route.repUid, 'today', route.repName, {
+          quiet: true,
+          append,
+        });
+      }
+    }, TODAY_TRACE_REFRESH_MS);
+
+    return () => window.clearInterval(interval);
+  }, [activeTraceRange]);
 
   const visibleRepUids = useMemo(() => {
     const uids = new Set<number>();

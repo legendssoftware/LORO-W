@@ -17,6 +17,11 @@ import {
   formatPaceLabel,
   resolveTripFuelEstimate,
 } from '@/lib/utils/trip-fuel-estimate';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 function formatKm(km: number): string {
@@ -104,6 +109,8 @@ export function TripBreakdownPanel({
     distanceAdjustment != null && distanceAdjustment.workCommuteDeductionKm > 0;
   const competitorViolations = journeySummary.competitorViolations ?? [];
   const hasCompetitorViolations = competitorViolations.length > 0;
+  const isAssumedConsumption =
+    vehicleProfile == null || vehicleProfile.source === 'fleet-default';
 
   const paceBadgeClass =
     consumption?.paceLabel === 'below_budget'
@@ -257,6 +264,7 @@ export function TripBreakdownPanel({
             <MetricRow
               label="Price per litre"
               value={`${formatFuelZar(fuelPrice.averagePetrolPerLitreZar)}/L`}
+              valueHint={fuelAsOf ? `as of ${fuelAsOf}` : null}
             />
             {fuelAsOf ? (
               <MetricRow
@@ -273,6 +281,9 @@ export function TripBreakdownPanel({
                 <MetricRow
                   label="Assumed consumption"
                   value={`${fuelEstimate.assumedKmPerLitre} km/L`}
+                  labelSuffix={
+                    isAssumedConsumption ? <AssumedConsumptionStar /> : null
+                  }
                 />
                 <MetricRow
                   label="Est. litres"
@@ -457,23 +468,56 @@ function MetricRow({
   label,
   value,
   highlight = false,
+  labelSuffix = null,
+  valueHint = null,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  labelSuffix?: ReactNode;
+  valueHint?: string | null;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-2 py-0.5 text-[11px]">
-      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-muted-foreground inline-flex shrink-0 items-center gap-0.5">
+        {label}
+        {labelSuffix}
+      </span>
       <span
         className={cn(
-          'text-right tabular-nums',
+          'text-right',
           highlight ? 'text-foreground font-semibold' : 'text-foreground font-medium'
         )}
       >
-        {value}
+        <span className="tabular-nums">{value}</span>
+        {valueHint ? (
+          <span className="text-muted-foreground mt-0.5 block text-[10px] font-normal">
+            {valueHint}
+          </span>
+        ) : null}
       </span>
     </div>
+  );
+}
+
+function AssumedConsumptionStar() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 -mt-0.5 px-0.5 text-xs leading-none font-semibold"
+          aria-label="Assumed consumption because vehicle OEM and usage are not set"
+        >
+          *
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64 text-left leading-snug">
+        Vehicle OEM and usage have not been set. This estimate uses the fleet
+        default (12 km/L). Set the primary vehicle make, model, and rated
+        consumption in staff settings.
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
