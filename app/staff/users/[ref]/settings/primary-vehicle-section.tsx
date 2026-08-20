@@ -210,7 +210,7 @@ export function PrimaryVehicleSection({
       branch: { uid: branchUid },
     });
 
-    let createdUid = created.asset?.uid;
+    let createdUid: number | undefined = created.asset?.uid;
     if (!createdUid) {
       const refreshed = await refetch();
       const fallback =
