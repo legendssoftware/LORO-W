@@ -368,5 +368,28 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
     expect(next.leads.current).toBe(3);
     expect(next.quotations.current).toBe(4);
     expect(next.quotations.amountCurrent).toBe(9000);
+    expect(next.travel.visitCount).toBe(1);
+  });
+
+  it('keeps Travel visitCount aligned with Visits after dashboard overwrite', () => {
+    const row = baseRow({
+      visits: { current: 12, target: 160, progress: 8 },
+      travel: {
+        distanceKm: 48.2,
+        visitCount: 12,
+        petrolClaimCount: 2,
+        petrolClaimAmount: 1240,
+        fuelAllowance: 500,
+        progress: 40,
+      },
+    });
+    const next = enrichRowWithTargetDashboard(row, {
+      personalTargets: {
+        checkIns: { current: 88, target: 160, progress: 55 },
+      },
+    });
+    expect(next.visits.current).toBe(88);
+    expect(next.travel.visitCount).toBe(88);
+    expect(next.travel.distanceKm).toBe(48.2);
   });
 });

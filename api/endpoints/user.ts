@@ -620,7 +620,8 @@ export async function getEngagementRange(
 }
 
 /**
- * GET /user/performance/travel-range — org distance / petrol claims / fuel allowance for [from, to].
+ * GET /user/performance/travel-range — org-local distance / petrol claims / fuel allowance for [from, to].
+ * Distance uses attendance/daily-report km, then the same GPS trail as the visualiser map.
  */
 export async function getTravelRange(
   client: AxiosInstance,

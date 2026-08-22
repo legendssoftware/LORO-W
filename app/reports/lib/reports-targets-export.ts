@@ -183,7 +183,7 @@ export function reportsTargetRowToExportRow(
     formatExportCount(row.hours.target),
     formatExportPercent(row.hours.progress),
     Number.isFinite(row.travel?.distanceKm) ? String(row.travel.distanceKm) : '0',
-    formatExportCount(row.travel?.visitCount ?? row.visits.current),
+    formatExportCount(row.visits.current),
     formatExportCount(row.travel?.petrolClaimCount ?? 0),
     formatExportMoney(
       row.travel?.petrolClaimAmount ?? 0,
