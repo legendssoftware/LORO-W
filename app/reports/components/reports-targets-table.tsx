@@ -33,7 +33,7 @@ const WARNING_BADGE: Record<1 | 2 | 3, string> = {
   3: 'bg-red-100 text-red-800 border-red-200/80',
 };
 
-const COL_COUNT = 11;
+const COL_COUNT = 12;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -77,6 +77,18 @@ function formatQuoteCount(count: number): string {
   return n === 1 ? '1 quote' : `${n.toLocaleString()} quotes`;
 }
 
+function formatDistanceKm(km: number): string {
+  if (!Number.isFinite(km) || km <= 0) return '0 km';
+  return `${km.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`;
+}
+
+function formatVisitClaimLine(visits: number, claimAmount: number): string {
+  const visitLabel =
+    Math.round(visits) === 1 ? '1 visit' : `${formatCount(visits)} visits`;
+  const claims = Math.round(claimAmount);
+  return `${visitLabel} · R ${claims.toLocaleString()}`;
+}
+
 function QuotationsMetricCell({
   cell,
   quotationCountAvailable = true,
@@ -107,6 +119,40 @@ function QuotationsMetricCell({
       </p>
       <ReportProgressBar value={cell.progress} />
       {cell.target > 0 ? (
+        <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
+          {cell.progress}%
+        </p>
+      ) : (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
+      )}
+    </div>
+  );
+}
+
+function TravelMetricCell({
+  row,
+}: {
+  row: ReportsTargetRow;
+}) {
+  const cell = row.travel ?? {
+    distanceKm: 0,
+    visitCount: row.visits.current,
+    petrolClaimCount: 0,
+    petrolClaimAmount: 0,
+    fuelAllowance: 0,
+    progress: 0,
+  };
+  const colors = getProgressColorClasses(cell.progress);
+  return (
+    <div className="min-w-[7.5rem] space-y-1.5">
+      <p className="text-xs font-medium text-foreground tabular-nums">
+        {formatDistanceKm(cell.distanceKm)}
+      </p>
+      <p className="text-[10px] tabular-nums text-muted-foreground">
+        {formatVisitClaimLine(cell.visitCount, cell.petrolClaimAmount)}
+      </p>
+      <ReportProgressBar value={cell.progress} />
+      {cell.fuelAllowance > 0 ? (
         <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
           {cell.progress}%
         </p>
@@ -244,6 +290,9 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           <TableCell className="hidden lg:table-cell">
             <Skeleton className="h-10 w-24" />
           </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-10 w-24" />
+          </TableCell>
           <TableCell>
             <Skeleton className="h-10 w-16" />
           </TableCell>
@@ -276,6 +325,8 @@ export interface ReportsTargetsTableProps {
   quotationEngagementError?: boolean;
   /** Skeleton Hours while attendance overlay is in flight. */
   hoursOverlayPending?: boolean;
+  /** Skeleton Travel while travel-range is in flight. */
+  travelOverlayPending?: boolean;
   /** True when engagement-range succeeded and quote count is available. */
   quotationCountAvailable?: boolean;
 }
@@ -294,6 +345,7 @@ export function ReportsTargetsTable({
   quotationEngagementPending = false,
   quotationEngagementError = false,
   hoursOverlayPending = false,
+  travelOverlayPending = false,
   quotationCountAvailable = true,
 }: ReportsTargetsTableProps) {
   function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, row: ReportsTargetRow) {
@@ -315,6 +367,7 @@ export function ReportsTargetsTable({
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
+          <TableHead className="hidden md:table-cell">Travel</TableHead>
           <TableHead
             title={PRODUCTIVITY_COLUMN_HINT}
           >
@@ -429,6 +482,13 @@ export function ReportsTargetsTable({
                       cell={row.hours}
                       formatValue={(c) => `${formatCount(c.current)}h / ${formatCount(c.target)}h`}
                     />
+                  )}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {travelOverlayPending ? (
+                    <MetricCellSkeleton />
+                  ) : (
+                    <TravelMetricCell row={row} />
                   )}
                 </TableCell>
                 <TableCell>
