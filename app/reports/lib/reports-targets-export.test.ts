@@ -118,4 +118,23 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Sales %')]).toBe('2%');
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
   });
+
+  it('exports Travel visits from the Visits column, not a stale travel.visitCount', () => {
+    const row = reportsTargetRowToExportRow(
+      minimalRow({
+        visits: { current: 12, target: 160, progress: 8 },
+        travel: {
+          distanceKm: 48.2,
+          visitCount: 88,
+          petrolClaimCount: 2,
+          petrolClaimAmount: 1240,
+          fuelAllowance: 2000,
+          progress: 62,
+        },
+      }),
+      'set'
+    );
+    const headers = buildReportsTargetsExportHeaders('set');
+    expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(12));
+  });
 });

@@ -712,6 +712,10 @@ export function enrichRowWithTargetDashboard(
     {
       ...row,
       ...metrics,
+      travel: {
+        ...(row.travel ?? emptyTravelCell(visits.current)),
+        visitCount: visits.current,
+      },
       targetWarnings: warnings,
       periodLabel:
         formatPeriodLabel(
