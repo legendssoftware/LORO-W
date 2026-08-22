@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyEngagementToRow,
   applyQuotationsEngagementToRow,
+  applyTravelToRow,
   enrichRowWithTargetDashboard,
   overlayTargetRowFilters,
   resolveTargetPeriodEngagementParams,
@@ -26,6 +27,14 @@ function baseRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow {
     sales: { current: 0, target: 500000, progress: 0, currency: 'ZAR' },
     hours: { current: 0, target: 180, progress: 0 },
     productivity: { score: null },
+    travel: {
+      distanceKm: 0,
+      visitCount: 0,
+      petrolClaimCount: 0,
+      petrolClaimAmount: 0,
+      fuelAllowance: 0,
+      progress: 0,
+    },
     achievement: 0,
     engagementMet: false,
     targetWarnings: null,
@@ -215,6 +224,45 @@ describe('resolveTargetPeriodEngagementParams', () => {
   });
 });
 
+describe('applyTravelToRow', () => {
+  it('sets distance and prorates fuel allowance for a single weekday', () => {
+    const row = baseRow({
+      visits: { current: 12, target: 160, progress: 8 },
+      periodStartDate: '2026-03-01',
+      periodEndDate: '2026-03-31',
+    });
+    const next = applyTravelToRow(
+      row,
+      {
+        distanceKm: 48.21,
+        petrolClaimCount: 2,
+        petrolClaimAmount: 1240,
+        fuelAllowance: 5000,
+      },
+      '2026-03-02',
+      '2026-03-02'
+    );
+    expect(next.travel.distanceKm).toBe(48.2);
+    expect(next.travel.visitCount).toBe(12);
+    expect(next.travel.petrolClaimCount).toBe(2);
+    expect(next.travel.petrolClaimAmount).toBe(1240);
+    expect(next.travel.fuelAllowance).toBeGreaterThan(0);
+    expect(next.travel.fuelAllowance).toBeLessThan(5000);
+    expect(next.travel.progress).toBeGreaterThan(0);
+  });
+
+  it('shows 0% when fuel allowance is 0', () => {
+    const next = applyTravelToRow(baseRow(), {
+      distanceKm: 10,
+      petrolClaimCount: 1,
+      petrolClaimAmount: 400,
+      fuelAllowance: 0,
+    });
+    expect(next.travel.progress).toBe(0);
+    expect(next.travel.fuelAllowance).toBe(0);
+  });
+});
+
 describe('applyQuotationsEngagementToRow', () => {
   it('updates quotation count and amount without changing calls', () => {
     const row = baseRow({
@@ -229,6 +277,38 @@ describe('applyQuotationsEngagementToRow', () => {
     expect(next.quotations.current).toBe(3);
     expect(next.quotations.amountCurrent).toBe(15000);
     expect(next.quotations.progress).toBe(30);
+  });
+});
+
+describe('overlayTargetRowFilters travel', () => {
+  it('overlays distance and prorated fuel after engagement visits', () => {
+    const row = baseRow({
+      visits: { current: 0, target: 160, progress: 0 },
+    });
+    const next = overlayTargetRowFilters(row, {
+      rangeParams: { from: '2026-08-10', to: '2026-08-15' },
+      engagement: {
+        callCount: 0,
+        visitCount: 12,
+        leadCount: 0,
+        quotationCount: 0,
+        quotationAmount: 0,
+      },
+      engagementReady: true,
+      travel: {
+        distanceKm: 48.2,
+        petrolClaimCount: 2,
+        petrolClaimAmount: 1240,
+        fuelAllowance: 5000,
+      },
+      travelReady: true,
+    });
+    expect(next.visits.current).toBe(12);
+    expect(next.travel.distanceKm).toBe(48.2);
+    expect(next.travel.visitCount).toBe(12);
+    expect(next.travel.petrolClaimAmount).toBe(1240);
+    expect(next.travel.fuelAllowance).toBeGreaterThan(0);
+    expect(next.travel.fuelAllowance).toBeLessThan(5000);
   });
 });
 

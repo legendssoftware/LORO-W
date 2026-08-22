@@ -36,9 +36,10 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/staff/components/r
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import { AddUserModal } from '@/app/staff/components/add-user-modal';
 import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-modal';
+import { GoogleFormIntakeModal } from '@/app/staff/components/google-form-intake-modal';
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Link2 } from 'lucide-react';
+import { UserPlus, Link2, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
@@ -57,6 +58,7 @@ export function StaffContent() {
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [sendIntakeOpen, setSendIntakeOpen] = useState(false);
+  const [googleFormOpen, setGoogleFormOpen] = useState(false);
   const singleDateStr = format(today, 'yyyy-MM-dd');
   const monthForSingle = today.getMonth() + 1;
   const yearForSingle = today.getFullYear();
@@ -303,6 +305,14 @@ export function StaffContent() {
                     Send intake link
                   </Button>
                   <Button
+                    variant="outline"
+                    className="h-9 gap-2 !rounded px-4"
+                    onClick={() => setGoogleFormOpen(true)}
+                  >
+                    <FileSpreadsheet className="size-4" />
+                    Google Form
+                  </Button>
+                  <Button
                     className={cn(
                       'h-9 gap-2 border-0 !rounded px-4',
                       'bg-violet-600 text-white hover:bg-violet-700',
@@ -333,6 +343,14 @@ export function StaffContent() {
               >
                 <Link2 className="size-4" />
                 Send intake link
+              </Button>
+              <Button
+                variant="outline"
+                className="h-9 gap-2 !rounded px-4"
+                onClick={() => setGoogleFormOpen(true)}
+              >
+                <FileSpreadsheet className="size-4" />
+                Google Form
               </Button>
               <Button
                 className={cn(
@@ -410,6 +428,7 @@ export function StaffContent() {
 
       <AddUserModal open={addUserOpen} onOpenChange={setAddUserOpen} />
       <SendIntakeLinkModal open={sendIntakeOpen} onOpenChange={setSendIntakeOpen} />
+      <GoogleFormIntakeModal open={googleFormOpen} onOpenChange={setGoogleFormOpen} />
     </div>
   );
 }

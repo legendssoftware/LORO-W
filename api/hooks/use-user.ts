@@ -22,6 +22,7 @@ import {
   postAcknowledgePerformanceWarning,
   getSubThresholdDailyCalls,
   getEngagementRange,
+  getTravelRange,
   type PatchUserBody,
   type PatchUserTargetBody,
   type UserResponse,
@@ -341,6 +342,39 @@ function engagementRangeStaleTimeMs(
     String(now.getUTCDate()).padStart(2, '0'),
   ].join('-');
   return params.to < todayYmd ? 10 * 60 * 1000 : 60 * 1000;
+}
+
+export function travelRangeQueryKey(
+  params: { from: string; to: string; branchId?: number } | null | undefined
+) {
+  return [
+    ...QUERY_KEY_PREFIX,
+    'travel-range-v1',
+    params?.from,
+    params?.to,
+    params?.branchId,
+  ] as const;
+}
+
+export function useTravelRange(
+  params: { from: string; to: string; branchId?: number } | null,
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: travelRangeQueryKey(params),
+    queryFn: async () => {
+      if (!params?.from || !params?.to) {
+        return { message: '', from: '', to: '', users: [] };
+      }
+      return getTravelRange(client, params);
+    },
+    enabled:
+      (options?.enabled !== false && !!params?.from && !!params?.to) ?? false,
+    staleTime: engagementRangeStaleTimeMs(params),
+    gcTime: 15 * 60 * 1000,
+    retry: false,
+  });
 }
 
 export function useEngagementRange(
