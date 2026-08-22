@@ -39,6 +39,29 @@ export interface ReportsTargetProductivityCell {
   isLoading?: boolean;
 }
 
+/** Field travel for the selected date filter (distance, visits, petrol vs fuel). */
+export interface ReportsTargetTravelCell {
+  distanceKm: number;
+  visitCount: number;
+  petrolClaimCount: number;
+  petrolClaimAmount: number;
+  fuelAllowance: number;
+  progress: number;
+}
+
+export function emptyTravelCell(
+  visitCount = 0
+): ReportsTargetTravelCell {
+  return {
+    distanceKm: 0,
+    visitCount,
+    petrolClaimCount: 0,
+    petrolClaimAmount: 0,
+    fuelAllowance: 0,
+    progress: 0,
+  };
+}
+
 export interface ReportsTargetRow {
   key: string;
   userId: number;
@@ -57,6 +80,8 @@ export interface ReportsTargetRow {
   salesLoading?: boolean;
   /** Target-based productivity (0–100); null when no range / no samples. */
   productivity: ReportsTargetProductivityCell;
+  /** Distance + petrol claims vs HR fuel allowance for the selected range. */
+  travel: ReportsTargetTravelCell;
   achievement: number;
   /** Calls+leads engagement gate met (combined / full-either rule). */
   engagementMet: boolean;
@@ -424,6 +449,7 @@ export function rowFromUserListItem(
       branch: branchLabel,
       ...metrics,
       productivity: { score: null },
+      travel: emptyTravelCell(targetNum(ut?.currentCheckIns)),
       targetWarnings: null,
       periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
       periodStartDate: ut?.periodStartDate ?? null,
@@ -439,6 +465,13 @@ export type EngagementOverlay = {
   visitCount: number;
   quotationCount: number;
   quotationAmount: number;
+};
+
+export type TravelOverlay = {
+  distanceKm: number;
+  petrolClaimCount: number;
+  petrolClaimAmount: number;
+  fuelAllowance: number;
 };
 
 const EMPTY_ENGAGEMENT_OVERLAY: EngagementOverlay = {
@@ -462,6 +495,8 @@ export function overlayTargetRowFilters(
     engagementRangeParams?: EngagementRangeParams | null;
     hoursWorked?: number;
     hoursOverlayReady?: boolean;
+    travel?: TravelOverlay | null;
+    travelReady?: boolean;
   }
 ): ReportsTargetRow {
   let next = row;
@@ -494,6 +529,14 @@ export function overlayTargetRowFilters(
       opts.rangeParams?.to ?? null
     );
   }
+  if (opts.travelReady) {
+    next = applyTravelToRow(
+      next,
+      opts.travel,
+      opts.rangeParams?.from ?? engagementRange?.from ?? null,
+      opts.rangeParams?.to ?? engagementRange?.to ?? null
+    );
+  }
   return applyFilterPeriodLabel(
     next,
     opts.rangeParams?.from ?? null,
@@ -513,6 +556,8 @@ export function targetRowFromUserListItem(
     engagementRangeParams?: EngagementRangeParams | null;
     hoursByUid?: Map<number, number>;
     hoursOverlayReady?: boolean;
+    travelByUid?: Map<number, TravelOverlay>;
+    travelReady?: boolean;
   }
 ): ReportsTargetRow {
   const row = rowFromUserListItem(user, opts.branchCountryByUid);
@@ -526,6 +571,8 @@ export function targetRowFromUserListItem(
     engagementRangeParams: opts.engagementRangeParams,
     hoursWorked,
     hoursOverlayReady: opts.hoursOverlayReady,
+    travel: opts.travelByUid?.get(row.userId) ?? null,
+    travelReady: opts.travelReady,
   });
 }
 
@@ -582,6 +629,7 @@ export function rowFromPersonalTarget(params: {
       branch: params.branch ?? null,
       ...metrics,
       productivity: { score: null },
+      travel: emptyTravelCell(visits.current),
       targetWarnings: warnings,
       periodLabel: formatPeriodLabel(
         personal.periodStartDate as string | Date | null | undefined,
@@ -870,6 +918,44 @@ export function averageProductivityScore(
  * When rangeFromYmd/rangeToYmd are set, the hours target is prorated like calls/leads.
  * `hoursWorked` should come from GET /att/report (range) or payroll-hours (period).
  */
+/**
+ * Overlay travel-range distance + petrol claims onto the Travel cell.
+ * Fuel allowance is prorated to the selected date range like other monthly targets.
+ */
+export function applyTravelToRow(
+  row: ReportsTargetRow,
+  travel: TravelOverlay | null | undefined,
+  rangeFromYmd?: string | null,
+  rangeToYmd?: string | null
+): ReportsTargetRow {
+  const distanceKm = Math.max(0, travel?.distanceKm ?? 0);
+  const petrolClaimCount = Math.max(0, travel?.petrolClaimCount ?? 0);
+  const petrolClaimAmount = Math.max(0, travel?.petrolClaimAmount ?? 0);
+  const periodFuel = Math.max(0, travel?.fuelAllowance ?? 0);
+  const fuelAllowance =
+    rangeFromYmd && rangeToYmd
+      ? prorateTargetForRange({
+          periodTarget: periodFuel,
+          periodStartDate: row.periodStartDate,
+          periodEndDate: row.periodEndDate,
+          rangeFromYmd,
+          rangeToYmd,
+        })
+      : periodFuel;
+
+  return {
+    ...row,
+    travel: {
+      distanceKm: Math.round(distanceKm * 10) / 10,
+      visitCount: row.visits.current,
+      petrolClaimCount: Math.round(petrolClaimCount),
+      petrolClaimAmount: Math.round(petrolClaimAmount),
+      fuelAllowance,
+      progress: calcTargetProgress(petrolClaimAmount, fuelAllowance),
+    },
+  };
+}
+
 export function applyHoursToRow(
   row: ReportsTargetRow,
   hoursWorked: number | undefined,

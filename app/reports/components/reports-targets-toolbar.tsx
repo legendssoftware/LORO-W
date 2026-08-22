@@ -49,6 +49,7 @@ export type ReportsTargetsSortMetric =
   | 'visits'
   | 'leads'
   | 'hours'
+  | 'travel'
   | 'productivity';
 
 export interface ReportsTargetsToolbarProps {
@@ -93,6 +94,7 @@ const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = 
   { value: 'visits', label: 'Sort: Visits' },
   { value: 'leads', label: 'Sort: Leads' },
   { value: 'hours', label: 'Sort: Hours' },
+  { value: 'travel', label: 'Sort: Travel' },
   { value: 'productivity', label: 'Sort: Productivity (page)' },
 ];
 

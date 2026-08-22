@@ -288,6 +288,23 @@ export interface GetEngagementRangeResponse {
   users: EngagementRangeUserRow[];
 }
 
+/** GET /user/performance/travel-range */
+export interface TravelRangeUserRow {
+  uid: number;
+  clerkUserId: string | null;
+  distanceKm: number;
+  petrolClaimCount: number;
+  petrolClaimAmount: number;
+  fuelAllowance: number;
+}
+
+export interface GetTravelRangeResponse {
+  message: string;
+  from: string;
+  to: string;
+  users: TravelRangeUserRow[];
+}
+
 export interface GetUserTargetResponse {
   userTarget: UserTargetDashboardShape | Record<string, unknown> | null;
   message: string;
@@ -426,6 +443,7 @@ export interface InviteUserResponse {
     email: string;
     clerkUserId: string;
     userref: string | null;
+    username?: string | null;
   };
   warnings?: string[];
 }
@@ -589,6 +607,27 @@ export async function getEngagementRange(
 ): Promise<GetEngagementRangeResponse> {
   const { data } = await client.get<GetEngagementRangeResponse>(
     '/user/performance/engagement-range',
+    {
+      params: {
+        from: params.from,
+        to: params.to,
+        ...(params.branchId != null ? { branchId: params.branchId } : {}),
+      },
+      timeout: 120_000,
+    }
+  );
+  return data;
+}
+
+/**
+ * GET /user/performance/travel-range — org distance / petrol claims / fuel allowance for [from, to].
+ */
+export async function getTravelRange(
+  client: AxiosInstance,
+  params: { from: string; to: string; branchId?: number }
+): Promise<GetTravelRangeResponse> {
+  const { data } = await client.get<GetTravelRangeResponse>(
+    '/user/performance/travel-range',
     {
       params: {
         from: params.from,

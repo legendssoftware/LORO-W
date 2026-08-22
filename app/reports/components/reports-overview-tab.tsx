@@ -9,6 +9,7 @@ import {
   useUserTarget,
   useApiClient,
   useEngagementRange,
+  useTravelRange,
   useAttendanceReport,
   usePayrollHoursAll,
   useAttMetricsByUser,
@@ -158,6 +159,12 @@ function sortTargetRows(
         return (
           b.hours.progress - a.hours.progress ||
           b.hours.current - a.hours.current ||
+          a.name.localeCompare(b.name)
+        );
+      case 'travel':
+        return (
+          (b.travel?.distanceKm ?? 0) - (a.travel?.distanceKm ?? 0) ||
+          (b.travel?.petrolClaimAmount ?? 0) - (a.travel?.petrolClaimAmount ?? 0) ||
           a.name.localeCompare(b.name)
         );
       case 'productivity': {
@@ -400,6 +407,10 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && !isSyncing && !!engagementQueryParams,
   });
 
+  const travelQuery = useTravelRange(engagementQueryParams, {
+    enabled: isTokenReady && !isSyncing && !!engagementQueryParams,
+  });
+
   const attendanceReportQuery = useAttendanceReport(
     {
       dateFrom: rangeParams?.from,
@@ -494,6 +505,31 @@ export function ReportsOverviewTab() {
     selfAttMetricsQuery.data?.totalHours?.payrollHours,
     backendUserData?.uid,
   ]);
+
+  const travelByUid = useMemo(() => {
+    const map = new Map<
+      number,
+      {
+        distanceKm: number;
+        petrolClaimCount: number;
+        petrolClaimAmount: number;
+        fuelAllowance: number;
+      }
+    >();
+    for (const u of travelQuery.data?.users ?? []) {
+      map.set(u.uid, {
+        distanceKm: u.distanceKm ?? 0,
+        petrolClaimCount: u.petrolClaimCount ?? 0,
+        petrolClaimAmount: u.petrolClaimAmount ?? 0,
+        fuelAllowance: u.fuelAllowance ?? 0,
+      });
+    }
+    return map;
+  }, [travelQuery.data?.users]);
+
+  const travelReady = !!engagementQueryParams && travelQuery.isSuccess;
+  const travelOverlayPending =
+    !!engagementQueryParams && !travelReady && !travelQuery.isError;
 
   const hoursOverlayReady = rangeParams
     ? attendanceReportQuery.isSuccess
@@ -608,6 +644,8 @@ export function ReportsOverviewTab() {
         engagementRangeParams: engagementQueryParams,
         hoursByUid,
         hoursOverlayReady,
+        travelByUid,
+        travelReady,
       })
     );
 
@@ -628,6 +666,8 @@ export function ReportsOverviewTab() {
     engagementQueryParams,
     hoursOverlayReady,
     hoursByUid,
+    travelByUid,
+    travelReady,
     branchCountryByUid,
   ]);
 
@@ -762,6 +802,8 @@ export function ReportsOverviewTab() {
         engagementRangeParams: engagementQueryParams,
         hoursWorked: hoursByUid.get(row.userId),
         hoursOverlayReady,
+        travel: travelByUid.get(row.userId),
+        travelReady,
       });
       const erpPending =
         selfHasSalesTarget &&
@@ -792,6 +834,8 @@ export function ReportsOverviewTab() {
     engagementQueryParams,
     hoursOverlayReady,
     hoursByUid,
+    travelByUid,
+    travelReady,
     selfHasSalesTarget,
     selfErpSalesQuery.isLoading,
     selfErpSalesQuery.data,
@@ -899,12 +943,16 @@ export function ReportsOverviewTab() {
       ? getQueryErrorMessage(usersQuery.error)
       : engagementQuery.isError
         ? getQueryErrorMessage(engagementQuery.error)
-        : hoursQueryError
+        : travelQuery.isError
+          ? getQueryErrorMessage(travelQuery.error)
+          : hoursQueryError
     : selfTargetQuery.isError
       ? getQueryErrorMessage(selfTargetQuery.error)
       : engagementQuery.isError
         ? getQueryErrorMessage(engagementQuery.error)
-        : hoursQueryError;
+        : travelQuery.isError
+          ? getQueryErrorMessage(travelQuery.error)
+          : hoursQueryError;
 
   const reviewStartYmd = useAllTime ? null : formatUtcYmd(startDate);
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
@@ -1044,6 +1092,7 @@ export function ReportsOverviewTab() {
               else void selfTargetQuery.refetch();
               if (rangeParams || engagementQueryParams) {
                 void engagementQuery.refetch();
+                void travelQuery.refetch();
                 if (rangeParams) void attendanceReportQuery.refetch();
               }
               if (useAllTime) {
@@ -1070,6 +1119,7 @@ export function ReportsOverviewTab() {
             quotationEngagementPending={quotationEngagementPending}
             quotationEngagementError={quotationEngagementError}
             hoursOverlayPending={hoursOverlayPending}
+            travelOverlayPending={travelOverlayPending}
             quotationCountAvailable={quotationCountAvailable}
           />
         </div>
@@ -1082,6 +1132,7 @@ export function ReportsOverviewTab() {
             isFetching={
               (usersQuery.isFetching && !usersQuery.isLoading) ||
               (engagementQuery.isFetching && !engagementQuery.isLoading) ||
+              (travelQuery.isFetching && !travelQuery.isLoading) ||
               hoursQueryFetching ||
               isEnriching
             }

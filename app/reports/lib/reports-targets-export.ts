@@ -97,6 +97,12 @@ export function buildReportsTargetsExportHeaders(
     'Hours (current)',
     'Hours (target)',
     'Hours %',
+    'Distance (km)',
+    'Visits (travel)',
+    'Petrol claims (count)',
+    'Petrol claims (amount)',
+    'Fuel allowance',
+    'Fuel %',
     'Productivity %',
     'Achievement %',
     'Engagement met',
@@ -176,6 +182,20 @@ export function reportsTargetRowToExportRow(
     formatExportCount(row.hours.current),
     formatExportCount(row.hours.target),
     formatExportPercent(row.hours.progress),
+    Number.isFinite(row.travel?.distanceKm) ? String(row.travel.distanceKm) : '0',
+    formatExportCount(row.travel?.visitCount ?? row.visits.current),
+    formatExportCount(row.travel?.petrolClaimCount ?? 0),
+    formatExportMoney(
+      row.travel?.petrolClaimAmount ?? 0,
+      row.quotations.currency,
+      includeSalesCurrencyPrefix
+    ),
+    formatExportMoney(
+      row.travel?.fuelAllowance ?? 0,
+      row.quotations.currency,
+      includeSalesCurrencyPrefix
+    ),
+    formatExportPercent(row.travel?.progress ?? 0),
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
     row.engagementMet ? 'Yes' : 'No',
