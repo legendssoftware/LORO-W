@@ -75,6 +75,7 @@ import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
   formatUtcYmd,
   resolveTargetsUtcCalendarRange,
+  utcMonthStartThroughToday,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
@@ -195,12 +196,13 @@ export function ReportsOverviewTab() {
     (backendUserData?.uid != null ? String(backendUserData.uid) : null);
 
   const today = utcToday();
+  const defaultMonthRange = utcMonthStartThroughToday();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<ReportsPageSize>(25);
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState(defaultMonthRange.start);
+  const [endDate, setEndDate] = useState(defaultMonthRange.end);
   const [useAllTime, setUseAllTime] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ReportsTargetRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -401,7 +403,7 @@ export function ReportsOverviewTab() {
 
   const engagementQueryParams = rangeParams ?? targetPeriodRangeParams;
 
-  const engagementMode = useAllTime ? ('quotationsOnly' as const) : ('full' as const);
+  const engagementMode = 'full' as const;
 
   const engagementQuery = useEngagementRange(engagementQueryParams, {
     enabled: isTokenReady && !isSyncing && !!engagementQueryParams,
@@ -1012,9 +1014,9 @@ export function ReportsOverviewTab() {
   }
 
   function resetDateToToday() {
-    const t = utcToday();
-    setStartDate(t);
-    setEndDate(t);
+    const { start, end } = utcMonthStartThroughToday();
+    setStartDate(start);
+    setEndDate(end);
     setUseAllTime(false);
   }
 
