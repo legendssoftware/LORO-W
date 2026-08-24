@@ -168,14 +168,14 @@ function ReportsTargetsFilterControls({
   const isStack = layout === 'stack';
   const pickerTriggerClass = isStack
     ? cn(reportsFilterSelectTriggerClass, 'w-full')
-    : 'min-w-[10rem] sm:min-w-[12rem]';
+    : 'h-9 min-w-[10rem] shrink-0 sm:min-w-[12rem]';
 
   return (
     <div
       className={cn(
         isStack
           ? 'flex flex-col gap-3'
-          : 'flex flex-wrap items-center gap-2'
+          : 'flex flex-nowrap items-center gap-2'
       )}
     >
       <UtcDateRangePicker
@@ -225,13 +225,15 @@ function ReportsTargetsFilterControls({
               triggerClassName={pickerTriggerClass}
             />
           ) : null}
-          <SearchableBranchPicker
-            branches={branches}
-            selectedBranchId={selectedBranchId}
-            onBranchChange={(id) => onBranchChange?.(id)}
-            groupByProvince={selectedCountry !== 'all'}
-            triggerClassName={pickerTriggerClass}
-          />
+          {selectedCountry !== 'all' ? (
+            <SearchableBranchPicker
+              branches={branches}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={(id) => onBranchChange?.(id)}
+              groupByProvince
+              triggerClassName={pickerTriggerClass}
+            />
+          ) : null}
           <SearchableUserPicker
             users={usersForPicker}
             branches={branches}
@@ -381,16 +383,16 @@ export function ReportsTargetsToolbar({
         </DialogContent>
       </Dialog>
 
-      <div className="mb-4 hidden shrink-0 flex-wrap items-center gap-2 md:flex">
-        <ReportsTargetsFilterControls layout="row" {...filterProps} />
-        {showSearch ? (
-          <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
-            {renderExportButton()}
-            {renderSearchField()}
+      <div className="mb-4 hidden w-full min-w-0 items-center gap-2 md:flex">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
+            <ReportsTargetsFilterControls layout="row" {...filterProps} />
           </div>
-        ) : hasExport ? (
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+        </div>
+        {showSearch || hasExport ? (
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
             {renderExportButton()}
+            {showSearch ? renderSearchField() : null}
           </div>
         ) : null}
       </div>

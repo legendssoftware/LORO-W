@@ -512,13 +512,10 @@ export function overlayTargetRowFilters(
     const engagement = opts.engagement ?? EMPTY_ENGAGEMENT_OVERLAY;
     if (opts.engagementMode === 'quotationsOnly') {
       next = applyQuotationsEngagementToRow(next, engagement);
-    } else if (opts.rangeParams) {
-      next = applyEngagementToRow(
-        next,
-        engagement,
-        opts.rangeParams.from,
-        opts.rangeParams.to
-      );
+    } else {
+      const rangeFrom = opts.rangeParams?.from ?? engagementRange.from;
+      const rangeTo = opts.rangeParams?.to ?? engagementRange.to;
+      next = applyEngagementToRow(next, engagement, rangeFrom, rangeTo);
     }
   }
   if (opts.hoursOverlayReady && opts.hoursWorked != null) {
