@@ -104,9 +104,11 @@ import {
   User,
   CalendarDays,
   Megaphone,
+  ImageIcon,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
 import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
+import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
 import { canAccessOrgSettings } from '@/lib/access';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
@@ -338,7 +340,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices' | 'banners';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -1252,7 +1254,7 @@ export function SettingsContent() {
       <div data-tour="settings-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage organisation profile, appearance, regional defaults, hours, branches, and notices.
+          Manage organisation profile, appearance, regional defaults, hours, branches, notices, and app banners.
         </p>
       </div>
 
@@ -1330,6 +1332,16 @@ export function SettingsContent() {
             >
               <Megaphone className="mr-2 size-4" />
               Notices
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('banners')}
+              className={tabBtnClass('banners')}
+            >
+              <ImageIcon className="mr-2 size-4" />
+              Banners
             </Button>
           </div>
 
@@ -3080,6 +3092,10 @@ export function SettingsContent() {
 
           {activeTab === 'notices' && (
             <OrganisationNoticesSection />
+          )}
+
+          {activeTab === 'banners' && (
+            <OrganisationBannersSection />
           )}
         </>
       )}
