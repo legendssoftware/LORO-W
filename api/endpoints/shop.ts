@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios';
+import type { GetShopBannersResponse } from '@/api/types/organisation-banner';
 
 export interface CheckoutItem {
   uid: number;
@@ -24,6 +25,14 @@ export interface CreateQuotationResponse {
   message?: string;
   quotationId?: string;
   quotationNumber?: string;
+}
+
+/** GET /shop/banners — same feed as the mobile app carousel (latest 5 published). */
+export async function getShopBanners(
+  client: AxiosInstance
+): Promise<GetShopBannersResponse> {
+  const { data } = await client.get<GetShopBannersResponse>('/shop/banners');
+  return data;
 }
 
 /** POST /shop/quotation — create quotation from cart. */

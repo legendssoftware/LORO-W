@@ -27,6 +27,10 @@ export function activeOrgNoticeKey(orgRef: string) {
   return ['org-notice', 'active', orgRef] as const;
 }
 
+export function settingsOrgBannersKey(orgRef: string) {
+  return ['settings', 'org', orgRef, 'banners'] as const;
+}
+
 /** Single branch for Settings branch editor (GET /branch/:ref). */
 export function settingsBranchDetailKey(orgRef: string, branchRef: string) {
   return ['settings', 'branch-detail', orgRef, branchRef] as const;
