@@ -330,6 +330,7 @@ export interface VisualiserUserPreferences {
     captureLowPct?: number;
     captureHighPct?: number;
     repTargetMonthlyZAR?: number;
+    revenuePerSqmMonthlyZAR?: number;
   };
   turnoverOverrides?: {
     brandTurnoverOverrides?: Record<string, number>;

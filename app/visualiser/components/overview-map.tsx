@@ -1124,6 +1124,15 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
                 {formatZarShort(selectedZone.potentialLowZAR)}–
                 {formatZarShort(selectedZone.potentialHighZAR)}
               </p>
+              {selectedZone.kind === 'catchment' &&
+              selectedZone.floorSizeSqm != null ? (
+                <p className="text-muted-foreground">
+                  Floor {selectedZone.floorSizeSqm.toLocaleString()} sqm
+                  {selectedZone.capacityCeilingZAR != null
+                    ? ` · Cap ${formatZarShort(selectedZone.capacityCeilingZAR)}/mo`
+                    : ''}
+                </p>
+              ) : null}
               <p className="text-muted-foreground">
                 Model {formatZarShort(zoneSim.simulatedMonthlyZAR)}
                 {zoneSim.actualMonthlyZAR != null
