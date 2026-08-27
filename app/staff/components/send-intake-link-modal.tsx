@@ -39,14 +39,33 @@ import { formatEnumLabel } from '@/lib/format-enum-label';
 import { Link2, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const sendIntakeSchema = z.object({
-  prefillEmail: z.union([z.string().email(), z.literal('')]).optional(),
-  branchId: z.string().optional(),
-  accessLevel: z.string().min(1, 'Access level is required'),
-  workforceType: z.string().optional(),
-  role: z.string().optional(),
-  expiresInDays: z.number().min(1).max(90).optional(),
-});
+const sendIntakeSchema = z
+  .object({
+    prefillEmail: z.union([z.string().email(), z.literal('')]).optional(),
+    phone: z.string().optional(),
+    channel: z.enum(['email', 'link', 'whatsapp']),
+    branchId: z.string().optional(),
+    accessLevel: z.string().min(1, 'Access level is required'),
+    workforceType: z.string().optional(),
+    role: z.string().optional(),
+    expiresInDays: z.number().min(1).max(90).optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.channel === 'email' && !values.prefillEmail?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Email is required to send the intake link',
+        path: ['prefillEmail'],
+      });
+    }
+    if (values.channel === 'whatsapp') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'WhatsApp delivery is coming soon',
+        path: ['channel'],
+      });
+    }
+  });
 
 type SendIntakeFormValues = z.infer<typeof sendIntakeSchema>;
 
@@ -70,6 +89,8 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
     resolver: zodResolver(sendIntakeSchema),
     defaultValues: {
       prefillEmail: '',
+      phone: '',
+      channel: 'email',
       branchId: '',
       accessLevel: AccessLevel.USER,
       workforceType: WorkforceType.GENERAL_WORKER,
@@ -90,6 +111,8 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
     try {
       const result = await createMutation.mutateAsync({
         prefillEmail: values.prefillEmail?.trim() || undefined,
+        phone: values.phone?.trim() || undefined,
+        channel: values.channel,
         branchId: branchId && branchId > 0 ? branchId : undefined,
         accessLevel: values.accessLevel,
         workforceType: values.workforceType || undefined,
@@ -137,10 +160,37 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
+              name="channel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Send via</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className={MODAL_SELECT_TRIGGER}>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="link">Copy link only</SelectItem>
+                      <SelectItem value="whatsapp" disabled>
+                        WhatsApp (coming soon)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="prefillEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Employee email (optional)</FormLabel>
+                  <FormLabel>
+                    Employee email{form.watch('channel') === 'email' ? ' *' : ' (optional)'}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -150,7 +200,29 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    If provided, the email is locked on the form and the link is sent automatically.
+                    If provided, the email is locked on the form. Email channel sends the link
+                    automatically.
+                  </p>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cell number (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="tel"
+                      placeholder="+27 64 123 4567"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Saved for WhatsApp delivery later. Not sent today.
                   </p>
                 </FormItem>
               )}

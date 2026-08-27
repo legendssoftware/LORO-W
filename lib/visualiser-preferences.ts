@@ -88,6 +88,7 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
   const captureLow = Number(s.captureLowPct);
   const captureHigh = Number(s.captureHighPct);
   const repTarget = Number(s.repTargetMonthlyZAR);
+  const revenuePerSqm = Number(s.revenuePerSqmMonthlyZAR);
   return {
     radiusMeters:
       Number.isFinite(radiusKm) && radiusKm >= 1000 && radiusKm <= 20_000
@@ -113,6 +114,10 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
       Number.isFinite(repTarget) && repTarget >= 100_000 && repTarget <= 50_000_000
         ? repTarget
         : DEFAULT_SITE_OPPORTUNITY_SETTINGS.repTargetMonthlyZAR,
+    revenuePerSqmMonthlyZAR:
+      Number.isFinite(revenuePerSqm) && revenuePerSqm >= 100 && revenuePerSqm <= 10_000
+        ? revenuePerSqm
+        : DEFAULT_SITE_OPPORTUNITY_SETTINGS.revenuePerSqmMonthlyZAR,
   };
 }
 

@@ -30,6 +30,7 @@ import {
 	type SpatialPointIndex,
 } from './geo';
 import { buildSiteOpportunityWarnings } from './warnings';
+import { applyFloorSizeCapacityCap } from './floor-size-capacity';
 import type { MapGeocodingSummary } from '@/api/types/site-opportunity';
 
 export { DEFAULT_SITE_OPPORTUNITY_SETTINGS };
@@ -182,8 +183,16 @@ export function computeBranchCatchments(
 		const byBrand = countByBrand(inRadiusCompetitors);
 		const byCategory = countByCategoryFromBrandCounts(byBrand);
 		const addressablePoolZAR = sumAddressablePool(inRadiusCompetitors);
-		const potentialLowZAR = addressablePoolZAR * settings.captureLowPct;
-		const potentialHighZAR = addressablePoolZAR * settings.captureHighPct;
+		const marketPotentialLowZAR = addressablePoolZAR * settings.captureLowPct;
+		const marketPotentialHighZAR = addressablePoolZAR * settings.captureHighPct;
+		const capacityCap = applyFloorSizeCapacityCap(
+			branch,
+			marketPotentialLowZAR,
+			marketPotentialHighZAR,
+			settings,
+		);
+		const { potentialLowZAR, potentialHighZAR, floorSizeSqm, capacityCeilingZAR } =
+			capacityCap;
 		const branchId = branch.id;
 		const branchKey = String(branchId);
 		const actualRevenueZAR = branchRevenueById?.get(branchKey) ?? null;
@@ -211,6 +220,8 @@ export function computeBranchCatchments(
 			opportunityScore: revenueGapZAR ?? addressablePoolZAR,
 			actualRevenueZAR,
 			revenueGapZAR,
+			floorSizeSqm,
+			capacityCeilingZAR,
 			...zoneCaptureFields(potentialLowZAR, potentialHighZAR),
 		});
 	}

@@ -27,10 +27,6 @@ export const NOTICE_FORM_PLACEHOLDERS = {
 } as const;
 
 export function emptyNoticeBody(): CreateOrganisationNoticeBody {
-  const now = new Date();
-  const until = new Date(now);
-  until.setFullYear(until.getFullYear() + 1);
-
   return {
     title: '',
     subtitle: '',
@@ -46,10 +42,39 @@ export function emptyNoticeBody(): CreateOrganisationNoticeBody {
       acknowledgeLabel: '',
       closingSignature: '',
     },
-    showFrom: now.toISOString(),
-    showUntil: until.toISOString(),
+    showFrom: new Date().toISOString(),
+    showUntil: null,
     isEnabled: true,
   };
+}
+
+/** End of today, used when switching a notice into until-date mode. */
+export function defaultShowUntilIso(): string {
+  const until = new Date();
+  until.setHours(23, 59, 0, 0);
+  return until.toISOString();
+}
+
+export type NoticeDisplayMode = 'three-times' | 'until-date';
+
+export function getNoticeDisplayMode(form: CreateOrganisationNoticeBody): NoticeDisplayMode {
+  return form.showUntil ? 'until-date' : 'three-times';
+}
+
+export function applyNoticeDisplayMode(
+  form: CreateOrganisationNoticeBody,
+  mode: NoticeDisplayMode
+): CreateOrganisationNoticeBody {
+  switch (mode) {
+    case 'three-times':
+      return { ...form, showUntil: null };
+    case 'until-date':
+      return { ...form, showUntil: form.showUntil ?? defaultShowUntilIso() };
+    default: {
+      const _exhaustive: never = mode;
+      return _exhaustive;
+    }
+  }
 }
 
 export function emptySection(): NoticeSection {

@@ -33,6 +33,7 @@ export interface PatchBranchBody {
   website?: string;
   status?: string;
   country?: string;
+  floorSizeSqm?: number | null;
   address?: {
     street?: string;
     suburb?: string;
@@ -67,6 +68,7 @@ export interface CreateBranchBody {
   contactPerson: string;
   ref: string;
   alias?: string;
+  floorSizeSqm?: number;
   address: {
     street: string;
     suburb: string;

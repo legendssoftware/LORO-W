@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -46,7 +46,7 @@ import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
-import { getActiveOrganisationNotice } from '@/api/endpoints/organisation-notice';
+import { acknowledgeOrganisationNotice, getActiveOrganisationNotice } from '@/api/endpoints/organisation-notice';
 import { activeOrgNoticeKey } from '@/api/query-keys/settings';
 import type { OrganisationNoticeRecord } from '@/api/types/organisation-notice';
 import {
@@ -96,6 +96,7 @@ export function SalesBenchmarksWelcomeDialog({
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const orgRef = backendUserData?.organisationRef ?? '';
@@ -108,6 +109,13 @@ export function SalesBenchmarksWelcomeDialog({
     queryFn: () => getActiveOrganisationNotice(client, orgRef),
     enabled: !previewNotice && Boolean(orgRef) && isTokenReady && isSignedIn,
     staleTime: 60_000,
+  });
+
+  const acknowledgeMut = useMutation({
+    mutationFn: (uid: number) => acknowledgeOrganisationNotice(client, orgRef, uid),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: activeOrgNoticeKey(orgRef) });
+    },
   });
 
   const activeNotice = previewNotice ?? activeNoticeQuery.data?.notice ?? null;
@@ -187,6 +195,9 @@ export function SalesBenchmarksWelcomeDialog({
     }
     if (!next && sessionId) {
       persistDismiss(sessionId, noticeUid);
+      if (noticeUid != null && orgRef) {
+        acknowledgeMut.mutate(noticeUid);
+      }
     }
     setOpen(next);
   };

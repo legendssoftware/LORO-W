@@ -25,8 +25,10 @@ export interface BranchListItem {
   address?: BranchAddress;
   latitude?: number | null;
   longitude?: number | null;
-  /** Brand logo URL used as circular map pin when present. */
+	/** Brand logo URL used as circular map pin when present. */
   logoUrl?: string | null;
+  /** Retail floor area in square metres — visualiser capacity simulation. */
+  floorSizeSqm?: number | null;
 }
 
 /** Response shape for GET /branch (findAll). */

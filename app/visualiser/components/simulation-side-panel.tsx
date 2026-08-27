@@ -185,6 +185,12 @@ function ZoneDetailBody({
   const zoneTitle =
     zone.kind === 'catchment' ? zone.branchName : zone.label;
   const isCatchment = zone.kind === 'catchment';
+  const catchmentZone = isCatchment ? zone : null;
+  const marketHighUncapped =
+    zone.addressablePoolZAR * (captureHighPctDisplay / 100);
+  const isCapacityCapped =
+    catchmentZone?.capacityCeilingZAR != null &&
+    zone.potentialHighZAR < marketHighUncapped - 0.01;
   const branchGap = branchGapToModelZAR(
     detailSim.simulatedMonthlyZAR,
     detailSim.actualMonthlyZAR,
@@ -264,6 +270,32 @@ function ZoneDetailBody({
 
       {isCatchment ? (
         <>
+          <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">Floor size</p>
+              <p className="text-xs font-semibold">
+                {catchmentZone?.floorSizeSqm != null
+                  ? `${catchmentZone.floorSizeSqm.toLocaleString()} sqm`
+                  : 'Not set'}
+              </p>
+            </div>
+            <div className="bg-muted/40 rounded p-1.5">
+              <p className="text-muted-foreground">Capacity ceiling</p>
+              <p className="text-xs font-semibold">
+                {catchmentZone?.capacityCeilingZAR != null
+                  ? `${formatZarShort(catchmentZone.capacityCeilingZAR)}/mo`
+                  : '—'}
+              </p>
+            </div>
+            {isCapacityCapped ? (
+              <div className="bg-amber-500/10 col-span-2 rounded p-1.5 text-[10px] text-amber-800 dark:text-amber-200">
+                Potential capped by floor size (market pool would allow{' '}
+                {formatZarShort(marketHighUncapped)}/mo at{' '}
+                {captureHighPctDisplay}% capture).
+              </div>
+            ) : null}
+          </div>
+
           <div className="grid grid-cols-2 gap-1.5 text-[10px]">
             <div className="bg-muted/40 rounded p-1.5">
               <p className="text-muted-foreground">Needed to match model</p>
@@ -1264,6 +1296,28 @@ export function SimulationSidePanel() {
                     const v = Number(e.target.value);
                     if (!Number.isFinite(v)) return;
                     setSettings((s) => ({ ...s, topN: Math.round(v) }));
+                  }}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sim-revenue-sqm" className="text-[11px]">
+                  Revenue / sqm (ZAR/mo)
+                </Label>
+                <Input
+                  id="sim-revenue-sqm"
+                  type="number"
+                  min={100}
+                  max={10000}
+                  step={50}
+                  value={settings.revenuePerSqmMonthlyZAR ?? 1_500}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (!Number.isFinite(v)) return;
+                    setSettings((s) => ({
+                      ...s,
+                      revenuePerSqmMonthlyZAR: Math.max(0, v),
+                    }));
                   }}
                   className="h-8 text-xs"
                 />

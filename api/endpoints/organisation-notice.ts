@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  AcknowledgeOrganisationNoticeResponse,
   CreateOrganisationNoticeBody,
   GetActiveOrganisationNoticeResponse,
   GetOrganisationNoticesResponse,
@@ -48,6 +49,17 @@ export async function patchOrganisationNotice(
   const { data } = await client.patch<{ notice: OrganisationNoticeRecord; message: string }>(
     `/organisations/${encodeURIComponent(orgRef)}/notices/${uid}`,
     body
+  );
+  return data;
+}
+
+export async function acknowledgeOrganisationNotice(
+  client: AxiosInstance,
+  orgRef: string,
+  uid: number
+): Promise<AcknowledgeOrganisationNoticeResponse> {
+  const { data } = await client.post<AcknowledgeOrganisationNoticeResponse>(
+    `/organisations/${encodeURIComponent(orgRef)}/notices/${uid}/acknowledge`
   );
   return data;
 }

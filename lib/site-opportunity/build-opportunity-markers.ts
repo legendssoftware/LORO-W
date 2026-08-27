@@ -40,6 +40,10 @@ export function buildOpportunityMarkers(input: {
         typeof branch.address === 'object' && branch.address
           ? (branch.address as { state?: string }).state
           : undefined,
+      floorSizeSqm:
+        branch.floorSizeSqm != null && Number.isFinite(Number(branch.floorSizeSqm))
+          ? Number(branch.floorSizeSqm)
+          : undefined,
     });
   }
 

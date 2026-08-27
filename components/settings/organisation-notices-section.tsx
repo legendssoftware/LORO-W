@@ -22,15 +22,18 @@ import {
   activeOrgNoticeKey,
   settingsOrgNoticesKey,
 } from '@/api/query-keys/settings';
-import { getNoticeStatus } from '@/lib/organisation-notice-content';
+import { getNoticeDisplayScheduleLabel, getNoticeStatus } from '@/lib/organisation-notice-content';
 import {
+  applyNoticeDisplayMode,
   arrayToLines,
   emptyNoticeBody,
+  getNoticeDisplayMode,
   linesToArray,
   normalizeNoticeFormForSave,
   NOTICE_FORM_PLACEHOLDERS,
   NOTICE_SECTION_LABELS,
   updateSection,
+  type NoticeDisplayMode,
 } from '@/lib/organisation-notice-form';
 import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
 import { Button } from '@/components/ui/button';
@@ -41,6 +44,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const PANEL_CLASS = 'rounded-xl border border-border bg-card shadow-sm';
 
@@ -194,7 +198,8 @@ export function OrganisationNoticesSection() {
               Organisation notices
             </h2>
             <p className="text-sm text-muted-foreground">
-              Manage the sign-in notice shown to users on the dashboard. Schedule when it appears and when it stops.
+              Manage the sign-in notice shown on the dashboard. By default each user sees it 3 times.
+              Set a date to keep showing it on every sign-in until then.
             </p>
           </div>
           <Button type="button" size="sm" onClick={startCreate}>
@@ -222,8 +227,7 @@ export function OrganisationNoticesSection() {
                   </div>
                   <p className="text-sm text-muted-foreground">{notice.subtitle}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Show from {new Date(notice.showFrom).toLocaleString()}
-                    {notice.showUntil ? ` until ${new Date(notice.showUntil).toLocaleString()}` : ' (no end date)'}
+                    {getNoticeDisplayScheduleLabel(notice)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -297,20 +301,51 @@ export function OrganisationNoticesSection() {
                   }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notice-show-until">Show until (last day to show)</Label>
-                <Input
-                  id="notice-show-until"
-                  type="datetime-local"
-                  value={toDateTimeLocalValue(form.showUntil)}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      showUntil: e.target.value ? fromDateTimeLocalValue(e.target.value) : null,
-                    }))
-                  }
-                />
+              <div className="space-y-3">
+                <Label>Display</Label>
+                <RadioGroup
+                  value={getNoticeDisplayMode(form)}
+                  onValueChange={(value) => {
+                    const mode: NoticeDisplayMode =
+                      value === 'until-date' ? 'until-date' : 'three-times';
+                    setForm((prev) => applyNoticeDisplayMode(prev, mode));
+                  }}
+                  className="gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="three-times" id="notice-mode-three" />
+                    <Label htmlFor="notice-mode-three" className="font-normal">
+                      Show 3 times (default)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="until-date" id="notice-mode-until" />
+                    <Label htmlFor="notice-mode-until" className="font-normal">
+                      Show until a date
+                    </Label>
+                  </div>
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  By default each user sees this notice 3 times. Set a date to keep showing it on every
+                  sign-in until then.
+                </p>
               </div>
+              {form.showUntil ? (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="notice-show-until">Show until (last day to show)</Label>
+                  <Input
+                    id="notice-show-until"
+                    type="datetime-local"
+                    value={toDateTimeLocalValue(form.showUntil)}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        showUntil: e.target.value ? fromDateTimeLocalValue(e.target.value) : null,
+                      }))
+                    }
+                  />
+                </div>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-3">

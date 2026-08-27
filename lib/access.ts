@@ -219,6 +219,20 @@ export function canManageClaims(accessLevel: string | undefined): boolean {
     return CLAIMS_MANAGE_LEVELS.has(level);
 }
 
+const APPROVALS_MANAGE_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "owner",
+    "hr",
+]);
+
+/** View and decide org approvals (web inbox + HR portal). */
+export function canManageApprovals(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return APPROVALS_MANAGE_LEVELS.has(level);
+}
+
 /**
  * Paginated GET /claims (org-wide list). Matches APK claims index: admin | owner only.
  * Other roles use GET /claims/me on the client.
@@ -282,6 +296,13 @@ export function canAccess(
     }
 
     if (
+        pathNormalized === "/approvals" ||
+        pathNormalized.startsWith("/approvals/")
+    ) {
+        return canManageApprovals(accessLevel);
+    }
+
+    if (
         pathNormalized === "/competitors" ||
         pathNormalized.startsWith("/competitors/") ||
         pathNormalized === "/visualiser" ||
@@ -326,6 +347,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
     { path: "/claims", label: "Claims" },
+    { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
@@ -340,7 +362,7 @@ export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as 
 export function canManageStaffUsers(accessLevel: string | undefined): boolean {
     const level = normalize(accessLevel);
     if (!level) return false;
-    return level === 'admin' || level === 'manager' || level === 'owner';
+    return level === 'admin' || level === 'manager' || level === 'owner' || level === 'hr';
 }
 
 /**
@@ -388,6 +410,11 @@ export function getAllowedRoutes(
         { path: "/planning", label: "Planning" },
     ];
 
+    if (canManageApprovals(accessLevel)) {
+        const claimsIndex = fullNav.findIndex((r) => r.path === "/claims");
+        fullNav.splice(claimsIndex + 1, 0, { path: "/approvals", label: "Approvals" });
+    }
+
     if (canAccessReports(accessLevel)) {
         fullNav.push({ path: "/reports", label: "Reports" });
     }
@@ -406,6 +433,15 @@ export function getAllowedRoutes(
     const restrictedNav = fullNav.filter((r) =>
         STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p))
     );
+
+    if (canManageApprovals(accessLevel) && !restrictedNav.some((r) => r.path === "/approvals")) {
+        const claimsIndex = restrictedNav.findIndex((r) => r.path === "/claims");
+        restrictedNav.splice(
+            claimsIndex >= 0 ? claimsIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/approvals", label: "Approvals" }
+        );
+    }
 
     if (canAccessUserSettings(accessLevel)) {
         return [...restrictedNav, STAFF_SETTINGS_ROUTE];

@@ -164,6 +164,11 @@ export const PAGE_COPY = {
     description:
       'Create expense claims with receipts, organise trips and folders, and follow approval status from submission to payment.',
   },
+  approvals: {
+    title: 'Approvals — Review pending requests and employee access',
+    description:
+      'See pending counts, open approval details, and approve or reject employee intake, claims, and other requests from the web inbox.',
+  },
   payslips: {
     title: 'Payslips — View and download your pay documents',
     description:
