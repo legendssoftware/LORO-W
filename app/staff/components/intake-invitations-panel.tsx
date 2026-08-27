@@ -22,10 +22,6 @@ import {
 import { formatEnumLabel } from '@/lib/format-enum-label';
 import toast from 'react-hot-toast';
 
-function buildIntakeUrl(token: string): string {
-  return `${window.location.origin}/employee-intake?token=${encodeURIComponent(token)}`;
-}
-
 export function IntakeInvitationsPanel() {
   const { data, isLoading } = useIntakeInvitations();
   const { data: branches = [] } = useBranches();
@@ -52,9 +48,9 @@ export function IntakeInvitationsPanel() {
     }
   }
 
-  async function handleCopyLink(token: string) {
+  async function handleCopyLink(intakeUrl: string) {
     try {
-      await navigator.clipboard.writeText(buildIntakeUrl(token));
+      await navigator.clipboard.writeText(intakeUrl);
       toast.success('Link copied to clipboard');
     } catch {
       toast.error('Could not copy link');
@@ -125,7 +121,7 @@ export function IntakeInvitationsPanel() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleCopyLink(inv.token)}
+                        onClick={() => handleCopyLink(inv.intakeUrl ?? '')}
                       >
                         Copy link
                       </Button>

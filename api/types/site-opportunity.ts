@@ -28,6 +28,8 @@ export interface SiteOpportunitySettings {
   captureHighPct: number;
   /** Monthly revenue target per sales rep (ZAR) for staffing estimates. */
   repTargetMonthlyZAR?: number;
+  /** Monthly revenue capacity per sqm (ZAR) for branch floor-size ceiling. */
+  revenuePerSqmMonthlyZAR?: number;
 }
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
@@ -39,6 +41,7 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   /** High case: 20% of local hardware pool (BitDrywall potential). */
   captureHighPct: 0.2,
   repTargetMonthlyZAR: 1_000_000,
+  revenuePerSqmMonthlyZAR: 1_500,
 };
 
 export interface BrandCount {
@@ -103,6 +106,10 @@ export interface BranchCatchmentOpportunity {
   revenueGapZAR?: number | null;
   captureTimeline: CaptureTimelinePoint[];
   monthsToTargetMid: number | null;
+  /** Branch retail floor area (sqm) when set on the branch record. */
+  floorSizeSqm?: number | null;
+  /** Mature monthly revenue ceiling from floor size × revenuePerSqmMonthlyZAR. */
+  capacityCeilingZAR?: number | null;
 }
 
 export interface GreenfieldOpportunityZone {

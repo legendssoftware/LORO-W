@@ -27,6 +27,8 @@ export interface CreateIntakeInvitationBody {
   workforceType?: string;
   role?: string;
   prefillEmail?: string;
+  phone?: string;
+  channel?: 'email' | 'link' | 'whatsapp';
   expiresInDays?: number;
 }
 
@@ -42,7 +44,10 @@ export interface IntakeInvitationRecord {
   workforceType?: string | null;
   role?: string | null;
   prefillEmail?: string | null;
+  phone?: string | null;
+  channel?: string | null;
   completedUserUid?: number | null;
+  intakeUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

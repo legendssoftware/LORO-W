@@ -1,42 +1,51 @@
 import { z } from 'zod';
+import {
+  getEmptyEmploymentProfile,
+  getEmptyPersonnelProfile,
+  personnelEmploymentSchemaShape,
+  personnelProfileSchemaShape,
+} from './personnel-fields';
 
 const optionalString = z.string().optional().nullable();
 
+const PHONE_PATTERN = /^\+?[0-9\s()-]{8,20}$/;
+
+export const INTAKE_MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+function ageFromIsoDate(value: string): number | null {
+  const parsed = new Date(`${value.trim()}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - parsed.getFullYear();
+  const monthDelta = today.getMonth() - parsed.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < parsed.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
 export const employeeIntakeProfileSchema = z.object({
-  height: optionalString,
-  weight: optionalString,
-  hairColor: optionalString,
-  eyeColor: optionalString,
+  ...personnelProfileSchemaShape,
   gender: z.enum(['male', 'female', 'other'], { message: 'Gender is required' }),
-  ethnicity: optionalString,
-  bodyType: optionalString,
-  smokingHabits: optionalString,
-  drinkingHabits: optionalString,
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  dateOfBirth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine((value) => {
+      const age = ageFromIsoDate(value);
+      return age != null && age >= 16 && age <= 80;
+    }, 'Enter a date of birth for someone aged 16 to 80'),
   address: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
-  zipCode: optionalString,
-  aboutMe: optionalString,
-  socialMedia: optionalString,
-  maritalStatus: optionalString,
-  numberDependents: z.union([z.number(), z.null()]).optional(),
-  shoeSize: optionalString,
-  shirtSize: optionalString,
-  pantsSize: optionalString,
-  dressSize: optionalString,
-  coatSize: optionalString,
 });
 
 export const employeeIntakeEmploymentSchema = z.object({
-  branchref: optionalString,
-  position: optionalString,
-  department: optionalString,
-  startDate: optionalString,
-  endDate: optionalString,
-  isCurrentlyEmployed: z.boolean().optional().nullable(),
+  ...personnelEmploymentSchemaShape,
   email: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
-  contactNumber: z.string().min(1, 'Contact number is required'),
+  contactNumber: z
+    .string()
+    .min(1, 'Work contact number is required')
+    .regex(PHONE_PATTERN, 'Enter a valid phone number'),
 });
 
 export const intakeDocumentSchema = z.object({
@@ -52,10 +61,23 @@ export const employeeIntakeSchema = z
     name: z.string().min(1, 'First name is required'),
     surname: z.string().min(1, 'Surname is required'),
     email: z.string().email('Valid email is required'),
-    phone: z.string().min(1, 'Phone is required'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    phone: z
+      .string()
+      .min(1, 'Phone is required')
+      .regex(PHONE_PATTERN, 'Enter a valid phone number'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters long')
+      .max(128, 'Password must be less than 128 characters')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+      ),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
     photoURL: optionalString,
+    consentToProcess: z.boolean().refine((value) => value === true, {
+      message: 'Please confirm we may process this information',
+    }),
     profile: employeeIntakeProfileSchema,
     employmentProfile: employeeIntakeEmploymentSchema,
     documents: z.array(intakeDocumentSchema).optional(),
@@ -68,16 +90,22 @@ export const employeeIntakeSchema = z
 export type EmployeeIntakeFormValues = z.infer<typeof employeeIntakeSchema>;
 export type IntakeDocumentValues = z.infer<typeof intakeDocumentSchema>;
 
-export const EMPLOYEE_INTAKE_STEP_FIELDS: Record<number, (keyof EmployeeIntakeFormValues)[]> = {
+export const EMPLOYEE_INTAKE_STEP_FIELDS: Record<number, string[]> = {
   0: ['name', 'surname', 'email', 'phone', 'password', 'confirmPassword'],
-  1: ['profile'],
-  2: ['employmentProfile'],
+  1: ['profile.gender', 'profile.dateOfBirth'],
+  2: ['profile.address', 'profile.city', 'profile.country'],
   3: [],
+  4: [],
+  5: ['employmentProfile.contactNumber'],
+  6: ['consentToProcess'],
 };
 
 export const EMPLOYEE_INTAKE_STEP_LABELS = [
   'Account',
   'Personal',
+  'Address',
+  'Health',
+  'Contacts',
   'Employment',
   'Review',
 ] as const;
@@ -93,39 +121,17 @@ export function getDefaultEmployeeIntakeValues(
     password: '',
     confirmPassword: '',
     photoURL: null,
+    consentToProcess: false,
     profile: {
-      height: null,
-      weight: null,
-      hairColor: null,
-      eyeColor: null,
-      gender: 'male',
-      ethnicity: null,
-      bodyType: null,
-      smokingHabits: null,
-      drinkingHabits: null,
+      ...getEmptyPersonnelProfile(),
+      gender: undefined as unknown as EmployeeIntakeFormValues['profile']['gender'],
       dateOfBirth: '',
       address: '',
       city: '',
       country: '',
-      zipCode: null,
-      aboutMe: null,
-      socialMedia: null,
-      maritalStatus: null,
-      numberDependents: null,
-      shoeSize: null,
-      shirtSize: null,
-      pantsSize: null,
-      dressSize: null,
-      coatSize: null,
     },
     employmentProfile: {
-      branchref: null,
-      position: null,
-      department: null,
-      startDate: null,
-      endDate: null,
-      isCurrentlyEmployed: true,
-      email: null,
+      ...getEmptyEmploymentProfile(),
       contactNumber: '',
     },
     documents: [],
@@ -133,7 +139,7 @@ export function getDefaultEmployeeIntakeValues(
 }
 
 export function buildCompleteIntakeBody(values: EmployeeIntakeFormValues) {
-  const { confirmPassword: _confirm, ...rest } = values;
+  const { confirmPassword: _confirm, consentToProcess: _consent, ...rest } = values;
   return {
     ...rest,
     employmentProfile: {

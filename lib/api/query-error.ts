@@ -62,6 +62,8 @@ export function shouldEndSessionAfterClerkSyncFailure(error: unknown): boolean {
   return (
     msg.includes('session has expired') ||
     msg.includes('session is invalid') ||
-    msg.includes('could not be verified')
+    msg.includes('could not be verified') ||
+    msg.includes('waiting for manager approval') ||
+    msg.includes('has been deactivated')
   );
 }

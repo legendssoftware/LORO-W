@@ -11,6 +11,7 @@ export const APP_DISALLOW_PATHS = [
   '/staff',
   '/iot',
   '/claims',
+  '/approvals',
   '/reports',
   '/visualiser',
   '/settings',

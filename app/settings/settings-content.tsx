@@ -367,6 +367,10 @@ function branchListItemToForm(b: BranchListItem) {
     website: b.website ?? '',
     status: (b.status as string) ?? 'active',
     country: b.country ?? 'SA',
+    floorSizeSqm:
+      b.floorSizeSqm != null && Number.isFinite(Number(b.floorSizeSqm))
+        ? String(b.floorSizeSqm)
+        : '',
     street: formatAddressForDisplay(b.address?.street),
     suburb: formatAddressForDisplay(b.address?.suburb),
     city: formatAddressForDisplay(b.address?.city),
@@ -374,6 +378,14 @@ function branchListItemToForm(b: BranchListItem) {
     addrCountry: formatAddressForDisplay(b.address?.country),
     postalCode: addressPostalCode(b.address).trim(),
   };
+}
+
+function parseOptionalFloorSizeSqm(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return n;
 }
 
 function normalizeBranchAddressForSave(f: {
@@ -426,6 +438,7 @@ export function SettingsContent() {
     state: '',
     country: '',
     postalCode: '',
+    floorSizeSqm: '',
   });
 
   const profileQuery = useQuery({
@@ -936,6 +949,7 @@ export function SettingsContent() {
     state: '',
     addrCountry: '',
     postalCode: '',
+    floorSizeSqm: '',
   });
   const [branchFormDirty, setBranchFormDirty] = useState(false);
 
@@ -1013,6 +1027,7 @@ export function SettingsContent() {
         website: branchForm.website,
         status: branchForm.status,
         country: branchForm.country.trim() || 'SA',
+        floorSizeSqm: parseOptionalFloorSizeSqm(branchForm.floorSizeSqm),
         address,
       });
     },
@@ -1085,6 +1100,13 @@ export function SettingsContent() {
         ...(createBranchForm.alias.trim()
           ? { alias: createBranchForm.alias.trim() }
           : {}),
+        ...(parseOptionalFloorSizeSqm(createBranchForm.floorSizeSqm) != null
+          ? {
+              floorSizeSqm: parseOptionalFloorSizeSqm(
+                createBranchForm.floorSizeSqm,
+              )!,
+            }
+          : {}),
         address,
       });
       return { ...res, ref };
@@ -1132,6 +1154,7 @@ export function SettingsContent() {
       state: '',
       country: '',
       postalCode: '',
+      floorSizeSqm: '',
     });
     setAddBranchOpen(true);
   }, []);
@@ -2827,6 +2850,23 @@ export function SettingsContent() {
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="br-floor">Floor size (sqm)</Label>
+                      <Input
+                        id="br-floor"
+                        type="number"
+                        min={0}
+                        step="any"
+                        placeholder="e.g. 2500"
+                        value={branchForm.floorSizeSqm}
+                        onChange={(e) =>
+                          setBranchFormUser((s) => ({
+                            ...s,
+                            floorSizeSqm: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label>Status</Label>
                       <Select
                         value={branchForm.status}
@@ -3002,6 +3042,24 @@ export function SettingsContent() {
                         setCreateBranchForm((s) => ({ ...s, phone: e.target.value }))
                       }
                       placeholder="0712345678"
+                      className={CREATE_BRANCH_INPUT_CLASS}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-br-floor">Floor size (sqm, optional)</Label>
+                    <Input
+                      id="new-br-floor"
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={createBranchForm.floorSizeSqm}
+                      onChange={(e) =>
+                        setCreateBranchForm((s) => ({
+                          ...s,
+                          floorSizeSqm: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 2500"
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>

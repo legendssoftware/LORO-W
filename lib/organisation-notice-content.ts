@@ -48,3 +48,12 @@ export function getNoticeStatus(notice: OrganisationNoticeRecord, now = new Date
   if (until && until < now) return 'expired';
   return 'active';
 }
+
+/** Schedule line for notice list cards: until-date vs 3-times default. */
+export function getNoticeDisplayScheduleLabel(notice: OrganisationNoticeRecord): string {
+  const from = `Show from ${new Date(notice.showFrom).toLocaleString()}`;
+  if (notice.showUntil) {
+    return `${from} until ${new Date(notice.showUntil).toLocaleString()}`;
+  }
+  return `${from} · 3 times per user`;
+}

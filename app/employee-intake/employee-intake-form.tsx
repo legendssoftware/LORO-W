@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -17,8 +17,14 @@ import {
   EMPLOYEE_INTAKE_STEP_LABELS,
   employeeIntakeSchema,
   getDefaultEmployeeIntakeValues,
+  INTAKE_MAX_FILE_BYTES,
   type EmployeeIntakeFormValues,
 } from '@/lib/user-form/employee-intake-schema';
+import {
+  clearEmployeeIntakeDraft,
+  readEmployeeIntakeDraft,
+  writeEmployeeIntakeDraft,
+} from '@/lib/user-form/employee-intake-draft';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -29,24 +35,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { DatePickerField } from '@/components/ui/date-picker-field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { ChevronDownIcon, XIcon } from '@/lib/icons';
+import { EmployeeIntakeSteps } from './employee-intake-steps';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import toast from 'react-hot-toast';
 
 const TOTAL_STEPS = EMPLOYEE_INTAKE_STEP_LABELS.length;
+const DRAFT_SAVE_DEBOUNCE_MS = 400;
 
 export function EmployeeIntakeForm() {
   const searchParams = useSearchParams();
@@ -59,6 +53,8 @@ export function EmployeeIntakeForm() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [completed, setCompleted] = useState<{ signInUrl: string; email: string } | null>(null);
+  const draftReadyRef = useRef(false);
+  const stepRef = useRef(0);
 
   const form = useForm<EmployeeIntakeFormValues>({
     resolver: zodResolver(employeeIntakeSchema),
@@ -69,6 +65,10 @@ export function EmployeeIntakeForm() {
   const emailLocked = Boolean(metadata?.prefillEmail);
 
   useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
     if (!token) {
       setLoadError('Missing intake link token. Please use the link from your invitation email.');
       setLoading(false);
@@ -76,12 +76,32 @@ export function EmployeeIntakeForm() {
     }
 
     let cancelled = false;
+    draftReadyRef.current = false;
     (async () => {
       try {
         const data = await getIntakeByToken(token);
         if (cancelled) return;
         setMetadata(data);
-        form.reset(getDefaultEmployeeIntakeValues(data.prefillEmail));
+        const defaults = getDefaultEmployeeIntakeValues(data.prefillEmail);
+        const draft = readEmployeeIntakeDraft(token);
+        if (draft) {
+          form.reset({
+            ...defaults,
+            ...draft.values,
+            email: data.prefillEmail ?? draft.values.email,
+            password: '',
+            confirmPassword: '',
+            profile: { ...defaults.profile, ...draft.values.profile },
+            employmentProfile: {
+              ...defaults.employmentProfile,
+              ...draft.values.employmentProfile,
+            },
+          });
+          setStep(Math.min(draft.step, TOTAL_STEPS - 1));
+        } else {
+          form.reset(defaults);
+        }
+        draftReadyRef.current = true;
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : 'Invalid intake link');
@@ -96,15 +116,54 @@ export function EmployeeIntakeForm() {
     };
   }, [token, form]);
 
+  useEffect(() => {
+    if (!token || loading) return;
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    function persist(values: EmployeeIntakeFormValues) {
+      if (!draftReadyRef.current) return;
+      writeEmployeeIntakeDraft(token, values, stepRef.current);
+    }
+
+    persist(form.getValues());
+    const subscription = form.watch(() => {
+      window.clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        persist(form.getValues());
+      }, DRAFT_SAVE_DEBOUNCE_MS);
+    });
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
+  }, [token, loading, form]);
+
+  useEffect(() => {
+    if (!token || loading || !draftReadyRef.current) return;
+    writeEmployeeIntakeDraft(token, form.getValues(), step);
+  }, [step, token, loading, form]);
+
   const validateStep = useCallback(async () => {
     const fields = EMPLOYEE_INTAKE_STEP_FIELDS[step];
     if (!fields?.length) return true;
-    return form.trigger(fields);
+    return form.trigger(fields as Parameters<typeof form.trigger>[0]);
   }, [form, step]);
 
   async function handleNext() {
     const valid = await validateStep();
-    if (!valid) return;
+    if (!valid) {
+      const firstInvalid = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+      firstInvalid?.focus();
+      return;
+    }
+    if (step === 0) {
+      const phone = form.getValues('phone');
+      const work = form.getValues('employmentProfile.contactNumber');
+      if (!work?.trim() && phone?.trim()) {
+        form.setValue('employmentProfile.contactNumber', phone.trim());
+      }
+    }
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   }
 
@@ -118,6 +177,10 @@ export function EmployeeIntakeForm() {
     event.target.value = '';
 
     for (const file of Array.from(files)) {
+      if (file.size > INTAKE_MAX_FILE_BYTES) {
+        toast.error(`${file.name} is larger than 5MB`);
+        continue;
+      }
       setUploadingCount((count) => count + 1);
       try {
         const result = await uploadIntakeDocument(token, file);
@@ -154,6 +217,7 @@ export function EmployeeIntakeForm() {
     try {
       const body = buildCompleteIntakeBody(values);
       const result = await completeIntake(token, body);
+      clearEmployeeIntakeDraft(token);
       setCompleted({ signInUrl: result.signInUrl, email: result.user.email });
       toast.success('Profile submitted successfully');
     } catch (err) {
@@ -165,15 +229,16 @@ export function EmployeeIntakeForm() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center" aria-busy="true" aria-live="polite">
         <LoadingSpinner />
+        <span className="sr-only">Loading intake form</span>
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="mx-auto max-w-lg px-4 py-16 text-center" role="status">
         <h1 className="text-xl font-semibold text-foreground">Unable to open form</h1>
         <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
         <Button asChild className="mt-6" variant="outline">
@@ -185,15 +250,13 @@ export function EmployeeIntakeForm() {
 
   if (completed) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold text-foreground">You&apos;re all set</h1>
+      <div className="mx-auto max-w-lg px-4 py-16 text-center" role="status">
+        <h1 className="text-xl font-semibold text-foreground">Profile submitted</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your profile for <strong>{completed.email}</strong> has been saved. Sign in with the
-          password you created.
+          We saved the profile for <strong>{completed.email}</strong>. A manager will review it
+          on the phone. You will get an email when you can sign in — please wait for that
+          approval.
         </p>
-        <Button asChild className="mt-6">
-          <Link href={completed.signInUrl}>Sign in</Link>
-        </Button>
       </div>
     );
   }
@@ -213,29 +276,54 @@ export function EmployeeIntakeForm() {
         </p>
       </div>
 
-      <div className="mb-6 flex justify-center gap-2">
-        {EMPLOYEE_INTAKE_STEP_LABELS.map((label, i) => (
-          <div
-            key={label}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              i === step
-                ? 'bg-primary text-primary-foreground'
-                : i < step
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
+      <nav className="mb-6" aria-label="Intake steps">
+        <ol className="flex justify-center gap-2">
+          {EMPLOYEE_INTAKE_STEP_LABELS.map((label, i) => {
+            const isCurrent = i === step;
+            const isComplete = i < step;
+            return (
+              <li key={label}>
+                <button
+                  type="button"
+                  aria-current={isCurrent ? 'step' : undefined}
+                  aria-label={`${label} step${isCurrent ? ', current' : ''}`}
+                  disabled={!isComplete && !isCurrent}
+                  onClick={() => {
+                    if (isComplete) setStep(i);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    isCurrent
+                      ? 'bg-primary text-primary-foreground'
+                      : isComplete
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form
+          onSubmit={(event) => {
+            if (step < TOTAL_STEPS - 1) {
+              event.preventDefault();
+              void handleNext();
+              return;
+            }
+            void form.handleSubmit(handleSubmit)(event);
+          }}
+          className="space-y-6"
+        >
           {step === 0 && (
             <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
               <p className="text-sm text-muted-foreground">
-                Create your account credentials. These will be used to sign in after submission.
+                Create your account credentials. You will get an email when a manager approves
+                access — you cannot sign in until then.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <FormField
@@ -243,7 +331,7 @@ export function EmployeeIntakeForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First name</FormLabel>
+                      <FormLabel>First name *</FormLabel>
                       <FormControl>
                         <Input {...field} autoComplete="given-name" />
                       </FormControl>
@@ -256,7 +344,7 @@ export function EmployeeIntakeForm() {
                   name="surname"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Surname</FormLabel>
+                      <FormLabel>Surname *</FormLabel>
                       <FormControl>
                         <Input {...field} autoComplete="family-name" />
                       </FormControl>
@@ -270,17 +358,23 @@ export function EmployeeIntakeForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
                         readOnly={emailLocked}
+                        aria-describedby={emailLocked ? 'intake-email-locked' : undefined}
                         className={emailLocked ? 'bg-muted' : undefined}
                         autoComplete="email"
                       />
                     </FormControl>
                     <FormMessage />
+                    {emailLocked ? (
+                      <p id="intake-email-locked" className="text-xs text-muted-foreground">
+                        This address is locked because the invitation was sent here.
+                      </p>
+                    ) : null}
                   </FormItem>
                 )}
               />
@@ -289,7 +383,7 @@ export function EmployeeIntakeForm() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>Personal phone *</FormLabel>
                     <FormControl>
                       <Input {...field} type="tel" autoComplete="tel" />
                     </FormControl>
@@ -303,7 +397,7 @@ export function EmployeeIntakeForm() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Password *</FormLabel>
                       <FormControl>
                         <Input {...field} type="password" autoComplete="new-password" />
                       </FormControl>
@@ -316,7 +410,7 @@ export function EmployeeIntakeForm() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm password</FormLabel>
+                      <FormLabel>Confirm password *</FormLabel>
                       <FormControl>
                         <Input {...field} type="password" autoComplete="new-password" />
                       </FormControl>
@@ -328,327 +422,16 @@ export function EmployeeIntakeForm() {
             </div>
           )}
 
-          {step === 1 && (
-            <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
-              <p className="text-sm text-muted-foreground">Personal details for your HR profile.</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="profile.gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gender</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="profile.dateOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of birth</FormLabel>
-                      <FormControl>
-                        <DatePickerField value={field.value} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="profile.address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input {...field} autoComplete="street-address" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="profile.city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input {...field} autoComplete="address-level2" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="profile.country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input {...field} autoComplete="country-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Collapsible>
-                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium">
-                  Additional personal details (optional)
-                  <ChevronDownIcon className="size-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      ['profile.height', 'Height'],
-                      ['profile.weight', 'Weight'],
-                      ['profile.hairColor', 'Hair color'],
-                      ['profile.eyeColor', 'Eye color'],
-                      ['profile.ethnicity', 'Ethnicity'],
-                      ['profile.bodyType', 'Body type'],
-                      ['profile.zipCode', 'ZIP / postal code'],
-                      ['profile.maritalStatus', 'Marital status'],
-                      ['profile.shoeSize', 'Shoe size'],
-                      ['profile.shirtSize', 'Shirt size'],
-                      ['profile.pantsSize', 'Pants size'],
-                      ['profile.dressSize', 'Dress size'],
-                      ['profile.coatSize', 'Coat size'],
-                    ] as const
-                  ).map(([name, label]) => (
-                    <FormField
-                      key={name}
-                      control={form.control}
-                      name={name}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{label}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={(field.value as string | null) ?? ''}
-                              onChange={(e) => field.onChange(e.target.value || null)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                  <FormField
-                    control={form.control}
-                    name="profile.aboutMe"
-                    render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel>About me</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            onChange={(e) => field.onChange(e.target.value || null)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
-              <p className="text-sm text-muted-foreground">Employment and contact details.</p>
-              <FormField
-                control={form.control}
-                name="employmentProfile.contactNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Work contact number</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="tel" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-3 rounded-md border p-4">
-                <div>
-                  <p className="text-sm font-medium">HR documents (optional)</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Upload ID, contract, bank proof, or other HR files (PDF, images, or
-                    documents — max 5MB each).
-                  </p>
-                </div>
-                <Input
-                  type="file"
-                  multiple
-                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                  onChange={handleDocumentSelect}
-                  disabled={uploadingCount > 0}
-                />
-                {uploadingCount > 0 && (
-                  <p className="text-xs text-muted-foreground">Uploading…</p>
-                )}
-                {documents.length > 0 && (
-                  <ul className="space-y-2">
-                    {documents.map((doc, index) => (
-                      <li
-                        key={`${doc.url}-${index}`}
-                        className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm"
-                      >
-                        <span className="truncate">{doc.title}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 shrink-0"
-                          onClick={() => removeDocument(index)}
-                          aria-label={`Remove ${doc.title}`}
-                        >
-                          <XIcon className="size-4" />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <Collapsible defaultOpen>
-                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium">
-                  Additional employment details (optional)
-                  <ChevronDownIcon className="size-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      ['employmentProfile.position', 'Position'],
-                      ['employmentProfile.department', 'Department'],
-                      ['employmentProfile.branchref', 'Branch ref'],
-                      ['employmentProfile.email', 'Work email'],
-                    ] as const
-                  ).map(([name, label]) => (
-                    <FormField
-                      key={name}
-                      control={form.control}
-                      name={name}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{label}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={(field.value as string | null) ?? ''}
-                              onChange={(e) => field.onChange(e.target.value || null)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                  <FormField
-                    control={form.control}
-                    name="employmentProfile.startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start date</FormLabel>
-                        <FormControl>
-                          <DatePickerField
-                            value={field.value ?? undefined}
-                            onChange={(v) => field.onChange(v || null)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="employmentProfile.endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End date</FormLabel>
-                        <FormControl>
-                          <DatePickerField
-                            value={field.value ?? undefined}
-                            onChange={(v) => field.onChange(v || null)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-3 rounded-lg border bg-card p-4 sm:p-6 text-sm">
-              <p className="font-medium">Review your information</p>
-              <dl className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <dt className="text-muted-foreground">Name</dt>
-                  <dd>
-                    {values.name} {values.surname}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Email</dt>
-                  <dd>{values.email}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Phone</dt>
-                  <dd>{values.phone}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Date of birth</dt>
-                  <dd>{values.profile.dateOfBirth}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-muted-foreground">Address</dt>
-                  <dd>
-                    {values.profile.address}, {values.profile.city}, {values.profile.country}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Work contact</dt>
-                  <dd>{values.employmentProfile.contactNumber}</dd>
-                </div>
-                {documents.length > 0 && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">HR documents</dt>
-                    <dd>
-                      <ul className="mt-1 list-inside list-disc">
-                        {documents.map((doc) => (
-                          <li key={doc.url}>{doc.title}</li>
-                        ))}
-                      </ul>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
+          {step > 0 && (
+            <EmployeeIntakeSteps
+              step={step}
+              form={form}
+              values={values}
+              documents={documents}
+              uploadingCount={uploadingCount}
+              onDocumentSelect={handleDocumentSelect}
+              onRemoveDocument={removeDocument}
+            />
           )}
 
           <div className="flex justify-between gap-3">
@@ -661,7 +444,7 @@ export function EmployeeIntakeForm() {
               </Button>
             ) : (
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Submitting…' : 'Submit profile'}
+                {submitting ? 'Saving…' : 'Submit profile'}
               </Button>
             )}
           </div>
