@@ -40,7 +40,7 @@ export function ApprovalsContent() {
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selected, setSelected] = useState<Approval | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -74,6 +74,7 @@ export function ApprovalsContent() {
   }
 
   const pending = statsQuery.data?.summary.pending ?? 0;
+  const approved = statsQuery.data?.summary.approved ?? 0;
   const overdue = statsQuery.data?.summary.overdue ?? 0;
   const listError = listQuery.error
     ? getQueryErrorMessage(listQuery.error, 'Could not load approvals')
@@ -94,6 +95,12 @@ export function ApprovalsContent() {
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Pending</p>
               <p className="mt-1 text-2xl font-semibold">{pending}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Approved</p>
+              <p className="mt-1 text-2xl font-semibold">{approved}</p>
             </CardContent>
           </Card>
           <Card>

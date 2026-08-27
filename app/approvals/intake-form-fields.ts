@@ -22,6 +22,11 @@ export type IntakeFormSection = {
   rows: IntakeFormRow[];
 };
 
+export type ApprovalPayloadSection = {
+  title: string;
+  rows: IntakeFormRow[];
+};
+
 function mapNamedFields(
   fields: Array<{ name: string; label: string }>,
 ): Array<{ name: string; label: string }> {
@@ -53,6 +58,8 @@ export const INTAKE_FORM_GROUPS: IntakeFormFieldGroup[] = [
       { name: 'accessLevel', label: 'Access level' },
       { name: 'workforceType', label: 'Workforce type' },
       { name: 'role', label: 'Role' },
+      { name: 'userref', label: 'User ref' },
+      { name: 'branchName', label: 'Branch' },
     ],
   },
   ...PERSONNEL_DETAILS_GROUPS.map((group) => ({
@@ -101,7 +108,8 @@ export function formatIntakeFieldValue(
 ): string | undefined {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'number') return String(value);
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : undefined;
+  if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
@@ -237,4 +245,90 @@ export function collectApprovalPayloadRows(params: {
   }
 
   return rows;
+}
+
+const NESTED_SECTION_TITLES: Record<string, string> = {
+  currentData: 'Current data',
+  proposedData: 'Proposed data',
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Builds labeled sections from a source record or merged payload.
+ * Nested objects become their own sections instead of being dropped.
+ */
+export function collectRecordFieldSections(params: {
+  record?: Record<string, unknown> | null;
+  skipKeys?: Iterable<string>;
+  detailsTitle?: string;
+}): ApprovalPayloadSection[] {
+  const record = params.record;
+  if (!record) return [];
+
+  const skip = new Set(
+    [...(params.skipKeys ?? [])].map((key) => key.toLowerCase()),
+  );
+  const scalarRows: IntakeFormRow[] = [];
+  const nestedSections: ApprovalPayloadSection[] = [];
+
+  for (const [name, raw] of Object.entries(record)) {
+    const key = name.toLowerCase();
+    if (PAYLOAD_SECRET_KEYS.has(name) || PAYLOAD_SECRET_KEYS.has(key)) continue;
+    if (skip.has(key)) continue;
+    if (isPlainObject(raw)) {
+      const nestedRows = collectApprovalPayloadRows({
+        entityData: raw,
+        skipKeys: params.skipKeys,
+      });
+      if (nestedRows.length === 0) continue;
+      nestedSections.push({
+        title: NESTED_SECTION_TITLES[name] ?? humanizeIntakeFieldLabel(name),
+        rows: nestedRows,
+      });
+      continue;
+    }
+    const value = formatPayloadScalar(raw);
+    if (!value) continue;
+    scalarRows.push({
+      name,
+      label: humanizeIntakeFieldLabel(name),
+      value,
+    });
+  }
+
+  const sections: ApprovalPayloadSection[] = [];
+  if (scalarRows.length > 0) {
+    sections.push({
+      title: params.detailsTitle ?? 'Details',
+      rows: scalarRows,
+    });
+  }
+  sections.push(...nestedSections);
+  return sections;
+}
+
+/**
+ * Merges entityData then metadata and splits scalars vs nested objects into sections.
+ */
+export function collectApprovalPayloadSections(params: {
+  entityData?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
+  skipKeys?: Iterable<string>;
+  detailsTitle?: string;
+}): ApprovalPayloadSection[] {
+  const merged: Record<string, unknown> = {};
+  for (const record of [params.entityData, params.metadata]) {
+    if (!record) continue;
+    for (const [key, value] of Object.entries(record)) {
+      if (merged[key] === undefined) merged[key] = value;
+    }
+  }
+  return collectRecordFieldSections({
+    record: merged,
+    skipKeys: params.skipKeys,
+    detailsTitle: params.detailsTitle,
+  });
 }

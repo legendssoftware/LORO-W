@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectApprovalPayloadRows,
   collectIntakeFormSections,
+  collectRecordFieldSections,
   formatApprovalTypeLabel,
   humanizeIntakeFieldLabel,
 } from './intake-form-fields';
@@ -73,6 +74,29 @@ describe('collectApprovalPayloadRows', () => {
       'source',
     ]);
     expect(rows.find((row) => row.name === 'password')).toBeUndefined();
+  });
+});
+
+describe('collectRecordFieldSections', () => {
+  it('turns nested objects into labeled subsections', () => {
+    const sections = collectRecordFieldSections({
+      record: {
+        name: 'Acme',
+        currentData: { phone: '011' },
+        proposedData: { phone: '082' },
+        password: 'secret',
+      },
+      detailsTitle: 'Client',
+    });
+
+    expect(sections.map((section) => section.title)).toEqual([
+      'Client',
+      'Current data',
+      'Proposed data',
+    ]);
+    expect(sections[0]?.rows.map((row) => row.name)).toEqual(['name']);
+    expect(sections[1]?.rows[0]?.value).toBe('011');
+    expect(sections[2]?.rows[0]?.value).toBe('082');
   });
 });
 

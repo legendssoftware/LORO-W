@@ -21,6 +21,14 @@ export type IntakeFormSnapshot = {
   documents?: IntakeFormDocument[];
 };
 
+export type ApprovalSourceItem = {
+  entityType: string;
+  entityId: number;
+  label: string;
+  href?: string;
+  userref?: string;
+};
+
 export type Approval = {
   uid: number;
   title: string;
@@ -44,6 +52,8 @@ export type Approval = {
   entityData?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
   intakeForm?: IntakeFormSnapshot;
+  sourceItem?: ApprovalSourceItem;
+  sourceRecord?: Record<string, unknown>;
   submittedAt?: string;
   createdAt?: string;
   updatedAt?: string;
