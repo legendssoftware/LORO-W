@@ -113,11 +113,6 @@ export {
   useResendIntakeInvitationMutation,
   useDeleteIntakeInvitationMutation,
 } from './use-employee-intake';
-export {
-  useGoogleFormIntakeConfig,
-  useSendGoogleFormLinkMutation,
-  useImportGoogleFormIntakeMutation,
-} from './use-google-form-intake';
 export { useTokenReady } from './use-token-ready';
 export { useSessionSync } from './use-session-sync';
 export { useSyncClerk } from './use-sync-clerk';
@@ -207,6 +202,14 @@ export {
   useGenerateShareTokenMutation,
   useUpdateClaimMutation,
 } from './use-claims';
+export {
+  APPROVALS_QUERY_KEY_PREFIX,
+  invalidateApprovalsQueries,
+  useApprovals,
+  useApproval,
+  useApprovalStats,
+  usePerformApprovalAction,
+} from './use-approvals';
 export {
   STORE_PRODUCTS_QUERY_KEY_PREFIX,
   mapStoreProduct,

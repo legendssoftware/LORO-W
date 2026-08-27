@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios';
+import type { StaffEmploymentFormValues, StaffProfileFormValues } from '@/lib/user-form/personnel-fields';
 
 /** User as returned by GET /user/:ref (subset of entity). */
 export interface UserResponse {
@@ -116,27 +117,8 @@ export interface PatchUserBody {
   managedBranches?: number[];
   managedStaff?: number[];
   managedDoors?: number[] | null;
-  profile?: {
-    height?: string;
-    weight?: string;
-    hairColor?: string;
-    eyeColor?: string;
-    gender?: string;
-    dateOfBirth?: string;
-    address?: string;
-    city?: string;
-    country?: string;
-  };
-  employmentProfile?: {
-    branchref?: string;
-    position?: string;
-    department?: string;
-    startDate?: string;
-    endDate?: string;
-    isCurrentlyEmployed?: boolean;
-    email?: string;
-    contactNumber?: string;
-  };
+  profile?: StaffProfileFormValues;
+  employmentProfile?: StaffEmploymentFormValues;
   /** Optional: create or update user targets in the same request. If user has no targets they are created; if they exist they are updated. */
   userTarget?: PatchUserTargetBody;
 }

@@ -24,12 +24,14 @@ export function DatePickerField({
   placeholder = 'Pick date',
   disabled,
   className,
+  'aria-label': ariaLabel,
 }: {
   value?: string | null;
   onChange: (value: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  'aria-label'?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = parseDateValue(value);
@@ -41,6 +43,7 @@ export function DatePickerField({
           type="button"
           variant="outline"
           disabled={disabled}
+          aria-label={ariaLabel ?? placeholder}
           className={cn(
             'h-9 w-full justify-start font-normal',
             !selected && 'text-muted-foreground',

@@ -1,28 +1,15 @@
 import { z } from 'zod';
 import { AccessLevel, WorkforceType } from '@/api/types/user';
+import {
+  staffEmploymentSchema,
+  staffProfileSchema,
+  getEmptyEmploymentProfile,
+  getEmptyPersonnelProfile,
+} from './personnel-fields';
 
-export const profileSchema = z.object({
-  height: z.string().optional().nullable(),
-  weight: z.string().optional().nullable(),
-  hairColor: z.string().optional().nullable(),
-  eyeColor: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
-  dateOfBirth: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-});
+export const profileSchema = staffProfileSchema;
 
-export const employmentProfileSchema = z.object({
-  branchref: z.string().optional().nullable(),
-  position: z.string().optional().nullable(),
-  department: z.string().optional().nullable(),
-  startDate: z.string().optional().nullable(),
-  endDate: z.string().optional().nullable(),
-  isCurrentlyEmployed: z.boolean().optional().nullable(),
-  email: z.string().optional().nullable(),
-  contactNumber: z.string().optional().nullable(),
-});
+export const employmentProfileSchema = staffEmploymentSchema;
 
 /** User targets form fields (PATCH /user/:ref with userTarget). */
 export const targetFormFieldsSchema = z.object({
@@ -204,27 +191,8 @@ export function getDefaultAddUserWizardValues(): AddUserWizardValues {
     managedBranches: [],
     managedStaff: [],
     businesscardURL: null,
-    profile: {
-      height: null,
-      weight: null,
-      hairColor: null,
-      eyeColor: null,
-      gender: null,
-      dateOfBirth: null,
-      address: null,
-      city: null,
-      country: null,
-    },
-    employmentProfile: {
-      branchref: null,
-      position: null,
-      department: null,
-      startDate: null,
-      endDate: null,
-      isCurrentlyEmployed: true,
-      email: null,
-      contactNumber: null,
-    },
+    profile: getEmptyPersonnelProfile(),
+    employmentProfile: getEmptyEmploymentProfile(),
     assignedClientIds: [],
     targetSalesAmount: null,
     targetQuotationsAmount: null,

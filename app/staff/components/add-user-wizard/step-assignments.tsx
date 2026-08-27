@@ -32,6 +32,8 @@ import type { ClientListItem } from '@/api/types/clients';
 import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
 import { cn } from '@/lib/utils';
 import type { AddUserWizardValues } from '@/lib/user-form';
+import { JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
+import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
 
 function matchesSearch(haystack: string, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -422,6 +424,8 @@ export function StepAssignments({
             )}
           />
         </div>
+        <p className="text-sm font-medium">Job information (optional)</p>
+        <PersonnelFieldGrid control={control} prefix="employmentProfile" fields={JOB_INFORMATION_FIELDS} />
       </div>
 
       <FormField

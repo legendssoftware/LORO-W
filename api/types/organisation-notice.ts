@@ -35,4 +35,10 @@ export type GetActiveOrganisationNoticeResponse = {
   notice: OrganisationNoticeRecord | null;
 };
 
+export type AcknowledgeOrganisationNoticeResponse = {
+  viewCount: number;
+  maxViews: number;
+  capped: boolean;
+};
+
 export type NoticeSectionForm = NoticeSection;

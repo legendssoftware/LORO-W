@@ -36,10 +36,9 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/staff/components/r
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import { AddUserModal } from '@/app/staff/components/add-user-modal';
 import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-modal';
-import { GoogleFormIntakeModal } from '@/app/staff/components/google-form-intake-modal';
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Link2, FileSpreadsheet } from 'lucide-react';
+import { UserPlus, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
@@ -58,7 +57,6 @@ export function StaffContent() {
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [sendIntakeOpen, setSendIntakeOpen] = useState(false);
-  const [googleFormOpen, setGoogleFormOpen] = useState(false);
   const singleDateStr = format(today, 'yyyy-MM-dd');
   const monthForSingle = today.getMonth() + 1;
   const yearForSingle = today.getFullYear();
@@ -285,89 +283,17 @@ export function StaffContent() {
           </div>
         </div>
 
-        {canAddUser && (
-          hasPendingIntakeLinks ? (
-            <section className="shrink-0 mb-6 rounded-lg border">
-              <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-sm font-medium text-foreground">User onboarding</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Add staff directly or send intake links for self-service onboarding.
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button
-                    variant="success"
-                    className="h-9 gap-2 !rounded px-4"
-                    onClick={() => setSendIntakeOpen(true)}
-                  >
-                    <Link2 className="size-4" />
-                    Send intake link
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-9 gap-2 !rounded px-4"
-                    onClick={() => setGoogleFormOpen(true)}
-                  >
-                    <FileSpreadsheet className="size-4" />
-                    Google Form
-                  </Button>
-                  <Button
-                    className={cn(
-                      'h-9 gap-2 border-0 !rounded px-4',
-                      'bg-violet-600 text-white hover:bg-violet-700',
-                      'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-                      '[&_svg]:text-white focus-visible:ring-violet-500/40'
-                    )}
-                    data-tour="staff-add-user"
-                    onClick={() => setAddUserOpen(true)}
-                  >
-                    <UserPlus className="size-4" />
-                    Add user
-                  </Button>
-                </div>
-              </div>
-              <div className="px-4 py-3">
-                <h3 className="text-xs font-medium text-muted-foreground mb-2">
-                  Pending intake links
-                </h3>
-                <IntakeInvitationsPanel />
-              </div>
-            </section>
-          ) : (
-            <div className="mb-6 flex shrink-0 justify-end gap-2">
-              <Button
-                variant="success"
-                className="h-9 gap-2 !rounded px-4"
-                onClick={() => setSendIntakeOpen(true)}
-              >
-                <Link2 className="size-4" />
-                Send intake link
-              </Button>
-              <Button
-                variant="outline"
-                className="h-9 gap-2 !rounded px-4"
-                onClick={() => setGoogleFormOpen(true)}
-              >
-                <FileSpreadsheet className="size-4" />
-                Google Form
-              </Button>
-              <Button
-                className={cn(
-                  'h-9 gap-2 border-0 !rounded px-4',
-                  'bg-violet-600 text-white hover:bg-violet-700',
-                  'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-                  '[&_svg]:text-white focus-visible:ring-violet-500/40'
-                )}
-                data-tour="staff-add-user"
-                onClick={() => setAddUserOpen(true)}
-              >
-                <UserPlus className="size-4" />
-                Add user
-              </Button>
+        {canAddUser && hasPendingIntakeLinks ? (
+          <section className="shrink-0 mb-6 rounded-lg border">
+            <div className="px-4 py-3">
+              <h2 className="text-sm font-medium text-foreground">Pending intake links</h2>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+                Staff who were sent a self-service onboarding link and have not finished yet.
+              </p>
+              <IntakeInvitationsPanel />
             </div>
-          )
-        )}
+          </section>
+        ) : null}
 
         <StaffFiltersBar
           search={search}
@@ -386,6 +312,33 @@ export function StaffContent() {
           branchFilterTriggerLabel={branchFilterTriggerLabel}
           branchPickerOpen={branchPickerOpen}
           onBranchPickerOpenChange={setBranchPickerOpen}
+          actions={
+            canAddUser ? (
+              <>
+                <Button
+                  variant="success"
+                  className="h-9 shrink-0 gap-2 !rounded px-4"
+                  onClick={() => setSendIntakeOpen(true)}
+                >
+                  <Link2 className="size-4" />
+                  Send intake link
+                </Button>
+                <Button
+                  className={cn(
+                    'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+                    'bg-violet-600 text-white hover:bg-violet-700',
+                    'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                    '[&_svg]:text-white focus-visible:ring-violet-500/40'
+                  )}
+                  data-tour="staff-add-user"
+                  onClick={() => setAddUserOpen(true)}
+                >
+                  <UserPlus className="size-4" />
+                  Add user
+                </Button>
+              </>
+            ) : null
+          }
         />
 
         <div className="flex-1 min-h-0 overflow-y-auto" data-tour="staff-grid">
@@ -428,7 +381,6 @@ export function StaffContent() {
 
       <AddUserModal open={addUserOpen} onOpenChange={setAddUserOpen} />
       <SendIntakeLinkModal open={sendIntakeOpen} onOpenChange={setSendIntakeOpen} />
-      <GoogleFormIntakeModal open={googleFormOpen} onOpenChange={setGoogleFormOpen} />
     </div>
   );
 }

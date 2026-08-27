@@ -11,6 +11,7 @@ import {
   canAccessCompetitors,
   canAccessReports,
   canAccessUserSettings,
+  canManageApprovals,
   getAllowedRoutes,
   getClientSidebarRoutes,
   isClientPortalUser,
@@ -32,6 +33,7 @@ import {
 import {
   BarChart3,
   Building2,
+  FileCheck,
   FileText,
   FolderKanban,
   GitBranch,
@@ -76,6 +78,7 @@ const ROUTE_ICONS: Record<
   "/competitors": Swords,
   "/planning": CheckSquareIcon,
   "/claims": Receipt,
+  "/approvals": FileCheck,
   "/payslips": FileText,
   "/reports": BarChart3,
   "/staff": UsersIcon,
@@ -99,6 +102,7 @@ function getSidebarRoutes(accessLevel: string | undefined) {
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
       if (r.path === "/reports") return canAccessReports(accessLevel);
+      if (r.path === "/approvals") return canManageApprovals(accessLevel);
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
       }

@@ -659,18 +659,18 @@ export function OrganisationBannersSection() {
 
       {/* Saved / form preview dialog */}
       <Dialog open={Boolean(previewBanner)} onOpenChange={(open) => !open && setPreviewBanner(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg overflow-hidden">
           <DialogHeader>
             <DialogTitle>{previewBanner?.title}</DialogTitle>
             <DialogDescription>{previewBanner?.subtitle}</DialogDescription>
           </DialogHeader>
           {previewBanner?.image ? (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Carousel preview (image only in app)</p>
+            <div className="-mx-6 space-y-2">
+              <p className="px-6 text-xs font-medium text-muted-foreground">Carousel preview (image only in app)</p>
               <img
                 src={previewBanner.image}
                 alt=""
-                className="max-h-48 w-full rounded-lg border object-cover"
+                className="max-h-48 w-full object-cover"
               />
             </div>
           ) : null}

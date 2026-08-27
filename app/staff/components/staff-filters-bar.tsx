@@ -296,11 +296,13 @@ export interface StaffFiltersBarProps
   extends Omit<StaffFilterControlsProps, 'layout'> {
   search: string;
   onSearchChange: (value: string) => void;
+  actions?: React.ReactNode;
 }
 
 export function StaffFiltersBar({
   search,
   onSearchChange,
+  actions,
   ...filterProps
 }: StaffFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
@@ -317,7 +319,7 @@ export function StaffFiltersBar({
 
   function renderSearchField() {
     return (
-      <div className="relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]">
+      <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
           placeholder="Search by name or email"
           value={search}
@@ -350,7 +352,10 @@ export function StaffFiltersBar({
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
           Filter
         </Button>
-        {renderSearchField()}
+        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {renderSearchField()}
+          {actions}
+        </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
@@ -371,7 +376,10 @@ export function StaffFiltersBar({
             <StaffFilterControls {...filterProps} layout="row" />
           </div>
         </div>
-        <div className="shrink-0">{renderSearchField()}</div>
+        <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {renderSearchField()}
+          {actions}
+        </div>
       </div>
     </div>
   );
