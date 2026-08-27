@@ -12,6 +12,10 @@ export const DETAIL_DIALOG_CONTENT_CLASS =
 export const LEAD_DETAIL_DIALOG_CONTENT_CLASS =
   'max-w-[calc(100%-3rem)] sm:max-w-[70vw] max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';
 
+/** Wider variant for approval detail so source-item fields fit three columns. */
+export const APPROVAL_DETAIL_DIALOG_CONTENT_CLASS =
+  'max-w-[calc(100%-3rem)] sm:max-w-[70vw] max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';
+
 /** Narrower variant for nested edit/confirm dialogs. */
 export const DETAIL_DIALOG_SMALL_CONTENT_CLASS =
   'max-w-[calc(100%-3rem)] sm:max-w-md max-h-[90vh] overflow-y-auto p-6 pt-12 pr-14';
@@ -19,17 +23,26 @@ export const DETAIL_DIALOG_SMALL_CONTENT_CLASS =
 /** Two-column grid for label/value pairs in detail views. */
 export const DETAIL_FIELD_GRID_CLASS = 'grid grid-cols-2 gap-x-6 gap-y-3';
 
+/** Three-column grid for approval source-item fields. */
+export const APPROVAL_DETAIL_FIELD_GRID_CLASS =
+  'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3';
+
 export function DetailSectionHeading({
   title,
   icon: Icon,
+  action,
 }: {
   title: string;
   icon: LucideIcon;
+  action?: ReactNode;
 }) {
   return (
-    <h4 className="mb-2 flex items-center gap-2 font-semibold">
-      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      {title}
+    <h4 className="mb-2 flex items-center justify-between gap-2 font-semibold">
+      <span className="flex items-center gap-2">
+        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        {title}
+      </span>
+      {action}
     </h4>
   );
 }
