@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import {
   Calendar,
   Check,
@@ -13,8 +14,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import type { Approval } from '@/api/types/approvals';
+import type { Approval, ApprovalSourceItem } from '@/api/types/approvals';
 import { useApproval, usePerformApprovalAction } from '@/api/hooks/use-approvals';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,15 +31,26 @@ import {
   DetailDialogCloseButton,
   DetailFieldRow,
   DetailSectionHeading,
-  DETAIL_DIALOG_CONTENT_CLASS,
-  DETAIL_FIELD_GRID_CLASS,
+  APPROVAL_DETAIL_DIALOG_CONTENT_CLASS,
+  APPROVAL_DETAIL_FIELD_GRID_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
 import {
-  collectApprovalPayloadRows,
+  collectApprovalPayloadSections,
   collectIntakeFormSections,
+  collectRecordFieldSections,
   formatApprovalTypeLabel,
   type IntakeFormRow,
 } from '@/app/approvals/intake-form-fields';
+import {
+  approvalPriorityClassName,
+  approvalStatusClassName,
+  formatApprovalAmount,
+  getApprovalSourceEntityType,
+  getApprovalSourceHref,
+  resolveApprovalAmount,
+} from '@/app/approvals/approval-display';
+import { ApprovalSourceOpenButton } from '@/app/approvals/components/approval-source-open-button';
+import { cn } from '@/lib/utils';
 
 function formatDateTime(value?: string): string {
   if (!value) return '—';
@@ -55,26 +66,16 @@ function personName(person?: { name?: string; surname?: string; email?: string }
   return name || person?.email || '—';
 }
 
-function formatAmount(amount?: number, currency?: string): string | undefined {
-  if (amount == null || !Number.isFinite(amount)) {
-    return currency?.trim() || undefined;
-  }
-  try {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: currency?.trim() || 'ZAR',
-    }).format(amount);
-  } catch {
-    return currency?.trim() ? `${currency} ${amount}` : String(amount);
-  }
-}
-
 function isPhotoRow(row: IntakeFormRow): boolean {
   return row.name === 'photoURL' || row.name.endsWith('.photoURL');
 }
 
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
 function IntakeValue({ row }: { row: IntakeFormRow }) {
-  if (isPhotoRow(row) && /^https?:\/\//i.test(row.value)) {
+  if (isPhotoRow(row) && isHttpUrl(row.value)) {
     return (
       <a href={row.value} target="_blank" rel="noreferrer" className="inline-block">
         {/* Intake photos are stored on GCS; next/image remotePatterns do not allow that host. */}
@@ -87,7 +88,29 @@ function IntakeValue({ row }: { row: IntakeFormRow }) {
       </a>
     );
   }
+  if (isHttpUrl(row.value)) {
+    return (
+      <a
+        href={row.value}
+        target="_blank"
+        rel="noreferrer"
+        className="break-all text-violet-700 underline underline-offset-2"
+      >
+        {row.value}
+      </a>
+    );
+  }
   return row.value;
+}
+
+function sourceSectionTitle(sourceItem?: ApprovalSourceItem): string {
+  const type = String(sourceItem?.entityType ?? '').toLowerCase();
+  if (type === 'claim') return 'Claim';
+  if (type === 'leave') return 'Leave';
+  if (type === 'client_profile' || type === 'client_credit_limit' || type === 'client') {
+    return 'Client';
+  }
+  return sourceItem?.label || 'Source';
 }
 
 export function ApprovalDetailDialog({
@@ -116,22 +139,46 @@ export function ApprovalDetailDialog({
   const isActionable =
     canAct && ['pending', 'under_review', 'submitted'].includes(status);
   const intakeForm = record?.intakeForm;
+  const sourceItem = record?.sourceItem;
   const intakeSections = useMemo(
     () => (intakeForm ? collectIntakeFormSections(intakeForm) : []),
     [intakeForm],
   );
-  const payloadRows = useMemo(
+  const sourceSections = useMemo(
     () =>
-      collectApprovalPayloadRows({
-        entityData: record?.entityData,
-        metadata: record?.metadata,
-        skipKeys: intakeForm
-          ? ['hireName', 'hireEmail', 'email', 'userId']
-          : ['userId'],
-      }),
-    [record?.entityData, record?.metadata, intakeForm],
+      intakeForm
+        ? []
+        : collectRecordFieldSections({
+            record: record?.sourceRecord,
+            detailsTitle: sourceSectionTitle(sourceItem),
+          }),
+    [intakeForm, record?.sourceRecord, sourceItem],
   );
-  const amountLabel = formatAmount(record?.amount, record?.currency);
+  const payloadSections = useMemo(() => {
+    const sourceKeys = record?.sourceRecord ? Object.keys(record.sourceRecord) : [];
+    return collectApprovalPayloadSections({
+      entityData: record?.entityData,
+      metadata: record?.metadata,
+      skipKeys: [
+        'userId',
+        'claimId',
+        'leaveId',
+        'clientId',
+        'clientAuthId',
+        'clientClerkUserId',
+        ...(intakeForm ? ['hireName', 'hireEmail', 'email', 'invitationUid', 'source'] : []),
+        ...sourceKeys,
+      ],
+    });
+  }, [record?.entityData, record?.metadata, record?.sourceRecord, intakeForm]);
+  const amountLabel = record
+    ? formatApprovalAmount(resolveApprovalAmount(record), record.currency)
+    : undefined;
+  const sourceHref = record ? getApprovalSourceHref(record) : undefined;
+  const sourceType = record ? getApprovalSourceEntityType(record) : undefined;
+  const sourceOpenButton = (
+    <ApprovalSourceOpenButton href={sourceHref} entityType={sourceType} />
+  );
   const deadlineLabel = record?.deadline
     ? `${formatDateTime(record.deadline)}${record.isOverdue ? ' (overdue)' : ''}`
     : undefined;
@@ -149,7 +196,7 @@ export function ApprovalDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={DETAIL_DIALOG_CONTENT_CLASS}>
+      <DialogContent className={APPROVAL_DETAIL_DIALOG_CONTENT_CLASS} showCloseButton={false}>
         <DetailDialogCloseButton />
         <DialogHeader>
           <DialogTitle>Approval details</DialogTitle>
@@ -166,24 +213,41 @@ export function ApprovalDetailDialog({
         ) : record ? (
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="uppercase">
+              <Badge
+                variant="outline"
+                className={cn('uppercase', approvalStatusClassName(record.status))}
+              >
                 {record.status}
               </Badge>
               {record.priority ? (
-                <Badge variant="outline" className="uppercase">
+                <Badge
+                  variant="outline"
+                  className={cn('uppercase', approvalPriorityClassName(record.priority))}
+                >
                   {record.priority}
                 </Badge>
               ) : null}
               {record.isUrgent ? (
-                <Badge variant="outline" className="uppercase">
+                <Badge
+                  variant="outline"
+                  className={cn('uppercase', approvalPriorityClassName('urgent'))}
+                >
                   Urgent
                 </Badge>
               ) : null}
             </div>
 
             <section>
-              <DetailSectionHeading title="Request" icon={FileText} />
-              <div className={DETAIL_FIELD_GRID_CLASS}>
+              <DetailSectionHeading
+                title="Request"
+                icon={FileText}
+                action={
+                  intakeSections.length === 0 && sourceSections.length === 0
+                    ? sourceOpenButton
+                    : null
+                }
+              />
+              <div className={APPROVAL_DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow label="Title" value={record.title} icon={FileText} />
                 <DetailFieldRow
                   label="Type"
@@ -226,16 +290,40 @@ export function ApprovalDetailDialog({
               ) : null}
             </section>
 
-            {intakeSections.map((section) => (
+            {intakeSections.map((section, index) => (
               <section key={section.title}>
-                <DetailSectionHeading title={section.title} icon={User} />
-                <div className={DETAIL_FIELD_GRID_CLASS}>
+                <DetailSectionHeading
+                  title={section.title}
+                  icon={User}
+                  action={index === 0 ? sourceOpenButton : undefined}
+                />
+                <div className={APPROVAL_DETAIL_FIELD_GRID_CLASS}>
                   {section.rows.map((row) => (
                     <DetailFieldRow
                       key={row.name}
                       label={row.label}
                       value={<IntakeValue row={row} />}
                       icon={User}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+
+            {sourceSections.map((section, index) => (
+              <section key={section.title}>
+                <DetailSectionHeading
+                  title={section.title}
+                  icon={FileText}
+                  action={index === 0 ? sourceOpenButton : undefined}
+                />
+                <div className={APPROVAL_DETAIL_FIELD_GRID_CLASS}>
+                  {section.rows.map((row) => (
+                    <DetailFieldRow
+                      key={row.name}
+                      label={row.label}
+                      value={<IntakeValue row={row} />}
+                      icon={FileText}
                     />
                   ))}
                 </div>
@@ -262,21 +350,21 @@ export function ApprovalDetailDialog({
               </section>
             ) : null}
 
-            {payloadRows.length > 0 ? (
-              <section>
-                <DetailSectionHeading title="Details" icon={FileText} />
-                <div className={DETAIL_FIELD_GRID_CLASS}>
-                  {payloadRows.map((row) => (
+            {payloadSections.map((section) => (
+              <section key={section.title}>
+                <DetailSectionHeading title={section.title} icon={FileText} />
+                <div className={APPROVAL_DETAIL_FIELD_GRID_CLASS}>
+                  {section.rows.map((row) => (
                     <DetailFieldRow
                       key={row.name}
                       label={row.label}
-                      value={row.value}
+                      value={<IntakeValue row={row} />}
                       icon={FileText}
                     />
                   ))}
                 </div>
               </section>
-            ) : null}
+            ))}
 
             {isActionable ? (
               <div className="space-y-2">
