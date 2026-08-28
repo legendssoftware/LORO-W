@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { getCall, getCalls, retryCallTranscript, startCompanyCall, ensureCallAudio } from '@/api/endpoints/calls';
+import { getCall, getCalls, retryCallTranscript, startCompanyCall, ensureCallAudio, rateCallConversation } from '@/api/endpoints/calls';
 import type { CallRecordingDetailResponse, CallStartPayload, GetCallsParams } from '@/api/types/calls';
 
 export const CALLS_QUERY_KEY_PREFIX = ['calls'] as const;
@@ -49,6 +49,18 @@ export function useRetryCallTranscriptMutation() {
     onSuccess: (_data, uid) => {
       void queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY_PREFIX });
       void queryClient.invalidateQueries({ queryKey: [...CALLS_QUERY_KEY_PREFIX, 'detail', uid] });
+    },
+  });
+}
+
+export function useRateCallMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (uid: string) => rateCallConversation(client, uid),
+    onSuccess: (data, uid) => {
+      queryClient.setQueryData([...CALLS_QUERY_KEY_PREFIX, 'detail', uid], data);
+      void queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY_PREFIX });
     },
   });
 }

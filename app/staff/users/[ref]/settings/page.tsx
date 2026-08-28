@@ -92,6 +92,7 @@ import { PerformanceWarningsCard } from './performance-warnings-card';
 import { PrimaryVehicleSection } from './primary-vehicle-section';
 import { PersonnelDetailsCard } from './personnel-details-card';
 import { JobInformationCard } from './job-information-card';
+import { ApprovableTypesPicker } from '@/components/approvable-types-picker';
 import {
   CURRENCY_OPTIONS,
   TARGET_PERIOD_OPTIONS,
@@ -301,6 +302,7 @@ export default function UserSettingsPage() {
       branchUid: null,
       managedBranches: [],
       managedStaff: [],
+      approvableTypes: [],
       businesscardURL: null,
       profile: getEmptyPersonnelProfile(),
       employmentProfile: getEmptyEmploymentProfile(),
@@ -340,6 +342,9 @@ export default function UserSettingsPage() {
         branchUid: normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null),
         managedBranches: (user as { managedBranches?: number[] }).managedBranches ?? [],
         managedStaff: (user as { managedStaff?: number[] }).managedStaff ?? [],
+        approvableTypes: Array.isArray((user as { approvableTypes?: string[] }).approvableTypes)
+          ? ((user as { approvableTypes?: string[] }).approvableTypes ?? [])
+          : [],
         businesscardURL: up.businesscardURL ?? null,
         profile: mapProfileFromApi(profile, parseFormDateInput),
         employmentProfile: mapEmploymentFromApi(emp, parseFormDateInput),
@@ -622,7 +627,7 @@ export default function UserSettingsPage() {
               <CardHeader>
                 <CardTitle className="text-sm sm:text-base">Identity & access</CardTitle>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  User reference, HR ID, role, access level, workforce type and status.
+                  User reference, HR ID, role, access level, workforce type, status, and what they can approve.
                 </p>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
@@ -824,6 +829,16 @@ export default function UserSettingsPage() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="approvableTypes"
+                  render={({ field }) => (
+                    <ApprovableTypesPicker
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
               </CardContent>

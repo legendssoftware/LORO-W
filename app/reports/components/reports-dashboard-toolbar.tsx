@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { CalendarIcon, Filter, Globe2 } from 'lucide-react';
+import { CalendarIcon, Download, Filter, Globe2, Loader2 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
 import {
   reportsFilterPortalHighZ,
@@ -22,8 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Popover,
   PopoverContent,
@@ -32,8 +30,8 @@ import {
 import {
   formatUtcCalendarLabel,
   formatUtcYmd,
-  getUtcMonthRange,
   orderUtcCalendarRange,
+  previousMondayToSaturdayUtcRange,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
@@ -69,10 +67,8 @@ export interface ReportsDashboardToolbarProps {
   onUserChange?: (uid: string) => void;
   selectedCountry?: string;
   onCountryChange?: (country: string) => void;
-  /** Persist filters to user preferences when enabled. */
-  rememberSettings?: boolean;
-  onRememberSettingsChange?: (enabled: boolean) => void;
-  rememberSettingsDisabled?: boolean;
+  onExportTravel?: () => void;
+  travelExportLoading?: boolean;
 }
 
 interface ReportsDashboardFilterControlsProps
@@ -94,9 +90,8 @@ function ReportsDashboardFilterControls({
   onUserChange,
   selectedCountry = 'all',
   onCountryChange,
-  rememberSettings = false,
-  onRememberSettingsChange,
-  rememberSettingsDisabled = false,
+  onExportTravel,
+  travelExportLoading = false,
 }: ReportsDashboardFilterControlsProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -106,10 +101,9 @@ function ReportsDashboardFilterControls({
   const skipApplyOnCloseRef = useRef(false);
 
   const today = utcToday();
-  const month = getUtcMonthRange(today);
-  const isCurrentMonth =
-    formatUtcYmd(startDate) === month.from &&
-    formatUtcYmd(endDate) === month.to;
+  const isToday =
+    formatUtcYmd(startDate) === formatUtcYmd(today) &&
+    formatUtcYmd(endDate) === formatUtcYmd(today);
 
   const rangeLabel =
     formatUtcYmd(startDate) === formatUtcYmd(endDate)
@@ -180,7 +174,7 @@ function ReportsDashboardFilterControls({
             className={cn(
               'h-9 gap-2 font-normal',
               isStack && 'w-full justify-start',
-              !isCurrentMonth && 'border-violet-300'
+              !isToday && 'border-violet-300'
             )}
           >
             <CalendarIcon className="size-4 shrink-0 opacity-70" aria-hidden />
@@ -212,7 +206,33 @@ function ReportsDashboardFilterControls({
                 : undefined
             }
           />
-          <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t px-3 py-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                skipApplyOnCloseRef.current = true;
+                const t = utcToday();
+                onRangeChange({ start: t, end: t });
+                setDateRangePopoverOpen(false);
+              }}
+            >
+              Today
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                skipApplyOnCloseRef.current = true;
+                const range = previousMondayToSaturdayUtcRange();
+                onRangeChange({ start: range.start, end: range.end });
+                setDateRangePopoverOpen(false);
+              }}
+            >
+              Last week (Mon–Sat)
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -269,29 +289,22 @@ function ReportsDashboardFilterControls({
         </>
       ) : null}
 
-      {onRememberSettingsChange ? (
-        <div
-          className={cn(
-            'flex items-center gap-2',
-            !isStack && 'ml-auto'
-          )}
+      {onExportTravel && !isStack ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-auto h-9 shrink-0 gap-1.5"
+          disabled={travelExportLoading}
+          onClick={() => onExportTravel()}
         >
-          <Switch
-            id={isStack ? 'reports-remember-settings-dialog' : 'reports-remember-settings'}
-            checked={rememberSettings}
-            disabled={rememberSettingsDisabled}
-            onCheckedChange={onRememberSettingsChange}
-            aria-label="remember my settings"
-          />
-          <Label
-            htmlFor={
-              isStack ? 'reports-remember-settings-dialog' : 'reports-remember-settings'
-            }
-            className="cursor-pointer text-sm font-normal text-muted-foreground"
-          >
-            remember my settings
-          </Label>
-        </div>
+          {travelExportLoading ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
+          )}
+          Export visits and travel
+        </Button>
       ) : null}
     </div>
   );
@@ -312,16 +325,32 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
 
   return (
     <div data-slot="reports-dashboard-toolbar">
-      <div className="flex md:hidden">
+      <div className="mb-2 flex gap-2 md:hidden">
         <Button
           type="button"
           variant="outline"
-          className="h-9 w-full justify-center gap-2"
+          className="h-9 flex-1 justify-center gap-2"
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="size-4 shrink-0" aria-hidden />
           Filter
         </Button>
+        {props.onExportTravel ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 shrink-0 gap-1.5"
+            disabled={props.travelExportLoading}
+            onClick={() => props.onExportTravel?.()}
+          >
+            {props.travelExportLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Download className="size-4" aria-hidden />
+            )}
+            Export
+          </Button>
+        ) : null}
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>

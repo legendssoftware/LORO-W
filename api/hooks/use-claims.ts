@@ -19,10 +19,11 @@ import {
   getClaim,
   getClaims,
   getClaimsMe,
+  getClaimsSummary,
   listClaimGroups,
   updateClaim,
 } from '@/api/endpoints/claims';
-import type { GetClaimsParams } from '@/api/endpoints/claims';
+import type { GetClaimsParams, GetClaimsSummaryParams } from '@/api/endpoints/claims';
 import type {
   Claim,
   CreateClaimPayload,
@@ -61,6 +62,7 @@ export function invalidateClaimsQueries(
 ) {
   queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'list'] });
   queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'infinite'] });
+  queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'summary'] });
   queryClient.invalidateQueries({ queryKey: CLAIM_GROUPS_KEY });
   if (opts?.detailRef != null) {
     queryClient.invalidateQueries({
@@ -257,6 +259,26 @@ export function useClaim(ref: number | null, options?: { enabled?: boolean }) {
   });
 }
 
+export function useClaimsSummary(
+  params: GetClaimsSummaryParams = {},
+  options?: { enabled?: boolean }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [
+      ...CLAIMS_QUERY_KEY_PREFIX,
+      'summary',
+      params.createdFrom ?? '',
+      params.createdTo ?? '',
+      params.claimGroupUid ?? '',
+    ],
+    queryFn: () => getClaimsSummary(client, params),
+    enabled: options?.enabled !== false,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
 export function useClaimGroups(options?: { enabled?: boolean }) {
   const client = useApiClient();
   return useQuery({
@@ -353,6 +375,7 @@ export function useDeleteClaimGroupMutation() {
       queryClient.invalidateQueries({ queryKey: CLAIM_GROUPS_KEY });
       queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'infinite'] });
       queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'summary'] });
     },
     onError: (err) => mutationToastError(err, 'Could not delete folder'),
   });

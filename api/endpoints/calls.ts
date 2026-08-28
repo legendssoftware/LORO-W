@@ -45,6 +45,17 @@ export async function retryCallTranscript(
 }
 
 /**
+ * Score a ready transcript with Gemini. Does not re-download audio or re-transcribe.
+ */
+export async function rateCallConversation(
+  client: AxiosInstance,
+  uid: string,
+): Promise<CallRecordingDetailResponse> {
+  const { data } = await client.post<CallRecordingDetailResponse>(`/calls/${uid}/rate`);
+  return data;
+}
+
+/**
  * Download PBX audio into GCS when missing and return a signed playback URL.
  * Does not change transcript status.
  */

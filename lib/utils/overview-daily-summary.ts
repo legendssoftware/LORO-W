@@ -1,4 +1,6 @@
 import type { VisitListItem } from '@/api/types/visits';
+import { addDays } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export type OverviewTimeframe = 'day' | 'month';
 
@@ -36,6 +38,50 @@ export function getUtcMonthRange(ref: Date): { from: string; to: string } {
   const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   const end = new Date(Date.UTC(y, m, lastDay));
   return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
+}
+
+/** First and last UTC calendar day of the month containing `reference`. */
+export function utcWholeMonthRange(reference?: Date): { start: Date; end: Date } {
+  const { from, to } = getUtcMonthRange(reference ?? utcToday());
+  return { start: utcDateFromYmd(from), end: utcDateFromYmd(to) };
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function ymdFromUtcNoon(date: Date): string {
+  return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+}
+
+function utcNoonFromYmd(ymd: string): Date {
+  const [year, month, day] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+/**
+ * Previous Monday through Saturday as UTC calendar dates (YMD from Africa/Johannesburg).
+ * Matches the Monday weekly travel email window.
+ */
+export function previousMondayToSaturdayUtcRange(
+  now: Date = new Date(),
+  timezone = 'Africa/Johannesburg'
+): { start: Date; end: Date; fromYmd: string; toYmd: string } {
+  const todayYmd = formatInTimeZone(now, timezone, 'yyyy-MM-dd');
+  const todayNoon = utcNoonFromYmd(todayYmd);
+  const dow = todayNoon.getUTCDay();
+  const daysSinceMonday = (dow + 6) % 7;
+  const thisMonday = addDays(todayNoon, -daysSinceMonday);
+  const lastMonday = addDays(thisMonday, -7);
+  const lastSaturday = addDays(lastMonday, 5);
+  const fromYmd = ymdFromUtcNoon(lastMonday);
+  const toYmd = ymdFromUtcNoon(lastSaturday);
+  return {
+    fromYmd,
+    toYmd,
+    start: utcDateFromYmd(fromYmd),
+    end: utcDateFromYmd(toYmd),
+  };
 }
 
 /** UTC calendar: first day of the month through today (UTC), inclusive. */

@@ -21,6 +21,7 @@ import type { BranchListItem } from '@/api/types/branch';
 import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
 import { formatEnumLabel } from '@/lib/format-enum-label';
 import type { AddUserWizardValues } from '@/lib/user-form';
+import { ApprovableTypesPicker } from '@/components/approvable-types-picker';
 
 const MODAL_SELECT_TRIGGER =
   'h-9 w-full border-border bg-background text-foreground';
@@ -38,7 +39,7 @@ export function StepAccess({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Role, access level, workforce type, and primary branch.
+        Role, access level, workforce type, primary branch, and what they can approve.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <FormField
@@ -229,6 +230,17 @@ export function StepAccess({
           )}
         />
       </div>
+      <FormField
+        control={control}
+        name="approvableTypes"
+        render={({ field }) => (
+          <ApprovableTypesPicker
+            value={field.value}
+            onChange={field.onChange}
+            triggerClassName={MODAL_SELECT_TRIGGER}
+          />
+        )}
+      />
     </div>
   );
 }

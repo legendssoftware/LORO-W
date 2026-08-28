@@ -11,7 +11,7 @@ import {
   SkipForward,
   XCircle,
 } from 'lucide-react';
-import type { TranscriptStatus } from '@/api/types/calls';
+import type { CallScoreDimension, TranscriptStatus } from '@/api/types/calls';
 
 export const SEARCH_DEBOUNCE_MS = 350;
 
@@ -38,6 +38,38 @@ export function formatCallDuration(seconds: number | null | undefined): string {
   const m = Math.floor(seconds / 60);
   const s = Math.abs(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+export function formatCallScore(score: number | null | undefined): string {
+  if (score == null || !Number.isFinite(Number(score))) return '—';
+  return String(Math.round(Number(score)));
+}
+
+export const CALL_SCORE_DIMENSIONS: CallScoreDimension[] = [
+  'opening',
+  'discovery',
+  'productKnowledge',
+  'nextSteps',
+  'professionalism',
+];
+
+export function callScoreDimensionLabel(dimension: CallScoreDimension): string {
+  switch (dimension) {
+    case 'opening':
+      return 'Opening';
+    case 'discovery':
+      return 'Discovery';
+    case 'productKnowledge':
+      return 'Product knowledge';
+    case 'nextSteps':
+      return 'Next steps';
+    case 'professionalism':
+      return 'Professionalism';
+    default: {
+      const _exhaustive: never = dimension;
+      return _exhaustive;
+    }
+  }
 }
 
 export function transcriptStatusVariant(

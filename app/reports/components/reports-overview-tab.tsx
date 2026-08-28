@@ -69,13 +69,13 @@ import {
   usePhasedPageEnrichment,
 } from '@/app/reports/lib/use-phased-page-enrichment';
 import { exportReportsTargets } from '@/app/reports/lib/reports-targets-export';
+import { downloadTravelExport } from '@/api/endpoints/reports-travel-export';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getReportsDataScope } from '@/lib/access';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
   formatUtcYmd,
   resolveTargetsUtcCalendarRange,
-  utcMonthStartThroughToday,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { userListItemInLeadsVisitsReportingCohort } from '@/lib/utils/user-has-performance-target';
@@ -196,14 +196,14 @@ export function ReportsOverviewTab() {
     (backendUserData?.uid != null ? String(backendUserData.uid) : null);
 
   const today = utcToday();
-  const defaultMonthRange = utcMonthStartThroughToday();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<ReportsPageSize>(25);
-  const [startDate, setStartDate] = useState(defaultMonthRange.start);
-  const [endDate, setEndDate] = useState(defaultMonthRange.end);
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [useAllTime, setUseAllTime] = useState(false);
+  const [travelExportLoading, setTravelExportLoading] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ReportsTargetRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [branchFilter, setBranchFilter] = useState('all');
@@ -1014,9 +1014,9 @@ export function ReportsOverviewTab() {
   }
 
   function resetDateToToday() {
-    const { start, end } = utcMonthStartThroughToday();
-    setStartDate(start);
-    setEndDate(end);
+    const t = utcToday();
+    setStartDate(t);
+    setEndDate(t);
     setUseAllTime(false);
   }
 
@@ -1033,6 +1033,27 @@ export function ReportsOverviewTab() {
   function handleExportExcel() {
     if (displayRowsWithCurrency.length === 0) return;
     exportReportsTargets(displayRowsWithCurrency, 'excel', exportFileBaseName(), currencyView);
+  }
+
+  async function handleExportTravel() {
+    if (useAllTime || travelExportLoading) return;
+    const from = formatUtcYmd(startDate);
+    const to = formatUtcYmd(endDate);
+    const userUid =
+      userFilter !== 'all' && Number.isFinite(Number(userFilter))
+        ? Number(userFilter)
+        : undefined;
+    setTravelExportLoading(true);
+    try {
+      await downloadTravelExport(client, {
+        from,
+        to,
+        ...(userUid != null ? { userUid } : {}),
+        ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
+      });
+    } finally {
+      setTravelExportLoading(false);
+    }
   }
 
   return (
@@ -1082,7 +1103,9 @@ export function ReportsOverviewTab() {
         onCurrencyViewChange={setCurrencyView}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
+        onExportTravel={handleExportTravel}
         exportDisabled={isLoading || displayRowsWithCurrency.length === 0}
+        travelExportLoading={travelExportLoading}
       />
 
       {errorMessage ? (
