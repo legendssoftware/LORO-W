@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 import {
   useCall,
   useEnsureCallAudioMutation,
+  useRateCallMutation,
   useRetryCallTranscriptMutation,
   useSessionSync,
   useUsers,
@@ -33,6 +34,7 @@ import { getBranchDisplayLabel } from '@/api/types/branch';
 import type {
   CallRecordingDetail,
   CallRecordingListItem,
+  CallScoreBreakdown,
   DialogueTurn,
   TranscriptStatus,
 } from '@/api/types/calls';
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import {
   Message,
@@ -76,10 +79,13 @@ import {
 } from '@/lib/utils/call-party-match';
 import { ORIGIN_LABEL, normalizeOrigin, originVariant } from '../origin-badge';
 import { CallPartyLabel } from './call-party-label';
+import { CallScoreRadialChart } from './call-score-radial-chart';
 import {
+  CALL_SCORE_DIMENSIONS,
   STATUS_LABEL,
   callDirectionIcon,
   callDirectionLabel,
+  callScoreDimensionLabel,
   displayCallMeta,
   formatCallDuration,
   isRetryableTranscriptStatus,
@@ -112,6 +118,7 @@ export function CallDetailDialog({
     pollWhileTranscribing: open,
   });
   const retryMutation = useRetryCallTranscriptMutation();
+  const rateMutation = useRateCallMutation();
   const call = data?.call;
   const headerRow: CallRecordingListItem | CallRecordingDetail | undefined | null =
     call ?? fallback;
@@ -120,6 +127,9 @@ export function CallDetailDialog({
   const status: TranscriptStatus | undefined = call?.transcriptStatus ?? fallback?.transcriptStatus;
   const showRetry =
     canRetry && Boolean(uid) && isRetryableTranscriptStatus(status);
+  const scoreOverall = call?.scoreOverall ?? fallback?.scoreOverall ?? null;
+  const showRate =
+    canRetry && Boolean(uid) && status === 'ready' && scoreOverall == null && !isLoading;
   const origin = normalizeOrigin(headerRow?.origin);
   const direction = normalizeCallDirection(headerRow?.callType);
   const DirectionIcon = callDirectionIcon(direction);
@@ -242,6 +252,29 @@ export function CallDetailDialog({
                 {retryMutation.isPending ? 'Queueing…' : 'Transcribe'}
               </Button>
             ) : null}
+            {showRate ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={rateMutation.isPending}
+                onClick={() => {
+                  if (!uid) return;
+                  rateMutation.mutate(uid, {
+                    onSuccess: () => toast.success('Conversation rated'),
+                    onError: () => toast.error('Could not rate this conversation'),
+                  });
+                }}
+              >
+                {rateMutation.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <Star className="size-4" aria-hidden />
+                )}
+                {rateMutation.isPending ? 'Rating…' : 'Rate conversation'}
+              </Button>
+            ) : null}
           </div>
 
           {partyLinks(headerRow)}
@@ -277,6 +310,21 @@ export function CallDetailDialog({
                 fromLoading={fromStaffQuery.isLoading}
                 toLoading={toStaffQuery.isLoading}
                 splitBranchId={toBranchId}
+              />
+
+              <CallQualitySection
+                status={status}
+                scoreOverall={scoreOverall}
+                scoreBreakdown={call?.scoreBreakdown ?? null}
+                canRate={showRate}
+                isRating={rateMutation.isPending}
+                onRate={() => {
+                  if (!uid) return;
+                  rateMutation.mutate(uid, {
+                    onSuccess: () => toast.success('Conversation rated'),
+                    onError: () => toast.error('Could not rate this conversation'),
+                  });
+                }}
               />
 
               <DialogueThread
@@ -512,11 +560,6 @@ function CallMetadataGrid({
             value={displayCallMeta(detail?.fileName)}
           />
           <DetailFieldRow
-            label="Score"
-            icon={Star}
-            value={displayCallMeta(detail?.scoreOverall)}
-          />
-          <DetailFieldRow
             label="Check-in"
             icon={MapPin}
             value={displayCallMeta(detail?.checkInUid)}
@@ -596,6 +639,103 @@ function BranchStaffSection({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function CallQualitySection({
+  status,
+  scoreOverall,
+  scoreBreakdown,
+  canRate,
+  isRating,
+  onRate,
+}: {
+  status?: TranscriptStatus;
+  scoreOverall: number | null;
+  scoreBreakdown: CallScoreBreakdown | null;
+  canRate: boolean;
+  isRating: boolean;
+  onRate: () => void;
+}) {
+  const hasScore = scoreOverall != null && Number.isFinite(Number(scoreOverall));
+  const dimensions = scoreBreakdown ? CALL_SCORE_DIMENSIONS : [];
+
+  return (
+    <div>
+      <DetailSectionHeading title="Call quality" icon={Star} />
+      {hasScore ? (
+        <div className="space-y-4 rounded-md border p-3">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr] sm:items-center">
+            <CallScoreRadialChart score={Number(scoreOverall)} />
+            {dimensions.length > 0 ? (
+              <ul className="space-y-2">
+                {dimensions.map((dimension) => {
+                  const value = scoreBreakdown?.[dimension];
+                  const clamped = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+                  return (
+                    <li key={dimension} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span>{callScoreDimensionLabel(dimension)}</span>
+                        <span className="tabular-nums text-muted-foreground">{clamped.toFixed(0)}/10</span>
+                      </div>
+                      <Progress value={clamped * 10} aria-label={`${callScoreDimensionLabel(dimension)} ${clamped} of 10`} />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Dimension scores were not returned for this call.</p>
+            )}
+          </div>
+          {scoreBreakdown?.summary ? (
+            <p className="text-sm">{scoreBreakdown.summary}</p>
+          ) : null}
+          {scoreBreakdown?.strengths?.length ? (
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Strengths</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                {scoreBreakdown.strengths.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {scoreBreakdown?.improvements?.length ? (
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Improvements</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                {scoreBreakdown.improvements.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : status === 'ready' ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-muted-foreground">Rating failed or not run yet.</p>
+          {canRate ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={isRating}
+              onClick={onRate}
+            >
+              {isRating ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <Star className="size-4" aria-hidden />
+              )}
+              {isRating ? 'Rating…' : 'Rate conversation'}
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Score appears after Transcribe finishes.</p>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   formatUtcYmd,
   getUtcMonthRange,
   orderUtcCalendarRange,
+  previousMondayToSaturdayUtcRange,
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
   utcMonthStartThroughToday,
@@ -47,6 +48,8 @@ export interface UtcDateRangePickerProps {
   dataTour?: string;
   /** Mobile filter sheet: inline single-month calendar instead of a popover. */
   stackLayout?: boolean;
+  /** Which preset counts as the default (reset X hidden). Reports uses today. */
+  defaultPreset?: 'today' | 'whole-month';
 }
 
 export function UtcDateRangePicker({
@@ -62,6 +65,7 @@ export function UtcDateRangePicker({
   disabled = false,
   dataTour,
   stackLayout = false,
+  defaultPreset = 'today',
 }: UtcDateRangePickerProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -76,10 +80,14 @@ export function UtcDateRangePicker({
   }, [stackLayout, startDate, endDate]);
 
   const today = utcToday();
+  const wholeMonth = getUtcMonthRange(today);
   const isDefaultRange =
     !useAllTime &&
-    formatUtcYmd(startDate) === formatUtcYmd(today) &&
-    formatUtcYmd(endDate) === formatUtcYmd(today);
+    (defaultPreset === 'whole-month'
+      ? formatUtcYmd(startDate) === wholeMonth.from &&
+        formatUtcYmd(endDate) === wholeMonth.to
+      : formatUtcYmd(startDate) === formatUtcYmd(today) &&
+        formatUtcYmd(endDate) === formatUtcYmd(today));
 
   const rangeLabel = useAllTime
     ? 'All time'
@@ -127,6 +135,14 @@ export function UtcDateRangePicker({
     const { from, to } = getUtcMonthRange(utcToday());
     onSetUseAllTime?.(false);
     onRangeChange({ start: utcDateFromYmd(from), end: utcDateFromYmd(to) });
+    setDateRangePopoverOpen(false);
+  }, [onSetUseAllTime, onRangeChange]);
+
+  const shortcutLastWeek = useCallback(() => {
+    skipApplyOnCloseRef.current = true;
+    const range = previousMondayToSaturdayUtcRange();
+    onSetUseAllTime?.(false);
+    onRangeChange({ start: range.start, end: range.end });
     setDateRangePopoverOpen(false);
   }, [onSetUseAllTime, onRangeChange]);
 
@@ -188,7 +204,7 @@ export function UtcDateRangePicker({
 
   const shortcutsFooter = (
     <div className="flex flex-col gap-2 border-t px-3 py-3">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button
           type="button"
           variant="ghost"
@@ -198,6 +214,16 @@ export function UtcDateRangePicker({
           onClick={shortcutToday}
         >
           Today (UTC)
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={calendarDisabled}
+          className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
+          onClick={shortcutLastWeek}
+        >
+          Last week (Mon–Sat)
         </Button>
         <Button
           type="button"
@@ -270,7 +296,11 @@ export function UtcDateRangePicker({
               type="button"
               onClick={onReset}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Reset to today"
+              aria-label={
+                defaultPreset === 'whole-month'
+                  ? 'Reset to this month'
+                  : 'Reset to today'
+              }
             >
               <XIcon className="size-4 text-muted-foreground" />
             </button>
@@ -341,7 +371,11 @@ export function UtcDateRangePicker({
             'ml-0.5 flex shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             compact ? 'h-8 w-8' : 'h-9 w-9'
           )}
-          aria-label="Reset to today"
+          aria-label={
+            defaultPreset === 'whole-month'
+              ? 'Reset to this month'
+              : 'Reset to today'
+          }
         >
           <XIcon className="size-4 text-muted-foreground" />
         </button>

@@ -3,6 +3,13 @@ import {
   normalizeCurrencyCode,
 } from '@/lib/utils/erp-currency';
 import {
+  amountToZar,
+  buildExchangeRateMap,
+  convertAmount,
+  type ExchangeRateMap,
+  zarToAmount,
+} from '@/lib/utils/zar-fx';
+import {
   calcTargetProgress,
   calcOverallAchievementWithEngagement,
   resolveCallsLeadsCellProgress,
@@ -15,72 +22,8 @@ import type {
 
 export type ReportsTargetsCurrencyView = 'set' | 'branch' | 'zar';
 
-export type ExchangeRateMap = Map<string, number>;
-
-export function buildExchangeRateMap(
-  rates: Array<{ code: string; rate: number }> | null | undefined
-): ExchangeRateMap {
-  const map = new Map<string, number>();
-  for (const row of rates ?? []) {
-    const code = normalizeCurrencyCode(row.code);
-    if (Number.isFinite(row.rate) && row.rate > 0) {
-      map.set(code, row.rate);
-    }
-  }
-  return map;
-}
-
-/** Resolve forex lookup code for an ISO currency (ZAR passthrough). */
-function forexCodeForCurrency(isoCode: string): string {
-  const code = normalizeCurrencyCode(isoCode);
-  if (code === 'ZAR') return 'ZAR';
-  return code;
-}
-
-/**
- * Convert amount to ZAR using tblforex_history semantics: amountZAR = amount / rate.
- */
-export function amountToZar(
-  amount: number,
-  fromCurrency: string,
-  rates: ExchangeRateMap
-): number {
-  if (!Number.isFinite(amount)) return 0;
-  const from = forexCodeForCurrency(fromCurrency);
-  if (from === 'ZAR') return amount;
-  const rate = rates.get(from);
-  if (rate == null || !Number.isFinite(rate) || rate <= 0) return amount;
-  return amount / rate;
-}
-
-/**
- * Convert ZAR amount to target ISO currency: amount = zar * rate.
- */
-export function zarToAmount(
-  zar: number,
-  toCurrency: string,
-  rates: ExchangeRateMap
-): number {
-  if (!Number.isFinite(zar)) return 0;
-  const to = forexCodeForCurrency(toCurrency);
-  if (to === 'ZAR') return zar;
-  const rate = rates.get(to);
-  if (rate == null || !Number.isFinite(rate) || rate <= 0) return zar;
-  return zar * rate;
-}
-
-export function convertAmount(
-  amount: number,
-  fromCurrency: string,
-  toCurrency: string,
-  rates: ExchangeRateMap
-): number {
-  const from = normalizeCurrencyCode(fromCurrency);
-  const to = normalizeCurrencyCode(toCurrency);
-  if (from === to) return amount;
-  const zar = amountToZar(amount, from, rates);
-  return zarToAmount(zar, to, rates);
-}
+export type { ExchangeRateMap };
+export { amountToZar, buildExchangeRateMap, convertAmount, zarToAmount };
 
 export function resolveRowSetCurrency(row: ReportsTargetRow): string {
   return normalizeCurrencyCode(row.setCurrency ?? row.sales.currency ?? 'ZAR');

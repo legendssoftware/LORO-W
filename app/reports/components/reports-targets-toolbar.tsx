@@ -7,6 +7,7 @@ import {
   Download,
   Filter,
   Globe2,
+  Loader2,
   MapPinned,
 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
@@ -80,7 +81,10 @@ export interface ReportsTargetsToolbarProps {
   /** Export currently visible/filtered table rows. */
   onExportCsv?: () => void;
   onExportExcel?: () => void;
+  /** Download the multi-sheet visits/travel workbook for the current date filters. */
+  onExportTravel?: () => void;
   exportDisabled?: boolean;
+  travelExportLoading?: boolean;
   currencyView?: ReportsTargetsCurrencyView;
   onCurrencyViewChange?: (view: ReportsTargetsCurrencyView) => void;
 }
@@ -107,7 +111,7 @@ const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; label: s
 interface ReportsTargetsFilterControlsProps
   extends Omit<
     ReportsTargetsToolbarProps,
-    'searchInput' | 'onSearchInputChange' | 'showSearch' | 'onExportCsv' | 'onExportExcel' | 'exportDisabled'
+    'searchInput' | 'onSearchInputChange' | 'showSearch' | 'onExportCsv' | 'onExportExcel' | 'onExportTravel' | 'exportDisabled' | 'travelExportLoading'
   > {
   layout: 'row' | 'stack';
 }
@@ -186,6 +190,7 @@ function ReportsTargetsFilterControls({
         showAllTime
         useAllTime={useAllTime}
         onSetUseAllTime={onSetUseAllTime}
+        defaultPreset="today"
         dataTour="reports-targets-date-filter"
         triggerClassName={isStack ? 'w-full' : undefined}
         stackLayout={isStack}
@@ -268,7 +273,9 @@ export function ReportsTargetsToolbar({
   showSearch = true,
   onExportCsv,
   onExportExcel,
+  onExportTravel,
   exportDisabled = false,
+  travelExportLoading = false,
   ...filterProps
 }: ReportsTargetsToolbarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
@@ -310,7 +317,7 @@ export function ReportsTargetsToolbar({
   }
 
   function renderExportButton() {
-    if (!onExportCsv && !onExportExcel) return null;
+    if (!onExportCsv && !onExportExcel && !onExportTravel) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -319,10 +326,14 @@ export function ReportsTargetsToolbar({
             variant="outline"
             size="sm"
             className="h-9 shrink-0 gap-1.5"
-            disabled={exportDisabled}
+            disabled={(exportDisabled && !onExportTravel) || travelExportLoading}
             data-tour="reports-targets-export"
           >
-            <Download className="size-4" aria-hidden />
+            {travelExportLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Download className="size-4" aria-hidden />
+            )}
             Export
           </Button>
         </DropdownMenuTrigger>
@@ -343,12 +354,20 @@ export function ReportsTargetsToolbar({
               Export Excel
             </DropdownMenuItem>
           ) : null}
+          {onExportTravel ? (
+            <DropdownMenuItem
+              disabled={travelExportLoading || filterProps.useAllTime}
+              onSelect={() => onExportTravel()}
+            >
+              Export visits and travel (Excel)
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     );
   }
 
-  const hasExport = Boolean(onExportCsv || onExportExcel);
+  const hasExport = Boolean(onExportCsv || onExportExcel || onExportTravel);
   const hasMobileActions = showSearch || hasExport;
 
   return (

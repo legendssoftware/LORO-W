@@ -23,6 +23,7 @@ export interface UserResponse {
   hrID?: number | null;
   managedBranches?: number[];
   managedStaff?: number[];
+  approvableTypes?: string[];
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
   businesscardURL?: string | null;
@@ -117,6 +118,7 @@ export interface PatchUserBody {
   managedBranches?: number[];
   managedStaff?: number[];
   managedDoors?: number[] | null;
+  approvableTypes?: string[];
   profile?: StaffProfileFormValues;
   employmentProfile?: StaffEmploymentFormValues;
   /** Optional: create or update user targets in the same request. If user has no targets they are created; if they exist they are updated. */

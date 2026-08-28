@@ -43,6 +43,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import {
+  claimPrimaryAmount,
+  claimSecondaryAmount,
+} from '@/app/claims/lib/claim-display';
 
 function formatLabel(s: string | undefined) {
   if (!s) return '—';
@@ -186,6 +190,8 @@ export function ClaimDetailContent() {
   const showApprover =
     !!claim.verifiedBy &&
     ['approved', 'declined', 'rejected', 'paid', 'cancelled'].includes(st);
+  const originalAmount = claimPrimaryAmount(claim, 'original');
+  const zarAmount = claimSecondaryAmount(claim, 'original');
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -234,8 +240,25 @@ export function ClaimDetailContent() {
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatLabel(claim.category)} · {claim.amount ?? '—'}
+            {formatLabel(claim.category)} · {originalAmount}
+            {zarAmount ? ` · ${zarAmount}` : ''}
           </p>
+          {claim.amountZar != null &&
+          Number.isFinite(claim.amountZar) &&
+          claim.fxCode &&
+          claim.fxRate != null &&
+          claim.fxRate !== 1 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Converted with {claim.fxCode} rate {claim.fxRate} on {claim.fxDate ?? 'claim date'}
+              {' '}(1 ZAR = {claim.fxRate} {claim.fxCode}).
+            </p>
+          ) : claim.currency &&
+            claim.currency !== 'ZAR' &&
+            (claim.amountZar == null || !Number.isFinite(claim.amountZar)) ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              No FX rate found for {claim.currency} on the claim date.
+            </p>
+          ) : null}
           {claim.createdAt ? (
             <p className="mt-1 text-xs text-muted-foreground">
               Created {format(new Date(claim.createdAt), 'MMM d, yyyy')}

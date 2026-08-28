@@ -221,6 +221,7 @@ export type UserBaseline = {
   branchUid?: number | null;
   managedBranches?: number[];
   managedStaff?: number[];
+  approvableTypes?: string[];
   businesscardURL?: string | null;
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
@@ -242,6 +243,11 @@ export function buildPatchBody(
   const sameArr = (a?: number[], b?: number[]) => {
     const x = [...(a ?? [])].sort((i, j) => i - j);
     const y = [...(b ?? [])].sort((i, j) => i - j);
+    return x.length === y.length && x.every((v, i) => v === y[i]);
+  };
+  const sameStrArr = (a?: string[], b?: string[]) => {
+    const x = [...(a ?? [])].sort();
+    const y = [...(b ?? [])].sort();
     return x.length === y.length && x.every((v, i) => v === y[i]);
   };
 
@@ -283,6 +289,8 @@ export function buildPatchBody(
     body.managedBranches = values.managedBranches ?? [];
   if (!sameArr(user.managedStaff, values.managedStaff))
     body.managedStaff = values.managedStaff ?? [];
+  if (!sameStrArr(user.approvableTypes, values.approvableTypes))
+    body.approvableTypes = values.approvableTypes ?? [];
 
   if (norm(user.businesscardURL ?? null) !== norm(values.businesscardURL ?? null))
     body.businesscardURL = values.businesscardURL ?? undefined;
@@ -361,6 +369,7 @@ export function buildInviteFollowUpPatchBody(
   if (values.managedBranches?.length)
     body.managedBranches = values.managedBranches;
   if (values.managedStaff?.length) body.managedStaff = values.managedStaff;
+  if (values.approvableTypes?.length) body.approvableTypes = values.approvableTypes;
   if (values.assignedClientIds?.length)
     body.assignedClientIds = values.assignedClientIds;
 

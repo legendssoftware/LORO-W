@@ -32,8 +32,27 @@ export type CallRecordingListItem = {
   hasAudio: boolean;
   ownerClerkUserId: string | null;
   ownerName: string | null;
+  scoreOverall: number | null;
   client: CallRecordingLinkedParty | null;
   lead: CallRecordingLinkedParty | null;
+};
+
+export type CallScoreDimension =
+  | 'opening'
+  | 'discovery'
+  | 'productKnowledge'
+  | 'nextSteps'
+  | 'professionalism';
+
+export type CallScoreBreakdown = {
+  opening: number;
+  discovery: number;
+  productKnowledge: number;
+  nextSteps: number;
+  professionalism: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
 };
 
 export type CallRecordingDetail = CallRecordingListItem & {
@@ -41,7 +60,8 @@ export type CallRecordingDetail = CallRecordingListItem & {
   audioUrl: string | null;
   fileName: string | null;
   checkInUid: number | null;
-  scoreOverall: number | null;
+  scoreBreakdown: CallScoreBreakdown | null;
+  ratedAt: string | null;
   localCallId: string | null;
   srcExt: string | null;
   dstExt: string | null;
@@ -68,6 +88,8 @@ export type CallRetryTranscriptResponse = {
   uid: string;
   transcriptStatus: TranscriptStatus;
 };
+
+export type CallRateConversationResponse = CallRecordingDetailResponse;
 
 export type CallStartPayload = {
   toNumber: string;

@@ -5,6 +5,7 @@ import type {
   ClaimGroupsListResponse,
   ClaimsListResponse,
   ClaimsMeResponse,
+  ClaimsSummaryResponse,
   CreateClaimGroupPayload,
   CreateClaimPayload,
   CreateClaimResponse,
@@ -69,6 +70,31 @@ export async function getClaimsMe(
 ): Promise<ClaimsListResponse> {
   const { data } = await client.get<ClaimsMeResponse>('/claims/me');
   return normalizeClaimsMeResponse(data);
+}
+
+export interface GetClaimsSummaryParams {
+  createdFrom?: string;
+  createdTo?: string;
+  claimGroupUid?: number;
+}
+
+/**
+ * GET /claims/summary — ZAR totals by status and folder (same RBAC as list).
+ */
+export async function getClaimsSummary(
+  client: AxiosInstance,
+  params: GetClaimsSummaryParams = {}
+): Promise<ClaimsSummaryResponse> {
+  const search = new URLSearchParams();
+  if (params.createdFrom) search.set('createdFrom', params.createdFrom);
+  if (params.createdTo) search.set('createdTo', params.createdTo);
+  if (params.claimGroupUid != null)
+    search.set('claimGroupUid', String(params.claimGroupUid));
+  const qs = search.toString();
+  const { data } = await client.get<ClaimsSummaryResponse>(
+    `/claims/summary${qs ? `?${qs}` : ''}`
+  );
+  return data;
 }
 
 export async function getClaim(

@@ -244,5 +244,6 @@ export {
   useCall,
   useRetryCallTranscriptMutation,
   useEnsureCallAudioMutation,
+  useRateCallMutation,
   useStartCompanyCallMutation,
 } from './use-calls';
