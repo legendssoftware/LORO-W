@@ -2,9 +2,11 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   countCallsByOwnerUid,
   getThresholdReferenceUtcDay,
+  previousMondayToSaturdayUtcRange,
   resolveTargetsUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
   utcRangeIsoFromUtcCalendarStoredRange,
+  utcWholeMonthRange,
 } from './overview-daily-summary';
 import type { VisitListItem } from '@/api/types/visits';
 
@@ -100,6 +102,25 @@ describe('resolveTargetsUtcCalendarRange', () => {
     expect(r.fromYmd).toBe('2026-07-01');
     expect(r.toYmd).toBe('2026-07-25');
     expect(r.referenceDayYmd).toBe('2026-07-25');
+  });
+});
+
+describe('utcWholeMonthRange', () => {
+  it('covers the first through last calendar day of the month', () => {
+    const { start, end } = utcWholeMonthRange(new Date(Date.UTC(2026, 7, 28)));
+    expect(start.toISOString().slice(0, 10)).toBe('2026-08-01');
+    expect(end.toISOString().slice(0, 10)).toBe('2026-08-31');
+  });
+});
+
+describe('previousMondayToSaturdayUtcRange', () => {
+  it('on Monday SAST returns the previous Mon–Sat YMD', () => {
+    const range = previousMondayToSaturdayUtcRange(
+      new Date('2026-08-24T05:00:00.000Z'),
+      'Africa/Johannesburg'
+    );
+    expect(range.fromYmd).toBe('2026-08-17');
+    expect(range.toYmd).toBe('2026-08-22');
   });
 });
 

@@ -1,7 +1,11 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useClaimsInfinite, useClaimGroups } from '@/api/hooks/use-claims';
+import {
+  useClaimsInfinite,
+  useClaimGroups,
+  useClaimsSummary,
+} from '@/api/hooks/use-claims';
 import { useBranches } from '@/api/hooks/use-branches';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
@@ -9,9 +13,14 @@ import type { BranchListItem } from '@/api/types/branch';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { ClaimsFiltersBar } from '@/app/claims/components/claims-filters-bar';
-import { ClaimRowCard, ClaimRowCardSkeleton } from '@/app/claims/components/claim-row-card';
 import { ClaimCreateDialog } from '@/app/claims/components/claim-create-dialog';
 import { ClaimFoldersPanel } from '@/app/claims/components/claim-folders-panel';
+import { ClaimsSummaryCards } from '@/app/claims/components/claims-summary-cards';
+import {
+  ClaimsGroupedList,
+  ClaimsGroupedListSkeleton,
+} from '@/app/claims/components/claims-grouped-list';
+import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
 import { Plus } from 'lucide-react';
 import type { Claim } from '@/api/types/claims';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
@@ -20,6 +29,8 @@ import {
   formatUtcYmd,
   utcMonthStartThroughToday,
 } from '@/lib/utils/overview-daily-summary';
+
+const AUTO_FETCH_TOTAL_CAP = 200;
 
 function matchesSearch(claim: Claim, q: string): boolean {
   if (!q) return true;
@@ -54,6 +65,7 @@ export function ClaimsContent() {
     return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
   });
   const [groupFilter, setGroupFilter] = useState('all');
+  const [currencyView, setCurrencyView] = useState<ClaimsCurrencyView>('original');
 
   const groupsQuery = useClaimGroups({ enabled: isTokenReady && !sessionSyncLoading });
   const groups = groupsQuery.data?.groups ?? [];
@@ -69,22 +81,50 @@ export function ClaimsContent() {
     return map;
   }, [branchesQuery.data]);
 
+  const claimGroupUid =
+    groupFilter === 'all' || Number.isNaN(Number.parseInt(groupFilter, 10))
+      ? undefined
+      : Number.parseInt(groupFilter, 10);
+
   const claimsQuery = useClaimsInfinite({
     enabled: isTokenReady && !sessionSyncLoading,
     status: statusFilter === 'all' ? undefined : statusFilter,
     createdFrom: createdRange.from || undefined,
     createdTo: createdRange.to || undefined,
-    claimGroupUid:
-      groupFilter === 'all' || Number.isNaN(Number.parseInt(groupFilter, 10))
-        ? undefined
-        : Number.parseInt(groupFilter, 10),
+    claimGroupUid,
   });
+
+  const summaryQuery = useClaimsSummary(
+    {
+      createdFrom: createdRange.from || undefined,
+      createdTo: createdRange.to || undefined,
+      claimGroupUid,
+    },
+    { enabled: isTokenReady && !sessionSyncLoading }
+  );
 
   const rows = claimsQuery.rows;
   const filteredRows = useMemo(
     () => rows.filter((c) => matchesSearch(c, debouncedSearch)),
     [rows, debouncedSearch]
   );
+
+  useEffect(() => {
+    const total = claimsQuery.data?.pages?.[0]?.meta?.total ?? 0;
+    if (
+      total > 0 &&
+      total <= AUTO_FETCH_TOTAL_CAP &&
+      claimsQuery.hasNextPage &&
+      !claimsQuery.isFetchingNextPage
+    ) {
+      void claimsQuery.fetchNextPage();
+    }
+  }, [
+    claimsQuery.data?.pages,
+    claimsQuery.hasNextPage,
+    claimsQuery.isFetchingNextPage,
+    claimsQuery.fetchNextPage,
+  ]);
 
   const err = claimsQuery.error;
   const statusCode = err ? getErrorStatus(err) : undefined;
@@ -126,6 +166,13 @@ export function ClaimsContent() {
           </Button>
         </div>
 
+        <ClaimsSummaryCards
+          summary={summaryQuery.data}
+          isLoading={summaryQuery.isLoading}
+          activeStatus={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
+
         <ClaimsFiltersBar
           searchInput={searchInput}
           onSearchChange={setSearchInput}
@@ -140,6 +187,8 @@ export function ClaimsContent() {
           groups={groups}
           claimGroupUid={groupFilter}
           onClaimGroupChange={setGroupFilter}
+          currencyView={currencyView}
+          onCurrencyViewChange={setCurrencyView}
         />
 
         <ClaimFoldersPanel
@@ -159,27 +208,17 @@ export function ClaimsContent() {
 
         <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
           {isLoading ? (
-            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <ClaimRowCardSkeleton key={i} />
-              ))}
-            </div>
+            <ClaimsGroupedListSkeleton />
           ) : (
-            <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-              {filteredRows.map((claim) => (
-                <ClaimRowCard
-                  key={claim.uid}
-                  claim={claim}
-                  branchByUid={branchByUid}
-                />
-              ))}
-            </div>
+            <ClaimsGroupedList
+              claims={filteredRows}
+              groups={groups}
+              byGroup={summaryQuery.data?.byGroup}
+              activeGroupUid={groupFilter}
+              branchByUid={branchByUid}
+              currencyView={currencyView}
+            />
           )}
-          {!isLoading && !err && filteredRows.length === 0 ? (
-            <p className="py-10 text-center text-muted-foreground">
-              No claims match your filters.
-            </p>
-          ) : null}
           {claimsQuery.hasNextPage ? (
             <div className="flex justify-center py-6">
               <Button

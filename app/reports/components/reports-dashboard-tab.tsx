@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import {
@@ -15,7 +15,6 @@ import {
   useEngagementRange,
   useLeadsReport,
   useMonthlyMetrics,
-  usePatchUserPreferences,
   usePayrollHoursAll,
   useProductsSales,
   useRepJourney,
@@ -25,9 +24,9 @@ import {
   useTeamTargets,
   useTokenReady,
   useUser,
-  useUserPreferences,
 } from '@/api/hooks';
 import { getStoresSales } from '@/api/endpoints/erp-stores-sales';
+import { downloadTravelExport } from '@/api/endpoints/reports-travel-export';
 import type { UserListItem } from '@/api/endpoints/user';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import { getBranchDisplayLabel } from '@/api/types/branch';
@@ -47,7 +46,6 @@ import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import {
   formatUtcYmd,
   getUtcMonthRange,
-  utcDateFromYmd,
   utcRangeIsoFromUtcCalendarStoredRange,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
@@ -279,115 +277,14 @@ export function ReportsDashboardTab() {
     backendUserData?.clerkUserId?.trim() ||
     (backendUserData?.uid != null ? String(backendUserData.uid) : null);
 
-  const defaultMonth = useMemo(() => {
-    const { from, to } = getUtcMonthRange(utcToday());
-    return { start: utcDateFromYmd(from), end: utcDateFromYmd(to) };
-  }, []);
+  const defaultToday = useMemo(() => utcToday(), []);
 
-  const [startDate, setStartDate] = useState(defaultMonth.start);
-  const [endDate, setEndDate] = useState(defaultMonth.end);
+  const [startDate, setStartDate] = useState(defaultToday);
+  const [endDate, setEndDate] = useState(defaultToday);
   const [branchFilter, setBranchFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
-  const [rememberSettings, setRememberSettings] = useState(false);
-  const filtersHydratedRef = useRef(false);
-  const skipNextPersistRef = useRef(false);
-
-  const prefsQuery = useUserPreferences(selfRef, {
-    enabled: isTokenReady && !!selfRef,
-  });
-  const { mutate: persistReportsPrefs, isPending: prefsSaving } =
-    usePatchUserPreferences(selfRef);
-
-  useEffect(() => {
-    if (filtersHydratedRef.current) return;
-    if (prefsQuery.isError) {
-      filtersHydratedRef.current = true;
-      return;
-    }
-    if (!prefsQuery.isSuccess) return;
-    const saved = prefsQuery.data?.preferences?.reportsDashboard;
-    if (!saved?.rememberSettings) {
-      filtersHydratedRef.current = true;
-      return;
-    }
-    skipNextPersistRef.current = true;
-    setRememberSettings(true);
-    if (
-      saved.startDate &&
-      saved.endDate &&
-      /^\d{4}-\d{2}-\d{2}$/.test(saved.startDate) &&
-      /^\d{4}-\d{2}-\d{2}$/.test(saved.endDate)
-    ) {
-      try {
-        setStartDate(utcDateFromYmd(saved.startDate));
-        setEndDate(utcDateFromYmd(saved.endDate));
-      } catch {
-        // keep default month on bad saved dates
-      }
-    }
-    if (saved.branchId) setBranchFilter(saved.branchId);
-    if (saved.userId) setUserFilter(saved.userId);
-    if (saved.country) setCountryFilter(saved.country);
-    filtersHydratedRef.current = true;
-  }, [prefsQuery.isSuccess, prefsQuery.isError, prefsQuery.data?.preferences?.reportsDashboard]);
-
-  useEffect(() => {
-    if (!selfRef || !filtersHydratedRef.current) return;
-    if (skipNextPersistRef.current) {
-      skipNextPersistRef.current = false;
-      return;
-    }
-    if (!rememberSettings) return;
-
-    const handle = window.setTimeout(() => {
-      persistReportsPrefs({
-        reportsDashboard: {
-          rememberSettings: true,
-          startDate: formatUtcYmd(startDate),
-          endDate: formatUtcYmd(endDate),
-          branchId: branchFilter,
-          userId: userFilter,
-          country: countryFilter,
-        },
-      });
-    }, 400);
-
-    return () => window.clearTimeout(handle);
-  }, [
-    selfRef,
-    rememberSettings,
-    startDate,
-    endDate,
-    branchFilter,
-    userFilter,
-    countryFilter,
-    persistReportsPrefs,
-  ]);
-
-  const handleRememberSettingsChange = (enabled: boolean) => {
-    setRememberSettings(enabled);
-    if (!selfRef) return;
-    skipNextPersistRef.current = true;
-    if (enabled) {
-      persistReportsPrefs({
-        reportsDashboard: {
-          rememberSettings: true,
-          startDate: formatUtcYmd(startDate),
-          endDate: formatUtcYmd(endDate),
-          branchId: branchFilter,
-          userId: userFilter,
-          country: countryFilter,
-        },
-      });
-      return;
-    }
-    persistReportsPrefs({
-      reportsDashboard: {
-        rememberSettings: false,
-      },
-    });
-  };
+  const [travelExportLoading, setTravelExportLoading] = useState(false);
 
   const from = formatUtcYmd(startDate);
   const to = formatUtcYmd(endDate);
@@ -1454,9 +1351,21 @@ export function ReportsDashboardTab() {
         onUserChange={setUserFilter}
         selectedCountry={countryFilter}
         onCountryChange={setCountryFilter}
-        rememberSettings={rememberSettings}
-        onRememberSettingsChange={handleRememberSettingsChange}
-        rememberSettingsDisabled={!selfRef || prefsSaving}
+        onExportTravel={async () => {
+          if (travelExportLoading) return;
+          setTravelExportLoading(true);
+          try {
+            await downloadTravelExport(client, {
+              from,
+              to,
+              ...(userIdFilter != null ? { userUid: userIdFilter } : {}),
+              ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
+            });
+          } finally {
+            setTravelExportLoading(false);
+          }
+        }}
+        travelExportLoading={travelExportLoading}
       />
 
       <ReportsSection

@@ -25,3 +25,4 @@ export * from './competitors';
 export * from './tracking';
 export * from './assets';
 export * from './iot';
+export * from './reports-travel-export';

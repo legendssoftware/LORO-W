@@ -45,11 +45,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { XIcon } from '@/lib/icons';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import {
   CLAIM_STATUS_FILTER_OPTIONS,
   type ClaimGroup,
 } from '@/api/types/claims';
+import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -92,6 +94,8 @@ export interface ClaimsFilterControlsProps {
   createdTo: string;
   onCreatedFromChange: (v: string) => void;
   onCreatedToChange: (v: string) => void;
+  currencyView: ClaimsCurrencyView;
+  onCurrencyViewChange: (v: ClaimsCurrencyView) => void;
 }
 
 export function ClaimsFilterControls({
@@ -105,6 +109,8 @@ export function ClaimsFilterControls({
   createdTo,
   onCreatedFromChange,
   onCreatedToChange,
+  currencyView,
+  onCurrencyViewChange,
 }: ClaimsFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
@@ -350,6 +356,27 @@ export function ClaimsFilterControls({
           </button>
         ) : null}
       </div>
+
+      <ToggleGroup
+        type="single"
+        value={currencyView}
+        onValueChange={(value) => {
+          if (value === 'original' || value === 'zar') {
+            onCurrencyViewChange(value);
+          }
+        }}
+        variant="outline"
+        size="sm"
+        className={cn(row ? 'shrink-0' : 'w-full')}
+        aria-label="Amount currency"
+      >
+        <ToggleGroupItem value="original" className="px-3">
+          Original
+        </ToggleGroupItem>
+        <ToggleGroupItem value="zar" className="px-3">
+          ZAR
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
   );
 }
@@ -366,6 +393,8 @@ export function ClaimsFiltersBar({
   groups,
   claimGroupUid,
   onClaimGroupChange,
+  currencyView,
+  onCurrencyViewChange,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
@@ -378,6 +407,8 @@ export function ClaimsFiltersBar({
   groups: ClaimGroup[];
   claimGroupUid: string;
   onClaimGroupChange: (v: string) => void;
+  currencyView: ClaimsCurrencyView;
+  onCurrencyViewChange: (v: ClaimsCurrencyView) => void;
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -432,6 +463,8 @@ export function ClaimsFiltersBar({
     createdTo,
     onCreatedFromChange,
     onCreatedToChange,
+    currencyView,
+    onCurrencyViewChange,
   };
 
   return (

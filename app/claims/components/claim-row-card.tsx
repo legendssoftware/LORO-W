@@ -13,6 +13,11 @@ import {
   claimPersonDisplayName,
 } from '@/app/claims/components/claim-person-row';
 import { cn } from '@/lib/utils';
+import {
+  claimPrimaryAmount,
+  claimSecondaryAmount,
+  type ClaimsCurrencyView,
+} from '@/app/claims/lib/claim-display';
 
 function statusVariant(
   s: string
@@ -75,14 +80,18 @@ export function ClaimRowCardSkeleton() {
 export function ClaimRowCard({
   claim,
   branchByUid,
+  currencyView = 'original',
 }: {
   claim: Claim;
   branchByUid: Map<number, BranchListItem>;
+  currencyView?: ClaimsCurrencyView;
 }) {
   const isMobile = useIsMobile();
   const refLabel = claim.claimRef || `#${claim.uid}`;
   const ownerName = claimPersonDisplayName(claim.owner);
   const branchInfo = claimBranchFlagAndLabel(claim.branch, branchByUid);
+  const primaryAmount = claimPrimaryAmount(claim, currencyView);
+  const secondaryAmount = claimSecondaryAmount(claim, currencyView);
 
   return (
     <Link href={`/claims/${claim.uid}`} className="block h-full">
@@ -119,16 +128,12 @@ export function ClaimRowCard({
                 </Badge>
               </div>
               <p className="truncate text-xs text-muted-foreground">
-                {formatLabel(claim.category)} · {claim.amount ?? '—'}
+                {formatLabel(claim.category)} · {primaryAmount}
+                {secondaryAmount ? ` · ${secondaryAmount}` : ''}
               </p>
               {ownerName !== '—' ? (
                 <p className="truncate text-xs text-muted-foreground">
                   {ownerName}
-                </p>
-              ) : null}
-              {claim.claimGroup?.title ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  {claim.claimGroup.title}
                 </p>
               ) : null}
             </div>

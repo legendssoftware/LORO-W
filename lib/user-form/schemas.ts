@@ -73,6 +73,7 @@ export const userFormSchema = z.object({
   branchUid: z.union([z.number(), z.null()]).optional(),
   managedBranches: z.array(z.number()).optional(),
   managedStaff: z.array(z.number()).optional(),
+  approvableTypes: z.array(z.string()).optional(),
   businesscardURL: z.string().optional().nullable(),
   profile: profileSchema.optional().nullable(),
   employmentProfile: employmentProfileSchema.optional().nullable(),
@@ -104,6 +105,7 @@ export const wizardAccessStepSchema = addUserWizardSchema.pick({
   hrID: true,
   userref: true,
   branchUid: true,
+  approvableTypes: true,
 });
 
 export const wizardTargetsStepSchema = targetFormFieldsSchema.omit({
@@ -130,6 +132,7 @@ export const WIZARD_STEP_FIELDS: Record<number, (keyof AddUserWizardValues)[]> =
     'hrID',
     'userref',
     'branchUid',
+    'approvableTypes',
   ],
   2: [
     'targetSalesAmount',
@@ -190,6 +193,7 @@ export function getDefaultAddUserWizardValues(): AddUserWizardValues {
     branchUid: null,
     managedBranches: [],
     managedStaff: [],
+    approvableTypes: [],
     businesscardURL: null,
     profile: getEmptyPersonnelProfile(),
     employmentProfile: getEmptyEmploymentProfile(),

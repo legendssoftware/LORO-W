@@ -80,6 +80,11 @@ export interface Claim {
   updatedAt?: string;
   verifiedAt?: string;
   amount?: number | string;
+  amountNumeric?: number;
+  amountZar?: number | null;
+  fxRate?: number | null;
+  fxDate?: string | null;
+  fxCode?: string | null;
   isDeleted?: boolean;
 }
 
@@ -162,6 +167,26 @@ export interface ClaimGroup {
 export interface ClaimGroupsListResponse {
   message?: string;
   groups: ClaimGroup[];
+}
+
+export interface ClaimStatusTotal {
+  status: string;
+  count: number;
+  totalZar: number;
+}
+
+export interface ClaimGroupTotal {
+  claimGroupUid: number | null;
+  title: string;
+  count: number;
+  totalZar: number;
+}
+
+export interface ClaimsSummaryResponse {
+  totalZar: number;
+  unconvertedCount: number;
+  byStatus: ClaimStatusTotal[];
+  byGroup: ClaimGroupTotal[];
 }
 
 export interface ClaimGroupDetailResponse {

@@ -47,6 +47,7 @@ import {
   callDirectionIcon,
   callDirectionLabel,
   formatCallDuration,
+  formatCallScore,
   isRetryableTranscriptStatus,
   normalizeCallDirection,
   transcriptActionIcon,
@@ -213,6 +214,7 @@ export function CallsContent() {
                     <TableHead>Client</TableHead>
                     <TableHead>Numbers</TableHead>
                     <TableHead>Duration</TableHead>
+                    <TableHead>Score</TableHead>
                     <TableHead>Transcript</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -301,6 +303,7 @@ function CallTableRow({
           {formatCallDuration(row.durationSeconds)}
         </span>
       </TableCell>
+      <TableCell className="tabular-nums">{formatCallScore(row.scoreOverall)}</TableCell>
       <TableCell>
         <Button
           type="button"
