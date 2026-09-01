@@ -105,10 +105,12 @@ import {
   CalendarDays,
   Megaphone,
   ImageIcon,
+  PhoneCall,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
 import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
 import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
+import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
 import { canAccessOrgSettings } from '@/lib/access';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
@@ -340,7 +342,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices' | 'banners';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices' | 'banners' | 'call-quality';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -1365,6 +1367,16 @@ export function SettingsContent() {
             >
               <ImageIcon className="mr-2 size-4" />
               Banners
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('call-quality')}
+              className={tabBtnClass('call-quality')}
+            >
+              <PhoneCall className="mr-2 size-4" />
+              Call quality
             </Button>
           </div>
 
@@ -3154,6 +3166,10 @@ export function SettingsContent() {
 
           {activeTab === 'banners' && (
             <OrganisationBannersSection />
+          )}
+
+          {activeTab === 'call-quality' && orgRef && (
+            <CallQualitySettingsSection orgRef={orgRef} />
           )}
         </>
       )}

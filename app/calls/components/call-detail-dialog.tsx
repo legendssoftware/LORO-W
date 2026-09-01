@@ -48,7 +48,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { CallScoreBar } from './call-score-bar';
+import { dimensionScoreToPercent } from '../lib/score-colors';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import {
   Message,
@@ -80,6 +81,8 @@ import {
 import { ORIGIN_LABEL, normalizeOrigin, originVariant } from '../origin-badge';
 import { CallPartyLabel } from './call-party-label';
 import { CallScoreRadialChart } from './call-score-radial-chart';
+import { CallScorecardTable } from './call-scorecard-table';
+import { BITDRYWALL_CALL_QUALITY_TEMPLATE } from '../lib/call-quality-types';
 import {
   CALL_SCORE_DIMENSIONS,
   STATUS_LABEL,
@@ -88,6 +91,8 @@ import {
   callScoreDimensionLabel,
   displayCallMeta,
   formatCallDuration,
+  isExternalCallDirection,
+  isInternalCallSkipped,
   isRetryableTranscriptStatus,
   normalizeCallDirection,
   transcriptStatusVariant,
@@ -125,14 +130,21 @@ export function CallDetailDialog({
   const accessLevel = String(backendUserData?.accessLevel ?? '').toLowerCase();
   const canRetry = RETRY_LEVELS.has(accessLevel);
   const status: TranscriptStatus | undefined = call?.transcriptStatus ?? fallback?.transcriptStatus;
-  const showRetry =
-    canRetry && Boolean(uid) && isRetryableTranscriptStatus(status);
-  const scoreOverall = call?.scoreOverall ?? fallback?.scoreOverall ?? null;
-  const showRate =
-    canRetry && Boolean(uid) && status === 'ready' && scoreOverall == null && !isLoading;
-  const origin = normalizeOrigin(headerRow?.origin);
   const direction = normalizeCallDirection(headerRow?.callType);
   const DirectionIcon = callDirectionIcon(direction);
+  const isExternalCall = isExternalCallDirection(direction);
+  const showRetry =
+    canRetry && Boolean(uid) && isRetryableTranscriptStatus(status) && isExternalCall;
+  const scoreOverall = call?.scoreOverall ?? fallback?.scoreOverall ?? null;
+  const showRate =
+    canRetry &&
+    Boolean(uid) &&
+    status === 'ready' &&
+    scoreOverall == null &&
+    !isLoading &&
+    isExternalCall;
+
+  const origin = normalizeOrigin(headerRow?.origin);
 
   const fromParty = useMemo(
     () =>
@@ -331,6 +343,10 @@ export function CallDetailDialog({
                 turns={call?.dialogue ?? []}
                 status={status}
                 error={call?.transcriptError ?? headerRow?.transcriptError}
+                agentDisplayName={headerRow?.ownerName ?? agentParty?.label ?? undefined}
+                clientDisplayName={
+                  headerRow?.client?.name ?? headerRow?.lead?.name ?? clientParty?.label ?? undefined
+                }
               />
             </div>
           )}
@@ -679,7 +695,7 @@ function CallQualitySection({
                         <span>{callScoreDimensionLabel(dimension)}</span>
                         <span className="tabular-nums text-muted-foreground">{clamped.toFixed(0)}/10</span>
                       </div>
-                      <Progress value={clamped * 10} aria-label={`${callScoreDimensionLabel(dimension)} ${clamped} of 10`} />
+                      <CallScoreBar value={dimensionScoreToPercent(clamped)} />
                     </li>
                   );
                 })}
@@ -711,6 +727,15 @@ function CallQualitySection({
               </ul>
             </div>
           ) : null}
+          {scoreBreakdown?.metrics ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Scorecard</p>
+              <CallScorecardTable
+                dimensions={BITDRYWALL_CALL_QUALITY_TEMPLATE.dimensions ?? []}
+                metrics={scoreBreakdown.metrics}
+              />
+            </div>
+          ) : null}
         </div>
       ) : status === 'ready' ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -740,14 +765,58 @@ function CallQualitySection({
   );
 }
 
+function speakerRoleLabel(role: DialogueTurn['speakerRole']): string {
+  switch (role) {
+    case 'agent':
+      return 'Agent';
+    case 'client':
+      return 'Client';
+    default:
+      return 'Unknown';
+  }
+}
+
+function speakerRoleBadgeClass(role: DialogueTurn['speakerRole']): string {
+  switch (role) {
+    case 'agent':
+      return 'bg-primary/10 text-primary';
+    case 'client':
+      return 'bg-secondary text-secondary-foreground';
+    default:
+      return 'bg-muted text-muted-foreground';
+  }
+}
+
+function formatTurnTimestamp(startedAtMs?: number): string | null {
+  if (startedAtMs == null || !Number.isFinite(startedAtMs)) return null;
+  const totalSeconds = Math.max(0, Math.floor(startedAtMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function resolveTurnDisplayName(
+  turn: DialogueTurn,
+  agentDisplayName?: string,
+  clientDisplayName?: string,
+): string {
+  if (turn.speakerRole === 'agent' && agentDisplayName?.trim()) return agentDisplayName.trim();
+  if (turn.speakerRole === 'client' && clientDisplayName?.trim()) return clientDisplayName.trim();
+  return turn.speaker;
+}
+
 function DialogueThread({
   turns,
   status,
   error,
+  agentDisplayName,
+  clientDisplayName,
 }: {
   turns: DialogueTurn[];
   status?: TranscriptStatus;
   error?: string | null;
+  agentDisplayName?: string;
+  clientDisplayName?: string;
 }) {
   if (status === 'processing' || status === 'pending') {
     return <p className="text-sm text-muted-foreground">Transcript is still being generated.</p>;
@@ -760,11 +829,18 @@ function DialogueThread({
     );
   }
   if (status === 'skipped') {
+    if (isInternalCallSkipped(error)) {
+      return (
+        <p className="text-sm text-muted-foreground">
+          Internal extension calls are recorded but not transcribed or rated.
+        </p>
+      );
+    }
     const isDeferred = Boolean(error?.toLowerCase().includes('deferred'));
     return (
       <p className="text-sm text-muted-foreground">
-        Click Transcribe to generate audio-to-text.
-        {!isDeferred && error ? ` ${error}` : ''}
+        {isDeferred ? 'Click Transcribe to generate audio-to-text.' : 'Transcription skipped.'}
+        {error ? ` ${error}` : ''}
       </p>
     );
   }
@@ -779,14 +855,22 @@ function DialogueThread({
           <MessageScrollerContent className="gap-3 p-3">
             {turns.map((turn, index) => {
               const isAgent = turn.speakerRole === 'agent';
+              const displayName = resolveTurnDisplayName(turn, agentDisplayName, clientDisplayName);
+              const timestamp = formatTurnTimestamp(turn.startedAtMs);
               return (
                 <MessageScrollerItem key={`${turn.speaker}-${index}`}>
                   <Message align={isAgent ? 'end' : 'start'}>
                     <MessageContent>
-                      <MessageHeader>
-                        <span className="text-xs font-medium">{turn.speaker}</span>
+                      <MessageHeader className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className={cn('text-[10px] font-medium', speakerRoleBadgeClass(turn.speakerRole))}>
+                          {speakerRoleLabel(turn.speakerRole)}
+                        </Badge>
+                        <span className="text-xs font-medium">{displayName}</span>
+                        {timestamp ? (
+                          <span className="text-[10px] text-muted-foreground tabular-nums">{timestamp}</span>
+                        ) : null}
                       </MessageHeader>
-                      <Bubble>
+                      <Bubble variant={isAgent ? 'default' : 'secondary'}>
                         <BubbleContent>{turn.text}</BubbleContent>
                       </Bubble>
                     </MessageContent>
