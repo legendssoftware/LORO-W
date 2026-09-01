@@ -53,6 +53,8 @@ import {
   transcriptActionIcon,
   transcriptStatusIcon,
 } from './call-display';
+import { getScoreColorClasses } from './lib/score-colors';
+import { cn } from '@/lib/utils';
 
 /** Month-to-date UTC range, matching Visits/Leads default. */
 function defaultCallsDateRange() {
@@ -303,7 +305,9 @@ function CallTableRow({
           {formatCallDuration(row.durationSeconds)}
         </span>
       </TableCell>
-      <TableCell className="tabular-nums">{formatCallScore(row.scoreOverall)}</TableCell>
+      <TableCell className={cn('tabular-nums font-medium', getScoreColorClasses(Number(row.scoreOverall ?? 0)).text)}>
+        {formatCallScore(row.scoreOverall)}
+      </TableCell>
       <TableCell>
         <Button
           type="button"

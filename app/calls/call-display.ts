@@ -120,6 +120,14 @@ export function transcriptActionIcon(status: TranscriptStatus): LucideIcon {
   return transcriptStatusIcon(status);
 }
 
+export function isExternalCallDirection(kind: CallDirectionKind): boolean {
+	return kind === 'inbound' || kind === 'outbound';
+}
+
+export function isInternalCallSkipped(error: string | null | undefined): boolean {
+	return Boolean(error?.toLowerCase().includes('internal calls are not transcribed'));
+}
+
 export function normalizeCallDirection(callType: string | null | undefined): CallDirectionKind {
   const t = callType?.trim().toLowerCase();
   if (t === 'inbound') return 'inbound';
