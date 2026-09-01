@@ -2,6 +2,25 @@ export type TranscriptStatus = 'pending' | 'processing' | 'ready' | 'failed' | '
 export type SpeakerRole = 'agent' | 'client' | 'unknown';
 export type CallOrigin = 'in_app' | 'company_phone' | 'personal_mobile';
 
+export type CallQualityMetricResult =
+  | { type: 'boolean'; value: boolean; evidence?: string }
+  | { type: 'score'; value: number; evidence?: string }
+  | { type: 'text'; value: string }
+  | { type: 'enum'; value: string; evidence?: string }
+  | { type: 'ratio'; agentPct: number; clientPct: number };
+
+export type CallQualityMetricsMap = Record<string, CallQualityMetricResult>;
+
+export type CallQualityMetricDefinition = {
+  id: string;
+  label: string;
+  type: 'boolean' | 'score' | 'text' | 'enum' | 'ratio';
+  enumOptions?: string[];
+  weight?: number;
+  category?: 'discovery' | 'closing' | 'behaviour' | 'outcome';
+  required?: boolean;
+};
+
 export type DialogueTurn = {
   speaker: string;
   speakerRole: SpeakerRole;
@@ -53,6 +72,7 @@ export type CallScoreBreakdown = {
   summary: string;
   strengths: string[];
   improvements: string[];
+  metrics?: CallQualityMetricsMap;
 };
 
 export type CallRecordingDetail = CallRecordingListItem & {

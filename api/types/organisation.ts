@@ -117,6 +117,23 @@ export interface OrganisationSettingsRecord {
   geofenceMinRadius?: number;
   socialLinks?: Record<string, unknown> | null;
   performance?: Record<string, unknown> | null;
+  callQuality?: {
+    enabled?: boolean;
+    dailyCallTarget?: number;
+    productName?: string;
+    dimensions?: Array<{
+      id: string;
+      label: string;
+      type: 'boolean' | 'score' | 'text' | 'enum' | 'ratio';
+      enumOptions?: string[];
+      weight?: number;
+      category?: 'discovery' | 'closing' | 'behaviour' | 'outcome';
+      required?: boolean;
+    }>;
+    coachingPrompt?: string;
+    autoCreateLead?: boolean;
+    reviewScoreThreshold?: number;
+  } | null;
 }
 
 export interface GetOrganisationSettingsResponse {

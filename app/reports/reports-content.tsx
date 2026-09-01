@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { LayoutDashboard, Target } from 'lucide-react';
 import { useSessionSync } from '@/api/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getReportsDataScope } from '@/lib/access';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
-import { ReportsDashboardTab } from './components/reports-dashboard-tab';
-import { ReportsOverviewTab } from './components/reports-overview-tab';
+import { REPORTS_TABS, reportsSubtitle } from './lib/reports-registry';
 
 const reportsTabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -23,25 +21,10 @@ const reportsTabTriggerClass = cn(
   'data-[state=active]:text-foreground data-[state=active]:shadow-none'
 );
 
-function reportsSubtitle(scope: ReturnType<typeof getReportsDataScope>): string {
-  switch (scope) {
-    case 'org':
-      return 'Org metrics across productivity, sales, leads, visits, attendance, and dispatch — plus performance targets.';
-    case 'team':
-      return 'Your team metrics across productivity, sales, leads, visits, attendance, and dispatch — plus performance targets.';
-    case 'self':
-      return 'Your metrics and performance targets for the selected period.';
-    default: {
-      const _exhaustive: never = scope;
-      return _exhaustive;
-    }
-  }
-}
-
 export function ReportsContent() {
   const { backendUserData } = useSessionSync();
   const scope = getReportsDataScope(backendUserData?.accessLevel);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<string>(REPORTS_TABS[0].id);
 
   return (
     <div className={appPageScrollWrapClass} data-slot="reports-page">
@@ -64,29 +47,33 @@ export function ReportsContent() {
           className="flex min-h-0 flex-1 flex-col"
         >
           <TabsList className={reportsTabListClass} data-slot="reports-tabs">
-            <TabsTrigger value="overview" className={reportsTabTriggerClass}>
-              <LayoutDashboard className="size-4 shrink-0" aria-hidden />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="targets" className={reportsTabTriggerClass}>
-              <Target className="size-4 shrink-0" aria-hidden />
-              Targets
-            </TabsTrigger>
+            {REPORTS_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className={reportsTabTriggerClass}
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden />
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          <TabsContent
-            value="overview"
-            className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
-          >
-            {activeTab === 'overview' ? <ReportsDashboardTab /> : null}
-          </TabsContent>
-
-          <TabsContent
-            value="targets"
-            className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
-          >
-            {activeTab === 'targets' ? <ReportsOverviewTab /> : null}
-          </TabsContent>
+          {REPORTS_TABS.map((tab) => {
+            const TabComponent = tab.component;
+            return (
+              <TabsContent
+                key={tab.id}
+                value={tab.id}
+                className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
+              >
+                {activeTab === tab.id ? <TabComponent /> : null}
+              </TabsContent>
+            );
+          })}
         </Tabs>
       </main>
     </div>
