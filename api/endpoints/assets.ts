@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
   AssetsByUserResponse,
+  AssetsListResponse,
   CreateAssetPayload,
   CreateAssetResponse,
 } from '@/api/types/asset';
@@ -24,6 +25,31 @@ function isCreateAssetResponse(value: unknown): value is CreateAssetResponse {
     (value as CreateAssetResponse).asset != null &&
     typeof (value as CreateAssetResponse).asset.uid === 'number'
   );
+}
+
+function isAssetsListResponse(value: unknown): value is AssetsListResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value &&
+    'assets' in value
+  );
+}
+
+/** GET /assets — active assets in the caller's organisation (branch-scoped for non-elevated roles). */
+export async function getAssets(client: AxiosInstance): Promise<AssetsListResponse> {
+  const { data } = await client.get<AssetsListResponse | { data: AssetsListResponse }>('/assets');
+
+  if (isAssetsListResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isAssetsListResponse((data as { data: AssetsListResponse }).data)
+  ) {
+    return (data as { data: AssetsListResponse }).data;
+  }
+  throw new Error('Invalid assets list response');
 }
 
 /** GET /assets/for/:userUid — assets assigned to a user. */

@@ -7,33 +7,96 @@ import {
 } from './personnel-fields';
 import { ageFromIsoDate } from './date-input';
 import {
+  isSouthAfrica,
   isValidBankAccountNo,
   isValidBankBranchCode,
+  isValidGenericBankAccount,
+  isValidNationalId,
+  isValidPassport,
   isValidPhone,
-  isValidSaId,
   optionalFilled,
+  PHONE_VALIDATION_MESSAGE,
 } from './sa-field-rules';
 
 const optionalString = z.string().optional().nullable();
 
 export const INTAKE_MAX_FILE_BYTES = 5 * 1024 * 1024;
 
-const optionalSaId = optionalString.refine(
-  (value) => !optionalFilled(value) || isValidSaId(value ?? ''),
-  'Enter a valid 13-digit South African ID number',
-);
-
-const optionalSaPhone = optionalString.refine(
-  (value) => !optionalFilled(value) || isValidPhone(value ?? ''),
-  'Enter a valid phone number',
-);
-
 const requiredPhone = z
   .string()
   .min(1, 'Phone is required')
-  .refine(isValidPhone, 'Enter a valid phone number, e.g. 082 123 4567 or +27 82 123 4567');
+  .refine(isValidPhone, PHONE_VALIDATION_MESSAGE);
 
-export const employeeIntakeProfileSchema = z.object({
+const PROFILE_PHONE_FIELDS = [
+  'partnerContactNo',
+  'nextOfKinContactNo',
+  'emergencyContactNo',
+  'dependantContactNo',
+] as const;
+
+function refineProfileByCountry(
+  data: z.infer<typeof employeeIntakeProfileBaseSchema>,
+  ctx: z.RefinementCtx,
+) {
+  const country = data.country ?? '';
+  const isSa = isSouthAfrica(country);
+
+  if (optionalFilled(data.nationalId)) {
+    if (!isValidNationalId(data.nationalId!, country)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: isSa
+          ? 'Enter a valid 13-digit South African ID number'
+          : 'Enter a valid national ID (4–20 letters or digits)',
+        path: ['nationalId'],
+      });
+    }
+  }
+
+  if (optionalFilled(data.passportNo) && !isValidPassport(data.passportNo!)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Enter a valid passport number (5–15 letters or digits)',
+      path: ['passportNo'],
+    });
+  }
+
+  if (optionalFilled(data.bankAccountNo)) {
+    const valid = isSa
+      ? isValidBankAccountNo(data.bankAccountNo!)
+      : isValidGenericBankAccount(data.bankAccountNo!);
+    if (!valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: isSa
+          ? 'Enter a bank account number with 7 to 11 digits'
+          : 'Enter a valid bank account number (4–20 characters)',
+        path: ['bankAccountNo'],
+      });
+    }
+  }
+
+  if (isSa && optionalFilled(data.bankBranchCode) && !isValidBankBranchCode(data.bankBranchCode!)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Enter a 6-digit branch code',
+      path: ['bankBranchCode'],
+    });
+  }
+
+  for (const field of PROFILE_PHONE_FIELDS) {
+    const value = data[field];
+    if (optionalFilled(value) && !isValidPhone(value!)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: PHONE_VALIDATION_MESSAGE,
+        path: [field],
+      });
+    }
+  }
+}
+
+const employeeIntakeProfileBaseSchema = z.object({
   ...personnelProfileSchemaShape,
   gender: z.enum(['male', 'female', 'other'], { message: 'Gender is required' }),
   dateOfBirth: z
@@ -46,20 +109,11 @@ export const employeeIntakeProfileSchema = z.object({
   address: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
-  nationalId: optionalSaId,
-  bankAccountNo: optionalString.refine(
-    (value) => !optionalFilled(value) || isValidBankAccountNo(value ?? ''),
-    'Enter a bank account number with 7 to 11 digits',
-  ),
-  bankBranchCode: optionalString.refine(
-    (value) => !optionalFilled(value) || isValidBankBranchCode(value ?? ''),
-    'Enter a 6-digit branch code',
-  ),
-  partnerContactNo: optionalSaPhone,
-  nextOfKinContactNo: optionalSaPhone,
-  emergencyContactNo: optionalSaPhone,
-  dependantContactNo: optionalSaPhone,
 });
+
+export const employeeIntakeProfileSchema = employeeIntakeProfileBaseSchema.superRefine(
+  refineProfileByCountry,
+);
 
 export const employeeIntakeEmploymentSchema = z
   .object({
@@ -68,7 +122,7 @@ export const employeeIntakeEmploymentSchema = z
     contactNumber: z
       .string()
       .min(1, 'Work contact number is required')
-      .refine(isValidPhone, 'Enter a valid phone number'),
+      .refine(isValidPhone, PHONE_VALIDATION_MESSAGE),
   })
   .refine(
     (data) => {
@@ -119,8 +173,8 @@ export type IntakeDocumentValues = z.infer<typeof intakeDocumentSchema>;
 
 export const EMPLOYEE_INTAKE_STEP_FIELDS: Record<number, string[]> = {
   0: ['name', 'surname', 'email', 'phone', 'password', 'confirmPassword'],
-  1: ['profile.gender', 'profile.dateOfBirth', 'profile.nationalId'],
-  2: ['profile.address', 'profile.city', 'profile.country'],
+  1: ['profile.gender', 'profile.dateOfBirth', 'profile.country', 'profile.nationalId', 'profile.passportNo'],
+  2: ['profile.address', 'profile.city'],
   3: [],
   4: [
     'profile.bankAccountNo',
@@ -142,7 +196,6 @@ export const EMPLOYEE_INTAKE_STEP_FIELDS: Record<number, string[]> = {
 const ADDRESS_FIELDS = new Set([
   'address',
   'city',
-  'country',
   'complex',
   'suburb',
   'province',

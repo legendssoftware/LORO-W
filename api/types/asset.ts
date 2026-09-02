@@ -55,6 +55,11 @@ export interface AssetsByUserResponse {
   assets: AssetRecord[] | null;
 }
 
+export interface AssetsListResponse {
+  message: string;
+  assets: AssetRecord[] | null;
+}
+
 export interface CreateAssetResponse {
   message: string;
   asset: AssetRecord;

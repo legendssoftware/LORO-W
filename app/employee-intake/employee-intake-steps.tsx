@@ -187,6 +187,31 @@ export function EmployeeIntakeSteps({
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="profile.country"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Country *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || undefined}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Used to validate your ID and phone number format.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <PersonnelFieldGrid control={form.control} prefix="profile" fields={PERSONNEL_IDENTITY_FIELDS} />
         <PersonnelFieldGrid control={form.control} prefix="profile" fields={PERSONNEL_SIZE_FIELDS} />
         <PersonnelFieldGrid control={form.control} prefix="profile" fields={PERSONNEL_EDUCATION_FIELDS} />
@@ -221,30 +246,6 @@ export function EmployeeIntakeSteps({
                 <FormControl>
                   <Input {...field} autoComplete="address-level2" placeholder={FORM_PLACEHOLDERS.city} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="profile.country"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Country *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || undefined}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {COUNTRY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}
