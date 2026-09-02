@@ -4,6 +4,9 @@ import type {
   AssetsListResponse,
   CreateAssetPayload,
   CreateAssetResponse,
+  DeleteAssetResponse,
+  UpdateAssetPayload,
+  UpdateAssetResponse,
 } from '@/api/types/asset';
 
 function isAssetsByUserResponse(value: unknown): value is AssetsByUserResponse {
@@ -92,4 +95,63 @@ export async function createAsset(
     return (data as { data: CreateAssetResponse }).data;
   }
   throw new Error('Invalid create-asset response');
+}
+
+function isUpdateAssetResponse(value: unknown): value is UpdateAssetResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value
+  );
+}
+
+function isDeleteAssetResponse(value: unknown): value is DeleteAssetResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value
+  );
+}
+
+/** PATCH /assets/:ref — update an existing asset. */
+export async function updateAsset(
+  client: AxiosInstance,
+  uid: number,
+  payload: UpdateAssetPayload
+): Promise<UpdateAssetResponse> {
+  const { data } = await client.patch<
+    UpdateAssetResponse | { data: UpdateAssetResponse }
+  >(`/assets/${uid}`, payload);
+
+  if (isUpdateAssetResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isUpdateAssetResponse((data as { data: UpdateAssetResponse }).data)
+  ) {
+    return (data as { data: UpdateAssetResponse }).data;
+  }
+  throw new Error('Invalid update-asset response');
+}
+
+/** DELETE /assets/:ref — soft-delete an asset. */
+export async function deleteAsset(
+  client: AxiosInstance,
+  uid: number
+): Promise<DeleteAssetResponse> {
+  const { data } = await client.delete<
+    DeleteAssetResponse | { data: DeleteAssetResponse }
+  >(`/assets/${uid}`);
+
+  if (isDeleteAssetResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isDeleteAssetResponse((data as { data: DeleteAssetResponse }).data)
+  ) {
+    return (data as { data: DeleteAssetResponse }).data;
+  }
+  throw new Error('Invalid delete-asset response');
 }

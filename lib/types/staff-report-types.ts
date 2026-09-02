@@ -67,14 +67,14 @@ export interface ReportCardUser {
   checkInNotes?: string | null;
   /** Activity performance warning from daily overview (user_targets). */
   targetWarnings?: TargetWarningsPayload | null;
-  /** Last 7 days attendance status (attended/missed/future) from monthly metrics. */
-  last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
+  /** Last 7 days attendance status (attended/missed/future/weekend) from monthly metrics. */
+  last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' | 'weekend' }>;
   /** Payroll-period hours (when merged from Staff payroll API). */
   payrollHours?: number;
   /** Payroll-period target hours (fixed cap: EXPECTED_MONTHLY_HOURS, 180h). */
   payrollTargetHours?: number;
   /** Prorated expected hours by today within the payroll period. */
   payrollExpectedByNow?: number;
-  /** Progress % for payroll period: (payrollHours / payrollTargetHours) × 100. */
+  /** Progress % for payroll period: (payrollHours / payrollExpectedByNow) × 100, capped at 100. */
   payrollProgressPercent?: number;
 }

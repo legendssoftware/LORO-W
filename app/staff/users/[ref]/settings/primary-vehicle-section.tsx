@@ -3,10 +3,12 @@
 import { useMemo, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
-import type { AssetRecord, CreateAssetPayload } from '@/api/types/asset';
+import type { AssetRecord } from '@/api/types/asset';
 import {
   useCreateAssetMutation,
+  useDeleteAssetMutation,
   useSelectableVehicleAssets,
+  useUpdateAssetMutation,
 } from '@/api/hooks/use-assets';
 import {
   FormControl,
@@ -23,30 +25,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { CheckIcon, Loader2Icon } from '@/lib/icons';
+import { Pencil } from 'lucide-react';
 import type { TargetFormValues } from '@/lib/user-form';
-
-const VEHICLE_SIZE_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'sedan', label: 'Sedan' },
-  { value: 'suv', label: 'SUV' },
-  { value: 'bakkie', label: 'Bakkie' },
-  { value: 'van', label: 'Van' },
-  { value: 'other', label: 'Other' },
-] as const;
-
-const FUEL_TYPE_OPTIONS = [
-  { value: 'petrol', label: 'Petrol' },
-  { value: 'diesel', label: 'Diesel' },
-] as const;
+import {
+  VehicleFormDialog,
+  buildCreateAssetPayload,
+  buildUpdateAssetPayload,
+  type VehicleFormValues,
+} from './vehicle-form-dialog';
 
 const NONE_VALUE = '__none__';
 
@@ -67,6 +64,12 @@ function formatVehicleLabel(asset: AssetRecord): string {
   return reg ? `${name} (${reg})` : name;
 }
 
+function formatFuelType(fuelType: AssetRecord['fuelType']): string {
+  if (fuelType === 'petrol') return 'Petrol';
+  if (fuelType === 'diesel') return 'Diesel';
+  return '—';
+}
+
 function parseAssetUid(value: string): number | null {
   if (value === NONE_VALUE) return null;
   const next = Number(value);
@@ -77,7 +80,6 @@ function isAssignedUid(uid: number | null | undefined): uid is number {
   return uid != null && uid > 0;
 }
 
-/** Form field for a vehicle role on the staff user target. */
 function vehicleRoleField(
   role: VehicleRole
 ): 'primaryVehicleAssetUid' | 'secondaryVehicleAssetUid' {
@@ -93,7 +95,6 @@ function vehicleRoleField(
   }
 }
 
-/** Assign a newly created vehicle to the first empty role, or neither. */
 function nextRoleForNewVehicle(
   primary: number | null | undefined,
   secondary: number | null | undefined
@@ -103,32 +104,60 @@ function nextRoleForNewVehicle(
   return null;
 }
 
-function VehicleDetails({ asset }: { asset: AssetRecord }) {
+type VehicleDetailsProps = {
+  asset: AssetRecord;
+  onEdit: () => void;
+};
+
+function VehicleDetails({ asset, onEdit }: VehicleDetailsProps) {
   return (
-    <dl className="text-muted-foreground grid gap-1 text-xs sm:grid-cols-2">
-      <div>
-        <dt className="font-medium text-foreground">Make / model</dt>
-        <dd>
-          {asset.brand} {asset.modelNumber}
-        </dd>
+    <div className="rounded-md border border-border/40 bg-background/60 p-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-foreground">Vehicle details</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label="Edit vehicle"
+          onClick={onEdit}
+        >
+          <Pencil className="size-3.5" />
+        </Button>
       </div>
-      <div>
-        <dt className="font-medium text-foreground">Size</dt>
-        <dd>{asset.vehicleSizeClass ?? '—'}</dd>
-      </div>
-      <div>
-        <dt className="font-medium text-foreground">Rated consumption</dt>
-        <dd>
-          {asset.ratedKmPerLitre != null
-            ? `${asset.ratedKmPerLitre} km/L`
-            : '—'}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-foreground">Registration</dt>
-        <dd>{asset.registrationPlate?.trim() || '—'}</dd>
-      </div>
-    </dl>
+      <dl className="text-muted-foreground grid gap-1 text-xs sm:grid-cols-2">
+        <div>
+          <dt className="font-medium text-foreground">Display name</dt>
+          <dd>{asset.displayName?.trim() || '—'}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">Make / model</dt>
+          <dd>
+            {asset.brand} {asset.modelNumber}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">Fuel type</dt>
+          <dd>{formatFuelType(asset.fuelType)}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">Size</dt>
+          <dd>{asset.vehicleSizeClass ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">Rated consumption</dt>
+          <dd>
+            {asset.ratedKmPerLitre != null
+              ? `${asset.ratedKmPerLitre} km/L`
+              : '—'}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">Registration</dt>
+          <dd>{asset.registrationPlate?.trim() || '—'}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 
@@ -144,14 +173,12 @@ export function PrimaryVehicleSection({
   const { data: vehicles = [], fleetVehicles = [], isLoading, refetch } =
     useSelectableVehicleAssets(userUid, { primaryUid, secondaryUid });
   const createAsset = useCreateAssetMutation();
+  const updateAsset = useUpdateAssetMutation();
+  const deleteAsset = useDeleteAssetMutation();
+
   const [addOpen, setAddOpen] = useState(false);
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [registrationPlate, setRegistrationPlate] = useState('');
-  const [ratedKmPerLitre, setRatedKmPerLitre] = useState('');
-  const [vehicleSizeClass, setVehicleSizeClass] = useState<string>('bakkie');
-  const [fuelType, setFuelType] = useState<string>('diesel');
+  const [editAsset, setEditAsset] = useState<AssetRecord | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const hasPrimary = isAssignedUid(primaryUid);
   const hasSecondary = isAssignedUid(secondaryUid);
@@ -182,41 +209,44 @@ export function PrimaryVehicleSection({
     }
   }
 
-  async function handleAddVehicle() {
+  function unassignVehicleIfDeleted(uid: number) {
+    if (getValues('primaryVehicleAssetUid') === uid) {
+      setValue('primaryVehicleAssetUid', null, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    }
+    if (getValues('secondaryVehicleAssetUid') === uid) {
+      setValue('secondaryVehicleAssetUid', null, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    }
+  }
+
+  async function handleAddVehicle(values: VehicleFormValues) {
     if (!clerkUserId?.trim()) return;
     if (!branchUid || branchUid <= 0) return;
 
-    const rated = Number(ratedKmPerLitre);
-    if (!make.trim() || !model.trim() || !Number.isFinite(rated) || rated <= 0) {
-      return;
-    }
-
     const serial =
-      registrationPlate.trim() ||
+      values.registrationPlate.trim() ||
       `VEH-${userUid}-${Date.now().toString(36).toUpperCase()}`;
 
-    const created = await createAsset.mutateAsync({
-      category: 'VEHICLE',
-      displayName: displayName.trim() || undefined,
-      brand: make.trim(),
-      modelNumber: model.trim(),
-      serialNumber: serial,
-      registrationPlate: registrationPlate.trim() || undefined,
-      vehicleSizeClass: vehicleSizeClass as CreateAssetPayload['vehicleSizeClass'],
-      fuelType: fuelType as CreateAssetPayload['fuelType'],
-      ratedKmPerLitre: rated,
-      purchaseDate: new Date().toISOString(),
-      hasInsurance: false,
-      owner: { uid: clerkUserId },
-      branch: { uid: branchUid },
-    });
+    const created = await createAsset.mutateAsync(
+      buildCreateAssetPayload(values, {
+        userUid,
+        clerkUserId,
+        branchUid,
+        serialNumber: serial,
+      })
+    );
 
     let createdUid: number | undefined = created.asset?.uid;
     if (!createdUid) {
       const refreshed = await refetch();
       const fallback =
-        refreshed.data?.find((a) => a.serialNumber === serial) ??
-        refreshed.data?.slice().sort((a, b) => b.uid - a.uid)[0];
+        refreshed.find((a) => a.serialNumber === serial) ??
+        refreshed.slice().sort((a, b) => b.uid - a.uid)[0];
       createdUid = fallback?.uid;
     }
 
@@ -229,12 +259,34 @@ export function PrimaryVehicleSection({
     }
 
     setAddOpen(false);
-    setMake('');
-    setModel('');
-    setDisplayName('');
-    setRegistrationPlate('');
-    setRatedKmPerLitre('');
   }
+
+  async function handleEditVehicle(values: VehicleFormValues) {
+    if (!editAsset) return;
+
+    await updateAsset.mutateAsync({
+      uid: editAsset.uid,
+      payload: buildUpdateAssetPayload(values, editAsset),
+    });
+
+    await refetch();
+    setEditAsset(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!editAsset) return;
+
+    const uid = editAsset.uid;
+    await deleteAsset.mutateAsync(uid);
+    unassignVehicleIfDeleted(uid);
+    await refetch();
+    setDeleteConfirmOpen(false);
+    setEditAsset(null);
+  }
+
+  const editLabel = editAsset
+    ? formatVehicleLabel(editAsset)
+    : 'this vehicle';
 
   return (
     <div className="sm:col-span-2 lg:col-span-3 space-y-3 rounded-md border border-border/50 bg-muted/20 p-3">
@@ -298,7 +350,10 @@ export function PrimaryVehicleSection({
           Loading vehicles…
         </p>
       ) : selectedPrimary ? (
-        <VehicleDetails asset={selectedPrimary} />
+        <VehicleDetails
+          asset={selectedPrimary}
+          onEdit={() => setEditAsset(selectedPrimary)}
+        />
       ) : vehicles.length === 0 ? (
         <p className="text-muted-foreground text-xs">
           No active fleet vehicles are available. Add a vehicle or assign one from Assets.
@@ -356,121 +411,61 @@ export function PrimaryVehicleSection({
         )}
       />
 
-      {selectedSecondary ? <VehicleDetails asset={selectedSecondary} /> : null}
+      {selectedSecondary ? (
+        <VehicleDetails
+          asset={selectedSecondary}
+          onEdit={() => setEditAsset(selectedSecondary)}
+        />
+      ) : null}
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add vehicle</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="grid gap-1">
-              <label className="text-sm font-medium">Display name</label>
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Sales Hilux"
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Make</label>
-                <Input
-                  value={make}
-                  onChange={(e) => setMake(e.target.value)}
-                  placeholder="Toyota"
-                />
-              </div>
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Model</label>
-                <Input
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="Hilux 2.4 GD-6"
-                />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Size class</label>
-                <Select value={vehicleSizeClass} onValueChange={setVehicleSizeClass}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VEHICLE_SIZE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Fuel type</label>
-                <Select value={fuelType} onValueChange={setFuelType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FUEL_TYPE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Rated km/L</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={ratedKmPerLitre}
-                  onChange={(e) => setRatedKmPerLitre(e.target.value)}
-                  placeholder="9.5"
-                />
-              </div>
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Registration</label>
-                <Input
-                  value={registrationPlate}
-                  onChange={(e) => setRegistrationPlate(e.target.value)}
-                  placeholder="CA 123-456"
-                />
-              </div>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              The new vehicle is assigned as primary if none is set, otherwise as
-              secondary if that slot is free.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+      <VehicleFormDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        mode="add"
+        isPending={createAsset.isPending}
+        canSubmit={Boolean(clerkUserId && branchUid)}
+        onSubmit={handleAddVehicle}
+      />
+
+      <VehicleFormDialog
+        open={editAsset != null}
+        onOpenChange={(open) => {
+          if (!open) setEditAsset(null);
+        }}
+        mode="edit"
+        asset={editAsset}
+        isPending={updateAsset.isPending}
+        isDeletePending={deleteAsset.isPending}
+        onSubmit={handleEditVehicle}
+        onDelete={() => setDeleteConfirmOpen(true)}
+      />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete vehicle?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <span className="font-medium text-foreground">{editLabel}</span>{' '}
+              from the fleet. This cannot be undone from this screen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteAsset.isPending}>
               Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={createAsset.isPending || !clerkUserId || !branchUid}
-              onClick={() => {
-                void handleAddVehicle();
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteAsset.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmDelete();
               }}
             >
-              {createAsset.isPending ? (
-                <>
-                  <Loader2Icon className="mr-1 size-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save vehicle'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {deleteAsset.isPending ? 'Deleting…' : 'Delete vehicle'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -64,3 +64,27 @@ export interface CreateAssetResponse {
   message: string;
   asset: AssetRecord;
 }
+
+export type UpdateAssetPayload = Partial<
+  Pick<
+    CreateAssetPayload,
+    | 'displayName'
+    | 'brand'
+    | 'modelNumber'
+    | 'modelYear'
+    | 'vehicleSizeClass'
+    | 'fuelType'
+    | 'ratedKmPerLitre'
+    | 'tankCapacityLitres'
+    | 'registrationPlate'
+    | 'serialNumber'
+  >
+>;
+
+export interface UpdateAssetResponse {
+  message: string;
+}
+
+export interface DeleteAssetResponse {
+  message: string;
+}

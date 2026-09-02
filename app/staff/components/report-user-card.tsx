@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { format, subDays } from 'date-fns';
+import { format, subDays, getDay } from 'date-fns';
 import { useMonthlyAttendance, useSessionSync } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import { PerformanceWarningsDialog } from '@/app/staff/components/performance-warnings-dialog';
@@ -12,7 +12,7 @@ import {
   HOURS_BEHIND_BADGE_THRESHOLD,
 } from '@/app/staff/lib/staff-report-constants';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
-import type { ClockInOptionKey } from '@/api/types/attendance';
+import type { ClockInOptionKey, Last7DaysItem } from '@/api/types/attendance';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,19 @@ const PERFORMANCE_WARNING_CHIP: Record<
   },
 };
 
+function mapCalendarDayToLast7Status(
+  date: string,
+  status: string
+): Last7DaysItem['status'] {
+  if (status === 'attended' || status === 'future' || status === 'weekend') {
+    return status;
+  }
+  if (status === 'missed' && getDay(new Date(date)) === 0) {
+    return 'weekend';
+  }
+  return 'missed';
+}
+
 function LastSevenDaysDots({
   userRef,
   endDate,
@@ -69,23 +82,53 @@ function LastSevenDaysDots({
   userRef: string;
   endDate: Date;
   /** When provided (e.g. from monthly metrics), skips useMonthlyAttendance fetch. */
-  last7Days?: Array<{ date: string; status: 'attended' | 'missed' | 'future' }>;
+  last7Days?: Last7DaysItem[];
 }) {
-  const year = endDate.getFullYear();
-  const month = endDate.getMonth() + 1;
-  const { data, isLoading } = useMonthlyAttendance(userRef, year, month, {
-    enabled: !!userRef && last7DaysProp == null,
-  });
-  const sevenDays = useMemo(() => {
+  const startDate = subDays(endDate, 6);
+  const endYear = endDate.getFullYear();
+  const endMonth = endDate.getMonth() + 1;
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth() + 1;
+  const spansMonths = startYear !== endYear || startMonth !== endMonth;
+
+  const { data: endMonthData, isLoading: loadingEndMonth } = useMonthlyAttendance(
+    userRef,
+    endYear,
+    endMonth,
+    { enabled: !!userRef && last7DaysProp == null }
+  );
+  const { data: startMonthData, isLoading: loadingStartMonth } = useMonthlyAttendance(
+    userRef,
+    startYear,
+    startMonth,
+    { enabled: !!userRef && last7DaysProp == null && spansMonths }
+  );
+
+  const sevenDays = useMemo((): Last7DaysItem[] => {
     if (last7DaysProp?.length) return last7DaysProp;
-    if (!data?.days?.length) return [];
     const end = format(endDate, 'yyyy-MM-dd');
-    const start = format(subDays(endDate, 6), 'yyyy-MM-dd');
-    return (data.days as { date: string; status: string }[])
-      .filter((d) => d.date >= start && d.date <= end)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [last7DaysProp, data?.days, endDate]);
-  const isLoadingDots = last7DaysProp == null && isLoading;
+    const start = format(startDate, 'yyyy-MM-dd');
+    const dayMap = new Map<string, Last7DaysItem['status']>();
+    for (const d of [...(startMonthData?.days ?? []), ...(endMonthData?.days ?? [])]) {
+      if (d.date >= start && d.date <= end) {
+        dayMap.set(d.date, mapCalendarDayToLast7Status(d.date, d.status));
+      }
+    }
+    const result: Last7DaysItem[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = subDays(endDate, i);
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const status =
+        dayMap.get(dateStr) ??
+        (dateStr > end ? 'future' : getDay(d) === 0 ? 'weekend' : 'missed');
+      result.push({ date: dateStr, status });
+    }
+    return result;
+  }, [last7DaysProp, startMonthData?.days, endMonthData?.days, endDate, startDate]);
+
+  const isLoadingDots =
+    last7DaysProp == null && (loadingEndMonth || (spansMonths && loadingStartMonth));
+
   if (isLoadingDots || sevenDays.length === 0) {
     return (
       <div className="w-full grid grid-cols-7 gap-0 items-center">
@@ -114,6 +157,7 @@ function LastSevenDaysDots({
               'size-2.5 rounded-full shrink-0',
               d.status === 'attended' && 'bg-green-500',
               d.status === 'missed' && 'bg-red-500',
+              d.status === 'weekend' && 'bg-muted border border-border',
               d.status === 'future' && 'bg-muted/50'
             )}
           />
