@@ -245,8 +245,8 @@ export function PrimaryVehicleSection({
     if (!createdUid) {
       const refreshed = await refetch();
       const fallback =
-        refreshed.data?.find((a) => a.serialNumber === serial) ??
-        refreshed.data?.slice().sort((a, b) => b.uid - a.uid)[0];
+        refreshed.find((a) => a.serialNumber === serial) ??
+        refreshed.slice().sort((a, b) => b.uid - a.uid)[0];
       createdUid = fallback?.uid;
     }
 

@@ -162,12 +162,20 @@ export function useSelectableVehicleAssets(
     options?.secondaryUid,
   ]);
 
-  async function refetch() {
-    await Promise.all([
+  async function refetch(): Promise<AssetRecord[]> {
+    const [vehiclesResult, ownedResult] = await Promise.all([
       vehiclesQuery.refetch(),
       ownedQuery.refetch(),
       usersQuery.refetch(),
     ]);
+    const byUid = new Map<number, AssetRecord>();
+    for (const asset of vehiclesResult.data ?? []) {
+      byUid.set(asset.uid, asset);
+    }
+    for (const asset of ownedResult.data ?? []) {
+      byUid.set(asset.uid, asset);
+    }
+    return [...byUid.values()];
   }
 
   return {
