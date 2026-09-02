@@ -15,6 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePickerField } from '@/components/ui/date-picker-field';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -31,8 +38,9 @@ import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
 import { cn } from '@/lib/utils';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import type { AddUserWizardValues } from '@/lib/user-form';
-import { JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
+import { GENDER_OPTIONS, JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
 import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
 
 function matchesSearch(haystack: string, query: string): boolean {
@@ -119,6 +127,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. 175 cm"
                   />
                 </FormControl>
                 <FormMessage />
@@ -136,6 +145,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. 70 kg"
                   />
                 </FormControl>
                 <FormMessage />
@@ -153,6 +163,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. Brown"
                   />
                 </FormControl>
                 <FormMessage />
@@ -170,6 +181,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. Brown"
                   />
                 </FormControl>
                 <FormMessage />
@@ -182,14 +194,23 @@ export function StepAssignments({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Gender</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder="e.g. Male, Female"
-                  />
-                </FormControl>
+                <Select
+                  onValueChange={(value) => field.onChange(value || null)}
+                  value={field.value || undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {GENDER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -204,6 +225,8 @@ export function StepAssignments({
                   <DatePickerField
                     value={field.value}
                     onChange={field.onChange}
+                    preset="birthdate"
+                    aria-label="Date of birth"
                   />
                 </FormControl>
                 <FormMessage />
@@ -222,6 +245,7 @@ export function StepAssignments({
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => field.onChange(e.target.value || null)}
+                  placeholder={FORM_PLACEHOLDERS.street}
                 />
               </FormControl>
               <FormMessage />
@@ -240,6 +264,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.city}
                   />
                 </FormControl>
                 <FormMessage />
@@ -257,6 +282,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.country}
                   />
                 </FormControl>
                 <FormMessage />
@@ -300,6 +326,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.branchRef}
                   />
                 </FormControl>
                 <FormMessage />
@@ -317,6 +344,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.position}
                   />
                 </FormControl>
                 <FormMessage />
@@ -334,6 +362,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.department}
                   />
                 </FormControl>
                 <FormMessage />
@@ -352,6 +381,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.workEmail}
                   />
                 </FormControl>
                 <FormMessage />
@@ -417,6 +447,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder={FORM_PLACEHOLDERS.phone}
                   />
                 </FormControl>
                 <FormMessage />

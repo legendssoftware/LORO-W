@@ -40,6 +40,7 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { COMPETITOR_MODAL_CONTENT_CLASS } from './competitor-dialog-shared';
 import { COMPETITOR_STATUS_VALUES } from '@/lib/competitor-filter-utils';
 import { cn } from '@/lib/utils';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 
 const geofenceValues = ['none', 'notify', 'alert', 'restricted'] as const;
 
@@ -286,7 +287,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Competitor name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="border-border bg-background" />
+                          <Input {...field} placeholder="e.g. BuildIt" className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -300,7 +301,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Contact email (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" className="border-border bg-background" />
+                            <Input {...field} type="email" placeholder="e.g. info@competitor.co.za" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -313,7 +314,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Contact phone (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -341,7 +342,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Industry (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder="e.g. Hardware retail" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -423,6 +424,7 @@ export function CompetitorFormDialog({
                           <Textarea
                             {...field}
                             rows={3}
+                            placeholder="Brief notes about this competitor"
                             className="min-h-[72px] resize-y border-border bg-background"
                           />
                         </FormControl>
@@ -438,7 +440,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Latitude (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder="e.g. -26.2041" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -451,7 +453,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Longitude (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder="e.g. 28.0473" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -516,7 +518,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Radius (m)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={100} max={5000} className="border-border bg-background" />
+                            <Input {...field} type="number" min={100} max={5000} placeholder="e.g. 500" className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -531,7 +533,7 @@ export function CompetitorFormDialog({
                       <FormItem>
                         <FormLabel>Street</FormLabel>
                         <FormControl>
-                          <Input {...field} className="border-border bg-background" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.street} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -545,7 +547,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Suburb</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -558,7 +560,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.city} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -571,7 +573,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Province</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.province} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -584,7 +586,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Country</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.country} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -597,7 +599,7 @@ export function CompetitorFormDialog({
                         <FormItem>
                           <FormLabel>Postal code</FormLabel>
                           <FormControl>
-                            <Input {...field} className="border-border bg-background" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.postalCode} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

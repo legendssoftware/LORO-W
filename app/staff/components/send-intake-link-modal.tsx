@@ -36,6 +36,7 @@ import { useBranches, useCreateIntakeInvitationMutation } from '@/api/hooks';
 import { AccessLevel, WorkforceType } from '@/api/types/user';
 import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
 import { formatEnumLabel } from '@/lib/format-enum-label';
+import { INTAKE_ACCESS_LEVELS } from '@/lib/user-form/constants';
 import { Link2, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -44,7 +45,7 @@ const sendIntakeSchema = z
     prefillEmail: z.union([z.string().email(), z.literal('')]).optional(),
     phone: z.string().optional(),
     channel: z.enum(['email', 'link', 'whatsapp']),
-    branchId: z.string().optional(),
+    branchId: z.string().min(1, 'Branch is required'),
     accessLevel: z.string().min(1, 'Access level is required'),
     workforceType: z.string().optional(),
     role: z.string().optional(),
@@ -72,7 +73,7 @@ type SendIntakeFormValues = z.infer<typeof sendIntakeSchema>;
 const MODAL_SELECT_TRIGGER =
   'h-9 w-full border-border bg-background text-foreground';
 
-const accessLevels = Object.values(AccessLevel);
+const accessLevels = INTAKE_ACCESS_LEVELS;
 const workforceTypes = Object.values(WorkforceType);
 
 export interface SendIntakeLinkModalProps {
@@ -284,7 +285,7 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
               name="branchId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Branch</FormLabel>
+                  <FormLabel>Branch *</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl>
                       <SelectTrigger className={MODAL_SELECT_TRIGGER}>

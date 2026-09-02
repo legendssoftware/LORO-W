@@ -34,6 +34,7 @@ function numField(
     <Input
       type="number"
       step="any"
+      placeholder="0"
       value={field.value ?? ''}
       onChange={(e) => {
         const v = e.target.value;
@@ -334,6 +335,7 @@ export function StepTargets({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="e.g. REP001"
                   />
                 </FormControl>
                 <FormMessage />

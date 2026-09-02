@@ -90,9 +90,9 @@ const ROUTE_ICONS: Record<
   "/account": UserCircle,
 };
 
-function getSidebarRoutes(accessLevel: string | undefined) {
+function getSidebarRoutes(accessLevel: string | undefined, approvableTypes?: string[] | null) {
   if (!accessLevel) {
-    return getAllowedRoutes(undefined);
+    return getAllowedRoutes(undefined, approvableTypes);
   }
 
   if (isClientPortalUser(accessLevel)) {
@@ -102,7 +102,7 @@ function getSidebarRoutes(accessLevel: string | undefined) {
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
       if (r.path === "/reports") return canAccessReports(accessLevel);
-      if (r.path === "/approvals") return canManageApprovals(accessLevel);
+      if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
       }
@@ -114,7 +114,7 @@ function getSidebarRoutes(accessLevel: string | undefined) {
     ];
   }
 
-  return getAllowedRoutes(accessLevel);
+  return getAllowedRoutes(accessLevel, approvableTypes);
 }
 
 export function AppSidebar() {
@@ -143,7 +143,7 @@ export function AppSidebar() {
 
   if (!isLoaded || !isSignedIn) return null;
 
-  const routes = getSidebarRoutes(profile?.accessLevel);
+  const routes = getSidebarRoutes(profile?.accessLevel, profile?.approvableTypes);
   const isClient = isClientPortalUser(profile?.accessLevel);
   const routeIcons = ROUTE_ICONS;
 

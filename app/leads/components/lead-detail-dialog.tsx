@@ -1107,6 +1107,7 @@ export function LeadDetailDialog({
                       onChange={(e) => setEngageDraft(e.target.value)}
                       rows={10}
                       className="resize-y text-sm"
+                      placeholder="Edit outreach message before sending…"
                     />
                   )}
                   <div className="flex gap-2 flex-wrap">

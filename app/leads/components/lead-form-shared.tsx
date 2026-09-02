@@ -1063,6 +1063,7 @@ export function LeadFormBody({
                 <Input
                   value={form.utmTerm}
                   onChange={(e) => setForm((f) => ({ ...f, utmTerm: e.target.value }))}
+                  placeholder="e.g. drywall supplies"
                 />
               </div>
               <div className="grid gap-2">
@@ -1070,6 +1071,7 @@ export function LeadFormBody({
                 <Input
                   value={form.utmContent}
                   onChange={(e) => setForm((f) => ({ ...f, utmContent: e.target.value }))}
+                  placeholder="e.g. banner-ad"
                 />
               </div>
             </div>
