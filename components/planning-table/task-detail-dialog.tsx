@@ -586,6 +586,7 @@ export function TaskDetailDialog({
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, title: e.target.value }))
                       }
+                      placeholder="Task title"
                     />
                   </div>
                   <div className="grid gap-2 sm:col-span-2">
@@ -600,6 +601,7 @@ export function TaskDetailDialog({
                       }
                       rows={4}
                       className="resize-y"
+                      placeholder="Task description"
                     />
                   </div>
                   <div className="grid gap-2 sm:col-span-2">
@@ -701,6 +703,7 @@ export function TaskDetailDialog({
                       type="number"
                       min={0}
                       max={100}
+                      placeholder="0"
                       value={editForm.progress ?? 0}
                       onChange={(e) =>
                         setEditForm((f) => ({

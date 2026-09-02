@@ -67,6 +67,7 @@ export function CreditLimitExtensionDialog({
               min={1}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 50000"
               required
             />
           </div>
@@ -77,6 +78,7 @@ export function CreditLimitExtensionDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
+              placeholder="e.g. Seasonal stock increase"
             />
           </div>
           <DialogFooter>

@@ -41,6 +41,8 @@ export interface SyncProfile {
   linkedClientUid?: number | null;
   /** Staff sync: mirrors `user_targets.targetWarnings` for early UI before GET /user/:ref/target settles. */
   targetWarnings?: TargetWarningsPayload | null;
+  /** Types this staff user is assigned to approve. Empty means they receive none. */
+  approvableTypes?: string[];
 }
 
 /** Response shape of POST /auth/sync-clerk */

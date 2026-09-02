@@ -6,7 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { getCallQualityReport } from '@/api/endpoints/reports-call-quality';
-import { useApiClient, useBranches, useTokenReady } from '@/api/hooks';
+import {
+  useApiClient,
+  useBranches,
+  useSessionSync,
+  useTokenReady,
+  useUser,
+} from '@/api/hooks';
 import type { CallQualityRepRow, CallQualityReviewCall } from '@/api/types/reports-call-quality';
 import { CallScoreBar } from '@/app/calls/components/call-score-bar';
 import { CallScoreRadialChart } from '@/app/calls/components/call-score-radial-chart';
@@ -31,8 +37,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { matchNamedParty, type MatchedCallParty } from '@/lib/utils/call-party-match';
+import { getReportsDataScope } from '@/lib/access';
+import { utcDateFromYmd, utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 import { cn } from '@/lib/utils';
-import { fetchReportsOrgUsers, REPORTS_USERS_QUERY_KEY } from '../lib/reports-scope-allowlist';
+import {
+  fetchReportsOrgUsers,
+  REPORTS_USERS_QUERY_KEY,
+  resolveReportsAllowlistUids,
+  userUidInAllowlist,
+} from '../lib/reports-scope-allowlist';
 import {
   buildCallQualityMatchIndex,
   repLabelMap,
@@ -56,6 +69,35 @@ const TOP_N = 5;
 type SortKey = 'ownerName' | 'callCount' | 'avgScore' | 'missedQuestionsCount';
 type SortDir = 'asc' | 'desc';
 
+function periodDayCount(fromYmd: string, toYmd: string): number {
+  const start = utcDateFromYmd(fromYmd);
+  const end = utcDateFromYmd(toYmd);
+  const orderedStart = start <= end ? start : end;
+  const orderedEnd = start <= end ? end : start;
+  const ms = orderedEnd.getTime() - orderedStart.getTime();
+  return Math.max(1, Math.floor(ms / 86_400_000) + 1);
+}
+
+function SummaryStat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">{value}</p>
+      {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
+    </div>
+  );
+}
+
 function repToParty(
   rep: CallQualityRepRow,
   displayName: string,
@@ -75,22 +117,15 @@ function repToParty(
   };
 }
 
-function scoreDistributionFromReps(reps: CallQualityRepRow[]) {
-  let excellent = 0;
-  let fair = 0;
-  let poor = 0;
-  for (const rep of reps) {
-    if (rep.avgScore == null) continue;
-    const count = rep.callCount;
-    if (rep.avgScore >= 70) excellent += count;
-    else if (rep.avgScore >= 40) fair += count;
-    else poor += count;
-  }
+function scoreDistributionFromResponse(
+  distribution: { excellent: number; fair: number; poor: number } | undefined
+) {
+  if (!distribution) return null;
   return toDonutSlices(
     [
-      { name: 'Excellent (70+)', value: excellent },
-      { name: 'Fair (40–69)', value: fair },
-      { name: 'Poor (<40)', value: poor },
+      { name: 'Excellent (70+)', value: distribution.excellent },
+      { name: 'Fair (40–69)', value: distribution.fair },
+      { name: 'Poor (<40)', value: distribution.poor },
     ],
     [REPORTS_CHART_GREEN, REPORTS_CHART_AMBER, REPORTS_CHART_RED],
   );
@@ -306,17 +341,80 @@ function ReviewCallRow({ call }: { call: CallQualityReviewCall }) {
 export function ReportsCallQualityTab() {
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
-  const { startDate, endDate, from, to, setRange } = useReportsDateRange();
+  const { backendUserData } = useSessionSync();
+  const accessLevel = backendUserData?.accessLevel;
+  const scope = getReportsDataScope(accessLevel);
+  const isMultiUser = scope !== 'self';
+  const selfRef =
+    backendUserData?.clerkUserId?.trim() ||
+    (backendUserData?.uid != null ? String(backendUserData.uid) : null);
+
+  const mtdDefault = useMemo(() => utcMonthStartThroughToday(), []);
+  const { startDate, endDate, from, to, setRange } = useReportsDateRange(
+    mtdDefault.start,
+    mtdDefault.end
+  );
+  const [branchFilter, setBranchFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
   const [sortKey, setSortKey] = useState<SortKey>('avgScore');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  const branchesQuery = useBranches({ enabled: isTokenReady });
+  const branchIdFilter =
+    isMultiUser &&
+    branchFilter !== 'all' &&
+    Number.isFinite(Number(branchFilter))
+      ? Number(branchFilter)
+      : null;
+  const userIdFilter = useMemo(() => {
+    if (!isMultiUser) {
+      return backendUserData?.uid != null && Number.isFinite(backendUserData.uid)
+        ? Number(backendUserData.uid)
+        : null;
+    }
+    if (userFilter !== 'all' && Number.isFinite(Number(userFilter))) {
+      return Number(userFilter);
+    }
+    return null;
+  }, [isMultiUser, backendUserData?.uid, userFilter]);
+
+  const selfProfileQuery = useUser(selfRef, {
+    enabled: isTokenReady && scope === 'team' && !!selfRef,
+    includeAssignedClients: false,
+  });
+
+  const allowlistUids = useMemo(
+    () =>
+      resolveReportsAllowlistUids({
+        scope,
+        selfUid: backendUserData?.uid,
+        managedStaff: selfProfileQuery.data?.managedStaff,
+      }),
+    [scope, backendUserData?.uid, selfProfileQuery.data?.managedStaff]
+  );
+
+  const branchesQuery = useBranches({ enabled: isTokenReady && isMultiUser });
   const usersQuery = useQuery({
-    queryKey: REPORTS_USERS_QUERY_KEY,
+    queryKey: [...REPORTS_USERS_QUERY_KEY, scope] as const,
     queryFn: () => fetchReportsOrgUsers(client),
-    enabled: isTokenReady,
+    enabled: isTokenReady && isMultiUser,
     staleTime: 5 * 60 * 1000,
   });
+
+  const allowlistedUsers = useMemo(
+    () =>
+      (usersQuery.data ?? []).filter((user) => userUidInAllowlist(user.uid, allowlistUids)),
+    [usersQuery.data, allowlistUids]
+  );
+
+  const reportParams = useMemo(
+    () => ({
+      from,
+      to,
+      ...(branchIdFilter != null ? { branchId: branchIdFilter } : {}),
+      ...(userIdFilter != null ? { userUid: userIdFilter } : {}),
+    }),
+    [from, to, branchIdFilter, userIdFilter]
+  );
 
   const matchIndex = useMemo(
     () =>
@@ -327,9 +425,11 @@ export function ReportsCallQualityTab() {
   );
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['reports', 'call-quality', from, to],
-    queryFn: () => getCallQualityReport(client, { from, to }),
+    queryKey: ['reports', 'call-quality', reportParams],
+    queryFn: () => getCallQualityReport(client, reportParams),
     enabled: isTokenReady,
+    staleTime: 60 * 1000,
+    refetchOnMount: 'always',
   });
 
   const labels = useMemo(
@@ -389,9 +489,14 @@ export function ReportsCallQualityTab() {
   );
 
   const scoreDistribution = useMemo(
-    () => (data ? scoreDistributionFromReps(data.reps) : null),
-    [data]
+    () => scoreDistributionFromResponse(data?.scoreDistribution),
+    [data?.scoreDistribution]
   );
+
+  const periodTarget = useMemo(() => {
+    if (!data) return 0;
+    return data.dailyCallTarget * periodDayCount(from, to);
+  }, [data, from, to]);
 
   const reviewScoreBars = useMemo(
     () =>
@@ -428,6 +533,8 @@ export function ReportsCallQualityTab() {
   const topReps = sortedReps.slice(0, TOP_N);
   const topReviews = data.callsNeedingReview.slice(0, TOP_N);
   const topMissedQuestions = data.missedQuestions.slice(0, TOP_N);
+  const targetProgressPct =
+    periodTarget > 0 ? Math.round((data.totalCalls / periodTarget) * 100) : null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -435,8 +542,51 @@ export function ReportsCallQualityTab() {
         startDate={startDate}
         endDate={endDate}
         onRangeChange={setRange}
-        showDimensionFilters={false}
+        showDimensionFilters={isMultiUser}
+        branches={branchesQuery.data}
+        users={allowlistedUsers}
+        selectedBranchId={branchFilter}
+        onBranchChange={setBranchFilter}
+        selectedUserId={userFilter}
+        onUserChange={setUserFilter}
       />
+
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <SummaryStat label="Total calls" value={String(data.totalCalls)} />
+        <SummaryStat
+          label="Avg score"
+          value={formatCallScore(data.avgScoreOverall)}
+          sub={
+            data.scoreDistribution.totalScored > 0
+              ? `${data.scoreDistribution.totalScored} scored`
+              : 'No scored calls yet'
+          }
+        />
+        <SummaryStat
+          label="Calls vs target"
+          value={`${data.totalCalls} / ${periodTarget}`}
+          sub={
+            targetProgressPct != null
+              ? `${targetProgressPct}% of period target`
+              : `${data.dailyCallTarget}/day target`
+          }
+        />
+        <SummaryStat
+          label="Conversion"
+          value={data.conversionRate != null ? `${data.conversionRate}%` : '—'}
+          sub="Leads to quotations in range"
+        />
+        <SummaryStat
+          label="Needs review"
+          value={String(data.callsNeedingReview.length)}
+          sub="Flagged in this period"
+        />
+        <SummaryStat
+          label="Unlinked calls"
+          value={String(data.unlinkedCallCount)}
+          sub="Not matched to a user"
+        />
+      </div>
 
       <Card className="shadow-sm">
         <CardHeader className="px-4 pb-2 pt-4">
@@ -513,7 +663,7 @@ export function ReportsCallQualityTab() {
 
         <ReportsChartCard
           title="Score distribution"
-          description="Calls grouped by agent average score tier"
+          description="Scored calls grouped by individual call score"
           contentClassName="px-2 pb-3 pt-1"
         >
           {!scoreDistribution || scoreDistribution.total <= 0 ? (

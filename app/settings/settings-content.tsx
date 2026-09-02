@@ -112,6 +112,7 @@ import { OrganisationNoticesSection } from '@/components/settings/organisation-n
 import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
 import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
 import { canAccessOrgSettings } from '@/lib/access';
+import { FORM_PLACEHOLDERS, ADDRESS_FIELD_PLACEHOLDERS } from '@/lib/form-placeholders';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
   { key: 'monday', label: 'Mon' },
@@ -1397,6 +1398,7 @@ export function SettingsContent() {
                     onChange={(e) =>
                       setProfileForm((s) => ({ ...s, name: e.target.value }))
                     }
+                    placeholder="e.g. LORO Group (Pty) Ltd"
                     aria-required
                   />
                 </Row>
@@ -1408,6 +1410,7 @@ export function SettingsContent() {
                     onChange={(e) =>
                       setProfileForm((s) => ({ ...s, alias: e.target.value }))
                     }
+                    placeholder="Short name (optional)"
                   />
                 </Row>
                 <Separator />
@@ -1458,6 +1461,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, email: e.target.value }))
                         }
+                        placeholder={FORM_PLACEHOLDERS.email}
                         className="bg-background border-border"
                       />
                     </div>
@@ -1469,6 +1473,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, phone: e.target.value }))
                         }
+                        placeholder="e.g. 0712345678"
                         className="bg-background border-border"
                       />
                     </div>
@@ -1480,6 +1485,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, website: e.target.value }))
                         }
+                        placeholder="https://www.company.co.za"
                         className="bg-background border-border"
                       />
                     </div>
@@ -1516,6 +1522,7 @@ export function SettingsContent() {
                               [key as string]: e.target.value,
                             }))
                           }
+                          placeholder={ADDRESS_FIELD_PLACEHOLDERS[key] ?? ''}
                         />
                       </div>
                     ))}
@@ -1581,6 +1588,7 @@ export function SettingsContent() {
                           primaryColor: e.target.value,
                         }))
                       }
+                      placeholder="#444CE7"
                       aria-label="Primary colour hex"
                     />
                   </div>
@@ -1733,6 +1741,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, dateFormat: e.target.value }))
                         }
+                        placeholder="e.g. dd/MM/yyyy"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1743,6 +1752,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, timeFormat: e.target.value }))
                         }
+                        placeholder="e.g. HH:mm"
                       />
                     </div>
                   </div>
@@ -1816,6 +1826,7 @@ export function SettingsContent() {
                             defaultView: e.target.value,
                           }))
                         }
+                        placeholder="e.g. dashboard"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1831,6 +1842,7 @@ export function SettingsContent() {
                             itemsPerPage: Number(e.target.value) || 25,
                           }))
                         }
+                        placeholder="25"
                       />
                     </div>
                     <label className="flex items-center gap-2 text-sm">
@@ -1932,6 +1944,7 @@ export function SettingsContent() {
                             feedbackTokenExpiryDays: Number(e.target.value) || 30,
                           }))
                         }
+                        placeholder="30"
                       />
                     </div>
                   </div>
@@ -1951,6 +1964,7 @@ export function SettingsContent() {
                             geofenceDefaultRadius: Number(e.target.value),
                           }))
                         }
+                        placeholder="e.g. 100"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1965,6 +1979,7 @@ export function SettingsContent() {
                             geofenceMaxRadius: Number(e.target.value),
                           }))
                         }
+                        placeholder="e.g. 500"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1979,6 +1994,7 @@ export function SettingsContent() {
                             geofenceMinRadius: Number(e.target.value),
                           }))
                         }
+                        placeholder="e.g. 50"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2060,6 +2076,7 @@ export function SettingsContent() {
                               contactEmail: e.target.value,
                             }))
                           }
+                          placeholder={FORM_PLACEHOLDERS.email}
                           className="border-border bg-background"
                         />
                       </div>
@@ -2089,6 +2106,7 @@ export function SettingsContent() {
                               contactPhoneNumber: e.target.value,
                             }))
                           }
+                          placeholder="e.g. 0712345678"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2103,19 +2121,20 @@ export function SettingsContent() {
                               contactWebsite: e.target.value,
                             }))
                           }
+                          placeholder={FORM_PLACEHOLDERS.website}
                           className="border-border bg-background"
                         />
                       </div>
                       {(
                         [
-                          ['contactAddrStreet', 'Street'],
-                          ['contactAddrSuburb', 'Suburb'],
-                          ['contactAddrCity', 'City'],
-                          ['contactAddrState', 'State'],
-                          ['contactAddrCountry', 'Country'],
-                          ['contactAddrPostal', 'Postal code'],
+                          ['contactAddrStreet', 'Street', 'street'],
+                          ['contactAddrSuburb', 'Suburb', 'suburb'],
+                          ['contactAddrCity', 'City', 'city'],
+                          ['contactAddrState', 'State', 'state'],
+                          ['contactAddrCountry', 'Country', 'country'],
+                          ['contactAddrPostal', 'Postal code', 'postalCode'],
                         ] as const
-                      ).map(([key, label]) => (
+                      ).map(([key, label, addrKey]) => (
                         <div key={key} className="space-y-2">
                           <Label htmlFor={`s-${key}`}>{label}</Label>
                           <Input
@@ -2127,6 +2146,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
+                            placeholder={ADDRESS_FIELD_PLACEHOLDERS[addrKey] ?? ''}
                             className="border-border bg-background"
                           />
                         </div>
@@ -2167,6 +2187,15 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
+                            placeholder={
+                              key === 'brandingPrimary'
+                                ? '#444CE7'
+                                : key === 'brandingSecondary' || key === 'brandingAccent'
+                                  ? '#000000'
+                                  : key === 'brandingLogoAlt'
+                                    ? 'Alt text'
+                                    : FORM_PLACEHOLDERS.website
+                            }
                             className="border-border bg-background"
                           />
                         </div>
@@ -2193,6 +2222,7 @@ export function SettingsContent() {
                               businessName: e.target.value,
                             }))
                           }
+                          placeholder="e.g. LORO Group (Pty) Ltd"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2207,6 +2237,7 @@ export function SettingsContent() {
                               businessReg: e.target.value,
                             }))
                           }
+                          placeholder="e.g. 2020/123456/07"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2221,6 +2252,7 @@ export function SettingsContent() {
                               businessTaxId: e.target.value,
                             }))
                           }
+                          placeholder="e.g. 4123456789"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2235,6 +2267,7 @@ export function SettingsContent() {
                               businessIndustry: e.target.value,
                             }))
                           }
+                          placeholder="e.g. Building supplies"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2296,6 +2329,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
+                            placeholder={FORM_PLACEHOLDERS.website}
                             className="border-border bg-background"
                           />
                         </div>
@@ -2325,6 +2359,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
+                            placeholder={FORM_PLACEHOLDERS.zero}
                             className="border-border bg-background"
                           />
                         </div>
@@ -2366,6 +2401,7 @@ export function SettingsContent() {
                               perfHistDays: e.target.value,
                             }))
                           }
+                          placeholder="e.g. 90"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2381,6 +2417,7 @@ export function SettingsContent() {
                               perfGrowthPct: e.target.value,
                             }))
                           }
+                          placeholder="e.g. 10"
                           className="border-border bg-background"
                         />
                       </div>
@@ -2449,6 +2486,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setHoursForm((s) => ({ ...s, timezone: e.target.value }))
                         }
+                        placeholder="Africa/Johannesburg"
                       />
                     </div>
                   </div>
@@ -2645,6 +2683,7 @@ export function SettingsContent() {
                                 return { ...s, specialHours: next };
                               })
                             }
+                            placeholder="e.g. Public holiday"
                           />
                         </div>
                         <div className="flex items-end justify-end">
@@ -2805,6 +2844,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, name: e.target.value }))
                         }
+                        placeholder="e.g. Sandton Branch"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2815,6 +2855,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, alias: e.target.value }))
                         }
+                        placeholder="Short name (optional)"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2826,6 +2867,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, email: e.target.value }))
                         }
+                        placeholder="branch@company.co.za"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2836,6 +2878,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, phone: e.target.value }))
                         }
+                        placeholder="0712345678"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2849,6 +2892,7 @@ export function SettingsContent() {
                             contactPerson: e.target.value,
                           }))
                         }
+                        placeholder={FORM_PLACEHOLDERS.fullName}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2859,6 +2903,7 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, website: e.target.value }))
                         }
+                        placeholder="https://www.company.co.za"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2957,6 +3002,11 @@ export function SettingsContent() {
                               ...s,
                               [key]: e.target.value,
                             }))
+                          }
+                          placeholder={
+                            ADDRESS_FIELD_PLACEHOLDERS[
+                              key === 'addrCountry' ? 'country' : key
+                            ] ?? ''
                           }
                           autoCapitalize="off"
                           autoCorrect="off"

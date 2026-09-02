@@ -210,6 +210,7 @@ export {
   useApprovalStats,
   usePerformApprovalAction,
 } from './use-approvals';
+export { useApprovalsWebSocket } from './use-approvals-websocket';
 export {
   STORE_PRODUCTS_QUERY_KEY_PREFIX,
   mapStoreProduct,

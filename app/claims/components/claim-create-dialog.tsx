@@ -172,6 +172,7 @@ export function ClaimCreateDialog({
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>

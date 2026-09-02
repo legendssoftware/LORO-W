@@ -59,7 +59,7 @@ export function ApprovableTypesPicker({
                 ? selected.length <= 2
                   ? selected.map(approvalTypeLabel).join(', ')
                   : `${selected.length} types selected`
-                : 'Role-based defaults'}
+                : 'None — will not receive requests'}
               <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
             </Button>
           </FormControl>
@@ -108,7 +108,7 @@ export function ApprovableTypesPicker({
         </PopoverContent>
       </Popover>
       <FormDescription>
-        Leave empty to keep role-based defaults.
+        Leave empty if this person should not receive approval requests.
       </FormDescription>
       <FormMessage />
     </FormItem>

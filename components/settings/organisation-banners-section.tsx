@@ -572,6 +572,7 @@ export function OrganisationBannersSection() {
                 id="banner-title"
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g. Summer Sale"
               />
             </div>
             <div className="space-y-2">
@@ -580,6 +581,7 @@ export function OrganisationBannersSection() {
                 id="banner-subtitle"
                 value={form.subtitle}
                 onChange={(e) => setForm((prev) => ({ ...prev, subtitle: e.target.value }))}
+                placeholder="e.g. Up to 30% off"
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -589,6 +591,7 @@ export function OrganisationBannersSection() {
                 rows={4}
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Short banner copy for the app carousel"
               />
             </div>
             <div className="space-y-2">

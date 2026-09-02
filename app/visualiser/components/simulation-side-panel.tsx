@@ -1216,6 +1216,7 @@ export function SimulationSidePanel() {
                     }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 5"
                 />
               </div>
               <div className="space-y-1">
@@ -1235,6 +1236,7 @@ export function SimulationSidePanel() {
                     setSettings((s) => ({ ...s, minBranchSeparationKm: v }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 15"
                 />
               </div>
               <div className="space-y-1">
@@ -1257,6 +1259,7 @@ export function SimulationSidePanel() {
                     }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 10"
                 />
               </div>
               <div className="space-y-1">
@@ -1279,6 +1282,7 @@ export function SimulationSidePanel() {
                     }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 30"
                 />
               </div>
               <div className="space-y-1">
@@ -1298,6 +1302,7 @@ export function SimulationSidePanel() {
                     setSettings((s) => ({ ...s, topN: Math.round(v) }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 10"
                 />
               </div>
               <div className="space-y-1">
@@ -1320,6 +1325,7 @@ export function SimulationSidePanel() {
                     }));
                   }}
                   className="h-8 text-xs"
+                  placeholder="e.g. 1500"
                 />
               </div>
             </div>
@@ -1350,6 +1356,7 @@ export function SimulationSidePanel() {
                         setBrandTurnovers((prev) => ({ ...prev, [brand]: v }));
                       }}
                       className="h-7 text-xs"
+                      placeholder="e.g. 5000000"
                     />
                   </div>
                 ))}

@@ -3,6 +3,9 @@ import {
   employeeIntakeSchema,
   getDefaultEmployeeIntakeValues,
 } from './employee-intake-schema';
+import { saIdChecksumDigit } from './sa-field-rules';
+
+const VALID_SA_ID = `900115580008${saIdChecksumDigit('900115580008')}`;
 
 function validIntake(overrides: Record<string, unknown> = {}) {
   const defaults = getDefaultEmployeeIntakeValues('jane@example.com');
@@ -129,7 +132,7 @@ describe('employeeIntakeSchema', () => {
           address: '1 Main Street',
           city: 'Cape Town',
           country: 'South Africa',
-          nationalId: '328219412',
+          nationalId: VALID_SA_ID,
           bankAccountNo: '6319848837',
           nextOfKinName: 'Boikhutso Molefe',
         },
@@ -141,9 +144,27 @@ describe('employeeIntakeSchema', () => {
     );
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.profile.nationalId).toBe('328219412');
+      expect(result.data.profile.nationalId).toBe(VALID_SA_ID);
       expect(result.data.profile.bankAccountNo).toBe('6319848837');
     }
+  });
+
+  it('rejects an invalid South African ID when one is provided', () => {
+    const defaults = getDefaultEmployeeIntakeValues();
+    const result = employeeIntakeSchema.safeParse(
+      validIntake({
+        profile: {
+          ...defaults.profile,
+          gender: 'female',
+          dateOfBirth: '1990-01-15',
+          address: '1 Main Street',
+          city: 'Cape Town',
+          country: 'South Africa',
+          nationalId: '328219412',
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
   });
 
   it('rejects a short or non-numeric phone', () => {
@@ -151,5 +172,9 @@ describe('employeeIntakeSchema', () => {
     expect(short.success).toBe(false);
     const letters = employeeIntakeSchema.safeParse(validIntake({ phone: 'not-a-phone' }));
     expect(letters.success).toBe(false);
+  });
+
+  it('defaults country to South Africa', () => {
+    expect(getDefaultEmployeeIntakeValues().profile.country).toBe('South Africa');
   });
 });

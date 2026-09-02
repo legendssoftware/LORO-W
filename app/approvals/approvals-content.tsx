@@ -11,6 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { canManageApprovals } from '@/lib/access';
 import { useSessionStore } from '@/store/session-store';
+import { useAuth } from '@clerk/nextjs';
+import { useApprovalsWebSocket } from '@/api/hooks/use-approvals-websocket';
 import { ApprovalDetailDialog } from './components/approval-detail-dialog';
 import {
   ApprovalRowCard,
@@ -35,8 +37,20 @@ function matchesSearch(approval: Approval, query: string): boolean {
 export function ApprovalsContent() {
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading } = useSessionSync();
+  const { isSignedIn, getToken } = useAuth();
   const accessLevel = useSessionStore((state) => state.profileData?.accessLevel);
-  const canAct = canManageApprovals(accessLevel);
+  const approvableTypes = useSessionStore((state) => state.profileData?.approvableTypes);
+  const organisationRef = useSessionStore((state) => state.profileData?.organisationRef);
+  const userId = useSessionStore((state) => state.profileData?.uid);
+  const canAct = canManageApprovals(accessLevel, approvableTypes);
+
+  useApprovalsWebSocket({
+    getToken,
+    isSignedIn: Boolean(isSignedIn),
+    organisationRef,
+    userId,
+    enabled: isTokenReady && !sessionSyncLoading,
+  });
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');

@@ -5,24 +5,33 @@ import {
   personnelEmploymentSchemaShape,
   personnelProfileSchemaShape,
 } from './personnel-fields';
+import { ageFromIsoDate } from './date-input';
+import {
+  isValidBankAccountNo,
+  isValidBankBranchCode,
+  isValidPhone,
+  isValidSaId,
+  optionalFilled,
+} from './sa-field-rules';
 
 const optionalString = z.string().optional().nullable();
 
-const PHONE_PATTERN = /^\+?[0-9\s()-]{8,20}$/;
-
 export const INTAKE_MAX_FILE_BYTES = 5 * 1024 * 1024;
 
-function ageFromIsoDate(value: string): number | null {
-  const parsed = new Date(`${value.trim()}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - parsed.getFullYear();
-  const monthDelta = today.getMonth() - parsed.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < parsed.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
+const optionalSaId = optionalString.refine(
+  (value) => !optionalFilled(value) || isValidSaId(value ?? ''),
+  'Enter a valid 13-digit South African ID number',
+);
+
+const optionalSaPhone = optionalString.refine(
+  (value) => !optionalFilled(value) || isValidPhone(value ?? ''),
+  'Enter a valid phone number',
+);
+
+const requiredPhone = z
+  .string()
+  .min(1, 'Phone is required')
+  .refine(isValidPhone, 'Enter a valid phone number, e.g. 082 123 4567 or +27 82 123 4567');
 
 export const employeeIntakeProfileSchema = z.object({
   ...personnelProfileSchemaShape,
@@ -37,16 +46,37 @@ export const employeeIntakeProfileSchema = z.object({
   address: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
+  nationalId: optionalSaId,
+  bankAccountNo: optionalString.refine(
+    (value) => !optionalFilled(value) || isValidBankAccountNo(value ?? ''),
+    'Enter a bank account number with 7 to 11 digits',
+  ),
+  bankBranchCode: optionalString.refine(
+    (value) => !optionalFilled(value) || isValidBankBranchCode(value ?? ''),
+    'Enter a 6-digit branch code',
+  ),
+  partnerContactNo: optionalSaPhone,
+  nextOfKinContactNo: optionalSaPhone,
+  emergencyContactNo: optionalSaPhone,
+  dependantContactNo: optionalSaPhone,
 });
 
-export const employeeIntakeEmploymentSchema = z.object({
-  ...personnelEmploymentSchemaShape,
-  email: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
-  contactNumber: z
-    .string()
-    .min(1, 'Work contact number is required')
-    .regex(PHONE_PATTERN, 'Enter a valid phone number'),
-});
+export const employeeIntakeEmploymentSchema = z
+  .object({
+    ...personnelEmploymentSchemaShape,
+    email: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
+    contactNumber: z
+      .string()
+      .min(1, 'Work contact number is required')
+      .refine(isValidPhone, 'Enter a valid phone number'),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.endDate) return true;
+      return data.startDate <= data.endDate;
+    },
+    { message: 'End date must be on or after the start date', path: ['endDate'] },
+  );
 
 export const intakeDocumentSchema = z.object({
   url: z.string().min(1),
@@ -61,10 +91,7 @@ export const employeeIntakeSchema = z
     name: z.string().min(1, 'First name is required'),
     surname: z.string().min(1, 'Surname is required'),
     email: z.string().email('Valid email is required'),
-    phone: z
-      .string()
-      .min(1, 'Phone is required')
-      .regex(PHONE_PATTERN, 'Enter a valid phone number'),
+    phone: requiredPhone,
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters long')
@@ -92,13 +119,85 @@ export type IntakeDocumentValues = z.infer<typeof intakeDocumentSchema>;
 
 export const EMPLOYEE_INTAKE_STEP_FIELDS: Record<number, string[]> = {
   0: ['name', 'surname', 'email', 'phone', 'password', 'confirmPassword'],
-  1: ['profile.gender', 'profile.dateOfBirth'],
+  1: ['profile.gender', 'profile.dateOfBirth', 'profile.nationalId'],
   2: ['profile.address', 'profile.city', 'profile.country'],
   3: [],
-  4: [],
-  5: ['employmentProfile.contactNumber'],
+  4: [
+    'profile.bankAccountNo',
+    'profile.bankBranchCode',
+    'profile.partnerContactNo',
+    'profile.nextOfKinContactNo',
+    'profile.emergencyContactNo',
+    'profile.dependantContactNo',
+  ],
+  5: [
+    'employmentProfile.contactNumber',
+    'employmentProfile.email',
+    'employmentProfile.startDate',
+    'employmentProfile.endDate',
+  ],
   6: ['consentToProcess'],
 };
+
+const ADDRESS_FIELDS = new Set([
+  'address',
+  'city',
+  'country',
+  'complex',
+  'suburb',
+  'province',
+  'zipCode',
+  'ownTransport',
+]);
+
+const HEALTH_FIELDS = new Set([
+  'smokingHabits',
+  'bloodType',
+  'chronicDisease',
+  'allergies',
+  'medicalAidName',
+  'medicalAidMembershipNo',
+  'medicalAidType',
+  'vaccinationStatus',
+  'vaccineBrand',
+]);
+
+const CONTACTS_FIELDS = new Set([
+  'partnerName',
+  'partnerIdNo',
+  'partnerContactNo',
+  'nextOfKinName',
+  'nextOfKinIdNo',
+  'nextOfKinContactNo',
+  'emergencyContactNo',
+  'mainDependantName',
+  'dependantId',
+  'dependantContactNo',
+  'numberDependents',
+  'bankName',
+  'bankAccountNo',
+  'bankBranchCode',
+  'bankAccountType',
+  'taxNumber',
+  'taxOffice',
+  'lifeInsurance',
+  'personalCarInsurance',
+  'householdInsurance',
+  'funeralPlan',
+]);
+
+export function employeeIntakeStepForFieldPath(path: string): number {
+  const [top, field] = path.split('.');
+  if (top === 'consentToProcess') return 6;
+  if (top === 'employmentProfile') return 5;
+  if (top === 'profile' && field) {
+    if (ADDRESS_FIELDS.has(field)) return 2;
+    if (HEALTH_FIELDS.has(field)) return 3;
+    if (CONTACTS_FIELDS.has(field)) return 4;
+    return 1;
+  }
+  return 0;
+}
 
 export const EMPLOYEE_INTAKE_STEP_LABELS = [
   'Account',
@@ -128,7 +227,7 @@ export function getDefaultEmployeeIntakeValues(
       dateOfBirth: '',
       address: '',
       city: '',
-      country: '',
+      country: 'South Africa',
     },
     employmentProfile: {
       ...getEmptyEmploymentProfile(),
@@ -140,8 +239,13 @@ export function getDefaultEmployeeIntakeValues(
 
 export function buildCompleteIntakeBody(values: EmployeeIntakeFormValues) {
   const { confirmPassword: _confirm, consentToProcess: _consent, ...rest } = values;
+  const currentAge = ageFromIsoDate(rest.profile.dateOfBirth);
   return {
     ...rest,
+    profile: {
+      ...rest.profile,
+      currentAge,
+    },
     employmentProfile: {
       ...rest.employmentProfile,
       email: rest.employmentProfile.email?.trim() || undefined,

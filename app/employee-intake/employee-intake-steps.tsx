@@ -4,12 +4,14 @@ import type { UseFormReturn } from 'react-hook-form';
 import type { EmployeeIntakeFormValues, IntakeDocumentValues } from '@/lib/user-form/employee-intake-schema';
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePickerField } from '@/components/ui/date-picker-field';
 import { Button } from '@/components/ui/button';
@@ -27,9 +29,12 @@ import {
 } from '@/components/ui/collapsible';
 import { ChevronDownIcon, XIcon } from '@/lib/icons';
 import {
+  COUNTRY_OPTIONS,
+  GENDER_OPTIONS,
   PERSONNEL_ADDRESS_OPTIONAL_FIELDS,
   PERSONNEL_BANKING_FIELDS,
   PERSONNEL_DEPENDANT_FIELDS,
+  PERSONNEL_DETAILS_GROUPS,
   PERSONNEL_EDUCATION_FIELDS,
   PERSONNEL_EMERGENCY_FIELDS,
   PERSONNEL_HEALTH_FIELDS,
@@ -37,13 +42,74 @@ import {
   PERSONNEL_INSURANCE_FIELDS,
   PERSONNEL_SIZE_FIELDS,
   PERSONNEL_TAX_FIELDS,
+  type PersonnelFieldSpec,
 } from '@/lib/user-form/personnel-fields';
 import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
+import { ageFromIsoDate, formatIsoToDisplay } from '@/lib/user-form/date-input';
 
-function filledValue(value: unknown): string | null {
+type ReviewRow = { label: string; value: string };
+
+function formatReviewValue(spec: Pick<PersonnelFieldSpec, 'name' | 'kind' | 'options'>, value: unknown): string | null {
   if (value == null) return null;
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   const text = String(value).trim();
-  return text.length ? text : null;
+  if (!text) return null;
+  if (spec.kind === 'date') return formatIsoToDisplay(text) || text;
+  const optionLabel = spec.options?.find((option) => option.value === text)?.label;
+  return optionLabel ?? text;
+}
+
+function collectReviewSections(values: EmployeeIntakeFormValues): { title: string; rows: ReviewRow[] }[] {
+  const accountRows: ReviewRow[] = [
+    { label: 'Name', value: `${values.name} ${values.surname}`.trim() },
+    { label: 'Email', value: values.email },
+    { label: 'Phone', value: values.phone },
+  ].filter((row) => row.value);
+
+  const sections: { title: string; rows: ReviewRow[] }[] = [];
+  if (accountRows.length) sections.push({ title: 'Account', rows: accountRows });
+
+  for (const group of PERSONNEL_DETAILS_GROUPS) {
+    const rows: ReviewRow[] = [];
+    for (const field of group.fields) {
+      const formatted = formatReviewValue(field, values.profile[field.name as keyof typeof values.profile]);
+      if (!formatted) continue;
+      rows.push({ label: field.label, value: formatted });
+    }
+    if (group.title === 'Identity') {
+      const age = values.profile.currentAge ?? ageFromIsoDate(values.profile.dateOfBirth);
+      if (age != null) {
+        const dobIndex = rows.findIndex((row) => row.label === 'Date of birth');
+        rows.splice(dobIndex === -1 ? rows.length : dobIndex + 1, 0, {
+          label: 'Age',
+          value: String(age),
+        });
+      }
+    }
+    if (rows.length) sections.push({ title: group.title, rows });
+  }
+
+  const employmentSpecs: PersonnelFieldSpec[] = [
+    { name: 'contactNumber', label: 'Work contact', kind: 'tel' },
+    { name: 'position', label: 'Position', kind: 'text' },
+    { name: 'department', label: 'Department', kind: 'text' },
+    { name: 'email', label: 'Work email', kind: 'text' },
+    { name: 'startDate', label: 'Start date', kind: 'date' },
+    { name: 'endDate', label: 'End date', kind: 'date' },
+  ];
+  const employmentRows: ReviewRow[] = [];
+  for (const spec of employmentSpecs) {
+    const formatted = formatReviewValue(
+      spec,
+      values.employmentProfile[spec.name as keyof typeof values.employmentProfile],
+    );
+    if (!formatted) continue;
+    employmentRows.push({ label: spec.label, value: formatted });
+  }
+  if (employmentRows.length) sections.push({ title: 'Employment', rows: employmentRows });
+
+  return sections;
 }
 
 export function EmployeeIntakeSteps({
@@ -63,19 +129,7 @@ export function EmployeeIntakeSteps({
   onDocumentSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveDocument: (index: number) => void;
 }) {
-  const reviewRows: { label: string; value: string | null }[] = [
-    { label: 'Name', value: `${values.name} ${values.surname}`.trim() },
-    { label: 'Email', value: values.email },
-    { label: 'Phone', value: values.phone },
-    { label: 'Gender', value: values.profile.gender },
-    { label: 'Date of birth', value: values.profile.dateOfBirth },
-    { label: 'ID No', value: filledValue(values.profile.nationalId) },
-    { label: 'Address', value: [values.profile.complex, values.profile.address, values.profile.suburb, values.profile.city, values.profile.province, values.profile.zipCode, values.profile.country].filter(Boolean).join(', ') },
-    { label: 'Next of kin', value: filledValue(values.profile.nextOfKinName) },
-    { label: 'Bank', value: filledValue(values.profile.bankName) },
-    { label: 'Work contact', value: values.employmentProfile.contactNumber },
-    { label: 'Position', value: filledValue(values.employmentProfile.position) },
-  ];
+  const reviewSections = collectReviewSections(values);
 
   if (step === 1) {
     return (
@@ -90,14 +144,16 @@ export function EmployeeIntakeSteps({
                 <FormLabel>Gender *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value || undefined}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {GENDER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -113,10 +169,19 @@ export function EmployeeIntakeSteps({
                 <FormControl>
                   <DatePickerField
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(iso) => {
+                      field.onChange(iso);
+                      form.setValue(
+                        'profile.currentAge',
+                        iso ? ageFromIsoDate(iso) : null,
+                        { shouldDirty: true },
+                      );
+                    }}
                     aria-label="Date of birth"
+                    preset="birthdate"
                   />
                 </FormControl>
+                <FormDescription>Type DD/MM/YYYY or open the calendar to pick a year.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -140,7 +205,7 @@ export function EmployeeIntakeSteps({
             <FormItem>
               <FormLabel>Street address *</FormLabel>
               <FormControl>
-                <Input {...field} autoComplete="street-address" />
+                <Input {...field} autoComplete="street-address" placeholder={FORM_PLACEHOLDERS.street} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -154,7 +219,7 @@ export function EmployeeIntakeSteps({
               <FormItem>
                 <FormLabel>City *</FormLabel>
                 <FormControl>
-                  <Input {...field} autoComplete="address-level2" />
+                  <Input {...field} autoComplete="address-level2" placeholder={FORM_PLACEHOLDERS.city} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -166,9 +231,20 @@ export function EmployeeIntakeSteps({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country *</FormLabel>
-                <FormControl>
-                  <Input {...field} autoComplete="country-name" />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {COUNTRY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -229,7 +305,7 @@ export function EmployeeIntakeSteps({
             <FormItem>
               <FormLabel>Work contact number *</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" />
+                <Input {...field} type="tel" placeholder={FORM_PLACEHOLDERS.phone} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -292,12 +368,11 @@ export function EmployeeIntakeSteps({
           <CollapsibleContent className="mt-3 grid gap-3 sm:grid-cols-2">
             {(
               [
-                ['employmentProfile.position', 'Position'],
-                ['employmentProfile.department', 'Department'],
-                ['employmentProfile.branchref', 'Branch ref'],
-                ['employmentProfile.email', 'Work email'],
+                ['employmentProfile.position', 'Position', FORM_PLACEHOLDERS.position],
+                ['employmentProfile.department', 'Department', FORM_PLACEHOLDERS.department],
+                ['employmentProfile.email', 'Work email', FORM_PLACEHOLDERS.workEmail],
               ] as const
-            ).map(([name, label]) => (
+            ).map(([name, label, placeholder]) => (
               <FormField
                 key={name}
                 control={form.control}
@@ -310,6 +385,7 @@ export function EmployeeIntakeSteps({
                         {...field}
                         value={(field.value as string | null) ?? ''}
                         onChange={(e) => field.onChange(e.target.value || null)}
+                        placeholder={placeholder}
                       />
                     </FormControl>
                     <FormMessage />
@@ -359,51 +435,54 @@ export function EmployeeIntakeSteps({
 
   if (step === 6) {
     return (
-      <div className="space-y-3 rounded-lg border bg-card p-4 sm:p-6 text-sm">
+      <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6 text-sm">
         <p className="font-medium">Review your information</p>
-        <dl className="grid gap-2 sm:grid-cols-2">
-          {reviewRows
-            .filter((row) => row.value)
-            .map((row) => (
-              <div key={row.label} className={row.label === 'Address' ? 'sm:col-span-2' : undefined}>
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className={row.label === 'Gender' ? 'capitalize' : undefined}>{row.value}</dd>
-              </div>
-            ))}
-          <FormField
-            control={form.control}
-            name="consentToProcess"
-            render={({ field }) => (
-              <FormItem className="sm:col-span-2 flex flex-row items-start gap-3 space-y-0 rounded-md border p-3">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    I confirm this information is accurate and agree it may be processed
-                    for HR and employment records.
-                  </FormLabel>
-                  <FormMessage />
+        {reviewSections.map((section) => (
+          <section key={section.title} className="space-y-2">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {section.title}
+            </h2>
+            <dl className="grid gap-2 sm:grid-cols-2">
+              {section.rows.map((row) => (
+                <div key={`${section.title}-${row.label}`}>
+                  <dt className="text-muted-foreground">{row.label}</dt>
+                  <dd>{row.value}</dd>
                 </div>
-              </FormItem>
-            )}
-          />
-          {documents.length > 0 && (
-            <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">HR documents</dt>
-              <dd>
-                <ul className="mt-1 list-inside list-disc">
-                  {documents.map((doc) => (
-                    <li key={doc.url}>{doc.title}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+        <FormField
+          control={form.control}
+          name="consentToProcess"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-md border p-3">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>
+                  I confirm this information is accurate and agree it may be processed
+                  for HR and employment records.
+                </FormLabel>
+                <FormMessage />
+              </div>
+            </FormItem>
           )}
-        </dl>
+        />
+        {documents.length > 0 && (
+          <div>
+            <p className="text-muted-foreground">HR documents</p>
+            <ul className="mt-1 list-inside list-disc">
+              {documents.map((doc) => (
+                <li key={doc.url}>{doc.title}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     );
   }

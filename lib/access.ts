@@ -224,10 +224,18 @@ const APPROVALS_MANAGE_LEVELS = new Set<string>([
     "manager",
     "owner",
     "hr",
+    "finance",
+    "accounting",
+    "accountant",
+    "supervisor",
 ]);
 
-/** View and decide org approvals (web inbox + HR portal). */
-export function canManageApprovals(accessLevel: string | undefined): boolean {
+/** View and decide approvals (web inbox + HR portal). Typed users can open even without these roles. */
+export function canManageApprovals(
+    accessLevel: string | undefined,
+    approvableTypes?: string[] | null,
+): boolean {
+    if (Array.isArray(approvableTypes) && approvableTypes.length > 0) return true;
     const level = normalize(accessLevel);
     if (!level) return false;
     return APPROVALS_MANAGE_LEVELS.has(level);
@@ -271,7 +279,8 @@ function isClientPortalPath(pathNormalized: string): boolean {
  */
 export function canAccess(
     path: string,
-    accessLevel: string | undefined
+    accessLevel: string | undefined,
+    approvableTypes?: string[] | null,
 ): boolean {
     const pathNormalized = path.replace(/\/$/, "") || "/";
     const level = normalize(accessLevel);
@@ -299,7 +308,7 @@ export function canAccess(
         pathNormalized === "/approvals" ||
         pathNormalized.startsWith("/approvals/")
     ) {
-        return canManageApprovals(accessLevel);
+        return canManageApprovals(accessLevel, approvableTypes);
     }
 
     if (
@@ -390,7 +399,8 @@ export function getClientSidebarRoutes(): AllowedRoute[] {
  * Reports Overview + Targets are available to all staff; data scope is org | team | self.
  */
 export function getAllowedRoutes(
-    accessLevel: string | undefined
+    accessLevel: string | undefined,
+    approvableTypes?: string[] | null,
 ): AllowedRoute[] {
     const level = normalize(accessLevel);
 
@@ -410,7 +420,7 @@ export function getAllowedRoutes(
         { path: "/planning", label: "Planning" },
     ];
 
-    if (canManageApprovals(accessLevel)) {
+    if (canManageApprovals(accessLevel, approvableTypes)) {
         const claimsIndex = fullNav.findIndex((r) => r.path === "/claims");
         fullNav.splice(claimsIndex + 1, 0, { path: "/approvals", label: "Approvals" });
     }
@@ -434,7 +444,7 @@ export function getAllowedRoutes(
         STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p))
     );
 
-    if (canManageApprovals(accessLevel) && !restrictedNav.some((r) => r.path === "/approvals")) {
+    if (canManageApprovals(accessLevel, approvableTypes) && !restrictedNav.some((r) => r.path === "/approvals")) {
         const claimsIndex = restrictedNav.findIndex((r) => r.path === "/claims");
         restrictedNav.splice(
             claimsIndex >= 0 ? claimsIndex + 1 : restrictedNav.length,

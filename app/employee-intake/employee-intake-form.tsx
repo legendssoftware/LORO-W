@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   completeIntake,
@@ -16,6 +16,7 @@ import {
   EMPLOYEE_INTAKE_STEP_FIELDS,
   EMPLOYEE_INTAKE_STEP_LABELS,
   employeeIntakeSchema,
+  employeeIntakeStepForFieldPath,
   getDefaultEmployeeIntakeValues,
   INTAKE_MAX_FILE_BYTES,
   type EmployeeIntakeFormValues,
@@ -26,21 +27,41 @@ import {
   writeEmployeeIntakeDraft,
 } from '@/lib/user-form/employee-intake-draft';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import { EmployeeIntakeSteps } from './employee-intake-steps';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import toast from 'react-hot-toast';
 
 const TOTAL_STEPS = EMPLOYEE_INTAKE_STEP_LABELS.length;
 const DRAFT_SAVE_DEBOUNCE_MS = 400;
+
+function flattenErrorPaths(errors: FieldErrors, prefix = ''): string[] {
+  return Object.entries(errors).flatMap(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (!value || typeof value !== 'object') return [];
+    if ('message' in value && value.message) return [path];
+    return flattenErrorPaths(value as FieldErrors, path);
+  });
+}
+
+function firstErrorMessage(errors: FieldErrors): string | null {
+  const paths = flattenErrorPaths(errors);
+  for (const path of paths) {
+    const parts = path.split('.');
+    let current: unknown = errors;
+    for (const part of parts) {
+      if (!current || typeof current !== 'object') break;
+      current = (current as Record<string, unknown>)[part];
+    }
+    if (current && typeof current === 'object' && 'message' in current) {
+      const message = (current as { message?: unknown }).message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+  }
+  return null;
+}
 
 export function EmployeeIntakeForm() {
   const searchParams = useSearchParams();
@@ -227,6 +248,19 @@ export function EmployeeIntakeForm() {
     }
   }
 
+  function handleInvalid(errors: FieldErrors<EmployeeIntakeFormValues>) {
+    const paths = flattenErrorPaths(errors);
+    const nextStep = Math.min(
+      ...paths.map((path) => employeeIntakeStepForFieldPath(path)),
+      TOTAL_STEPS - 1,
+    );
+    if (Number.isFinite(nextStep)) setStep(nextStep);
+    toast.error(firstErrorMessage(errors) ?? 'Please fix the highlighted fields');
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    });
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center" aria-busy="true" aria-live="polite">
@@ -315,7 +349,7 @@ export function EmployeeIntakeForm() {
               void handleNext();
               return;
             }
-            void form.handleSubmit(handleSubmit)(event);
+            void form.handleSubmit(handleSubmit, handleInvalid)(event);
           }}
           className="space-y-6"
         >
@@ -333,7 +367,7 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>First name *</FormLabel>
                       <FormControl>
-                        <Input {...field} autoComplete="given-name" />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.firstName} autoComplete="given-name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -346,7 +380,7 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>Surname *</FormLabel>
                       <FormControl>
-                        <Input {...field} autoComplete="family-name" />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.surname} autoComplete="family-name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -367,6 +401,7 @@ export function EmployeeIntakeForm() {
                         aria-describedby={emailLocked ? 'intake-email-locked' : undefined}
                         className={emailLocked ? 'bg-muted' : undefined}
                         autoComplete="email"
+                        placeholder={FORM_PLACEHOLDERS.email}
                       />
                     </FormControl>
                     <FormMessage />
@@ -385,7 +420,7 @@ export function EmployeeIntakeForm() {
                   <FormItem>
                     <FormLabel>Personal phone *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" autoComplete="tel" />
+                      <Input {...field} type="tel" autoComplete="tel" placeholder={FORM_PLACEHOLDERS.phone} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -399,8 +434,12 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>Password *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="password" autoComplete="new-password" />
+                        <Input {...field} type="password" autoComplete="new-password" placeholder="Min. 8 characters" />
                       </FormControl>
+                      <FormDescription>
+                        At least 8 characters, with one uppercase letter, one lowercase letter, and one
+                        number.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -412,7 +451,7 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>Confirm password *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="password" autoComplete="new-password" />
+                        <Input {...field} type="password" autoComplete="new-password" placeholder="Re-enter password" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
