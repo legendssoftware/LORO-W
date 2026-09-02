@@ -4,9 +4,19 @@ import { useMemo } from 'react';
 import type { AxiosInstance } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { createAsset, getAssets, getAssetsByUser } from '@/api/endpoints/assets';
+import {
+  createAsset,
+  deleteAsset,
+  getAssets,
+  getAssetsByUser,
+  updateAsset,
+} from '@/api/endpoints/assets';
 import { getUsers, type UserListItem } from '@/api/endpoints/user';
-import type { AssetRecord, CreateAssetPayload } from '@/api/types/asset';
+import type {
+  AssetRecord,
+  CreateAssetPayload,
+  UpdateAssetPayload,
+} from '@/api/types/asset';
 import toast from 'react-hot-toast';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 
@@ -181,6 +191,39 @@ export function useCreateAssetMutation() {
     },
     onError: (err) => {
       toast.error(getQueryErrorMessage(err, 'Failed to add vehicle'));
+    },
+  });
+}
+
+export function useUpdateAssetMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ uid, payload }: { uid: number; payload: UpdateAssetPayload }) =>
+      updateAsset(client, uid, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEY_PREFIX });
+      toast.success('Vehicle updated');
+    },
+    onError: (err) => {
+      toast.error(getQueryErrorMessage(err, 'Failed to update vehicle'));
+    },
+  });
+}
+
+export function useDeleteAssetMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (uid: number) => deleteAsset(client, uid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEY_PREFIX });
+      toast.success('Vehicle removed');
+    },
+    onError: (err) => {
+      toast.error(getQueryErrorMessage(err, 'Failed to remove vehicle'));
     },
   });
 }

@@ -33,6 +33,8 @@ export {
   useUserVehicleAssets,
   useSelectableVehicleAssets,
   useCreateAssetMutation,
+  useUpdateAssetMutation,
+  useDeleteAssetMutation,
 } from './use-assets';
 export { useBranches, getBranchDisplayLabel } from './use-branches';
 export {
