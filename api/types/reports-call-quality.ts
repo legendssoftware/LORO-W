@@ -32,6 +32,13 @@ export type CallQualityScoreByDimension = {
   callCount: number;
 };
 
+export type CallQualityScoreDistribution = {
+  excellent: number;
+  fair: number;
+  poor: number;
+  totalScored: number;
+};
+
 export type CallQualityReportResponse = {
   avgScoreOverall: number | null;
   totalCalls: number;
@@ -40,6 +47,7 @@ export type CallQualityReportResponse = {
   conversionRate: number | null;
   unlinkedCallCount: number;
   scoreByDimension: CallQualityScoreByDimension[];
+  scoreDistribution: CallQualityScoreDistribution;
   reps: CallQualityRepRow[];
   missedQuestions: CallQualityMissedQuestion[];
   callsNeedingReview: CallQualityReviewCall[];
@@ -48,4 +56,6 @@ export type CallQualityReportResponse = {
 export type CallQualityReportParams = {
   from?: string;
   to?: string;
+  branchId?: number;
+  userUid?: number;
 };

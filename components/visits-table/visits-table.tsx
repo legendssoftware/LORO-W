@@ -30,6 +30,7 @@ import {
   CURRENCY_OPTIONS,
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import { useUpdateVisitDetailsMutation, useClientsInfinite } from '@/api/hooks';
 import type { ClientListItem } from '@/api/endpoints/clients';
 
@@ -1213,6 +1214,7 @@ function VisitDetailDialog({
                       maxLength={NOTES_MAX_LENGTH}
                       rows={4}
                       className="resize-y"
+                      placeholder="Add notes"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {getWordCount(editForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
@@ -1223,6 +1225,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.resolution ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, resolution: e.target.value }))}
+                      placeholder="e.g. Issue resolved"
                     />
                   </div>
                   <div>
@@ -1230,6 +1233,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.contactFullName ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, contactFullName: e.target.value }))}
+                      placeholder="Person contacted"
                     />
                   </div>
                   <div>
@@ -1237,6 +1241,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.companyName ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
+                      placeholder="Company"
                     />
                   </div>
                   <div>
@@ -1249,6 +1254,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactCellPhone}
                       className={fieldErrors.contactCellPhone ? 'border-destructive' : ''}
+                      placeholder={FORM_PLACEHOLDERS.phone}
                     />
                     {fieldErrors.contactCellPhone && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactCellPhone}</p>
@@ -1264,6 +1270,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactLandline}
                       className={fieldErrors.contactLandline ? 'border-destructive' : ''}
+                      placeholder={FORM_PLACEHOLDERS.landline}
                     />
                     {fieldErrors.contactLandline && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactLandline}</p>
@@ -1280,6 +1287,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactEmail}
                       className={fieldErrors.contactEmail ? 'border-destructive' : ''}
+                      placeholder={FORM_PLACEHOLDERS.email}
                     />
                     {fieldErrors.contactEmail && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactEmail}</p>
@@ -1414,6 +1422,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.quotationNumber ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, quotationNumber: e.target.value }))}
+                      placeholder="Optional"
                     />
                   </div>
                   <div>
@@ -1465,6 +1474,7 @@ function VisitDetailDialog({
                         className="flex-1"
                         value={editForm.salesValue ?? ''}
                         onChange={(e) => setEditForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))}
+                        placeholder={FORM_PLACEHOLDERS.zero}
                       />
                     </div>
                   </div>
@@ -1496,6 +1506,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.meetingLink ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
+                      placeholder={FORM_PLACEHOLDERS.website}
                     />
                   </div>
                   <div>

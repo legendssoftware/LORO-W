@@ -191,6 +191,7 @@ export function StepAccess({
                     const v = e.target.value;
                     field.onChange(v === '' ? null : Number(v));
                   }}
+                  placeholder="e.g. 12"
                 />
               </FormControl>
               <FormMessage />

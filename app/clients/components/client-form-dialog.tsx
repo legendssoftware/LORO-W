@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { CLIENT_MODAL_CONTENT_CLASS } from './client-dialog-shared';
 import { cn } from '@/lib/utils';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 
 const addressSchema = z.object({
   street: z.string().min(5, 'Street is required (min 5 chars)'),
@@ -234,7 +235,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Company / client name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-background border-border" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.companyName} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -247,7 +248,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Contact person</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-background border-border" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.fullName} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -261,7 +262,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" className="bg-background border-border" />
+                            <Input {...field} type="email" placeholder={FORM_PLACEHOLDERS.email} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -274,7 +275,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="+27 11 123 4567" className="bg-background border-border" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -288,7 +289,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Alternative phone (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-background border-border" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.phone} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -301,7 +302,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Website (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="bg-background border-border" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.website} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -315,7 +316,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Category</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder="e.g. Retail" className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -328,7 +329,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Industry (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder="e.g. Construction" className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -370,7 +371,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Description (optional)</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} className="bg-background border-border resize-y min-h-[72px]" />
+                          <Textarea {...field} rows={3} placeholder="Brief notes about this client" className="bg-background border-border resize-y min-h-[72px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -384,7 +385,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Street</FormLabel>
                         <FormControl>
-                          <Input {...field} className="bg-background border-border" />
+                          <Input {...field} placeholder={FORM_PLACEHOLDERS.street} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -398,7 +399,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Suburb</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -411,7 +412,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.city} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -426,7 +427,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Province / state</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.province} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -439,7 +440,7 @@ export function ClientFormDialog({
                         <FormItem>
                           <FormLabel>Country</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background border-border" />
+                            <Input {...field} placeholder={FORM_PLACEHOLDERS.country} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -453,7 +454,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Postal code (4 digits)</FormLabel>
                         <FormControl>
-                          <Input {...field} maxLength={4} className="bg-background border-border" />
+                          <Input {...field} maxLength={4} placeholder={FORM_PLACEHOLDERS.postalCode} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

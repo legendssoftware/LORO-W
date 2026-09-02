@@ -152,6 +152,7 @@ export function CallQualitySettingsSection({ orgRef }: CallQualitySettingsSectio
               id="daily-call-target"
               type="number"
               min={1}
+              placeholder="e.g. 60"
               value={form.dailyCallTarget ?? 60}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, dailyCallTarget: Number(event.target.value) || 60 }))
@@ -174,6 +175,7 @@ export function CallQualitySettingsSection({ orgRef }: CallQualitySettingsSectio
               type="number"
               min={0}
               max={100}
+              placeholder="e.g. 50"
               value={form.reviewScoreThreshold ?? 50}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, reviewScoreThreshold: Number(event.target.value) || 50 }))
@@ -296,6 +298,7 @@ function MetricRow({ dimension, onPatch, onRemove }: MetricRowProps) {
             value={dimension.label}
             disabled={protectedMetric && dimension.id === 'coaching_recommendation'}
             onChange={(event) => onPatch({ label: event.target.value })}
+            placeholder="e.g. Discovery quality"
           />
         </td>
         <td className="px-3 py-2">
@@ -346,6 +349,7 @@ function MetricRow({ dimension, onPatch, onRemove }: MetricRowProps) {
             min={0}
             step={0.5}
             className="h-8"
+            placeholder="1"
             value={dimension.weight ?? 1}
             disabled={dimension.type === 'text' || dimension.type === 'ratio'}
             onChange={(event) => onPatch({ weight: Number(event.target.value) || 1 })}

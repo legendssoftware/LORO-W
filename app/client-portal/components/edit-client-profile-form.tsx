@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import toast from 'react-hot-toast';
 
 export function EditClientProfileForm({
@@ -51,30 +52,35 @@ export function EditClientProfileForm({
             <Input
               value={form.contactPerson ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, contactPerson: e.target.value }))}
+              placeholder={FORM_PLACEHOLDERS.fullName}
             />
           </Field>
           <Field label="Phone">
             <Input
               value={form.phone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              placeholder={FORM_PLACEHOLDERS.landline}
             />
           </Field>
           <Field label="Alternative phone">
             <Input
               value={form.alternativePhone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, alternativePhone: e.target.value }))}
+              placeholder={FORM_PLACEHOLDERS.phone}
             />
           </Field>
           <Field label="Website">
             <Input
               value={form.website ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+              placeholder={FORM_PLACEHOLDERS.website}
             />
           </Field>
           <Field label="Industry">
             <Input
               value={form.industry ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+              placeholder="e.g. Construction"
             />
           </Field>
           <Field label="Description">
@@ -82,6 +88,7 @@ export function EditClientProfileForm({
               value={form.description ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
+              placeholder="Brief description of your business"
             />
           </Field>
           <Field label="Street">
@@ -93,6 +100,7 @@ export function EditClientProfileForm({
                   address: { ...f.address, street: e.target.value },
                 }))
               }
+              placeholder={FORM_PLACEHOLDERS.street}
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -105,6 +113,7 @@ export function EditClientProfileForm({
                     address: { ...f.address, city: e.target.value },
                   }))
                 }
+                placeholder={FORM_PLACEHOLDERS.city}
               />
             </Field>
             <Field label="Postal code">
@@ -116,6 +125,7 @@ export function EditClientProfileForm({
                     address: { ...f.address, postalCode: e.target.value },
                   }))
                 }
+                placeholder={FORM_PLACEHOLDERS.postalCode}
               />
             </Field>
           </div>

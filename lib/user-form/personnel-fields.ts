@@ -1,17 +1,111 @@
 import { z } from 'zod';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import type { DatePickerPreset } from './date-input';
 
 const optionalString = z.string().optional().nullable();
 const optionalNumber = z.union([z.number(), z.null()]).optional();
 const optionalBoolean = z.boolean().optional().nullable();
 
-export type PersonnelFieldKind = 'text' | 'date' | 'number' | 'tel';
+export type PersonnelFieldKind = 'text' | 'date' | 'number' | 'tel' | 'select';
+
+export type PersonnelSelectOption = {
+  value: string;
+  label: string;
+};
 
 export type PersonnelFieldSpec = {
   name: string;
   label: string;
   kind: PersonnelFieldKind;
   placeholder?: string;
+  options?: PersonnelSelectOption[];
+  datePreset?: DatePickerPreset;
 };
+
+export const GENDER_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other', label: 'Other' },
+];
+
+export const COUNTRY_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'South Africa', label: 'South Africa' },
+  { value: 'Namibia', label: 'Namibia' },
+  { value: 'Botswana', label: 'Botswana' },
+  { value: 'Zimbabwe', label: 'Zimbabwe' },
+  { value: 'Lesotho', label: 'Lesotho' },
+  { value: 'Eswatini', label: 'Eswatini' },
+  { value: 'Mozambique', label: 'Mozambique' },
+  { value: 'Zambia', label: 'Zambia' },
+  { value: 'Malawi', label: 'Malawi' },
+  { value: 'United Kingdom', label: 'United Kingdom' },
+  { value: 'Other', label: 'Other' },
+];
+
+export const SA_PROVINCE_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'Eastern Cape', label: 'Eastern Cape' },
+  { value: 'Free State', label: 'Free State' },
+  { value: 'Gauteng', label: 'Gauteng' },
+  { value: 'KwaZulu-Natal', label: 'KwaZulu-Natal' },
+  { value: 'Limpopo', label: 'Limpopo' },
+  { value: 'Mpumalanga', label: 'Mpumalanga' },
+  { value: 'Northern Cape', label: 'Northern Cape' },
+  { value: 'North West', label: 'North West' },
+  { value: 'Western Cape', label: 'Western Cape' },
+];
+
+export const MARITAL_STATUS_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'Single', label: 'Single' },
+  { value: 'Married', label: 'Married' },
+  { value: 'Divorced', label: 'Divorced' },
+  { value: 'Widowed', label: 'Widowed' },
+  { value: 'Life partner', label: 'Life partner' },
+];
+
+export const BLOOD_TYPE_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'A+', label: 'A+' },
+  { value: 'A-', label: 'A-' },
+  { value: 'B+', label: 'B+' },
+  { value: 'B-', label: 'B-' },
+  { value: 'AB+', label: 'AB+' },
+  { value: 'AB-', label: 'AB-' },
+  { value: 'O+', label: 'O+' },
+  { value: 'O-', label: 'O-' },
+];
+
+export const SMOKER_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'No', label: 'No' },
+  { value: 'Yes', label: 'Yes' },
+  { value: 'Former', label: 'Former' },
+];
+
+export const YES_NO_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'Yes', label: 'Yes' },
+  { value: 'No', label: 'No' },
+];
+
+export const CLOTHING_SIZE_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'XS', label: 'XS' },
+  { value: 'S', label: 'S' },
+  { value: 'M', label: 'M' },
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' },
+  { value: 'XXL', label: 'XXL' },
+  { value: 'XXXL', label: 'XXXL' },
+];
+
+export const BANK_ACCOUNT_TYPE_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'Cheque', label: 'Cheque' },
+  { value: 'Savings', label: 'Savings' },
+  { value: 'Transmission', label: 'Transmission' },
+];
+
+export const EMPLOYMENT_TYPE_OPTIONS: PersonnelSelectOption[] = [
+  { value: 'full_time', label: 'Full time' },
+  { value: 'part_time', label: 'Part time' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'temporary', label: 'Temporary' },
+];
 
 export const personnelProfileSchemaShape = {
   height: optionalString,
@@ -336,41 +430,41 @@ export function mapEmploymentFromApi(
 }
 
 export const PERSONNEL_IDENTITY_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'nationalId', label: 'ID No', kind: 'text' },
-  { name: 'passportNo', label: 'Passport No', kind: 'text' },
+  { name: 'nationalId', label: 'ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'passportNo', label: 'Passport No', kind: 'text', placeholder: 'e.g. A12345678' },
   { name: 'visaExpiryDate', label: 'Visa expiry date', kind: 'date' },
-  { name: 'fingerIndex', label: 'Finger index', kind: 'text' },
-  { name: 'religion', label: 'Religion', kind: 'text' },
-  { name: 'ethnicity', label: 'Ethnicity', kind: 'text' },
-  { name: 'maritalStatus', label: 'Marital status', kind: 'text' },
+  { name: 'fingerIndex', label: 'Finger index', kind: 'text', placeholder: 'e.g. Right index' },
+  { name: 'religion', label: 'Religion', kind: 'text', placeholder: 'e.g. Christian' },
+  { name: 'ethnicity', label: 'Ethnicity', kind: 'text', placeholder: 'e.g. Xhosa' },
+  { name: 'maritalStatus', label: 'Marital status', kind: 'select', options: MARITAL_STATUS_OPTIONS },
 ];
 
 export const PERSONNEL_SIZE_FIELDS: PersonnelFieldSpec[] = [
   { name: 'height', label: 'Height', kind: 'text', placeholder: 'e.g. 175 cm' },
   { name: 'weight', label: 'Weight', kind: 'text', placeholder: 'e.g. 70 kg' },
-  { name: 'shirtSize', label: 'Shirt size', kind: 'text' },
-  { name: 'shoeSize', label: 'Shoe size', kind: 'text' },
-  { name: 'overallSize', label: 'Overall size', kind: 'text' },
-  { name: 'pantsSize', label: 'Pants size', kind: 'text' },
-  { name: 'dressSize', label: 'Dress size', kind: 'text' },
-  { name: 'coatSize', label: 'Coat size', kind: 'text' },
+  { name: 'shirtSize', label: 'Shirt size', kind: 'select', options: CLOTHING_SIZE_OPTIONS },
+  { name: 'shoeSize', label: 'Shoe size', kind: 'text', placeholder: 'e.g. UK 8' },
+  { name: 'overallSize', label: 'Overall size', kind: 'select', options: CLOTHING_SIZE_OPTIONS },
+  { name: 'pantsSize', label: 'Pants size', kind: 'text', placeholder: 'e.g. 32' },
+  { name: 'dressSize', label: 'Dress size', kind: 'select', options: CLOTHING_SIZE_OPTIONS },
+  { name: 'coatSize', label: 'Coat size', kind: 'select', options: CLOTHING_SIZE_OPTIONS },
 ];
 
 export const PERSONNEL_EDUCATION_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'education', label: 'Education', kind: 'text' },
-  { name: 'homeLanguage', label: 'Home language', kind: 'text' },
-  { name: 'secondLanguage', label: 'Second language', kind: 'text' },
+  { name: 'education', label: 'Education', kind: 'text', placeholder: 'e.g. BCom Accounting' },
+  { name: 'homeLanguage', label: 'Home language', kind: 'text', placeholder: 'e.g. isiXhosa' },
+  { name: 'secondLanguage', label: 'Second language', kind: 'text', placeholder: 'e.g. English' },
 ];
 
 export const PERSONNEL_ADDRESS_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'complex', label: 'Complex / plot', kind: 'text' },
-  { name: 'address', label: 'Street address', kind: 'text' },
-  { name: 'suburb', label: 'Suburb / town', kind: 'text' },
-  { name: 'city', label: 'City', kind: 'text' },
-  { name: 'province', label: 'Province / state', kind: 'text' },
-  { name: 'zipCode', label: 'Postal code', kind: 'text' },
-  { name: 'country', label: 'Country', kind: 'text' },
-  { name: 'ownTransport', label: 'Own transport', kind: 'text', placeholder: 'Yes / N/A' },
+  { name: 'complex', label: 'Complex / plot', kind: 'text', placeholder: 'e.g. Sunrise Estate' },
+  { name: 'address', label: 'Street address', kind: 'text', placeholder: FORM_PLACEHOLDERS.street },
+  { name: 'suburb', label: 'Suburb / town', kind: 'text', placeholder: FORM_PLACEHOLDERS.suburb },
+  { name: 'city', label: 'City', kind: 'text', placeholder: FORM_PLACEHOLDERS.city },
+  { name: 'province', label: 'Province / state', kind: 'select', options: SA_PROVINCE_OPTIONS },
+  { name: 'zipCode', label: 'Postal code', kind: 'text', placeholder: FORM_PLACEHOLDERS.postalCode },
+  { name: 'country', label: 'Country', kind: 'select', options: COUNTRY_OPTIONS },
+  { name: 'ownTransport', label: 'Own transport', kind: 'select', options: YES_NO_OPTIONS },
 ];
 
 export const PERSONNEL_ADDRESS_OPTIONAL_FIELDS: PersonnelFieldSpec[] = PERSONNEL_ADDRESS_FIELDS.filter(
@@ -378,76 +472,76 @@ export const PERSONNEL_ADDRESS_OPTIONAL_FIELDS: PersonnelFieldSpec[] = PERSONNEL
 );
 
 export const PERSONNEL_HEALTH_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'smokingHabits', label: 'Smoker', kind: 'text' },
-  { name: 'bloodType', label: 'Blood type', kind: 'text' },
-  { name: 'chronicDisease', label: 'Chronic disease', kind: 'text' },
-  { name: 'allergies', label: 'Allergies', kind: 'text' },
-  { name: 'medicalAidName', label: 'Medical aid', kind: 'text' },
-  { name: 'medicalAidMembershipNo', label: 'Membership No', kind: 'text' },
-  { name: 'medicalAidType', label: 'Aid type', kind: 'text' },
-  { name: 'vaccinationStatus', label: 'Vaccination status', kind: 'text' },
-  { name: 'vaccineBrand', label: 'Vaccine brand', kind: 'text' },
+  { name: 'smokingHabits', label: 'Smoker', kind: 'select', options: SMOKER_OPTIONS },
+  { name: 'bloodType', label: 'Blood type', kind: 'select', options: BLOOD_TYPE_OPTIONS },
+  { name: 'chronicDisease', label: 'Chronic disease', kind: 'text', placeholder: 'e.g. Type 2 diabetes' },
+  { name: 'allergies', label: 'Allergies', kind: 'text', placeholder: 'e.g. Peanuts' },
+  { name: 'medicalAidName', label: 'Medical aid', kind: 'text', placeholder: 'e.g. Discovery Health' },
+  { name: 'medicalAidMembershipNo', label: 'Membership No', kind: 'text', placeholder: 'e.g. 123456789' },
+  { name: 'medicalAidType', label: 'Aid type', kind: 'text', placeholder: 'e.g. Comprehensive' },
+  { name: 'vaccinationStatus', label: 'Vaccination status', kind: 'text', placeholder: 'e.g. Fully vaccinated' },
+  { name: 'vaccineBrand', label: 'Vaccine brand', kind: 'text', placeholder: 'e.g. Pfizer' },
 ];
 
 export const PERSONNEL_EMERGENCY_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'partnerName', label: 'Partner name', kind: 'text' },
-  { name: 'partnerIdNo', label: 'Partner ID No', kind: 'text' },
-  { name: 'partnerContactNo', label: 'Partner contact No', kind: 'tel' },
-  { name: 'nextOfKinName', label: 'Next of kin', kind: 'text' },
-  { name: 'nextOfKinIdNo', label: 'Next of kin ID No', kind: 'text' },
-  { name: 'nextOfKinContactNo', label: 'Next of kin contact No', kind: 'tel' },
-  { name: 'emergencyContactNo', label: 'Emergency contact No', kind: 'tel' },
+  { name: 'partnerName', label: 'Partner name', kind: 'text', placeholder: FORM_PLACEHOLDERS.fullName },
+  { name: 'partnerIdNo', label: 'Partner ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'partnerContactNo', label: 'Partner contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
+  { name: 'nextOfKinName', label: 'Next of kin', kind: 'text', placeholder: 'e.g. John Smith' },
+  { name: 'nextOfKinIdNo', label: 'Next of kin ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'nextOfKinContactNo', label: 'Next of kin contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
+  { name: 'emergencyContactNo', label: 'Emergency contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
 ];
 
 export const PERSONNEL_DEPENDANT_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'mainDependantName', label: 'Main dependant name', kind: 'text' },
-  { name: 'dependantId', label: 'Dependant ID', kind: 'text' },
-  { name: 'dependantContactNo', label: 'Dependant contact No', kind: 'tel' },
-  { name: 'numberDependents', label: 'No of dependants', kind: 'number' },
+  { name: 'mainDependantName', label: 'Main dependant name', kind: 'text', placeholder: 'e.g. Child Smith' },
+  { name: 'dependantId', label: 'Dependant ID', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'dependantContactNo', label: 'Dependant contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
+  { name: 'numberDependents', label: 'No of dependants', kind: 'number', placeholder: 'e.g. 2' },
 ];
 
 export const PERSONNEL_BANKING_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'bankName', label: 'Bank name', kind: 'text' },
-  { name: 'bankAccountNo', label: 'Account No', kind: 'text' },
-  { name: 'bankBranchCode', label: 'Branch code', kind: 'text' },
-  { name: 'bankAccountType', label: 'Account type', kind: 'text', placeholder: 'Cheque' },
+  { name: 'bankName', label: 'Bank name', kind: 'text', placeholder: 'e.g. FNB' },
+  { name: 'bankAccountNo', label: 'Account No', kind: 'text', placeholder: '7–11 digits' },
+  { name: 'bankBranchCode', label: 'Branch code', kind: 'text', placeholder: '6 digits' },
+  { name: 'bankAccountType', label: 'Account type', kind: 'select', options: BANK_ACCOUNT_TYPE_OPTIONS },
 ];
 
 export const PERSONNEL_TAX_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'taxNumber', label: 'Tax number', kind: 'text' },
-  { name: 'taxOffice', label: 'Tax office', kind: 'text' },
+  { name: 'taxNumber', label: 'Tax number', kind: 'text', placeholder: '10-digit tax number' },
+  { name: 'taxOffice', label: 'Tax office', kind: 'text', placeholder: 'e.g. SARS Cape Town' },
 ];
 
 export const PERSONNEL_INSURANCE_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'lifeInsurance', label: 'Life insurance', kind: 'text' },
-  { name: 'personalCarInsurance', label: 'Car insurance', kind: 'text' },
-  { name: 'householdInsurance', label: 'Household insurance', kind: 'text' },
-  { name: 'funeralPlan', label: 'Funeral plan', kind: 'text' },
+  { name: 'lifeInsurance', label: 'Life insurance', kind: 'text', placeholder: 'e.g. Old Mutual' },
+  { name: 'personalCarInsurance', label: 'Car insurance', kind: 'text', placeholder: 'e.g. Outsurance' },
+  { name: 'householdInsurance', label: 'Household insurance', kind: 'text', placeholder: 'e.g. Santam' },
+  { name: 'funeralPlan', label: 'Funeral plan', kind: 'text', placeholder: 'e.g. AVBOB' },
 ];
 
 export const JOB_INFORMATION_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'employeeNumber', label: 'Employee No', kind: 'text' },
-  { name: 'divisionName', label: 'Division name', kind: 'text' },
-  { name: 'employmentType', label: 'Employment type', kind: 'text', placeholder: 'full_time / part_time / contract' },
-  { name: 'directManager', label: 'Direct manager', kind: 'text' },
-  { name: 'directSupervisor', label: 'Direct supervisor', kind: 'text' },
-  { name: 'directTeamLeader', label: 'Direct team leader', kind: 'text' },
-  { name: 'directDirector', label: 'Direct director', kind: 'text' },
-  { name: 'leaveDays', label: 'Leave days', kind: 'number' },
-  { name: 'leaveRate', label: 'Leave rate', kind: 'text' },
-  { name: 'medicalLeaveDays', label: 'Medical leave days', kind: 'number' },
-  { name: 'wageType', label: 'Wage type', kind: 'text' },
-  { name: 'wageDay', label: 'Wage day', kind: 'text' },
-  { name: 'salaryDay', label: 'Salary day', kind: 'text' },
-  { name: 'ratePerHour', label: 'Rate per hour (ZAR)', kind: 'number' },
+  { name: 'employeeNumber', label: 'Employee No', kind: 'text', placeholder: 'e.g. EMP001' },
+  { name: 'divisionName', label: 'Division name', kind: 'text', placeholder: 'e.g. Retail Division' },
+  { name: 'employmentType', label: 'Employment type', kind: 'select', options: EMPLOYMENT_TYPE_OPTIONS },
+  { name: 'directManager', label: 'Direct manager', kind: 'text', placeholder: FORM_PLACEHOLDERS.fullName },
+  { name: 'directSupervisor', label: 'Direct supervisor', kind: 'text', placeholder: 'e.g. John Doe' },
+  { name: 'directTeamLeader', label: 'Direct team leader', kind: 'text', placeholder: 'e.g. Sarah Jones' },
+  { name: 'directDirector', label: 'Direct director', kind: 'text', placeholder: 'e.g. Michael Brown' },
+  { name: 'leaveDays', label: 'Leave days', kind: 'number', placeholder: 'e.g. 15' },
+  { name: 'leaveRate', label: 'Leave rate', kind: 'text', placeholder: 'e.g. 1.0 per month' },
+  { name: 'medicalLeaveDays', label: 'Medical leave days', kind: 'number', placeholder: 'e.g. 3' },
+  { name: 'wageType', label: 'Wage type', kind: 'text', placeholder: 'e.g. Monthly' },
+  { name: 'wageDay', label: 'Wage day', kind: 'text', placeholder: 'e.g. Last Friday' },
+  { name: 'salaryDay', label: 'Salary day', kind: 'text', placeholder: 'e.g. 25' },
+  { name: 'ratePerHour', label: 'Rate per hour (ZAR)', kind: 'number', placeholder: 'e.g. 85.50' },
 ];
 
 export const PERSONNEL_DETAILS_GROUPS: { title: string; fields: PersonnelFieldSpec[] }[] = [
   {
     title: 'Identity',
     fields: [
-      { name: 'gender', label: 'Gender', kind: 'text' },
-      { name: 'dateOfBirth', label: 'Date of birth', kind: 'date' },
+      { name: 'gender', label: 'Gender', kind: 'select', options: GENDER_OPTIONS },
+      { name: 'dateOfBirth', label: 'Date of birth', kind: 'date', datePreset: 'birthdate' },
       ...PERSONNEL_IDENTITY_FIELDS,
     ],
   },

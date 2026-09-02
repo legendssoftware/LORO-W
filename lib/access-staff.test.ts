@@ -17,14 +17,20 @@ describe('canManageStaffUsers', () => {
 });
 
 describe('canManageApprovals', () => {
-  it('allows admin, manager, owner, and HR', () => {
+  it('allows admin, manager, owner, HR, and finance family', () => {
     expect(canManageApprovals('admin')).toBe(true);
     expect(canManageApprovals('manager')).toBe(true);
     expect(canManageApprovals('owner')).toBe(true);
     expect(canManageApprovals('hr')).toBe(true);
+    expect(canManageApprovals('finance')).toBe(true);
+    expect(canManageApprovals('supervisor')).toBe(true);
   });
 
-  it('blocks standard users', () => {
+  it('allows a standard user who has approvable types', () => {
+    expect(canManageApprovals('user', ['leave_request'])).toBe(true);
+  });
+
+  it('blocks standard users without types', () => {
     expect(canManageApprovals('user')).toBe(false);
     expect(canManageApprovals(undefined)).toBe(false);
   });

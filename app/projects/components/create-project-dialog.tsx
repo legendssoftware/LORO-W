@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import {
   Select,
   SelectContent,
@@ -306,7 +307,7 @@ export function CreateProjectDialog({
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input {...field} required />
+                      <Input {...field} required placeholder="e.g. Sandton Office Fit-out" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -319,7 +320,7 @@ export function CreateProjectDialog({
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} />
+                      <Textarea {...field} rows={3} placeholder="Brief project summary" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -409,6 +410,7 @@ export function CreateProjectDialog({
                           type="number"
                           min={0}
                           max={100}
+                          placeholder={FORM_PLACEHOLDERS.zero}
                           {...field}
                         />
                       </FormControl>
@@ -431,6 +433,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
+                          placeholder={FORM_PLACEHOLDERS.zero}
                           {...field}
                         />
                       </FormControl>
@@ -448,6 +451,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
+                          placeholder={FORM_PLACEHOLDERS.zero}
                           {...field}
                         />
                       </FormControl>
@@ -465,6 +469,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
+                          placeholder={FORM_PLACEHOLDERS.zero}
                           {...field}
                         />
                       </FormControl>
@@ -482,6 +487,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           min={0}
+                          placeholder={FORM_PLACEHOLDERS.zero}
                           {...field}
                         />
                       </FormControl>
@@ -558,7 +564,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>Contact email</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <Input type="email" {...field} placeholder={FORM_PLACEHOLDERS.email} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -571,7 +577,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>Contact phone</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -589,7 +595,7 @@ export function CreateProjectDialog({
                     <FormItem className="sm:col-span-2">
                       <FormLabel>Street</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.street} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -602,7 +608,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>Suburb</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -615,7 +621,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.city} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -628,7 +634,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>State / province</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.province} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -641,7 +647,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.country} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -654,7 +660,7 @@ export function CreateProjectDialog({
                     <FormItem>
                       <FormLabel>Postal code</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} placeholder={FORM_PLACEHOLDERS.postalCode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -670,6 +676,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           step="any"
+                          placeholder="e.g. -26.2041"
                           {...field}
                         />
                       </FormControl>
@@ -687,6 +694,7 @@ export function CreateProjectDialog({
                         <Input
                           type="number"
                           step="any"
+                          placeholder="e.g. 28.0473"
                           {...field}
                         />
                       </FormControl>
@@ -748,7 +756,7 @@ export function CreateProjectDialog({
                   <FormItem>
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} />
+                      <Textarea {...field} rows={3} placeholder="Optional project notes" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

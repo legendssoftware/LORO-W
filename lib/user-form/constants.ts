@@ -32,6 +32,8 @@ export const CURRENCY_OPTIONS = [
   { value: 'CNY', label: 'CNY - Chinese Yuan' },
 ] as const;
 
+export const INTAKE_ACCESS_LEVELS = ['user', 'manager', 'hr', 'admin'] as const;
+
 /** Target period options for dropdown. */
 export const TARGET_PERIOD_OPTIONS = [
   { value: 'daily', label: 'Daily' },

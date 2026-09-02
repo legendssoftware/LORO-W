@@ -135,6 +135,7 @@ export function TaskFlagsSection({ taskId }: TaskFlagsSectionProps) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
+                placeholder="e.g. Steps to complete on site"
               />
             </div>
             <div className="space-y-1">

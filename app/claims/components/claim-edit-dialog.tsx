@@ -166,6 +166,7 @@ export function ClaimEditDialog({
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>
