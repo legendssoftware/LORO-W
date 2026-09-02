@@ -322,7 +322,7 @@ export interface AttendanceReportResponse {
 /** Last 7 days attendance status for staff grid. */
 export interface Last7DaysItem {
     date: string;
-    status: 'attended' | 'missed' | 'future';
+    status: 'attended' | 'missed' | 'future' | 'weekend';
 }
 
 /** POST /att/metrics/monthly - monthly metrics for all users. */

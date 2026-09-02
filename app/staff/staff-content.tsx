@@ -117,10 +117,10 @@ export function StaffContent() {
     return cardUsers.map((u) => {
       const payrollHours = payrollByUserId.get(u.userId);
       if (payrollHours == null) return u;
-      const payrollProgressPercent = Math.min(
-        100,
-        Math.round((payrollHours / payrollTargetHours) * 100)
-      );
+      const payrollProgressPercent =
+        payrollExpectedByNow > 0
+          ? Math.min(100, Math.round((payrollHours / payrollExpectedByNow) * 100))
+          : 0;
       return {
         ...u,
         payrollHours,
