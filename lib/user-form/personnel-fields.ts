@@ -430,7 +430,7 @@ export function mapEmploymentFromApi(
 }
 
 export const PERSONNEL_IDENTITY_FIELDS: PersonnelFieldSpec[] = [
-  { name: 'nationalId', label: 'ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'nationalId', label: 'ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.nationalId },
   { name: 'passportNo', label: 'Passport No', kind: 'text', placeholder: 'e.g. A12345678' },
   { name: 'visaExpiryDate', label: 'Visa expiry date', kind: 'date' },
   { name: 'fingerIndex', label: 'Finger index', kind: 'text', placeholder: 'e.g. Right index' },
@@ -485,17 +485,17 @@ export const PERSONNEL_HEALTH_FIELDS: PersonnelFieldSpec[] = [
 
 export const PERSONNEL_EMERGENCY_FIELDS: PersonnelFieldSpec[] = [
   { name: 'partnerName', label: 'Partner name', kind: 'text', placeholder: FORM_PLACEHOLDERS.fullName },
-  { name: 'partnerIdNo', label: 'Partner ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'partnerIdNo', label: 'Partner ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.idOrPassport },
   { name: 'partnerContactNo', label: 'Partner contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
   { name: 'nextOfKinName', label: 'Next of kin', kind: 'text', placeholder: 'e.g. John Smith' },
-  { name: 'nextOfKinIdNo', label: 'Next of kin ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'nextOfKinIdNo', label: 'Next of kin ID No', kind: 'text', placeholder: FORM_PLACEHOLDERS.idOrPassport },
   { name: 'nextOfKinContactNo', label: 'Next of kin contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
   { name: 'emergencyContactNo', label: 'Emergency contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
 ];
 
 export const PERSONNEL_DEPENDANT_FIELDS: PersonnelFieldSpec[] = [
   { name: 'mainDependantName', label: 'Main dependant name', kind: 'text', placeholder: 'e.g. Child Smith' },
-  { name: 'dependantId', label: 'Dependant ID', kind: 'text', placeholder: FORM_PLACEHOLDERS.saId },
+  { name: 'dependantId', label: 'Dependant ID', kind: 'text', placeholder: FORM_PLACEHOLDERS.idOrPassport },
   { name: 'dependantContactNo', label: 'Dependant contact No', kind: 'tel', placeholder: FORM_PLACEHOLDERS.phone },
   { name: 'numberDependents', label: 'No of dependants', kind: 'number', placeholder: 'e.g. 2' },
 ];

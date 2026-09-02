@@ -149,7 +149,7 @@ describe('employeeIntakeSchema', () => {
     }
   });
 
-  it('rejects an invalid South African ID when one is provided', () => {
+  it('rejects an invalid South African ID when country is South Africa', () => {
     const defaults = getDefaultEmployeeIntakeValues();
     const result = employeeIntakeSchema.safeParse(
       validIntake({
@@ -165,6 +165,55 @@ describe('employeeIntakeSchema', () => {
       }),
     );
     expect(result.success).toBe(false);
+  });
+
+  it('accepts a generic national ID for non-SA countries', () => {
+    const defaults = getDefaultEmployeeIntakeValues();
+    const result = employeeIntakeSchema.safeParse(
+      validIntake({
+        profile: {
+          ...defaults.profile,
+          gender: 'female',
+          dateOfBirth: '1990-01-15',
+          address: '1 Main Street',
+          city: 'Harare',
+          country: 'Zimbabwe',
+          nationalId: '63-123456-A-78',
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a passport number instead of a national ID', () => {
+    const defaults = getDefaultEmployeeIntakeValues();
+    const result = employeeIntakeSchema.safeParse(
+      validIntake({
+        profile: {
+          ...defaults.profile,
+          gender: 'male',
+          dateOfBirth: '1985-06-20',
+          address: '10 High Street',
+          city: 'London',
+          country: 'United Kingdom',
+          passportNo: 'BN2203945',
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts local-format phone numbers without a country code', () => {
+    const result = employeeIntakeSchema.safeParse(
+      validIntake({
+        phone: '07123 456789',
+        employmentProfile: {
+          ...getDefaultEmployeeIntakeValues().employmentProfile,
+          contactNumber: '07123 456789',
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
   });
 
   it('rejects a short or non-numeric phone', () => {

@@ -31,6 +31,7 @@ export {
 export {
   ASSETS_QUERY_KEY_PREFIX,
   useUserVehicleAssets,
+  useSelectableVehicleAssets,
   useCreateAssetMutation,
 } from './use-assets';
 export { useBranches, getBranchDisplayLabel } from './use-branches';

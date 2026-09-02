@@ -6,7 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import type { AssetRecord, CreateAssetPayload } from '@/api/types/asset';
 import {
   useCreateAssetMutation,
-  useUserVehicleAssets,
+  useSelectableVehicleAssets,
 } from '@/api/hooks/use-assets';
 import {
   FormControl,
@@ -139,7 +139,10 @@ export function PrimaryVehicleSection({
   branchUid,
 }: PrimaryVehicleSectionProps) {
   const { setValue, watch, getValues } = useFormContext<TargetFormValues>();
-  const { data: vehicles = [], isLoading, refetch } = useUserVehicleAssets(userUid);
+  const primaryUid = watch('primaryVehicleAssetUid');
+  const secondaryUid = watch('secondaryVehicleAssetUid');
+  const { data: vehicles = [], fleetVehicles = [], isLoading, refetch } =
+    useSelectableVehicleAssets(userUid, { primaryUid, secondaryUid });
   const createAsset = useCreateAssetMutation();
   const [addOpen, setAddOpen] = useState(false);
   const [make, setMake] = useState('');
@@ -150,18 +153,16 @@ export function PrimaryVehicleSection({
   const [vehicleSizeClass, setVehicleSizeClass] = useState<string>('bakkie');
   const [fuelType, setFuelType] = useState<string>('diesel');
 
-  const primaryUid = watch('primaryVehicleAssetUid');
-  const secondaryUid = watch('secondaryVehicleAssetUid');
   const hasPrimary = isAssignedUid(primaryUid);
   const hasSecondary = isAssignedUid(secondaryUid);
 
   const selectedPrimary = useMemo(
-    () => vehicles.find((v) => v.uid === primaryUid) ?? null,
-    [vehicles, primaryUid]
+    () => fleetVehicles.find((v) => v.uid === primaryUid) ?? null,
+    [fleetVehicles, primaryUid]
   );
   const selectedSecondary = useMemo(
-    () => vehicles.find((v) => v.uid === secondaryUid) ?? null,
-    [vehicles, secondaryUid]
+    () => fleetVehicles.find((v) => v.uid === secondaryUid) ?? null,
+    [fleetVehicles, secondaryUid]
   );
 
   function assignVehicleRole(role: VehicleRole, uid: number | null) {
@@ -298,6 +299,10 @@ export function PrimaryVehicleSection({
         </p>
       ) : selectedPrimary ? (
         <VehicleDetails asset={selectedPrimary} />
+      ) : vehicles.length === 0 ? (
+        <p className="text-muted-foreground text-xs">
+          No active fleet vehicles are available. Add a vehicle or assign one from Assets.
+        </p>
       ) : (
         <p className="text-muted-foreground text-xs">
           No primary vehicle — trip fuel estimates use the fleet default (12 km/L)
