@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { getScoreColorClasses } from '../lib/score-colors';
+import { getScoreColorClasses, callQualityScoreBand, callQualityScoreBandLabel } from '../lib/score-colors';
 import { cn } from '@/lib/utils';
 import { formatCallScore } from '../call-display';
 
@@ -15,9 +15,21 @@ const remainderColor = 'hsl(var(--muted))';
 
 function scoreChartColor(value: number): string {
   const clamped = Math.min(100, Math.max(0, value));
-  if (clamped >= 70) return 'hsl(142 71% 45%)';
-  if (clamped >= 40) return 'hsl(38 92% 50%)';
-  return 'hsl(0 84% 60%)';
+  const band = callQualityScoreBand(clamped);
+  switch (band) {
+    case 'excellent':
+      return 'hsl(142 71% 45%)';
+    case 'good':
+      return 'hsl(160 64% 40%)';
+    case 'needsImprovement':
+      return 'hsl(38 92% 50%)';
+    case 'poor':
+      return 'hsl(0 84% 60%)';
+    default: {
+      const _exhaustive: never = band;
+      return _exhaustive;
+    }
+  }
 }
 
 type CallScoreRadialChartProps = {
@@ -124,7 +136,7 @@ export function CallScoreRadialChart({
       </ChartContainer>
       {!hideCaption && !compact ? (
         <p className={cn('text-center text-xs tabular-nums', progressColors.text)}>
-          {formatCallScore(clamped)} / 100
+          {callQualityScoreBandLabel(callQualityScoreBand(clamped))} · {formatCallScore(clamped)} / 100
         </p>
       ) : null}
     </div>

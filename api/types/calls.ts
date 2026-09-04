@@ -4,7 +4,7 @@ export type CallOrigin = 'in_app' | 'company_phone' | 'personal_mobile';
 
 export type CallQualityMetricResult =
   | { type: 'boolean'; value: boolean; evidence?: string }
-  | { type: 'score'; value: number; evidence?: string }
+  | { type: 'score'; value: number; evidence?: string; notApplicable?: boolean }
   | { type: 'text'; value: string }
   | { type: 'enum'; value: string; evidence?: string }
   | { type: 'ratio'; agentPct: number; clientPct: number };
@@ -19,6 +19,13 @@ export type CallQualityMetricDefinition = {
   weight?: number;
   category?: 'discovery' | 'closing' | 'behaviour' | 'outcome';
   required?: boolean;
+  affectsScore?: boolean;
+};
+
+export type CallMissedOpportunity = {
+  customerQuote: string;
+  repResponse: string;
+  shouldHaveAsked: string[];
 };
 
 export type DialogueTurn = {
@@ -73,6 +80,7 @@ export type CallScoreBreakdown = {
   strengths: string[];
   improvements: string[];
   metrics?: CallQualityMetricsMap;
+  missedOpportunities?: CallMissedOpportunity[];
 };
 
 export type CallRecordingDetail = CallRecordingListItem & {

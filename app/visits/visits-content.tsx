@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
-import { utcRangeIsoFromUtcCalendarStoredRange } from '@/lib/utils/overview-daily-summary';
+import { utcRangeIsoFromUtcCalendarStoredRange, utcDateFromYmd } from '@/lib/utils/overview-daily-summary';
 import {
   useCheckIns,
   useCheckInStatus,
@@ -84,7 +85,31 @@ export function VisitsContent({
     selectedMethod,
     setSelectedMethod,
     setSelectedUserUid,
+    setStartDate,
+    setEndDate,
+    setUseAllTime,
+    setSearchQuery,
   } = useVisitsStore();
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    const userUid = searchParams.get('userUid');
+    const q = searchParams.get('q');
+    const ymd = /^\d{4}-\d{2}-\d{2}$/;
+    if (from && ymd.test(from)) {
+      setStartDate(utcDateFromYmd(from));
+      setUseAllTime(false);
+    }
+    if (to && ymd.test(to)) {
+      setEndDate(utcDateFromYmd(to));
+      setUseAllTime(false);
+    }
+    if (userUid) setSelectedUserUid(userUid);
+    if (q) setSearchQuery(q);
+  }, [searchParams, setStartDate, setEndDate, setUseAllTime, setSelectedUserUid, setSearchQuery]);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredVisitsPageSize());
