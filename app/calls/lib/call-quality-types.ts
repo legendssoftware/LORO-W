@@ -54,7 +54,7 @@ export type OrganisationCallQualityConfig = {
   enabled?: boolean;
   dailyCallTarget?: number;
   productName?: string;
-  dimensions?: CallQualityMetricDefinition[];
+  dimensions: CallQualityMetricDefinition[];
   coachingPrompt?: string;
   autoCreateLead?: boolean;
   reviewScoreThreshold?: number;
@@ -260,8 +260,8 @@ export function buildBitDrywallCallQualityTemplate(productName = 'BitDrywall'): 
   };
 }
 
-function dimensionIds(dimensions: CallQualityMetricDefinition[]): string[] {
-  return dimensions.map((row) => row.id).sort();
+function dimensionIds(dimensions: CallQualityMetricDefinition[] | undefined): string[] {
+  return (dimensions ?? []).map((row) => row.id).sort();
 }
 
 function sameIdSet(left: readonly string[], right: readonly string[]): boolean {
