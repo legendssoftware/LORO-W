@@ -62,6 +62,25 @@ export function LeadHistoryEntry({
           <p className="text-xs font-medium text-violet-900">LORO</p>
         )}
         <p className="break-words whitespace-pre-wrap text-muted-foreground">{summary}</p>
+        {typeof entry.meta?.commercialSnapshot === 'object' &&
+        entry.meta.commercialSnapshot != null &&
+        !Array.isArray(entry.meta.commercialSnapshot) &&
+        Array.isArray(
+          (entry.meta.commercialSnapshot as { missedOpportunities?: unknown }).missedOpportunities,
+        ) &&
+        (entry.meta.commercialSnapshot as { missedOpportunities: { customerQuote?: string }[] })
+          .missedOpportunities[0]?.customerQuote ? (
+          <p className="text-xs text-amber-900">
+            Missed:{' '}
+            {
+              (
+                entry.meta.commercialSnapshot as {
+                  missedOpportunities: { customerQuote: string }[];
+                }
+              ).missedOpportunities[0].customerQuote
+            }
+          </p>
+        ) : null}
       </div>
     </li>
   );

@@ -113,7 +113,6 @@ import {
   Tag,
   Target,
   Thermometer,
-  Timer,
   TrendingUp,
   User,
   UserCircle,
@@ -125,6 +124,10 @@ import {
   type ActivityActorLookupUser,
   isLeadActivityLoroRow,
 } from '@/lib/lead-activity-display';
+import {
+  commercialSnapshotHeadline,
+  parseLeadCommercialSnapshot,
+} from '@/lib/lead-commercial-snapshot';
 import { LeadHistoryEntry } from './lead-history-entry';
 import { LeadTeamChat } from './lead-team-chat';
 import { buildLeadCallCheckInPayload, leadToEndVisitInitialForm, parseActiveCallFromStatus } from '@/lib/check-in-utils';
@@ -279,6 +282,11 @@ export function LeadDetailDialog({
   }, [leadDetailQuery.data?.lead, lead]);
 
   const loadingAudit = leadDetailQuery.isLoading && leadAuditLogEntries.length === 0;
+
+  const commercialSnapshot = useMemo(
+    () => parseLeadCommercialSnapshot(leadDetailQuery.data?.lead ?? lead),
+    [leadDetailQuery.data?.lead, lead],
+  );
 
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editAttachmentInputRef = useRef<HTMLInputElement>(null);
@@ -1258,24 +1266,85 @@ export function LeadDetailDialog({
                 />
               </dl>
             </div>
-            {(lead.totalInteractions != null || lead.averageResponseTime != null) && (
+            {commercialSnapshot ? (
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Engagement" icon={Activity} />
+                  <DetailSectionHeading title="Last commercial snapshot" icon={TrendingUp} />
+                  <p className="mb-3 text-sm text-foreground">
+                    {commercialSnapshotHeadline(commercialSnapshot)}
+                  </p>
+                  {commercialSnapshot.summary ? (
+                    <p className="mb-3 text-sm text-muted-foreground">{commercialSnapshot.summary}</p>
+                  ) : null}
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow
+                      label="Call score"
+                      value={
+                        commercialSnapshot.scoreOverall != null
+                          ? String(commercialSnapshot.scoreOverall)
+                          : '-'
+                      }
+                      icon={Target}
+                    />
+                    <DetailFieldRow
+                      label="Quality conversation"
+                      value={commercialSnapshot.qualityConversation ? 'Yes' : 'No'}
+                      icon={Phone}
+                    />
+                    <DetailFieldRow
+                      label="BOQ asked"
+                      value={commercialSnapshot.boqRequested ? 'Yes' : 'No'}
+                      icon={ClipboardList}
+                    />
+                    <DetailFieldRow
+                      label="Follow-up booked"
+                      value={commercialSnapshot.followUpBooked ? 'Yes' : 'No'}
+                      icon={CalendarCheck2}
+                    />
+                  </dl>
+                  {commercialSnapshot.missedOpportunity &&
+                  commercialSnapshot.missedOpportunities?.[0] ? (
+                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                      <p className="font-medium">Missed pursuit</p>
+                      <p className="mt-1">
+                        Customer: {commercialSnapshot.missedOpportunities[0].customerQuote}
+                      </p>
+                      <p className="mt-1">
+                        Rep: {commercialSnapshot.missedOpportunities[0].repResponse}
+                      </p>
+                      {commercialSnapshot.missedOpportunities[0].shouldHaveAsked?.length ? (
+                        <p className="mt-1 text-amber-900">
+                          Should have asked:{' '}
+                          {commercialSnapshot.missedOpportunities[0].shouldHaveAsked.join(' · ')}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {commercialSnapshot.coaching ? (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Coaching: {commercialSnapshot.coaching}
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+            {(lead.nextFollowUpDate || lead.totalInteractions != null) && (
+              <>
+                <Separator />
+                <div>
+                  <DetailSectionHeading title="Next action" icon={Activity} />
+                  <dl className={DETAIL_FIELD_GRID_CLASS}>
+                    <DetailFieldRow
+                      label="Next follow-up"
+                      value={formatDate(lead.nextFollowUpDate)}
+                      icon={CalendarCheck2}
+                    />
                     {lead.totalInteractions != null && (
                       <DetailFieldRow
-                        label="Total interactions"
+                        label="Logged interactions"
                         value={lead.totalInteractions}
                         icon={MessageSquare}
-                      />
-                    )}
-                    {lead.averageResponseTime != null && (
-                      <DetailFieldRow
-                        label="Avg response time (hours)"
-                        value={lead.averageResponseTime}
-                        icon={Timer}
                       />
                     )}
                   </dl>

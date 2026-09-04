@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { MapPin, Camera, Upload, Phone, Mail, Smartphone, ChevronDown } from 'lucide-react';
+import { MapPin, Camera, Upload, Phone, Mail, Smartphone, ChevronDown, TriangleAlert } from 'lucide-react';
 import { CalendarIcon, Loader2Icon, XIcon, UsersIcon } from '@/lib/icons';
 import {
   TYPE_OF_BUSINESS_OPTIONS,
@@ -44,6 +44,8 @@ import {
 import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-schemas';
 import { resolveCheckInLocation } from '@/lib/check-in-utils';
 import { cn } from '@/lib/utils';
+import { visitQualityMissingFields } from '@/lib/visit-quality-hints';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import toast from 'react-hot-toast';
 
 const NOTES_MAX_WORDS = 2500;
@@ -147,6 +149,26 @@ export function EndVisitDialog({
   }, [clientsFromApi, selectedClient]);
 
   const showPhotoInEndModal = activeVisit?.methodOfContact === 'Physical';
+  const qualityMissing = useMemo(
+    () =>
+      visitQualityMissingFields({
+        notes: endForm.notes,
+        resolution: endForm.resolution,
+        contactFullName: endForm.contactFullName,
+        followUp: endForm.followUp,
+        methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
+        contactMade: endForm.contactMade,
+      }),
+    [
+      endForm.notes,
+      endForm.resolution,
+      endForm.contactFullName,
+      endForm.followUp,
+      endForm.methodOfContact,
+      endForm.contactMade,
+      activeVisit?.methodOfContact,
+    ],
+  );
   const endVisitDialogContainer =
     typeof document !== 'undefined' ? document.getElementById('end-visit-dialog-content') : null;
 
@@ -336,6 +358,16 @@ export function EndVisitDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
+          {qualityMissing.length > 0 ? (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+              <TriangleAlert />
+              <AlertTitle>This activity will look incomplete on reports</AlertTitle>
+              <AlertDescription>
+                Missing: {qualityMissing.join(', ')}. Voicemail and no-answer only need a note.
+                You can still end the visit.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             {/* 1. Type of business (top) */}
             <div className="grid gap-2 sm:col-span-2">
