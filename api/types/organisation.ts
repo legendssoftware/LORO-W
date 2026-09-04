@@ -129,10 +129,12 @@ export interface OrganisationSettingsRecord {
       weight?: number;
       category?: 'discovery' | 'closing' | 'behaviour' | 'outcome';
       required?: boolean;
+      affectsScore?: boolean;
     }>;
     coachingPrompt?: string;
     autoCreateLead?: boolean;
     reviewScoreThreshold?: number;
+    scorecardVersion?: number;
   } | null;
 }
 

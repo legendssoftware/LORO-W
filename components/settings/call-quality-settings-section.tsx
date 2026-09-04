@@ -21,6 +21,7 @@ import {
   PROTECTED_CALL_QUALITY_METRIC_IDS,
   buildBitDrywallCallQualityTemplate,
   createEmptyCallQualityMetric,
+  resolveOrganisationCallQualityConfig,
 } from '@/app/calls/lib/call-quality-types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,11 +48,7 @@ function isProtectedMetric(id: string): boolean {
 }
 
 function normalizeConfig(raw: OrganisationCallQualityConfig | null | undefined): OrganisationCallQualityConfig {
-  return {
-    ...BITDRYWALL_CALL_QUALITY_TEMPLATE,
-    ...raw,
-    dimensions: raw?.dimensions?.length ? raw.dimensions : BITDRYWALL_CALL_QUALITY_TEMPLATE.dimensions,
-  };
+  return resolveOrganisationCallQualityConfig(raw);
 }
 
 function updateDimension(
@@ -175,10 +172,10 @@ export function CallQualitySettingsSection({ orgRef }: CallQualitySettingsSectio
               type="number"
               min={0}
               max={100}
-              placeholder="e.g. 50"
-              value={form.reviewScoreThreshold ?? 50}
+              placeholder="e.g. 55"
+              value={form.reviewScoreThreshold ?? 55}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, reviewScoreThreshold: Number(event.target.value) || 50 }))
+                setForm((prev) => ({ ...prev, reviewScoreThreshold: Number(event.target.value) || 55 }))
               }
             />
           </div>
@@ -187,7 +184,9 @@ export function CallQualitySettingsSection({ orgRef }: CallQualitySettingsSectio
         <div className="mt-4 flex items-center justify-between rounded-md border p-3">
           <div>
             <Label htmlFor="auto-create-lead">Auto-create lead on qualified call</Label>
-            <p className="text-xs text-muted-foreground">When opportunity and contact are captured</p>
+            <p className="text-xs text-muted-foreground">
+              When an opportunity is found and a specific follow-up is booked
+            </p>
           </div>
           <Switch
             id="auto-create-lead"
@@ -217,9 +216,9 @@ export function CallQualitySettingsSection({ orgRef }: CallQualitySettingsSectio
             onChange={(event) => setForm((prev) => ({ ...prev, coachingPrompt: event.target.value }))}
             placeholder="e.g. Focus on commercial discovery before presenting products"
           />
-          <p className="text-xs text-muted-foreground">
-            Guides the AI when scoring calls and generating per-call coaching recommendations for sales agents.
-          </p>
+            <p className="text-xs text-muted-foreground">
+              Guides the AI when scoring calls. Quality is based on questions asked, not whether the customer had a job.
+            </p>
         </div>
       </div>
 
@@ -349,7 +348,7 @@ function MetricRow({ dimension, onPatch, onRemove }: MetricRowProps) {
             min={0}
             step={0.5}
             className="h-8"
-            placeholder="1"
+            placeholder={dimension.affectsScore === false ? '—' : '15'}
             value={dimension.weight ?? 1}
             disabled={dimension.type === 'text' || dimension.type === 'ratio'}
             onChange={(event) => onPatch({ weight: Number(event.target.value) || 1 })}

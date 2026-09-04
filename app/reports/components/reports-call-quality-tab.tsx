@@ -13,16 +13,11 @@ import {
   useTokenReady,
   useUser,
 } from '@/api/hooks';
-import type { CallQualityRepRow, CallQualityReviewCall } from '@/api/types/reports-call-quality';
+import type { CallQualityFunnel, CallQualityRepRow, CallQualityReviewCall } from '@/api/types/reports-call-quality';
 import { CallScoreBar } from '@/app/calls/components/call-score-bar';
 import { CallScoreRadialChart } from '@/app/calls/components/call-score-radial-chart';
 import { CallPartyLabel } from '@/app/calls/components/call-party-label';
-import {
-  CALL_SCORE_DIMENSIONS,
-  callScoreDimensionLabel,
-  formatCallScore,
-} from '@/app/calls/call-display';
-import type { CallScoreDimension } from '@/api/types/calls';
+import { formatCallScore } from '@/app/calls/call-display';
 import { dimensionScoreToPercent, getScoreColorClasses } from '@/app/calls/lib/score-colors';
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +49,7 @@ import {
 import { useReportsDateRange } from '../lib/use-reports-date-range';
 import {
   REPORTS_CHART_AMBER,
+  REPORTS_CHART_BLUE,
   REPORTS_CHART_GREEN,
   REPORTS_CHART_RED,
   toDonutSlices,
@@ -66,7 +62,16 @@ import { ReportsCoachingRecommendationDetailDialog } from './reports-coaching-re
 
 const TOP_N = 5;
 
-type SortKey = 'ownerName' | 'callCount' | 'avgScore' | 'missedQuestionsCount';
+type SortKey =
+  | 'ownerName'
+  | 'callCount'
+  | 'decisionMakersReached'
+  | 'qualityConversations'
+  | 'opportunitiesFound'
+  | 'boqsRequested'
+  | 'followUpsBooked'
+  | 'avgScore'
+  | 'qualityConversationRate';
 type SortDir = 'asc' | 'desc';
 
 function periodDayCount(fromYmd: string, toYmd: string): number {
@@ -76,6 +81,37 @@ function periodDayCount(fromYmd: string, toYmd: string): number {
   const orderedEnd = start <= end ? end : start;
   const ms = orderedEnd.getTime() - orderedStart.getTime();
   return Math.max(1, Math.floor(ms / 86_400_000) + 1);
+}
+
+function formatRate(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return `${value}%`;
+}
+
+function FunnelStrip({ funnel }: { funnel: CallQualityFunnel }) {
+  const steps: Array<{ label: string; value: number }> = [
+    { label: 'Calls made', value: funnel.callsMade },
+    { label: 'Decision-makers', value: funnel.decisionMakersReached },
+    { label: 'Quality conversations', value: funnel.qualityConversations },
+    { label: 'Opportunities', value: funnel.immediateOpportunitiesFound },
+    { label: 'Projects', value: funnel.projectsIdentified },
+    { label: 'BOQs', value: funnel.boqsRequested },
+    { label: 'Quotes', value: funnel.quotesGenerated },
+    { label: 'Follow-ups', value: funnel.followUpsBooked },
+    { label: 'Orders', value: funnel.ordersConverted },
+  ];
+  return (
+    <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-9">
+      {steps.map((step) => (
+        <div key={step.label} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {step.label}
+          </p>
+          <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">{step.value}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function SummaryStat({
@@ -118,16 +154,19 @@ function repToParty(
 }
 
 function scoreDistributionFromResponse(
-  distribution: { excellent: number; fair: number; poor: number } | undefined
+  distribution:
+    | { excellent: number; good: number; needsImprovement: number; poor: number }
+    | undefined,
 ) {
   if (!distribution) return null;
   return toDonutSlices(
     [
-      { name: 'Excellent (70+)', value: distribution.excellent },
-      { name: 'Fair (40–69)', value: distribution.fair },
-      { name: 'Poor (<40)', value: distribution.poor },
+      { name: 'Excellent (85+)', value: distribution.excellent },
+      { name: 'Good (70–84)', value: distribution.good },
+      { name: 'Needs improvement (55–69)', value: distribution.needsImprovement },
+      { name: 'Poor (<55)', value: distribution.poor },
     ],
-    [REPORTS_CHART_GREEN, REPORTS_CHART_AMBER, REPORTS_CHART_RED],
+    [REPORTS_CHART_GREEN, REPORTS_CHART_BLUE, REPORTS_CHART_AMBER, REPORTS_CHART_RED],
   );
 }
 
@@ -170,7 +209,52 @@ function LeaderboardTable({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Avg score"
+              label="Decision makers"
+              sortKey="decisionMakersReached"
+              activeKey={sortKey}
+              dir={sortDir}
+              onSort={onSort}
+            />
+          </TableHead>
+          <TableHead className="py-3">
+            <SortHeader
+              label="Quality calls"
+              sortKey="qualityConversations"
+              activeKey={sortKey}
+              dir={sortDir}
+              onSort={onSort}
+            />
+          </TableHead>
+          <TableHead className="py-3">
+            <SortHeader
+              label="Opportunities"
+              sortKey="opportunitiesFound"
+              activeKey={sortKey}
+              dir={sortDir}
+              onSort={onSort}
+            />
+          </TableHead>
+          <TableHead className="py-3">
+            <SortHeader
+              label="BOQs"
+              sortKey="boqsRequested"
+              activeKey={sortKey}
+              dir={sortDir}
+              onSort={onSort}
+            />
+          </TableHead>
+          <TableHead className="py-3">
+            <SortHeader
+              label="Follow-ups"
+              sortKey="followUpsBooked"
+              activeKey={sortKey}
+              dir={sortDir}
+              onSort={onSort}
+            />
+          </TableHead>
+          <TableHead className="py-3">
+            <SortHeader
+              label="Avg quality"
               sortKey="avgScore"
               activeKey={sortKey}
               dir={sortDir}
@@ -179,8 +263,8 @@ function LeaderboardTable({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Missed questions"
-              sortKey="missedQuestionsCount"
+              label="Quality conversation rate"
+              sortKey="qualityConversationRate"
               activeKey={sortKey}
               dir={sortDir}
               onSort={onSort}
@@ -217,6 +301,11 @@ function LeaderboardTable({
                 </div>
               </TableCell>
               <TableCell className="py-3 tabular-nums">{rep.callCount}</TableCell>
+              <TableCell className="py-3 tabular-nums">{rep.decisionMakersReached}</TableCell>
+              <TableCell className="py-3 tabular-nums">{rep.qualityConversations}</TableCell>
+              <TableCell className="py-3 tabular-nums">{rep.opportunitiesFound}</TableCell>
+              <TableCell className="py-3 tabular-nums">{rep.boqsRequested}</TableCell>
+              <TableCell className="py-3 tabular-nums">{rep.followUpsBooked}</TableCell>
               <TableCell className="py-3">
                 <div className="flex min-w-[120px] items-center gap-2">
                   <CallScoreBar value={score} className="max-w-[72px] flex-1" />
@@ -225,7 +314,9 @@ function LeaderboardTable({
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="py-3 tabular-nums">{rep.missedQuestionsCount}</TableCell>
+              <TableCell className="py-3 tabular-nums font-medium">
+                {formatRate(rep.qualityConversationRate)}
+              </TableCell>
             </TableRow>
           );
         })}
@@ -356,7 +447,7 @@ export function ReportsCallQualityTab() {
   );
   const [branchFilter, setBranchFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
-  const [sortKey, setSortKey] = useState<SortKey>('avgScore');
+  const [sortKey, setSortKey] = useState<SortKey>('qualityConversationRate');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const branchIdFilter =
@@ -460,11 +551,26 @@ export function ReportsCallQualityTab() {
         case 'callCount':
           cmp = a.callCount - b.callCount;
           break;
+        case 'decisionMakersReached':
+          cmp = a.decisionMakersReached - b.decisionMakersReached;
+          break;
+        case 'qualityConversations':
+          cmp = a.qualityConversations - b.qualityConversations;
+          break;
+        case 'opportunitiesFound':
+          cmp = a.opportunitiesFound - b.opportunitiesFound;
+          break;
+        case 'boqsRequested':
+          cmp = a.boqsRequested - b.boqsRequested;
+          break;
+        case 'followUpsBooked':
+          cmp = a.followUpsBooked - b.followUpsBooked;
+          break;
         case 'avgScore':
           cmp = (a.avgScore ?? -1) - (b.avgScore ?? -1);
           break;
-        case 'missedQuestionsCount':
-          cmp = a.missedQuestionsCount - b.missedQuestionsCount;
+        case 'qualityConversationRate':
+          cmp = (a.qualityConversationRate ?? -1) - (b.qualityConversationRate ?? -1);
           break;
         default: {
           const _exhaustive: never = sortKey;
@@ -530,7 +636,6 @@ export function ReportsCallQualityTab() {
     return <p className="text-sm text-destructive">Could not load call quality report.</p>;
   }
 
-  const topReps = sortedReps.slice(0, TOP_N);
   const topReviews = data.callsNeedingReview.slice(0, TOP_N);
   const topMissedQuestions = data.missedQuestions.slice(0, TOP_N);
   const targetProgressPct =
@@ -554,13 +659,18 @@ export function ReportsCallQualityTab() {
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SummaryStat label="Total calls" value={String(data.totalCalls)} />
         <SummaryStat
-          label="Avg score"
+          label="Avg quality"
           value={formatCallScore(data.avgScoreOverall)}
           sub={
             data.scoreDistribution.totalScored > 0
               ? `${data.scoreDistribution.totalScored} scored`
               : 'No scored calls yet'
           }
+        />
+        <SummaryStat
+          label="Quality conversation rate"
+          value={formatRate(data.qualityConversationRate)}
+          sub="Quality calls ÷ decision-makers"
         />
         <SummaryStat
           label="Calls vs target"
@@ -572,14 +682,9 @@ export function ReportsCallQualityTab() {
           }
         />
         <SummaryStat
-          label="Conversion"
-          value={data.conversionRate != null ? `${data.conversionRate}%` : '—'}
-          sub="Leads to quotations in range"
-        />
-        <SummaryStat
           label="Needs review"
           value={String(data.callsNeedingReview.length)}
-          sub="Flagged in this period"
+          sub="Poor score or missed opportunity"
         />
         <SummaryStat
           label="Unlinked calls"
@@ -588,14 +693,30 @@ export function ReportsCallQualityTab() {
         />
       </div>
 
+      {data.funnel ? (
+        <Card className="shadow-sm">
+          <CardHeader className="px-4 pb-2 pt-4">
+            <CardTitle className="text-base">Activity funnel</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Calls to pipeline. Quality rate is independent of whether the customer had a job.
+            </p>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            <FunnelStrip funnel={data.funnel} />
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="shadow-sm">
         <CardHeader className="px-4 pb-2 pt-4">
           <CardTitle className="text-base">Salesperson leaderboard</CardTitle>
-          <p className="text-sm text-muted-foreground">Top {TOP_N} agents in this period</p>
+          <p className="text-sm text-muted-foreground">
+            Sorted by quality conversation rate, then average quality. High call volume alone does not rank first.
+          </p>
         </CardHeader>
         <CardContent className="overflow-x-auto px-4 pb-4 pt-0">
           <LeaderboardTable
-            reps={topReps}
+            reps={sortedReps}
             labels={labels}
             matchIndex={matchIndex}
             sortKey={sortKey}
@@ -615,8 +736,8 @@ export function ReportsCallQualityTab() {
         </ReportsChartCard>
 
         <ReportsChartCard
-          title="Dimension scores"
-          description="Team average by call quality dimension (0–10)"
+          title="Script area scores"
+          description="Team average by BitDrywall script area (0–10)"
           contentClassName="px-3 pb-3 pt-1"
         >
           {data.scoreByDimension.length === 0 ? (
@@ -625,14 +746,12 @@ export function ReportsCallQualityTab() {
             </p>
           ) : (
             <ul className="space-y-2.5 py-1">
-              {CALL_SCORE_DIMENSIONS.map((dimension) => {
-                const row = data.scoreByDimension.find((d) => d.dimension === dimension);
-                if (!row) return null;
+              {data.scoreByDimension.map((row) => {
                 const clamped = Math.min(10, Math.max(0, row.avgScore));
                 return (
-                  <li key={dimension} className="space-y-1">
+                  <li key={row.dimension} className="space-y-1">
                     <div className="flex items-center justify-between gap-2 text-sm">
-                      <span>{callScoreDimensionLabel(dimension as CallScoreDimension)}</span>
+                      <span>{row.label}</span>
                       <span className="tabular-nums text-muted-foreground">
                         {clamped.toFixed(1)}/10
                       </span>

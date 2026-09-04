@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 import {
   AudioLines,
   Building2,
@@ -29,7 +30,11 @@ import {
   useRetryCallTranscriptMutation,
   useSessionSync,
   useUsers,
+  useApiClient,
+  useTokenReady,
 } from '@/api/hooks';
+import { getOrganisationSettings } from '@/api/endpoints/organisation';
+import { useOrgId } from '@/lib/org-id-context';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import type {
   CallRecordingDetail,
@@ -81,14 +86,17 @@ import {
 import { ORIGIN_LABEL, normalizeOrigin, originVariant } from '../origin-badge';
 import { CallPartyLabel } from './call-party-label';
 import { CallScoreRadialChart } from './call-score-radial-chart';
-import { CallScorecardTable } from './call-scorecard-table';
-import { BITDRYWALL_CALL_QUALITY_TEMPLATE } from '../lib/call-quality-types';
+import { CallScorecardTable, MissedOpportunitiesPanel } from './call-scorecard-table';
 import {
-  CALL_SCORE_DIMENSIONS,
+  resolveOrganisationCallQualityConfig,
+  scoringCallQualityDimensions,
+  type CallQualityMetricDefinition,
+} from '../lib/call-quality-types';
+import { callQualityScoreBand, callQualityScoreBandLabel } from '../lib/score-colors';
+import {
   STATUS_LABEL,
   callDirectionIcon,
   callDirectionLabel,
-  callScoreDimensionLabel,
   displayCallMeta,
   formatCallDuration,
   isExternalCallDirection,
@@ -118,10 +126,22 @@ export function CallDetailDialog({
   matchIndex,
 }: CallDetailDialogProps) {
   const { backendUserData } = useSessionSync();
+  const orgId = useOrgId();
+  const client = useApiClient();
+  const { isTokenReady } = useTokenReady();
   const { data, isLoading, isError, refetch } = useCall(uid, {
     enabled: open && Boolean(uid),
     pollWhileTranscribing: open,
   });
+  const scorecardQuery = useQuery({
+    queryKey: ['organisation', orgId, 'settings', 'call-quality'],
+    queryFn: () => getOrganisationSettings(client, orgId ?? ''),
+    enabled: Boolean(orgId) && isTokenReady && open,
+    staleTime: 5 * 60 * 1000,
+  });
+  const scorecardConfig = resolveOrganisationCallQualityConfig(
+    scorecardQuery.data?.settings?.callQuality ?? null,
+  );
   const retryMutation = useRetryCallTranscriptMutation();
   const rateMutation = useRateCallMutation();
   const call = data?.call;
@@ -328,6 +348,7 @@ export function CallDetailDialog({
                 status={status}
                 scoreOverall={scoreOverall}
                 scoreBreakdown={call?.scoreBreakdown ?? null}
+                scorecardDimensions={scorecardConfig.dimensions ?? []}
                 canRate={showRate}
                 isRating={rateMutation.isPending}
                 onRate={() => {
@@ -663,6 +684,7 @@ function CallQualitySection({
   status,
   scoreOverall,
   scoreBreakdown,
+  scorecardDimensions,
   canRate,
   isRating,
   onRate,
@@ -670,32 +692,58 @@ function CallQualitySection({
   status?: TranscriptStatus;
   scoreOverall: number | null;
   scoreBreakdown: CallScoreBreakdown | null;
+  scorecardDimensions: CallQualityMetricDefinition[];
   canRate: boolean;
   isRating: boolean;
   onRate: () => void;
 }) {
   const hasScore = scoreOverall != null && Number.isFinite(Number(scoreOverall));
-  const dimensions = scoreBreakdown ? CALL_SCORE_DIMENSIONS : [];
+  const scoringAreas = scoringCallQualityDimensions({ dimensions: scorecardDimensions });
+  const band =
+    hasScore ? callQualityScoreBand(Number(scoreOverall)) : null;
+  const metrics = scoreBreakdown?.metrics;
 
   return (
     <div>
       <DetailSectionHeading title="Call quality" icon={Star} />
       {hasScore ? (
         <div className="space-y-4 rounded-md border p-3">
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr] sm:items-center">
-            <CallScoreRadialChart score={Number(scoreOverall)} />
-            {dimensions.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr] sm:items-start">
+            <div className="flex flex-col items-center">
+              <CallScoreRadialChart score={Number(scoreOverall)} />
+              {band ? (
+                <Badge variant="outline" className="mt-1">
+                  {callQualityScoreBandLabel(band)}
+                </Badge>
+              ) : null}
+            </div>
+            {scoringAreas.length > 0 ? (
               <ul className="space-y-2">
-                {dimensions.map((dimension) => {
-                  const value = scoreBreakdown?.[dimension];
-                  const clamped = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+                {scoringAreas.map((dimension) => {
+                  const metric = metrics?.[dimension.id];
+                  const isNa = metric?.type === 'score' && metric.notApplicable;
+                  const value =
+                    metric?.type === 'score'
+                      ? metric.value
+                      : metric?.type === 'boolean'
+                        ? metric.value
+                          ? 10
+                          : 0
+                        : 0;
                   return (
-                    <li key={dimension} className="space-y-1">
+                    <li key={dimension.id} className="space-y-1">
                       <div className="flex items-center justify-between gap-2 text-sm">
-                        <span>{callScoreDimensionLabel(dimension)}</span>
-                        <span className="tabular-nums text-muted-foreground">{clamped.toFixed(0)}/10</span>
+                        <span>
+                          {dimension.label}
+                          {dimension.weight ? (
+                            <span className="ml-1 text-xs text-muted-foreground">({dimension.weight}%)</span>
+                          ) : null}
+                        </span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {isNa ? 'N/A' : `${value.toFixed(0)}/10`}
+                        </span>
                       </div>
-                      <CallScoreBar value={dimensionScoreToPercent(clamped)} />
+                      <CallScoreBar value={isNa ? 0 : dimensionScoreToPercent(value)} />
                     </li>
                   );
                 })}
@@ -727,13 +775,11 @@ function CallQualitySection({
               </ul>
             </div>
           ) : null}
-          {scoreBreakdown?.metrics ? (
+          <MissedOpportunitiesPanel items={scoreBreakdown?.missedOpportunities} />
+          {scorecardDimensions.length > 0 && metrics ? (
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Scorecard</p>
-              <CallScorecardTable
-                dimensions={BITDRYWALL_CALL_QUALITY_TEMPLATE.dimensions ?? []}
-                metrics={scoreBreakdown.metrics}
-              />
+              <CallScorecardTable dimensions={scorecardDimensions} metrics={metrics} />
             </div>
           ) : null}
         </div>

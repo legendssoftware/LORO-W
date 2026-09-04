@@ -4,10 +4,17 @@ export type CallQualityRepRow = {
   ownerExtension: string | null;
   isUnlinked: boolean;
   callCount: number;
+  decisionMakersReached: number;
+  qualityConversations: number;
+  opportunitiesFound: number;
+  boqsRequested: number;
+  followUpsBooked: number;
+  qualityConversationRate: number | null;
   avgScore: number | null;
   missedQuestionsCount: number;
   leadsLinked: number;
   quotationsCount: number;
+  ordersConverted: number;
   conversionRate: number | null;
   coachingRecommendations: string[];
 };
@@ -28,15 +35,29 @@ export type CallQualityReviewCall = {
 
 export type CallQualityScoreByDimension = {
   dimension: string;
+  label: string;
   avgScore: number;
   callCount: number;
 };
 
 export type CallQualityScoreDistribution = {
   excellent: number;
-  fair: number;
+  good: number;
+  needsImprovement: number;
   poor: number;
   totalScored: number;
+};
+
+export type CallQualityFunnel = {
+  callsMade: number;
+  decisionMakersReached: number;
+  qualityConversations: number;
+  immediateOpportunitiesFound: number;
+  projectsIdentified: number;
+  boqsRequested: number;
+  quotesGenerated: number;
+  followUpsBooked: number;
+  ordersConverted: number;
 };
 
 export type CallQualityReportResponse = {
@@ -45,7 +66,9 @@ export type CallQualityReportResponse = {
   callsVsDailyTarget: number;
   dailyCallTarget: number;
   conversionRate: number | null;
+  qualityConversationRate: number | null;
   unlinkedCallCount: number;
+  funnel: CallQualityFunnel;
   scoreByDimension: CallQualityScoreByDimension[];
   scoreDistribution: CallQualityScoreDistribution;
   reps: CallQualityRepRow[];
