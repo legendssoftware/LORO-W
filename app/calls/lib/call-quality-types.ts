@@ -7,7 +7,7 @@ export type CallQualityMetricCategory = (typeof CALL_QUALITY_METRIC_CATEGORIES)[
 /** Metrics the AI pipeline expects — cannot be removed from the scorecard. */
 export const PROTECTED_CALL_QUALITY_METRIC_IDS = ['coaching_recommendation', 'missed_opportunity'] as const;
 
-export const BITDRYWALL_CALL_QUALITY_SCORECARD_VERSION = 2;
+export const BITDRYWALL_CALL_QUALITY_SCORECARD_VERSION = 3;
 
 export const BITDRYWALL_DEMO_COACHING_PROMPT = `Score whether the rep asked the right commercial questions and attempted to create an opportunity — not whether the customer already had a job.
 
@@ -131,8 +131,9 @@ export function buildBitDrywallCallQualityTemplate(productName = 'BitDrywall'): 
         id: 'professional_introduction',
         label: `Professional introduction (name, ${productName}, reason for calling)`,
         type: 'score',
-        category: 'discovery',
-        weight: 5,
+        category: 'behaviour',
+        weight: 0,
+        affectsScore: false,
       }),
       metric({
         id: 'customer_discovery',
@@ -167,14 +168,15 @@ export function buildBitDrywallCallQualityTemplate(productName = 'BitDrywall'): 
         label: 'BOQ / quotation opportunity (asked for BOQ, material list, or chance to quote)',
         type: 'score',
         category: 'closing',
-        weight: 15,
+        weight: 20,
       }),
       metric({
         id: 'questioning_listening',
         label: 'Good questioning and listening (open-ended, follow-ups, did not dominate)',
         type: 'score',
         category: 'behaviour',
-        weight: 5,
+        weight: 0,
+        affectsScore: false,
       }),
       metric({
         id: 'objection_handling',
@@ -188,7 +190,7 @@ export function buildBitDrywallCallQualityTemplate(productName = 'BitDrywall'): 
         label: 'Next action (specific quote, BOQ, WhatsApp, meeting, or callback date)',
         type: 'score',
         category: 'closing',
-        weight: 10,
+        weight: 15,
       }),
       metric({
         id: 'decision_maker_reached',
@@ -282,9 +284,12 @@ export function resolveOrganisationCallQualityConfig(
   if (!config) return template;
 
   const savedVersion = config.scorecardVersion ?? 0;
+  const templateIds = dimensionIds(template.dimensions);
   const shouldUpgrade =
     savedVersion < BITDRYWALL_CALL_QUALITY_SCORECARD_VERSION &&
-    (!config.dimensions?.length || isLegacyBitDrywallDimensionSet(config.dimensions));
+    (!config.dimensions?.length ||
+      isLegacyBitDrywallDimensionSet(config.dimensions) ||
+      sameIdSet(dimensionIds(config.dimensions), templateIds));
 
   if (shouldUpgrade) {
     const customPrompt = config.coachingPrompt?.trim();

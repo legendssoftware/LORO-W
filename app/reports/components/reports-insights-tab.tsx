@@ -220,8 +220,22 @@ export function ReportsInsightsTab() {
         ? [
             { name: 'Blank notes', value: data.completeness.blankNotesPct },
             { name: 'No contact', value: data.completeness.missingContactPct },
-            { name: 'No quote', value: data.completeness.missingQuotePct },
             { name: 'No follow-up', value: data.completeness.missingFollowUpPct },
+          ]
+        : [],
+    [data]
+  );
+
+  const opportunityFunnel = useMemo(
+    () =>
+      data
+        ? [
+            { label: 'Connected calls', value: data.funnel.connectedTelephone },
+            { label: 'Quality conversations', value: data.funnel.qualityConversations },
+            { label: 'Commercial facts', value: data.funnel.commercialFact },
+            { label: 'Next steps', value: data.funnel.nextStep },
+            { label: 'Quotes', value: data.funnel.withQuote },
+            { label: 'Missed pursuits', value: data.funnel.missedOpportunities },
           ]
         : [],
     [data]
@@ -266,16 +280,30 @@ export function ReportsInsightsTab() {
           value={`${data.reliability.score}/100`}
           sub={data.reliability.verdict}
         />
-        <SummaryStat label="Activities" value={String(data.totals.activities)} />
-        <SummaryStat label="Telephone" value={String(data.totals.telephone)} />
-        <SummaryStat label="Physical" value={String(data.totals.physical)} />
         <SummaryStat
-          label="Burst clusters"
-          value={String(data.clusters.length)}
+          label="Connected calls"
+          value={String(data.funnel.connectedTelephone)}
+          sub={`${data.funnel.deadAir} voicemail / no-answer`}
         />
         <SummaryStat
-          label="PBX match"
-          value={pbxLabel(data.pbxMatchRate, data.telephoneCount)}
+          label="Commercial facts"
+          value={String(data.funnel.commercialFact)}
+          sub={`${data.funnel.commercialFactPct}% of connected work`}
+        />
+        <SummaryStat
+          label="Next steps"
+          value={String(data.funnel.nextStep)}
+          sub={`${data.funnel.nextStepPct}% of connected work`}
+        />
+        <SummaryStat
+          label="Quality conversations"
+          value={String(data.funnel.qualityConversations)}
+          sub={pbxLabel(data.pbxMatchRate, data.telephoneCount)}
+        />
+        <SummaryStat
+          label="Missed pursuits"
+          value={String(data.funnel.missedOpportunities)}
+          sub={`${data.clusters.length} burst clusters`}
         />
       </div>
 
@@ -304,7 +332,7 @@ export function ReportsInsightsTab() {
             </ReportsChartCard>
             <ReportsChartCard
               title="Completeness gaps"
-              description="Share of records missing notes, contact, quotes, or follow-up."
+              description="Share of connected work missing notes, contact, or a next step. Voicemail is not a missing quote."
             >
               <ReportsNamedBarChart
                 data={completenessBars}
@@ -318,7 +346,7 @@ export function ReportsInsightsTab() {
           {data.brief ? (
             <ReportsSection
               title="Summary"
-              description="Narrative of volume, bursts, and what the numbers do not prove."
+              description="Which conversations created commercial value — volume without a next step is context, not the headline."
             >
               <div className="rounded-lg border border-border/60 bg-card p-4 text-sm leading-relaxed text-foreground">
                 {data.brief.summary}
@@ -343,6 +371,27 @@ export function ReportsInsightsTab() {
               ) : null}
             </ReportsSection>
           ) : null}
+
+          <ReportsSection
+            title="Opportunity funnel"
+            description="Connected conversations to commercial facts and next steps. Dead air is excluded."
+          >
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {opportunityFunnel.map((step) => (
+                <div
+                  key={step.label}
+                  className="rounded-lg border border-border/60 bg-muted/20 p-3"
+                >
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {step.label}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                    {step.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </ReportsSection>
 
           <ReportsSection
             title="Burst clusters"

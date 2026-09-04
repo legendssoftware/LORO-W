@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table';
 import { matchNamedParty, type MatchedCallParty } from '@/lib/utils/call-party-match';
 import { getReportsDataScope } from '@/lib/access';
-import { utcDateFromYmd, utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
+import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 import { cn } from '@/lib/utils';
 import {
   fetchReportsOrgUsers,
@@ -74,15 +74,6 @@ type SortKey =
   | 'qualityConversationRate';
 type SortDir = 'asc' | 'desc';
 
-function periodDayCount(fromYmd: string, toYmd: string): number {
-  const start = utcDateFromYmd(fromYmd);
-  const end = utcDateFromYmd(toYmd);
-  const orderedStart = start <= end ? start : end;
-  const orderedEnd = start <= end ? end : start;
-  const ms = orderedEnd.getTime() - orderedStart.getTime();
-  return Math.max(1, Math.floor(ms / 86_400_000) + 1);
-}
-
 function formatRate(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—';
   return `${value}%`;
@@ -90,15 +81,15 @@ function formatRate(value: number | null | undefined): string {
 
 function FunnelStrip({ funnel }: { funnel: CallQualityFunnel }) {
   const steps: Array<{ label: string; value: number }> = [
-    { label: 'Calls made', value: funnel.callsMade },
     { label: 'Decision-makers', value: funnel.decisionMakersReached },
     { label: 'Quality conversations', value: funnel.qualityConversations },
     { label: 'Opportunities', value: funnel.immediateOpportunitiesFound },
     { label: 'Projects', value: funnel.projectsIdentified },
     { label: 'BOQs', value: funnel.boqsRequested },
-    { label: 'Quotes', value: funnel.quotesGenerated },
     { label: 'Follow-ups', value: funnel.followUpsBooked },
+    { label: 'Quotes (attributed)', value: funnel.quotesGenerated },
     { label: 'Orders', value: funnel.ordersConverted },
+    { label: 'Missed pursuits', value: funnel.missedOpportunities ?? 0 },
   ];
   return (
     <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-9">
@@ -599,11 +590,6 @@ export function ReportsCallQualityTab() {
     [data?.scoreDistribution]
   );
 
-  const periodTarget = useMemo(() => {
-    if (!data) return 0;
-    return data.dailyCallTarget * periodDayCount(from, to);
-  }, [data, from, to]);
-
   const reviewScoreBars = useMemo(
     () =>
       (data?.callsNeedingReview ?? [])
@@ -638,8 +624,6 @@ export function ReportsCallQualityTab() {
 
   const topReviews = data.callsNeedingReview.slice(0, TOP_N);
   const topMissedQuestions = data.missedQuestions.slice(0, TOP_N);
-  const targetProgressPct =
-    periodTarget > 0 ? Math.round((data.totalCalls / periodTarget) * 100) : null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -657,48 +641,44 @@ export function ReportsCallQualityTab() {
       />
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <SummaryStat label="Total calls" value={String(data.totalCalls)} />
-        <SummaryStat
-          label="Avg quality"
-          value={formatCallScore(data.avgScoreOverall)}
-          sub={
-            data.scoreDistribution.totalScored > 0
-              ? `${data.scoreDistribution.totalScored} scored`
-              : 'No scored calls yet'
-          }
-        />
         <SummaryStat
           label="Quality conversation rate"
           value={formatRate(data.qualityConversationRate)}
-          sub="Quality calls ÷ decision-makers"
+          sub={`${data.funnel.qualityConversations} of ${data.funnel.decisionMakersReached} decision-makers`}
         />
         <SummaryStat
-          label="Calls vs target"
-          value={`${data.totalCalls} / ${periodTarget}`}
-          sub={
-            targetProgressPct != null
-              ? `${targetProgressPct}% of period target`
-              : `${data.dailyCallTarget}/day target`
-          }
+          label="Opportunities"
+          value={String(data.funnel.immediateOpportunitiesFound)}
+          sub={`${data.funnel.projectsIdentified} projects identified`}
         />
         <SummaryStat
-          label="Needs review"
-          value={String(data.callsNeedingReview.length)}
-          sub="Poor score or missed opportunity"
+          label="BOQs asked"
+          value={String(data.funnel.boqsRequested)}
+          sub={`${data.funnel.quotesGenerated} attributed quotes`}
         />
         <SummaryStat
-          label="Unlinked calls"
-          value={String(data.unlinkedCallCount)}
-          sub="Not matched to a user"
+          label="Follow-ups booked"
+          value={String(data.funnel.followUpsBooked)}
+        />
+        <SummaryStat
+          label="Missed pursuits"
+          value={String(data.missedOpportunitiesCount)}
+          sub="Customer volunteered, rep did not pursue"
+        />
+        <SummaryStat
+          label="Avg quality"
+          value={formatCallScore(data.avgScoreOverall)}
+          sub={`${data.totalCalls} recordings scored`}
         />
       </div>
 
       {data.funnel ? (
         <Card className="shadow-sm">
           <CardHeader className="px-4 pb-2 pt-4">
-            <CardTitle className="text-base">Activity funnel</CardTitle>
+            <CardTitle className="text-base">Opportunity funnel</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Calls to pipeline. Quality rate is independent of whether the customer had a job.
+              Pipeline from decision-makers reached. Quotes are counted only when the quotation
+              client matches a call in this period. Recording volume is not the headline.
             </p>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">

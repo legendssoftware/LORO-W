@@ -21,6 +21,7 @@ export type ActivityIntelligenceCompleteness = {
   missingFollowUpPct: number;
   missingClientPct: number;
   zeroGpsPct: number;
+  connectedCount: number;
 };
 
 export type ActivityIntelligenceCluster = {
@@ -71,6 +72,8 @@ export type ActivityIntelligenceResponse = {
     contactMadeNo: number;
     voicemail: number;
     noAnswer: number;
+    deadAir: number;
+    connectedTelephone: number;
   };
   clusters: ActivityIntelligenceCluster[];
   funnel: {
@@ -80,9 +83,18 @@ export type ActivityIntelligenceResponse = {
     leadPct: number;
     quotePct: number;
     salesValuePct: number;
+    connectedTelephone: number;
+    deadAir: number;
+    commercialFact: number;
+    nextStep: number;
+    qualityConversations: number;
+    missedOpportunities: number;
+    commercialFactPct: number;
+    nextStepPct: number;
   };
   pbxMatchedCount: number;
   pbxMatchRate: number | null;
+  pbxQualityConversationCount: number;
   telephoneCount: number;
   brief: ActivityIntelligenceBrief | null;
   generatedAt: string;

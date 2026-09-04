@@ -153,19 +153,19 @@ export function EndVisitDialog({
     () =>
       visitQualityMissingFields({
         notes: endForm.notes,
+        resolution: endForm.resolution,
         contactFullName: endForm.contactFullName,
         followUp: endForm.followUp,
         methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
-        quotationNumber: endForm.quotationNumber,
-        salesValue: endForm.salesValue,
+        contactMade: endForm.contactMade,
       }),
     [
       endForm.notes,
+      endForm.resolution,
       endForm.contactFullName,
       endForm.followUp,
       endForm.methodOfContact,
-      endForm.quotationNumber,
-      endForm.salesValue,
+      endForm.contactMade,
       activeVisit?.methodOfContact,
     ],
   );
@@ -363,7 +363,8 @@ export function EndVisitDialog({
               <TriangleAlert />
               <AlertTitle>This activity will look incomplete on reports</AlertTitle>
               <AlertDescription>
-                Missing: {qualityMissing.join(', ')}. You can still end the visit.
+                Missing: {qualityMissing.join(', ')}. Voicemail and no-answer only need a note.
+                You can still end the visit.
               </AlertDescription>
             </Alert>
           ) : null}

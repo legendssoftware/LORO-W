@@ -12,6 +12,7 @@ export type CallQualityRepRow = {
   qualityConversationRate: number | null;
   avgScore: number | null;
   missedQuestionsCount: number;
+  missedOpportunitiesCount: number;
   leadsLinked: number;
   quotationsCount: number;
   ordersConverted: number;
@@ -58,6 +59,7 @@ export type CallQualityFunnel = {
   quotesGenerated: number;
   followUpsBooked: number;
   ordersConverted: number;
+  missedOpportunities: number;
 };
 
 export type CallQualityReportResponse = {
@@ -67,6 +69,7 @@ export type CallQualityReportResponse = {
   dailyCallTarget: number;
   conversionRate: number | null;
   qualityConversationRate: number | null;
+  missedOpportunitiesCount: number;
   unlinkedCallCount: number;
   funnel: CallQualityFunnel;
   scoreByDimension: CallQualityScoreByDimension[];
