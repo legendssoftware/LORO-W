@@ -118,6 +118,8 @@ export interface CheckInStatusResponse {
   uid?: number;
   checkInTime?: string;
   checkOutTime?: string | null;
+  methodOfContact?: string | null;
+  leadUid?: number | null;
   [key: string]: unknown;
 }
 

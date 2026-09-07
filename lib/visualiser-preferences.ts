@@ -89,6 +89,10 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
   const captureHigh = Number(s.captureHighPct);
   const repTarget = Number(s.repTargetMonthlyZAR);
   const revenuePerSqm = Number(s.revenuePerSqmMonthlyZAR);
+  const suggestStoreSizeFromTurnover =
+    s.suggestStoreSizeFromTurnover === false
+      ? false
+      : DEFAULT_SITE_OPPORTUNITY_SETTINGS.suggestStoreSizeFromTurnover;
   return {
     radiusMeters:
       Number.isFinite(radiusKm) && radiusKm >= 1000 && radiusKm <= 20_000
@@ -118,6 +122,7 @@ function parseSettings(raw: unknown): SiteOpportunitySettings {
       Number.isFinite(revenuePerSqm) && revenuePerSqm >= 100 && revenuePerSqm <= 10_000
         ? revenuePerSqm
         : DEFAULT_SITE_OPPORTUNITY_SETTINGS.revenuePerSqmMonthlyZAR,
+    suggestStoreSizeFromTurnover,
   };
 }
 

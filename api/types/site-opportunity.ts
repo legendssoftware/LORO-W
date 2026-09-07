@@ -30,6 +30,8 @@ export interface SiteOpportunitySettings {
   repTargetMonthlyZAR?: number;
   /** Monthly revenue capacity per sqm (ZAR) for branch floor-size ceiling. */
   revenuePerSqmMonthlyZAR?: number;
+  /** When true, suggest a BitDrywall format and office size from modelled turnover. */
+  suggestStoreSizeFromTurnover?: boolean;
 }
 
 export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
@@ -42,6 +44,7 @@ export const DEFAULT_SITE_OPPORTUNITY_SETTINGS: SiteOpportunitySettings = {
   captureHighPct: 0.2,
   repTargetMonthlyZAR: 1_000_000,
   revenuePerSqmMonthlyZAR: 1_500,
+  suggestStoreSizeFromTurnover: true,
 };
 
 export interface BrandCount {

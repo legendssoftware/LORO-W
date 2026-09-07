@@ -66,6 +66,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/brand-mark";
 
 const ROUTE_ICONS: Record<
   string,
@@ -158,7 +159,11 @@ export function AppSidebar() {
     <>
       <Sidebar collapsible="offcanvas">
         <SidebarHeader className="relative flex h-14 w-full shrink-0 flex-row items-center justify-center border-b border-sidebar-border px-3 md:justify-between md:px-4">
-          <span className="text-lg font-bold text-sidebar-foreground">LORO</span>
+          <BrandMark
+            className="min-w-0"
+            wordmarkClassName="text-lg font-bold text-sidebar-foreground"
+            imageClassName="h-7 w-auto"
+          />
           <SidebarTrigger className="absolute right-3 md:static" />
         </SidebarHeader>
         <SidebarContent className="justify-center md:justify-start">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { BrandMark } from '@/components/brand-mark';
 
 const solutionLinks = [
   { href: '/solutions/field-sales', label: 'Field sales' },
@@ -18,11 +19,11 @@ export function MarketingShell({
     <div className="min-h-screen w-full min-w-0 flex-1 bg-zinc-950 text-zinc-100">
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4 md:px-6">
-          <Link
-            href="/"
-            className="font-body text-lg font-medium tracking-tight text-white shrink-0"
-          >
-            LORO
+          <Link href="/" className="shrink-0">
+            <BrandMark
+              priority
+              wordmarkClassName="text-lg font-medium tracking-tight text-white"
+            />
           </Link>
           <nav
             className="hidden lg:flex items-center gap-5 text-sm text-zinc-400"
@@ -69,7 +70,10 @@ export function MarketingShell({
       <footer className="border-t border-white/10 bg-black py-10 mt-8">
         <div className="container mx-auto px-4 md:px-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 text-sm text-zinc-400">
           <div>
-            <p className="text-white font-medium mb-2">LORO</p>
+            <BrandMark
+              className="mb-2"
+              wordmarkClassName="text-white font-medium"
+            />
             <p className="text-xs">Field sales software for South Africa.</p>
           </div>
           <div>

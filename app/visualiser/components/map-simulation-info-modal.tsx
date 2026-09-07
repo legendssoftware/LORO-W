@@ -10,6 +10,11 @@ import {
 import { MARKET_CAPTURE_PHASES } from '@/lib/site-opportunity/compute/capture-phases';
 import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
+import {
+  BITDRYWALL_STORE_FORMATS,
+  formatStoreFormatSizeRange,
+  formatStoreFormatTurnoverRange,
+} from '@/lib/site-opportunity/bitdrywall-store-formats';
 
 interface MapSimulationInfoModalProps {
   open: boolean;
@@ -102,6 +107,41 @@ export function MapSimulationInfoModal({
               Year targets (of local market): Year 1 ≈ 8%, Year 2 ≈ 13%, Year 3 ≈
               15% (up to 20% in exceptional locations).
             </p>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="font-semibold">Recommended store formats</h3>
+            <p className="text-muted-foreground">
+              When <span className="text-foreground font-medium">Suggest store size from turnover</span>{' '}
+              is on, modelled monthly turnover maps to a BitDrywall format and an
+              interpolated office size. This is a planning suggestion, not a
+              lease specification. Overlapping bands step up at the next
+              format&apos;s lower bound.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[28rem] text-left text-xs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-1.5 pr-2 font-medium">Format</th>
+                    <th className="py-1.5 pr-2 font-medium">Office size</th>
+                    <th className="py-1.5 font-medium">Target monthly turnover</th>
+                  </tr>
+                </thead>
+                <tbody className="text-muted-foreground">
+                  {BITDRYWALL_STORE_FORMATS.map((format) => (
+                    <tr key={format.key} className="border-b border-dashed">
+                      <td className="py-1.5 pr-2">{format.label}</td>
+                      <td className="py-1.5 pr-2">
+                        {formatStoreFormatSizeRange(format)}
+                      </td>
+                      <td className="py-1.5">
+                        {formatStoreFormatTurnoverRange(format)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section className="space-y-2">

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandMark } from '@/components/brand-mark';
 import {
   InstagramIcon,
   LinkedInIcon,
@@ -13,9 +14,7 @@ export function LandingSiteFooter() {
         <div className="flex flex-col items-center gap-10 text-center md:flex-row md:justify-between md:items-start md:text-left">
           <div className="flex flex-col items-center space-y-4 max-w-xs mx-auto md:items-start md:mx-0">
             <div className="flex items-center gap-2">
-              <span className="font-body text-xl font-normal tracking-tight text-white">
-                LORO
-              </span>
+              <BrandMark wordmarkClassName="text-xl font-normal tracking-tight text-white" />
             </div>
             <p className="font-body max-w-xs text-sm text-zinc-400">
               Field sales software for South Africa—visits, routes, and pipeline.
