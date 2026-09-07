@@ -44,6 +44,37 @@ export function canAccessReports(accessLevel: string | undefined): boolean {
     return true;
 }
 
+/** Profile fields used by Performance Tracker (mirrors server canAccessPerformanceTrackerApi). */
+export type PerformanceAccessUser = {
+    accessLevel?: string | null;
+    role?: string | null;
+    workforceType?: string | null;
+    managedBranches?: number[] | null;
+};
+
+const PERFORMANCE_TRACKER_WORKFORCE = new Set(["management", "finance"]);
+const PERFORMANCE_TRACKER_ELEVATED = new Set(["admin", "owner", "manager"]);
+
+/**
+ * Sales Performance Tracker (`/performance`) — same rule as APK and GET /reports/performance/*.
+ * Allowed: management/finance workforce, admin/owner/manager, or assigned managed branches.
+ */
+export function canAccessPerformanceTracker(
+    user: PerformanceAccessUser | null | undefined
+): boolean {
+    if (!user) return false;
+    const workforce =
+        typeof user.workforceType === "string"
+            ? user.workforceType.trim().toLowerCase()
+            : "";
+    if (PERFORMANCE_TRACKER_WORKFORCE.has(workforce)) return true;
+
+    const level = normalize(user.accessLevel ?? user.role ?? undefined);
+    if (PERFORMANCE_TRACKER_ELEVATED.has(level)) return true;
+
+    return Array.isArray(user.managedBranches) && user.managedBranches.length > 0;
+}
+
 /**
  * Three-tier reports data scope (mirrors server reports-access.util).
  * - org: admin/owner/manager (+ developer, support, hr, supervisor, executive)
@@ -273,14 +304,16 @@ function isClientPortalPath(pathNormalized: string): boolean {
  * - Public/auth paths are always allowed.
  * - `/settings` is allowed for all staff (calendar tab); org tabs gated in the page UI.
  * - `/reports` is all staff (Overview + Targets scoped by role).
+ * - `/performance` is workforce/role gated (management, finance, elevated, or managed branches).
  * - `/competitors` and `/visualiser` are not available to restricted (standard) users.
- * - Restricted roles only get STANDARD_USER_PATHS.
+ * - Restricted roles only get STANDARD_USER_PATHS (plus Performance when eligible).
  * - Non-restricted roles (e.g. owner, admin, manager) can access other paths.
  */
 export function canAccess(
     path: string,
     accessLevel: string | undefined,
     approvableTypes?: string[] | null,
+    performanceUser?: PerformanceAccessUser | null,
 ): boolean {
     const pathNormalized = path.replace(/\/$/, "") || "/";
     const level = normalize(accessLevel);
@@ -302,6 +335,18 @@ export function canAccess(
         pathNormalized.startsWith("/reports/")
     ) {
         return canAccessReports(accessLevel);
+    }
+
+    if (
+        pathNormalized === "/performance" ||
+        pathNormalized.startsWith("/performance/")
+    ) {
+        return canAccessPerformanceTracker({
+            accessLevel,
+            role: performanceUser?.role,
+            workforceType: performanceUser?.workforceType,
+            managedBranches: performanceUser?.managedBranches,
+        });
     }
 
     if (
@@ -360,6 +405,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/payslips", label: "Payslips" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
+    { path: "/performance", label: "Performance" },
     { path: "/competitors", label: "Competitors" },
     { path: "/visualiser", label: "Competitor Overview" },
 ];
@@ -401,6 +447,7 @@ export function getClientSidebarRoutes(): AllowedRoute[] {
 export function getAllowedRoutes(
     accessLevel: string | undefined,
     approvableTypes?: string[] | null,
+    performanceUser?: PerformanceAccessUser | null,
 ): AllowedRoute[] {
     const level = normalize(accessLevel);
 
@@ -429,6 +476,17 @@ export function getAllowedRoutes(
         fullNav.push({ path: "/reports", label: "Reports" });
     }
 
+    if (
+        canAccessPerformanceTracker({
+            accessLevel,
+            role: performanceUser?.role,
+            workforceType: performanceUser?.workforceType,
+            managedBranches: performanceUser?.managedBranches,
+        })
+    ) {
+        fullNav.push({ path: "/performance", label: "Performance" });
+    }
+
     if (canAccessCompetitors(accessLevel)) {
         fullNav.push(
             { path: "/competitors", label: "Competitors" },
@@ -443,6 +501,23 @@ export function getAllowedRoutes(
     const restrictedNav = fullNav.filter((r) =>
         STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p))
     );
+
+    if (
+        canAccessPerformanceTracker({
+            accessLevel,
+            role: performanceUser?.role,
+            workforceType: performanceUser?.workforceType,
+            managedBranches: performanceUser?.managedBranches,
+        }) &&
+        !restrictedNav.some((r) => r.path === "/performance")
+    ) {
+        const reportsIndex = restrictedNav.findIndex((r) => r.path === "/reports");
+        restrictedNav.splice(
+            reportsIndex >= 0 ? reportsIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/performance", label: "Performance" }
+        );
+    }
 
     if (canManageApprovals(accessLevel, approvableTypes) && !restrictedNav.some((r) => r.path === "/approvals")) {
         const claimsIndex = restrictedNav.findIndex((r) => r.path === "/claims");

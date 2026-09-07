@@ -135,8 +135,8 @@ export function ReportDonutChart({
                   <text x={viewBox.cx} y={cy} textAnchor="middle">
                     <tspan
                       x={viewBox.cx}
-                      y={cy - 16 + CENTER_LABEL_VERTICAL_OFFSET}
-                      className="fill-foreground text-2xl font-bold"
+                      y={cy - 12 + CENTER_LABEL_VERTICAL_OFFSET}
+                      className="fill-foreground text-sm font-bold sm:text-base"
                     >
                       {centerPrimary}
                     </tspan>
