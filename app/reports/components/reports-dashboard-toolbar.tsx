@@ -45,6 +45,7 @@ export const REPORTS_OVERVIEW_ERP_COUNTRIES = [
   'ZAM',
   'MOZ',
   'ZW',
+  'ZWI',
   'MAL',
   'CON',
   'TAN',

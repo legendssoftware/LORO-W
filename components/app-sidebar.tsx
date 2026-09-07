@@ -9,6 +9,7 @@ import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard"
 import { usePrefetchStaffQueries } from "@/api/hooks/use-prefetch-staff";
 import {
   canAccessCompetitors,
+  canAccessPerformanceTracker,
   canAccessReports,
   canAccessUserSettings,
   canManageApprovals,
@@ -18,6 +19,7 @@ import {
   isStaffDashboardVisible,
   STAFF_SETTINGS_ROUTE,
   STAFF_SIDEBAR_ROUTES,
+  type PerformanceAccessUser,
 } from "@/lib/access";
 import {
   CheckSquareIcon,
@@ -42,6 +44,7 @@ import {
   Receipt,
   ShoppingBag,
   Swords,
+  TrendingUp,
   UserCircle,
   Phone,
 } from "lucide-react";
@@ -81,6 +84,7 @@ const ROUTE_ICONS: Record<
   "/approvals": FileCheck,
   "/payslips": FileText,
   "/reports": BarChart3,
+  "/performance": TrendingUp,
   "/staff": UsersIcon,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,
@@ -90,9 +94,11 @@ const ROUTE_ICONS: Record<
   "/account": UserCircle,
 };
 
-function getSidebarRoutes(accessLevel: string | undefined, approvableTypes?: string[] | null) {
+function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, approvableTypes?: string[] | null) {
+  const accessLevel = profile?.accessLevel ?? undefined;
+
   if (!accessLevel) {
-    return getAllowedRoutes(undefined, approvableTypes);
+    return getAllowedRoutes(undefined, approvableTypes, profile);
   }
 
   if (isClientPortalUser(accessLevel)) {
@@ -102,6 +108,7 @@ function getSidebarRoutes(accessLevel: string | undefined, approvableTypes?: str
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
       if (r.path === "/reports") return canAccessReports(accessLevel);
+      if (r.path === "/performance") return canAccessPerformanceTracker(profile);
       if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
@@ -114,7 +121,7 @@ function getSidebarRoutes(accessLevel: string | undefined, approvableTypes?: str
     ];
   }
 
-  return getAllowedRoutes(accessLevel, approvableTypes);
+  return getAllowedRoutes(accessLevel, approvableTypes, profile);
 }
 
 export function AppSidebar() {
@@ -143,7 +150,7 @@ export function AppSidebar() {
 
   if (!isLoaded || !isSignedIn) return null;
 
-  const routes = getSidebarRoutes(profile?.accessLevel, profile?.approvableTypes);
+  const routes = getSidebarRoutes(profile, profile?.approvableTypes);
   const isClient = isClientPortalUser(profile?.accessLevel);
   const routeIcons = ROUTE_ICONS;
 

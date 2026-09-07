@@ -110,6 +110,11 @@ export function ReportsNamedBarChart({
           textAnchor={xLayout.textAnchor}
           height={xLayout.height}
           tick={{ fontSize: 11 }}
+          tickFormatter={(value: string) => {
+            const label = String(value ?? '').trim();
+            if (label.length <= 16) return label;
+            return `${label.slice(0, 14)}…`;
+          }}
         />
         <YAxis
           tickLine={false}

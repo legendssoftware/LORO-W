@@ -13,6 +13,7 @@ export const APP_DISALLOW_PATHS = [
   '/claims',
   '/approvals',
   '/reports',
+  '/performance',
   '/visualiser',
   '/settings',
   '/store',

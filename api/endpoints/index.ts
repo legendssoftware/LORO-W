@@ -26,3 +26,4 @@ export * from './tracking';
 export * from './assets';
 export * from './iot';
 export * from './reports-travel-export';
+export * from './reports-performance';

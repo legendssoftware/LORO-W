@@ -179,6 +179,11 @@ export const PAGE_COPY = {
     description:
       'Attendance, leads, visits and payroll signals in charts you can share. Export when finance asks—stop rebuilding slides every Friday.',
   },
+  performance: {
+    title: 'Performance Tracker — ERP sales, GP and branch results',
+    description:
+      'Track revenue versus target, daily sales, store history, and consolidated income across countries. Filter by branch, rep, and product from live ERP data.',
+  },
   visualiser: {
     title:
       'Competitor Overview — Map visits, clients & competitors in one view',
