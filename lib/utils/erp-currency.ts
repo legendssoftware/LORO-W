@@ -15,6 +15,7 @@ const COUNTRY_CURRENCY_MAP: Record<string, ErpCurrencyInfo> = {
   ZAM: { code: 'ZMW', symbol: 'ZK', locale: 'en-ZM', name: 'Zambian Kwacha' },
   MOZ: { code: 'MZN', symbol: 'MT', locale: 'pt-MZ', name: 'Mozambican Metical' },
   ZW: { code: 'ZWL', symbol: 'ZiG', locale: 'en-ZW', name: 'Zimbabwean Gold' },
+  ZWI: { code: 'ZWL', symbol: 'ZiG', locale: 'en-ZW', name: 'Zimbabwean Gold' },
   MAL: { code: 'MWK', symbol: 'MK', locale: 'en-MW', name: 'Malawian Kwacha' },
   CON: { code: 'CDF', symbol: 'FC', locale: 'fr-CD', name: 'Congolese Franc' },
   TAN: { code: 'TZS', symbol: 'TSh', locale: 'en-TZ', name: 'Tanzanian Shilling' },
@@ -40,6 +41,7 @@ export function normalizeErpCountryCode(countryCode?: string | null): string {
   if (raw === 'ZAMBIA') return 'ZAM';
   if (raw === 'MOZAMBIQUE') return 'MOZ';
   if (raw === 'ZIMBABWE') return 'ZW';
+  if (raw === 'ZIM (INCOGNITO)' || raw === 'ZIMBABWE INCOGNITO') return 'ZWI';
   if (raw === 'MALAWI') return 'MAL';
   if (raw === 'CONGO') return 'CON';
   if (raw === 'TANZANIA') return 'TAN';
@@ -53,15 +55,15 @@ export function getCurrencyForCountry(countryCode?: string | null): ErpCurrencyI
 
 /**
  * ISO code used to look up tblforex_history when converting branch/sales amounts to ZAR.
- * Zimbabwe ERP totals are USD.
+ * Zimbabwe and Zim (Incognito) ERP totals are USD.
  */
 export function getForexCodeForZarConversion(countryCode?: string | null): string {
   const normalized = normalizeErpCountryCode(countryCode);
-  if (normalized === 'ZW') return 'USD';
+  if (normalized === 'ZW' || normalized === 'ZWI') return 'USD';
   return getCurrencyForCountry(normalized).code;
 }
 
-/** Currency of ERP sales amounts for a branch country (ZW → USD). */
+/** Currency of ERP sales amounts for a branch country (ZW/ZWI → USD). */
 export function getErpSalesCurrencyForCountry(countryCode?: string | null): string {
   return getForexCodeForZarConversion(countryCode);
 }

@@ -23,11 +23,26 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     if (!isSignedIn) return;
     if (isSyncing) return; // Wait for sync to know access level before redirect
     const accessLevel = backendUserData?.accessLevel;
-    const allowed = canAccess(pathname ?? '', accessLevel, backendUserData?.approvableTypes);
+    const allowed = canAccess(
+      pathname ?? '',
+      accessLevel,
+      backendUserData?.approvableTypes,
+      backendUserData
+    );
     if (!allowed) {
       router.replace(getDefaultRoute(backendUserData ?? undefined));
     }
-  }, [isSignedIn, pathname, router, isSyncing, backendUserData?.accessLevel, backendUserData?.approvableTypes]);
+  }, [
+    isSignedIn,
+    pathname,
+    router,
+    isSyncing,
+    backendUserData?.accessLevel,
+    backendUserData?.approvableTypes,
+    backendUserData?.workforceType,
+    backendUserData?.managedBranches,
+    backendUserData?.role,
+  ]);
 
   return <>{children}</>;
 }

@@ -31,6 +31,8 @@ export interface SyncProfile {
   accessLevel?: AccessLevel | string;
   /** Staff sync only; aligns with server WorkforceType. */
   workforceType?: WorkforceType | string | null;
+  /** Branch uids this user manages (regional / performance tracker access). */
+  managedBranches?: number[];
   role?: string;
   organisationRef?: string;
   branchUid?: number;
