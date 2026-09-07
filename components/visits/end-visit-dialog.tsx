@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, type ReactNode } from 'react';
 import { format } from 'date-fns';
-import { useCheckInStatus, useCheckOutMutation, useClientsInfinite } from '@/api/hooks';
+import { useApiClient, useCheckInStatus, useCheckOutMutation, useClientsInfinite } from '@/api/hooks';
+import { uploadFile } from '@/api/endpoints/upload';
 import type { ClientListItem, ClientAddress } from '@/api/endpoints/clients';
 import type { CreateCheckOutPayload, MethodOfContact } from '@/api/types/visits';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +34,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { MapPin, Camera, Upload, Phone, Mail, Smartphone, ChevronDown, TriangleAlert } from 'lucide-react';
-import { CalendarIcon, Loader2Icon, XIcon, UsersIcon } from '@/lib/icons';
+import { CalendarIcon, Loader2Icon, UsersIcon } from '@/lib/icons';
 import {
   TYPE_OF_BUSINESS_OPTIONS,
   CURRENCY_OPTIONS,
@@ -44,12 +46,34 @@ import {
 import { validateEndVisitFormWithZodFieldErrors } from '@/lib/schemas/visit-schemas';
 import { resolveCheckInLocation } from '@/lib/check-in-utils';
 import { cn } from '@/lib/utils';
-import { visitQualityMissingFields } from '@/lib/visit-quality-hints';
+import {
+  ACTIVITY_NEXT_STEP,
+  appendNextStepToResolution,
+  isShortCall,
+  isValidActivityNextStep,
+  visitQualityMissingFields,
+} from '@/lib/visit-quality-hints';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { VisitMediaUpload, MAX_VISIT_MEDIA_BYTES } from '@/components/visits/visit-media-upload';
 import toast from 'react-hot-toast';
 
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15;
+
+function countWords(value: string | null | undefined): number {
+  return (value ?? '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+function RequiredLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
+  return (
+    <Label htmlFor={htmlFor}>
+      {children}
+      <span className="text-destructive" aria-hidden="true">
+        *
+      </span>
+    </Label>
+  );
+}
 
 function hasAddress(addr?: ClientAddress): boolean {
   if (!addr) return false;
@@ -118,6 +142,7 @@ export function EndVisitDialog({
 }: EndVisitDialogProps) {
   const statusQuery = useCheckInStatus({ enabled: open });
   const checkOutMutation = useCheckOutMutation();
+  const apiClient = useApiClient();
 
   const [endForm, setEndForm] = useState<Partial<CreateCheckOutPayload>>(() =>
     defaultEndForm(activeVisit, initialFormValues),
@@ -126,14 +151,14 @@ export function EndVisitDialog({
   const [endPhotoPreview, setEndPhotoPreview] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [mediaUrlInput, setMediaUrlInput] = useState('');
+  const [nextStep, setNextStep] = useState('');
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [endFieldErrors, setEndFieldErrors] = useState<Record<string, string>>({});
   const [clientComboboxOpen, setClientComboboxOpen] = useState(false);
   const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [clientSearch, setClientSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaFileInputRef = useRef<HTMLInputElement>(null);
   const originalClientRef = useRef<ClientListItem | null>(null);
   const prevOpenRef = useRef(false);
 
@@ -148,7 +173,11 @@ export function EndVisitDialog({
     return inList ? clientsFromApi : [selectedClient, ...clientsFromApi];
   }, [clientsFromApi, selectedClient]);
 
-  const showPhotoInEndModal = activeVisit?.methodOfContact === 'Physical';
+  const showPhotoInEndModal =
+    (endForm.methodOfContact ?? activeVisit?.methodOfContact) === 'Physical';
+  const hasLead = typeof statusQuery.data?.leadUid === 'number';
+  const selectedNextStep = isValidActivityNextStep(nextStep, hasLead) ? nextStep : '';
+  const followUpRequired = selectedNextStep === ACTIVITY_NEXT_STEP.keep;
   const qualityMissing = useMemo(
     () =>
       visitQualityMissingFields({
@@ -158,6 +187,8 @@ export function EndVisitDialog({
         followUp: endForm.followUp,
         methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
         contactMade: endForm.contactMade,
+        nextStep: selectedNextStep,
+        hasLead,
       }),
     [
       endForm.notes,
@@ -167,8 +198,15 @@ export function EndVisitDialog({
       endForm.methodOfContact,
       endForm.contactMade,
       activeVisit?.methodOfContact,
+      selectedNextStep,
+      hasLead,
     ],
   );
+  const shortCall = isShortCall({
+    methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
+    checkInTime: statusQuery.data?.checkInTime,
+  });
+  const canSubmit = qualityMissing.length === 0 && !checkOutMutation.isPending && !isUploadingMedia;
   const endVisitDialogContainer =
     typeof document !== 'undefined' ? document.getElementById('end-visit-dialog-content') : null;
 
@@ -185,34 +223,24 @@ export function EndVisitDialog({
     setEndPhotoPreview(null);
     setMediaFiles([]);
     setMediaUrls([]);
-    setMediaUrlInput('');
+    setNextStep('');
+    setIsUploadingMedia(false);
     setEndFieldErrors({});
   }, [open, activeVisit, initialFormValues]);
 
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setEndPhotoFile(file);
-      setEndPhotoPreview(URL.createObjectURL(file));
-    }
     e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > MAX_VISIT_MEDIA_BYTES) {
+      toast.error(`${file.name} is over 12MB`);
+      return;
+    }
+    setEndPhotoFile(file);
+    setEndPhotoPreview(URL.createObjectURL(file));
   };
 
   const triggerFileInput = () => fileInputRef.current?.click();
-
-  const handleMediaFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length) setMediaFiles((prev) => [...prev, ...files]);
-    e.target.value = '';
-  };
-
-  const addMediaUrl = () => {
-    const url = mediaUrlInput.trim();
-    if (url) {
-      setMediaUrls((prev) => [...prev, url]);
-      setMediaUrlInput('');
-    }
-  };
 
   function applyClientToForm(client: ClientListItem) {
     originalClientRef.current = client;
@@ -248,9 +276,11 @@ export function EndVisitDialog({
   }
 
   const submitEndVisit = async () => {
-    const { fieldErrors: errs, firstMessage } = validateEndVisitFormWithZodFieldErrors(
-      endForm as Record<string, unknown>,
-    );
+    const { fieldErrors: errs, firstMessage } = validateEndVisitFormWithZodFieldErrors({
+      ...(endForm as Record<string, unknown>),
+      nextStep: selectedNextStep,
+      hasLead,
+    });
     if (firstMessage) {
       setEndFieldErrors(errs);
       toast.error(firstMessage);
@@ -298,12 +328,29 @@ export function EndVisitDialog({
       }
       if (Object.keys(changed).length > 0) clientProfileUpdate = changed;
     }
+    const uploadedMediaUrls = [...mediaUrls];
+    let checkOutPhoto: string | undefined;
+    try {
+      setIsUploadingMedia(true);
+      for (const file of mediaFiles) {
+        uploadedMediaUrls.push(await uploadFile(apiClient, file));
+      }
+      if (endPhotoFile) {
+        checkOutPhoto = await uploadFile(apiClient, endPhotoFile);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to upload files');
+      return;
+    } finally {
+      setIsUploadingMedia(false);
+    }
+    const resolution = appendNextStepToResolution(endForm.resolution, selectedNextStep, hasLead);
     const payload: CreateCheckOutPayload = {
       checkOutTime: new Date().toISOString(),
       checkOutLocation: location,
-      checkOutPhoto: undefined,
+      checkOutPhoto,
       notes: endForm.notes || undefined,
-      resolution: endForm.resolution || undefined,
+      resolution: resolution || undefined,
       followUp: endForm.followUp || undefined,
       contactFullName: endForm.contactFullName || undefined,
       contactCellPhone: endForm.contactCellPhone || undefined,
@@ -321,15 +368,9 @@ export function EndVisitDialog({
       businessType: endForm.businessType,
       client: endForm.client,
       contactAddress: endForm.contactAddress,
-      media:
-        mediaUrls.length > 0 || mediaFiles.length > 0
-          ? [...mediaUrls, ...mediaFiles.map((f) => f.name)]
-          : undefined,
+      media: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
       ...(clientProfileUpdate && { clientProfileUpdate }),
     };
-    if (endPhotoFile) {
-      /* optional photo upload not wired */
-    }
     try {
       await checkOutMutation.mutateAsync(payload);
       originalClientRef.current = null;
@@ -363,8 +404,17 @@ export function EndVisitDialog({
               <TriangleAlert />
               <AlertTitle>This activity will look incomplete on reports</AlertTitle>
               <AlertDescription>
-                Missing: {qualityMissing.join(', ')}. Voicemail and no-answer only need a note.
-                You can still end the visit.
+                Missing: {qualityMissing.join(', ')}. Fill the starred fields to end.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {shortCall ? (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+              <TriangleAlert />
+              <AlertTitle>This call is under 30 seconds</AlertTitle>
+              <AlertDescription>
+                Short calls count as a no-call on reports unless notes and resolution explain what was
+                discussed.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -530,34 +580,68 @@ export function EndVisitDialog({
             </div>
             {/* 3. Notes (textarea, max 2500 words) */}
             <div className="grid gap-2 sm:col-span-2">
-              <Label>Notes</Label>
+              <RequiredLabel htmlFor="end-visit-notes">Notes</RequiredLabel>
               <Textarea
+                id="end-visit-notes"
                 placeholder="Add notes"
                 value={endForm.notes ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, notes: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, notes: e.target.value }));
+                  if (endFieldErrors.notes) setEndFieldErrors((prev) => ({ ...prev, notes: '' }));
+                }}
                 maxLength={NOTES_MAX_LENGTH}
                 rows={10}
-                className="min-h-[200px] resize-y"
+                className={cn('min-h-[200px] resize-y', endFieldErrors.notes && 'border-destructive')}
+                aria-invalid={!!endFieldErrors.notes}
               />
               <p className="text-xs text-muted-foreground">
-                {((endForm.notes ?? '').trim().split(/\s+/).filter(Boolean).length).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+                {countWords(endForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
               </p>
+              {endFieldErrors.notes ? (
+                <p className="text-xs text-destructive">{endFieldErrors.notes}</p>
+              ) : null}
             </div>
-            <div className="grid gap-2">
-              <Label>Resolution / outcome</Label>
-              <Input
-                placeholder="e.g. Issue resolved"
+            <div className="grid gap-2 sm:col-span-2">
+              <RequiredLabel htmlFor="end-visit-resolution">Resolution / outcome</RequiredLabel>
+              <Textarea
+                id="end-visit-resolution"
+                placeholder="What was the outcome of this call or visit?"
                 value={endForm.resolution ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, resolution: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, resolution: e.target.value }));
+                  if (endFieldErrors.resolution) setEndFieldErrors((prev) => ({ ...prev, resolution: '' }));
+                }}
+                maxLength={NOTES_MAX_LENGTH}
+                rows={10}
+                className={cn('min-h-[200px] resize-y', endFieldErrors.resolution && 'border-destructive')}
+                aria-invalid={!!endFieldErrors.resolution}
               />
+              <p className="text-xs text-muted-foreground">
+                {countWords(endForm.resolution).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()}{' '}
+                words
+              </p>
+              {endFieldErrors.resolution ? (
+                <p className="text-xs text-destructive">{endFieldErrors.resolution}</p>
+              ) : null}
             </div>
             <div className="grid gap-2">
-              <Label>Contact name</Label>
+              <RequiredLabel htmlFor="end-visit-contact">Contact name</RequiredLabel>
               <Input
+                id="end-visit-contact"
                 placeholder="Person contacted"
                 value={endForm.contactFullName ?? ''}
-                onChange={(e) => setEndForm((f) => ({ ...f, contactFullName: e.target.value }))}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, contactFullName: e.target.value }));
+                  if (endFieldErrors.contactFullName) {
+                    setEndFieldErrors((prev) => ({ ...prev, contactFullName: '' }));
+                  }
+                }}
+                aria-invalid={!!endFieldErrors.contactFullName}
+                className={endFieldErrors.contactFullName ? 'border-destructive' : ''}
               />
+              {endFieldErrors.contactFullName ? (
+                <p className="text-xs text-destructive">{endFieldErrors.contactFullName}</p>
+              ) : null}
             </div>
             <div className="grid gap-2">
               <Label>Cell</Label>
@@ -709,8 +793,59 @@ export function EndVisitDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2 sm:col-span-2">
+              <RequiredLabel>
+                {hasLead ? 'Lead next step' : 'Next step'}
+              </RequiredLabel>
+              <RadioGroup
+                value={selectedNextStep}
+                onValueChange={(value) => {
+                  setNextStep(value);
+                  if (endFieldErrors.nextStep) setEndFieldErrors((prev) => ({ ...prev, nextStep: '' }));
+                }}
+                className="gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value={ACTIVITY_NEXT_STEP.keep} id="end-next-keep" />
+                  <Label htmlFor="end-next-keep" className="font-normal">
+                    Keep working
+                  </Label>
+                </div>
+                {hasLead ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value={ACTIVITY_NEXT_STEP.discard} id="end-next-discard" />
+                      <Label htmlFor="end-next-discard" className="font-normal">
+                        Discard
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value={ACTIVITY_NEXT_STEP.delete} id="end-next-delete" />
+                      <Label htmlFor="end-next-delete" className="font-normal">
+                        Delete
+                      </Label>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value={ACTIVITY_NEXT_STEP.close} id="end-next-close" />
+                    <Label htmlFor="end-next-close" className="font-normal">
+                      No further action
+                    </Label>
+                  </div>
+                )}
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground">
+                {hasLead
+                  ? 'This is recorded on the visit for reporting. Discard and delete still happen on the lead page.'
+                  : 'Keep working requires a follow-up date. No further action closes this visit.'}
+              </p>
+              {endFieldErrors.nextStep ? (
+                <p className="text-xs text-destructive">{endFieldErrors.nextStep}</p>
+              ) : null}
+            </div>
             <div className="grid gap-2">
-              <Label>Follow-up</Label>
+              {followUpRequired ? <RequiredLabel>Follow-up</RequiredLabel> : <Label>Follow-up</Label>}
               <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -904,75 +1039,16 @@ export function EndVisitDialog({
               </div>
             </div>
 
-            {/* Media (images / files) */}
             <div className="grid gap-2 sm:col-span-2">
-              <Label>Media (images / files)</Label>
-              <input
-                ref={mediaFileInputRef}
-                type="file"
-                accept="image/*,.pdf,.doc,.docx"
-                multiple
-                className="hidden"
-                onChange={handleMediaFilesSelect}
+              <VisitMediaUpload
+                files={mediaFiles}
+                urls={mediaUrls}
+                onFilesAdd={(added) => setMediaFiles((prev) => [...prev, ...added])}
+                onFileRemove={(index) => setMediaFiles((prev) => prev.filter((_, i) => i !== index))}
+                onUrlAdd={(url) => setMediaUrls((prev) => [...prev, url])}
+                onUrlRemove={(index) => setMediaUrls((prev) => prev.filter((_, i) => i !== index))}
+                disabled={checkOutMutation.isPending || isUploadingMedia}
               />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => mediaFileInputRef.current?.click()}
-                  className="gap-2"
-                >
-                  <Upload className="size-4" />
-                  Add files
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <Input
-                  placeholder="Or add URL"
-                  value={mediaUrlInput}
-                  onChange={(e) => setMediaUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMediaUrl())}
-                  className="max-w-xs"
-                />
-                <Button type="button" variant="outline" size="sm" onClick={addMediaUrl}>
-                  Add URL
-                </Button>
-              </div>
-              {(mediaFiles.length > 0 || mediaUrls.length > 0) && (
-                <ul className="text-sm space-y-1 mt-1">
-                  {mediaFiles.map((f, i) => (
-                    <li key={`file-${i}`} className="flex items-center gap-2">
-                      <span className="truncate">{f.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 shrink-0"
-                        onClick={() => setMediaFiles((prev) => prev.filter((_, j) => j !== i))}
-                      >
-                        <XIcon className="size-3" />
-                      </Button>
-                    </li>
-                  ))}
-                  {mediaUrls.map((url, i) => (
-                    <li key={`url-${i}`} className="flex items-center gap-2">
-                      <span className="truncate max-w-[200px]" title={url}>
-                        {url}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 shrink-0"
-                        onClick={() => setMediaUrls((prev) => prev.filter((_, j) => j !== i))}
-                      >
-                        <XIcon className="size-3" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
             {/* Optional photo: only for Physical visits */}
@@ -1040,10 +1116,12 @@ export function EndVisitDialog({
               variant="success"
               className="rounded-full"
               onClick={submitEndVisit}
-              disabled={checkOutMutation.isPending}
+              disabled={!canSubmit}
             >
-              {checkOutMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
-              {submitLabel}
+              {(checkOutMutation.isPending || isUploadingMedia) && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
+              {isUploadingMedia ? 'Uploading…' : submitLabel}
             </Button>
           </DialogFooter>
         </DialogContent>

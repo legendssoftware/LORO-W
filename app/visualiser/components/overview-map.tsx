@@ -44,6 +44,11 @@ import {
 } from '@/lib/utils/visualiser-map-points';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import {
+  formatStoreFormatSummary,
+  isStoreSizeSuggestionEnabled,
+  suggestBitDrywallStoreFormat,
+} from '@/lib/site-opportunity/bitdrywall-store-formats';
+import {
   buildTurnoverSimulation,
   branchSimulationTextClass,
 } from '@/lib/site-opportunity/turnover-simulation';
@@ -474,7 +479,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
     clearSelection: clearRepSelection,
   } = useSearchableUsersList({ enabled, limit: 100 });
 
-  const { isActive, selectedZone, clearSimulation, panelOpen, allZones, ranAt } =
+  const { isActive, selectedZone, clearSimulation, panelOpen, allZones, ranAt, result } =
     useVisualiserSimulation();
 
   const { data: branches = [] } = useBranches({ enabled });
@@ -512,6 +517,18 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           : null,
     });
   }, [selectedZone]);
+
+  const storeFormatSuggestion = useMemo(() => {
+    if (!zoneSim) return null;
+    if (
+      !isStoreSizeSuggestionEnabled(
+        result?.settings.suggestStoreSizeFromTurnover,
+      )
+    ) {
+      return null;
+    }
+    return suggestBitDrywallStoreFormat(zoneSim.simulatedMonthlyZAR);
+  }, [result?.settings.suggestStoreSizeFromTurnover, zoneSim]);
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -1131,6 +1148,13 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
                   {selectedZone.capacityCeilingZAR != null
                     ? ` · Cap ${formatZarShort(selectedZone.capacityCeilingZAR)}/mo`
                     : ''}
+                </p>
+              ) : null}
+              {storeFormatSuggestion ? (
+                <p className="text-muted-foreground">
+                  {selectedZone.kind === 'catchment'
+                    ? `Recommended ${formatStoreFormatSummary(storeFormatSuggestion)}`
+                    : formatStoreFormatSummary(storeFormatSuggestion)}
                 </p>
               ) : null}
               <p className="text-muted-foreground">

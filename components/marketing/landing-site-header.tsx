@@ -7,6 +7,7 @@ import type Vapi from '@vapi-ai/web';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuIcon, PhoneCallIcon, XIcon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
+import { BrandMark } from '@/components/brand-mark';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast-helpers';
 import { handleVapiError, retryVapiOperation } from '@/lib/utils/vapi-error-handler';
 
@@ -237,9 +238,12 @@ export function LandingSiteHeader({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="font-body text-xl font-normal tracking-tight text-white"
+            className="inline-flex"
           >
-            LORO
+            <BrandMark
+              priority
+              wordmarkClassName="text-xl font-normal tracking-tight text-white"
+            />
           </motion.span>
         </Link>
 
@@ -315,7 +319,7 @@ export function LandingSiteHeader({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center border-b border-white/10 bg-zinc-900/80 p-4">
-                <span className="font-body text-lg tracking-tight text-white">LORO</span>
+                <BrandMark wordmarkClassName="text-lg tracking-tight text-white" />
                 <motion.button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="rounded-full p-2 border border-white/20 bg-white/5 text-zinc-300 hover:bg-white/10"

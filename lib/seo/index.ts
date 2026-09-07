@@ -57,6 +57,10 @@ export const defaultMetadata: Metadata = {
   keywords,
   authors: [author],
   creator: author.name,
+  icons: {
+    icon: [{ url: '/logo.png', type: 'image/png' }],
+    apple: [{ url: '/logo.png', type: 'image/png' }],
+  },
   openGraph: {
     type: 'website',
     locale: 'en_ZA',

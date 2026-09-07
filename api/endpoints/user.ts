@@ -315,6 +315,7 @@ export interface VisualiserUserPreferences {
     captureHighPct?: number;
     repTargetMonthlyZAR?: number;
     revenuePerSqmMonthlyZAR?: number;
+    suggestStoreSizeFromTurnover?: boolean;
   };
   turnoverOverrides?: {
     brandTurnoverOverrides?: Record<string, number>;
