@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -53,6 +54,7 @@ import { CompetitorsDetailModalButton } from '@/app/visualiser/components/compet
 import { MissingCompetitorsList } from '@/app/visualiser/components/missing-competitors-list';
 import { SimulationTrendChart } from '@/app/visualiser/components/simulation-trend-chart';
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
+import { StoreFormatSuggestionCard } from '@/app/visualiser/components/store-format-suggestion';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
@@ -86,6 +88,11 @@ import {
   type WorkforceHeadcount,
 } from '@/lib/site-opportunity/branch-rep-rates';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
+import {
+  formatStoreFormatSummary,
+  isStoreSizeSuggestionEnabled,
+  suggestBitDrywallStoreFormat,
+} from '@/lib/site-opportunity/bitdrywall-store-formats';
 import { matureShareByCompetition } from '@/lib/site-opportunity/compute/capture-phases';
 import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
 import { listCompetitorsInZone } from '@/lib/site-opportunity/zone-competitors';
@@ -158,6 +165,7 @@ function ZoneDetailBody({
   detailSim,
   captureLowPctDisplay,
   captureHighPctDisplay,
+  showStoreSizeSuggestion,
   competitorsByBrand,
   workforce,
   workforceLoading,
@@ -170,6 +178,7 @@ function ZoneDetailBody({
   detailSim: TurnoverSimulation;
   captureLowPctDisplay: number;
   captureHighPctDisplay: number;
+  showStoreSizeSuggestion: boolean;
   competitorsByBrand: Map<
     HardwareBrandKey,
     ReturnType<typeof listCompetitorsInZone>
@@ -203,6 +212,9 @@ function ZoneDetailBody({
     detailSim.simulatedMonthlyZAR,
     repCountForShare,
   );
+  const storeFormatSuggestion = showStoreSizeSuggestion
+    ? suggestBitDrywallStoreFormat(detailSim.simulatedMonthlyZAR)
+    : null;
   const explainPayload = {
     kind: (zone.kind === 'catchment' ? 'catchment' : 'greenfield') as
       | 'catchment'
@@ -295,6 +307,12 @@ function ZoneDetailBody({
               </div>
             ) : null}
           </div>
+          {storeFormatSuggestion ? (
+            <StoreFormatSuggestionCard
+              suggestion={storeFormatSuggestion}
+              recordedFloorSqm={catchmentZone?.floorSizeSqm ?? null}
+            />
+          ) : null}
 
           <div className="grid grid-cols-2 gap-1.5 text-[10px]">
             <div className="bg-muted/40 rounded p-1.5">
@@ -426,6 +444,8 @@ function ZoneDetailBody({
             )}
           </div>
         </>
+      ) : storeFormatSuggestion ? (
+        <StoreFormatSuggestionCard suggestion={storeFormatSuggestion} />
       ) : null}
 
       <div>
@@ -515,11 +535,13 @@ function ZoneAccordionRow({
   selected,
   onOpenChange,
   detailContent,
+  showStoreSizeSuggestion,
 }: {
   zone: SiteOpportunityZone;
   selected: boolean;
   onOpenChange: (open: boolean) => void;
   detailContent: ReactNode;
+  showStoreSizeSuggestion: boolean;
 }) {
   const sim = buildTurnoverSimulation(zone, {
     actualRevenueZAR: zone.kind === 'catchment' ? zone.actualRevenueZAR : null,
@@ -527,6 +549,12 @@ function ZoneAccordionRow({
   });
   const title = zone.kind === 'catchment' ? zone.branchName : zone.label;
   const intensity = matureShareByCompetition(zone.competitorCount);
+  const storeFormatSummary =
+    showStoreSizeSuggestion && zone.kind === 'greenfield'
+      ? formatStoreFormatSummary(
+          suggestBitDrywallStoreFormat(sim.simulatedMonthlyZAR),
+        )
+      : null;
 
   return (
     <Collapsible
@@ -549,6 +577,7 @@ function ZoneAccordionRow({
               <p className="text-muted-foreground mt-0.5 text-[10px] leading-snug">
                 {zone.competitorCount} hardwares · pool{' '}
                 {formatZarShort(zone.addressablePoolZAR)}/mo · {intensity.label}
+                {storeFormatSummary ? ` · ${storeFormatSummary}` : ''}
               </p>
             </div>
             <div className="flex shrink-0 items-start gap-1">
@@ -1032,6 +1061,9 @@ export function SimulationSidePanel() {
         detailSim={detailSim}
         captureLowPctDisplay={captureLowPctDisplay}
         captureHighPctDisplay={captureHighPctDisplay}
+        showStoreSizeSuggestion={isStoreSizeSuggestionEnabled(
+          settings.suggestStoreSizeFromTurnover,
+        )}
         competitorsByBrand={competitorsByBrand}
         workforce={zone.kind === 'catchment' ? catchmentWorkforce : null}
         workforceLoading={
@@ -1330,6 +1362,35 @@ export function SimulationSidePanel() {
               </div>
             </div>
 
+            <div className="flex items-start justify-between gap-3 rounded-md border px-2.5 py-2">
+              <div className="min-w-0 space-y-0.5">
+                <Label
+                  htmlFor="sim-suggest-size"
+                  className="text-[11px] leading-snug"
+                >
+                  Suggest store size from turnover
+                </Label>
+                <p className="text-muted-foreground text-[10px] leading-snug">
+                  Recommend a BitDrywall format and office size from modelled
+                  monthly turnover.
+                </p>
+              </div>
+              <Switch
+                id="sim-suggest-size"
+                size="sm"
+                checked={isStoreSizeSuggestionEnabled(
+                  settings.suggestStoreSizeFromTurnover,
+                )}
+                onCheckedChange={(checked) => {
+                  setSettings((s) => ({
+                    ...s,
+                    suggestStoreSizeFromTurnover: checked,
+                  }));
+                }}
+                className="mt-0.5 data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-red-500"
+              />
+            </div>
+
             <div className="space-y-2">
               <p className="text-xs font-medium">Brand turnover (R / month)</p>
               <div className="space-y-1.5">
@@ -1473,6 +1534,9 @@ export function SimulationSidePanel() {
                         onOpenChange={(open) =>
                           selectZone(open ? z.id : null)
                         }
+                        showStoreSizeSuggestion={isStoreSizeSuggestionEnabled(
+                          settings.suggestStoreSizeFromTurnover,
+                        )}
                         detailContent={renderZoneDetail(z)}
                       />
                     ))}
@@ -1493,6 +1557,9 @@ export function SimulationSidePanel() {
                         onOpenChange={(open) =>
                           selectZone(open ? z.id : null)
                         }
+                        showStoreSizeSuggestion={isStoreSizeSuggestionEnabled(
+                          settings.suggestStoreSizeFromTurnover,
+                        )}
                         detailContent={renderZoneDetail(z)}
                       />
                     ))}

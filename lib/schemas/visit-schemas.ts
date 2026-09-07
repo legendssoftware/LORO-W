@@ -13,6 +13,10 @@ import {
   MAX_EMAIL,
   PHONE_REGEX,
 } from '@/lib/visit-form-utils';
+import {
+  ACTIVITY_NEXT_STEP,
+  isValidActivityNextStep,
+} from '@/lib/visit-quality-hints';
 
 /** Optional string with max length; empty string passes. Accepts null from API payloads. */
 const optionalString = (max: number) =>
@@ -88,8 +92,59 @@ const visitFormBaseSchema = z.object({
   meetingLink: z.string().max(2048).optional(),
 });
 
-/** Schema for end-visit form fields (client-side validation). */
-export const endVisitFormSchema = visitFormBaseSchema.passthrough();
+function isBlankField(value: unknown): boolean {
+  if (value == null) return true;
+  const text = String(value).trim();
+  return !text || text === '-';
+}
+
+/** Schema for end-visit form fields (client-side validation). Blocks incomplete check-out. */
+export const endVisitFormSchema = visitFormBaseSchema
+  .extend({
+    nextStep: z.string().nullish(),
+    hasLead: z.boolean().optional(),
+  })
+  .passthrough()
+  .superRefine((data, ctx) => {
+    if (isBlankField(data.notes)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Notes are required',
+        path: ['notes'],
+      });
+    }
+    if (isBlankField(data.resolution)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Resolution is required',
+        path: ['resolution'],
+      });
+    }
+    if (isBlankField(data.contactFullName)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Contact name is required',
+        path: ['contactFullName'],
+      });
+    }
+    const hasLead = data.hasLead === true;
+    const nextStep = typeof data.nextStep === 'string' ? data.nextStep : '';
+    if (!isValidActivityNextStep(nextStep, hasLead)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: hasLead
+          ? 'Choose whether to keep working, discard, or delete the lead'
+          : 'Choose a next step',
+        path: ['nextStep'],
+      });
+    } else if (nextStep === ACTIVITY_NEXT_STEP.keep && isBlankField(data.followUp)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Follow-up date is required when keeping this activity open',
+        path: ['followUp'],
+      });
+    }
+  });
 
 export type EndVisitFormInput = z.infer<typeof endVisitFormSchema>;
 

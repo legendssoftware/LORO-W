@@ -1220,13 +1220,19 @@ function VisitDetailDialog({
                       {getWordCount(editForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
                     </p>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <Label>Resolution</Label>
-                    <Input
+                    <Textarea
                       value={editForm.resolution ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, resolution: e.target.value }))}
-                      placeholder="e.g. Issue resolved"
+                      maxLength={NOTES_MAX_LENGTH}
+                      rows={10}
+                      className="min-h-[200px] resize-y"
+                      placeholder="What was the outcome of this call or visit?"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getWordCount(editForm.resolution).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+                    </p>
                   </div>
                   <div>
                     <Label>Contact name</Label>
