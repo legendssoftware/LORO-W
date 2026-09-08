@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import type { VisitExportItem } from '@/api/types/reports';
 import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
@@ -31,8 +31,16 @@ import {
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
 import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
-import { useUpdateVisitDetailsMutation, useClientsInfinite } from '@/api/hooks';
+import {
+  useUpdateVisitDetailsMutation,
+  useUpdateCheckInPhotoMutation,
+  useUpdateCheckOutPhotoMutation,
+  useClientsInfinite,
+  useApiClient,
+} from '@/api/hooks';
+import { uploadVisitFile } from '@/api/endpoints/docs';
 import type { ClientListItem } from '@/api/endpoints/clients';
+import { VisitDetailMediaSection } from '@/components/visits/visit-detail-media-section';
 
 /**
  * Visit detail modal field mapping (all columns and data presence) is documented in
@@ -91,8 +99,6 @@ import {
   LogOut,
   Timer,
   MapPin,
-  Image as ImageIcon,
-  Paperclip,
   StickyNote,
   ClipboardList,
   User,
@@ -125,9 +131,6 @@ import {
   type CreateLeadModalInitialValues,
 } from '@/app/leads/components/create-lead-modal';
 
-const VISIT_IMAGE_FALLBACK_URL =
-  'https://images.pexels.com/photos/163194/old-retro-antique-vintage-163194.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
-
 const NOTES_MAX_WORDS = 2500;
 const NOTES_MAX_LENGTH = NOTES_MAX_WORDS * 15; // ~15 chars per word
 
@@ -155,71 +158,10 @@ function getWordCount(value: string | null | undefined): number {
 }
 
 const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?|$)/i;
-const DOCUMENT_EXTENSIONS = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|odt|ods)(\?|$)/i;
 
 function isImageUrl(url: string): boolean {
   if (!url.startsWith('http')) return false;
   return IMAGE_EXTENSIONS.test(url) || url.includes('image');
-}
-
-function isDocumentUrl(url: string): boolean {
-  return DOCUMENT_EXTENSIONS.test(url) || url.includes('application/pdf') || url.includes('document');
-}
-
-function getFileIconType(url: string): 'pdf' | 'word' | 'excel' | 'generic' {
-  const lower = url.toLowerCase();
-  if (/\.pdf(\?|$)/i.test(lower)) return 'pdf';
-  if (/\.(doc|docx)(\?|$)/i.test(lower)) return 'word';
-  if (/\.(xls|xlsx)(\?|$)/i.test(lower)) return 'excel';
-  return 'generic';
-}
-
-function getFilenameFromUrl(item: string): string {
-  if (item.startsWith('http')) {
-    try {
-      const path = new URL(item).pathname;
-      return path.split('/').pop() || item;
-    } catch {
-      return item;
-    }
-  }
-  return item;
-}
-
-function PdfIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#DC2626"
-      strokeWidth="2"
-      className={cn('shrink-0 size-10', className)}
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
-}
-
-function WordIcon({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn('flex items-center justify-center rounded size-10 shrink-0 bg-[#2B579A] text-white font-bold text-sm', className)}
-      aria-hidden
-    >
-      W
-    </div>
-  );
-}
-
-function FileIcon({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} width={24} height={24}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
 }
 
 interface VisitsDisplayColumn {
@@ -741,7 +683,21 @@ function VisitDetailDialog({
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [createLeadModalOpen, setCreateLeadModalOpen] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [checkInPhotoFile, setCheckInPhotoFile] = useState<File | null>(null);
+  const [checkOutPhotoFile, setCheckOutPhotoFile] = useState<File | null>(null);
+  const [checkInPhotoPreview, setCheckInPhotoPreview] = useState<string | null>(null);
+  const [checkOutPhotoPreview, setCheckOutPhotoPreview] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const apiClient = useApiClient();
   const updateMutation = useUpdateVisitDetailsMutation();
+  const updateCheckInPhotoMutation = useUpdateCheckInPhotoMutation();
+  const updateCheckOutPhotoMutation = useUpdateCheckOutPhotoMutation();
+  const isSaving =
+    updateMutation.isPending ||
+    isUploadingMedia ||
+    updateCheckInPhotoMutation.isPending ||
+    updateCheckOutPhotoMutation.isPending;
   const clientsInfinite = useClientsInfinite({
     enabled: open && isEditing,
   });
@@ -754,11 +710,27 @@ function VisitDetailDialog({
 
   const isEndedVisit = !!visit?.checkOutTime;
 
+  function resetMediaEditState() {
+    setMediaFiles([]);
+    setCheckInPhotoFile(null);
+    setCheckOutPhotoFile(null);
+    setCheckInPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setCheckOutPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setIsUploadingMedia(false);
+  }
+
   useEffect(() => {
     if (!visit || !open) return;
     setEditForm(visitToEditForm(visit));
     setIsEditing(false);
     setFieldErrors({});
+    resetMediaEditState();
   }, [visit?.uid, open]);
 
   useEffect(() => {
@@ -781,35 +753,64 @@ function VisitDetailDialog({
     if (visit) setEditForm(visitToEditForm(visit));
     setIsEditing(false);
     setFieldErrors({});
+    resetMediaEditState();
   };
 
   const handleSaveEdit = async () => {
     if (!visit) return;
     const original = visitToEditForm(visit);
-    const changed = getChangedFields(original, editForm);
-    if (Object.keys(changed).length === 0) {
+    const hasPendingMedia = mediaFiles.length > 0;
+    const hasProofPhotoChange = !!checkInPhotoFile || !!checkOutPhotoFile;
+    const changedBeforeUpload = getChangedFields(original, editForm);
+    if (
+      Object.keys(changedBeforeUpload).length === 0 &&
+      !hasPendingMedia &&
+      !hasProofPhotoChange
+    ) {
       toast.success('No changes to save');
       setIsEditing(false);
+      resetMediaEditState();
       return;
     }
-    const { fieldErrors: errs, firstMessage } = validateEditVisitFormChangedFields(changed as Record<string, unknown>);
+    const { fieldErrors: errs, firstMessage } = validateEditVisitFormChangedFields(
+      changedBeforeUpload as Record<string, unknown>
+    );
     if (firstMessage) {
       setFieldErrors(errs);
       toast.error(firstMessage);
       return;
     }
-    const payload: UpdateVisitDetailsPayload = {
-      checkInId: visit.uid,
-      ...changed,
-    };
     try {
-      await updateMutation.mutateAsync(payload);
+      setIsUploadingMedia(true);
+      const nextMedia = [...(editForm.media ?? [])];
+      for (const file of mediaFiles) {
+        nextMedia.push(await uploadVisitFile(apiClient, file));
+      }
+      if (checkInPhotoFile) {
+        const photoUrl = await uploadVisitFile(apiClient, checkInPhotoFile);
+        await updateCheckInPhotoMutation.mutateAsync({ checkInId: visit.uid, photoUrl });
+      }
+      if (checkOutPhotoFile) {
+        const photoUrl = await uploadVisitFile(apiClient, checkOutPhotoFile);
+        await updateCheckOutPhotoMutation.mutateAsync({ checkInId: visit.uid, photoUrl });
+      }
+      const changed = getChangedFields(original, { ...editForm, media: nextMedia });
+      if (Object.keys(changed).length > 0) {
+        const payload: UpdateVisitDetailsPayload = {
+          checkInId: visit.uid,
+          ...changed,
+        };
+        await updateMutation.mutateAsync(payload);
+      }
       toast.success('Visit updated');
       setIsEditing(false);
       setFieldErrors({});
+      resetMediaEditState();
       onVisitUpdated?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update visit');
+    } finally {
+      setIsUploadingMedia(false);
     }
   };
 
@@ -936,180 +937,58 @@ function VisitDetailDialog({
                 />
               </dl>
             </div>
-            {(visit.methodOfContact === 'Physical' || !visit.methodOfContact) &&
-            (visit.checkInPhoto || visit.checkOutPhoto || visit.contactImage) ? (
-              <>
-                <Separator />
-                <div>
-                  <DetailSectionHeading title="Photos" icon={ImageIcon} />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {visit.checkInPhoto ? (
-                      <div>
-                        <p className="text-muted-foreground text-xs mb-1">Check-in photo</p>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedImageUrl(visit.checkInPhoto ?? null);
-                          }}
-                          className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-label="View check-in photo full size"
-                        >
-                          <img
-                            src={visit.checkInPhoto}
-                            alt="Check-in"
-                            className="w-full max-h-48 object-cover cursor-pointer"
-                            onError={(e) => {
-                              e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                            }}
-                          />
-                        </button>
-                      </div>
-                    ) : null}
-                    {visit.checkOutPhoto ? (
-                      <div>
-                        <p className="text-muted-foreground text-xs mb-1">Check-out photo</p>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedImageUrl(visit.checkOutPhoto ?? null);
-                          }}
-                          className="block w-full rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-label="View check-out photo full size"
-                        >
-                          <img
-                            src={visit.checkOutPhoto}
-                            alt="Check-out"
-                            className="w-full max-h-48 object-cover cursor-pointer"
-                            onError={(e) => {
-                              e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                            }}
-                          />
-                        </button>
-                      </div>
-                    ) : null}
-                    {visit.contactImage ? (
-                      <div className="sm:col-span-2">
-                        <p className="text-muted-foreground text-xs mb-1">Contact image</p>
-                        <img
-                          src={visit.contactImage}
-                          alt="Contact"
-                          className="w-full max-h-48 object-cover rounded-lg border"
-                          onError={(e) => {
-                            e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                          }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-                <Separator />
-              </>
-            ) : null}
-            {visit.media && visit.media.length > 0 ? (
-              <>
-                <Separator />
-                <div>
-                  <DetailSectionHeading title="Media" icon={Paperclip} />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {visit.media.map((item, i) => {
-                      const isImage = item.startsWith('http') && isImageUrl(item);
-                      const isDocument = item.startsWith('http') && isDocumentUrl(item);
-                      const isNonUrlDoc = !item.startsWith('http') && DOCUMENT_EXTENSIONS.test(item);
-                      const isNonUrlImage = !item.startsWith('http') && IMAGE_EXTENSIONS.test(item);
-                      const filename = getFilenameFromUrl(item);
-
-                      if (isImage) {
-                        return (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedImageUrl(item);
-                            }}
-                            className="block rounded-lg border overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-left"
-                            aria-label={`View image ${i + 1} full size`}
-                          >
-                            <img
-                              src={item}
-                              alt={`Media ${i + 1}`}
-                              className="w-full h-24 object-cover cursor-pointer"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = VISIT_IMAGE_FALLBACK_URL;
-                              }}
-                            />
-                          </button>
-                        );
-                      }
-
-                      if (isDocument || isNonUrlDoc || (item.startsWith('http') && !isImage)) {
-                        const iconType = item.startsWith('http') ? getFileIconType(item) : 'generic';
-                        const Icon =
-                          iconType === 'pdf' ? PdfIcon : iconType === 'word' ? WordIcon : FileIcon;
-                        const href = item.startsWith('http') ? item : undefined;
-                        const content = (
-                          <>
-                            <Icon className="shrink-0 size-10" />
-                            <span className="truncate text-xs">{filename}</span>
-                          </>
-                        );
-                        if (href) {
-                          return (
-                            <a
-                              key={i}
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={cn(
-                                'flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm',
-                                VISITS_TABLE_LINK_CLASS
-                              )}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {content}
-                            </a>
-                          );
-                        }
-                        return (
-                          <span
-                            key={i}
-                            className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
-                          >
-                            <FileIcon className="shrink-0 size-10 text-muted-foreground" />
-                            <span className="truncate text-xs">{filename}</span>
-                          </span>
-                        );
-                      }
-
-                      if (isNonUrlImage) {
-                        return (
-                          <span
-                            key={i}
-                            className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
-                          >
-                            <FileIcon className="shrink-0 size-10 text-muted-foreground" />
-                            <span className="truncate text-xs">{filename}</span>
-                          </span>
-                        );
-                      }
-
-                      return (
-                        <span
-                          key={i}
-                          className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border p-2 text-sm text-muted-foreground"
-                        >
-                          <FileIcon className="shrink-0 size-10 text-muted-foreground" />
-                          <span className="truncate text-xs">{item}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            ) : null}
+            <Separator />
+            <VisitDetailMediaSection
+              visit={visit}
+              isEditing={isEditing}
+              canEdit={isEndedVisit}
+              mediaFiles={mediaFiles}
+              mediaUrls={editForm.media ?? []}
+              onFilesAdd={(added) => setMediaFiles((prev) => [...prev, ...added])}
+              onFileRemove={(index) => setMediaFiles((prev) => prev.filter((_, i) => i !== index))}
+              onUrlAdd={(url) =>
+                setEditForm((f) => ({ ...f, media: [...(f.media ?? []), url] }))
+              }
+              onUrlRemove={(index) =>
+                setEditForm((f) => ({
+                  ...f,
+                  media: (f.media ?? []).filter((_, i) => i !== index),
+                }))
+              }
+              checkInPhotoPreview={checkInPhotoPreview}
+              checkOutPhotoPreview={checkOutPhotoPreview}
+              onCheckInPhotoSelect={(file) => {
+                setCheckInPhotoFile(file);
+                setCheckInPhotoPreview((prev) => {
+                  if (prev) URL.revokeObjectURL(prev);
+                  return URL.createObjectURL(file);
+                });
+              }}
+              onCheckOutPhotoSelect={(file) => {
+                setCheckOutPhotoFile(file);
+                setCheckOutPhotoPreview((prev) => {
+                  if (prev) URL.revokeObjectURL(prev);
+                  return URL.createObjectURL(file);
+                });
+              }}
+              onCheckInPhotoClear={() => {
+                setCheckInPhotoFile(null);
+                setCheckInPhotoPreview((prev) => {
+                  if (prev) URL.revokeObjectURL(prev);
+                  return null;
+                });
+              }}
+              onCheckOutPhotoClear={() => {
+                setCheckOutPhotoFile(null);
+                setCheckOutPhotoPreview((prev) => {
+                  if (prev) URL.revokeObjectURL(prev);
+                  return null;
+                });
+              }}
+              onExpandImage={(url) => setExpandedImageUrl(url)}
+              disabled={isSaving}
+            />
+            <Separator />
             <div>
               <DetailSectionHeading title="Details" icon={ClipboardList} />
               {isEditing ? (
@@ -1677,11 +1556,21 @@ function VisitDetailDialog({
           </div>
           {isEditing && (
             <DialogFooter className="gap-3">
-              <Button variant="cancel" className="rounded-full" onClick={handleCancelEdit} disabled={updateMutation.isPending}>
+              <Button
+                variant="cancel"
+                className="rounded-full"
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
-              <Button variant="success" className="rounded-full" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
-                {updateMutation.isPending && <Loader2Icon className="size-4 animate-spin mr-2" />}
+              <Button
+                variant="success"
+                className="rounded-full"
+                onClick={handleSaveEdit}
+                disabled={isSaving}
+              >
+                {isSaving && <Loader2Icon className="size-4 animate-spin mr-2" />}
                 Save
               </Button>
             </DialogFooter>

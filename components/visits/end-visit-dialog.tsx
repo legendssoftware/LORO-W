@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useEffect, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { useApiClient, useCheckInStatus, useCheckOutMutation, useClientsInfinite } from '@/api/hooks';
-import { uploadFile } from '@/api/endpoints/upload';
+import { uploadVisitFile } from '@/api/endpoints/docs';
 import type { ClientListItem, ClientAddress } from '@/api/endpoints/clients';
 import type { CreateCheckOutPayload, MethodOfContact } from '@/api/types/visits';
 import { Button } from '@/components/ui/button';
@@ -239,7 +239,11 @@ export function EndVisitDialog({
       /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(file.name);
     if (!isImage) return;
     if (file.size > MAX_VISIT_MEDIA_BYTES) {
-      toast.error(`${file.name} is over 12MB`);
+      toast.error(`${file.name} is over 5MB`);
+      return;
+    }
+    if (!/\.(jpe?g|png|gif)$/i.test(file.name) && !/^image\/(jpeg|jpg|png|gif)$/i.test(file.type)) {
+      toast.error(`${file.name} must be JPG, PNG, or GIF`);
       return;
     }
     setEndPhotoFile(file);
@@ -334,19 +338,28 @@ export function EndVisitDialog({
     }
     const uploadedMediaUrls = [...mediaUrls];
     let checkOutPhoto: string | undefined;
+    let mediaUploadFailed = false;
     try {
       setIsUploadingMedia(true);
       for (const file of mediaFiles) {
-        uploadedMediaUrls.push(await uploadFile(apiClient, file));
+        try {
+          uploadedMediaUrls.push(await uploadVisitFile(apiClient, file));
+        } catch {
+          mediaUploadFailed = true;
+        }
       }
       if (endPhotoFile) {
-        checkOutPhoto = await uploadFile(apiClient, endPhotoFile);
+        try {
+          checkOutPhoto = await uploadVisitFile(apiClient, endPhotoFile);
+        } catch {
+          mediaUploadFailed = true;
+        }
       }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to upload files');
-      return;
     } finally {
       setIsUploadingMedia(false);
+    }
+    if (mediaUploadFailed) {
+      toast.error('Some files could not be uploaded. Ending the visit without them.');
     }
     const resolution = appendNextStepToResolution(endForm.resolution, selectedNextStep, hasLead);
     const payload: CreateCheckOutPayload = {
@@ -1062,14 +1075,14 @@ export function EndVisitDialog({
                 <input
                   ref={galleryPhotoRef}
                   type="file"
-                  accept="image/*,.heic,.heif"
+                  accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
                   className="hidden"
                   onChange={handleEndPhotoSelect}
                 />
                 <input
                   ref={cameraPhotoRef}
                   type="file"
-                  accept="image/*,.heic,.heif"
+                  accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
                   capture="environment"
                   className="hidden"
                   onChange={handleEndPhotoSelect}

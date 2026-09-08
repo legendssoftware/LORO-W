@@ -10,6 +10,8 @@ export {
   useCheckInMutation,
   useCheckOutMutation,
   useUpdateVisitDetailsMutation,
+  useUpdateCheckInPhotoMutation,
+  useUpdateCheckOutPhotoMutation,
 } from './use-check-in-mutations';
 
 /** Re-export attendance mutations for dashboard (start/end shift) */
