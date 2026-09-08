@@ -16,7 +16,15 @@ export type StatusFilter =
   | 'driving'
   | 'sales_warning_1'
   | 'sales_warning_2'
-  | 'sales_warning_3';
+  | 'sales_warning_3'
+  | 'with_vehicle'
+  | 'without_vehicle'
+  | 'with_targets'
+  | 'without_targets'
+  | 'with_sales_code'
+  | 'without_sales_code'
+  | 'with_hrid'
+  | 'without_hrid';
 
 /** Unified card item: user identity + hours + present/absent for the period. */
 export interface ReportCardUser {
@@ -63,6 +71,14 @@ export interface ReportCardUser {
   distanceFromWorkplaceMeters?: number | null;
   /** Employee HR ID (Employee Code) */
   hrID?: number | null;
+  /** True when the user has a user_targets row. */
+  hasTargets?: boolean;
+  /** True when a primary or secondary vehicle asset is assigned. */
+  hasVehicle?: boolean;
+  /** ERP sales rep code when set (salesperson). */
+  erpSalesRepCode?: string | null;
+  /** Primary branch country code (e.g. SA, BOT). */
+  branchCountry?: string | null;
   /** Clock-in note / mode label for today (present only). */
   checkInNotes?: string | null;
   /** Activity performance warning from daily overview (user_targets). */

@@ -17,10 +17,15 @@ import {
   MapPin,
   Car,
   AlertTriangle,
+  Target,
+  Cpu,
+  ShoppingBag,
+  CarFront,
 } from 'lucide-react';
 import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-types';
 import { OPTION_KEY_TO_LABEL } from '@/lib/clock-in-options';
 import { formatEnumLabel } from '@/lib/format-enum-label';
+import { getCountryFlag } from '@/lib/utils/country-flags';
 
 /** Sentinel: no role/branch dimension filter applied. */
 export const STAFF_DIMENSION_FILTER_ALL = '__all__';
@@ -124,6 +129,49 @@ export function staffUserMatchesWorkforceFilter(user: ReportCardUser, filter: st
   return user.workforceType?.trim().toLowerCase() === filter;
 }
 
+/**
+ * Build country dropdown options from the current user list (dedupes by canonical code).
+ */
+export function buildStaffCountryFilterItems(users: ReportCardUser[]): { value: string; label: string }[] {
+  const byCode = new Map<string, string>();
+  let hasUnassigned = false;
+  for (const u of users) {
+    const raw = u.branchCountry?.trim();
+    if (!raw) {
+      hasUnassigned = true;
+      continue;
+    }
+    const info = getCountryFlag(raw);
+    const k = info.code.toLowerCase();
+    if (!byCode.has(k)) byCode.set(k, `${info.flag} ${info.name}`);
+  }
+  const items: { value: string; label: string }[] = [
+    { value: STAFF_DIMENSION_FILTER_ALL, label: 'All countries' },
+  ];
+  if (hasUnassigned) items.push({ value: STAFF_DIMENSION_FILTER_NONE, label: 'Unassigned' });
+  const sorted = [...byCode.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  for (const [low, label] of sorted) {
+    items.push({ value: low, label });
+  }
+  return items;
+}
+
+export function staffUserMatchesCountryFilter(user: ReportCardUser, filter: string): boolean {
+  if (filter === STAFF_DIMENSION_FILTER_ALL) return true;
+  const raw = user.branchCountry?.trim();
+  if (filter === STAFF_DIMENSION_FILTER_NONE) return !raw;
+  if (!raw) return false;
+  return getCountryFlag(raw).code.toLowerCase() === filter;
+}
+
+export function staffUserHasSalesCode(user: ReportCardUser): boolean {
+  return !!user.erpSalesRepCode?.trim();
+}
+
+export function staffUserHasHrid(user: ReportCardUser): boolean {
+  return user.hrID != null;
+}
+
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
 
 export const STAFF_STATUS_FILTER_OPTIONS: {
@@ -146,4 +194,12 @@ export const STAFF_STATUS_FILTER_OPTIONS: {
   { value: 'sales_warning_1', label: 'Performance warning: Level 1', icon: AlertTriangle },
   { value: 'sales_warning_2', label: 'Performance warning: Level 2', icon: AlertTriangle },
   { value: 'sales_warning_3', label: 'Performance warning: Level 3', icon: AlertTriangle },
+  { value: 'with_vehicle', label: 'With vehicle', icon: Car },
+  { value: 'without_vehicle', label: 'Without vehicle', icon: CarFront },
+  { value: 'with_targets', label: 'With targets', icon: Target },
+  { value: 'without_targets', label: 'Without targets', icon: Target },
+  { value: 'with_sales_code', label: 'With sales code', icon: ShoppingBag },
+  { value: 'without_sales_code', label: 'Without sales code', icon: ShoppingBag },
+  { value: 'with_hrid', label: 'With HR ID', icon: Cpu },
+  { value: 'without_hrid', label: 'Without HR ID', icon: Cpu },
 ];

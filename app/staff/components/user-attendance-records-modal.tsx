@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { format, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
-import { AlertCircle, Car, Building2, Users } from 'lucide-react';
+import { AlertCircle, Car, Building2, Users, Pencil } from 'lucide-react';
 import {
   useMonthlyAttendance,
   useCheckIns,
@@ -16,6 +16,7 @@ import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
 import { getPayrollPeriodRange } from '@/lib/payroll-period';
+import { canManageStaffUsers } from '@/lib/access';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -24,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -34,6 +36,7 @@ import {
 } from '@/components/ui/table';
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { formatAttendanceClockTime } from '@/lib/attendance-time';
+import { EditAttendanceRecordDialog } from '@/app/staff/components/edit-attendance-record-dialog';
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
 
@@ -83,6 +86,8 @@ export function UserAttendanceRecordsModal({
   const today = new Date();
   const todayKey = format(today, 'yyyy-MM-dd');
   const { backendUserData: profile } = useSessionSync();
+  const canEditTimes = canManageStaffUsers(profile?.accessLevel);
+  const [editingRow, setEditingRow] = useState<DayRecord | null>(null);
   const currentUserRef = profile?.uid != null ? String(profile.uid) : null;
   const isViewingAnotherUser = open && user != null && currentUserRef != null && user.ref !== currentUserRef;
 
@@ -355,8 +360,12 @@ export function UserAttendanceRecordsModal({
         return 'Late';
       case 'weekend':
         return 'Weekend';
-      default:
+      case 'present':
         return 'Present';
+      default: {
+        const _exhaustive: never = status;
+        throw new Error(`Unhandled attendance row status: ${_exhaustive}`);
+      }
     }
   };
 
@@ -401,7 +410,13 @@ export function UserAttendanceRecordsModal({
   }, [records, todayKey, periodEndFull]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o && !editingRow) onClose();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="flex flex-col w-full w-[80vw] max-w-[80vw] sm:max-w-[80vw] max-h-[85vh] sm:max-h-[90vh] p-4 sm:p-6 pt-12 pr-14"
@@ -464,6 +479,7 @@ export function UserAttendanceRecordsModal({
                   <TableHead title={PRODUCTIVITY_COLUMN_HINT} className="max-w-[9rem]">
                     Productivity
                   </TableHead>
+                  {canEditTimes ? <TableHead className="w-12 text-right">Edit</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -587,6 +603,21 @@ export function UserAttendanceRecordsModal({
                         return String(s);
                       })()}
                     </TableCell>
+                    {canEditTimes ? (
+                      <TableCell className="text-right">
+                        {r.date <= todayKey ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={`Edit attendance for ${r.date}`}
+                            onClick={() => setEditingRow(r)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        ) : null}
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
@@ -616,5 +647,18 @@ export function UserAttendanceRecordsModal({
         )}
       </DialogContent>
     </Dialog>
+    {user && canEditTimes && editingRow ? (
+      <EditAttendanceRecordDialog
+        open
+        onOpenChange={(next) => {
+          if (!next) setEditingRow(null);
+        }}
+        userRef={user.ref}
+        userName={user.name}
+        date={editingRow.date}
+        attendanceRecord={editingRow.attendanceRecord}
+      />
+    ) : null}
+    </>
   );
 }

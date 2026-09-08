@@ -6,7 +6,7 @@ export const EXPECTED_MONTHLY_HOURS = 180;
 /** Expected hours per weekday (Mon–Fri) for five-day work week calculations. */
 export const EXPECTED_HOURS_PER_DAY = 8;
 
-/** Hours behind expected at which to show the "Running behind" badge on user cards. */
+/** Hours behind expected at which the staff card clock turns red. */
 export const HOURS_BEHIND_BADGE_THRESHOLD = 20;
 
 /** Expected monthly hours for a five-day work week: weekdays in month × EXPECTED_HOURS_PER_DAY. month is 1–12. */

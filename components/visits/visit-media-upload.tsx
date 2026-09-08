@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type DragEvent, type ChangeEvent } from 'react';
-import { FileText, Film, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
+import { Camera, FileText, Film, Image as ImageIcon, Images, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +10,9 @@ import toast from 'react-hot-toast';
 
 export const MAX_VISIT_MEDIA_BYTES = 12 * 1024 * 1024;
 
-const ACCEPT =
-  'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.mp4,.mov,.webm';
+const ACCEPT_FILES =
+  'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.mp4,.mov,.webm,.heic,.heif';
+const ACCEPT_IMAGES = 'image/*,.heic,.heif,.png,.jpg,.jpeg,.gif,.webp,.bmp';
 
 export type VisitMediaFileKind = 'PDF' | 'WORD' | 'MP4' | 'IMG' | 'FILE';
 
@@ -40,7 +41,7 @@ export function visitMediaFileKind(name: string, mimeType = ''): VisitMediaFileK
   ) {
     return 'MP4';
   }
-  if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic|bmp|svg)$/.test(lower)) {
+  if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic|heif|bmp|svg)$/.test(lower)) {
     return 'IMG';
   }
   return 'FILE';
@@ -128,6 +129,8 @@ export interface VisitMediaUploadProps {
 
 /**
  * Drag-and-drop visit media picker with file cards (name, size, type, remove).
+ * Uses separate file inputs so mobile browsers can open Files, the photo library,
+ * or the camera independently (`capture` must never be set on the gallery/files inputs).
  */
 export function VisitMediaUpload({
   files,
@@ -138,7 +141,9 @@ export function VisitMediaUpload({
   onUrlRemove,
   disabled = false,
 }: VisitMediaUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const filesInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [urlInput, setUrlInput] = useState('');
 
@@ -178,10 +183,28 @@ export function VisitMediaUpload({
     <div className="grid gap-3">
       <Label>Media (images / files)</Label>
       <input
-        ref={inputRef}
+        ref={filesInputRef}
         type="file"
-        accept={ACCEPT}
+        accept={ACCEPT_FILES}
         multiple
+        className="hidden"
+        disabled={disabled}
+        onChange={handleInputChange}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        multiple
+        className="hidden"
+        disabled={disabled}
+        onChange={handleInputChange}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        capture="environment"
         className="hidden"
         disabled={disabled}
         onChange={handleInputChange}
@@ -196,11 +219,11 @@ export function VisitMediaUpload({
             : 'border-muted-foreground/30 bg-muted/40 hover:border-primary/50 hover:bg-muted/60',
           disabled && 'pointer-events-none opacity-50'
         )}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => filesInputRef.current?.click()}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            inputRef.current?.click();
+            filesInputRef.current?.click();
           }
         }}
         onDragOver={(e) => {
@@ -214,7 +237,42 @@ export function VisitMediaUpload({
           <Upload className="size-6" />
         </div>
         <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
-        <p className="text-xs text-muted-foreground">max: 12MB</p>
+        <p className="text-xs text-muted-foreground">Files, gallery, or camera · max 12MB</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className="gap-2"
+          onClick={() => filesInputRef.current?.click()}
+        >
+          <Upload className="size-4" />
+          Files
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className="gap-2"
+          onClick={() => galleryInputRef.current?.click()}
+        >
+          <Images className="size-4" />
+          Gallery
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className="gap-2"
+          onClick={() => cameraInputRef.current?.click()}
+        >
+          <Camera className="size-4" />
+          Camera
+        </Button>
       </div>
 
       {(files.length > 0 || urls.length > 0) && (
