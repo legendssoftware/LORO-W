@@ -7,6 +7,8 @@ describe('visit media helpers', () => {
     expect(visitMediaFileKind('brief.docx')).toBe('WORD');
     expect(visitMediaFileKind('clip.mp4', 'video/mp4')).toBe('MP4');
     expect(visitMediaFileKind('photo.png', 'image/png')).toBe('IMG');
+    expect(visitMediaFileKind('item.heic')).toBe('IMG');
+    expect(visitMediaFileKind('item.heif')).toBe('IMG');
   });
 
   it('formats file sizes', () => {

@@ -254,3 +254,40 @@ export async function getPayrollHoursAll(
     );
     return data;
 }
+
+export interface AdjustUserAttendanceRecordBody {
+    date: string;
+    checkIn: string;
+    checkOut?: string | null;
+    nextDayClockOut?: boolean;
+}
+
+export interface AdjustUserAttendanceRecordResponse {
+    message: string;
+    data: {
+        uid: number;
+        date: string;
+        checkIn: string;
+        checkOut: string | null;
+        duration: string | null;
+        status: string;
+        earlyMinutes: number;
+        lateMinutes: number;
+        overtime: string | null;
+    };
+}
+
+/**
+ * PATCH /att/user/:ref/record - admin correction of check-in/out for one calendar day.
+ */
+export async function adjustUserAttendanceRecord(
+    client: AxiosInstance,
+    ref: string | number,
+    body: AdjustUserAttendanceRecordBody
+): Promise<AdjustUserAttendanceRecordResponse> {
+    const { data } = await client.patch<AdjustUserAttendanceRecordResponse>(
+        `/att/user/${ref}/record`,
+        body
+    );
+    return data;
+}

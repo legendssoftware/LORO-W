@@ -1,7 +1,6 @@
 'use client';
 
 import type { Control } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -15,17 +14,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
 import type { UserFormValues } from '@/lib/user-form';
 import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
+import { CollapsibleFormSection } from '@/components/collapsible-form-section';
 
 export function JobInformationCard({ control }: { control: Control<UserFormValues> }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm sm:text-base">Job information</CardTitle>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          HR-assigned role, reporting line, leave entitlement, and wage schedule. Salary amount stays on Targets.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-4">
+    <CollapsibleFormSection
+      title="Job information"
+      description="HR-assigned role, reporting line, leave entitlement, and wage schedule. Salary amount stays on Targets."
+      contentClassName="space-y-3 sm:space-y-4"
+    >
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           <FormField
             control={control}
@@ -133,7 +130,6 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
           />
         </div>
         <PersonnelFieldGrid control={control} prefix="employmentProfile" fields={JOB_INFORMATION_FIELDS} />
-      </CardContent>
-    </Card>
+    </CollapsibleFormSection>
   );
 }

@@ -158,7 +158,8 @@ export function EndVisitDialog({
   const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [clientSearch, setClientSearch] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryPhotoRef = useRef<HTMLInputElement>(null);
+  const cameraPhotoRef = useRef<HTMLInputElement>(null);
   const originalClientRef = useRef<ClientListItem | null>(null);
   const prevOpenRef = useRef(false);
 
@@ -231,7 +232,12 @@ export function EndVisitDialog({
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
+    const isImage =
+      !file.type ||
+      file.type.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(file.name);
+    if (!isImage) return;
     if (file.size > MAX_VISIT_MEDIA_BYTES) {
       toast.error(`${file.name} is over 12MB`);
       return;
@@ -239,8 +245,6 @@ export function EndVisitDialog({
     setEndPhotoFile(file);
     setEndPhotoPreview(URL.createObjectURL(file));
   };
-
-  const triggerFileInput = () => fileInputRef.current?.click();
 
   function applyClientToForm(client: ClientListItem) {
     originalClientRef.current = client;
@@ -1056,28 +1060,36 @@ export function EndVisitDialog({
               <div className="grid gap-2 sm:col-span-2">
                 <Label>Photo (optional)</Label>
                 <input
-                  ref={fileInputRef}
+                  ref={galleryPhotoRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
+                  className="hidden"
+                  onChange={handleEndPhotoSelect}
+                />
+                <input
+                  ref={cameraPhotoRef}
+                  type="file"
+                  accept="image/*,.heic,.heif"
                   capture="environment"
                   className="hidden"
                   onChange={handleEndPhotoSelect}
                 />
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={triggerFileInput} className="gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => galleryPhotoRef.current?.click()}
+                    className="gap-2"
+                  >
                     <Upload className="size-4" />
-                    Choose from device
+                    Gallery / files
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.setAttribute('capture', 'environment');
-                        fileInputRef.current.click();
-                      }
-                    }}
+                    onClick={() => cameraPhotoRef.current?.click()}
                     className="gap-2"
                   >
                     <Camera className="size-4" />

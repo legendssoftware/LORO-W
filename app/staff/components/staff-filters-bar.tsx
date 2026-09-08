@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   MapPinned,
   Users,
+  Globe,
 } from 'lucide-react';
 import {
   SearchableOptionListPicker,
@@ -71,6 +72,12 @@ export interface StaffFilterControlsProps {
   branchFilterTriggerLabel: string;
   branchPickerOpen: boolean;
   onBranchPickerOpenChange: (open: boolean) => void;
+  countryFilter: string;
+  onCountryFilterChange: (v: string) => void;
+  countryFilterItems: StaffDimensionFilterItem[];
+  countryFilterTriggerLabel: string;
+  countryPickerOpen: boolean;
+  onCountryPickerOpenChange: (open: boolean) => void;
 }
 
 export function StaffFilterControls({
@@ -89,6 +96,12 @@ export function StaffFilterControls({
   branchFilterTriggerLabel,
   branchPickerOpen,
   onBranchPickerOpenChange,
+  countryFilter,
+  onCountryFilterChange,
+  countryFilterItems,
+  countryFilterTriggerLabel,
+  countryPickerOpen,
+  onCountryPickerOpenChange,
 }: StaffFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
@@ -101,6 +114,9 @@ export function StaffFilterControls({
     ? 'h-9 min-w-0 w-[160px] shrink-0'
     : 'h-9 w-full min-w-0';
   const branchBtn = row
+    ? 'h-9 min-w-0 w-[160px] shrink-0'
+    : 'h-9 min-w-0 w-full';
+  const countryBtn = row
     ? 'h-9 min-w-0 w-[160px] shrink-0'
     : 'h-9 min-w-0 w-full';
 
@@ -288,6 +304,77 @@ export function StaffFilterControls({
           </button>
         ) : null}
       </div>
+
+      <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
+        <Popover open={countryPickerOpen} onOpenChange={onCountryPickerOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={countryPickerOpen}
+              className={cn(
+                reportsFilterSelectTriggerClass,
+                'justify-between font-normal',
+                countryBtn
+              )}
+            >
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <Globe className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{countryFilterTriggerLabel}</span>
+              </span>
+              <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className={cn(
+              'w-[var(--radix-popover-trigger-width)] min-w-[200px] max-w-[min(100vw-2rem,24rem)] p-0',
+              reportsFilterPortalHighZ
+            )}
+            align="start"
+          >
+            <Command>
+              <CommandInput placeholder="Search countries…" />
+              <CommandList>
+                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandGroup>
+                  {countryFilterItems.map((opt) => (
+                    <CommandItem
+                      key={opt.value}
+                      value={`${opt.label} ${opt.value}`}
+                      onSelect={() => {
+                        onCountryFilterChange(opt.value);
+                        onCountryPickerOpenChange(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'size-4 shrink-0',
+                          countryFilter === opt.value ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                        <Globe className="size-4 shrink-0" />
+                        {opt.label}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {countryFilter !== STAFF_DIMENSION_FILTER_ALL ? (
+          <button
+            type="button"
+            onClick={() => onCountryFilterChange(STAFF_DIMENSION_FILTER_ALL)}
+            className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
+            aria-label="Clear country filter"
+          >
+            <XIcon className="size-4 text-muted-foreground" />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -363,7 +450,7 @@ export function StaffFiltersBar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Narrow the staff list by status, role, workforce type, and branch.
+              Narrow the staff list by status, role, workforce type, country, and branch.
             </DialogDescription>
           </DialogHeader>
           <StaffFilterControls {...filterProps} layout="stack" />

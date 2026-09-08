@@ -403,6 +403,14 @@ export interface DailyOverviewUser {
     checkInNotes?: string | null;
     /** Sales target performance warning tier from user_targets (staff cards / filters). */
     targetWarnings?: TargetWarningsPayload | null;
+    /** True when the user has a user_targets row. */
+    hasTargets?: boolean;
+    /** True when a primary or secondary vehicle asset is assigned. */
+    hasVehicle?: boolean;
+    /** ERP sales rep code when set. */
+    erpSalesRepCode?: string | null;
+    /** Primary branch country code (e.g. SA, BOT). */
+    branchCountry?: string | null;
 }
 
 export interface DailyOverviewResponse {

@@ -24,13 +24,132 @@ import {
   optionKeyFromCheckInNotes,
   resolveDisplayedClockInModeKey,
 } from '@/lib/clock-in-options';
-import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van } from 'lucide-react';
+import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van, Target, Car, Cpu, ShoppingBag } from 'lucide-react';
 import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatEnumLabel } from '@/lib/format-enum-label';
 import { canManageStaffUsers } from '@/lib/access';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+/** Compact identity line: `- Branch - Role - workforce type`. */
+function staffMetaLine(user: ReportCardUser): string {
+  const branch = user.branch?.trim() || '—';
+  const role = user.role?.trim() || '—';
+  const workforce = user.workforceType?.trim()
+    ? formatEnumLabel(user.workforceType.trim())
+    : '—';
+  return `- ${branch} - ${role} - ${workforce}`;
+}
+
+function StaffProfileAttributeIcons({ user }: { user: ReportCardUser }) {
+  const items: Array<{ key: string; label: string; Icon: typeof Target }> = [];
+  if (user.hasTargets) {
+    items.push({ key: 'targets', label: 'Has targets', Icon: Target });
+  }
+  if (user.hasVehicle) {
+    items.push({ key: 'vehicle', label: 'Vehicle assigned', Icon: Car });
+  }
+  if (user.hrID != null) {
+    items.push({ key: 'hrid', label: `HR ID ${user.hrID}`, Icon: Cpu });
+  }
+  if (user.erpSalesRepCode?.trim()) {
+    items.push({
+      key: 'sales',
+      label: `Sales code ${user.erpSalesRepCode.trim()}`,
+      Icon: ShoppingBag,
+    });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className="flex items-center justify-end gap-0.5">
+      {items.map(({ key, label, Icon }) => (
+        <Tooltip key={key}>
+          <TooltipTrigger asChild>
+            <span
+              className="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground"
+              aria-label={label}
+            >
+              <Icon className="size-3" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{label}</TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Clock control that opens attendance. Red when behind expected hours, green otherwise.
+ */
+function HoursClockButton({
+  isBehind,
+  hoursBehind,
+  compact,
+  onClick,
+}: {
+  isBehind: boolean;
+  hoursBehind: number;
+  compact: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const label = isBehind
+    ? `Behind on hours: ${Math.round(hoursBehind)}h under expected. View attendance records`
+    : 'On track for expected hours. View attendance records';
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick(e);
+          }}
+          className={cn(
+            'inline-flex shrink-0 items-center justify-center rounded-full border',
+            compact ? 'size-6' : 'size-7',
+            isBehind
+              ? 'border-red-500/50 bg-red-500/15 text-red-500 hover:bg-red-500/25'
+              : 'border-green-500/50 bg-green-500/15 text-green-500 hover:bg-green-500/25'
+          )}
+          aria-label={label}
+        >
+          <Clock className={compact ? 'size-3' : 'size-3.5'} aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CardSettingsLink({
+  userRef,
+  compact,
+  onSettingsClick,
+}: {
+  userRef: string;
+  compact: boolean;
+  onSettingsClick?: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <Link
+      href={`/staff/users/${userRef}/settings`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSettingsClick?.(e);
+      }}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-accent',
+        compact ? 'size-6' : 'size-7'
+      )}
+      aria-label="User settings"
+    >
+      <SettingsIcon className={compact ? 'size-3' : 'size-3.5'} />
+    </Link>
+  );
+}
 
 const CLOCK_IN_MODE_BADGE: Record<
   ClockInOptionKey,
@@ -60,6 +179,188 @@ const PERFORMANCE_WARNING_CHIP: Record<
     shortLabel: 'Final warning (tier 3)',
   },
 };
+
+function StatusChromeRow({
+  user,
+  compact,
+  isBehindBadge,
+  hoursBehind,
+  onClockClick,
+  onSettingsClick,
+  performanceWarningLevel,
+  performanceWarningChip,
+  onOpenWarnings,
+  showModeHover,
+  hasResolvedModeChip,
+  modeBadge,
+  ModeIcon,
+  modeHoverPrimary,
+  modeHoverAriaLabel,
+  distanceText,
+  mapsQuery,
+}: {
+  user: ReportCardUser;
+  compact: boolean;
+  isBehindBadge: boolean;
+  hoursBehind: number;
+  onClockClick?: (e: React.MouseEvent) => void;
+  onSettingsClick?: (e: React.MouseEvent) => void;
+  performanceWarningLevel: 1 | 2 | 3 | undefined;
+  performanceWarningChip: { className: string; shortLabel: string } | null;
+  onOpenWarnings: () => void;
+  showModeHover: boolean;
+  hasResolvedModeChip: boolean;
+  modeBadge: { Icon: typeof Building2; className: string } | null;
+  ModeIcon: typeof Building2 | undefined;
+  modeHoverPrimary: string;
+  modeHoverAriaLabel: string;
+  distanceText: string;
+  mapsQuery: string | null;
+}) {
+  const chipSize = compact ? 'size-6' : 'size-7';
+  const iconSize = compact ? 'size-3' : 'size-3.5';
+  return (
+    <div
+      className="flex w-full shrink-0 items-center justify-end gap-1 flex-nowrap"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Badge
+        variant={user.isPresent ? 'default' : 'destructive'}
+        className={cn(
+          'text-[10px] px-1.5 py-0 text-white',
+          user.isPresent && 'bg-green-600 hover:bg-green-600 text-white'
+        )}
+        aria-label={user.isPresent ? 'Present' : 'Absent'}
+      >
+        {user.isPresent ? 'Present' : 'Absent'}
+      </Badge>
+      {onClockClick ? (
+        <HoursClockButton
+          isBehind={isBehindBadge}
+          hoursBehind={hoursBehind}
+          compact={compact}
+          onClick={onClockClick}
+        />
+      ) : null}
+      {performanceWarningChip ? (
+        <HoverCard openDelay={200}>
+          <HoverCardTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex shrink-0 items-center justify-center rounded-full',
+                chipSize,
+                performanceWarningChip.className
+              )}
+              title={
+                compact
+                  ? `Performance warning: Level ${performanceWarningLevel}. Click to manage.`
+                  : undefined
+              }
+              aria-label={`Performance warning: Level ${performanceWarningLevel}. Open to view and clear.`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenWarnings();
+              }}
+            >
+              <span className={cn('leading-none select-none', compact ? 'text-[12px]' : 'text-[13px]')} aria-hidden>
+                ⚠️
+              </span>
+            </button>
+          </HoverCardTrigger>
+          <HoverCardContent
+            side="bottom"
+            align="end"
+            className="w-72 space-y-2 p-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-medium leading-snug">
+              Performance warning: Level {performanceWarningLevel}
+            </p>
+            <p className="text-xs text-muted-foreground">{performanceWarningChip.shortLabel}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenWarnings();
+              }}
+            >
+              View / clear warnings
+            </Button>
+          </HoverCardContent>
+        </HoverCard>
+      ) : null}
+      {showModeHover ? (
+        <HoverCard openDelay={200}>
+          <HoverCardTrigger asChild>
+            <span
+              className={cn(
+                'inline-flex shrink-0 items-center justify-center rounded-full cursor-default',
+                chipSize,
+                hasResolvedModeChip && modeBadge
+                  ? modeBadge.className
+                  : 'border border-border bg-muted text-black'
+              )}
+              title={compact ? modeHoverPrimary : undefined}
+              aria-label={modeHoverAriaLabel}
+            >
+              {hasResolvedModeChip && ModeIcon ? (
+                <ModeIcon className={iconSize} aria-hidden />
+              ) : (
+                <Building2 className={iconSize} aria-hidden />
+              )}
+            </span>
+          </HoverCardTrigger>
+          <HoverCardContent
+            side="bottom"
+            align="end"
+            className="w-72 space-y-2 p-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-medium leading-snug">{modeHoverPrimary}</p>
+            <div className="space-y-1.5 text-xs text-muted-foreground">
+              {user.branch ? (
+                <p>
+                  <span className="text-foreground/80">Branch: </span>
+                  {user.branch}
+                </p>
+              ) : null}
+              {distanceText !== '—' ? (
+                <p>
+                  <span className="text-foreground/80">Distance: </span>
+                  {distanceText}
+                </p>
+              ) : null}
+              {user.shiftStartAddress ? (
+                <p className="break-words text-foreground/90">{user.shiftStartAddress}</p>
+              ) : null}
+            </div>
+            {mapsQuery ? (
+              <a
+                href={mapsQuery}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-xs font-medium text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Open in Maps
+              </a>
+            ) : null}
+          </HoverCardContent>
+        </HoverCard>
+      ) : null}
+      <StaffProfileAttributeIcons user={user} />
+      <CardSettingsLink
+        userRef={user.ref}
+        compact={compact}
+        onSettingsClick={onSettingsClick}
+      />
+    </div>
+  );
+}
 
 function mapCalendarDayToLast7Status(
   date: string,
@@ -172,20 +473,18 @@ export function ReportUserCardSkeleton() {
   if (isMobile) {
     return (
       <Card className="gap-0 py-0 rounded-lg border border-border bg-background">
-        <CardContent className="flex items-start gap-2 p-2">
-          <Skeleton className="size-9 shrink-0 rounded-full" />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-[min(100%,12rem)] rounded-md" />
-            <Skeleton className="h-3 w-[min(100%,9rem)] rounded-md" />
+        <CardContent className="flex flex-col gap-1.5 px-2 py-1.5">
+          <div className="flex w-full items-center justify-end gap-1">
+            <Skeleton className="h-5 w-14 rounded-full" />
+            <Skeleton className="size-6 shrink-0 rounded-full" />
+            <Skeleton className="size-6 shrink-0 rounded-full" />
+            <Skeleton className="size-6 shrink-0 rounded-full" />
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <div className="flex flex-wrap justify-end gap-1">
-              <Skeleton className="h-5 w-14 rounded-full" />
-              <Skeleton className="h-5 w-20 rounded-full" />
-            </div>
-            <div className="flex items-center gap-1">
-              <Skeleton className="size-8 shrink-0 rounded-md" />
-              <Skeleton className="size-8 shrink-0 rounded-md" />
+          <div className="flex items-start gap-2">
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-[min(100%,12rem)] rounded-md" />
+              <Skeleton className="h-3 w-[min(100%,9rem)] rounded-md" />
             </div>
           </div>
         </CardContent>
@@ -193,18 +492,21 @@ export function ReportUserCardSkeleton() {
     );
   }
   return (
-    <Card className="rounded-lg border border-border bg-background min-h-[220px]">
-      <CardContent className="flex flex-col flex-1 justify-between p-4 min-h-[220px]">
-        <div className="flex flex-col gap-3 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <Skeleton className="size-10 shrink-0 rounded-full" />
-              <div className="min-w-0 flex-1 space-y-1">
-                <Skeleton className="h-4 w-24 rounded-md" />
-                <Skeleton className="h-3 w-20 rounded-md" />
-              </div>
+    <Card className="gap-0 py-0 rounded-lg border border-border bg-background">
+      <CardContent className="flex flex-col flex-1 justify-between px-3 py-2">
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="flex w-full items-center justify-end gap-1">
+            <Skeleton className="h-5 w-14 rounded-full" />
+            <Skeleton className="size-7 shrink-0 rounded-full" />
+            <Skeleton className="size-7 shrink-0 rounded-full" />
+            <Skeleton className="size-7 shrink-0 rounded-full" />
+          </div>
+          <div className="flex min-w-0 items-center gap-3">
+            <Skeleton className="size-10 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-3 w-20 rounded-md" />
             </div>
-            <Skeleton className="size-8 shrink-0 rounded-md" />
           </div>
           <div className="space-y-1">
             <Skeleton className="h-4 w-full max-w-[180px] rounded-md" />
@@ -222,7 +524,7 @@ export function ReportUserCardSkeleton() {
             </div>
           </div>
         </div>
-        <div className="mt-3 space-y-1 shrink-0">
+        <div className="mt-2 space-y-1 shrink-0">
           <Skeleton className="h-4 w-full max-w-[min(100%,20rem)] rounded-md" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-2 flex-1 w-full rounded-full" />
@@ -336,192 +638,64 @@ export function ReportUserCard({
     />
   );
 
+  const statusChrome = (
+    <StatusChromeRow
+      user={user}
+      compact={isMobile}
+      isBehindBadge={isBehindBadge}
+      hoursBehind={hoursBehind}
+      onClockClick={onClockClick}
+      onSettingsClick={onSettingsClick}
+      performanceWarningLevel={
+        performanceWarningLevel === 1 ||
+        performanceWarningLevel === 2 ||
+        performanceWarningLevel === 3
+          ? performanceWarningLevel
+          : undefined
+      }
+      performanceWarningChip={performanceWarningChip}
+      onOpenWarnings={() => setWarningsOpen(true)}
+      showModeHover={showModeHover}
+      hasResolvedModeChip={hasResolvedModeChip}
+      modeBadge={modeBadge}
+      ModeIcon={ModeIcon}
+      modeHoverPrimary={modeHoverPrimary}
+      modeHoverAriaLabel={modeHoverAriaLabel}
+      distanceText={distanceText}
+      mapsQuery={mapsQuery}
+    />
+  );
+
   if (isMobile) {
     return (
       <>
       <Card
         className={cn(
-          'relative gap-0 py-0 rounded-lg min-h-[220px]',
+          'relative gap-0 py-0 rounded-lg',
           user.isPresent ? 'border-green-500' : 'border-red-500',
           onClick && 'cursor-pointer transition-colors hover:opacity-90'
         )}
         {...(onClick ? { onClick } : {})}
       >
-        <CardContent className="flex items-start gap-2 p-2">
-          <Avatar className="size-9 shrink-0">
-            <AvatarImage src={user.photoURL ?? undefined} />
-            <AvatarFallback>
-              {user.name
-                .split(/\s+/)
-                .map((s) => s[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              Branch: {user.branch || '—'}
-            </p>
-          </div>
-          <div
-            className="flex max-w-[42%] shrink-0 flex-col items-end gap-1.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex max-w-full flex-wrap justify-end gap-1">
-              <Badge
-                variant={user.isPresent ? 'default' : 'destructive'}
-                className={cn(
-                  'text-[10px] px-1.5 py-0 text-white',
-                  user.isPresent && 'bg-green-600 hover:bg-green-600 text-white'
-                )}
-                aria-label={user.isPresent ? 'Present' : 'Absent'}
-              >
-                {user.isPresent ? 'Present' : 'Absent'}
-              </Badge>
-              {isBehindBadge && (
-                <Badge
-                  variant="destructive"
-                  className="text-[10px] px-1.5 py-0 text-white"
-                  title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
-                  aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
-                >
-                  Behind on hours
-                </Badge>
-              )}
-              {performanceWarningChip ? (
-                <HoverCard openDelay={200}>
-                  <HoverCardTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        'inline-flex size-6 shrink-0 items-center justify-center rounded-full',
-                        performanceWarningChip.className
-                      )}
-                      title={`Performance warning: Level ${performanceWarningLevel}. Click to manage.`}
-                      aria-label={`Performance warning: Level ${performanceWarningLevel}. Open to view and clear.`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setWarningsOpen(true);
-                      }}
-                    >
-                      <span className="text-[12px] leading-none select-none" aria-hidden>
-                        ⚠️
-                      </span>
-                    </button>
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    side="bottom"
-                    align="end"
-                    className="w-72 space-y-2 p-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <p className="text-sm font-medium leading-snug">
-                      Performance warning: Level {performanceWarningLevel}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {performanceWarningChip.shortLabel}
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setWarningsOpen(true);
-                      }}
-                    >
-                      View / clear warnings
-                    </Button>
-                  </HoverCardContent>
-                </HoverCard>
-              ) : null}
-              {showModeHover ? (
-                <HoverCard openDelay={200}>
-                  <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'inline-flex size-6 shrink-0 items-center justify-center rounded-full cursor-default',
-                        hasResolvedModeChip && modeBadge
-                          ? modeBadge.className
-                          : 'border border-border bg-muted text-black'
-                      )}
-                      title={modeHoverPrimary}
-                      aria-label={modeHoverAriaLabel}
-                    >
-                      {hasResolvedModeChip && ModeIcon ? (
-                        <ModeIcon className="size-3" aria-hidden />
-                      ) : (
-                        <Building2 className="size-3" aria-hidden />
-                      )}
-                    </span>
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    side="bottom"
-                    align="end"
-                    className="w-72 space-y-2 p-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <p className="text-sm font-medium leading-snug">{modeHoverPrimary}</p>
-                    <div className="space-y-1.5 text-xs text-muted-foreground">
-                      {user.branch ? (
-                        <p>
-                          <span className="text-foreground/80">Branch: </span>
-                          {user.branch}
-                        </p>
-                      ) : null}
-                      {distanceText !== '—' ? (
-                        <p>
-                          <span className="text-foreground/80">Distance: </span>
-                          {distanceText}
-                        </p>
-                      ) : null}
-                      {user.shiftStartAddress ? (
-                        <p className="break-words text-foreground/90">{user.shiftStartAddress}</p>
-                      ) : null}
-                    </div>
-                    {mapsQuery ? (
-                      <a
-                        href={mapsQuery}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-xs font-medium text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Open in Maps
-                      </a>
-                    ) : null}
-                  </HoverCardContent>
-                </HoverCard>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              {onClockClick && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClockClick(e);
-                  }}
-                  className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
-                  aria-label="View attendance records"
-                >
-                  <Clock className="size-3.5" />
-                </button>
-              )}
-              <Link
-                href={`/staff/users/${user.ref}/settings`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSettingsClick?.(e);
-                }}
-                className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
-                aria-label="User settings"
-              >
-                <SettingsIcon className="size-3.5" />
-              </Link>
+        <CardContent className="flex flex-col gap-1.5 px-2 py-1.5">
+          {statusChrome}
+          <div className="flex min-w-0 items-start gap-2">
+            <Avatar className="size-9 shrink-0">
+              <AvatarImage src={user.photoURL ?? undefined} />
+              <AvatarFallback>
+                {user.name
+                  .split(/\s+/)
+                  .map((s) => s[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {staffMetaLine(user)}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -535,221 +709,50 @@ export function ReportUserCard({
     <>
     <Card
       className={cn(
-        'relative rounded-lg min-h-[220px]',
+        'relative gap-0 py-0 rounded-lg',
         user.isPresent ? 'border-green-500' : 'border-red-500',
         onClick && 'cursor-pointer transition-colors hover:opacity-90'
       )}
       {...(onClick ? { onClick } : {})}
     >
-      <div className="absolute top-2 right-2 z-10 flex flex-wrap items-center gap-1 justify-end max-w-[60%]">
-        <Badge
-          variant={user.isPresent ? 'default' : 'destructive'}
-          className={cn(
-            'text-[10px] px-1.5 py-0 text-white',
-            user.isPresent && 'bg-green-600 hover:bg-green-600 text-white'
-          )}
-          aria-label={user.isPresent ? 'Present' : 'Absent'}
-        >
-          {user.isPresent ? 'Present' : 'Absent'}
-        </Badge>
-        {isBehindBadge && (
-          <Badge
-            variant="destructive"
-            className="text-[10px] px-1.5 py-0 text-white"
-            title={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
-            aria-label={`Behind on hours: ${Math.round(hoursBehind)}h under expected`}
-          >
-            Behind on hours
-          </Badge>
-        )}
-        {performanceWarningChip ? (
-          <HoverCard openDelay={200}>
-            <HoverCardTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full',
-                  performanceWarningChip.className
-                )}
-                title={
-                  isMobile
-                    ? `Performance warning: Level ${performanceWarningLevel}. Click to manage.`
-                    : undefined
-                }
-                aria-label={`Performance warning: Level ${performanceWarningLevel}. Open to view and clear.`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWarningsOpen(true);
-                }}
-              >
-                <span className="text-[13px] leading-none select-none" aria-hidden>
-                  ⚠️
-                </span>
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent
-              side="bottom"
-              align="end"
-              className="w-72 space-y-2 p-3"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-medium leading-snug">
-                Performance warning: Level {performanceWarningLevel}
+      <CardContent className="flex flex-col flex-1 justify-between px-3 py-2">
+        <div className="flex flex-col flex-1 gap-2">
+          {statusChrome}
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Avatar className={cn('shrink-0', isMobile ? 'size-8' : 'size-10')}>
+              <AvatarImage src={user.photoURL ?? undefined} />
+              <AvatarFallback>
+                {user.name
+                  .split(/\s+/)
+                  .map((s) => s[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+              <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
+                {user.name}
               </p>
-              <p className="text-xs text-muted-foreground">{performanceWarningChip.shortLabel}</p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWarningsOpen(true);
-                }}
+              <a
+                href={`mailto:${user.email}`}
+                onClick={(e) => e.stopPropagation()}
+                className="block truncate text-xs text-primary hover:underline"
               >
-                View / clear warnings
-              </Button>
-            </HoverCardContent>
-          </HoverCard>
-        ) : null}
-        {showModeHover ? (
-          <HoverCard openDelay={200}>
-            <HoverCardTrigger asChild>
-              <span
-                className={cn(
-                  'inline-flex size-7 shrink-0 items-center justify-center rounded-full cursor-default',
-                  hasResolvedModeChip && modeBadge
-                    ? modeBadge.className
-                    : 'border border-border bg-muted text-black'
-                )}
-                title={isMobile ? modeHoverPrimary : undefined}
-                aria-label={modeHoverAriaLabel}
-              >
-                {hasResolvedModeChip && ModeIcon ? (
-                  <ModeIcon className="size-3.5" aria-hidden />
-                ) : (
-                  <Building2 className="size-3.5" aria-hidden />
-                )}
-              </span>
-            </HoverCardTrigger>
-            <HoverCardContent
-              side="bottom"
-              align="end"
-              className="w-72 space-y-2 p-3"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-medium leading-snug">{modeHoverPrimary}</p>
-              <div className="space-y-1.5 text-xs text-muted-foreground">
-                {user.branch ? (
-                  <p>
-                    <span className="text-foreground/80">Branch: </span>
-                    {user.branch}
-                  </p>
-                ) : null}
-                {distanceText !== '—' ? (
-                  <p>
-                    <span className="text-foreground/80">Distance: </span>
-                    {distanceText}
-                  </p>
-                ) : null}
-                {user.shiftStartAddress ? (
-                  <p className="break-words text-foreground/90">{user.shiftStartAddress}</p>
-                ) : null}
-              </div>
-              {mapsQuery ? (
+                {user.email}
+              </a>
+              <p className="text-xs text-muted-foreground truncate">
+                {staffMetaLine(user)}
+              </p>
+              {user.phone ? (
                 <a
-                  href={mapsQuery}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-xs font-medium text-primary hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Open in Maps
-                </a>
-              ) : null}
-            </HoverCardContent>
-          </HoverCard>
-        ) : null}
-      </div>
-      <CardContent
-        className={cn(
-          'flex flex-col flex-1 justify-between',
-          isMobile
-            ? 'p-3 min-h-[160px] gap-2'
-            : 'p-4 min-h-[220px] gap-3'
-        )}
-      >
-        <div className={cn('flex flex-col flex-1', isMobile ? 'gap-2' : 'gap-3')}>
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-              <Avatar className={cn('shrink-0', isMobile ? 'size-8' : 'size-10')}>
-                <AvatarImage src={user.photoURL ?? undefined} />
-                <AvatarFallback>
-                  {user.name
-                    .split(/\s+/)
-                    .map((s) => s[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1 flex flex-col gap-1">
-                <p className={cn('font-medium text-foreground truncate', isMobile && 'text-sm')}>
-                  {user.name}
-                </p>
-                <a
-                  href={`mailto:${user.email}`}
+                  href={`tel:${user.phone}`}
                   onClick={(e) => e.stopPropagation()}
                   className="block truncate text-xs text-primary hover:underline"
                 >
-                  {user.email}
+                  {user.phone}
                 </a>
-                <p className="text-xs text-muted-foreground truncate">
-                  Branch: {user.branch || '—'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">Role: {user.role || '—'}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  Workforce:{' '}
-                  {user.workforceType?.trim()
-                    ? formatEnumLabel(user.workforceType.trim())
-                    : '—'}
-                </p>
-                {user.phone ? (
-                  <a
-                    href={`tel:${user.phone}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="block truncate text-xs text-primary hover:underline"
-                  >
-                    {user.phone}
-                  </a>
-                ) : null}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              {onClockClick && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClockClick(e);
-                  }}
-                  className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
-                  aria-label="View attendance records"
-                >
-                  <Clock className={isMobile ? 'size-3.5' : 'size-4'} />
-                </button>
-              )}
-              <Link
-                href={`/staff/users/${user.ref}/settings`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSettingsClick?.(e);
-                }}
-                className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent sm:p-1.5"
-                aria-label="User settings"
-              >
-                <SettingsIcon className={isMobile ? 'size-3.5' : 'size-4'} />
-              </Link>
+              ) : null}
             </div>
           </div>
           <div className="w-full">
@@ -763,7 +766,7 @@ export function ReportUserCard({
             </div>
           </div>
         </div>
-        <div className={cn('shrink-0 min-w-0', isMobile ? 'mt-2 space-y-0.5' : 'mt-3 space-y-1')}>
+        <div className="shrink-0 min-w-0 mt-2 space-y-1">
           <p className={cn('text-muted-foreground flex items-center justify-between gap-2 min-w-0', isMobile ? 'text-xs' : 'text-sm')}>
             {usePayroll ? (
               <>

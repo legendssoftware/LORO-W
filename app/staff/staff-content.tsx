@@ -18,9 +18,13 @@ import {
   buildStaffRoleFilterItems,
   buildStaffBranchFilterItems,
   buildStaffWorkforceFilterItems,
+  buildStaffCountryFilterItems,
   staffUserMatchesRoleFilter,
   staffUserMatchesBranchFilter,
   staffUserMatchesWorkforceFilter,
+  staffUserMatchesCountryFilter,
+  staffUserHasSalesCode,
+  staffUserHasHrid,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { canManageStaffUsers, isStaffDashboardVisible } from '@/lib/access';
@@ -54,6 +58,8 @@ export function StaffContent() {
   const [workforceFilter, setWorkforceFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchFilter, setBranchFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
   const [branchPickerOpen, setBranchPickerOpen] = useState(false);
+  const [countryFilter, setCountryFilter] = useState(STAFF_DIMENSION_FILTER_ALL);
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [sendIntakeOpen, setSendIntakeOpen] = useState(false);
@@ -187,6 +193,30 @@ export function StaffContent() {
           ) === statusFilter
       );
     }
+    if (statusFilter === 'with_vehicle') {
+      return cardUsersWithPayroll.filter((u) => u.hasVehicle);
+    }
+    if (statusFilter === 'without_vehicle') {
+      return cardUsersWithPayroll.filter((u) => !u.hasVehicle);
+    }
+    if (statusFilter === 'with_targets') {
+      return cardUsersWithPayroll.filter((u) => u.hasTargets);
+    }
+    if (statusFilter === 'without_targets') {
+      return cardUsersWithPayroll.filter((u) => !u.hasTargets);
+    }
+    if (statusFilter === 'with_sales_code') {
+      return cardUsersWithPayroll.filter((u) => staffUserHasSalesCode(u));
+    }
+    if (statusFilter === 'without_sales_code') {
+      return cardUsersWithPayroll.filter((u) => !staffUserHasSalesCode(u));
+    }
+    if (statusFilter === 'with_hrid') {
+      return cardUsersWithPayroll.filter((u) => staffUserHasHrid(u));
+    }
+    if (statusFilter === 'without_hrid') {
+      return cardUsersWithPayroll.filter((u) => !staffUserHasHrid(u));
+    }
     return cardUsersWithPayroll;
   }, [
     cardUsersWithPayroll,
@@ -207,6 +237,10 @@ export function StaffContent() {
     () => buildStaffWorkforceFilterItems(statusFilteredUsers),
     [statusFilteredUsers]
   );
+  const countryFilterItems = useMemo(
+    () => buildStaffCountryFilterItems(statusFilteredUsers),
+    [statusFilteredUsers]
+  );
 
   useEffect(() => {
     const valid = roleFilterItems.some((i) => i.value === roleFilter);
@@ -223,14 +257,20 @@ export function StaffContent() {
     if (!valid) setWorkforceFilter(STAFF_DIMENSION_FILTER_ALL);
   }, [workforceFilterItems, workforceFilter]);
 
+  useEffect(() => {
+    const valid = countryFilterItems.some((i) => i.value === countryFilter);
+    if (!valid) setCountryFilter(STAFF_DIMENSION_FILTER_ALL);
+  }, [countryFilterItems, countryFilter]);
+
   const dimensionFilteredUsers = useMemo(() => {
     return statusFilteredUsers.filter(
       (u) =>
         staffUserMatchesRoleFilter(u, roleFilter) &&
         staffUserMatchesWorkforceFilter(u, workforceFilter) &&
-        staffUserMatchesBranchFilter(u, branchFilter)
+        staffUserMatchesBranchFilter(u, branchFilter) &&
+        staffUserMatchesCountryFilter(u, countryFilter)
     );
-  }, [statusFilteredUsers, roleFilter, workforceFilter, branchFilter]);
+  }, [statusFilteredUsers, roleFilter, workforceFilter, branchFilter, countryFilter]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -246,6 +286,10 @@ export function StaffContent() {
   const branchFilterTriggerLabel = useMemo(
     () => branchFilterItems.find((i) => i.value === branchFilter)?.label ?? 'All branches',
     [branchFilterItems, branchFilter]
+  );
+  const countryFilterTriggerLabel = useMemo(
+    () => countryFilterItems.find((i) => i.value === countryFilter)?.label ?? 'All countries',
+    [countryFilterItems, countryFilter]
   );
 
   const isStaff = isStaffDashboardVisible(profile?.accessLevel);
@@ -312,6 +356,12 @@ export function StaffContent() {
           branchFilterTriggerLabel={branchFilterTriggerLabel}
           branchPickerOpen={branchPickerOpen}
           onBranchPickerOpenChange={setBranchPickerOpen}
+          countryFilter={countryFilter}
+          onCountryFilterChange={setCountryFilter}
+          countryFilterItems={countryFilterItems}
+          countryFilterTriggerLabel={countryFilterTriggerLabel}
+          countryPickerOpen={countryPickerOpen}
+          onCountryPickerOpenChange={setCountryPickerOpen}
           actions={
             canAddUser ? (
               <>
