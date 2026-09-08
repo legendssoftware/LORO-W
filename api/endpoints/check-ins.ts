@@ -82,3 +82,36 @@ export async function updateVisitDetails(
   );
   return data;
 }
+
+export interface UpdateVisitPhotoPayload {
+  checkInId: number;
+  photoUrl: string;
+}
+
+/**
+ * PATCH /check-ins/photo/check-in - set check-in proof photo after upload.
+ */
+export async function updateCheckInPhoto(
+  client: AxiosInstance,
+  payload: UpdateVisitPhotoPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    '/check-ins/photo/check-in',
+    payload
+  );
+  return data;
+}
+
+/**
+ * PATCH /check-ins/photo/check-out - set check-out proof photo after upload.
+ */
+export async function updateCheckOutPhoto(
+  client: AxiosInstance,
+  payload: UpdateVisitPhotoPayload
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    '/check-ins/photo/check-out',
+    payload
+  );
+  return data;
+}
