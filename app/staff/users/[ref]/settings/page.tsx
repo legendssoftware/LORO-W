@@ -66,7 +66,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CollapsibleFormSection } from '@/components/collapsible-form-section';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -500,15 +500,11 @@ export default function UserSettingsPage() {
               </div>
             )}
 
-            {/* Basic details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Basic details</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Name, contact and email.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
+            <CollapsibleFormSection
+              title="Basic details"
+              description="Name, contact and email."
+              contentClassName="space-y-3 sm:space-y-4"
+            >
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
@@ -619,18 +615,13 @@ export default function UserSettingsPage() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
-            {/* Identity & access */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Identity & access</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  User reference, HR ID, role, access level, workforce type, status, and what they can approve.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
+            <CollapsibleFormSection
+              title="Identity & access"
+              description="User reference, HR ID, role, access level, workforce type, status, and what they can approve."
+              contentClassName="space-y-3 sm:space-y-4"
+            >
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <FormField
                     control={form.control}
@@ -842,18 +833,12 @@ export default function UserSettingsPage() {
                     />
                   )}
                 />
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
-            {/* Primary branch */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Primary branch</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  The branch this user is assigned to.
-                </p>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleFormSection
+              title="Primary branch"
+              description="The branch this user is assigned to."
+            >
                 <FormField
                   control={form.control}
                   name="branchUid"
@@ -962,22 +947,16 @@ export default function UserSettingsPage() {
                     );
                   }}
                 />
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
             <PersonnelDetailsCard control={form.control} />
 
             <JobInformationCard control={form.control} />
 
-            {/* Assigned clients */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Assigned clients</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Clients this user has access to.
-                </p>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleFormSection
+              title="Assigned clients"
+              description="Clients this user has access to."
+            >
                 <FormField
                   control={form.control}
                   name="assignedClientIds"
@@ -1099,8 +1078,7 @@ export default function UserSettingsPage() {
                 </div>
 
                 {ref ? <ActiveVisitSchedules userRef={ref} /> : null}
-              </CardContent>
-            </Card>
+            </CollapsibleFormSection>
 
             {ref ? (
               <PlanClientVisitsDialog
@@ -1132,15 +1110,10 @@ export default function UserSettingsPage() {
               />
             ) : null}
 
-            {/* User targets */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">User targets</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Performance targets and cost breakdown. Use the &quot;Save&quot; button at the bottom of the page to persist these together with the rest of the user (creates targets if the user has none).
-                </p>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleFormSection
+              title="User targets"
+              description='Performance targets and cost breakdown. Use the "Save" button at the bottom of the page to persist these together with the rest of the user (creates targets if the user has none).'
+            >
                 <Form {...targetForm}>
                   <div className="space-y-3 sm:space-y-4">
                     <FormField
@@ -1573,18 +1546,12 @@ export default function UserSettingsPage() {
                     </div>
                   </div>
                 </Form>
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
-            {/* Managed branches */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Managed branches</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Branches this user manages (managers/supervisors).
-                </p>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleFormSection
+              title="Managed branches"
+              description="Branches this user manages (managers/supervisors)."
+            >
                 <FormField
                   control={form.control}
                   name="managedBranches"
@@ -1697,18 +1664,12 @@ export default function UserSettingsPage() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
-            {/* Managed staff */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Managed staff</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Staff members this user manages.
-                </p>
-              </CardHeader>
-              <CardContent>
+            <CollapsibleFormSection
+              title="Managed staff"
+              description="Staff members this user manages."
+            >
                 <FormField
                   control={form.control}
                   name="managedStaff"
@@ -1821,18 +1782,15 @@ export default function UserSettingsPage() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
-            {/* Danger zone: remove / restore / permanent delete */}
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base text-destructive">Danger zone</CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Remove user from the system or restore a removed user. Permanent delete cannot be undone.
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
+            <CollapsibleFormSection
+              title="Danger zone"
+              description="Remove user from the system or restore a removed user. Permanent delete cannot be undone."
+              titleClassName="text-destructive"
+              cardClassName="border-destructive/50"
+              contentClassName="flex flex-col gap-3"
+            >
                 {(user as { isDeleted?: boolean })?.isDeleted ? (
                   <>
                     <div className="flex flex-wrap gap-2">
@@ -1888,8 +1846,7 @@ export default function UserSettingsPage() {
                     </p>
                   </>
                 )}
-              </CardContent>
-            </Card>
+              </CollapsibleFormSection>
 
             <div className="flex flex-row gap-2">
               <Button

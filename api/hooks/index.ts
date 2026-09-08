@@ -121,6 +121,7 @@ export { useSessionSync } from './use-session-sync';
 export { useSyncClerk } from './use-sync-clerk';
 export { useMonthlyMetrics } from './use-monthly-metrics';
 export { useMonthlyAttendance } from './use-monthly-attendance';
+export { useAdjustUserAttendanceRecordMutation } from './use-attendance-mutations';
 export { useAttendanceByDateRange } from './use-attendance-range';
 export { usePayrollHoursAll } from './use-payroll-hours-all';
 export { useDailyOverview, DAILY_OVERVIEW_QUERY_KEY_PREFIX } from './use-daily-overview';

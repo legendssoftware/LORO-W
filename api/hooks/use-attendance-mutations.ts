@@ -3,13 +3,27 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { DAILY_OVERVIEW_QUERY_KEY_PREFIX } from '@/api/hooks/use-daily-overview';
-import { checkIn, checkOut, manageBreak } from '@/api/endpoints/attendance';
+import {
+  checkIn,
+  checkOut,
+  manageBreak,
+  adjustUserAttendanceRecord,
+  type AdjustUserAttendanceRecordBody,
+} from '@/api/endpoints/attendance';
 import type { CheckInBody, CheckOutBody, BreakBody } from '@/api/types';
 
 const ATT_STATUS_QUERY_KEY = ['att-status'] as const;
 const ATT_METRICS_QUERY_KEY = ['att', 'metrics'] as const;
 const ATT_MONTHLY_QUERY_KEY = ['att', 'monthly'] as const;
 const ATT_PAYROLL_QUERY_KEY = ['att', 'payroll-hours'] as const;
+
+function invalidateAttendanceQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+}
 
 /**
  * Mutation for starting a shift (attendance check-in).
@@ -24,11 +38,7 @@ export function useAttCheckInMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      invalidateAttendanceQueries(queryClient);
     },
   });
 }
@@ -46,11 +56,7 @@ export function useAttCheckOutMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      invalidateAttendanceQueries(queryClient);
     },
   });
 }
@@ -68,11 +74,26 @@ export function useBreakMutation() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ATT_STATUS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_METRICS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_MONTHLY_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ATT_PAYROLL_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      invalidateAttendanceQueries(queryClient);
+    },
+  });
+}
+
+/**
+ * Mutation for admin correction of a user's check-in/out on one calendar day.
+ * Calls PATCH /att/user/:ref/record.
+ */
+export function useAdjustUserAttendanceRecordMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      ref: string | number;
+      body: AdjustUserAttendanceRecordBody;
+    }) => adjustUserAttendanceRecord(client, payload.ref, payload.body),
+    onSuccess: () => {
+      invalidateAttendanceQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['att', 'metrics', 'monthly'] });
     },
   });
 }
