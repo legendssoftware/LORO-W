@@ -6,6 +6,11 @@ import {
   CHECK_INS_LIST_QUERY_KEY,
   CHECK_IN_STATUS_QUERY_KEY,
 } from './use-check-ins';
+import {
+  updateCheckInPhoto,
+  updateCheckOutPhoto,
+  type UpdateVisitPhotoPayload,
+} from '@/api/endpoints/check-ins';
 import type {
   CreateCheckInPayload,
   CreateCheckOutPayload,
@@ -13,6 +18,7 @@ import type {
   CheckOutResponse,
   UpdateVisitDetailsPayload,
 } from '@/api/types/visits';
+import { useApiClient } from './use-api-client';
 
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -95,6 +101,28 @@ export function useUpdateVisitDetailsMutation() {
       if (!res.ok) throw new Error(data?.message || res.statusText || 'Failed to update visit details');
       return data;
     },
+    onSuccess: () => {
+      invalidateAndRefetchVisitQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateCheckInPhotoMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateVisitPhotoPayload) => updateCheckInPhoto(client, payload),
+    onSuccess: () => {
+      invalidateAndRefetchVisitQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateCheckOutPhotoMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateVisitPhotoPayload) => updateCheckOutPhoto(client, payload),
     onSuccess: () => {
       invalidateAndRefetchVisitQueries(queryClient);
     },

@@ -8,11 +8,39 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-export const MAX_VISIT_MEDIA_BYTES = 12 * 1024 * 1024;
+/** Matches POST /docs/upload MaxFileSizeValidator (5MB). */
+export const MAX_VISIT_MEDIA_BYTES = 5 * 1024 * 1024;
 
 const ACCEPT_FILES =
-  'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.mp4,.mov,.webm,.heic,.heif';
+  'image/*,.heic,.heif,.jpg,.jpeg,.png,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.txt';
 const ACCEPT_IMAGES = 'image/*,.heic,.heif,.png,.jpg,.jpeg,.gif,.webp,.bmp';
+
+const ALLOWED_VISIT_MEDIA_EXT = /\.(jpe?g|png|gif|webp|heic|heif|bmp|pdf|docx?|xlsx?|txt)$/i;
+const ALLOWED_VISIT_MEDIA_MIME = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/bmp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+]);
+
+/**
+ * Whether a file is within the 5MB limit and a type accepted by POST /docs/upload.
+ */
+export function isAllowedVisitMediaFile(file: File): boolean {
+  if (file.size > MAX_VISIT_MEDIA_BYTES) return false;
+  if (ALLOWED_VISIT_MEDIA_EXT.test(file.name)) return true;
+  return ALLOWED_VISIT_MEDIA_MIME.has(file.type.toLowerCase());
+}
 
 export type VisitMediaFileKind = 'PDF' | 'WORD' | 'MP4' | 'IMG' | 'FILE';
 
@@ -152,7 +180,11 @@ export function VisitMediaUpload({
     const accepted: File[] = [];
     for (const file of list) {
       if (file.size > MAX_VISIT_MEDIA_BYTES) {
-        toast.error(`${file.name} is over 12MB`);
+        toast.error(`${file.name} is over 5MB`);
+        continue;
+      }
+      if (!isAllowedVisitMediaFile(file)) {
+        toast.error(`${file.name} is not a supported file type`);
         continue;
       }
       accepted.push(file);
@@ -237,7 +269,7 @@ export function VisitMediaUpload({
           <Upload className="size-6" />
         </div>
         <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
-        <p className="text-xs text-muted-foreground">Files, gallery, or camera · max 12MB</p>
+        <p className="text-xs text-muted-foreground">Photos, HEIC, PDF, or Office docs · max 5MB</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button

@@ -17,6 +17,8 @@ export {
   useCheckInMutation,
   useCheckOutMutation,
   useUpdateVisitDetailsMutation,
+  useUpdateCheckInPhotoMutation,
+  useUpdateCheckOutPhotoMutation,
 } from './use-att-status';
 export { useAttendanceReport } from './use-attendance-report';
 export {
