@@ -253,7 +253,7 @@ export function PerformanceConsolidatedStatement({
               <div key={country.countryCode || `country-${index}`}>
                 <button
                   type="button"
-                  className="flex w-full items-start gap-3 bg-muted/50 px-4 py-3 text-left hover:bg-muted"
+                  className="flex w-full items-start gap-2 bg-muted/50 px-4 py-3 text-left hover:bg-muted sm:gap-3"
                   onClick={() =>
                     setExpanded((prev) => {
                       const next = new Set(prev);
@@ -263,19 +263,19 @@ export function PerformanceConsolidatedStatement({
                     })
                   }
                 >
-                  <span className="text-2xl leading-none">{flag.flag}</span>
+                  <span className="shrink-0 text-2xl leading-none">{flag.flag}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{country.countryName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate font-semibold">{country.countryName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {country.branchCount || country.branches.length}{' '}
                       {(country.branchCount || country.branches.length) === 1 ? 'branch' : 'branches'}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className={cn('font-semibold', performanceAmountClassName(totals.revenue))}>
+                  <div className="shrink-0 text-right">
+                    <p className={cn('whitespace-nowrap font-semibold', performanceAmountClassName(totals.revenue))}>
                       {formatPerformanceMoney(totals.revenue, symbol)}
                     </p>
-                    <p className="text-xs">
+                    <p className="whitespace-nowrap text-[11px] sm:text-xs">
                       <span className={performanceGpPercentClassName(totals.gpPercentage)}>
                         Avg GP {formatPerformancePercent(totals.gpPercentage)}
                       </span>
@@ -284,7 +284,7 @@ export function PerformanceConsolidatedStatement({
                         {formatPerformanceMoney(totals.gp, symbol)}
                       </span>
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="whitespace-nowrap text-[11px] text-muted-foreground">
                       {showInZAR ? fxLine || (forexCode === 'ZAR' ? 'ZAR' : 'Rate unavailable') : country.currency.code}
                     </p>
                   </div>
@@ -305,7 +305,7 @@ export function PerformanceConsolidatedStatement({
                               index % 2 === 0 ? 'bg-background' : 'bg-muted/30'
                             )}
                           >
-                            <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
                               <Building2 className="size-4 shrink-0 text-muted-foreground" />
                               <div className="min-w-0">
                                 <p className="truncate font-medium">{branch.branchName}</p>
@@ -317,11 +317,11 @@ export function PerformanceConsolidatedStatement({
                                 ) : null}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className={cn('font-semibold', performanceAmountClassName(branchTotals.revenue))}>
+                            <div className="shrink-0 text-right">
+                              <p className={cn('whitespace-nowrap font-semibold', performanceAmountClassName(branchTotals.revenue))}>
                                 {formatPerformanceMoney(branchTotals.revenue, symbol)}
                               </p>
-                              <p className="text-xs">
+                              <p className="whitespace-nowrap text-[11px] sm:text-xs">
                                 <span className={performanceGpPercentClassName(branchTotals.gpPercentage)}>
                                   GP {formatPerformancePercent(branchTotals.gpPercentage)}
                                 </span>
