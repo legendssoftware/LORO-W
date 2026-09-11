@@ -28,6 +28,21 @@ const VEHICLE_ASSIGNMENT_USERS_QUERY_KEY = [
   'vehicle-assignment-users',
 ] as const;
 
+const EMPTY_VEHICLES: AssetRecord[] = [];
+const EMPTY_LISTED_ASSIGNMENT = {
+  primaryUid: null as number | null,
+  secondaryUid: null as number | null,
+};
+
+function listedAssetUid(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
+
 function isActiveVehicle(asset: AssetRecord): boolean {
   return asset.category === 'VEHICLE';
 }
@@ -162,6 +177,16 @@ export function useSelectableVehicleAssets(
     options?.secondaryUid,
   ]);
 
+  const listedAssignment = useMemo(() => {
+    if (!userUid || !usersQuery.data) return EMPTY_LISTED_ASSIGNMENT;
+    const match = usersQuery.data.find((user) => user.uid === userUid);
+    const target = match?.userTarget;
+    return {
+      primaryUid: listedAssetUid(target?.primaryVehicleAssetUid),
+      secondaryUid: listedAssetUid(target?.secondaryVehicleAssetUid),
+    };
+  }, [userUid, usersQuery.data]);
+
   async function refetch(): Promise<AssetRecord[]> {
     const [vehiclesResult, ownedResult] = await Promise.all([
       vehiclesQuery.refetch(),
@@ -181,8 +206,9 @@ export function useSelectableVehicleAssets(
   return {
     data,
     fleetVehicles,
-    isLoading:
-      vehiclesQuery.isLoading || ownedQuery.isLoading || usersQuery.isLoading,
+    ownedVehicles: ownedQuery.data ?? EMPTY_VEHICLES,
+    listedAssignment,
+    isLoading: vehiclesQuery.isLoading || ownedQuery.isLoading,
     refetch,
   };
 }

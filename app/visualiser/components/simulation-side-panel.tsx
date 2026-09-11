@@ -55,6 +55,7 @@ import { MissingCompetitorsList } from '@/app/visualiser/components/missing-comp
 import { SimulationTrendChart } from '@/app/visualiser/components/simulation-trend-chart';
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import { StoreFormatSuggestionCard } from '@/app/visualiser/components/store-format-suggestion';
+import { ExportSimulationButton } from '@/app/visualiser/components/export-simulation-button';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
@@ -1026,6 +1027,7 @@ export function SimulationSidePanel() {
           province: provinceFilter ?? ALL_PROVINCES,
           mode,
         },
+        turnoverOverrides,
       });
 
       const scopeLabel = [
@@ -1583,18 +1585,21 @@ export function SimulationSidePanel() {
 
       <div className="flex shrink-0 flex-col gap-2 border-t px-3 py-2.5">
         {isActive ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              clearSimulation();
-              toast.success('Simulation overlay cleared');
-            }}
-          >
-            <X className="size-3.5" />
-            Clear overlay
-          </Button>
+          <>
+            <ExportSimulationButton />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                clearSimulation();
+                toast.success('Simulation overlay cleared');
+              }}
+            >
+              <X className="size-3.5" />
+              Clear overlay
+            </Button>
+          </>
         ) : null}
         <Button
           type="button"

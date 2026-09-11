@@ -5,6 +5,7 @@ import { useApiClient } from '@/api/hooks/use-api-client';
 import { getSessionSyncQueryKey } from '@/api/hooks/use-session-sync';
 import { DAILY_OVERVIEW_QUERY_KEY_PREFIX } from '@/api/hooks/use-daily-overview';
 import { REPORTS_USERS_QUERY_KEY_PREFIX } from '@/api/query-keys';
+import { ASSETS_QUERY_KEY_PREFIX } from '@/api/hooks/use-assets';
 import { useSessionStore } from '@/store/session-store';
 import {
   getUserByRef,
@@ -76,9 +77,11 @@ export function usePatchUser(ref: string | null) {
       return patchUser(client, ref, body);
     },
     onSuccess: (_data, body) => {
-      if (ref) {
-        queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
-      }
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: TARGET_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       const currentUid = useSessionStore.getState().profileData?.uid;
       const refNum = ref != null ? Number(ref) : NaN;
       const isSelf =
@@ -258,10 +261,11 @@ export function usePatchUserTarget(ref: string | null) {
       return patchUserTarget(client, ref, body);
     },
     onSuccess: (_, __, ___) => {
-      if (ref) {
-        queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_PREFIX, ref] });
-        queryClient.invalidateQueries({ queryKey: [...TARGET_QUERY_KEY_PREFIX, ref] });
-      }
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: TARGET_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: DAILY_OVERVIEW_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ASSETS_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }
