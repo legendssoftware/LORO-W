@@ -57,7 +57,6 @@ import {
   useApiClient,
   useCheckInStatus,
   useCheckInMutation,
-  useStartCompanyCallMutation,
 } from '@/api/hooks';
 import { uploadFile } from '@/api/endpoints/upload';
 import type { UpdateLeadPayload } from '@/api/types/leads';
@@ -119,7 +118,6 @@ import {
   Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
   type ActivityActorLookupUser,
   isLeadActivityLoroRow,
@@ -131,6 +129,7 @@ import {
 import { LeadHistoryEntry } from './lead-history-entry';
 import { LeadTeamChat } from './lead-team-chat';
 import { buildLeadCallCheckInPayload, leadToEndVisitInitialForm, parseActiveCallFromStatus } from '@/lib/check-in-utils';
+import { buildTelUrl } from '@/components/visits-table/visits-table-utils';
 import { EndVisitDialog } from '@/components/visits/end-visit-dialog';
 
 function getOptionLabel(
@@ -252,7 +251,6 @@ export function LeadDetailDialog({
   const client = useApiClient();
   const checkInStatusQuery = useCheckInStatus({ enabled: true });
   const checkInMutation = useCheckInMutation();
-  const startCompanyCallMutation = useStartCompanyCallMutation();
   const { checkedIn, activeCheckInMethod, hasActiveCall, activeCallLeadUid } =
     parseActiveCallFromStatus(checkInStatusQuery.data);
   const hasActiveCallForLead =
@@ -755,25 +753,13 @@ export function LeadDetailDialog({
       toast.error('This lead has no phone number');
       return;
     }
+    const phone = lead.phone.trim();
     try {
       const payload = await buildLeadCallCheckInPayload(lead);
-      const checkIn = await checkInMutation.mutateAsync(payload);
-      try {
-        await startCompanyCallMutation.mutateAsync({
-          toNumber: lead.phone.trim(),
-          leadUid: lead.uid,
-          checkInUid: checkIn.checkInId,
-        });
-        toast.success('Call started on the company line');
-      } catch (pbxErr) {
-        toast.error(
-          getQueryErrorMessage(
-            pbxErr,
-            'Visit logged, but the company-line call failed. Set your PBX extension and try again.',
-          ),
-        );
-      }
-      checkInStatusQuery.refetch();
+      await checkInMutation.mutateAsync(payload);
+      toast.success('Call started');
+      void checkInStatusQuery.refetch();
+      window.location.href = buildTelUrl(phone);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start call');
     }
@@ -834,11 +820,10 @@ export function LeadDetailDialog({
                   !leadUid ||
                   !lead.phone?.trim() ||
                   checkInMutation.isPending ||
-                  startCompanyCallMutation.isPending ||
                   checkedIn
                 }
               >
-                {checkInMutation.isPending || startCompanyCallMutation.isPending ? (
+                {checkInMutation.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
                   <Phone className="size-4" />
