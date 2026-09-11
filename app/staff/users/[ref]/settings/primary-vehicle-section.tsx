@@ -1,15 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
 import type { AssetRecord } from '@/api/types/asset';
+import toast from 'react-hot-toast';
 import {
   useCreateAssetMutation,
   useDeleteAssetMutation,
   useSelectableVehicleAssets,
   useUpdateAssetMutation,
 } from '@/api/hooks/use-assets';
+import type { PatchUserTargetBody } from '@/api/endpoints/user';
+import { usePatchUserTarget } from '@/api/hooks/use-user';
 import {
   FormControl,
   FormField,
@@ -37,7 +40,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { CheckIcon, Loader2Icon } from '@/lib/icons';
 import { Pencil } from 'lucide-react';
-import type { TargetFormValues } from '@/lib/user-form';
+import {
+  fillPrimaryVehicleUidFromOwned,
+  type TargetFormValues,
+} from '@/lib/user-form';
 import {
   VehicleFormDialog,
   buildCreateAssetPayload,
@@ -52,6 +58,7 @@ type VehicleRole = 'primary' | 'secondary';
 type PrimaryVehicleSectionProps = {
   control: Control<TargetFormValues>;
   userUid: number;
+  userRef: string;
   clerkUserId?: string | null;
   branchUid?: number | null;
 };
@@ -102,6 +109,28 @@ function nextRoleForNewVehicle(
   if (!isAssignedUid(primary)) return 'primary';
   if (!isAssignedUid(secondary)) return 'secondary';
   return null;
+}
+
+function mergeAssignedIntoOptions(
+  vehicles: AssetRecord[],
+  assigned: AssetRecord | null
+): AssetRecord[] {
+  if (!assigned) return vehicles;
+  if (vehicles.some((asset) => asset.uid === assigned.uid)) return vehicles;
+  return [assigned, ...vehicles];
+}
+
+function AssignedVehicleUnavailable({ uid }: { uid: number | null | undefined }) {
+  const label = uid != null && uid > 0 ? `#${uid}` : '';
+  return (
+    <div className="rounded-md border border-dashed border-border/60 bg-background/60 p-2">
+      <p className="text-xs font-medium text-foreground">Assigned vehicle</p>
+      <p className="text-muted-foreground text-xs">
+        Vehicle {label} is assigned but details are unavailable. It may have been
+        removed from the fleet.
+      </p>
+    </div>
+  );
 }
 
 type VehicleDetailsProps = {
@@ -164,21 +193,31 @@ function VehicleDetails({ asset, onEdit }: VehicleDetailsProps) {
 export function PrimaryVehicleSection({
   control,
   userUid,
+  userRef,
   clerkUserId,
   branchUid,
 }: PrimaryVehicleSectionProps) {
-  const { setValue, watch, getValues } = useFormContext<TargetFormValues>();
+  const { setValue, watch, getValues, formState } = useFormContext<TargetFormValues>();
   const primaryUid = watch('primaryVehicleAssetUid');
   const secondaryUid = watch('secondaryVehicleAssetUid');
-  const { data: vehicles = [], fleetVehicles = [], isLoading, refetch } =
-    useSelectableVehicleAssets(userUid, { primaryUid, secondaryUid });
+  const {
+    data: vehicles = [],
+    fleetVehicles = [],
+    ownedVehicles = [],
+    listedAssignment,
+    isLoading,
+    refetch,
+  } = useSelectableVehicleAssets(userUid, { primaryUid, secondaryUid });
   const createAsset = useCreateAssetMutation();
   const updateAsset = useUpdateAssetMutation();
   const deleteAsset = useDeleteAssetMutation();
+  const assignTarget = usePatchUserTarget(userRef);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editAsset, setEditAsset] = useState<AssetRecord | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const skipOwnedPrimaryRef = useRef(false);
+  const skipListedSecondaryRef = useRef(false);
 
   const hasPrimary = isAssignedUid(primaryUid);
   const hasSecondary = isAssignedUid(secondaryUid);
@@ -192,20 +231,111 @@ export function PrimaryVehicleSection({
     [fleetVehicles, secondaryUid]
   );
 
+  const primaryOptions = useMemo(
+    () => mergeAssignedIntoOptions(vehicles, selectedPrimary),
+    [vehicles, selectedPrimary]
+  );
+  const secondaryOptions = useMemo(
+    () =>
+      mergeAssignedIntoOptions(vehicles, selectedSecondary).filter(
+        (asset) => asset.uid !== primaryUid || asset.uid === secondaryUid
+      ),
+    [vehicles, selectedSecondary, primaryUid, secondaryUid]
+  );
+
+  useEffect(() => {
+    if (isLoading) return;
+    const ownedUids = ownedVehicles.map((asset) => asset.uid);
+    const nextPrimary = fillPrimaryVehicleUidFromOwned(
+      primaryUid ?? listedAssignment?.primaryUid,
+      secondaryUid ?? listedAssignment?.secondaryUid,
+      ownedUids,
+      Boolean(formState.dirtyFields.primaryVehicleAssetUid) ||
+        skipOwnedPrimaryRef.current
+    );
+    if (nextPrimary != null && nextPrimary !== primaryUid) {
+      setValue('primaryVehicleAssetUid', nextPrimary, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+    const listedSecondary = listedAssignment?.secondaryUid;
+    if (
+      !formState.dirtyFields.secondaryVehicleAssetUid &&
+      !skipListedSecondaryRef.current &&
+      !isAssignedUid(secondaryUid) &&
+      isAssignedUid(listedSecondary) &&
+      listedSecondary !== nextPrimary
+    ) {
+      setValue('secondaryVehicleAssetUid', listedSecondary, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+  }, [
+    isLoading,
+    ownedVehicles,
+    listedAssignment,
+    primaryUid,
+    secondaryUid,
+    formState.dirtyFields.primaryVehicleAssetUid,
+    formState.dirtyFields.secondaryVehicleAssetUid,
+    setValue,
+  ]);
+
   function assignVehicleRole(role: VehicleRole, uid: number | null) {
+    if (
+      role === 'secondary' &&
+      uid != null &&
+      uid === getValues('primaryVehicleAssetUid')
+    ) {
+      return;
+    }
     const field = vehicleRoleField(role);
-    setValue(field, uid, { shouldDirty: true, shouldTouch: true });
     if (role === 'primary' && uid != null && uid === getValues('secondaryVehicleAssetUid')) {
       setValue('secondaryVehicleAssetUid', null, {
         shouldDirty: true,
         shouldTouch: true,
       });
     }
-    if (role === 'secondary' && uid != null && uid === getValues('primaryVehicleAssetUid')) {
-      setValue('secondaryVehicleAssetUid', null, {
-        shouldDirty: true,
-        shouldTouch: true,
-      });
+    setValue(field, uid, { shouldDirty: true, shouldTouch: true });
+  }
+
+  async function persistVehicleRole(role: VehicleRole, uid: number | null) {
+    if (
+      role === 'secondary' &&
+      uid != null &&
+      uid === getValues('primaryVehicleAssetUid')
+    ) {
+      return;
+    }
+    const field = vehicleRoleField(role);
+    const previous = getValues(field);
+    const previousSecondary = getValues('secondaryVehicleAssetUid');
+    assignVehicleRole(role, uid);
+    if (role === 'primary') skipOwnedPrimaryRef.current = uid == null;
+    if (role === 'secondary') skipListedSecondaryRef.current = uid == null;
+    const body: PatchUserTargetBody = { [field]: uid };
+    if (role === 'primary' && uid != null && previousSecondary === uid) {
+      body.secondaryVehicleAssetUid = null;
+    }
+    try {
+      await assignTarget.mutateAsync(body);
+      setValue(field, uid, { shouldDirty: false, shouldTouch: true });
+      if (body.secondaryVehicleAssetUid === null) {
+        setValue('secondaryVehicleAssetUid', null, {
+          shouldDirty: false,
+          shouldTouch: true,
+        });
+      }
+    } catch {
+      setValue(field, previous, { shouldDirty: false });
+      if (role === 'primary') {
+        setValue('secondaryVehicleAssetUid', previousSecondary, {
+          shouldDirty: false,
+        });
+      }
+      toast.error('Could not save vehicle assignment');
     }
   }
 
@@ -241,23 +371,35 @@ export function PrimaryVehicleSection({
       })
     );
 
-    let createdUid: number | undefined = created.asset?.uid;
+    const createdUid = created.asset?.uid;
     if (!createdUid) {
-      const refreshed = await refetch();
-      const fallback =
-        refreshed.find((a) => a.serialNumber === serial) ??
-        refreshed.slice().sort((a, b) => b.uid - a.uid)[0];
-      createdUid = fallback?.uid;
-    }
-
-    if (createdUid) {
-      const role = nextRoleForNewVehicle(
-        getValues('primaryVehicleAssetUid'),
-        getValues('secondaryVehicleAssetUid')
+      toast.error(
+        'Vehicle was created but its id was not returned. Refresh and assign it from the list.'
       );
-      if (role) assignVehicleRole(role, createdUid);
+      setAddOpen(false);
+      return;
     }
 
+    const role = nextRoleForNewVehicle(
+      getValues('primaryVehicleAssetUid'),
+      getValues('secondaryVehicleAssetUid')
+    );
+    if (role) {
+      assignVehicleRole(role, createdUid);
+      if (role === 'primary') skipOwnedPrimaryRef.current = false;
+      if (role === 'secondary') skipListedSecondaryRef.current = false;
+      const field = vehicleRoleField(role);
+      try {
+        await assignTarget.mutateAsync({ [field]: createdUid });
+        setValue(field, createdUid, { shouldDirty: false, shouldTouch: true });
+      } catch {
+        toast.error(
+          'Vehicle was added but could not be assigned. Save the user form to finish assignment.'
+        );
+      }
+    }
+
+    await refetch();
     setAddOpen(false);
   }
 
@@ -315,14 +457,14 @@ export function PrimaryVehicleSection({
               ) : null}
             </FormLabel>
             <Select
-              disabled={isLoading}
+              disabled={isLoading || assignTarget.isPending}
               value={
                 field.value != null && field.value > 0
                   ? String(field.value)
                   : NONE_VALUE
               }
               onValueChange={(v) => {
-                assignVehicleRole('primary', parseAssetUid(v));
+                void persistVehicleRole('primary', parseAssetUid(v));
               }}
             >
               <FormControl>
@@ -332,7 +474,13 @@ export function PrimaryVehicleSection({
               </FormControl>
               <SelectContent>
                 <SelectItem value={NONE_VALUE}>No vehicle selected</SelectItem>
-                {vehicles.map((asset) => (
+                {hasPrimary &&
+                !primaryOptions.some((asset) => asset.uid === field.value) ? (
+                  <SelectItem value={String(field.value)}>
+                    Assigned vehicle #{field.value}
+                  </SelectItem>
+                ) : null}
+                {primaryOptions.map((asset) => (
                   <SelectItem key={asset.uid} value={String(asset.uid)}>
                     {formatVehicleLabel(asset)}
                   </SelectItem>
@@ -344,16 +492,25 @@ export function PrimaryVehicleSection({
         )}
       />
 
-      {isLoading ? (
-        <p className="text-muted-foreground flex items-center gap-1 text-xs">
-          <Loader2Icon className="size-3 animate-spin" />
-          Loading vehicles…
-        </p>
-      ) : selectedPrimary ? (
+      {selectedPrimary ? (
         <VehicleDetails
           asset={selectedPrimary}
           onEdit={() => setEditAsset(selectedPrimary)}
         />
+      ) : hasPrimary ? (
+        isLoading ? (
+          <p className="text-muted-foreground flex items-center gap-1 text-xs">
+            <Loader2Icon className="size-3 animate-spin" />
+            Loading assigned vehicle…
+          </p>
+        ) : (
+          <AssignedVehicleUnavailable uid={primaryUid} />
+        )
+      ) : isLoading ? (
+        <p className="text-muted-foreground flex items-center gap-1 text-xs">
+          <Loader2Icon className="size-3 animate-spin" />
+          Loading vehicles…
+        </p>
       ) : vehicles.length === 0 ? (
         <p className="text-muted-foreground text-xs">
           No active fleet vehicles are available. Add a vehicle or assign one from Assets.
@@ -377,14 +534,14 @@ export function PrimaryVehicleSection({
               ) : null}
             </FormLabel>
             <Select
-              disabled={isLoading}
+              disabled={isLoading || assignTarget.isPending}
               value={
                 field.value != null && field.value > 0
                   ? String(field.value)
                   : NONE_VALUE
               }
               onValueChange={(v) => {
-                assignVehicleRole('secondary', parseAssetUid(v));
+                void persistVehicleRole('secondary', parseAssetUid(v));
               }}
             >
               <FormControl>
@@ -394,16 +551,17 @@ export function PrimaryVehicleSection({
               </FormControl>
               <SelectContent>
                 <SelectItem value={NONE_VALUE}>No vehicle selected</SelectItem>
-                {vehicles
-                  .filter(
-                    (asset) =>
-                      asset.uid !== primaryUid || asset.uid === field.value
-                  )
-                  .map((asset) => (
-                    <SelectItem key={asset.uid} value={String(asset.uid)}>
-                      {formatVehicleLabel(asset)}
-                    </SelectItem>
-                  ))}
+                {hasSecondary &&
+                !secondaryOptions.some((asset) => asset.uid === field.value) ? (
+                  <SelectItem value={String(field.value)}>
+                    Assigned vehicle #{field.value}
+                  </SelectItem>
+                ) : null}
+                {secondaryOptions.map((asset) => (
+                  <SelectItem key={asset.uid} value={String(asset.uid)}>
+                    {formatVehicleLabel(asset)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -416,13 +574,22 @@ export function PrimaryVehicleSection({
           asset={selectedSecondary}
           onEdit={() => setEditAsset(selectedSecondary)}
         />
+      ) : hasSecondary ? (
+        isLoading ? (
+          <p className="text-muted-foreground flex items-center gap-1 text-xs">
+            <Loader2Icon className="size-3 animate-spin" />
+            Loading assigned vehicle…
+          </p>
+        ) : (
+          <AssignedVehicleUnavailable uid={secondaryUid} />
+        )
       ) : null}
 
       <VehicleFormDialog
         open={addOpen}
         onOpenChange={setAddOpen}
         mode="add"
-        isPending={createAsset.isPending}
+        isPending={createAsset.isPending || assignTarget.isPending}
         canSubmit={Boolean(clerkUserId && branchUid)}
         onSubmit={handleAddVehicle}
       />
