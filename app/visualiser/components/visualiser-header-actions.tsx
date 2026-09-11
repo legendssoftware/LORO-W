@@ -5,6 +5,7 @@ import { BarChart3, Info, Loader2, MapPin, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MapSummaryModal } from '@/app/visualiser/components/map-summary-modal';
 import { MapSimulationInfoModal } from '@/app/visualiser/components/map-simulation-info-modal';
+import { ExportSimulationButton } from '@/app/visualiser/components/export-simulation-button';
 import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import { useGeocodeMapBatchMutation } from '@/api/hooks';
 import type { VisualiserLayerId } from '@/lib/utils/visualiser-map-points';
@@ -69,6 +70,7 @@ export function VisualiserHeaderActions({
         >
           <Info className="size-4" />
         </Button>
+        <ExportSimulationButton disabled={disabled} />
         <Button
           type="button"
           size="sm"

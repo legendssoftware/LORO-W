@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -102,6 +102,7 @@ import {
   buildUserTargetPatchBody,
   getDefaultTargetValues,
   parseFormDateInput,
+  preserveAssignedVehicleUids,
   normalizePrimaryBranchUid,
   getEmptyEmploymentProfile,
   getEmptyPersonnelProfile,
@@ -358,10 +359,20 @@ export default function UserSettingsPage() {
     defaultValues: getDefaultTargetValues(null),
   });
   const { dirtyFields: targetDirtyFields } = targetForm.formState;
+  const lastHydratedTargetUid = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     const ut = (user as { userTarget?: Record<string, unknown> | null })?.userTarget ?? null;
-    targetForm.reset(getDefaultTargetValues(ut));
+    const shouldHydrate =
+      lastHydratedTargetUid.current !== user.uid || !targetForm.formState.isDirty;
+    if (!shouldHydrate) return;
+    const incoming = getDefaultTargetValues(ut);
+    const next = preserveAssignedVehicleUids(incoming, targetForm.getValues(), {
+      sameUser: lastHydratedTargetUid.current === user.uid,
+    });
+    targetForm.reset(next);
+    lastHydratedTargetUid.current = user.uid;
   }, [user, targetForm]);
 
   const onSubmit = (values: FormValues) => {
@@ -1417,6 +1428,7 @@ export default function UserSettingsPage() {
                       <PrimaryVehicleSection
                         control={targetForm.control}
                         userUid={user.uid}
+                        userRef={effectiveRef ?? ref ?? String(user.uid)}
                         clerkUserId={user.clerkUserId}
                         branchUid={normalizePrimaryBranchUid(
                           (user as { branchUid?: number | null }).branchUid ??

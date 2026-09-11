@@ -48,9 +48,6 @@ function StaffProfileAttributeIcons({ user }: { user: ReportCardUser }) {
   if (user.hasTargets) {
     items.push({ key: 'targets', label: 'Has targets', Icon: Target });
   }
-  if (user.hasVehicle) {
-    items.push({ key: 'vehicle', label: 'Vehicle assigned', Icon: Car });
-  }
   if (user.hrID != null) {
     items.push({ key: 'hrid', label: `HR ID ${user.hrID}`, Icon: Cpu });
   }
@@ -120,6 +117,33 @@ function HoursClockButton({
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Vehicle chip in the chrome row — only shown when a vehicle is assigned. */
+function VehicleAssignmentChip({
+  hasVehicle,
+  compact,
+}: {
+  hasVehicle: boolean;
+  compact: boolean;
+}) {
+  if (!hasVehicle) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center justify-center rounded-full border border-green-500/50 bg-green-500/15 text-green-600',
+            compact ? 'size-6' : 'size-7'
+          )}
+          aria-label="Vehicle assigned"
+        >
+          <Car className={compact ? 'size-3' : 'size-3.5'} aria-hidden />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Vehicle assigned</TooltipContent>
     </Tooltip>
   );
 }
@@ -352,6 +376,7 @@ function StatusChromeRow({
           </HoverCardContent>
         </HoverCard>
       ) : null}
+      <VehicleAssignmentChip hasVehicle={Boolean(user.hasVehicle)} compact={compact} />
       <StaffProfileAttributeIcons user={user} />
       <CardSettingsLink
         userRef={user.ref}

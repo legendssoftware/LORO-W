@@ -7,6 +7,8 @@ export {
 } from './capture-phases';
 export * from './compute';
 export * from './export-csv';
+export * from './simulation-export-types';
+export * from './build-simulation-export-document';
 export * from './format-potential';
 export * from './bitdrywall-store-formats';
 export * from './turnover-simulation';

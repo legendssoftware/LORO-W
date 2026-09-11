@@ -9,7 +9,11 @@ import {
   type ReactNode,
 } from 'react';
 import type { MapMarkerBase } from '@/api/types/map';
-import type { SiteOpportunityResult, SiteOpportunityZone } from '@/api/types/site-opportunity';
+import type {
+  SiteOpportunityResult,
+  SiteOpportunityZone,
+  TurnoverOverrideSettings,
+} from '@/api/types/site-opportunity';
 
 export type SimulationPanelMode = 'configure' | 'results';
 
@@ -32,6 +36,8 @@ export interface VisualiserSimulationState {
   runMarkers: MapMarkerBase[];
   /** Geo + mode scope applied on the last successful run. */
   runFilters: SimulationRunFilters | null;
+  /** Brand turnover overrides applied on the last successful run. */
+  runTurnoverOverrides: TurnoverOverrideSettings | null;
 }
 
 interface VisualiserSimulationContextValue extends VisualiserSimulationState {
@@ -42,6 +48,7 @@ interface VisualiserSimulationContextValue extends VisualiserSimulationState {
       erpError?: string | null;
       markers?: MapMarkerBase[];
       filters?: SimulationRunFilters | null;
+      turnoverOverrides?: TurnoverOverrideSettings | null;
     },
   ) => void;
   selectZone: (zoneId: string | null) => void;
@@ -67,6 +74,7 @@ const EMPTY: VisualiserSimulationState = {
   panelMode: 'configure',
   runMarkers: [],
   runFilters: null,
+  runTurnoverOverrides: null,
 };
 
 export function VisualiserSimulationProvider({ children }: { children: ReactNode }) {
@@ -80,6 +88,7 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
         erpError?: string | null;
         markers?: MapMarkerBase[];
         filters?: SimulationRunFilters | null;
+        turnoverOverrides?: TurnoverOverrideSettings | null;
       },
     ) => {
       setState((prev) => ({
@@ -96,6 +105,10 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
         runMarkers: meta?.markers ?? prev.runMarkers,
         runFilters:
           result == null ? null : (meta?.filters ?? prev.runFilters),
+        runTurnoverOverrides:
+          result == null
+            ? null
+            : (meta?.turnoverOverrides ?? prev.runTurnoverOverrides),
       }));
     },
     [],

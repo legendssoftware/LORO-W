@@ -394,16 +394,66 @@ export function buildInviteFollowUpPatchBody(
   return body;
 }
 
+/** Coerce API numbers or numeric strings; empty / non-finite → null. */
+export function coerceTargetNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Vehicle asset uid: positive integer only (API may send a string). */
+export function coerceAssetUid(value: unknown): number | null {
+  const n = coerceTargetNumber(value);
+  if (n == null || n <= 0) return null;
+  return n;
+}
+
+/**
+ * Keep locally assigned vehicle UIDs when the same user is re-fetched
+ * and the incoming payload still has null/missing FKs.
+ */
+export function preserveAssignedVehicleUids(
+  incoming: TargetFormValues,
+  current: Pick<
+    TargetFormValues,
+    'primaryVehicleAssetUid' | 'secondaryVehicleAssetUid'
+  >,
+  options: { sameUser: boolean }
+): TargetFormValues {
+  if (!options.sameUser) return incoming;
+  return {
+    ...incoming,
+    primaryVehicleAssetUid:
+      incoming.primaryVehicleAssetUid ?? current.primaryVehicleAssetUid ?? null,
+    secondaryVehicleAssetUid:
+      incoming.secondaryVehicleAssetUid ??
+      current.secondaryVehicleAssetUid ??
+      null,
+  };
+}
+
+/**
+ * When the primary FK is unset and the field was not cleared by the user,
+ * use the first owned vehicle (same fallback as server fuel estimates).
+ */
+export function fillPrimaryVehicleUidFromOwned(
+  primary: number | null | undefined,
+  secondary: number | null | undefined,
+  ownedUids: number[],
+  primaryDirty?: boolean
+): number | null {
+  const current = coerceAssetUid(primary);
+  if (current != null) return current;
+  if (primaryDirty) return null;
+  const secondaryUid = coerceAssetUid(secondary);
+  return ownedUids.find((uid) => uid > 0 && uid !== secondaryUid) ?? null;
+}
+
 /** Default form values for user targets from API userTarget or null. */
 export function getDefaultTargetValues(
   ut: Record<string, unknown> | null
 ): TargetFormValues {
-  const num = (v: unknown): number | null =>
-    v === null || v === undefined
-      ? null
-      : typeof v === 'number' && !Number.isNaN(v)
-        ? v
-        : null;
+  const num = coerceTargetNumber;
   const str = (v: unknown): string | null =>
     v === null || v === undefined
       ? null
@@ -489,13 +539,13 @@ export function getDefaultTargetValues(
     carInstalment: num(src.carInstalment),
     carInsurance: num(src.carInsurance),
     fuel: num(src.fuel),
-    primaryVehicleAssetUid: num(
-      src.primaryVehicleAssetUid ??
-        (ut as { primaryVehicleAssetUid?: unknown }).primaryVehicleAssetUid
+    primaryVehicleAssetUid: coerceAssetUid(
+      (ut as { primaryVehicleAssetUid?: unknown }).primaryVehicleAssetUid ??
+        src.primaryVehicleAssetUid
     ),
-    secondaryVehicleAssetUid: num(
-      src.secondaryVehicleAssetUid ??
-        (ut as { secondaryVehicleAssetUid?: unknown }).secondaryVehicleAssetUid
+    secondaryVehicleAssetUid: coerceAssetUid(
+      (ut as { secondaryVehicleAssetUid?: unknown }).secondaryVehicleAssetUid ??
+        src.secondaryVehicleAssetUid
     ),
     cellPhoneAllowance: num(src.cellPhoneAllowance),
     carMaintenance: num(src.carMaintenance),
