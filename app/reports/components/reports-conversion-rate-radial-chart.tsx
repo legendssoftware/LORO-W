@@ -24,8 +24,8 @@ interface ReportsConversionRateRadialChartProps {
 }
 
 /**
- * Lead conversion vs visits + calls — green = converted (leads), amber = remaining activity.
- * Rate = leads / (visits + calls).
+ * Lead conversion vs visits + countable calls — green = converted (leads), amber = remaining activity.
+ * Rate = leads / (visits + calls). Pass countable calls so voicemail/blank logs do not deflate the rate.
  */
 export function ReportsConversionRateRadialChart({
   leads,

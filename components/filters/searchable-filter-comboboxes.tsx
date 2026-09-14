@@ -524,6 +524,11 @@ export interface SearchableOptionListPickerProps {
   includeAllOption?: boolean;
   /** Value emitted when the synthetic "All" row is chosen. Default `'all'`. */
   allOptionValue?: string;
+  /**
+   * On viewports below `md`, show only the trigger icon (square button).
+   * Label and chevron remain on `md+`.
+   */
+  compactTriggerOnMobile?: boolean;
 }
 
 export function SearchableOptionListPicker({
@@ -538,6 +543,7 @@ export function SearchableOptionListPicker({
   disabled = false,
   includeAllOption = true,
   allOptionValue = 'all',
+  compactTriggerOnMobile = false,
 }: SearchableOptionListPickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -569,20 +575,44 @@ export function SearchableOptionListPicker({
           variant="outline"
           role="combobox"
           aria-expanded={disabled ? false : open}
+          aria-label={triggerLabel}
+          title={triggerLabel}
           disabled={disabled}
           className={cn(
             reportsFilterSelectTriggerClass,
             'justify-between font-normal gap-2',
+            compactTriggerOnMobile &&
+              'h-9 w-9 shrink-0 justify-center px-0 sm:w-9 md:h-9 md:justify-between md:px-3',
+            compactTriggerOnMobile &&
+              selectedValue !== allOptionValue &&
+              'ring-2 ring-violet-500/40',
             triggerClassName
           )}
         >
-          <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span
+            className={cn(
+              'flex min-w-0 items-center gap-2',
+              compactTriggerOnMobile ? 'md:flex-1' : 'flex-1'
+            )}
+          >
             {leftIcon ? (
               <span className="shrink-0 text-muted-foreground [&_svg]:size-4">{leftIcon}</span>
             ) : null}
-            <span className="truncate text-left">{triggerLabel}</span>
+            <span
+              className={cn(
+                'truncate text-left',
+                compactTriggerOnMobile && 'hidden md:inline'
+              )}
+            >
+              {triggerLabel}
+            </span>
           </span>
-          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+          <ChevronsUpDown
+            className={cn(
+              'size-4 shrink-0 opacity-50',
+              compactTriggerOnMobile && 'hidden md:block'
+            )}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent

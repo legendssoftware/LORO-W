@@ -461,6 +461,9 @@ export function rowFromUserListItem(
 
 export type EngagementOverlay = {
   callCount: number;
+  countableCallCount?: number;
+  deadAirCallCount?: number;
+  unsubstantiatedCallCount?: number;
   leadCount: number;
   visitCount: number;
   quotationCount: number;
@@ -763,11 +766,20 @@ export function totalEngagementCheckIns(engagement: {
   return (engagement.callCount ?? 0) + (engagement.visitCount ?? 0);
 }
 
+/** Calls that count toward targets; falls back to logged volume when countable is absent. */
+export function countableCallCountFrom(engagement: {
+  callCount?: number;
+  countableCallCount?: number;
+}): number {
+  return engagement.countableCallCount ?? engagement.callCount ?? 0;
+}
+
 export function applyEngagementToRow(
   row: ReportsTargetRow,
   engagement:
     | {
         callCount: number;
+        countableCallCount?: number;
         leadCount: number;
         visitCount?: number;
         quotationCount?: number;
@@ -808,7 +820,7 @@ export function applyEngagementToRow(
     rangeToYmd,
   });
 
-  const callCount = engagement.callCount ?? 0;
+  const callCount = countableCallCountFrom(engagement);
   const visitCount = engagement.visitCount ?? 0;
   const quotationCount = engagement.quotationCount ?? 0;
   const quotationAmount = engagement.quotationAmount ?? 0;

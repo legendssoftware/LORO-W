@@ -51,10 +51,12 @@ import {
   appendNextStepToResolution,
   isShortCall,
   isValidActivityNextStep,
+  visitLooksLikeDeadAir,
   visitQualityMissingFields,
 } from '@/lib/visit-quality-hints';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VisitMediaUpload, MAX_VISIT_MEDIA_BYTES } from '@/components/visits/visit-media-upload';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import toast from 'react-hot-toast';
 
 const NOTES_MAX_WORDS = 2500;
@@ -73,6 +75,30 @@ function RequiredLabel({ htmlFor, children }: { htmlFor?: string; children: Reac
       </span>
     </Label>
   );
+}
+
+const MISSING_FIELD_ANCHORS: Record<string, string> = {
+  Notes: 'end-visit-notes',
+  Resolution: 'end-visit-resolution',
+  'Contact person': 'end-visit-contact',
+  'Lead next step': 'end-next-step',
+  'Next step': 'end-next-step',
+  'Follow-up date': 'end-visit-followup',
+};
+
+const ZOD_FIELD_LABELS: Record<string, string> = {
+  notes: 'Notes',
+  resolution: 'Resolution',
+  contactFullName: 'Contact person',
+  nextStep: 'Next step',
+  followUp: 'Follow-up date',
+  contactCellPhone: 'Cell',
+  contactLandline: 'Landline',
+  contactEmail: 'Contact email',
+};
+
+function scrollToEndVisitAnchor(anchorId: string) {
+  document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function hasAddress(addr?: ClientAddress): boolean {
@@ -158,10 +184,13 @@ export function EndVisitDialog({
   const [followUpPickerOpen, setFollowUpPickerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null);
   const [clientSearch, setClientSearch] = useState('');
+  const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
+  const [showFooterMissing, setShowFooterMissing] = useState(false);
   const galleryPhotoRef = useRef<HTMLInputElement>(null);
   const cameraPhotoRef = useRef<HTMLInputElement>(null);
   const originalClientRef = useRef<ClientListItem | null>(null);
   const prevOpenRef = useRef(false);
+  const locationPromiseRef = useRef<Promise<string> | null>(null);
 
   const clientsInfinite = useClientsInfinite({
     enabled: open,
@@ -207,7 +236,22 @@ export function EndVisitDialog({
     methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
     checkInTime: statusQuery.data?.checkInTime,
   });
-  const canSubmit = qualityMissing.length === 0 && !checkOutMutation.isPending && !isUploadingMedia;
+  const deadAir = visitLooksLikeDeadAir({
+    notes: endForm.notes,
+    resolution: endForm.resolution,
+    methodOfContact: endForm.methodOfContact ?? activeVisit?.methodOfContact,
+    contactMade: endForm.contactMade,
+  });
+  const canSubmit = !checkOutMutation.isPending && !isUploadingMedia;
+  const footerMissingLabels = useMemo(() => {
+    const labels = [...qualityMissing];
+    for (const [key, message] of Object.entries(endFieldErrors)) {
+      if (!message) continue;
+      const label = ZOD_FIELD_LABELS[key] ?? message;
+      if (!labels.includes(label)) labels.push(label);
+    }
+    return labels;
+  }, [qualityMissing, endFieldErrors]);
   const endVisitDialogContainer =
     typeof document !== 'undefined' ? document.getElementById('end-visit-dialog-content') : null;
 
@@ -227,6 +271,9 @@ export function EndVisitDialog({
     setNextStep('');
     setIsUploadingMedia(false);
     setEndFieldErrors({});
+    setMoreDetailsOpen(false);
+    setShowFooterMissing(false);
+    locationPromiseRef.current = resolveCheckInLocation();
   }, [open, activeVisit, initialFormValues]);
 
   const handleEndPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,6 +331,12 @@ export function EndVisitDialog({
   }
 
   const submitEndVisit = async () => {
+    setShowFooterMissing(true);
+    if (qualityMissing.length > 0) {
+      const firstAnchor = MISSING_FIELD_ANCHORS[qualityMissing[0]];
+      if (firstAnchor) scrollToEndVisitAnchor(firstAnchor);
+      return;
+    }
     const { fieldErrors: errs, firstMessage } = validateEndVisitFormWithZodFieldErrors({
       ...(endForm as Record<string, unknown>),
       nextStep: selectedNextStep,
@@ -292,6 +345,10 @@ export function EndVisitDialog({
     if (firstMessage) {
       setEndFieldErrors(errs);
       toast.error(firstMessage);
+      const firstKey = Object.keys(errs)[0];
+      const firstLabel = firstKey ? ZOD_FIELD_LABELS[firstKey] : undefined;
+      const firstAnchor = firstLabel ? MISSING_FIELD_ANCHORS[firstLabel] : undefined;
+      if (firstAnchor) scrollToEndVisitAnchor(firstAnchor);
       return;
     }
     const stillCheckedIn = await statusQuery.refetch().then((r) => r.data?.checkedIn === true);
@@ -300,7 +357,7 @@ export function EndVisitDialog({
       onOpenChange(false);
       return;
     }
-    const location = await resolveCheckInLocation();
+    const location = await (locationPromiseRef.current ?? resolveCheckInLocation());
     let clientProfileUpdate: CreateCheckOutPayload['clientProfileUpdate'] | undefined;
     if (endForm.client && originalClientRef.current) {
       const orig = originalClientRef.current;
@@ -341,12 +398,18 @@ export function EndVisitDialog({
     let mediaUploadFailed = false;
     try {
       setIsUploadingMedia(true);
-      for (const file of mediaFiles) {
-        try {
-          uploadedMediaUrls.push(await uploadVisitFile(apiClient, file));
-        } catch {
-          mediaUploadFailed = true;
-        }
+      const uploaded = await Promise.all(
+        mediaFiles.map(async (file) => {
+          try {
+            return await uploadVisitFile(apiClient, file);
+          } catch {
+            mediaUploadFailed = true;
+            return null;
+          }
+        }),
+      );
+      for (const url of uploaded) {
+        if (url) uploadedMediaUrls.push(url);
       }
       if (endPhotoFile) {
         try {
@@ -403,25 +466,31 @@ export function EndVisitDialog({
   return (
 <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          id="end-visit-dialog-content"
           showCloseButton={false}
-          className={cn(DETAIL_DIALOG_CONTENT_CLASS, 'z-[10000]')}
+          className={cn(
+            DETAIL_DIALOG_CONTENT_CLASS,
+            'z-[10000] flex flex-col overflow-hidden p-0 pt-0 pr-0',
+          )}
           overlayClassName="z-[10000]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute top-4 right-4 z-10">
             <DetailDialogCloseButton />
           </div>
-          <DialogHeader className="pr-24">
+          <DialogHeader className="shrink-0 px-6 pt-12 pr-14">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
+          <div
+            id="end-visit-dialog-content"
+            className="min-h-0 flex-1 overflow-y-auto px-6 pr-14 pb-2"
+          >
           {qualityMissing.length > 0 ? (
             <Alert className="border-amber-200 bg-amber-50 text-amber-950">
               <TriangleAlert />
               <AlertTitle>This activity will look incomplete on reports</AlertTitle>
               <AlertDescription>
-                Missing: {qualityMissing.join(', ')}. Fill the starred fields to end.
+                Missing: {qualityMissing.join(', ')}. Fill the starred fields, then tap {submitLabel} — a list stays at the bottom.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -430,12 +499,221 @@ export function EndVisitDialog({
               <TriangleAlert />
               <AlertTitle>This call is under 30 seconds</AlertTitle>
               <AlertDescription>
-                Short calls count as a no-call on reports unless notes and resolution explain what was
-                discussed.
+                Add notes and a resolution so the outcome is clear. Duration is not used to count
+                or exclude the call on reports.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {deadAir ? (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+              <TriangleAlert />
+              <AlertTitle>Voicemail / no-answer</AlertTitle>
+              <AlertDescription>
+                Notes and resolution are enough. This will not count as a sales call.
               </AlertDescription>
             </Alert>
           ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+            <div className="grid gap-2 sm:col-span-2">
+              <RequiredLabel htmlFor="end-visit-notes">Notes</RequiredLabel>
+              <Textarea
+                id="end-visit-notes"
+                placeholder="Add notes"
+                value={endForm.notes ?? ''}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, notes: e.target.value }));
+                  if (endFieldErrors.notes) setEndFieldErrors((prev) => ({ ...prev, notes: '' }));
+                }}
+                maxLength={NOTES_MAX_LENGTH}
+                rows={5}
+                className={cn('min-h-[96px] resize-y', endFieldErrors.notes && 'border-destructive')}
+                aria-invalid={!!endFieldErrors.notes}
+              />
+              <p className="text-xs text-muted-foreground">
+                {countWords(endForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+              </p>
+              {endFieldErrors.notes ? (
+                <p className="text-xs text-destructive">{endFieldErrors.notes}</p>
+              ) : null}
+            </div>
+            <div className="grid gap-2 sm:col-span-2">
+              <RequiredLabel htmlFor="end-visit-resolution">Resolution / outcome</RequiredLabel>
+              <Textarea
+                id="end-visit-resolution"
+                placeholder="What was the outcome of this call or visit?"
+                value={endForm.resolution ?? ''}
+                onChange={(e) => {
+                  setEndForm((f) => ({ ...f, resolution: e.target.value }));
+                  if (endFieldErrors.resolution) setEndFieldErrors((prev) => ({ ...prev, resolution: '' }));
+                }}
+                maxLength={NOTES_MAX_LENGTH}
+                rows={5}
+                className={cn(
+                  'min-h-[96px] resize-y',
+                  endFieldErrors.resolution && 'border-destructive',
+                )}
+                aria-invalid={!!endFieldErrors.resolution}
+              />
+              <p className="text-xs text-muted-foreground">
+                {countWords(endForm.resolution).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()}{' '}
+                words
+              </p>
+              {endFieldErrors.resolution ? (
+                <p className="text-xs text-destructive">{endFieldErrors.resolution}</p>
+              ) : null}
+            </div>
+            <div className="grid gap-2 sm:col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label>Contact made</Label>
+                <p className="text-sm text-muted-foreground">
+                  Turn off for voicemail or no-answer — those only need notes and resolution.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="end-contact-made"
+                  checked={endForm.contactMade ?? true}
+                  onCheckedChange={(checked) => setEndForm((f) => ({ ...f, contactMade: !!checked }))}
+                />
+                <label htmlFor="end-contact-made" className="text-sm cursor-pointer">
+                  {endForm.contactMade ?? true ? 'Yes' : 'No'}
+                </label>
+              </div>
+            </div>
+            {!deadAir ? (
+              <>
+                <div className="grid gap-2">
+                  <RequiredLabel htmlFor="end-visit-contact">Contact name</RequiredLabel>
+                  <Input
+                    id="end-visit-contact"
+                    placeholder="Person contacted"
+                    value={endForm.contactFullName ?? ''}
+                    onChange={(e) => {
+                      setEndForm((f) => ({ ...f, contactFullName: e.target.value }));
+                      if (endFieldErrors.contactFullName) {
+                        setEndFieldErrors((prev) => ({ ...prev, contactFullName: '' }));
+                      }
+                    }}
+                    aria-invalid={!!endFieldErrors.contactFullName}
+                    className={endFieldErrors.contactFullName ? 'border-destructive' : ''}
+                  />
+                  {endFieldErrors.contactFullName ? (
+                    <p className="text-xs text-destructive">{endFieldErrors.contactFullName}</p>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 sm:col-span-2" id="end-next-step">
+                  <RequiredLabel>
+                    {hasLead ? 'Lead next step' : 'Next step'}
+                  </RequiredLabel>
+                  <RadioGroup
+                    value={selectedNextStep}
+                    onValueChange={(value) => {
+                      setNextStep(value);
+                      if (endFieldErrors.nextStep) setEndFieldErrors((prev) => ({ ...prev, nextStep: '' }));
+                    }}
+                    className="gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value={ACTIVITY_NEXT_STEP.keep} id="end-next-keep" />
+                      <Label htmlFor="end-next-keep" className="font-normal">
+                        Keep working
+                      </Label>
+                    </div>
+                    {hasLead ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value={ACTIVITY_NEXT_STEP.discard} id="end-next-discard" />
+                          <Label htmlFor="end-next-discard" className="font-normal">
+                            Discard
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value={ACTIVITY_NEXT_STEP.delete} id="end-next-delete" />
+                          <Label htmlFor="end-next-delete" className="font-normal">
+                            Delete
+                          </Label>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value={ACTIVITY_NEXT_STEP.close} id="end-next-close" />
+                        <Label htmlFor="end-next-close" className="font-normal">
+                          No further action
+                        </Label>
+                      </div>
+                    )}
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground">
+                    {hasLead
+                      ? 'This is recorded on the visit for reporting. Discard and delete still happen on the lead page.'
+                      : 'Keep working requires a follow-up date. No further action closes this visit.'}
+                  </p>
+                  {endFieldErrors.nextStep ? (
+                    <p className="text-xs text-destructive">{endFieldErrors.nextStep}</p>
+                  ) : null}
+                </div>
+                <div className="grid gap-2" id="end-visit-followup">
+                  {followUpRequired ? <RequiredLabel>Follow-up</RequiredLabel> : <Label>Follow-up</Label>}
+                  <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !endForm.followUp && 'text-muted-foreground',
+                          endFieldErrors.followUp && 'border-destructive'
+                        )}
+                        aria-invalid={!!endFieldErrors.followUp}
+                      >
+                        <CalendarIcon className="mr-2 size-4" />
+                        {endForm.followUp
+                          ? (() => {
+                              const d = endForm.followUp.match(/^\d{4}-\d{2}-\d{2}/)
+                                ? new Date(endForm.followUp)
+                                : null;
+                              return d && !Number.isNaN(d.getTime())
+                                ? format(d, 'MMM d, yyyy')
+                                : endForm.followUp;
+                            })()
+                          : 'Pick date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-[10001]" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          endForm.followUp && /^\d{4}-\d{2}-\d{2}/.test(endForm.followUp)
+                            ? new Date(endForm.followUp)
+                            : undefined
+                        }
+                        onSelect={(d) => {
+                          setEndForm((f) => ({ ...f, followUp: d ? format(d, 'yyyy-MM-dd') : '' }));
+                          if (endFieldErrors.followUp) setEndFieldErrors((prev) => ({ ...prev, followUp: '' }));
+                          setFollowUpPickerOpen(false);
+                        }}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {endFieldErrors.followUp && (
+                    <p className="text-xs text-destructive">{endFieldErrors.followUp}</p>
+                  )}
+                </div>
+              </>
+            ) : null}
+            <div className="sm:col-span-2">
+              <Collapsible open={moreDetailsOpen} onOpenChange={setMoreDetailsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full justify-between">
+                    More details
+                    <ChevronDown
+                      className={cn('size-4 transition-transform', moreDetailsOpen && 'rotate-180')}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* 1. Type of business (top) */}
             <div className="grid gap-2 sm:col-span-2">
               <Label>Type of business</Label>
@@ -595,71 +873,6 @@ export function EndVisitDialog({
                 </PopoverContent>
               </Popover>
             </div>
-            {/* 3. Notes (textarea, max 2500 words) */}
-            <div className="grid gap-2 sm:col-span-2">
-              <RequiredLabel htmlFor="end-visit-notes">Notes</RequiredLabel>
-              <Textarea
-                id="end-visit-notes"
-                placeholder="Add notes"
-                value={endForm.notes ?? ''}
-                onChange={(e) => {
-                  setEndForm((f) => ({ ...f, notes: e.target.value }));
-                  if (endFieldErrors.notes) setEndFieldErrors((prev) => ({ ...prev, notes: '' }));
-                }}
-                maxLength={NOTES_MAX_LENGTH}
-                rows={10}
-                className={cn('min-h-[200px] resize-y', endFieldErrors.notes && 'border-destructive')}
-                aria-invalid={!!endFieldErrors.notes}
-              />
-              <p className="text-xs text-muted-foreground">
-                {countWords(endForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
-              </p>
-              {endFieldErrors.notes ? (
-                <p className="text-xs text-destructive">{endFieldErrors.notes}</p>
-              ) : null}
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <RequiredLabel htmlFor="end-visit-resolution">Resolution / outcome</RequiredLabel>
-              <Textarea
-                id="end-visit-resolution"
-                placeholder="What was the outcome of this call or visit?"
-                value={endForm.resolution ?? ''}
-                onChange={(e) => {
-                  setEndForm((f) => ({ ...f, resolution: e.target.value }));
-                  if (endFieldErrors.resolution) setEndFieldErrors((prev) => ({ ...prev, resolution: '' }));
-                }}
-                maxLength={NOTES_MAX_LENGTH}
-                rows={10}
-                className={cn('min-h-[200px] resize-y', endFieldErrors.resolution && 'border-destructive')}
-                aria-invalid={!!endFieldErrors.resolution}
-              />
-              <p className="text-xs text-muted-foreground">
-                {countWords(endForm.resolution).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()}{' '}
-                words
-              </p>
-              {endFieldErrors.resolution ? (
-                <p className="text-xs text-destructive">{endFieldErrors.resolution}</p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <RequiredLabel htmlFor="end-visit-contact">Contact name</RequiredLabel>
-              <Input
-                id="end-visit-contact"
-                placeholder="Person contacted"
-                value={endForm.contactFullName ?? ''}
-                onChange={(e) => {
-                  setEndForm((f) => ({ ...f, contactFullName: e.target.value }));
-                  if (endFieldErrors.contactFullName) {
-                    setEndFieldErrors((prev) => ({ ...prev, contactFullName: '' }));
-                  }
-                }}
-                aria-invalid={!!endFieldErrors.contactFullName}
-                className={endFieldErrors.contactFullName ? 'border-destructive' : ''}
-              />
-              {endFieldErrors.contactFullName ? (
-                <p className="text-xs text-destructive">{endFieldErrors.contactFullName}</p>
-              ) : null}
-            </div>
             <div className="grid gap-2">
               <Label>Cell</Label>
               <Input
@@ -810,105 +1023,6 @@ export function EndVisitDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <RequiredLabel>
-                {hasLead ? 'Lead next step' : 'Next step'}
-              </RequiredLabel>
-              <RadioGroup
-                value={selectedNextStep}
-                onValueChange={(value) => {
-                  setNextStep(value);
-                  if (endFieldErrors.nextStep) setEndFieldErrors((prev) => ({ ...prev, nextStep: '' }));
-                }}
-                className="gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value={ACTIVITY_NEXT_STEP.keep} id="end-next-keep" />
-                  <Label htmlFor="end-next-keep" className="font-normal">
-                    Keep working
-                  </Label>
-                </div>
-                {hasLead ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value={ACTIVITY_NEXT_STEP.discard} id="end-next-discard" />
-                      <Label htmlFor="end-next-discard" className="font-normal">
-                        Discard
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value={ACTIVITY_NEXT_STEP.delete} id="end-next-delete" />
-                      <Label htmlFor="end-next-delete" className="font-normal">
-                        Delete
-                      </Label>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value={ACTIVITY_NEXT_STEP.close} id="end-next-close" />
-                    <Label htmlFor="end-next-close" className="font-normal">
-                      No further action
-                    </Label>
-                  </div>
-                )}
-              </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                {hasLead
-                  ? 'This is recorded on the visit for reporting. Discard and delete still happen on the lead page.'
-                  : 'Keep working requires a follow-up date. No further action closes this visit.'}
-              </p>
-              {endFieldErrors.nextStep ? (
-                <p className="text-xs text-destructive">{endFieldErrors.nextStep}</p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              {followUpRequired ? <RequiredLabel>Follow-up</RequiredLabel> : <Label>Follow-up</Label>}
-              <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !endForm.followUp && 'text-muted-foreground',
-                      endFieldErrors.followUp && 'border-destructive'
-                    )}
-                    aria-invalid={!!endFieldErrors.followUp}
-                  >
-                    <CalendarIcon className="mr-2 size-4" />
-                    {endForm.followUp
-                      ? (() => {
-                          const d = endForm.followUp.match(/^\d{4}-\d{2}-\d{2}/)
-                            ? new Date(endForm.followUp)
-                            : null;
-                          return d && !Number.isNaN(d.getTime())
-                            ? format(d, 'MMM d, yyyy')
-                            : endForm.followUp;
-                        })()
-                      : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[10001]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={
-                      endForm.followUp && /^\d{4}-\d{2}-\d{2}/.test(endForm.followUp)
-                        ? new Date(endForm.followUp)
-                        : undefined
-                    }
-                    onSelect={(d) => {
-                      setEndForm((f) => ({ ...f, followUp: d ? format(d, 'yyyy-MM-dd') : '' }));
-                      if (endFieldErrors.followUp) setEndFieldErrors((prev) => ({ ...prev, followUp: '' }));
-                      setFollowUpPickerOpen(false);
-                    }}
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {endFieldErrors.followUp && (
-                <p className="text-xs text-destructive">{endFieldErrors.followUp}</p>
-              )}
-            </div>
             <div className="grid gap-2">
               <Label>Quotation number</Label>
               <Input
@@ -1038,24 +1152,6 @@ export function EndVisitDialog({
               </Select>
             </div>
 
-            {/* Contact made */}
-            <div className="grid gap-2 sm:col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label>Contact made</Label>
-                <p className="text-sm text-muted-foreground">Whether contact was made during the visit</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="end-contact-made"
-                  checked={endForm.contactMade ?? true}
-                  onCheckedChange={(checked) => setEndForm((f) => ({ ...f, contactMade: !!checked }))}
-                />
-                <label htmlFor="end-contact-made" className="text-sm cursor-pointer">
-                  {endForm.contactMade ?? true ? 'Yes' : 'No'}
-                </label>
-              </div>
-            </div>
-
             <div className="grid gap-2 sm:col-span-2">
               <VisitMediaUpload
                 files={mediaFiles}
@@ -1132,8 +1228,37 @@ export function EndVisitDialog({
                 )}
               </div>
             ) : null}
+            </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
           </div>
-          <DialogFooter className="gap-3">
+          </div>
+          <DialogFooter className="shrink-0 gap-3 border-t px-6 pr-14 py-3 sm:flex-col sm:items-stretch">
+            {showFooterMissing && footerMissingLabels.length > 0 ? (
+              <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                <TriangleAlert />
+                <AlertTitle>Still missing</AlertTitle>
+                <AlertDescription>
+                  <span className="flex flex-wrap gap-x-2 gap-y-1">
+                    {footerMissingLabels.map((label) => (
+                      <button
+                        key={label}
+                        type="button"
+                        className="underline-offset-2 hover:underline"
+                        onClick={() => {
+                          const anchor = MISSING_FIELD_ANCHORS[label];
+                          if (anchor) scrollToEndVisitAnchor(anchor);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </span>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="cancel" className="rounded-full" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -1148,6 +1273,7 @@ export function EndVisitDialog({
               )}
               {isUploadingMedia ? 'Uploading…' : submitLabel}
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

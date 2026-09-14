@@ -399,7 +399,7 @@ function Map3DController() {
   if (!isLoaded) return null;
 
   return (
-    <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
+    <div className="absolute top-3 right-3 z-10 hidden flex-col gap-2 md:flex">
       <div className="flex gap-2">
         <Button size="sm" variant="secondary" onClick={handle3DView}>
           <Mountain className="mr-1.5 size-4" />

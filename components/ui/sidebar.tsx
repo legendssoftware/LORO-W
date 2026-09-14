@@ -184,7 +184,7 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Navigation menu.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col items-center text-center">
+          <div className="flex h-full min-h-0 w-full flex-col items-center overflow-hidden text-center">
             {children}
           </div>
         </SheetContent>
@@ -313,7 +313,10 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-header"
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn(
+        "flex shrink-0 flex-col gap-2 p-2 pt-[max(0.5rem,env(safe-area-inset-top))]",
+        className
+      )}
       {...props}
     />
   );
@@ -324,7 +327,10 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-footer"
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn(
+        "flex shrink-0 flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+        className
+      )}
       {...props}
     />
   );

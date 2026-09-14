@@ -218,9 +218,10 @@ export function ReportsInsightsTab() {
     () =>
       data
         ? [
-            { name: 'Blank notes', value: data.completeness.blankNotesPct },
-            { name: 'No contact', value: data.completeness.missingContactPct },
-            { name: 'No follow-up', value: data.completeness.missingFollowUpPct },
+            { name: 'Blank notes (all logs)', value: data.completeness.blankNotesPct },
+            { name: 'No contact (connected)', value: data.completeness.missingContactPct },
+            { name: 'No follow-up (connected)', value: data.completeness.missingFollowUpPct },
+            { name: 'Zero GPS', value: data.completeness.zeroGpsPct },
           ]
         : [],
     [data]
@@ -230,8 +231,8 @@ export function ReportsInsightsTab() {
     () =>
       data
         ? [
-            { label: 'Connected calls', value: data.funnel.connectedTelephone },
-            { label: 'Quality conversations', value: data.funnel.qualityConversations },
+            { label: 'Connected calls (CRM)', value: data.funnel.connectedTelephone },
+            { label: 'Quality conversations (PBX)', value: data.funnel.qualityConversations },
             { label: 'Commercial facts', value: data.funnel.commercialFact },
             { label: 'Next steps', value: data.funnel.nextStep },
             { label: 'Quotes', value: data.funnel.withQuote },
@@ -281,7 +282,7 @@ export function ReportsInsightsTab() {
           sub={data.reliability.verdict}
         />
         <SummaryStat
-          label="Connected calls"
+          label="Connected calls (CRM)"
           value={String(data.funnel.connectedTelephone)}
           sub={`${data.funnel.deadAir} voicemail / no-answer`}
         />
@@ -296,14 +297,18 @@ export function ReportsInsightsTab() {
           sub={`${data.funnel.nextStepPct}% of connected work`}
         />
         <SummaryStat
-          label="Quality conversations"
+          label="Quality conversations (PBX)"
           value={String(data.funnel.qualityConversations)}
           sub={pbxLabel(data.pbxMatchRate, data.telephoneCount)}
         />
         <SummaryStat
-          label="Missed pursuits"
+          label="Missed pursuits (PBX)"
           value={String(data.funnel.missedOpportunities)}
-          sub={`${data.clusters.length} burst clusters`}
+          sub={
+            data.pbxMatchedCount > 0
+              ? `${data.funnel.missedOpportunities} of ${data.pbxMatchedCount} PBX-linked calls`
+              : 'No PBX-linked calls'
+          }
         />
       </div>
 
@@ -332,7 +337,7 @@ export function ReportsInsightsTab() {
             </ReportsChartCard>
             <ReportsChartCard
               title="Completeness gaps"
-              description="Share of connected work missing notes, contact, or a next step. Voicemail is not a missing quote."
+              description="Blank notes and GPS are all CRM logs. Contact and follow-up are connected work only. Voicemail is not a missing quote."
             >
               <ReportsNamedBarChart
                 data={completenessBars}
@@ -374,7 +379,7 @@ export function ReportsInsightsTab() {
 
           <ReportsSection
             title="Opportunity funnel"
-            description="Connected conversations to commercial facts and next steps. Dead air is excluded."
+            description="CRM connected work except quality conversations and missed pursuits, which come from PBX recordings linked to those check-ins."
           >
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {opportunityFunnel.map((step) => (

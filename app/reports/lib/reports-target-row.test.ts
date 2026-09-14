@@ -81,6 +81,17 @@ describe('applyEngagementToRow', () => {
     expect(next.calls.target).toBe(60);
   });
 
+  it('uses countableCallCount for target overlay instead of logged volume', () => {
+    const row = baseRow();
+    const next = applyEngagementToRow(
+      row,
+      { callCount: 60, countableCallCount: 12, leadCount: 0, visitCount: 0 },
+      '2026-08-07',
+      '2026-08-07'
+    );
+    expect(next.calls.current).toBe(12);
+  });
+
   it('must not apply engagement overlay twice (1200 → 60 → 3)', () => {
     const row = baseRow({
       calls: { current: 0, target: 1200, progress: 0 },

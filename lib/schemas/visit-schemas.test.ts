@@ -28,12 +28,12 @@ describe('end visit form schema', () => {
     expect(fieldErrors.followUp).toMatch(/follow-up date/i);
   });
 
-  it('allows discard without a follow-up date', () => {
+  it('allows voicemail checkout without contact or next step', () => {
     const { firstMessage, fieldErrors } = validateEndVisitFormWithZodFieldErrors({
-      notes: 'Not a fit',
-      resolution: 'Too small',
-      contactFullName: 'Thabo',
-      nextStep: ACTIVITY_NEXT_STEP.discard,
+      notes: 'Left voicemail',
+      resolution: 'Try again tomorrow',
+      methodOfContact: 'Telephone',
+      contactMade: false,
       hasLead: true,
     });
     expect(firstMessage).toBeNull();

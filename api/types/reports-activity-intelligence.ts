@@ -16,6 +16,7 @@ export type ActivityIntelligenceTotals = {
 
 export type ActivityIntelligenceCompleteness = {
   blankNotesPct: number;
+  blankNotesConnectedPct: number;
   missingContactPct: number;
   missingQuotePct: number;
   missingFollowUpPct: number;

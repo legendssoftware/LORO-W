@@ -16,6 +16,7 @@ import {
 import {
   ACTIVITY_NEXT_STEP,
   isValidActivityNextStep,
+  visitLooksLikeDeadAir,
 } from '@/lib/visit-quality-hints';
 
 /** Optional string with max length; empty string passes. Accepts null from API payloads. */
@@ -120,6 +121,7 @@ export const endVisitFormSchema = visitFormBaseSchema
         path: ['resolution'],
       });
     }
+    if (visitLooksLikeDeadAir(data)) return;
     if (isBlankField(data.contactFullName)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

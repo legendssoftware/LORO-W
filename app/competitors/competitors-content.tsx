@@ -178,7 +178,7 @@ export function CompetitorsContent() {
                 <TooltipContent>Import competitors</TooltipContent>
               </Tooltip>
               <Button
-                className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
+                className="hidden h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40 md:inline-flex"
                 onClick={openCreate}
               >
                 <Plus className="size-4" />
@@ -189,7 +189,7 @@ export function CompetitorsContent() {
         </div>
 
         <div className="mb-4 flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-nowrap items-center gap-2 md:flex-wrap">
             <div className="flex min-w-0 items-center gap-1">
               <SearchableOptionListPicker
                 selectedValue={statusFilter}
@@ -199,13 +199,14 @@ export function CompetitorsContent() {
                 searchPlaceholder="Search statuses…"
                 emptyMessage="No status found."
                 triggerIcon={<ListFilter className="size-4 shrink-0" />}
-                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[170px]"
+                compactTriggerOnMobile
+                triggerClassName="h-9 min-w-0 shrink-0 md:w-[170px]"
               />
               {statusFilter !== 'all' ? (
                 <button
                   type="button"
                   onClick={() => setStatusFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
                   aria-label="Clear status filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
@@ -221,13 +222,14 @@ export function CompetitorsContent() {
                 searchPlaceholder="Search types…"
                 emptyMessage="No type found."
                 triggerIcon={<Link2 className="size-4 shrink-0" />}
-                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[150px]"
+                compactTriggerOnMobile
+                triggerClassName="h-9 min-w-0 shrink-0 md:w-[150px]"
               />
               {directFilter !== 'all' ? (
                 <button
                   type="button"
                   onClick={() => setDirectFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
                   aria-label="Clear type filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
@@ -243,19 +245,32 @@ export function CompetitorsContent() {
                 searchPlaceholder="Search threat levels…"
                 emptyMessage="No option found."
                 triggerIcon={<ShieldAlert className="size-4 shrink-0" />}
-                triggerClassName="h-9 min-w-0 w-full shrink-0 sm:w-[160px]"
+                compactTriggerOnMobile
+                triggerClassName="h-9 min-w-0 shrink-0 md:w-[160px]"
               />
               {threatFilter !== 'all' ? (
                 <button
                   type="button"
                   onClick={() => setThreatFilter('all')}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
                   aria-label="Clear threat filter"
                 >
                   <XIcon className="size-4 text-muted-foreground" />
                 </button>
               ) : null}
             </div>
+            {canEdit ? (
+              <Button
+                type="button"
+                size="icon"
+                className="ml-auto size-9 shrink-0 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40 md:hidden"
+                onClick={openCreate}
+                aria-label="Add competitor"
+                title="Add competitor"
+              >
+                <Plus className="size-4" />
+              </Button>
+            ) : null}
           </div>
           <div className="flex w-full min-w-0 items-center lg:w-auto">
             <Input
