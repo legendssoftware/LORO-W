@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2Icon, Phone, Timer } from 'lucide-react';
-import { useBranches, useCalls, useUsers } from '@/api/hooks';
+import { useBranches, useCalls, useSessionSync, useTokenReady, useUsers } from '@/api/hooks';
 import type { CallRecordingListItem } from '@/api/types/calls';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { canAccessCallRecordings } from '@/lib/access';
 import { QueryErrorBanner } from '@/components/query-error-banner';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -73,6 +75,10 @@ export function CallsContent() {
   const [endDate, setEndDate] = useState(() => defaultCallsDateRange().end);
   const [useAllTime, setUseAllTime] = useState(false);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const { isTokenReady } = useTokenReady();
+  const { backendUserData, isSyncing } = useSessionSync();
+  const canView = canAccessCallRecordings(backendUserData?.accessLevel);
+  const queriesEnabled = canView && isTokenReady && !isSyncing;
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -96,18 +102,21 @@ export function CallsContent() {
       ? undefined
       : parsedBranchId;
 
-  const { data, isLoading, isError, isFetching, error, refetch } = useCalls({
-    page,
-    limit: pageSize,
-    search: debouncedSearch || undefined,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    callType: directionFilter === 'all' ? undefined : directionFilter,
-    startDate: dateParams.startDate,
-    endDate: dateParams.endDate,
-    branchId,
-  });
-  const branchesQuery = useBranches();
-  const usersQuery = useUsers({ limit: 100 });
+  const { data, isLoading, isError, isFetching, error, refetch } = useCalls(
+    {
+      page,
+      limit: pageSize,
+      search: debouncedSearch || undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      callType: directionFilter === 'all' ? undefined : directionFilter,
+      startDate: dateParams.startDate,
+      endDate: dateParams.endDate,
+      branchId,
+    },
+    { enabled: queriesEnabled },
+  );
+  const branchesQuery = useBranches({ enabled: queriesEnabled });
+  const usersQuery = useUsers({ limit: 100, enabled: queriesEnabled });
 
   const rows = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
@@ -147,6 +156,29 @@ export function CallsContent() {
     setStartDate(range.start);
     setEndDate(range.end);
     setUseAllTime(false);
+  }
+
+  if (!isTokenReady || isSyncing) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+          <LoadingSpinner wrapperClassName="py-24" />
+        </main>
+      </div>
+    );
+  }
+
+  if (!canView) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+          <h1 className="text-xl font-semibold">Call recordings</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You do not have access to call recordings.
+          </p>
+        </main>
+      </div>
+    );
   }
 
   return (

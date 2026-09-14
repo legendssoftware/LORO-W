@@ -258,7 +258,12 @@ export interface GetSubThresholdDailyCallsResponse {
 export interface EngagementRangeUserRow {
   uid: number;
   clerkUserId: string | null;
+  /** Logged non-physical check-ins, including voicemail and blank telephone. */
   callCount: number;
+  /** Calls that count toward targets (same gate as checkout). */
+  countableCallCount?: number;
+  deadAirCallCount?: number;
+  unsubstantiatedCallCount?: number;
   visitCount: number;
   leadCount: number;
   quotationCount: number;

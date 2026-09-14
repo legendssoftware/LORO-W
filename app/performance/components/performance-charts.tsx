@@ -23,6 +23,10 @@ import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-to
 import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import type { PerformanceChartPoint } from '@/api/types/reports-performance';
 import { formatPerformanceMoney } from '../lib/format';
+import {
+  HOURLY_SALES_X_TICKS,
+  padHourlySalesDomain,
+} from '../lib/hourly-sales-chart';
 
 function toBars(data: PerformanceChartPoint[]) {
   return takeTopNWithOther(
@@ -97,7 +101,7 @@ export function PerformanceAreaChartCard({
   isError?: boolean;
   onRetry?: () => void;
 }) {
-  const chartData = data.map((d) => ({ name: d.label || '', value: d.value }));
+  const chartData = padHourlySalesDomain(data);
   const gradientId = useId().replace(/:/g, '');
   const config: ChartConfig = {
     value: { label: 'Revenue', color: ATT_CHART_HSL.c4 },
@@ -123,7 +127,15 @@ export function PerformanceAreaChartCard({
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
+            <XAxis
+              dataKey="name"
+              ticks={[...HOURLY_SALES_X_TICKS]}
+              interval={0}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fontSize: 11 }}
+            />
             <YAxis
               tickLine={false}
               axisLine={false}

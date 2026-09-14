@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 interface ExportSimulationButtonProps {
   disabled?: boolean;
   className?: string;
+  /** Hide the "Export PDF" label below `md` (header toolbar). */
+  compactOnMobile?: boolean;
 }
 
 /**
@@ -21,6 +23,7 @@ interface ExportSimulationButtonProps {
 export function ExportSimulationButton({
   disabled = false,
   className,
+  compactOnMobile = false,
 }: ExportSimulationButtonProps) {
   const orgName = useOrgName();
   const {
@@ -69,6 +72,7 @@ export function ExportSimulationButton({
       className={cn(className)}
       disabled={isDisabled}
       onClick={() => void handleExport()}
+      aria-label={isExporting ? 'Exporting…' : 'Export PDF'}
       title={
         isActive
           ? 'Download a PDF briefing of this simulation'
@@ -80,7 +84,9 @@ export function ExportSimulationButton({
       ) : (
         <Download className="size-4" />
       )}
-      {isExporting ? 'Exporting…' : 'Export PDF'}
+      <span className={cn(compactOnMobile && 'hidden md:inline')}>
+        {isExporting ? 'Exporting…' : 'Export PDF'}
+      </span>
     </Button>
   );
 }

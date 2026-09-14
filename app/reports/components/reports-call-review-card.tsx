@@ -16,12 +16,15 @@ import { ReportsCallOutcomeChip } from './reports-call-outcome-chip';
 export function ReportsCallReviewCard({
   call,
   party,
+  canOpenCallRecordings = false,
 }: {
   call: CallQualityReviewCall;
   party: MatchedCallParty;
+  canOpenCallRecordings?: boolean;
 }) {
   const origin = call.origin ? ORIGIN_LABEL[normalizeOrigin(call.origin)] : null;
   const scoreColors = getScoreColorClasses(call.scoreOverall ?? 0);
+  const recordingHref = canOpenCallRecordings ? `/calls?uid=${call.uid}` : undefined;
 
   return (
     <div className="flex items-start gap-2 rounded-md border px-2.5 py-2 text-sm">
@@ -32,9 +35,15 @@ export function ReportsCallReviewCard({
       ) : null}
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/calls?uid=${call.uid}`} className="min-w-0 hover:underline">
-            <CallPartyLabel party={party} />
-          </Link>
+          {recordingHref ? (
+            <Link href={recordingHref} className="min-w-0 hover:underline">
+              <CallPartyLabel party={party} />
+            </Link>
+          ) : (
+            <span className="min-w-0">
+              <CallPartyLabel party={party} />
+            </span>
+          )}
           <span className={cn('shrink-0 tabular-nums text-sm font-semibold', scoreColors.text)}>
             {formatCallScore(call.scoreOverall)}
           </span>

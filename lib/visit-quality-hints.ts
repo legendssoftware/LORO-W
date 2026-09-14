@@ -178,12 +178,15 @@ export function appendNextStepToResolution(
 
 /**
  * Completeness checklist for end-visit / end-call. Missing items must block submit on web.
- * Voicemail, no-answer, and short calls use the same required fields as a connected call.
+ * Voicemail / no-answer only need notes and resolution. Connected work also needs
+ * contact person, next step, and a follow-up date when keeping the activity open.
  */
 export function visitQualityMissingFields(input: VisitQualityHintInput): string[] {
   const missing: string[] = [];
   if (isBlank(input.notes)) missing.push('Notes');
   if (isBlank(input.resolution)) missing.push('Resolution');
+  if (visitLooksLikeDeadAir(input)) return missing;
+
   if (isBlank(input.contactFullName)) missing.push('Contact person');
 
   const hasLead = input.hasLead === true;

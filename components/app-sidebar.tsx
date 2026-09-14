@@ -8,6 +8,7 @@ import { useSessionSync } from "@/api/hooks";
 import { usePrefetchDashboardQueries } from "@/api/hooks/use-prefetch-dashboard";
 import { usePrefetchStaffQueries } from "@/api/hooks/use-prefetch-staff";
 import {
+  canAccessCallRecordings,
   canAccessCompetitors,
   canAccessPerformanceTracker,
   canAccessReports,
@@ -108,6 +109,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
 
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
+      if (r.path === "/calls") return canAccessCallRecordings(accessLevel);
       if (r.path === "/reports") return canAccessReports(accessLevel);
       if (r.path === "/performance") return canAccessPerformanceTracker(profile);
       if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
@@ -158,7 +160,7 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="offcanvas">
-        <SidebarHeader className="relative flex h-14 w-full shrink-0 flex-row items-center justify-center border-b border-sidebar-border px-3 md:justify-between md:px-4">
+        <SidebarHeader className="relative flex min-h-14 w-full shrink-0 flex-row items-center justify-center border-b border-sidebar-border px-3 md:justify-between md:px-4">
           <BrandMark
             className="min-w-0"
             wordmarkClassName="text-lg font-bold text-sidebar-foreground"
@@ -166,8 +168,8 @@ export function AppSidebar() {
           />
           <SidebarTrigger className="absolute right-3 md:static" />
         </SidebarHeader>
-        <SidebarContent className="justify-center md:justify-start">
-          <SidebarGroup>
+        <SidebarContent className="justify-start">
+          <SidebarGroup className="pt-4">
             <SidebarGroupContent className="w-full">
               <SidebarMenu className="items-center md:items-stretch">
                 {routes.map((route) => {

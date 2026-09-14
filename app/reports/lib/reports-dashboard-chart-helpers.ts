@@ -86,12 +86,46 @@ export function toNamedBars(
 }
 
 export function engagementTotals(
-  users: Array<{ callCount?: number; visitCount?: number; leadCount?: number }>
-): { name: string; calls: number; visits: number; leads: number }[] {
-  const calls = users.reduce((s, u) => s + (u.callCount ?? 0), 0);
+  users: Array<{
+    callCount?: number;
+    countableCallCount?: number;
+    visitCount?: number;
+    leadCount?: number;
+    deadAirCallCount?: number;
+    unsubstantiatedCallCount?: number;
+  }>
+): {
+  name: string;
+  calls: number;
+  loggedCalls: number;
+  visits: number;
+  leads: number;
+  deadAirCalls: number;
+  unsubstantiatedCalls: number;
+}[] {
+  const loggedCalls = users.reduce((s, u) => s + (u.callCount ?? 0), 0);
+  const calls = users.reduce(
+    (s, u) => s + (u.countableCallCount ?? u.callCount ?? 0),
+    0
+  );
   const visits = users.reduce((s, u) => s + (u.visitCount ?? 0), 0);
   const leads = users.reduce((s, u) => s + (u.leadCount ?? 0), 0);
-  return [{ name: 'Team', calls, visits, leads }];
+  const deadAirCalls = users.reduce((s, u) => s + (u.deadAirCallCount ?? 0), 0);
+  const unsubstantiatedCalls = users.reduce(
+    (s, u) => s + (u.unsubstantiatedCallCount ?? 0),
+    0
+  );
+  return [
+    {
+      name: 'Team',
+      calls,
+      loggedCalls,
+      visits,
+      leads,
+      deadAirCalls,
+      unsubstantiatedCalls,
+    },
+  ];
 }
 
 /** Axis / legend label with country flag emoji. */

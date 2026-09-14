@@ -451,6 +451,7 @@ export function ReportsOverviewTab() {
       number,
       {
         callCount: number;
+        countableCallCount?: number;
         leadCount: number;
         visitCount: number;
         quotationCount: number;
@@ -460,6 +461,7 @@ export function ReportsOverviewTab() {
     for (const u of engagementQuery.data?.users ?? []) {
       map.set(u.uid, {
         callCount: u.callCount,
+        countableCallCount: u.countableCallCount,
         leadCount: u.leadCount,
         visitCount: u.visitCount,
         quotationCount: u.quotationCount ?? 0,

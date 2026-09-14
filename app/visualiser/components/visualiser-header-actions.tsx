@@ -38,9 +38,11 @@ export function VisualiserHeaderActions({
           size="sm"
           disabled={disabled}
           onClick={() => setOpenModal('summary')}
+          aria-label="Map data summary"
+          title="Map data summary"
         >
           <BarChart3 className="size-4" />
-          Map data summary
+          <span className="hidden md:inline">Map data summary</span>
         </Button>
         <Button
           type="button"
@@ -50,6 +52,7 @@ export function VisualiserHeaderActions({
           onClick={() =>
             geocodeMutation.mutate({ resetExhausted: true, maxGeocodes: 500 })
           }
+          aria-label={isGeocoding ? 'Geocoding…' : 'Geocode'}
           title="Clear exhausted coordinates and re-geocode missing map addresses"
         >
           {isGeocoding ? (
@@ -57,7 +60,9 @@ export function VisualiserHeaderActions({
           ) : (
             <MapPin className="size-4" />
           )}
-          {isGeocoding ? 'Geocoding…' : 'Geocode'}
+          <span className="hidden md:inline">
+            {isGeocoding ? 'Geocoding…' : 'Geocode'}
+          </span>
         </Button>
         <Button
           type="button"
@@ -70,15 +75,19 @@ export function VisualiserHeaderActions({
         >
           <Info className="size-4" />
         </Button>
-        <ExportSimulationButton disabled={disabled} />
+        <ExportSimulationButton disabled={disabled} compactOnMobile />
         <Button
           type="button"
           size="sm"
           disabled={disabled}
           onClick={() => openPanel(isActive ? 'results' : 'configure')}
+          aria-label={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+          title={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
         >
           <Sparkles className="size-4" />
-          {panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+          <span className="hidden md:inline">
+            {panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+          </span>
         </Button>
       </div>
 
