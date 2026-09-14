@@ -279,12 +279,22 @@ export function ReportsProductivityTab() {
 
       <ReportsSection
         title="Productivity"
-        description="Calls, visits, leads, and sales target progress across the selected period."
+        description="Countable calls (voicemail and blank telephone excluded), visits, leads, and sales target progress."
       >
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <ReportsChartCard
             title="Engagement totals"
-            description="Combined calls, visits, and leads"
+            description={
+              productivityGrouped[0]
+                ? `${productivityGrouped[0].loggedCalls} logged · ${productivityGrouped[0].calls} countable${
+                    productivityGrouped[0].deadAirCalls +
+                      productivityGrouped[0].unsubstantiatedCalls >
+                    0
+                      ? ` · ${productivityGrouped[0].deadAirCalls} voicemail/no-answer · ${productivityGrouped[0].unsubstantiatedCalls} blank telephone`
+                      : ''
+                  }`
+                : 'Combined calls, visits, and leads'
+            }
             isLoading={engagementQuery.isLoading}
             isError={engagementQuery.isError}
             onRetry={() => void engagementQuery.refetch()}
@@ -296,7 +306,7 @@ export function ReportsProductivityTab() {
               series={[
                 {
                   key: 'calls',
-                  label: 'Calls',
+                  label: 'Countable calls',
                   color: REPORTS_CHART_BLUE,
                 },
                 {
@@ -314,7 +324,7 @@ export function ReportsProductivityTab() {
           </ReportsChartCard>
           <ReportsChartCard
             title="Conversion rate"
-            description="Leads as a share of visits + calls"
+            description="Leads as a share of visits + countable calls"
             isLoading={engagementQuery.isLoading}
             isError={engagementQuery.isError}
             onRetry={() => void engagementQuery.refetch()}

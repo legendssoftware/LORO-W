@@ -8,7 +8,7 @@ import {
 } from './visit-quality-hints';
 
 describe('visit quality hints', () => {
-  it('requires notes, resolution, contact, and next step on voicemail', () => {
+  it('requires only notes and resolution on voicemail', () => {
     expect(
       visitQualityMissingFields({
         methodOfContact: 'Telephone',
@@ -18,16 +18,17 @@ describe('visit quality hints', () => {
         quotationNumber: '',
         hasLead: true,
       })
-    ).toEqual(['Resolution', 'Contact person', 'Lead next step']);
+    ).toEqual(['Resolution']);
     expect(
       visitQualityMissingFields({
         methodOfContact: 'Telephone',
         notes: '',
+        contactMade: false,
         contactFullName: '',
         followUp: '',
         hasLead: true,
       })
-    ).toEqual(['Notes', 'Resolution', 'Contact person', 'Lead next step']);
+    ).toEqual(['Notes', 'Resolution']);
   });
 
   it('does not demand a quotation on a connected telephone call', () => {
@@ -55,13 +56,12 @@ describe('visit quality hints', () => {
     ).toBe(true);
   });
 
-  it('requires the same key fields for dead-air and connected calls', () => {
+  it('does not demand contact or next step for dead-air telephone', () => {
     const deadAir = visitQualityMissingFields({
       methodOfContact: 'Telephone',
       notes: 'Left voicemail',
       resolution: 'No answer — try again',
-      contactFullName: 'Thabo',
-      nextStep: ACTIVITY_NEXT_STEP.discard,
+      contactFullName: '',
       hasLead: true,
     });
     expect(deadAir).toEqual([]);

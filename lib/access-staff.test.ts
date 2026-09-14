@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canAccess,
+  canAccessCallRecordings,
   canAccessPerformanceTracker,
   canManageApprovals,
   canManageStaffUsers,
@@ -103,5 +104,32 @@ describe('canAccessPerformanceTracker', () => {
 
     const userOnly = getAllowedRoutes('user');
     expect(userOnly.some((r) => r.path === '/performance')).toBe(false);
+  });
+});
+
+describe('canAccessCallRecordings', () => {
+  it('allows only admin', () => {
+    expect(canAccessCallRecordings('admin')).toBe(true);
+    expect(canAccessCallRecordings('Admin')).toBe(true);
+  });
+
+  it('blocks owner, manager, and standard users', () => {
+    expect(canAccessCallRecordings('owner')).toBe(false);
+    expect(canAccessCallRecordings('manager')).toBe(false);
+    expect(canAccessCallRecordings('user')).toBe(false);
+    expect(canAccessCallRecordings(undefined)).toBe(false);
+  });
+
+  it('gates /calls via canAccess and sidebar routes', () => {
+    expect(canAccess('/calls', 'admin')).toBe(true);
+    expect(canAccess('/calls', 'owner')).toBe(false);
+    expect(canAccess('/calls', 'manager')).toBe(false);
+    expect(canAccess('/calls', 'user')).toBe(false);
+    expect(canAccess('/calls/abc', 'manager')).toBe(false);
+
+    expect(getAllowedRoutes('admin').some((r) => r.path === '/calls')).toBe(true);
+    expect(getAllowedRoutes('owner').some((r) => r.path === '/calls')).toBe(false);
+    expect(getAllowedRoutes('manager').some((r) => r.path === '/calls')).toBe(false);
+    expect(getAllowedRoutes('user').some((r) => r.path === '/calls')).toBe(false);
   });
 });

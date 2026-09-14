@@ -78,6 +78,7 @@ export function ReportsCallQualityLeaderboard({
   sortKey,
   sortDir,
   onSort,
+  canOpenCallRecordings = false,
 }: {
   reps: CallQualityRepRow[];
   labels: Map<string, string>;
@@ -85,6 +86,7 @@ export function ReportsCallQualityLeaderboard({
   sortKey: CallQualityLeaderboardSortKey;
   sortDir: CallQualitySortDir;
   onSort: (key: CallQualityLeaderboardSortKey) => void;
+  canOpenCallRecordings?: boolean;
 }) {
   return (
     <Table>
@@ -176,9 +178,10 @@ export function ReportsCallQualityLeaderboard({
           const score = rep.avgScore ?? 0;
           const colors = getScoreColorClasses(score);
           const party = partyForRep(rep, displayName);
-          const href = rep.isUnlinked
-            ? undefined
-            : `/calls?ownerClerkUserId=${encodeURIComponent(rep.ownerClerkUserId)}`;
+          const href =
+            canOpenCallRecordings && !rep.isUnlinked
+              ? `/calls?ownerClerkUserId=${encodeURIComponent(rep.ownerClerkUserId)}`
+              : undefined;
 
           return (
             <TableRow key={rep.ownerClerkUserId} className="hover:bg-muted/40">

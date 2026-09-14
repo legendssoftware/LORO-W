@@ -7,7 +7,6 @@
 export const STANDARD_USER_PATHS = [
     "/dashboard",
     "/visits",
-    "/calls",
     "/leads",
     "/pipeline",
     "/clients",
@@ -206,6 +205,14 @@ export function isAdminAccessLevel(accessLevel: string | undefined): boolean {
 }
 
 /**
+ * Call recordings (`/calls`) — audio, transcripts, and signed playback.
+ * Admin only; owners, managers, and standard users cannot open the page.
+ */
+export function canAccessCallRecordings(accessLevel: string | undefined): boolean {
+    return isAdminAccessLevel(accessLevel);
+}
+
+/**
  * Whether the user may open organisation / branch admin settings (web UI).
  */
 export function canAccessOrgSettings(accessLevel: string | undefined): boolean {
@@ -303,11 +310,12 @@ function isClientPortalPath(pathNormalized: string): boolean {
  * Returns whether the given path is allowed for the given access level.
  * - Public/auth paths are always allowed.
  * - `/settings` is allowed for all staff (calendar tab); org tabs gated in the page UI.
+ * - `/calls` is admin-only (audio + transcripts).
  * - `/reports` is all staff (Overview + Targets scoped by role).
  * - `/performance` is workforce/role gated (management, finance, elevated, or managed branches).
  * - `/competitors` and `/visualiser` are not available to restricted (standard) users.
  * - Restricted roles only get STANDARD_USER_PATHS (plus Performance when eligible).
- * - Non-restricted roles (e.g. owner, admin, manager) can access other paths.
+ * - Non-restricted roles (e.g. owner, admin, manager) can access other paths except admin-only ones.
  */
 export function canAccess(
     path: string,
@@ -328,6 +336,13 @@ export function canAccess(
 
     if (isSettingsPath(pathNormalized)) {
         return canAccessUserSettings(accessLevel);
+    }
+
+    if (
+        pathNormalized === "/calls" ||
+        pathNormalized.startsWith("/calls/")
+    ) {
+        return canAccessCallRecordings(accessLevel);
     }
 
     if (
@@ -458,7 +473,6 @@ export function getAllowedRoutes(
     const fullNav: AllowedRoute[] = [
         { path: "/dashboard", label: "Home" },
         { path: "/visits", label: "Visits" },
-        { path: "/calls", label: "Call recordings" },
         { path: "/leads", label: "Leads" },
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },
@@ -466,6 +480,11 @@ export function getAllowedRoutes(
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
     ];
+
+    if (canAccessCallRecordings(accessLevel)) {
+        const visitsIndex = fullNav.findIndex((r) => r.path === "/visits");
+        fullNav.splice(visitsIndex + 1, 0, { path: "/calls", label: "Call recordings" });
+    }
 
     if (canManageApprovals(accessLevel, approvableTypes)) {
         const claimsIndex = fullNav.findIndex((r) => r.path === "/claims");

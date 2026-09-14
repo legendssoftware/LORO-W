@@ -17,7 +17,7 @@ function dropOffPct(previous: number, current: number): number | null {
 export function ReportsCallQualityFunnel({ funnel }: { funnel: CallQualityFunnel }) {
   const steps: FunnelStep[] = [
     { label: 'Decision-makers', value: funnel.decisionMakersReached, tone: 'good' },
-    { label: 'Quality conversations', value: funnel.qualityConversations, tone: 'good' },
+    { label: 'Quality conversations (PBX)', value: funnel.qualityConversations, tone: 'good' },
     { label: 'Opportunities', value: funnel.immediateOpportunitiesFound, tone: 'good' },
     { label: 'Projects', value: funnel.projectsIdentified, tone: 'good' },
     { label: 'BOQs', value: funnel.boqsRequested, tone: 'good' },

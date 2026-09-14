@@ -20,7 +20,7 @@ import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { matchNamedParty, type MatchedCallParty } from '@/lib/utils/call-party-match';
-import { getReportsDataScope } from '@/lib/access';
+import { getReportsDataScope, canAccessCallRecordings } from '@/lib/access';
 import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 import { cn } from '@/lib/utils';
 import {
@@ -153,16 +153,19 @@ function CoachingRepRecommendations({
   rep,
   labels,
   matchIndex,
+  canOpenCallRecordings,
 }: {
   rep: CallQualityRepRow;
   labels: Map<string, string>;
   matchIndex: ReturnType<typeof buildCallQualityMatchIndex> | null;
+  canOpenCallRecordings: boolean;
 }) {
   const name = labels.get(rep.ownerClerkUserId) ?? resolveRepDisplayName(rep, matchIndex);
   const party = repToParty(rep, name, matchIndex);
-  const agentHref = rep.isUnlinked
-    ? undefined
-    : `/calls?ownerClerkUserId=${encodeURIComponent(rep.ownerClerkUserId)}`;
+  const agentHref =
+    canOpenCallRecordings && !rep.isUnlinked
+      ? `/calls?ownerClerkUserId=${encodeURIComponent(rep.ownerClerkUserId)}`
+      : undefined;
 
   return (
     <div className="rounded-md border px-3 py-2.5">
@@ -189,6 +192,7 @@ export function ReportsCallQualityTab() {
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const accessLevel = backendUserData?.accessLevel;
+  const canOpenCallRecordings = canAccessCallRecordings(accessLevel);
   const scope = getReportsDataScope(accessLevel);
   const isMultiUser = scope !== 'self';
   const selfRef =
@@ -365,7 +369,7 @@ export function ReportsCallQualityTab() {
           <CardContent className="flex items-center justify-center px-2 py-3">
             <ReportsCallQualityRateRadial
               rate={data.qualityConversationRate}
-              label="Quality conversation rate"
+              label="Quality conversation rate (PBX recordings)"
             />
           </CardContent>
         </Card>
@@ -477,7 +481,7 @@ export function ReportsCallQualityTab() {
       {data.daily.length > 1 ? (
         <ReportsChartCard
           title="Daily recordings vs quality conversations"
-          description={`${data.sources.from} – ${data.sources.to}`}
+          description={`PBX recordings ${data.sources.from} – ${data.sources.to} — not CRM check-ins`}
           contentClassName="px-2 pb-3 pt-1"
         >
           <ReportsCallQualityTrendChart daily={data.daily} />
@@ -519,6 +523,7 @@ export function ReportsCallQualityTab() {
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={handleSort}
+            canOpenCallRecordings={canOpenCallRecordings}
           />
         </CardContent>
       </Card>
@@ -607,6 +612,7 @@ export function ReportsCallQualityTab() {
                   key={call.uid}
                   call={call}
                   party={reviewToParty(call, matchIndex)}
+                  canOpenCallRecordings={canOpenCallRecordings}
                 />
               ))}
             </div>
@@ -626,6 +632,7 @@ export function ReportsCallQualityTab() {
                   rep={rep}
                   labels={labels}
                   matchIndex={matchIndex}
+                  canOpenCallRecordings={canOpenCallRecordings}
                 />
               ))}
             </div>
