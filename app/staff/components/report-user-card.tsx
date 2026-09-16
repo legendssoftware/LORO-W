@@ -6,6 +6,7 @@ import { format, subDays, getDay } from 'date-fns';
 import { useMonthlyAttendance, useSessionSync } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import { PerformanceWarningsDialog } from '@/app/staff/components/performance-warnings-dialog';
+import { StaffTravelExportDialog } from '@/app/staff/components/staff-travel-export-dialog';
 import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedMonthlyHoursWeekdaysOnly,
@@ -24,7 +25,7 @@ import {
   optionKeyFromCheckInNotes,
   resolveDisplayedClockInModeKey,
 } from '@/lib/clock-in-options';
-import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van, Target, Car, Cpu, ShoppingBag } from 'lucide-react';
+import { Smartphone, Laptop, Clock, Building2, Home, House, MapPinX, Van, Target, Car, Cpu, ShoppingBag, Download } from 'lucide-react';
 import { formatLastSeen } from '@/app/staff/lib/format-last-seen';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -148,6 +149,40 @@ function VehicleAssignmentChip({
   );
 }
 
+/**
+ * Opens the per-user travel Excel export dialog from the staff card chrome row.
+ */
+function TravelExportButton({
+  compact,
+  onClick,
+}: {
+  compact: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const label = 'Export visits and travel';
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick(e);
+          }}
+          className={cn(
+            'inline-flex shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-accent',
+            compact ? 'size-6' : 'size-7'
+          )}
+          aria-label={label}
+        >
+          <Download className={compact ? 'size-3' : 'size-3.5'} aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function CardSettingsLink({
   userRef,
   compact,
@@ -222,6 +257,7 @@ function StatusChromeRow({
   modeHoverAriaLabel,
   distanceText,
   mapsQuery,
+  onOpenTravelExport,
 }: {
   user: ReportCardUser;
   compact: boolean;
@@ -240,6 +276,7 @@ function StatusChromeRow({
   modeHoverAriaLabel: string;
   distanceText: string;
   mapsQuery: string | null;
+  onOpenTravelExport: () => void;
 }) {
   const chipSize = compact ? 'size-6' : 'size-7';
   const iconSize = compact ? 'size-3' : 'size-3.5';
@@ -383,6 +420,7 @@ function StatusChromeRow({
         compact={compact}
         onSettingsClick={onSettingsClick}
       />
+      <TravelExportButton compact={compact} onClick={() => onOpenTravelExport()} />
     </div>
   );
 }
@@ -581,6 +619,7 @@ export function ReportUserCard({
   const { backendUserData } = useSessionSync();
   const canManageWarnings = canManageStaffUsers(backendUserData?.accessLevel);
   const [warningsOpen, setWarningsOpen] = useState(false);
+  const [travelExportOpen, setTravelExportOpen] = useState(false);
   const usePayroll =
     user.payrollHours != null &&
     user.payrollTargetHours != null &&
@@ -662,6 +701,14 @@ export function ReportUserCard({
       canManage={canManageWarnings}
     />
   );
+  const travelExportDialog = (
+    <StaffTravelExportDialog
+      open={travelExportOpen}
+      onOpenChange={setTravelExportOpen}
+      userUid={user.userId}
+      userName={user.name}
+    />
+  );
 
   const statusChrome = (
     <StatusChromeRow
@@ -688,6 +735,7 @@ export function ReportUserCard({
       modeHoverAriaLabel={modeHoverAriaLabel}
       distanceText={distanceText}
       mapsQuery={mapsQuery}
+      onOpenTravelExport={() => setTravelExportOpen(true)}
     />
   );
 
@@ -726,6 +774,7 @@ export function ReportUserCard({
         </CardContent>
       </Card>
       {warningsDialog}
+      {travelExportDialog}
       </>
     );
   }
@@ -876,6 +925,7 @@ export function ReportUserCard({
       </CardContent>
     </Card>
     {warningsDialog}
+    {travelExportDialog}
     </>
   );
 }

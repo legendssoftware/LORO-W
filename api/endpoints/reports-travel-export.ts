@@ -10,6 +10,8 @@ export type TravelExportParams = {
   to: string;
   userUid?: number;
   branchId?: number;
+  /** When true, the Axios error interceptor does not toast; the caller shows its own. */
+  skipErrorToast?: boolean;
 };
 
 export function parseContentDispositionFilename(
@@ -49,6 +51,7 @@ export async function downloadTravelExport(
     },
     responseType: 'blob',
     timeout: 120_000,
+    ...(params.skipErrorToast ? { meta: { skipErrorToast: true } } : {}),
   });
   const disposition =
     (response.headers['content-disposition'] as string | undefined) ??
