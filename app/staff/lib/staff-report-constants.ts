@@ -94,3 +94,15 @@ export function getExpectedPayrollHoursByDate(
   const targetHours = EXPECTED_MONTHLY_HOURS;
   return Math.round((soFar / total) * targetHours);
 }
+
+/**
+ * Card bar % toward the payroll period total (180h), not prorated expected-by-now.
+ * Using expected-by-now made on-pace staff show 100% mid-period.
+ */
+export function getPayrollProgressPercent(
+  payrollHours: number,
+  targetHours: number = EXPECTED_MONTHLY_HOURS
+): number {
+  if (targetHours <= 0) return 0;
+  return Math.min(100, Math.round((payrollHours / targetHours) * 100));
+}
