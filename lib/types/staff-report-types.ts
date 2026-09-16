@@ -91,6 +91,6 @@ export interface ReportCardUser {
   payrollTargetHours?: number;
   /** Prorated expected hours by today within the payroll period. */
   payrollExpectedByNow?: number;
-  /** Progress % for payroll period: (payrollHours / payrollExpectedByNow) × 100, capped at 100. */
+  /** Progress % toward payroll period total: (payrollHours / payrollTargetHours) × 100, capped at 100. */
   payrollProgressPercent?: number;
 }
