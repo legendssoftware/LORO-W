@@ -33,6 +33,7 @@ import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-type
 import {
   getExpectedHoursByDateWeekdaysOnly,
   getExpectedPayrollHoursByDate,
+  getPayrollProgressPercent,
   HOURS_BEHIND_BADGE_THRESHOLD,
   EXPECTED_MONTHLY_HOURS,
 } from '@/app/staff/lib/staff-report-constants';
@@ -123,10 +124,10 @@ export function StaffContent() {
     return cardUsers.map((u) => {
       const payrollHours = payrollByUserId.get(u.userId);
       if (payrollHours == null) return u;
-      const payrollProgressPercent =
-        payrollExpectedByNow > 0
-          ? Math.min(100, Math.round((payrollHours / payrollExpectedByNow) * 100))
-          : 0;
+      const payrollProgressPercent = getPayrollProgressPercent(
+        payrollHours,
+        payrollTargetHours
+      );
       return {
         ...u,
         payrollHours,

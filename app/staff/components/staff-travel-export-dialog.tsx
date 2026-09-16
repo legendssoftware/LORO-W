@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApiClient } from '@/api/hooks';
+import { fetchTravelAnalysis } from '@/api/endpoints/reports-travel-analysis';
 import { downloadTravelExport } from '@/api/endpoints/reports-travel-export';
 import { UtcDateRangePicker } from '@/components/filters/utc-date-range-picker';
 import { Button } from '@/components/ui/button';
@@ -18,9 +19,11 @@ import {
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
+import { buildTravelAnalysisDocument } from '@/lib/travel-analysis/build-travel-analysis-document';
+import { downloadTravelAnalysisPdf } from '@/lib/travel-analysis/travel-analysis-pdf';
 
 /**
- * Date-range dialog that downloads the reports travel Excel workbook for one staff member.
+ * Date-range dialog that downloads the reports travel Excel workbook or Analysis PDF for one staff member.
  */
 export function StaffTravelExportDialog({
   open,
@@ -37,6 +40,9 @@ export function StaffTravelExportDialog({
   const [startDate, setStartDate] = useState(utcToday);
   const [endDate, setEndDate] = useState(utcToday);
   const [isExporting, setIsExporting] = useState(false);
+  const [isAnalysing, setIsAnalysing] = useState(false);
+
+  const isBusy = isExporting || isAnalysing;
 
   useEffect(() => {
     if (!open) return;
@@ -44,13 +50,14 @@ export function StaffTravelExportDialog({
     setStartDate(today);
     setEndDate(today);
     setIsExporting(false);
+    setIsAnalysing(false);
   }, [open]);
 
   /**
    * Downloads the 5-sheet travel workbook scoped to this user and the selected UTC range.
    */
   async function handleExport() {
-    if (isExporting) return;
+    if (isBusy) return;
     setIsExporting(true);
     try {
       await downloadTravelExport(client, {
@@ -68,6 +75,30 @@ export function StaffTravelExportDialog({
     }
   }
 
+  /**
+   * Downloads a visualiser-style A4 PDF briefing of day-by-day trips, areas, patterns, and fuel.
+   */
+  async function handleAnalysis() {
+    if (isBusy) return;
+    setIsAnalysing(true);
+    try {
+      const payload = await fetchTravelAnalysis(client, {
+        from: formatUtcYmd(startDate),
+        to: formatUtcYmd(endDate),
+        userUid,
+        skipErrorToast: true,
+      });
+      const document = buildTravelAnalysisDocument(payload, userName);
+      downloadTravelAnalysisPdf(document);
+      toast.success('Travel analysis downloaded');
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(getQueryErrorMessage(error, 'Could not export travel analysis'));
+    } finally {
+      setIsAnalysing(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -80,7 +111,7 @@ export function StaffTravelExportDialog({
         <DialogHeader>
           <DialogTitle>Export travels — {userName}</DialogTitle>
           <DialogDescription>
-            Choose a date range, then export this user's visits and travel as Excel.
+            Choose a date range. Excel is the visits and travel workbook. Analysis is a day-by-day PDF briefing.
           </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto min-h-0 flex-1 pt-2">
@@ -100,14 +131,14 @@ export function StaffTravelExportDialog({
             defaultPreset="today"
             stackLayout
             commitOnSelect
-            disabled={isExporting}
+            disabled={isBusy}
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex flex-col gap-2 sm:flex-col sm:justify-stretch">
           <Button
             type="button"
             className="w-full"
-            disabled={isExporting}
+            disabled={isBusy}
             onClick={() => void handleExport()}
             aria-label={isExporting ? 'Exporting…' : 'Export visits and travel'}
           >
@@ -117,6 +148,21 @@ export function StaffTravelExportDialog({
               <Download className="size-4" aria-hidden />
             )}
             Export visits and travel
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={isBusy}
+            onClick={() => void handleAnalysis()}
+            aria-label={isAnalysing ? 'Building analysis…' : 'Analysis'}
+          >
+            {isAnalysing ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <FileText className="size-4" aria-hidden />
+            )}
+            Analysis
           </Button>
         </DialogFooter>
       </DialogContent>
