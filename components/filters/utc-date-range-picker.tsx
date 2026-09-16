@@ -50,6 +50,8 @@ export interface UtcDateRangePickerProps {
   stackLayout?: boolean;
   /** Which preset counts as the default (reset X hidden). Reports uses today. */
   defaultPreset?: 'today' | 'whole-month';
+  /** Commit the range as soon as a calendar day is selected (to falls back to from). */
+  commitOnSelect?: boolean;
 }
 
 export function UtcDateRangePicker({
@@ -66,6 +68,7 @@ export function UtcDateRangePicker({
   dataTour,
   stackLayout = false,
   defaultPreset = 'today',
+  commitOnSelect = false,
 }: UtcDateRangePickerProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -163,12 +166,14 @@ export function UtcDateRangePicker({
         return;
       }
       onSetUseAllTime?.(false);
-      setDraft({
-        from: r.from ? utcCalendarDateFromLocalPickerDate(r.from) : undefined,
-        to: r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined,
-      });
+      const from = r.from ? utcCalendarDateFromLocalPickerDate(r.from) : undefined;
+      const to = r.to ? utcCalendarDateFromLocalPickerDate(r.to) : undefined;
+      setDraft({ from, to });
+      if (commitOnSelect && from) {
+        onRangeChange(orderUtcCalendarRange(from, to ?? from));
+      }
     },
-    [calendarDisabled, onSetUseAllTime]
+    [calendarDisabled, onSetUseAllTime, commitOnSelect, onRangeChange]
   );
 
   const calendarProps = stackLayout
@@ -309,20 +314,22 @@ export function UtcDateRangePicker({
         <div className="w-full min-w-0 overflow-hidden rounded-md border">
           {calendarPanel}
         </div>
-        <Button
-          type="button"
-          size="sm"
-          disabled={calendarDisabled}
-          className={cn(
-            'h-9 w-full border-transparent bg-violet-600 text-white shadow-sm',
-            'hover:bg-violet-700 hover:text-white',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
-            calendarDisabled && 'pointer-events-none opacity-50'
-          )}
-          onClick={applyDraft}
-        >
-          Apply date range
-        </Button>
+        {commitOnSelect ? null : (
+          <Button
+            type="button"
+            size="sm"
+            disabled={calendarDisabled}
+            className={cn(
+              'h-9 w-full border-transparent bg-violet-600 text-white shadow-sm',
+              'hover:bg-violet-700 hover:text-white',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2',
+              calendarDisabled && 'pointer-events-none opacity-50'
+            )}
+            onClick={applyDraft}
+          >
+            Apply date range
+          </Button>
+        )}
       </div>
     );
   }

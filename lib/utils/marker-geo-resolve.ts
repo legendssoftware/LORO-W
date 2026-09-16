@@ -214,7 +214,8 @@ type BBox = { minLat: number; maxLat: number; minLng: number; maxLng: number };
 
 const COUNTRY_BBOX: Record<AllowedCountry, BBox> = {
   'South Africa': { minLat: -35.0, maxLat: -22.0, minLng: 16.0, maxLng: 33.0 },
-  Botswana: { minLat: -27.0, maxLat: -17.5, minLng: 19.5, maxLng: 29.5 },
+  /** Coarse envelope only; GPS matching uses BOTSWANA_BBOXES so inland SA is not absorbed. */
+  Botswana: { minLat: -26.9, maxLat: -17.8, minLng: 20.0, maxLng: 29.2 },
   Zimbabwe: { minLat: -22.5, maxLat: -15.5, minLng: 25.0, maxLng: 33.5 },
   Namibia: { minLat: -29.0, maxLat: -16.9, minLng: 11.5, maxLng: 25.5 },
   Lesotho: { minLat: -30.7, maxLat: -28.5, minLng: 27.0, maxLng: 29.5 },
@@ -226,16 +227,26 @@ const COUNTRY_BBOX: Record<AllowedCountry, BBox> = {
   Tanzania: { minLat: -11.8, maxLat: -0.9, minLng: 29.3, maxLng: 40.5 },
 };
 
+/**
+ * Two Botswana boxes that follow the real border: west/south (Gaborone, Kgalagadi)
+ * and north-east (Francistown, Tuli). A single rectangle previously swallowed
+ * Johannesburg, Pretoria, Rustenburg, and Polokwane.
+ */
+const BOTSWANA_BBOXES: readonly BBox[] = [
+  { minLat: -26.9, maxLat: -17.8, minLng: 20.0, maxLng: 26.5 },
+  { minLat: -23.0, maxLat: -17.8, minLng: 26.5, maxLng: 29.2 },
+];
+
 /** Rough SA province bounding boxes (approximate; used as last resort). */
 const SA_PROVINCE_BBOX: Record<SaProvince, BBox> = {
   'Western Cape': { minLat: -35.0, maxLat: -30.0, minLng: 17.0, maxLng: 24.5 },
   'Eastern Cape': { minLat: -34.2, maxLat: -30.0, minLng: 22.5, maxLng: 30.0 },
   'Northern Cape': { minLat: -32.5, maxLat: -24.5, minLng: 16.3, maxLng: 25.5 },
-  'Free State': { minLat: -30.7, maxLat: -26.5, minLng: 24.3, maxLng: 29.8 },
+  'Free State': { minLat: -30.7, maxLat: -26.5, minLng: 25.0, maxLng: 29.8 },
   'KwaZulu-Natal': { minLat: -31.2, maxLat: -26.7, minLng: 28.8, maxLng: 32.9 },
   'North West': { minLat: -28.2, maxLat: -24.5, minLng: 22.5, maxLng: 28.5 },
   Gauteng: { minLat: -26.8, maxLat: -25.1, minLng: 27.5, maxLng: 29.0 },
-  Mpumalanga: { minLat: -27.5, maxLat: -22.5, minLng: 28.5, maxLng: 32.2 },
+  Mpumalanga: { minLat: -27.5, maxLat: -24.6, minLng: 28.5, maxLng: 32.2 },
   Limpopo: { minLat: -25.5, maxLat: -22.1, minLng: 26.5, maxLng: 31.9 },
 };
 
@@ -347,6 +358,14 @@ function inBBox(lat: number, lng: number, box: BBox): boolean {
   return lat >= box.minLat && lat <= box.maxLat && lng >= box.minLng && lng <= box.maxLng;
 }
 
+function bboxArea(box: BBox): number {
+  return Math.max(0, box.maxLat - box.minLat) * Math.max(0, box.maxLng - box.minLng);
+}
+
+function inAnyBBox(lat: number, lng: number, boxes: readonly BBox[]): boolean {
+  return boxes.some((box) => inBBox(lat, lng, box));
+}
+
 function filterPostalAddressParts(parts: string[]): string[] {
   return parts.filter((p) => {
     const t = p.trim();
@@ -409,31 +428,21 @@ function provinceFromSaPostal(postal: string): SaProvince | null {
 }
 
 function provinceFromSaBBox(lat: number, lng: number): SaProvince | null {
-  // Prefer smallest matching area — test tighter boxes first (Gauteng)
-  const order: SaProvince[] = [
-    'Gauteng',
-    'KwaZulu-Natal',
-    'Western Cape',
-    'Free State',
-    'Mpumalanga',
-    'Limpopo',
-    'North West',
-    'Eastern Cape',
-    'Northern Cape',
-  ];
-  for (const p of order) {
-    if (inBBox(lat, lng, SA_PROVINCE_BBOX[p])) return p;
-  }
-  return null;
+  const matches = SA_PROVINCES.filter((p) => inBBox(lat, lng, SA_PROVINCE_BBOX[p]));
+  if (matches.length === 0) return null;
+  matches.sort((a, b) => bboxArea(SA_PROVINCE_BBOX[a]) - bboxArea(SA_PROVINCE_BBOX[b]));
+  return matches[0] ?? null;
 }
 
 function countryFromBBox(lat: number, lng: number): AllowedCountry | null {
-  // Smaller countries first to avoid SA absorbing Lesotho/Eswatini
+  // Enclaves inside SA first so they are not absorbed by the SA province boxes.
+  if (inBBox(lat, lng, COUNTRY_BBOX.Lesotho)) return 'Lesotho';
+  if (inBBox(lat, lng, COUNTRY_BBOX.Eswatini)) return 'Eswatini';
+  if (inAnyBBox(lat, lng, BOTSWANA_BBOXES)) return 'Botswana';
+  if (provinceFromSaBBox(lat, lng)) return 'South Africa';
+
   const order: AllowedCountry[] = [
-    'Lesotho',
-    'Eswatini',
     'Malawi',
-    'Botswana',
     'Zimbabwe',
     'Zambia',
     'Namibia',
