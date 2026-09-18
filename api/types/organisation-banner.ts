@@ -9,6 +9,8 @@ export type OrganisationBannerRecord = {
   isAiGenerated: boolean;
   sourceNewsUid: number | null;
   carouselOrder: number | null;
+  startsAt: string | null;
+  endsAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,6 +42,8 @@ export type CreateOrganisationBannerBody = {
   image: string;
   category: string;
   isPublished?: boolean;
+  startsAt?: string;
+  endsAt?: string | null;
 };
 
 export type PatchOrganisationBannerBody = Partial<CreateOrganisationBannerBody>;
