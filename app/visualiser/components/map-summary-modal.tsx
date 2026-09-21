@@ -530,7 +530,13 @@ export function MapSummaryModal({
                         dataKey="count"
                         position="top"
                         content={(props) => (
-                          <BarTopLabel {...props} formatter={formatBarCount} />
+                          <BarTopLabel
+                            x={Number(props.x) || 0}
+                            y={Number(props.y) || 0}
+                            width={Number(props.width) || 0}
+                            value={props.value}
+                            formatter={formatBarCount}
+                          />
                         )}
                       />
                     </Bar>
@@ -545,7 +551,13 @@ export function MapSummaryModal({
                         dataKey="revenue"
                         position="top"
                         content={(props) => (
-                          <BarTopLabel {...props} formatter={formatBarRevenue} />
+                          <BarTopLabel
+                            x={Number(props.x) || 0}
+                            y={Number(props.y) || 0}
+                            width={Number(props.width) || 0}
+                            value={props.value}
+                            formatter={formatBarRevenue}
+                          />
                         )}
                       />
                     </Bar>
