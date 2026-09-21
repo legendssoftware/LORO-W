@@ -247,6 +247,63 @@ export interface LeadImportResponse {
   message?: string;
 }
 
+/** POST /leads/apify/runs */
+export interface StartApifyLeadRunPayload {
+  searchStrings: string[];
+  locationQuery: string;
+  maxPlaces?: number;
+  skipClosedPlaces?: boolean;
+  scrapeContacts?: boolean;
+}
+
+export interface StartApifyLeadRunResponse {
+  runId: string;
+  status: string;
+}
+
+/** GET /leads/apify/runs/:runId */
+export interface ApifyLeadRunStatus {
+  runId: string;
+  status: string;
+  defaultDatasetId?: string;
+  itemCount: number;
+  startedAt?: string;
+  finishedAt?: string;
+  errorMessage?: string;
+}
+
+/** POST /leads/apify/import */
+export interface ImportApifyLeadsPayload {
+  runId: string;
+  assignedUserIds?: number[];
+  targetBranchIds?: number[];
+  targetBranchId?: number;
+  followUpInterval?: string;
+  followUpDuration?: number;
+  source?: string;
+}
+
+/** GET /leads/apify/runs/:runId/preview */
+export interface ApifyLeadPreviewRow {
+  name?: string;
+  companyName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  website?: string;
+  categoryName?: string;
+}
+
+export interface ApifyLeadRunPreview {
+  runId: string;
+  itemCount: number;
+  mappedCount: number;
+  errorCount: number;
+  skippedClosedCount: number;
+  rows: ApifyLeadPreviewRow[];
+  previewLimit: number;
+}
+
 /** Filename for the downloadable CSV template (lead import). */
 export const LEAD_IMPORT_SAMPLE_FILENAME = 'loro-leads-import-sample.csv';
 

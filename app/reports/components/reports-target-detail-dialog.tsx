@@ -21,6 +21,7 @@ import {
   useLeads,
   useLeadsReport,
   useUserTarget,
+  useVariableRemuneration,
 } from '@/api/hooks';
 import { useUserVisitPlanSchedules } from '@/api/hooks/use-user-visit-plan-schedules';
 import {
@@ -304,6 +305,9 @@ export function ReportsTargetDetailDialog({
   );
 
   const targetQuery = useUserTarget(row?.ref ?? null, {
+    enabled: open && !!row?.ref,
+  });
+  const variableRemQuery = useVariableRemuneration(row?.ref ?? null, {
     enabled: open && !!row?.ref,
   });
 
@@ -874,7 +878,45 @@ export function ReportsTargetDetailDialog({
                     {formatMoney(totalCommission, currency)}
                   </span>
                 </span>
+                {variableRemQuery.data &&
+                variableRemQuery.data.status !== 'not_applicable' ? (
+                  <span>
+                    Variable rem:{' '}
+                    <span className="font-medium text-foreground">
+                      {variableRemQuery.data.amountsConfigured
+                        ? `${variableRemQuery.data.currency.symbol}${variableRemQuery.data.liveTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        : `${variableRemQuery.data.gates.filter((g) => g.met).length}/4 gates`}
+                    </span>
+                    <span className="ml-1">
+                      (variable{' '}
+                      {variableRemQuery.data.amountsConfigured
+                        ? variableRemQuery.data.variable.live.toLocaleString()
+                        : '—'}
+                      {' + '}
+                      excellence{' '}
+                      {variableRemQuery.data.amountsConfigured
+                        ? variableRemQuery.data.excellence.live.toLocaleString()
+                        : '—'}
+                      )
+                    </span>
+                  </span>
+                ) : null}
               </div>
+              {variableRemQuery.data &&
+              variableRemQuery.data.status !== 'not_applicable' ? (
+                <ul className="mb-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  {variableRemQuery.data.gates.map((gate) => (
+                    <li key={gate.id}>
+                      {gate.met ? 'Met' : 'Open'}: {gate.label}
+                      {gate.unit === 'percent'
+                        ? ` (${gate.actual}% / ${gate.required}%)`
+                        : gate.unit === 'per_day'
+                          ? ` (${gate.actual} / ${gate.required})`
+                          : ''}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <div className="grid gap-4 lg:grid-cols-2">
                 {commissionsCategoryQuery.isLoading ? (
                   <Skeleton className="h-[220px] w-full" />

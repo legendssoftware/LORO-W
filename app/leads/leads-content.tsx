@@ -35,6 +35,7 @@ import {
 } from './components/leads-list-pagination';
 import { CreateLeadModal } from './components/create-lead-modal';
 import { ImportLeadsModal } from './components/import-leads-modal';
+import { ImportFromApifyModal } from './components/import-from-apify-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
 import { LeadsFiltersBar } from './components/leads-filters-bar';
 import { formatUtcYmd } from '@/lib/utils/overview-daily-summary';
@@ -102,6 +103,7 @@ export function LeadsContent() {
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [apifyImportModalOpen, setApifyImportModalOpen] = useState(false);
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
@@ -399,6 +401,7 @@ export function LeadsContent() {
           canDedupe={canDedupe}
           dedupePending={dedupeMutation.isPending}
           onImportClick={() => setImportModalOpen(true)}
+          onImportApifyClick={() => setApifyImportModalOpen(true)}
           onDedupeClick={() => setDedupeDialogOpen(true)}
         />
         {hasActiveCall && activeCallLeadUid != null ? (
@@ -565,6 +568,11 @@ export function LeadsContent() {
         <ImportLeadsModal
           open={importModalOpen}
           onOpenChange={setImportModalOpen}
+          onSuccess={() => refetchLeads()}
+        />
+        <ImportFromApifyModal
+          open={apifyImportModalOpen}
+          onOpenChange={setApifyImportModalOpen}
           onSuccess={() => refetchLeads()}
         />
         <CreateLeadModal

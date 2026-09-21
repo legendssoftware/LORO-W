@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Megaphone } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -48,7 +48,11 @@ import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { acknowledgeOrganisationNotice, getActiveOrganisationNotice } from '@/api/endpoints/organisation-notice';
 import { activeOrgNoticeKey } from '@/api/query-keys/settings';
-import type { OrganisationNoticeRecord } from '@/api/types/organisation-notice';
+import {
+  DEFAULT_ORGANISATION_NOTICE_THEME,
+  type OrganisationNoticeRecord,
+  type OrganisationNoticeTheme,
+} from '@/api/types/organisation-notice';
 import {
   buildNoticeContentFromRecord,
   getNoticeLocaleOptions,
@@ -79,6 +83,38 @@ function isDismissedForNotice(sessionId: string, noticeUid: number | null): bool
     return dismissedUid === String(noticeUid);
   } catch {
     return false;
+  }
+}
+
+const NOTICE_THEME_STYLES = {
+  alert: {
+    content: '!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl',
+    header: 'relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center dark:bg-red-950/40',
+    select: 'h-8 w-[140px] border-red-200 bg-background text-xs',
+    iconWrap: 'mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50',
+    icon: 'size-7 text-red-700 dark:text-red-400',
+  },
+  policy: {
+    content: '!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-amber-500 p-0 sm:max-w-2xl',
+    header: 'relative shrink-0 bg-amber-50 px-6 pt-8 pb-4 text-center dark:bg-amber-950/40',
+    select: 'h-8 w-[140px] border-amber-200 bg-background text-xs',
+    iconWrap: 'mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50',
+    icon: 'size-7 text-amber-700 dark:text-amber-400',
+  },
+} as const;
+
+/** Resolve dashboard chrome for a notice theme; unknown/missing values stay on the red alert look. */
+function getNoticeThemeStyles(theme: OrganisationNoticeTheme | undefined) {
+  const resolved = theme ?? DEFAULT_ORGANISATION_NOTICE_THEME;
+  switch (resolved) {
+    case 'alert':
+      return { ...NOTICE_THEME_STYLES.alert, Icon: AlertTriangle };
+    case 'policy':
+      return { ...NOTICE_THEME_STYLES.policy, Icon: Megaphone };
+    default: {
+      const _exhaustive: never = resolved;
+      return _exhaustive;
+    }
   }
 }
 
@@ -207,12 +243,14 @@ export function SalesBenchmarksWelcomeDialog({
   }
 
   const dialogOpen = forceOpen ? open : open && !deferForPendingWarning;
+  const themeStyles = getNoticeThemeStyles(activeNotice?.theme);
+  const ThemeIcon = themeStyles.Icon;
 
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={forceOpen}
-        className="!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl"
+        className={themeStyles.content}
         onPointerDownOutside={(e) => {
           if (!forceOpen) e.preventDefault();
         }}
@@ -223,14 +261,14 @@ export function SalesBenchmarksWelcomeDialog({
           if (!forceOpen) e.preventDefault();
         }}
       >
-        <div className="relative shrink-0 bg-red-50 px-6 pt-8 pb-4 text-center dark:bg-red-950/40">
+        <div className={themeStyles.header}>
           <div className="absolute top-4 right-4 z-10">
             <Select
               value={locale}
               onValueChange={(value) => setLocale(value as SalesBenchmarksLocale)}
             >
               <SelectTrigger
-                className="h-8 w-[140px] border-red-200 bg-background text-xs"
+                className={themeStyles.select}
                 aria-label="Notice language"
               >
                 <SelectValue />
@@ -244,8 +282,8 @@ export function SalesBenchmarksWelcomeDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-            <AlertTriangle className="size-7 text-red-700 dark:text-red-400" aria-hidden />
+          <div className={themeStyles.iconWrap}>
+            <ThemeIcon className={themeStyles.icon} aria-hidden />
           </div>
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
             <DialogTitle className="text-lg font-semibold">{content.noticeTitle}</DialogTitle>

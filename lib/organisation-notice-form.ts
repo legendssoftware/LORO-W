@@ -1,4 +1,7 @@
-import type { CreateOrganisationNoticeBody } from '@/api/types/organisation-notice';
+import {
+  DEFAULT_ORGANISATION_NOTICE_THEME,
+  type CreateOrganisationNoticeBody,
+} from '@/api/types/organisation-notice';
 import type { NoticeSection } from '@/lib/sales-benchmarks-welcome/types';
 
 export const NOTICE_SECTION_LABELS = [
@@ -44,6 +47,7 @@ export function emptyNoticeBody(): CreateOrganisationNoticeBody {
     },
     showFrom: new Date().toISOString(),
     showUntil: null,
+    theme: DEFAULT_ORGANISATION_NOTICE_THEME,
     isEnabled: true,
   };
 }

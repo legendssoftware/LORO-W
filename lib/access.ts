@@ -74,6 +74,22 @@ export function canAccessPerformanceTracker(
     return Array.isArray(user.managedBranches) && user.managedBranches.length > 0;
 }
 
+const WELLBEING_DASHBOARD_LEVELS = new Set([
+    "manager",
+    "supervisor",
+    "executive",
+    "hr",
+    "owner",
+    "admin",
+]);
+
+/** Daily Employee Pulse dashboard for managers, HR, executives, owners, and admins. */
+export function canAccessWellbeingDashboard(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level || level === "client") return false;
+    return WELLBEING_DASHBOARD_LEVELS.has(level);
+}
+
 /**
  * Three-tier reports data scope (mirrors server reports-access.util).
  * - org: admin/owner/manager (+ developer, support, hr, supervisor, executive)
@@ -353,6 +369,13 @@ export function canAccess(
     }
 
     if (
+        pathNormalized === "/wellbeing" ||
+        pathNormalized.startsWith("/wellbeing/")
+    ) {
+        return canAccessWellbeingDashboard(accessLevel);
+    }
+
+    if (
         pathNormalized === "/performance" ||
         pathNormalized.startsWith("/performance/")
     ) {
@@ -409,6 +432,7 @@ export interface AllowedRoute {
 export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/dashboard", label: "Home" },
     { path: "/staff", label: "Staff" },
+    { path: "/wellbeing", label: "Wellbeing" },
     { path: "/iot", label: "IoT" },
     { path: "/visits", label: "Visits" },
     { path: "/calls", label: "Call recordings" },
@@ -544,6 +568,15 @@ export function getAllowedRoutes(
             claimsIndex >= 0 ? claimsIndex + 1 : restrictedNav.length,
             0,
             { path: "/approvals", label: "Approvals" }
+        );
+    }
+
+    if (canAccessWellbeingDashboard(accessLevel) && !restrictedNav.some((r) => r.path === "/wellbeing")) {
+        const reportsIndex = restrictedNav.findIndex((r) => r.path === "/reports");
+        restrictedNav.splice(
+            reportsIndex >= 0 ? reportsIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/wellbeing", label: "Wellbeing" }
         );
     }
 

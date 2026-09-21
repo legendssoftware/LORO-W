@@ -160,6 +160,39 @@ function formatBarRevenue(v: number): string {
   return formatZarShort(v);
 }
 
+const BAR_TOP_LABEL_FONT_SIZE = 8;
+
+/** SVG label above a bar. Uses fontSize so Recharts cannot override Tailwind text-* classes. */
+function BarTopLabel({
+  x = 0,
+  y = 0,
+  width = 0,
+  value,
+  formatter,
+}: {
+  x?: number;
+  y?: number;
+  width?: number;
+  value?: number | string;
+  formatter: (v: number) => string;
+}) {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  const label = formatter(numeric);
+  if (!label) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y}
+      dy={-4}
+      textAnchor="middle"
+      className="fill-foreground"
+      fontSize={BAR_TOP_LABEL_FONT_SIZE}
+    >
+      {label}
+    </text>
+  );
+}
+
 interface MapSummaryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -496,8 +529,9 @@ export function MapSummaryModal({
                       <LabelList
                         dataKey="count"
                         position="top"
-                        className="fill-foreground text-[9px]"
-                        formatter={(v: number) => formatBarCount(v)}
+                        content={(props) => (
+                          <BarTopLabel {...props} formatter={formatBarCount} />
+                        )}
                       />
                     </Bar>
                     <Bar
@@ -510,8 +544,9 @@ export function MapSummaryModal({
                       <LabelList
                         dataKey="revenue"
                         position="top"
-                        className="fill-foreground text-[9px]"
-                        formatter={(v: number) => formatBarRevenue(v)}
+                        content={(props) => (
+                          <BarTopLabel {...props} formatter={formatBarRevenue} />
+                        )}
                       />
                     </Bar>
                   </BarChart>

@@ -17,6 +17,11 @@ import type {
   LeadActionResponse,
   EngageDraftParams,
   EngageDraftResponse,
+  StartApifyLeadRunPayload,
+  StartApifyLeadRunResponse,
+  ApifyLeadRunStatus,
+  ImportApifyLeadsPayload,
+  ApifyLeadRunPreview,
 } from '@/api/types/leads';
 import type { LeadsReportResponse } from '@/api/types/reports';
 
@@ -301,6 +306,67 @@ export async function importLeadsFromCSV(
     `/leads/import-csv?${search.toString()}`,
     formData,
     axiosConfig
+  );
+  return data;
+}
+
+const APIFY_IMPORT_LONG_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * POST /leads/apify/runs — start Google Maps scrape (returns immediately with runId).
+ */
+export async function startApifyLeadRun(
+  client: AxiosInstance,
+  payload: StartApifyLeadRunPayload
+): Promise<StartApifyLeadRunResponse> {
+  const { data } = await client.post<StartApifyLeadRunResponse>(
+    '/leads/apify/runs',
+    payload
+  );
+  return data;
+}
+
+/**
+ * GET /leads/apify/runs/:runId — poll Actor run status and dataset item count.
+ */
+export async function getApifyLeadRun(
+  client: AxiosInstance,
+  runId: string,
+  opts?: { skipErrorToast?: boolean }
+): Promise<ApifyLeadRunStatus> {
+  const { data } = await client.get<ApifyLeadRunStatus>(
+    `/leads/apify/runs/${encodeURIComponent(runId)}`,
+    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+  );
+  return data;
+}
+
+/**
+ * GET /leads/apify/runs/:runId/preview — mapped places for review before import.
+ */
+export async function getApifyLeadRunPreview(
+  client: AxiosInstance,
+  runId: string,
+  opts?: { skipErrorToast?: boolean }
+): Promise<ApifyLeadRunPreview> {
+  const { data } = await client.get<ApifyLeadRunPreview>(
+    `/leads/apify/runs/${encodeURIComponent(runId)}/preview`,
+    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+  );
+  return data;
+}
+
+/**
+ * POST /leads/apify/import — map a SUCCEEDED run dataset into leads.
+ */
+export async function importLeadsFromApify(
+  client: AxiosInstance,
+  payload: ImportApifyLeadsPayload
+): Promise<LeadImportResponse> {
+  const { data } = await client.post<LeadImportResponse>(
+    '/leads/apify/import',
+    payload,
+    { timeout: APIFY_IMPORT_LONG_TIMEOUT_MS }
   );
   return data;
 }
