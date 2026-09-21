@@ -58,6 +58,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  BANNER_SCHEDULE_FILTERS,
+  bannerScheduleFilterLabel,
+  bannerScheduleStatusLabel,
+  defaultEndsAtIso,
+  fromDateTimeLocalValue,
+  getBannerScheduleLabel,
+  getBannerScheduleStatus,
+  toDateTimeLocalValue,
+  type BannerScheduleFilter,
+  type BannerScheduleStatus,
+} from '@/lib/banner-schedule';
 
 const PANEL_CLASS = 'rounded-xl border border-border bg-card shadow-sm';
 const DAILY_AI_LIMIT = 5;
@@ -79,6 +92,8 @@ function emptyBannerBody(): CreateOrganisationBannerBody {
     image: '',
     category: 'promotions',
     isPublished: true,
+    startsAt: new Date().toISOString(),
+    endsAt: null,
   };
 }
 
@@ -90,6 +105,8 @@ function recordToForm(record: OrganisationBannerRecord): CreateOrganisationBanne
     image: record.image,
     category: record.category,
     isPublished: record.isPublished,
+    startsAt: record.startsAt ?? new Date().toISOString(),
+    endsAt: record.endsAt,
   };
 }
 
@@ -105,6 +122,8 @@ function formToPreviewRecord(form: CreateOrganisationBannerBody, uid = 0): Organ
     isAiGenerated: false,
     sourceNewsUid: null,
     carouselOrder: null,
+    startsAt: form.startsAt ?? null,
+    endsAt: form.endsAt ?? null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -116,7 +135,49 @@ function validateBannerForm(form: CreateOrganisationBannerBody): string | null {
   if (!form.description.trim()) return 'Description is required';
   if (!form.image.trim()) return 'Image URL or upload is required';
   if (!form.category.trim()) return 'Category is required';
+  if (!form.startsAt) return 'Start time is required';
+  const start = new Date(form.startsAt);
+  if (Number.isNaN(start.getTime())) return 'Start time is invalid';
+  if (form.endsAt) {
+    const end = new Date(form.endsAt);
+    if (Number.isNaN(end.getTime())) return 'End time is invalid';
+    if (end <= start) return 'End time must be after start time';
+  }
   return null;
+}
+
+function scheduleStatusBadge(status: BannerScheduleStatus) {
+  switch (status) {
+    case 'live':
+      return <Badge className="bg-green-600">{bannerScheduleStatusLabel(status)}</Badge>;
+    case 'scheduled':
+      return <Badge variant="secondary">{bannerScheduleStatusLabel(status)}</Badge>;
+    case 'ended':
+      return <Badge variant="outline">{bannerScheduleStatusLabel(status)}</Badge>;
+    case 'hidden':
+      return <Badge variant="outline">{bannerScheduleStatusLabel(status)}</Badge>;
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
+function carouselSlotBadge(status: BannerScheduleStatus, rank: number) {
+  switch (status) {
+    case 'live':
+      return <Badge className="bg-violet-600">Active #{rank}</Badge>;
+    case 'scheduled':
+      return <Badge className="bg-violet-600">Queued #{rank}</Badge>;
+    case 'ended':
+      return <Badge variant="outline">Slot #{rank}</Badge>;
+    case 'hidden':
+      return <Badge variant="outline">Slot #{rank}</Badge>;
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
 }
 
 export function OrganisationBannersSection() {
@@ -136,6 +197,7 @@ export function OrganisationBannersSection() {
   const [aiTheme, setAiTheme] = useState('sales');
   const [aiCount, setAiCount] = useState(DAILY_AI_LIMIT);
   const [aiSuggestions, setAiSuggestions] = useState<BannerSuggestion[]>([]);
+  const [listFilter, setListFilter] = useState<BannerScheduleFilter>('all');
 
   const bannersQuery = useQuery({
     queryKey: settingsOrgBannersKey(orgRef),
@@ -259,6 +321,11 @@ export function OrganisationBannersSection() {
     [banners]
   );
 
+  const filteredBanners = useMemo(() => {
+    if (listFilter === 'all') return banners;
+    return banners.filter((banner) => getBannerScheduleStatus(banner) === listFilter);
+  }, [banners, listFilter]);
+
   const formError = useMemo(() => {
     if (editingUid === null) return null;
     return validateBannerForm(form);
@@ -344,7 +411,9 @@ export function OrganisationBannersSection() {
               App banners &amp; news
             </h2>
             <p className="text-sm text-muted-foreground">
-              Manage carousel banners shown in the mobile app. New published banners enter slot #1 automatically. Choose up to 5 active banners below.
+              Manage carousel banners shown in the mobile app. Published banners play only inside their
+              start/end window. Currently live published banners enter slot #1 automatically. Choose up
+              to 5 active banners below.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               AI saved today: {aiGeneratedToday}/{DAILY_AI_LIMIT}
@@ -405,17 +474,20 @@ export function OrganisationBannersSection() {
           ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          Select and order the banners shown in Home and Sales carousels. Slot #1 appears first.
+          Select and order the banners shown in Home and Sales carousels. Slot #1 appears first. Add
+          scheduled banners to a slot so they go live automatically at start time.
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {Array.from({ length: MAX_ACTIVE }).map((_, slotIndex) => {
             const uid = draftActiveUids[slotIndex];
             const banner = uid ? banners.find((b) => b.uid === uid) : undefined;
+            const slotStatus = banner ? getBannerScheduleStatus(banner) : null;
             return (
               <Card key={slotIndex} className="overflow-hidden">
-                <div className="border-b bg-muted/40 px-2 py-1">
+                <div className="flex items-center justify-between gap-1 border-b bg-muted/40 px-2 py-1">
                   <Badge className="bg-violet-600">#{slotIndex + 1}</Badge>
+                  {slotStatus ? scheduleStatusBadge(slotStatus) : null}
                 </div>
                 {banner?.image ? (
                   <img src={banner.image} alt="" className="h-20 w-full object-cover" />
@@ -434,15 +506,23 @@ export function OrganisationBannersSection() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— Empty —</SelectItem>
-                      {publishedBanners.map((b) => (
-                        <SelectItem key={b.uid} value={String(b.uid)}>
-                          {b.title}
-                        </SelectItem>
-                      ))}
+                      {publishedBanners.map((b) => {
+                        const status = getBannerScheduleStatus(b);
+                        return (
+                          <SelectItem key={b.uid} value={String(b.uid)}>
+                            {b.title} ({bannerScheduleStatusLabel(status)})
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {banner ? (
-                    <p className="line-clamp-1 text-xs text-muted-foreground">{banner.subtitle}</p>
+                    <>
+                      <p className="line-clamp-1 text-xs text-muted-foreground">{banner.subtitle}</p>
+                      <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                        {getBannerScheduleLabel(banner)}
+                      </p>
+                    </>
                   ) : null}
                 </div>
               </Card>
@@ -455,7 +535,27 @@ export function OrganisationBannersSection() {
 
       {/* All banners CRUD list */}
       <div className="space-y-4 px-6 pb-6">
-        <h3 className="text-sm font-medium">All banners</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-medium">All banners</h3>
+          <ToggleGroup
+            type="single"
+            value={listFilter}
+            onValueChange={(value) => {
+              if (BANNER_SCHEDULE_FILTERS.includes(value as BannerScheduleFilter)) {
+                setListFilter(value as BannerScheduleFilter);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            aria-label="Filter banners by schedule status"
+          >
+            {BANNER_SCHEDULE_FILTERS.map((filter) => (
+              <ToggleGroupItem key={filter} value={filter} className="px-3">
+                {bannerScheduleFilterLabel(filter)}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
         {bannersQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading banners…</p>
         ) : bannersQuery.isError ? (
@@ -466,10 +566,13 @@ export function OrganisationBannersSection() {
           <p className="text-sm text-muted-foreground">
             No banners yet. Generate AI suggestions or create one manually.
           </p>
+        ) : filteredBanners.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No banners match this filter.</p>
         ) : (
-          banners.map((banner) => {
+          filteredBanners.map((banner) => {
             const rank = liveAppRank(banner.uid);
             const isActive = liveInAppSet.has(banner.uid);
+            const status = getBannerScheduleStatus(banner);
             return (
               <Card key={banner.uid} className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -477,17 +580,12 @@ export function OrganisationBannersSection() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-medium">{banner.title}</h3>
                       {banner.isAiGenerated ? <Badge variant="secondary">AI generated</Badge> : null}
-                      {banner.isPublished ? (
-                        <Badge className="bg-green-600">Published</Badge>
-                      ) : (
-                        <Badge variant="outline">Hidden</Badge>
-                      )}
-                      {isActive ? (
-                        <Badge className="bg-violet-600">Active #{rank}</Badge>
-                      ) : null}
+                      {scheduleStatusBadge(status)}
+                      {isActive && rank ? carouselSlotBadge(status, rank) : null}
                       <Badge variant="outline">{banner.category}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{banner.subtitle}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{getBannerScheduleLabel(banner)}</p>
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{banner.description}</p>
                     {banner.sourceNewsUid ? (
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -560,7 +658,9 @@ export function OrganisationBannersSection() {
             <DialogTitle>{editingUid === 'new' ? 'Create banner' : 'Edit banner'}</DialogTitle>
             {editingUid === 'new' ? (
               <DialogDescription>
-                Published banners are added to carousel slot #1 when saved.
+                Published banners that are currently in their play window are added to carousel slot #1
+                when saved. Schedule a future start to plan ahead, then add the banner to a slot so it
+                goes live automatically.
               </DialogDescription>
             ) : null}
           </DialogHeader>
@@ -620,6 +720,51 @@ export function OrganisationBannersSection() {
               />
               <Label htmlFor="banner-published">Published in mobile app</Label>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="banner-starts-at">Start time</Label>
+              <Input
+                id="banner-starts-at"
+                type="datetime-local"
+                value={toDateTimeLocalValue(form.startsAt)}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setForm((prev) => ({ ...prev, startsAt: fromDateTimeLocalValue(e.target.value) }));
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="banner-no-end"
+                checked={!form.endsAt}
+                onCheckedChange={(checked) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    endsAt: checked ? null : prev.endsAt ?? defaultEndsAtIso(),
+                  }))
+                }
+              />
+              <Label htmlFor="banner-no-end">No end date</Label>
+            </div>
+            {form.endsAt ? (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="banner-ends-at">End time</Label>
+                <Input
+                  id="banner-ends-at"
+                  type="datetime-local"
+                  value={toDateTimeLocalValue(form.endsAt)}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      endsAt: e.target.value ? fromDateTimeLocalValue(e.target.value) : null,
+                    }))
+                  }
+                />
+              </div>
+            ) : null}
+            <p className="text-xs text-muted-foreground md:col-span-2">
+              Published banners play only inside this window. Add scheduled banners to a carousel slot
+              so they go live automatically at start time.
+            </p>
           </div>
 
           <LogoField
@@ -679,14 +824,16 @@ export function OrganisationBannersSection() {
           ) : null}
           <p className="text-sm text-muted-foreground">{previewBanner?.description}</p>
           {previewBanner ? (
+            <p className="text-xs text-muted-foreground">{getBannerScheduleLabel(previewBanner)}</p>
+          ) : null}
+          {previewBanner ? (
             <div className="flex flex-wrap gap-2">
-              {previewBanner.isPublished ? (
-                <Badge className="bg-green-600">Published</Badge>
-              ) : (
-                <Badge variant="outline">Hidden</Badge>
-              )}
+              {scheduleStatusBadge(getBannerScheduleStatus(previewBanner))}
               {previewBanner.uid > 0 && liveInAppSet.has(previewBanner.uid) ? (
-                <Badge className="bg-violet-600">Active #{liveAppRank(previewBanner.uid)}</Badge>
+                carouselSlotBadge(
+                  getBannerScheduleStatus(previewBanner),
+                  liveAppRank(previewBanner.uid) ?? 1
+                )
               ) : null}
               <Badge variant="outline">{previewBanner.category}</Badge>
             </div>

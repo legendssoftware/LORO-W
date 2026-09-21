@@ -23,6 +23,8 @@ import {
   getEngageDraft,
   sendLeadEngage,
   importLeadsFromCSV,
+  startApifyLeadRun,
+  importLeadsFromApify,
   dedupeLeads,
 } from '@/api/endpoints/leads';
 import type {
@@ -36,6 +38,7 @@ import type {
   EngageDraftParams,
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
+import type { ImportApifyLeadsPayload, StartApifyLeadRunPayload } from '@/api/types/leads';
 
 /** Query key prefix for leads. Use for invalidateQueries after create, import, or other lead mutations. */
 export const LEADS_QUERY_KEY_PREFIX = ['leads'] as const;
@@ -418,6 +421,26 @@ export function useImportLeadsMutation() {
       importLeadsFromCSV(client, formData, params, {
         longRunning: longRunning === true,
       }),
+    onSuccess: () => {
+      invalidateLeadQueries(queryClient, { scopes: ['all'] });
+    },
+  });
+}
+
+export function useStartApifyLeadRunMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: async (payload: StartApifyLeadRunPayload) =>
+      startApifyLeadRun(client, payload),
+  });
+}
+
+export function useImportApifyLeadsMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: ImportApifyLeadsPayload) =>
+      importLeadsFromApify(client, payload),
     onSuccess: () => {
       invalidateLeadQueries(queryClient, { scopes: ['all'] });
     },

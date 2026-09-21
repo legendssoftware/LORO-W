@@ -106,11 +106,13 @@ import {
   Megaphone,
   ImageIcon,
   PhoneCall,
+  MapPin,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
 import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
 import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
 import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
+import { ApifyLeadJobsSection } from '@/components/settings/apify-lead-jobs-section';
 import { canAccessOrgSettings } from '@/lib/access';
 import { FORM_PLACEHOLDERS, ADDRESS_FIELD_PLACEHOLDERS } from '@/lib/form-placeholders';
 
@@ -343,7 +345,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'notices' | 'banners' | 'call-quality';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'scrapping' | 'notices' | 'banners' | 'call-quality';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -1280,7 +1282,7 @@ export function SettingsContent() {
       <div data-tour="settings-page-header">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage organisation profile, appearance, regional defaults, hours, branches, notices, and app banners.
+          Manage organisation profile, appearance, regional defaults, hours, branches, scrapping, notices, and app banners.
         </p>
       </div>
 
@@ -1348,6 +1350,16 @@ export function SettingsContent() {
             >
               <CalendarDays className="mr-2 size-4" />
               Calendar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('scrapping')}
+              className={tabBtnClass('scrapping')}
+            >
+              <MapPin className="mr-2 size-4" />
+              Scrapping
             </Button>
             <Button
               type="button"
@@ -3208,6 +3220,12 @@ export function SettingsContent() {
 
           {activeTab === 'calendar' && (
             <CalendarIntegrationsSection />
+          )}
+
+          {activeTab === 'scrapping' && (
+            <ApifyLeadJobsSection
+              orgTimezone={settingsQuery.data?.settings?.regional?.timezone}
+            />
           )}
 
           {activeTab === 'notices' && (

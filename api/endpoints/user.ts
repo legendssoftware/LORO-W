@@ -708,11 +708,12 @@ export interface BonusStatusResponse {
     achievedVisits: number;
     dayPct: number | null;
   } | null;
-  sources: { crmOnly: true };
+  sources: { crmOnly: true; countableCalls: true };
 }
 
 /**
  * GET /user/:ref/bonus-status — year-end performance bonus progress and eligibility.
+ * achievedCalls is countable sales calls only (excludes voicemail, no-answer, blank telephone).
  */
 export async function getBonusStatus(
   client: AxiosInstance,
@@ -722,6 +723,66 @@ export async function getBonusStatus(
   const { data } = await client.get<BonusStatusResponse>(`/user/${ref}/bonus-status`, {
     params: params?.asOf ? { asOf: params.asOf } : undefined,
   });
+  return data;
+}
+
+/** GET /user/:ref/variable-remuneration — live monthly variable + excellence (on top of commission) */
+export type VariableRemStatus =
+  | 'on_track'
+  | 'partial'
+  | 'earned'
+  | 'zero'
+  | 'not_applicable';
+
+export type VariableRemGateId = 'visits' | 'calls' | 'conversion' | 'quality';
+
+export interface VariableRemunerationResponse {
+  message: string;
+  status: VariableRemStatus;
+  month: string;
+  position: { key: string; label: string } | null;
+  currency: { code: string; symbol: string };
+  amountsConfigured: boolean;
+  workingDaysWorked: number;
+  remainingWorkingDays: number;
+  averages: { visits: number; calls: number; conversionPct: number };
+  gates: Array<{
+    id: VariableRemGateId;
+    label: string;
+    met: boolean;
+    required: number;
+    actual: number;
+    unit: 'per_day' | 'percent' | 'count';
+  }>;
+  variable: { max: number | null; live: number };
+  excellence: { max: number | null; live: number; band: number };
+  liveTotal: number;
+  isPartialMonth: boolean;
+  today: {
+    date: string;
+    visits: number;
+    calls: number;
+    requiredVisits: number;
+    requiredCalls: number;
+  } | null;
+  validVisitCount: number;
+  validCallCount: number;
+  convertingVisitCount: number;
+  sources: { crmAndAttendance: true };
+}
+
+/**
+ * GET /user/:ref/variable-remuneration — live variable pay + excellence bonus.
+ */
+export async function getVariableRemuneration(
+  client: AxiosInstance,
+  ref: string,
+  params?: { month?: string }
+): Promise<VariableRemunerationResponse> {
+  const { data } = await client.get<VariableRemunerationResponse>(
+    `/user/${ref}/variable-remuneration`,
+    { params: params?.month ? { month: params.month } : undefined }
+  );
   return data;
 }
 

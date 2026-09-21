@@ -14,9 +14,11 @@ import {
   patchOrganisationNotice,
   postOrganisationNotice,
 } from '@/api/endpoints/organisation-notice';
-import type {
-  CreateOrganisationNoticeBody,
-  OrganisationNoticeRecord,
+import {
+  DEFAULT_ORGANISATION_NOTICE_THEME,
+  type CreateOrganisationNoticeBody,
+  type OrganisationNoticeRecord,
+  type OrganisationNoticeTheme,
 } from '@/api/types/organisation-notice';
 import {
   activeOrgNoticeKey,
@@ -67,6 +69,7 @@ function recordToForm(record: OrganisationNoticeRecord): CreateOrganisationNotic
     translations: record.translations ?? undefined,
     showFrom: record.showFrom,
     showUntil: record.showUntil,
+    theme: record.theme ?? DEFAULT_ORGANISATION_NOTICE_THEME,
     isEnabled: record.isEnabled,
   };
 }
@@ -181,6 +184,7 @@ export function OrganisationNoticesSection() {
       translations: normalized.translations ?? null,
       showFrom: normalized.showFrom,
       showUntil: normalized.showUntil ?? null,
+      theme: normalized.theme ?? DEFAULT_ORGANISATION_NOTICE_THEME,
       isEnabled: normalized.isEnabled ?? true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -224,6 +228,11 @@ export function OrganisationNoticesSection() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">{notice.title}</h3>
                     {statusBadge(getNoticeStatus(notice))}
+                    {notice.theme === 'policy' ? (
+                      <Badge className="bg-amber-500 hover:bg-amber-500">Policy</Badge>
+                    ) : (
+                      <Badge variant="destructive">Alert</Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">{notice.subtitle}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -328,6 +337,33 @@ export function OrganisationNoticesSection() {
                 <p className="text-xs text-muted-foreground">
                   By default each user sees this notice 3 times. Set a date to keep showing it on every
                   sign-in until then.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Label>Colour</Label>
+                <RadioGroup
+                  value={form.theme ?? DEFAULT_ORGANISATION_NOTICE_THEME}
+                  onValueChange={(value) => {
+                    const theme: OrganisationNoticeTheme = value === 'policy' ? 'policy' : 'alert';
+                    setForm((prev) => ({ ...prev, theme }));
+                  }}
+                  className="gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="alert" id="notice-theme-alert" />
+                    <Label htmlFor="notice-theme-alert" className="font-normal">
+                      Alert (red)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="policy" id="notice-theme-policy" />
+                    <Label htmlFor="notice-theme-policy" className="font-normal">
+                      Policy (amber)
+                    </Label>
+                  </div>
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  Use amber for policy and allowance notices so they stand out from red disciplinary alerts.
                 </p>
               </div>
               {form.showUntil ? (

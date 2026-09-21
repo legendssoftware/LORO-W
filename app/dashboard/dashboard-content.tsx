@@ -1,7 +1,7 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Clock } from 'lucide-react';
 import {
@@ -28,6 +28,10 @@ import { getBrowserPosition, geolocationFailureMessage } from '@/lib/browser-geo
 import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientDashboardHome } from '@/app/client-portal/components/client-dashboard-home';
+import { PulseDialog } from '@/components/pulse-dialog';
+import { usePulseMe, useSubmitPulseMutation } from '@/api/hooks/use-pulse';
+import type { PulsePeriod, PulseSubmitBody } from '@/api/types/pulse';
+import { DashboardVariableRemCard } from '@/components/dashboard-variable-rem-card';
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
@@ -42,6 +46,10 @@ export function DashboardContent() {
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
   const [clockInContextError, setClockInContextError] = useState<string | null>(null);
+  const [pulseOpen, setPulseOpen] = useState(false);
+  const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>('morning');
+  const pendingCheckOutRef = useRef(false);
+  const skipPulsePromptRef = useRef(false);
 
   const currentUserForModal = useMemo((): ReportCardUser | null => {
     if (!profile?.uid) return null;
@@ -92,6 +100,8 @@ export function DashboardContent() {
   const attCheckInMutation = useAttCheckInMutation();
   const attCheckOutMutation = useAttCheckOutMutation();
   const breakMutation = useBreakMutation();
+  const pulseMe = usePulseMe(staffAttendanceEnabled);
+  const submitPulseMutation = useSubmitPulseMutation();
   const attStatus = attQuery.data;
   const checkedIn = attStatus?.checkedIn ?? false;
   const onBreak =
@@ -167,12 +177,23 @@ export function DashboardContent() {
       {
         onSuccess: () => {
           showSuccessToast('Shift started', toast);
+          if (!pulseMe.data?.morningSubmitted) {
+            setPulsePeriod('morning');
+            setPulseOpen(true);
+          }
         },
       }
     );
   };
 
   const handleCheckOut = async () => {
+    if (!skipPulsePromptRef.current && !pulseMe.data?.eveningSubmitted) {
+      pendingCheckOutRef.current = true;
+      setPulsePeriod('evening');
+      setPulseOpen(true);
+      return;
+    }
+    skipPulsePromptRef.current = false;
     const position = await getBrowserPosition();
     const noLocationNote = 'Clocked out without location (browser location not granted).';
     attCheckOutMutation.mutate(
@@ -230,6 +251,35 @@ export function DashboardContent() {
     );
   };
 
+  function finishEveningThenCheckout() {
+    setPulseOpen(false);
+    if (pendingCheckOutRef.current) {
+      pendingCheckOutRef.current = false;
+      skipPulsePromptRef.current = true;
+      void handleCheckOut();
+    }
+  }
+
+  function handlePulseSkip() {
+    if (pulsePeriod === 'evening') {
+      finishEveningThenCheckout();
+      return;
+    }
+    setPulseOpen(false);
+  }
+
+  function handlePulseSubmit(body: PulseSubmitBody) {
+    submitPulseMutation.mutate(body, {
+      onSuccess: () => {
+        if (body.period === 'evening') {
+          finishEveningThenCheckout();
+          return;
+        }
+        setPulseOpen(false);
+      },
+    });
+  };
+
   // Render a single consistent tree until mounted to avoid hydration mismatch:
   // server and initial client render both show the same loading placeholder.
   if (!mounted) {
@@ -276,6 +326,13 @@ export function DashboardContent() {
               breakStartTime={attStatus?.breakStartTime ?? null}
               orgTimezone={attStatus?.schedule?.timezone ?? null}
             />
+            <PulseDialog
+              open={pulseOpen}
+              period={pulsePeriod}
+              submitting={submitPulseMutation.isPending}
+              onSkip={handlePulseSkip}
+              onSubmit={handlePulseSubmit}
+            />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}
               headerTrailing={
@@ -296,6 +353,9 @@ export function DashboardContent() {
             <UserAttendanceRecordsModal
               user={attendanceModalUser}
               onClose={() => setAttendanceModalUser(null)}
+            />
+            <DashboardVariableRemCard
+              userRef={calendarUserRef != null ? String(calendarUserRef) : null}
             />
           </div>
         )}

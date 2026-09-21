@@ -16,6 +16,7 @@ import {
   getUserTarget,
   getDailyProductivity,
   getBonusStatus,
+  getVariableRemuneration,
   patchUserTarget,
   clearSelectedPerformanceWarnings,
   getUserPreferences,
@@ -39,6 +40,7 @@ export const DAILY_PRODUCTIVITY_KEY_PREFIX = [
   'daily-productivity',
 ] as const;
 const BONUS_STATUS_KEY_PREFIX = ['user', 'bonus-status'] as const;
+const VARIABLE_REM_KEY_PREFIX = ['user', 'variable-remuneration'] as const;
 
 function invalidateOrgUserListCaches(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: QUERY_KEY_PREFIX });
@@ -208,6 +210,23 @@ export function useBonusStatus(
         return null;
       }
       return getBonusStatus(client, ref, { asOf: options?.asOf });
+    },
+    enabled: (options?.enabled !== false && !!ref) ?? false,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+export function useVariableRemuneration(
+  ref: string | null,
+  options?: { enabled?: boolean; month?: string }
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...VARIABLE_REM_KEY_PREFIX, ref, options?.month ?? null],
+    queryFn: async () => {
+      if (!ref) return null;
+      return getVariableRemuneration(client, ref, { month: options?.month });
     },
     enabled: (options?.enabled !== false && !!ref) ?? false,
     staleTime: 60 * 1000,
