@@ -7,6 +7,7 @@ import {
   CopyMinus,
   Filter,
   LayoutGrid,
+  MapPin,
   Upload as UploadIcon,
   UserRound,
   Users,
@@ -46,6 +47,12 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { XIcon } from '@/lib/icons';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   LEAD_STATUS_OPTIONS_WITH_ALL,
   LEAD_SOURCE_OPTIONS_WITH_ALL,
@@ -511,6 +518,7 @@ export interface LeadsFiltersBarProps extends Omit<LeadsFilterControlsProps, 'la
   canDedupe: boolean;
   dedupePending: boolean;
   onImportClick: () => void;
+  onImportApifyClick: () => void;
   onDedupeClick: () => void;
 }
 
@@ -520,6 +528,7 @@ export function LeadsFiltersBar({
   canDedupe,
   dedupePending,
   onImportClick,
+  onImportApifyClick,
   onDedupeClick,
   ...filterProps
 }: LeadsFiltersBarProps) {
@@ -568,21 +577,34 @@ export function LeadsFiltersBar({
 
   const actionButtons = (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
-            onClick={onImportClick}
-            aria-label="Import leads"
-          >
-            <UploadIcon className="size-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Import leads</TooltipContent>
-      </Tooltip>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
+                aria-label="Import leads"
+              >
+                <UploadIcon className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Import leads</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
+          <DropdownMenuItem onSelect={() => onImportClick()}>
+            <UploadIcon className="size-4" aria-hidden />
+            From spreadsheet
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onImportApifyClick()}>
+            <MapPin className="size-4" aria-hidden />
+            From Google Maps
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {canDedupe ? (
         <Tooltip>
           <TooltipTrigger asChild>

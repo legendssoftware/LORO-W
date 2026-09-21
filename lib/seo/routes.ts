@@ -154,6 +154,11 @@ export const PAGE_COPY = {
     description:
       'Manage people, branches and responsibility in one view. Leaders see who does what; HR spends less time chasing updates.',
   },
+  wellbeing: {
+    title: 'Wellbeing — Daily employee pulse and team mood',
+    description:
+      'See morning and evening pulse scores, support requests, and wellbeing trends by branch. Follow up early when people need help.',
+  },
   iot: {
     title: 'IoT — Devices, access hardware & branch connections',
     description:

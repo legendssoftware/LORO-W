@@ -107,6 +107,22 @@ describe('canAccessPerformanceTracker', () => {
   });
 });
 
+describe('canAccessWellbeingDashboard', () => {
+  it('allows managers, HR, executives, owners, and admins', () => {
+    expect(canAccess('/wellbeing', 'manager')).toBe(true);
+    expect(canAccess('/wellbeing', 'hr')).toBe(true);
+    expect(canAccess('/wellbeing', 'executive')).toBe(true);
+    expect(canAccess('/wellbeing', 'owner')).toBe(true);
+    expect(canAccess('/wellbeing', 'admin')).toBe(true);
+  });
+
+  it('blocks standard users and is available to HR in restricted nav', () => {
+    expect(canAccess('/wellbeing', 'user')).toBe(false);
+    expect(getAllowedRoutes('user').some((r) => r.path === '/wellbeing')).toBe(false);
+    expect(getAllowedRoutes('hr').some((r) => r.path === '/wellbeing')).toBe(true);
+  });
+});
+
 describe('canAccessCallRecordings', () => {
   it('allows only admin', () => {
     expect(canAccessCallRecordings('admin')).toBe(true);

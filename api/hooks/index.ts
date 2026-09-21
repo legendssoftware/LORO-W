@@ -94,6 +94,7 @@ export {
   DAILY_PRODUCTIVITY_KEY_PREFIX,
   useDailyProductivity,
   useBonusStatus,
+  useVariableRemuneration,
   useUserPreferences,
   usePatchUserPreferences,
   usePatchUser,
@@ -157,6 +158,8 @@ export {
   useEngageDraftMutation,
   useSendLeadEngageMutation,
   useImportLeadsMutation,
+  useStartApifyLeadRunMutation,
+  useImportApifyLeadsMutation,
   useDedupeLeadsMutation,
 } from './use-leads';
 export {
@@ -261,3 +264,12 @@ export {
 } from './use-performance-dashboard';
 export { usePerformanceStoreYtd } from './use-performance-store-ytd';
 export { useConsolidatedIncomeStatement } from './use-consolidated-income-statement';
+export {
+  PULSE_ME_QUERY_KEY,
+  usePulseMe,
+  useSubmitPulseMutation,
+  usePulseDaily,
+  usePulseInsights,
+  usePulseExecutive,
+  usePulseCorrelations,
+} from './use-pulse';

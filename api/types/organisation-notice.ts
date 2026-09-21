@@ -1,5 +1,11 @@
 import type { NoticeSection, SalesBenchmarksContent } from '@/lib/sales-benchmarks-welcome/types';
 
+export const ORGANISATION_NOTICE_THEMES = ['alert', 'policy'] as const;
+
+export type OrganisationNoticeTheme = (typeof ORGANISATION_NOTICE_THEMES)[number];
+
+export const DEFAULT_ORGANISATION_NOTICE_THEME: OrganisationNoticeTheme = 'alert';
+
 export type OrganisationNoticeContent = SalesBenchmarksContent;
 
 export type OrganisationNoticeRecord = {
@@ -10,6 +16,7 @@ export type OrganisationNoticeRecord = {
   translations: Record<string, OrganisationNoticeContent> | null;
   showFrom: string;
   showUntil: string | null;
+  theme: OrganisationNoticeTheme;
   isEnabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -22,6 +29,7 @@ export type CreateOrganisationNoticeBody = {
   translations?: Record<string, OrganisationNoticeContent>;
   showFrom: string;
   showUntil?: string | null;
+  theme?: OrganisationNoticeTheme;
   isEnabled?: boolean;
 };
 

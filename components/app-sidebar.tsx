@@ -13,6 +13,7 @@ import {
   canAccessPerformanceTracker,
   canAccessReports,
   canAccessUserSettings,
+  canAccessWellbeingDashboard,
   canManageApprovals,
   getAllowedRoutes,
   getClientSidebarRoutes,
@@ -48,6 +49,7 @@ import {
   TrendingUp,
   UserCircle,
   Phone,
+  HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
@@ -88,6 +90,7 @@ const ROUTE_ICONS: Record<
   "/reports": BarChart3,
   "/performance": TrendingUp,
   "/staff": UsersIcon,
+  "/wellbeing": HeartPulse,
   "/iot": CpuIcon,
   "/settings": SettingsIcon,
   "/store": ShoppingBag,
@@ -111,6 +114,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
       if (r.path === "/calls") return canAccessCallRecordings(accessLevel);
       if (r.path === "/reports") return canAccessReports(accessLevel);
+      if (r.path === "/wellbeing") return canAccessWellbeingDashboard(accessLevel);
       if (r.path === "/performance") return canAccessPerformanceTracker(profile);
       if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
       if (r.path === "/competitors" || r.path === "/visualiser") {

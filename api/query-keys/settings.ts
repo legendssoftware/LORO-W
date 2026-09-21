@@ -31,6 +31,10 @@ export function settingsOrgBannersKey(orgRef: string) {
   return ['settings', 'org', orgRef, 'banners'] as const;
 }
 
+export function settingsOrgApifyLeadJobsKey(orgRef: string) {
+  return ['settings', 'org', orgRef, 'apify-lead-jobs'] as const;
+}
+
 /** Single branch for Settings branch editor (GET /branch/:ref). */
 export function settingsBranchDetailKey(orgRef: string, branchRef: string) {
   return ['settings', 'branch-detail', orgRef, branchRef] as const;
