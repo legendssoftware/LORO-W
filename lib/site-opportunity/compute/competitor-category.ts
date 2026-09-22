@@ -11,9 +11,18 @@ export const RETAILER_BRANDS: readonly HardwareBrandKey[] = [
   'BUILDERS',
   'POWERBUILD',
   'EST',
+  'BOXER BUILD',
 ] as const;
 
 export const SD_BRANDS: readonly HardwareBrandKey[] = [
+  'FB MART',
+  'SOLID CEILING',
+  'OWA',
+  'PELICAN',
+  'CAPCO',
+  'CDS',
+  'SUPERTEC',
+  'UBS',
   'P&L HARDWARE',
   'OTHER',
 ] as const;

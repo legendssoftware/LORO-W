@@ -115,6 +115,15 @@ const EDITABLE_BRANDS: HardwareBrandKey[] = [
   'BUILDERS',
   'POWERBUILD',
   'EST',
+  'BOXER BUILD',
+  'FB MART',
+  'SOLID CEILING',
+  'OWA',
+  'PELICAN',
+  'CAPCO',
+  'CDS',
+  'SUPERTEC',
+  'UBS',
 ];
 
 const ALL_COUNTRIES = 'all';
@@ -1403,7 +1412,7 @@ export function SimulationSidePanel() {
                   >
                     <Label
                       htmlFor={`brand-${brand}`}
-                      className="text-muted-foreground w-24 shrink-0 text-[11px]"
+                      className="text-muted-foreground w-32 shrink-0 text-[11px]"
                     >
                       {brand}
                     </Label>

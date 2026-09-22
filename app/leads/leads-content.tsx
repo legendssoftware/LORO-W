@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   useLeads,
   useUnassignedLeads,
@@ -8,6 +9,7 @@ import {
   useBranches,
   useDedupeLeadsMutation,
   useCheckInStatus,
+  useLead,
 } from '@/api/hooks';
 import type { BranchListItem } from '@/api/types/branch';
 import { useLeadsStore } from '@/store/leads-store';
@@ -109,6 +111,21 @@ export function LeadsContent() {
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
   const [listEndCallOpen, setListEndCallOpen] = useState(false);
   const [listEndCallLead, setListEndCallLead] = useState<LeadListItem | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const leadFromQueryRaw = searchParams.get('lead');
+  const leadFromQuery = leadFromQueryRaw ? Number.parseInt(leadFromQueryRaw, 10) : NaN;
+  const deepLinkLeadUid = Number.isInteger(leadFromQuery) && leadFromQuery > 0 ? leadFromQuery : null;
+  const deepLinkLeadQuery = useLead(deepLinkLeadUid, {
+    enabled: deepLinkLeadUid != null,
+  });
+
+  useEffect(() => {
+    const linked = deepLinkLeadQuery.data?.lead;
+    if (!linked || deepLinkLeadUid == null) return;
+    setSelectedLead(linked);
+    setLeadDialogOpen(true);
+  }, [deepLinkLeadQuery.data?.lead, deepLinkLeadUid]);
 
   const checkInStatusQuery = useCheckInStatus({ enabled: true });
   const { hasActiveCall, activeCallLeadUid, activeCheckInMethod } =
@@ -546,6 +563,9 @@ export function LeadsContent() {
             setLeadDialogOpen(open);
             if (!open) {
               setSelectedLead(null);
+              if (deepLinkLeadUid != null) {
+                router.replace('/leads');
+              }
             }
           }}
           lead={selectedLead}

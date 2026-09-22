@@ -28,7 +28,7 @@ export function useCalendarConnect() {
   const client = useApiClient();
 
   return useMutation({
-    mutationFn: (provider: CalendarProvider) => postCalendarConnect(client, provider),
+    mutationFn: (provider: CalendarProvider) => postCalendarConnect(client, provider, 'web'),
     onSuccess: (data) => {
       if (data.url && typeof window !== 'undefined') {
         window.location.href = data.url;

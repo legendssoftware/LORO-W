@@ -14,6 +14,7 @@ import {
   getLeadsForUser,
   getLeadsReport,
   getLead,
+  getLeadCalls,
   createLead,
   updateLead,
   deleteLead,
@@ -259,6 +260,20 @@ export function useLead(ref: number | null | undefined, options?: { enabled?: bo
     queryFn: async () => getLead(client, ref!),
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Company-line calls matched to a lead by phone. Metadata only; no audio.
+ */
+export function useLeadCalls(ref: number | null | undefined, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...QUERY_KEY_PREFIX, 'calls', ref ?? 'none'],
+    queryFn: async () => getLeadCalls(client, ref!),
+    enabled: (options?.enabled !== false) && ref != null && ref > 0,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }

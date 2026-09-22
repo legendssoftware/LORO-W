@@ -39,12 +39,16 @@ export async function getCalendarIntegrationsStatus(
   return data;
 }
 
+export type CalendarOAuthClient = 'web' | 'mobile';
+
 export async function postCalendarConnect(
   client: AxiosInstance,
-  provider: CalendarProvider
+  provider: CalendarProvider,
+  oauthClient: CalendarOAuthClient = 'web'
 ): Promise<CalendarConnectResponse> {
   const { data } = await client.post<CalendarConnectResponse>(
-    `/calendar-integrations/${provider}/connect`
+    `/calendar-integrations/${provider}/connect`,
+    { client: oauthClient }
   );
   return data;
 }

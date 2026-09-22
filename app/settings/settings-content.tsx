@@ -109,6 +109,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
+import { OrganisationCalendarSettingsSection } from '@/components/settings/organisation-calendar-settings-section';
 import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
 import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
 import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
@@ -3219,7 +3220,10 @@ export function SettingsContent() {
           )}
 
           {activeTab === 'calendar' && (
-            <CalendarIntegrationsSection />
+            <div className="space-y-6">
+              <OrganisationCalendarSettingsSection orgRef={orgRef} />
+              <CalendarIntegrationsSection />
+            </div>
           )}
 
           {activeTab === 'scrapping' && (
