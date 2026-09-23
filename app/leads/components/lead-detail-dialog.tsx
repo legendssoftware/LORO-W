@@ -44,6 +44,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { canAccessCallRecordings } from '@/lib/access';
+import { useSessionStore } from '@/store/session-store';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import {
+  formatCallDuration,
+  callDirectionLabel,
+  normalizeCallDirection,
+} from '@/app/calls/call-display';
+import { ORIGIN_LABEL, normalizeOrigin, originVariant } from '@/app/calls/origin-badge';
 import {
   useUpdateLeadMutation,
   useDeleteLeadMutation,
@@ -54,6 +64,7 @@ import {
   useUsers,
   useSearchableUsersList,
   useLead,
+  useLeadCalls,
   useApiClient,
   useCheckInStatus,
   useCheckInMutation,
@@ -258,6 +269,11 @@ export function LeadDetailDialog({
   const leadDetailQuery = useLead(leadUid ?? null, {
     enabled: open && leadUid != null,
   });
+  const leadCallsQuery = useLeadCalls(leadUid ?? null, {
+    enabled: open && leadUid != null,
+  });
+  const accessLevel = useSessionStore((s) => s.profileData?.accessLevel ?? s.profileData?.role);
+  const canOpenCallRecordings = canAccessCallRecordings(accessLevel);
 
   const activityTimelineUsersQuery = useUsers({
     limit: 100,
@@ -1336,6 +1352,60 @@ export function LeadDetailDialog({
                 </div>
               </>
             )}
+            <Separator />
+            <div>
+              <DetailSectionHeading title="Company calls" icon={Phone} />
+              {leadCallsQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading company calls…</p>
+              ) : (leadCallsQuery.data?.data ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No company-line calls matched this lead's phone yet.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {(leadCallsQuery.data?.data ?? []).map((call) => {
+                    const direction = normalizeCallDirection(call.callType);
+                    const origin = normalizeOrigin(call.origin);
+                    const when = call.startedAt
+                      ? format(new Date(call.startedAt), 'dd MMM yyyy HH:mm')
+                      : '—';
+                    const number = call.toNumber || call.fromNumber || '—';
+                    const body = (
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{when}</span>
+                          <Badge variant={originVariant(origin)}>{ORIGIN_LABEL[origin]}</Badge>
+                          <span className="text-muted-foreground">
+                            {callDirectionLabel(direction, call.callType)}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {formatCallDuration(call.durationSeconds)}
+                          </span>
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {number}
+                          {call.ownerName ? ` · ${call.ownerName}` : ''}
+                        </span>
+                      </span>
+                    );
+                    return (
+                      <li key={call.uid} className="rounded-md border px-3 py-2">
+                        {canOpenCallRecordings ? (
+                          <Link
+                            href={`/calls?uid=${call.uid}`}
+                            className="block text-foreground underline-offset-4 hover:underline"
+                          >
+                            {body}
+                          </Link>
+                        ) : (
+                          body
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
             <Separator />
             <div>
               <DetailSectionHeading title="History" icon={History} />

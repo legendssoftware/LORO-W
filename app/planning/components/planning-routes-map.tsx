@@ -106,7 +106,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {routes.map((route) => (
             <RouteSummaryCard
-              key={route.userId}
+              key={route.routeUid ?? `${route.userId}-${route.stops[0]?.taskId ?? 'route'}`}
               route={route}
               repName={userNameById.get(route.userId) ?? `Rep #${route.userId}`}
               onOpenTask={onOpenTask}
@@ -147,11 +147,13 @@ function RouteSummaryCard({
                 className="text-left text-violet-700 hover:underline dark:text-violet-400"
                 onClick={() => onOpenTask(stop.taskId)}
               >
-                Task #{stop.taskId} · Client #{stop.clientId}
+                {stop.clientName?.trim() || `Client #${stop.clientId}`}
+                {stop.location.address ? ` · ${stop.location.address}` : ''}
               </button>
             ) : (
               <span>
-                Task #{stop.taskId} · Client #{stop.clientId}
+                {stop.clientName?.trim() || `Client #${stop.clientId}`}
+                {stop.location.address ? ` · ${stop.location.address}` : ''}
               </span>
             )}
           </li>

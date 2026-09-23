@@ -944,8 +944,11 @@ function partyLinks(row: CallRecordingListItem | undefined | null) {
         </Link>
       ) : null}
       {row.lead ? (
-        <Link href="/leads" className="text-primary underline-offset-4 hover:underline">
-          Lead: {row.lead.name || 'Open leads'}
+        <Link
+          href={`/leads?lead=${row.lead.uid}`}
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Lead: {row.lead.name || 'Open lead'}
         </Link>
       ) : null}
     </div>

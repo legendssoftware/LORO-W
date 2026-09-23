@@ -4,6 +4,7 @@ import type {
   LeadsForUserResponse,
   GetLeadsForUserParams,
   LeadDetailResponse,
+  LeadCompanyCallsResponse,
   GetLeadsParams,
   GetLeadsReportParams,
   GetUnassignedLeadsParams,
@@ -154,6 +155,17 @@ export async function getLead(
   ref: number
 ): Promise<LeadDetailResponse> {
   const { data } = await client.get<LeadDetailResponse>(`/leads/${ref}`);
+  return data;
+}
+
+/**
+ * GET /leads/:ref/calls — company-line recordings matched to this lead (metadata only).
+ */
+export async function getLeadCalls(
+  client: AxiosInstance,
+  ref: number
+): Promise<LeadCompanyCallsResponse> {
+  const { data } = await client.get<LeadCompanyCallsResponse>(`/leads/${ref}/calls`);
   return data;
 }
 

@@ -10,6 +10,15 @@ export type HardwareBrandKey =
   | 'BUILDERS'
   | 'POWERBUILD'
   | 'EST'
+  | 'BOXER BUILD'
+  | 'FB MART'
+  | 'SOLID CEILING'
+  | 'OWA'
+  | 'PELICAN'
+  | 'CAPCO'
+  | 'CDS'
+  | 'SUPERTEC'
+  | 'UBS'
   | 'P&L HARDWARE'
   | 'OTHER';
 

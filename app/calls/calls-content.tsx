@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Loader2Icon, Phone, Timer } from 'lucide-react';
 import { useBranches, useCalls, useSessionSync, useTokenReady, useUsers } from '@/api/hooks';
@@ -75,6 +76,12 @@ export function CallsContent() {
   const [endDate, setEndDate] = useState(() => defaultCallsDateRange().end);
   const [useAllTime, setUseAllTime] = useState(false);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const uidFromQuery = searchParams.get('uid')?.trim() || null;
+
+  useEffect(() => {
+    if (uidFromQuery) setSelectedUid(uidFromQuery);
+  }, [uidFromQuery]);
   const { isTokenReady } = useTokenReady();
   const { backendUserData, isSyncing } = useSessionSync();
   const canView = canAccessCallRecordings(backendUserData?.accessLevel);

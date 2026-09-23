@@ -382,6 +382,23 @@ export type UpdateLeadPayload = Partial<Omit<CreateLeadPayload, 'branch'>> & {
   nextStep?: string;
 };
 
+/** One metadata row from GET /leads/:ref/calls (no audio). */
+export type LeadCompanyCallItem = {
+  uid: string;
+  startedAt: string | null;
+  durationSeconds: number | null;
+  callType: string | null;
+  origin: 'in_app' | 'company_phone' | 'personal_mobile';
+  fromNumber: string | null;
+  toNumber: string | null;
+  ownerName: string | null;
+  scoreOverall: number | null;
+};
+
+export type LeadCompanyCallsResponse = {
+  data: LeadCompanyCallItem[];
+};
+
 /** Response from PATCH /leads/:ref, PATCH restore/reactivate, DELETE /leads/:ref, POST send-engage */
 export interface LeadActionResponse {
   message: string;
