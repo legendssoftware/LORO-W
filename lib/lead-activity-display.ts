@@ -80,6 +80,10 @@ export function leadActivityActionPresentation(action: string | undefined): {
       label: 'Call ended',
       className: 'border-green-300 bg-green-100 text-green-950',
     },
+    company_call: {
+      label: 'Company call',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+    },
   };
   if (table[a]) return table[a];
   const words = a.replace(/_/g, ' ').trim();

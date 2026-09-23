@@ -193,6 +193,7 @@ export interface CreateTaskPayload {
 export interface OptimizedRouteStop {
   taskId: number;
   clientId: number;
+  clientName?: string;
   location: {
     latitude: number;
     longitude: number;
@@ -201,6 +202,7 @@ export interface OptimizedRouteStop {
 }
 
 export interface OptimizedRoute {
+  routeUid?: number;
   userId: number;
   stops: OptimizedRouteStop[];
   totalDistance: number;

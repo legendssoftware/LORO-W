@@ -351,6 +351,7 @@ export interface GetUserPreferencesResponse {
       enabled?: boolean;
       preferredProvider?: 'google' | 'microsoft' | 'auto';
       defaultDurationMinutes?: number;
+      syncTaskTypes?: string[];
     };
     reportsDashboard?: ReportsDashboardPreferences;
     visualiser?: VisualiserUserPreferences;

@@ -149,6 +149,7 @@ export {
   useLeadsForUser,
   useLeadsReport,
   useLead,
+  useLeadCalls,
   useCreateLeadMutation,
   useUpdateLeadMutation,
   useDeleteLeadMutation,

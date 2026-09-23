@@ -33,6 +33,15 @@ const ASSUMPTION_BRANDS = [
   'BUILDERS',
   'POWERBUILD',
   'EST',
+  'BOXER BUILD',
+  'FB MART',
+  'SOLID CEILING',
+  'OWA',
+  'PELICAN',
+  'CAPCO',
+  'CDS',
+  'SUPERTEC',
+  'UBS',
 ] as const;
 
 export interface SimulationExportRunFilters {
