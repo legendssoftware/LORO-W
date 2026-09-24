@@ -10,7 +10,7 @@ export interface StaffTourState {
   completedThisMonth: boolean;
 }
 
-const STAFF_TOUR_KEY_PREFIX = 'loro_staff_tour_v2';
+const STAFF_TOUR_KEY_PREFIX = 'loro_staff_tour_v3';
 
 function buildStaffTourKey(userId: string): string {
   return `${STAFF_TOUR_KEY_PREFIX}:${userId}`;

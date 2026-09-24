@@ -79,6 +79,134 @@ const REST_GROUPS: ApprovalTypeGroup[] = [
     ],
   },
   {
+    id: 'system',
+    label: 'System & technical',
+    types: [
+      { value: 'system_change', label: 'System change' },
+      { value: 'data_export', label: 'Data export' },
+      { value: 'integration_request', label: 'Integration request' },
+      { value: 'software_upgrade', label: 'Software upgrade' },
+      { value: 'infrastructure_change', label: 'Infrastructure change' },
+      { value: 'security_policy_change', label: 'Security policy change' },
+    ],
+  },
+  {
+    id: 'healthcare',
+    label: 'Healthcare & medical',
+    types: [
+      { value: 'medical_leave', label: 'Medical leave' },
+      { value: 'insurance_claim', label: 'Insurance claim' },
+      { value: 'medical_procedure', label: 'Medical procedure' },
+    ],
+  },
+  {
+    id: 'education',
+    label: 'Education & training',
+    types: [
+      { value: 'course_approval', label: 'Course approval' },
+      { value: 'certification_request', label: 'Certification request' },
+      { value: 'education_leave', label: 'Education leave' },
+    ],
+  },
+  {
+    id: 'compliance',
+    label: 'Compliance & legal',
+    types: [
+      { value: 'compliance_report', label: 'Compliance report' },
+      { value: 'legal_document', label: 'Legal document' },
+      { value: 'audit_request', label: 'Audit request' },
+      { value: 'risk_assessment', label: 'Risk assessment' },
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Projects & initiatives',
+    types: [
+      { value: 'project_initiation', label: 'Project initiation' },
+      { value: 'project_change', label: 'Project change' },
+      { value: 'initiative_request', label: 'Initiative request' },
+    ],
+  },
+  {
+    id: 'banking',
+    label: 'Financial & banking',
+    types: [
+      { value: 'loan_request', label: 'Loan request' },
+      { value: 'investment_request', label: 'Investment request' },
+      { value: 'tax_filing', label: 'Tax filing' },
+    ],
+  },
+  {
+    id: 'facilities',
+    label: 'Construction & facilities',
+    types: [
+      { value: 'construction_request', label: 'Construction request' },
+      { value: 'space_allocation', label: 'Space allocation' },
+    ],
+  },
+  {
+    id: 'supply_chain',
+    label: 'Supply chain & procurement',
+    types: [
+      { value: 'supplier_evaluation', label: 'Supplier evaluation' },
+      { value: 'inventory_adjustment', label: 'Inventory adjustment' },
+      { value: 'quality_control', label: 'Quality control' },
+    ],
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing & creative',
+    types: [
+      { value: 'marketing_campaign', label: 'Marketing campaign' },
+      { value: 'brand_approval', label: 'Brand approval' },
+      { value: 'content_approval', label: 'Content approval' },
+    ],
+  },
+  {
+    id: 'research',
+    label: 'Research & development',
+    types: [
+      { value: 'research_project', label: 'Research project' },
+      { value: 'product_development', label: 'Product development' },
+      { value: 'innovation_request', label: 'Innovation request' },
+    ],
+  },
+  {
+    id: 'environment',
+    label: 'Environmental & sustainability',
+    types: [
+      { value: 'environmental_impact', label: 'Environmental impact' },
+      { value: 'sustainability_initiative', label: 'Sustainability initiative' },
+      { value: 'waste_management', label: 'Waste management' },
+    ],
+  },
+  {
+    id: 'events',
+    label: 'Events & entertainment',
+    types: [
+      { value: 'event_request', label: 'Event request' },
+      { value: 'entertainment_request', label: 'Entertainment request' },
+      { value: 'sponsorship_request', label: 'Sponsorship request' },
+    ],
+  },
+  {
+    id: 'awards',
+    label: 'Awards & recognition',
+    types: [
+      { value: 'award_nomination', label: 'Award nomination' },
+      { value: 'recognition_request', label: 'Recognition request' },
+    ],
+  },
+  {
+    id: 'emergency',
+    label: 'Emergency & security',
+    types: [
+      { value: 'emergency_procedure', label: 'Emergency procedure' },
+      { value: 'security_incident', label: 'Security incident' },
+      { value: 'crisis_management', label: 'Crisis management' },
+    ],
+  },
+  {
     id: 'other',
     label: 'Other',
     types: [

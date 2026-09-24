@@ -54,6 +54,8 @@ interface MapLayerTogglesProps {
   repPoints?: VisualiserMapPoint[];
   selectedRepUid?: number | null;
   onRepClick?: (point: VisualiserMapPoint) => void;
+  /** Omit the sales-rep layer and its tracking list. */
+  hideReps?: boolean;
   className?: string;
 }
 
@@ -92,6 +94,7 @@ export function MapLayerToggles({
   repPoints = [],
   selectedRepUid = null,
   onRepClick,
+  hideReps = false,
   className,
 }: MapLayerTogglesProps) {
   const [repsExpanded, setRepsExpanded] = useState(false);
@@ -110,7 +113,7 @@ export function MapLayerToggles({
         Layers
       </p>
       <ul className="space-y-2">
-        {LAYER_ORDER.map((layer) => {
+        {LAYER_ORDER.filter((layer) => !(hideReps && layer === 'reps')).map((layer) => {
           if (layer === 'reps') {
             return (
               <li key={layer}>

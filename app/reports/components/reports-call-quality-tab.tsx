@@ -331,7 +331,7 @@ export function ReportsCallQualityTab() {
 
   if (!isTokenReady || isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4" data-tour="reports-call-quality-tab">
         <Skeleton className="h-9 w-full max-w-xl" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -348,7 +348,7 @@ export function ReportsCallQualityTab() {
   const greetingBehaviour = data.behaviour.find((row) => row.id === 'professional_introduction');
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-8" data-tour="reports-call-quality-tab">
       <ReportsDashboardToolbar
         startDate={startDate}
         endDate={endDate}

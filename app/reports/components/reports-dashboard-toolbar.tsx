@@ -70,6 +70,8 @@ export interface ReportsDashboardToolbarProps {
   onCountryChange?: (country: string) => void;
   onExportTravel?: () => void;
   travelExportLoading?: boolean;
+  /** driver.js anchor on the desktop travel export button. */
+  exportDataTour?: string;
 }
 
 interface ReportsDashboardFilterControlsProps
@@ -93,6 +95,7 @@ function ReportsDashboardFilterControls({
   onCountryChange,
   onExportTravel,
   travelExportLoading = false,
+  exportDataTour,
 }: ReportsDashboardFilterControlsProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
@@ -298,6 +301,7 @@ function ReportsDashboardFilterControls({
           className="ml-auto h-9 shrink-0 gap-1.5"
           disabled={travelExportLoading}
           onClick={() => onExportTravel()}
+          data-tour={!isStack ? exportDataTour : undefined}
         >
           {travelExportLoading ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />

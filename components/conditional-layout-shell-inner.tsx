@@ -15,6 +15,11 @@ import { ClientsTour } from '@/components/clients-tour';
 import { PipelineTour } from '@/components/pipeline-tour';
 import { PlanningTour } from '@/components/planning-tour';
 import { SettingsTour } from '@/components/settings-tour';
+import { CallsTour } from '@/components/calls-tour';
+import { ReportsTour } from '@/components/reports-tour';
+import { WellbeingTour } from '@/components/wellbeing-tour';
+import { VisualiserTour } from '@/components/visualiser-tour';
+import { PerformanceTour } from '@/components/performance-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { useSessionSync } from '@/api/hooks';
 import { isClientPortalUser } from '@/lib/access';
@@ -57,6 +62,11 @@ export function ConditionalLayoutShellInner({ children }: { children: ReactNode 
               <PipelineTour />
               <PlanningTour />
               <SettingsTour />
+              <CallsTour />
+              <ReportsTour />
+              <WellbeingTour />
+              <VisualiserTour />
+              <PerformanceTour />
             </>
           )}
           <PostAuthRouteHandler />

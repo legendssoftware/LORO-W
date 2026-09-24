@@ -10,7 +10,7 @@ export interface SettingsTourState {
   completedThisMonth: boolean;
 }
 
-const SETTINGS_TOUR_KEY_PREFIX = 'loro_settings_tour_v2';
+const SETTINGS_TOUR_KEY_PREFIX = 'loro_settings_tour_v3';
 
 function buildSettingsTourKey(userId: string): string {
   return `${SETTINGS_TOUR_KEY_PREFIX}:${userId}`;

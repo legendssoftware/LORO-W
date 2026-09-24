@@ -1091,7 +1091,10 @@ export function SimulationSidePanel() {
   }
 
   return (
-    <aside className="border-border bg-background flex h-full w-[20%] min-w-[16rem] max-w-[22rem] shrink-0 flex-col overflow-hidden border-l">
+    <aside
+      className="border-border bg-background flex h-full w-[20%] min-w-[16rem] max-w-[22rem] shrink-0 flex-col overflow-hidden border-l"
+      data-tour="visualiser-simulation-panel"
+    >
       <div className="flex shrink-0 items-start justify-between gap-2 border-b px-3 py-2.5">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">Store turnover simulation</h2>

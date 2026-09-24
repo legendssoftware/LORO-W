@@ -114,7 +114,7 @@ export function PerformanceContent() {
   return (
     <div className={appPageScrollWrapClass} data-slot="performance-page">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col gap-4')}>
-        <div className="mb-1 flex shrink-0 flex-col gap-1">
+        <div className="mb-1 flex shrink-0 flex-col gap-1" data-tour="performance-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
             {showConsolidatedView ? 'Consolidated Statement' : 'Performance Tracker'}
           </h1>
@@ -165,7 +165,7 @@ export function PerformanceContent() {
         {showConsolidatedView ? (
           <PerformanceConsolidatedStatement filters={filters} enabled={hydrated} />
         ) : dashboardQuery.isLoading && !dashboardData ? (
-          <div className="rounded-xl border bg-card py-16">
+          <div className="rounded-xl border bg-card py-16" data-tour="performance-loading">
             <LoadingSpinner />
             <p className="mt-3 text-center text-sm text-muted-foreground">
               Loading performance data…
@@ -173,6 +173,7 @@ export function PerformanceContent() {
           </div>
         ) : (
           <>
+            <div className="flex flex-col gap-4" data-tour="performance-summary">
             {summary ? (
               <PerformanceTargetCard
                 achieved={
@@ -200,8 +201,9 @@ export function PerformanceContent() {
                 dateRange={filters.dateRange}
               />
             ) : null}
+            </div>
 
-            <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+            <div className="grid min-w-0 gap-4 lg:grid-cols-2" data-tour="performance-charts">
               {charts?.salesByCategory?.data?.length ? (
                 <PerformancePieChartCard
                   title="Sales by Category"

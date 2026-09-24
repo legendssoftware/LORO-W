@@ -207,6 +207,8 @@ export interface OptimizedRoute {
   stops: OptimizedRouteStop[];
   totalDistance: number;
   estimatedDuration: number;
+  /** Google overview polyline as [longitude, latitude]. */
+  coordinates?: [number, number][];
 }
 
 export type TaskFlagStatusValue =

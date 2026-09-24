@@ -42,6 +42,7 @@ import {
   type VisualiserLayerId,
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
+import type { OptimizedRoute } from '@/api/types/tasks';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
 import {
   formatStoreFormatSummary,
@@ -438,19 +439,82 @@ function resolveRepDisplayName(
 interface OverviewMapProps {
   orgRef?: string | null;
   enabled?: boolean;
+  /** Standard-user map: hide sales-rep tracking and the reps layer. */
+  showRepTracking?: boolean;
+  /** Signed-in user's Google-planned visit route. Drawn only for the limited map. */
+  plannedRoute?: OptimizedRoute | null;
+}
+
+/** Road line from the saved Google polyline, or stop order when a legacy row has none. */
+function plannedRouteCoordinates(route: OptimizedRoute): [number, number][] {
+  if (route.coordinates && route.coordinates.length >= 2) {
+    return route.coordinates;
+  }
+  return route.stops.flatMap((stop) => {
+    const latitude = stop.location?.latitude;
+    const longitude = stop.location?.longitude;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return [];
+    return [[longitude, latitude] as [number, number]];
+  });
+}
+
+function PlannedUserRouteLayer({ route }: { route: OptimizedRoute }) {
+  const line = plannedRouteCoordinates(route);
+  return (
+    <>
+      {line.length >= 2 ? (
+        <MapRoute
+          id="planned-user-route"
+          coordinates={line}
+          color="#2563eb"
+          width={5}
+          opacity={0.9}
+          interactive={false}
+        />
+      ) : null}
+      {route.stops.map((stop, index) => {
+        const latitude = stop.location?.latitude;
+        const longitude = stop.location?.longitude;
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+        const label = stop.clientName?.trim() || `Stop ${index + 1}`;
+        return (
+          <MapMarker
+            key={`planned-stop-${stop.taskId}-${index}`}
+            longitude={longitude}
+            latitude={latitude}
+          >
+            <MarkerContent>
+              <span className="flex size-6 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-[11px] font-semibold text-white shadow">
+                {index + 1}
+              </span>
+              <MarkerLabel position="top">{label}</MarkerLabel>
+            </MarkerContent>
+          </MapMarker>
+        );
+      })}
+    </>
+  );
 }
 
 /**
  * Competitor Overview map: layered branches/HQ, clients, competitors, sales-rep GPS.
  * After Simulate, shows 5 km catchment overlays and selected-zone summary.
  */
-export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
+export function OverviewMap({
+  orgRef,
+  enabled = true,
+  showRepTracking = true,
+  plannedRoute = null,
+}: OverviewMapProps) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const [center, setCenter] = useState<[number, number] | null>(null);
   const [isUserLocation, setIsUserLocation] = useState(false);
-  const [visibility, setVisibility] =
-    useState<VisualiserLayerVisibility>(DEFAULT_LAYER_VISIBILITY);
+  const [visibility, setVisibility] = useState<VisualiserLayerVisibility>(() =>
+    showRepTracking
+      ? DEFAULT_LAYER_VISIBILITY
+      : { ...DEFAULT_LAYER_VISIBILITY, reps: false },
+  );
   const [selected, setSelected] = useState<VisualiserMapPoint | null>(null);
   const [journeyRoutes, setJourneyRoutes] = useState<JourneyRouteState[]>([]);
   const [isTracing, setIsTracing] = useState(false);
@@ -603,6 +667,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
 
   const handleLayerChange = useCallback(
     (layer: VisualiserLayerId, visible: boolean) => {
+      if (layer === 'reps' && !showRepTracking) return;
       setVisibility((prev) => ({ ...prev, [layer]: visible }));
       setSelected((cur) => (cur?.layer === layer && !visible ? null : cur));
       if (layer === 'reps' && !visible) {
@@ -618,7 +683,7 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         setTrackStatusMessage(null);
       }
     },
-    [clearRepSelection, setRepSearchInput]
+    [clearRepSelection, setRepSearchInput, showRepTracking]
   );
 
   const handlePlottedRepClick = useCallback((point: VisualiserMapPoint) => {
@@ -1187,8 +1252,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           repPoints={repPoints}
           selectedRepUid={selected?.repUid ?? null}
           onRepClick={handlePlottedRepClick}
+          hideReps={!showRepTracking}
         />
 
+        {showRepTracking ? (
         <RepTrackerControl
           users={users}
           branches={branches}
@@ -1234,9 +1301,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
           onCustomRangeChange={handleCustomRangeChange}
           onResetCustomRange={handleResetCustomRange}
         />
+        ) : null}
       </div>
 
-      {journeyRoutes.length > 0 ? (
+      {showRepTracking && journeyRoutes.length > 0 ? (
         <div className="bg-background/95 absolute bottom-3 left-3 z-10 max-w-xs rounded-md border px-3 py-2 text-xs shadow-sm backdrop-blur">
           <div className="flex items-start justify-between gap-2">
             <p className="text-muted-foreground min-w-0 truncate">
@@ -1326,6 +1394,10 @@ export function OverviewMap({ orgRef, enabled = true }: OverviewMapProps) {
         />
 
         <SimulationOverlayLayer />
+
+        {plannedRoute ? (
+          <PlannedUserRouteLayer route={plannedRoute} />
+        ) : null}
 
         {journeyRoutes.flatMap((route, routeIndex) => {
           const segments = resolveJourneySegments(route);

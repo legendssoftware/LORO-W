@@ -36,6 +36,7 @@ import {
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
   utcMonthStartThroughToday,
+  utcPlanningDefaultRange,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import {
@@ -109,11 +110,11 @@ export function PlanningFilterControls({
     ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
     : 'h-9 w-full shrink-0 justify-start text-left font-normal';
 
-  const mtd = utcMonthStartThroughToday();
+  const defaultRange = utcPlanningDefaultRange();
   const isDefaultRange =
     !useAllTime &&
-    formatUtcYmd(startDate) === formatUtcYmd(mtd.start) &&
-    formatUtcYmd(endDate) === formatUtcYmd(mtd.end);
+    formatUtcYmd(startDate) === formatUtcYmd(defaultRange.start) &&
+    formatUtcYmd(endDate) === formatUtcYmd(defaultRange.end);
 
   const categoricalWidth = row
     ? cn(reportsFilterSelectTriggerClass, 'min-w-[150px] w-[176px] shrink-0')

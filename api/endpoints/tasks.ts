@@ -194,6 +194,18 @@ export async function calculateOptimizedRoutes(
   return data;
 }
 
+/** POST /tasks/routes/mine/calculate — Google-plan the signed-in user's day route. */
+export async function calculateMyOptimizedRoute(
+  client: AxiosInstance,
+  date?: string
+): Promise<OptimizedRoute | null> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const { data } = await client.post<OptimizedRoute | null>(
+    `/tasks/routes/mine/calculate${qs}`
+  );
+  return data;
+}
+
 export async function getTaskFlags(
   client: AxiosInstance,
   taskId: number,

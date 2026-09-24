@@ -13,59 +13,98 @@ import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
+const SEL_HEADER = '[data-tour="staff-page-header"]';
+const SEL_TOOLBAR = '[data-tour="staff-toolbar"]';
+const SEL_GRID = '[data-tour="staff-grid"]';
+const SEL_ADD_USER = '[data-tour="staff-add-user"]';
+const SEL_TRAVEL = '[data-tour="staff-travel-export"]';
+
+const REQUIRED_SELECTORS = [SEL_HEADER, SEL_TOOLBAR, SEL_GRID] as const;
+
 const TOUR_INTRO_DESCRIPTION =
   'This is the Staff page: see who is present or absent today, filter by status, role, and branch, and open a teammate for more detail. The next steps walk through the header, filters, and the card grid.';
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to Staff',
-      description: TOUR_INTRO_DESCRIPTION,
+function buildStaffSteps(): DriveStep[] {
+  const steps: DriveStep[] = [
+    {
+      popover: {
+        title: 'Welcome to Staff',
+        description: TOUR_INTRO_DESCRIPTION,
+      },
     },
-  },
-  {
-    element: '[data-tour="staff-page-header"]',
-    popover: {
-      title: 'Staff overview',
-      description:
-        'Use this page to review attendance and activity for your team for the current day at a glance.',
-      side: 'bottom',
-      align: 'start',
+    {
+      element: SEL_HEADER,
+      popover: {
+        title: 'Staff overview',
+        description:
+          'Use this page to review attendance and activity for your team for the current day at a glance.',
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="staff-toolbar"]',
-    popover: {
-      title: 'Filter and search',
-      description:
-        'Narrow the list by status (present, absent, location mode, and more), role, and branch. Search by name or email, and open Summary for a payroll roll-up when you have access.',
-      side: 'bottom',
-      align: 'center',
+  ];
+
+  if (document.querySelector(SEL_ADD_USER)) {
+    steps.push({
+      element: SEL_ADD_USER,
+      popover: {
+        title: 'Invite a teammate',
+        description:
+          'Add user creates a staff account. Send intake link, beside it, lets someone finish onboarding themselves.',
+        side: 'bottom',
+        align: 'end',
+      },
+    });
+  }
+
+  steps.push(
+    {
+      element: SEL_TOOLBAR,
+      popover: {
+        title: 'Filter and search',
+        description:
+          'Narrow the list by status (present, absent, location mode, and more), role, workforce, branch, and country. Search by name or email.',
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="staff-grid"]',
-    popover: {
-      title: 'Teammate cards',
-      description:
-        'Each card shows today’s context for a person. Click a card to open full detail; use the clock where available to see attendance history.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
+    {
+      element: SEL_GRID,
+      popover: {
+        title: 'Teammate cards',
+        description:
+          'Each card shows today’s context for a person. Click a card to open full detail; use the clock where available to see attendance history.',
+        side: 'top',
+        align: 'center',
+      },
+    }
+  );
+
+  if (document.querySelector(SEL_TRAVEL)) {
+    steps.push({
+      element: SEL_TRAVEL,
+      popover: {
+        title: 'Export visits and travel',
+        description:
+          'On a card, download that person’s visits and travel workbook (Excel) or a day-by-day analysis PDF for a date range you choose.',
+        side: 'left',
+        align: 'center',
+      },
+    });
+  }
+
+  steps.push({
     popover: {
       title: 'Having issues?',
       description: TOUR_FAQ_DESCRIPTION,
     },
-  },
-];
+  });
+
+  return steps;
+}
 
 function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
-    if (typeof step.element !== 'string') return true;
-    return document.querySelector(step.element) !== null;
-  });
+  return REQUIRED_SELECTORS.every((selector) => document.querySelector(selector) !== null);
 }
 
 export function StaffTour() {
@@ -128,9 +167,10 @@ export function StaffTour() {
     const cancelSchedule = scheduleTourWhenReady({
       areTargetsReady: areTourTargetsReady,
       onReady: () => {
+        const steps = buildStaffSteps();
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writeStaffTourState(userId, {
@@ -147,7 +187,7 @@ export function StaffTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writeStaffTourState(userId, {

@@ -401,9 +401,10 @@ export function StaffContent() {
             </div>
           ) : (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user, index) => (
                 <ReportUserCard
                   key={user.userId}
+                  tourAnchor={index === 0}
                   user={user}
                   endDate={today}
                   branchLocationRadiusMeters={

@@ -10,7 +10,7 @@ export interface ClientsTourState {
   completedThisMonth: boolean;
 }
 
-const CLIENTS_TOUR_KEY_PREFIX = 'loro_clients_tour_v2';
+const CLIENTS_TOUR_KEY_PREFIX = 'loro_clients_tour_v3';
 
 function buildClientsTourKey(userId: string): string {
   return `${CLIENTS_TOUR_KEY_PREFIX}:${userId}`;
