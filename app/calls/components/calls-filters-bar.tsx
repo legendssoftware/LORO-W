@@ -441,7 +441,7 @@ export function CallsFiltersBar({
   };
 
   return (
-    <div className="mb-4 flex shrink-0 flex-col gap-3">
+    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="calls-toolbar">
       <div className="flex flex-col gap-2 md:hidden">
         <div className="flex w-full min-w-0 flex-row items-stretch gap-2">
           <Button

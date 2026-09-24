@@ -275,6 +275,7 @@ export function ReportsProductivityTab() {
           }
         }}
         travelExportLoading={travelExportLoading}
+        exportDataTour="reports-travel-export"
       />
 
       <ReportsSection

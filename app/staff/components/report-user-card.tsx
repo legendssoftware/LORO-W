@@ -154,9 +154,11 @@ function VehicleAssignmentChip({
  */
 function TravelExportButton({
   compact,
+  tourAnchor = false,
   onClick,
 }: {
   compact: boolean;
+  tourAnchor?: boolean;
   onClick: (e: React.MouseEvent) => void;
 }) {
   const label = 'Export visits and travel';
@@ -174,6 +176,7 @@ function TravelExportButton({
             compact ? 'size-6' : 'size-7'
           )}
           aria-label={label}
+          data-tour={tourAnchor ? 'staff-travel-export' : undefined}
         >
           <Download className={compact ? 'size-3' : 'size-3.5'} aria-hidden />
         </button>
@@ -258,6 +261,7 @@ function StatusChromeRow({
   distanceText,
   mapsQuery,
   onOpenTravelExport,
+  tourAnchor = false,
 }: {
   user: ReportCardUser;
   compact: boolean;
@@ -277,6 +281,7 @@ function StatusChromeRow({
   distanceText: string;
   mapsQuery: string | null;
   onOpenTravelExport: () => void;
+  tourAnchor?: boolean;
 }) {
   const chipSize = compact ? 'size-6' : 'size-7';
   const iconSize = compact ? 'size-3' : 'size-3.5';
@@ -420,7 +425,11 @@ function StatusChromeRow({
         compact={compact}
         onSettingsClick={onSettingsClick}
       />
-      <TravelExportButton compact={compact} onClick={() => onOpenTravelExport()} />
+      <TravelExportButton
+        compact={compact}
+        tourAnchor={tourAnchor}
+        onClick={() => onOpenTravelExport()}
+      />
     </div>
   );
 }
@@ -606,6 +615,7 @@ export function ReportUserCard({
   onClick,
   onSettingsClick,
   onClockClick,
+  tourAnchor = false,
 }: {
   user: ReportCardUser;
   endDate: Date;
@@ -614,6 +624,8 @@ export function ReportUserCard({
   onClick?: () => void;
   onSettingsClick?: (e: React.MouseEvent) => void;
   onClockClick?: (e: React.MouseEvent) => void;
+  /** Marks the travel export control for the staff product tour. */
+  tourAnchor?: boolean;
 }) {
   const isMobile = useIsMobile();
   const { backendUserData } = useSessionSync();
@@ -736,6 +748,7 @@ export function ReportUserCard({
       distanceText={distanceText}
       mapsQuery={mapsQuery}
       onOpenTravelExport={() => setTravelExportOpen(true)}
+      tourAnchor={tourAnchor}
     />
   );
 

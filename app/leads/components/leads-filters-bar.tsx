@@ -587,6 +587,7 @@ export function LeadsFiltersBar({
                 size="icon"
                 className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
                 aria-label="Import leads"
+                data-tour="leads-import"
               >
                 <UploadIcon className="size-4" />
               </Button>

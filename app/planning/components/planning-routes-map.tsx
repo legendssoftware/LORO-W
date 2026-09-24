@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Loader2, MapPin, RefreshCw, ExternalLink } from 'lucide-react';
 import { useCalculateRoutesMutation, useOptimizedRoutes, useSessionSync, useUsers } from '@/api/hooks';
-import { canAccessCompetitors } from '@/lib/access';
-import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
+import { canAccessVisualiser } from '@/lib/access';
+import { formatUtcYmd, utcTomorrow } from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/popover';
 import type { OptimizedRoute } from '@/api/types/tasks';
 import { CalendarIcon } from '@/lib/icons';
+import { ROUTE_PLANNING_EMPTY } from '@/lib/route-planning-note';
+import { RoutePlanningNote } from './route-planning-note';
 
 interface PlanningRoutesMapProps {
   onOpenTask?: (taskId: number) => void;
@@ -26,8 +28,8 @@ interface PlanningRoutesMapProps {
  */
 export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
   const { backendUserData } = useSessionSync();
-  const showVisualiserLink = canAccessCompetitors(backendUserData?.accessLevel);
-  const [routeDate, setRouteDate] = useState<Date>(() => utcToday());
+  const showVisualiserLink = canAccessVisualiser(backendUserData?.accessLevel);
+  const [routeDate, setRouteDate] = useState<Date>(() => utcTomorrow());
   const dateYmd = formatUtcYmd(routeDate);
   const routesQuery = useOptimizedRoutes(dateYmd);
   const calculateMutation = useCalculateRoutesMutation();
@@ -59,14 +61,17 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             <Calendar
               mode="single"
               selected={routeDate}
-              onSelect={(d) => d && setRouteDate(d)}
+              onSelect={(d) => {
+                if (!d) return;
+                setRouteDate(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
+              }}
             />
           </PopoverContent>
         </Popover>
         <div className="flex flex-wrap items-center gap-2">
           {showVisualiserLink ? (
             <Button variant="outline" size="sm" className="gap-1.5" asChild>
-              <Link href="/visualiser">
+              <Link href={`/visualiser?date=${dateYmd}`}>
                 <ExternalLink className="size-4" />
                 Open visualiser
               </Link>
@@ -89,6 +94,8 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
         </div>
       </div>
 
+      <RoutePlanningNote />
+
       {routesQuery.isLoading ? (
         <div className="flex h-[240px] items-center justify-center rounded-lg border">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -97,10 +104,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center">
           <MapPin className="size-8 text-muted-foreground" />
           <p className="text-sm font-medium">No routes for this day</p>
-          <p className="max-w-md text-xs text-muted-foreground">
-            Assign tasks with clients and ensure reps have a branch with coordinates.
-            Then click Recalculate routes.
-          </p>
+          <p className="max-w-md text-xs text-muted-foreground">{ROUTE_PLANNING_EMPTY}</p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -52,7 +52,10 @@ export function PerformanceToolbar({
   const isMdUp = useIsMdUp();
 
   return (
-    <div className="mb-4 space-y-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+    <div
+      className="mb-4 space-y-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4"
+      data-tour="performance-toolbar"
+    >
       <p className="truncate text-xs text-muted-foreground sm:text-sm">
         {getCountriesDisplayLabel(filters.countries)}
       </p>
@@ -93,6 +96,7 @@ export function PerformanceToolbar({
           variant={showConsolidatedView ? 'default' : 'outline'}
           className="h-9"
           onClick={onToggleConsolidatedView}
+          data-tour="performance-consolidated-toggle"
         >
           {showConsolidatedView ? 'Performance Report' : 'Consolidated Report'}
         </Button>

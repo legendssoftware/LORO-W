@@ -125,13 +125,23 @@ export function isReportsElevatedViewer(
 }
 
 /**
- * Competitors list + Competitor Overview (`/visualiser`).
- * Restricted (standard) users are denied via STANDARD_USER_PATHS; this gates the routes for clarity.
+ * Competitors list and the full Competitor Overview toolkit (tracking, summary, simulation, geocode).
+ * Restricted (standard) users are denied the competitors list; they may open a limited map from Planning.
  */
 export function canAccessCompetitors(accessLevel: string | undefined): boolean {
     const level = normalize(accessLevel);
     if (!level || level === "client") return false;
     return !RESTRICTED_ACCESS_LEVELS.has(level);
+}
+
+/**
+ * Competitor Overview map (`/visualiser`).
+ * Standard users may open it from Planning; operational tools stay gated by canAccessCompetitors.
+ */
+export function canAccessVisualiser(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level || level === "client") return false;
+    return true;
 }
 
 export type StandardUserPath = (typeof STANDARD_USER_PATHS)[number];
@@ -329,7 +339,8 @@ function isClientPortalPath(pathNormalized: string): boolean {
  * - `/calls` is admin-only (audio + transcripts).
  * - `/reports` is all staff (Overview + Targets scoped by role).
  * - `/performance` is workforce/role gated (management, finance, elevated, or managed branches).
- * - `/competitors` and `/visualiser` are not available to restricted (standard) users.
+ * - `/competitors` is not available to restricted (standard) users.
+ * - `/visualiser` is available to all staff; standard users get a limited map (no tracking, summary, or simulation).
  * - Restricted roles only get STANDARD_USER_PATHS (plus Performance when eligible).
  * - Non-restricted roles (e.g. owner, admin, manager) can access other paths except admin-only ones.
  */
@@ -396,11 +407,16 @@ export function canAccess(
 
     if (
         pathNormalized === "/competitors" ||
-        pathNormalized.startsWith("/competitors/") ||
+        pathNormalized.startsWith("/competitors/")
+    ) {
+        return canAccessCompetitors(accessLevel);
+    }
+
+    if (
         pathNormalized === "/visualiser" ||
         pathNormalized.startsWith("/visualiser/")
     ) {
-        return canAccessCompetitors(accessLevel);
+        return canAccessVisualiser(accessLevel);
     }
 
     if (isClientPortalUser(accessLevel)) {

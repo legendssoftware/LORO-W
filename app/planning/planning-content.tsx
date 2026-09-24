@@ -18,6 +18,7 @@ import {
 import { CreateTaskModal } from './components/create-task-modal';
 import { PlanningRemindersPanel } from './components/planning-reminders-panel';
 import { PlanningRoutesMap } from './components/planning-routes-map';
+import { RoutePlanningNote } from './components/route-planning-note';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -268,11 +269,17 @@ export function PlanningContent() {
           </Button>
         </div>
 
+        <RoutePlanningNote tourAnchor className="mb-4" />
+
         <Tabs value={planningTab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
           <TabsList className="mb-4 w-full justify-start sm:w-auto" data-tour="planning-tabs">
-            <TabsTrigger value="all">All tasks</TabsTrigger>
+            <TabsTrigger value="all" data-tour="planning-tab-all">
+              All tasks
+            </TabsTrigger>
             <TabsTrigger value="my-day">My day</TabsTrigger>
-            <TabsTrigger value="routes">Routes</TabsTrigger>
+            <TabsTrigger value="routes" data-tour="planning-tab-routes">
+              Routes
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-0 flex min-h-0 flex-1 flex-col gap-4">

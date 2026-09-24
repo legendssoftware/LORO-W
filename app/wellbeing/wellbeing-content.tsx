@@ -112,12 +112,13 @@ export function WellbeingContent() {
   return (
     <div className={appPageScrollWrapClass} data-slot="wellbeing-page">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
-        <div className="mb-6 flex shrink-0 flex-col gap-1">
+        <div className="mb-6 flex shrink-0 flex-col gap-1" data-tour="wellbeing-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Wellbeing</h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
             Daily employee pulse, named follow-ups for your team, and mood vs performance estimates.
           </p>
         </div>
+        <div data-tour="wellbeing-toolbar">
         <ReportsDashboardToolbar
           startDate={range.startDate}
           endDate={range.endDate}
@@ -127,22 +128,23 @@ export function WellbeingContent() {
           selectedBranchId={branchId}
           onBranchChange={setBranchId}
         />
+        </div>
         <Tabs value={tab} onValueChange={setTab} className="mt-4 flex min-h-0 flex-1 flex-col">
-          <TabsList className={tabListClass}>
+          <TabsList className={tabListClass} data-tour="wellbeing-tabs">
             <TabsTrigger value="today" className={tabTriggerClass}>
               <LayoutDashboard className="size-4" /> Today
             </TabsTrigger>
             <TabsTrigger value="insights" className={tabTriggerClass}>
               <Sparkles className="size-4" /> Insights
             </TabsTrigger>
-            <TabsTrigger value="executive" className={tabTriggerClass}>
+            <TabsTrigger value="executive" className={tabTriggerClass} data-tour="wellbeing-tab-executive">
               <HeartPulse className="size-4" /> Executive
             </TabsTrigger>
             <TabsTrigger value="correlations" className={tabTriggerClass}>
               <TrendingUp className="size-4" /> Correlations
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="today" className="space-y-6">
+          <TabsContent value="today" className="space-y-6" data-tour="wellbeing-today">
             {daily.isLoading ? (
               <Skeleton className="h-24 w-full" />
             ) : (
@@ -221,11 +223,11 @@ export function WellbeingContent() {
               </>
             )}
           </TabsContent>
-          <TabsContent value="executive">
+          <TabsContent value="executive" data-tour="wellbeing-executive">
             {executive.isLoading ? (
-              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" data-tour="wellbeing-radial" />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-tour="wellbeing-radial">
                 {(executive.data?.indices ?? []).map((index) => (
                   <WellbeingRadialIndex key={index.label} label={index.label} value={index.value} unit={index.unit} />
                 ))}

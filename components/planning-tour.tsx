@@ -14,11 +14,53 @@ import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
+import { ROUTE_PLANNING_NOTE, ROUTE_PLANNING_NOTE_TITLE } from '@/lib/route-planning-note';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
+const SEL_HEADER = '[data-tour="planning-page-header"]';
+const SEL_CREATE = '[data-tour="planning-create-button"]';
+const SEL_TABS = '[data-tour="planning-tabs"]';
+const SEL_ROUTE_NOTE = '[data-tour="planning-route-note"]';
+const SEL_REMINDERS = '[data-tour="planning-reminders"]';
+const SEL_TOOLBAR = '[data-tour="planning-toolbar"]';
+const SEL_TABLE = '[data-tour="planning-task-table"]';
+const SEL_PAGINATION = '[data-tour="planning-pagination"]';
+const SEL_ROUTES = '[data-tour="planning-routes"]';
+const SEL_TAB_ALL = '[data-tour="planning-tab-all"]';
+const SEL_TAB_ROUTES = '[data-tour="planning-tab-routes"]';
+
+/** Always on the page, including My day and Routes. */
+const REQUIRED_SELECTORS = [SEL_HEADER, SEL_CREATE, SEL_TABS, SEL_ROUTE_NOTE] as const;
+
+const ALL_TASKS_SELECTORS = new Set<string>([
+  SEL_REMINDERS,
+  SEL_TOOLBAR,
+  SEL_TABLE,
+  SEL_PAGINATION,
+]);
+
 const TOUR_INTRO_DESCRIPTION =
-  'This is the Planning page: track your tasks, create new work, and manage progress. The next steps walk through the page overview, task actions, filters, and the task table.';
+  'This is the Planning page: track tasks, create work, and open the day’s routes. The next steps walk through the overview, All tasks, and Routes.';
+
+function clickPlanningTab(selector: string): void {
+  const tab = document.querySelector(selector);
+  if (tab instanceof HTMLElement) tab.click();
+}
+
+function activeStepElement(activeDriver: Driver): string {
+  const step = activeDriver.getActiveStep();
+  return typeof step?.element === 'string' ? step.element : '';
+}
+
+function revealStepTarget(stepElement: string): void {
+  if (!stepElement || document.querySelector(stepElement)) return;
+  if (stepElement === SEL_ROUTES) {
+    clickPlanningTab(SEL_TAB_ROUTES);
+    return;
+  }
+  if (ALL_TASKS_SELECTORS.has(stepElement)) clickPlanningTab(SEL_TAB_ALL);
+}
 
 const TOUR_STEPS: DriveStep[] = [
   {
@@ -28,7 +70,7 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="planning-page-header"]',
+    element: SEL_HEADER,
     popover: {
       title: 'Planning overview',
       description:
@@ -38,7 +80,7 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="planning-create-button"]',
+    element: SEL_CREATE,
     popover: {
       title: 'Create tasks quickly',
       description:
@@ -48,37 +90,46 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="planning-tabs"]',
+    element: SEL_TABS,
     popover: {
       title: 'All tasks, My day, Routes',
       description:
-        'Switch between the full task list, today’s work, and optimized field routes on the map.',
+        'All tasks is the full list. My day is work due today. Routes is the planned field day: pick the date, recalculate, or open Competitor Overview.',
       side: 'bottom',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="planning-reminders"]',
+    element: SEL_ROUTE_NOTE,
+    popover: {
+      title: ROUTE_PLANNING_NOTE_TITLE,
+      description: ROUTE_PLANNING_NOTE,
+      side: 'bottom',
+      align: 'start',
+    },
+  },
+  {
+    element: SEL_REMINDERS,
     popover: {
       title: 'Reminders inbox',
       description:
-        'See due today, overdue, and upcoming tasks without waiting for push notifications.',
+        'On All tasks, see due today, overdue, and upcoming tasks without waiting for push notifications.',
       side: 'left',
       align: 'start',
     },
   },
   {
-    element: '[data-tour="planning-toolbar"]',
+    element: SEL_TOOLBAR,
     popover: {
       title: 'Filter and search tasks',
       description:
-        'Refine your task list by date range, status, priority, assignee, and search text to focus on exactly what matters.',
+        'On All tasks, refine the list by date, status, priority, assignee, client, branch, overdue only, and search text.',
       side: 'bottom',
       align: 'center',
     },
   },
   {
-    element: '[data-tour="planning-task-table"]',
+    element: SEL_TABLE,
     popover: {
       title: 'Task list',
       description:
@@ -88,11 +139,20 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
-    element: '[data-tour="planning-pagination"]',
+    element: SEL_PAGINATION,
     popover: {
       title: 'Pagination',
+      description: 'Change rows per page and move between pages when you have many tasks.',
+      side: 'top',
+      align: 'center',
+    },
+  },
+  {
+    element: SEL_ROUTES,
+    popover: {
+      title: 'Routes',
       description:
-        'Change rows per page and move between pages when you have many tasks.',
+        'Pick the day the visits were planned, recalculate routes, and open Competitor Overview when you need the map.',
       side: 'top',
       align: 'center',
     },
@@ -106,10 +166,7 @@ const TOUR_STEPS: DriveStep[] = [
 ];
 
 function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
-    if (typeof step.element !== 'string') return true;
-    return document.querySelector(step.element) !== null;
-  });
+  return REQUIRED_SELECTORS.every((selector) => document.querySelector(selector) !== null);
 }
 
 export function PlanningTour() {
@@ -193,6 +250,13 @@ export function PlanningTour() {
           doneBtnText: 'Done',
           steps: TOUR_STEPS,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
+            const stepElement = activeStepElement(activeDriver);
+            if (stepElement && !document.querySelector(stepElement)) {
+              revealStepTarget(stepElement);
+              window.setTimeout(() => {
+                activeDriver.refresh();
+              }, 280);
+            }
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writePlanningTourState(userId, {
               period: getCurrentYearMonth(),

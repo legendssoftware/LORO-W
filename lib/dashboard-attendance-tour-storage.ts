@@ -10,7 +10,7 @@ export interface DashboardAttendanceTourState {
   completedThisMonth: boolean;
 }
 
-const DASHBOARD_ATTENDANCE_TOUR_KEY_PREFIX = 'loro_dashboard_attendance_tour_v3';
+const DASHBOARD_ATTENDANCE_TOUR_KEY_PREFIX = 'loro_dashboard_attendance_tour_v4';
 
 function buildDashboardAttendanceTourKey(userId: string): string {
   return `${DASHBOARD_ATTENDANCE_TOUR_KEY_PREFIX}:${userId}`;

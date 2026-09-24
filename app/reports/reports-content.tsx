@@ -31,7 +31,7 @@ export function ReportsContent() {
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div
           className="mb-6 flex shrink-0 flex-col gap-1"
-          data-slot="reports-page-header"
+          data-tour="reports-page-header"
         >
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
             Reports
@@ -46,7 +46,7 @@ export function ReportsContent() {
           onValueChange={setActiveTab}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <TabsList className={reportsTabListClass} data-slot="reports-tabs">
+          <TabsList className={reportsTabListClass} data-tour="reports-tabs">
             {REPORTS_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -54,6 +54,7 @@ export function ReportsContent() {
                   key={tab.id}
                   value={tab.id}
                   className={reportsTabTriggerClass}
+                  data-tour={`reports-tab-${tab.id}`}
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
                   {tab.label}

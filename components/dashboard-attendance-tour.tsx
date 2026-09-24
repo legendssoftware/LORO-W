@@ -17,84 +17,115 @@ import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is your Home dashboard: your day-to-day command centre for work time. Here you can start and end your shift, see your hours (today, this week, this month, and payroll period), and review attendance with the calendar, month selector, and logs. The next steps walk you through each part.';
+const SEL_ATTENDANCE = '[data-tour="attendance-button"]';
+const SEL_VARIABLE_REM = '[data-tour="variable-rem-section"]';
+const SEL_BONUS = '[data-tour="year-end-bonus-section"]';
+const SEL_SECTION = '[data-tour="attendance-section"]';
+const SEL_MONTH = '[data-tour="attendance-month-selector"]';
+const SEL_LOGS = '[data-tour="attendance-logs-button"]';
+const SEL_LIST = '[data-tour="monthly-attendance-list"]';
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to your dashboard',
-      description: TOUR_INTRO_DESCRIPTION,
+const REQUIRED_SELECTORS = [SEL_ATTENDANCE, SEL_SECTION, SEL_MONTH, SEL_LOGS, SEL_LIST] as const;
+
+const TOUR_INTRO_DESCRIPTION =
+  'This is your Home dashboard: start and end your shift, review attendance, and see variable pay when it applies to you. The next steps walk through each part that is on screen.';
+
+function buildDashboardSteps(): DriveStep[] {
+  const steps: DriveStep[] = [
+    {
+      popover: {
+        title: 'Welcome to your dashboard',
+        description: TOUR_INTRO_DESCRIPTION,
+      },
     },
-  },
-  {
-    element: '[data-tour="attendance-button"]',
-    popover: {
-      title: 'Attendance Actions',
-      description: 'Use this button area to start your shift, take breaks, and end your shift.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: SEL_ATTENDANCE,
+      popover: {
+        title: 'Attendance actions',
+        description:
+          'Start your shift, take breaks, and end your shift here. Clock-in asks how you are working, such as office or work from home. After you clock in or out, Pulse may ask for a short check-in. This tour does not open Pulse.',
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="total-hours-worked-section"]',
-    popover: {
-      title: 'Total Hours Worked',
-      description: 'Track your hours for today, this week, this month, and payroll period at a glance.',
-      side: 'bottom',
-      align: 'center',
+  ];
+
+  if (document.querySelector(SEL_VARIABLE_REM)) {
+    steps.push({
+      element: SEL_VARIABLE_REM,
+      popover: {
+        title: 'Variable remuneration',
+        description:
+          'Live extra pay on top of commission for this month: which gates are open, progress toward the maximum, and what is still available.',
+        side: 'top',
+        align: 'center',
+      },
+    });
+  }
+
+  if (document.querySelector(SEL_BONUS)) {
+    steps.push({
+      element: SEL_BONUS,
+      popover: {
+        title: 'Year-end bonus',
+        description: 'Year-end bonus status for the current cycle, when your profile includes it.',
+        side: 'top',
+        align: 'center',
+      },
+    });
+  }
+
+  steps.push(
+    {
+      element: SEL_SECTION,
+      popover: {
+        title: 'Attendance section',
+        description: 'Review your monthly attendance card, legend, and quick actions in one place.',
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="attendance-section"]',
-    popover: {
-      title: 'Attendance Section',
-      description: 'Review your monthly attendance card, legend, and quick actions in one place.',
-      side: 'top',
-      align: 'center',
+    {
+      element: SEL_MONTH,
+      popover: {
+        title: 'Change month',
+        description:
+          'Use this menu to pick a recent month and view your attendance for past months (up to the last three months).',
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="attendance-month-selector"]',
-    popover: {
-      title: 'Change month',
-      description:
-        'Use this menu to pick a recent month and view your attendance for past months (up to the last three months).',
-      side: 'bottom',
-      align: 'start',
+    {
+      element: SEL_LOGS,
+      popover: {
+        title: 'View logs',
+        description: 'Open your attendance logs for detailed daily records.',
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="attendance-logs-button"]',
-    popover: {
-      title: 'View Logs',
-      description: 'Open your attendance logs for detailed daily records.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: SEL_LIST,
+      popover: {
+        title: 'Monthly attendance list',
+        description: 'This monthly view shows attended, missed, and future days.',
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="monthly-attendance-list"]',
-    popover: {
-      title: 'Monthly Attendance List',
-      description: 'This monthly view shows attended, missed, and future days.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
-    },
-  },
-];
+    {
+      popover: {
+        title: 'Having issues?',
+        description: TOUR_FAQ_DESCRIPTION,
+      },
+    }
+  );
+
+  return steps;
+}
 
 function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
-    if (typeof step.element !== 'string') return true;
-    return document.querySelector(step.element) !== null;
-  });
+  return REQUIRED_SELECTORS.every((selector) => document.querySelector(selector) !== null);
 }
 
 export function DashboardAttendanceTour() {
@@ -157,9 +188,10 @@ export function DashboardAttendanceTour() {
     const cancelSchedule = scheduleTourWhenReady({
       areTargetsReady: areTourTargetsReady,
       onReady: () => {
+        const steps = buildDashboardSteps();
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writeDashboardAttendanceTourState(userId, {
@@ -176,7 +208,7 @@ export function DashboardAttendanceTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writeDashboardAttendanceTourState(userId, {
