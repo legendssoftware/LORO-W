@@ -10,7 +10,7 @@ export interface LeadsTourState {
   completedThisMonth: boolean;
 }
 
-const LEADS_TOUR_KEY_PREFIX = 'loro_leads_tour_v3';
+const LEADS_TOUR_KEY_PREFIX = 'loro_leads_tour_v4';
 
 function buildLeadsTourKey(userId: string): string {
   return `${LEADS_TOUR_KEY_PREFIX}:${userId}`;

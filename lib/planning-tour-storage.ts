@@ -10,7 +10,7 @@ export interface PlanningTourState {
   completedThisMonth: boolean;
 }
 
-const PLANNING_TOUR_KEY_PREFIX = 'loro_planning_tour_v2';
+const PLANNING_TOUR_KEY_PREFIX = 'loro_planning_tour_v4';
 
 function buildPlanningTourKey(userId: string): string {
   return `${PLANNING_TOUR_KEY_PREFIX}:${userId}`;

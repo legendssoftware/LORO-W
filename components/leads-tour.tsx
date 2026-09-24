@@ -16,6 +16,7 @@ const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 const SEL_HEADER = '[data-tour="leads-page-header"]';
 const SEL_CREATE = '[data-tour="leads-create-button"]';
 const SEL_TOOLBAR = '[data-tour="leads-toolbar"]';
+const SEL_IMPORT = '[data-tour="leads-import"]';
 const SEL_TABLE = '[data-tour="leads-table"]';
 const SEL_FIRST_GROUP = '[data-tour="leads-first-group-row"]';
 const SEL_FIRST_LEAD = '[data-tour="leads-first-lead-row"]';
@@ -27,7 +28,17 @@ const DYNAMIC_STEP_SELECTORS = new Set<string>([SEL_FIRST_LEAD, SEL_LEAD_DIALOG]
 const TOUR_INTRO_DESCRIPTION =
   'Welcome to Leads. This page helps you create leads quickly, filter and search your pipeline, and manage follow-ups in one place. The next steps highlight the main areas you will use every day.';
 
+/** Prefer the import control that is actually on screen (mobile and desktop each render one). */
+function visibleImportButton(): Element | undefined {
+  const nodes = Array.from(document.querySelectorAll(SEL_IMPORT));
+  const visible = nodes.find(
+    (node) => node instanceof HTMLElement && node.getClientRects().length > 0
+  );
+  return visible ?? nodes[0];
+}
+
 function areBaseTargetsReady(steps: DriveStep[]): boolean {
+  if (document.querySelector(SEL_IMPORT) === null) return false;
   return steps.every((step) => {
     if (typeof step.element !== 'string') return true;
     if (DYNAMIC_STEP_SELECTORS.has(step.element)) return true;
@@ -70,9 +81,19 @@ function buildEmptyTourSteps(): DriveStep[] {
       popover: {
         title: 'Filter, search, and import',
         description:
-          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters, search, and import to narrow the list.',
+          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters and search to narrow the list.',
         side: 'bottom',
         align: 'center',
+      },
+    },
+    {
+      element: () => visibleImportButton() ?? document.body,
+      popover: {
+        title: 'Import leads',
+        description:
+          'Open Import to add leads from a spreadsheet or from Google Maps. A Google Maps run scrapes places, then you review them and assign owners before they appear in this list.',
+        side: 'bottom',
+        align: 'end',
       },
     },
     {
@@ -125,9 +146,19 @@ function buildDataTourSteps(): DriveStep[] {
       popover: {
         title: 'Filter, search, and import',
         description:
-          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters, search, and import to narrow the list.',
+          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters and search to narrow the list.',
         side: 'bottom',
         align: 'center',
+      },
+    },
+    {
+      element: () => visibleImportButton() ?? document.body,
+      popover: {
+        title: 'Import leads',
+        description:
+          'Open Import to add leads from a spreadsheet or from Google Maps. A Google Maps run scrapes places, then you review them and assign owners before they appear in this list.',
+        side: 'bottom',
+        align: 'end',
       },
     },
     {
@@ -165,7 +196,7 @@ function buildDataTourSteps(): DriveStep[] {
       popover: {
         title: 'Lead detail',
         description:
-          'This dialog is the full workspace for one lead—status, activity, edits, and actions. Close it when you are done to return to the list.',
+          'This dialog is the workspace for one lead. Start or end a call, reach them on WhatsApp, email, or SMS, use team chat, and review linked call scores. Close it when you are done to return to the list.',
         side: 'left',
         align: 'start',
       },

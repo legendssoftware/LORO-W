@@ -5,9 +5,9 @@
 
 import { create } from 'zustand';
 
-import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
+import { utcPlanningDefaultRange } from '@/lib/utils/overview-daily-summary';
 
-const mtd = utcMonthStartThroughToday();
+const mtd = utcPlanningDefaultRange();
 
 export interface PlanningFiltersState {
   startDate: Date;
@@ -77,7 +77,7 @@ export const usePlanningStore = create<PlanningStore>((set) => ({
 
   resetDateRangeToDefault: () =>
     set(() => {
-      const r = utcMonthStartThroughToday();
+      const r = utcPlanningDefaultRange();
       return {
         startDate: r.start,
         endDate: r.end,

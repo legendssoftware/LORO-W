@@ -3,6 +3,7 @@ import {
   canAccess,
   canAccessCallRecordings,
   canAccessPerformanceTracker,
+  canAccessVisualiser,
   canManageApprovals,
   canManageStaffUsers,
   getAllowedRoutes,
@@ -120,6 +121,24 @@ describe('canAccessWellbeingDashboard', () => {
     expect(canAccess('/wellbeing', 'user')).toBe(false);
     expect(getAllowedRoutes('user').some((r) => r.path === '/wellbeing')).toBe(false);
     expect(getAllowedRoutes('hr').some((r) => r.path === '/wellbeing')).toBe(true);
+  });
+});
+
+describe('canAccessVisualiser', () => {
+  it('lets standard users open the map and keeps the competitors list closed', () => {
+    expect(canAccessVisualiser('user')).toBe(true);
+    expect(canAccess('/visualiser', 'user')).toBe(true);
+    expect(canAccess('/competitors', 'user')).toBe(false);
+    expect(getAllowedRoutes('user').some((r) => r.path === '/visualiser')).toBe(
+      false,
+    );
+  });
+
+  it('keeps the full map for admin and blocks clients', () => {
+    expect(canAccessVisualiser('admin')).toBe(true);
+    expect(canAccess('/visualiser', 'admin')).toBe(true);
+    expect(canAccessVisualiser('client')).toBe(false);
+    expect(canAccess('/visualiser', 'client')).toBe(false);
   });
 });
 

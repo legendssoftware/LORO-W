@@ -96,6 +96,45 @@ export function utcMonthStartThroughToday(reference?: Date): {
   return orderUtcCalendarRange(monthStart, utcToday());
 }
 
+/** Weekdays filled by the ERP visit planner, starting tomorrow. */
+const VISIT_PLAN_HORIZON_WEEKDAYS = 20;
+
+function addUtcCalendarDays(date: Date, days: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days));
+}
+
+/** UTC midnight of the calendar day after `reference` (default today). */
+export function utcTomorrow(reference?: Date): Date {
+  return addUtcCalendarDays(reference ?? utcToday(), 1);
+}
+
+/** Last weekday in the 20-weekday visit horizon that starts the day after `reference`. */
+export function utcVisitHorizonEnd(reference?: Date): Date {
+  let cursor = utcTomorrow(reference);
+  let found = 0;
+  let last = cursor;
+  while (found < VISIT_PLAN_HORIZON_WEEKDAYS) {
+    const day = cursor.getUTCDay();
+    if (day >= 1 && day <= 5) {
+      last = cursor;
+      found += 1;
+    }
+    cursor = addUtcCalendarDays(cursor, 1);
+  }
+  return last;
+}
+
+/**
+ * Planning All tasks default: month start through the later of today and the visit horizon.
+ * Upcoming visit tasks stay inside the range the page loads.
+ */
+export function utcPlanningDefaultRange(reference?: Date): { start: Date; end: Date } {
+  const month = utcMonthStartThroughToday(reference);
+  const horizonEnd = utcVisitHorizonEnd(month.end);
+  const end = horizonEnd.getTime() >= month.end.getTime() ? horizonEnd : month.end;
+  return { start: month.start, end };
+}
+
 /**
  * ISO bounds for GET /check-ins when `start`/`end` are UTC calendar dates stored like
  * Overview / Visits pickers: `new Date(Date.UTC(y, m, d))` from wall-clock Y/M/D.

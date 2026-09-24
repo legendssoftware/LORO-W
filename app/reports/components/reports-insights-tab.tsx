@@ -244,7 +244,7 @@ export function ReportsInsightsTab() {
 
   if (!isTokenReady || isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4" data-tour="reports-insights-tab">
         <Skeleton className="h-9 w-full max-w-xl" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -261,7 +261,7 @@ export function ReportsInsightsTab() {
   const empty = data.totals.activities === 0;
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-8" data-tour="reports-insights-tab">
       <ReportsDashboardToolbar
         startDate={startDate}
         endDate={endDate}

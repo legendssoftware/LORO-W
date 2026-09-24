@@ -34,7 +34,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Settings overview',
       description:
-        'Use this page to manage organisation profile, appearance, regional defaults, operating hours, and branches.',
+        'Use this page to manage organisation profile, appearance, regional defaults, operating hours, branches, Calendar, Scrapping, Notices, Banners, and Call quality.',
       side: 'bottom',
       align: 'start',
     },
@@ -44,7 +44,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Switch between sections',
       description:
-        'These tabs group all settings into focused sections. Select a tab to edit that part of your organisation setup.',
+        'Tabs cover profile, appearance, regional defaults, operating hours, branches, Calendar (Outlook or Google), Scrapping (Google Maps jobs), Notices, Banners, and Call quality. Select a tab to edit that section. This tour stays on the tab you already have open.',
       side: 'bottom',
       align: 'start',
     },

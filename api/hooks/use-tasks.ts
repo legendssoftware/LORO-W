@@ -16,6 +16,7 @@ import {
   deleteSubtask,
   getOptimizedRoutes,
   calculateOptimizedRoutes,
+  calculateMyOptimizedRoute,
   getTaskFlags,
   createTaskFlag,
   updateTaskFlag,
@@ -242,6 +243,20 @@ export function useCalculateRoutesMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (date?: string) => calculateOptimizedRoutes(client, date),
+    onSuccess: (_, date) => {
+      queryClient.invalidateQueries({
+        queryKey: [...TASKS_LIST_QUERY_KEY, 'routes', date ?? 'today'],
+      });
+    },
+  });
+}
+
+/** Google-plan the signed-in user's visit route for one day. */
+export function useCalculateMyRouteMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (date?: string) => calculateMyOptimizedRoute(client, date),
     onSuccess: (_, date) => {
       queryClient.invalidateQueries({
         queryKey: [...TASKS_LIST_QUERY_KEY, 'routes', date ?? 'today'],

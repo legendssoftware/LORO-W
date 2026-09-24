@@ -177,6 +177,7 @@ export {
   useDeleteSubtaskMutation,
   useOptimizedRoutes,
   useCalculateRoutesMutation,
+  useCalculateMyRouteMutation,
   useTaskFlags,
   useCreateTaskFlagMutation,
   useUpdateTaskFlagMutation,

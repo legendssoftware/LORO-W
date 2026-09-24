@@ -191,7 +191,7 @@ export function CallsContent() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
-        <div className="mb-6 flex shrink-0 flex-col gap-1">
+        <div className="mb-6 flex shrink-0 flex-col gap-1" data-tour="calls-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Call recordings</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Company-line PBX audio, transcribed into a speaker-labelled dialogue. In-app calls were
@@ -228,7 +228,10 @@ export function CallsContent() {
           onResetDateRange={handleResetDateRange}
         />
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+          data-tour="calls-table"
+        >
           <div className="min-h-0 flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">

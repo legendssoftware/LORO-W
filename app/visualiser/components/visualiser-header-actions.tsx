@@ -17,12 +17,18 @@ interface VisualiserHeaderActionsProps {
   points: VisualiserMapPoint[];
   counts: Record<VisualiserLayerId, number>;
   disabled?: boolean;
+  /**
+   * Standard-user map: hide summary and simulation.
+   * Geocode stays visible and is forced off.
+   */
+  limited?: boolean;
 }
 
 export function VisualiserHeaderActions({
   points,
   counts,
   disabled = false,
+  limited = false,
 }: VisualiserHeaderActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
   const { openPanel, panelOpen, isActive } = useVisualiserSimulation();
@@ -31,29 +37,35 @@ export function VisualiserHeaderActions({
 
   return (
     <>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2" data-tour="visualiser-header-actions">
+        {limited ? null : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => setOpenModal('summary')}
+            aria-label="Map data summary"
+            title="Map data summary"
+          >
+            <BarChart3 className="size-4" />
+            <span className="hidden md:inline">Map data summary</span>
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
           size="sm"
-          disabled={disabled}
-          onClick={() => setOpenModal('summary')}
-          aria-label="Map data summary"
-          title="Map data summary"
-        >
-          <BarChart3 className="size-4" />
-          <span className="hidden md:inline">Map data summary</span>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled || isGeocoding}
+          disabled={disabled || limited || isGeocoding}
           onClick={() =>
             geocodeMutation.mutate({ resetExhausted: true, maxGeocodes: 500 })
           }
           aria-label={isGeocoding ? 'Geocoding…' : 'Geocode'}
-          title="Clear exhausted coordinates and re-geocode missing map addresses"
+          title={
+            limited
+              ? 'Geocode is unavailable for your role'
+              : 'Clear exhausted coordinates and re-geocode missing map addresses'
+          }
         >
           {isGeocoding ? (
             <Loader2 className="size-4 animate-spin" />
@@ -64,31 +76,35 @@ export function VisualiserHeaderActions({
             {isGeocoding ? 'Geocoding…' : 'Geocode'}
           </span>
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          disabled={disabled}
-          onClick={() => setOpenModal('info')}
-          aria-label="Simulation info"
-          title="How simulation works"
-        >
-          <Info className="size-4" />
-        </Button>
-        <ExportSimulationButton disabled={disabled} compactOnMobile />
-        <Button
-          type="button"
-          size="sm"
-          disabled={disabled}
-          onClick={() => openPanel(isActive ? 'results' : 'configure')}
-          aria-label={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
-          title={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
-        >
-          <Sparkles className="size-4" />
-          <span className="hidden md:inline">
-            {panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
-          </span>
-        </Button>
+        {limited ? null : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              disabled={disabled}
+              onClick={() => setOpenModal('info')}
+              aria-label="Simulation info"
+              title="How simulation works"
+            >
+              <Info className="size-4" />
+            </Button>
+            <ExportSimulationButton disabled={disabled} compactOnMobile />
+            <Button
+              type="button"
+              size="sm"
+              disabled={disabled}
+              onClick={() => openPanel(isActive ? 'results' : 'configure')}
+              aria-label={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+              title={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+            >
+              <Sparkles className="size-4" />
+              <span className="hidden md:inline">
+                {panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+              </span>
+            </Button>
+          </>
+        )}
       </div>
 
       <MapSummaryModal

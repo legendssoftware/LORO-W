@@ -10,7 +10,7 @@ export interface PipelineTourState {
   completedThisMonth: boolean;
 }
 
-const PIPELINE_TOUR_KEY_PREFIX = 'loro_pipeline_tour_v2';
+const PIPELINE_TOUR_KEY_PREFIX = 'loro_pipeline_tour_v3';
 
 function buildPipelineTourKey(userId: string): string {
   return `${PIPELINE_TOUR_KEY_PREFIX}:${userId}`;
