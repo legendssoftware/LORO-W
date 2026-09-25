@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO, startOfDay } from 'date-fns';
 import toast from 'react-hot-toast';
-import { CalendarDays, Search } from 'lucide-react';
+import { CalendarDays, MapPin, Search } from 'lucide-react';
 import { Loader2Icon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +50,9 @@ export interface PlanClientVisitsClient {
   code?: string | null;
   email?: string | null;
   contactPerson?: string | null;
+  hasAddress?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface PlanClientVisitsDialogProps {
@@ -58,6 +61,7 @@ export interface PlanClientVisitsDialogProps {
   userRef: string | number;
   assignedClientIds: number[];
   clients: PlanClientVisitsClient[];
+  origin?: { latitude: number; longitude: number } | null;
   onClientsAssigned?: (clientIds: number[]) => void;
 }
 
@@ -71,9 +75,14 @@ function getClientCode(client: PlanClientVisitsClient): string | null {
 }
 
 function formatClientLabel(client: PlanClientVisitsClient): string {
-  const name = client.name?.trim() || `Client ${client.uid}`;
-  const code = getClientCode(client);
-  return code ? `(${code}) ${name}` : name;
+  return client.name?.trim() || 'Client';
+}
+
+function clientHasAddress(client: PlanClientVisitsClient): boolean {
+  if (client.hasAddress) return true;
+  const latitude = Number(client.latitude);
+  const longitude = Number(client.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && !(latitude === 0 && longitude === 0);
 }
 
 function clientMatchesSearch(client: PlanClientVisitsClient, query: string): boolean {
@@ -98,6 +107,7 @@ export function PlanClientVisitsDialog({
   userRef,
   assignedClientIds,
   clients,
+  origin,
   onClientsAssigned,
 }: PlanClientVisitsDialogProps) {
   const planMutation = usePlanClientVisitsMutation(userRef);
@@ -164,10 +174,11 @@ export function PlanClientVisitsDialog({
         const client = clients.find((c) => c.uid === uid);
         return {
           uid,
-          name: client ? formatClientLabel(client) : `Client ${uid}`,
+          name: client ? formatClientLabel(client) : 'Client',
+          latitude: client?.latitude,
+          longitude: client?.longitude,
         };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      });
   }, [selectedClientIds, clients]);
 
   const parsedBatchSize = Math.min(
@@ -181,9 +192,10 @@ export function PlanClientVisitsDialog({
       previewClients,
       startDate,
       visitDaysOfWeek,
-      parsedBatchSize
+      parsedBatchSize,
+      origin
     );
-  }, [previewClients, startDate, visitDaysOfWeek, parsedBatchSize]);
+  }, [previewClients, startDate, visitDaysOfWeek, parsedBatchSize, origin]);
 
   const recurrencePreview = useMemo(() => {
     if (
@@ -552,7 +564,10 @@ export function PlanClientVisitsDialog({
                             }
                             className="mt-0.5"
                           />
-                          <span className="min-w-0 flex-1 text-sm leading-snug">
+                          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm leading-snug">
+                            {clientHasAddress(client) ? (
+                              <MapPin className="size-3.5 shrink-0 text-muted-foreground" aria-label="Has address" />
+                            ) : null}
                             {formatClientLabel(client)}
                             {!isAssigned && selected && (
                               <span className="ml-1 text-xs text-muted-foreground">
@@ -575,10 +590,13 @@ export function PlanClientVisitsDialog({
                       <Badge
                         key={uid}
                         variant="secondary"
-                        className="cursor-pointer"
+                        className="cursor-pointer gap-1"
                         onClick={() => toggleClient(uid, false)}
                       >
-                        {client ? formatClientLabel(client) : uid} ×
+                        {client && clientHasAddress(client) ? (
+                          <MapPin className="size-3 shrink-0" aria-label="Has address" />
+                        ) : null}
+                        {client ? formatClientLabel(client) : 'Client'} ×
                       </Badge>
                     );
                   })}
@@ -586,10 +604,18 @@ export function PlanClientVisitsDialog({
               )}
             </div>
 
+            {selectedClientIds.length > 0 && batchPreviews.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Clients without a map address are left out of the driving days.
+              </p>
+            )}
+
             {batchPreviews.length > 0 && (
               <div className="space-y-2 rounded-md border p-3">
                 <p className="text-sm font-medium">
-                  {hasActivePlanDefaults ? 'Preview (from current plan)' : 'Preview'}
+                  {hasActivePlanDefaults
+                    ? 'Preview (nearby areas, from current plan)'
+                    : 'Preview — one nearby area per day'}
                 </p>
                 <div className="max-h-52 space-y-3 overflow-y-auto">
                   {batchPreviews.map((batch) => (

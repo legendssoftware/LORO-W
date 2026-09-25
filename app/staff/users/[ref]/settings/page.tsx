@@ -15,6 +15,7 @@ import {
   useBranches,
   useUsers,
   useClients,
+  useSalesAssignedClients,
   useSessionSync,
   useProvisionUserMutation,
   useReInviteUserMutation,
@@ -247,6 +248,7 @@ export default function UserSettingsPage() {
   const { data: branches = [] } = useBranches({ enabled: !!ref });
   const { data: users = [] } = useUsers({ enabled: !!ref, limit: 200 });
   const { data: clients = [] } = useClients({ enabled: !!ref, limit: 100 });
+  const { data: salesAssigned } = useSalesAssignedClients(ref ?? undefined, { enabled: !!ref });
 
   const [permanentConfirmText, setPermanentConfirmText] = useState('');
   const [softDeleteOpen, setSoftDeleteOpen] = useState(false);
@@ -261,6 +263,84 @@ export default function UserSettingsPage() {
   const [managedBranchesSearch, setManagedBranchesSearch] = useState('');
   const [managedStaffPickerOpen, setManagedStaffPickerOpen] = useState(false);
   const [managedStaffSearch, setManagedStaffSearch] = useState('');
+
+  const clientLabelById = useMemo(() => {
+    const map = new Map<number, { name: string; hasAddress: boolean }>();
+    for (const client of salesAssigned?.clients ?? []) {
+      map.set(client.uid, { name: client.name, hasAddress: client.hasAddress });
+    }
+    for (const client of clients) {
+      if (map.has(client.uid)) continue;
+      const address = client.address;
+      const hasText = [address?.street, address?.suburb, address?.city].some(
+        (part) => typeof part === 'string' && part.trim().length > 0
+      );
+      const latitude = Number(client.latitude);
+      const longitude = Number(client.longitude);
+      const hasCoordinates =
+        Number.isFinite(latitude) && Number.isFinite(longitude) && !(latitude === 0 && longitude === 0);
+      map.set(client.uid, {
+        name: client.name?.trim() || 'Client',
+        hasAddress: hasText || hasCoordinates,
+      });
+    }
+    return map;
+  }, [salesAssigned?.clients, clients]);
+
+  const planningClients = useMemo(() => {
+    const byId = new Map<
+      number,
+      {
+        uid: number;
+        name: string;
+        hasAddress: boolean;
+        latitude: number | null;
+        longitude: number | null;
+        email?: string | null;
+        contactPerson?: string | null;
+      }
+    >();
+    for (const client of salesAssigned?.clients ?? []) {
+      byId.set(client.uid, {
+        uid: client.uid,
+        name: client.name,
+        hasAddress: client.hasAddress,
+        latitude: client.latitude,
+        longitude: client.longitude,
+      });
+    }
+    for (const client of clients) {
+      const existing = byId.get(client.uid);
+      const address = client.address;
+      const hasText = [address?.street, address?.suburb, address?.city].some(
+        (part) => typeof part === 'string' && part.trim().length > 0
+      );
+      const latitude = Number(client.latitude);
+      const longitude = Number(client.longitude);
+      const hasCoordinates =
+        Number.isFinite(latitude) && Number.isFinite(longitude) && !(latitude === 0 && longitude === 0);
+      byId.set(client.uid, {
+        uid: client.uid,
+        name: existing?.name || client.name?.trim() || 'Client',
+        hasAddress: existing?.hasAddress || hasText || hasCoordinates,
+        latitude: existing?.latitude ?? (hasCoordinates ? latitude : null),
+        longitude: existing?.longitude ?? (hasCoordinates ? longitude : null),
+        email: client.email,
+        contactPerson: client.contactPerson,
+      });
+    }
+    return [...byId.values()];
+  }, [salesAssigned?.clients, clients]);
+
+  const visitOrigin = useMemo(() => {
+    const branch = user?.branch as { latitude?: number | null; longitude?: number | null } | undefined;
+    const latitude = Number(branch?.latitude);
+    const longitude = Number(branch?.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || (latitude === 0 && longitude === 0)) {
+      return null;
+    }
+    return { latitude, longitude };
+  }, [user?.branch]);
 
   const filteredClientsForPicker = useMemo(
     () =>
@@ -966,7 +1046,7 @@ export default function UserSettingsPage() {
 
             <CollapsibleFormSection
               title="Assigned clients"
-              description="Clients this user has access to."
+              description="Clients linked to this user by sales code."
             >
                 <FormField
                   control={form.control}
@@ -1039,7 +1119,12 @@ export default function UserSettingsPage() {
                                             }
                                           }}
                                         />
-                                        <span>{c.name ?? `Client ${c.uid}`}</span>
+                                        <span className="flex min-w-0 items-center gap-1.5">
+                                          {clientLabelById.get(c.uid)?.hasAddress ? (
+                                            <MapPinIcon className="size-3.5 shrink-0 text-muted-foreground" aria-label="Has address" />
+                                          ) : null}
+                                          <span className="truncate">{clientLabelById.get(c.uid)?.name ?? c.name ?? 'Client'}</span>
+                                        </span>
                                       </label>
                                     );
                                   })
@@ -1057,12 +1142,15 @@ export default function UserSettingsPage() {
                               <Badge
                                 key={uid}
                                 variant="secondary"
-                                className="cursor-pointer"
+                                className="cursor-pointer gap-1"
                                 onClick={() =>
                                   field.onChange(field.value?.filter((id) => id !== uid) ?? [])
                                 }
                               >
-                                {c?.name ?? uid} ×
+                                {clientLabelById.get(uid)?.hasAddress ? (
+                                  <MapPinIcon className="size-3 shrink-0" aria-label="Has address" />
+                                ) : null}
+                                {clientLabelById.get(uid)?.name ?? c?.name ?? 'Client'} ×
                               </Badge>
                             );
                           })}
@@ -1074,7 +1162,7 @@ export default function UserSettingsPage() {
                 />
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
                   <p className="text-xs text-muted-foreground flex-1 min-w-[200px]">
-                    Split assigned clients into weekly visit batches and create planning tasks.
+                    Group assigned clients into nearby visit days and save a driving route for each day.
                   </p>
                   <Button
                     type="button"
@@ -1097,7 +1185,8 @@ export default function UserSettingsPage() {
                 onOpenChange={setPlanVisitsOpen}
                 userRef={ref}
                 assignedClientIds={form.watch('assignedClientIds') ?? []}
-                clients={clients}
+                clients={planningClients}
+                origin={visitOrigin}
                 onClientsAssigned={(clientIds) =>
                   form.setValue('assignedClientIds', clientIds, { shouldDirty: true })
                 }
