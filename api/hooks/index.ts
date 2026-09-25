@@ -108,6 +108,7 @@ export {
   useRestoreUser,
   useDeleteUserPermanently,
 } from './use-user';
+export { useSalesAssignedClients } from './use-sales-assigned-clients';
 export {
   useInviteUserMutation,
   useProvisionUserMutation,

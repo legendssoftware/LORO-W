@@ -863,6 +863,30 @@ export async function planClientVisits(
   return data;
 }
 
+/** GET /user/:ref/sales-assigned-clients — clients linked by sales code. */
+export interface SalesAssignedClient {
+  uid: number;
+  name: string;
+  hasAddress: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface SalesAssignedClientsResponse {
+  message: string;
+  clients: SalesAssignedClient[];
+}
+
+export async function getSalesAssignedClients(
+  client: AxiosInstance,
+  ref: string | number
+): Promise<SalesAssignedClientsResponse> {
+  const { data } = await client.get<SalesAssignedClientsResponse>(
+    `/user/${ref}/sales-assigned-clients`
+  );
+  return data;
+}
+
 /** GET /user/:ref/visit-plan-schedules — active visit-plan tasks grouped by date. */
 export interface VisitPlanScheduleTask {
   uid: number;
@@ -870,14 +894,24 @@ export interface VisitPlanScheduleTask {
   status: string;
   clientUid?: number;
   clientName?: string;
+  hasAddress?: boolean;
   repetitionType?: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   repetitionDeadline?: string;
   repetitionSeriesId?: string;
 }
 
+export interface VisitPlanScheduleRoute {
+  routeUid: number;
+  totalDistanceMeters: number;
+  totalDurationSeconds: number;
+  stopCount: number;
+  clientUids: number[];
+}
+
 export interface VisitPlanScheduleSlot {
   visitDate: string;
   tasks: VisitPlanScheduleTask[];
+  route?: VisitPlanScheduleRoute | null;
 }
 
 export interface VisitPlanSchedulesResponse {
