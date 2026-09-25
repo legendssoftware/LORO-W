@@ -80,7 +80,104 @@ export function chunkItems<T>(items: T[], batchSize: number): T[][] {
 export type VisitBatchPreviewClient = {
   uid: number;
   name: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
+
+const VISIT_REGION_MAX_KM = 40;
+
+type GeoPoint = { latitude: number; longitude: number };
+
+function haversineKm(a: GeoPoint, b: GeoPoint): number {
+  const earthKm = 6371;
+  const dLat = ((b.latitude - a.latitude) * Math.PI) / 180;
+  const dLng = ((b.longitude - a.longitude) * Math.PI) / 180;
+  const lat1 = (a.latitude * Math.PI) / 180;
+  const lat2 = (b.latitude * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * earthKm * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function nearestKmToGroup(point: GeoPoint, group: GeoPoint[]): number {
+  let best = Number.POSITIVE_INFINITY;
+  for (const member of group) {
+    const distance = haversineKm(point, member);
+    if (distance < best) best = distance;
+  }
+  return best;
+}
+
+function orderByNearestNeighbour<T extends GeoPoint>(items: T[], origin: GeoPoint): T[] {
+  const remaining = [...items];
+  const ordered: T[] = [];
+  let anchor: GeoPoint = origin;
+  while (remaining.length > 0) {
+    let bestIndex = 0;
+    let bestDistance = haversineKm(anchor, remaining[0]);
+    for (let index = 1; index < remaining.length; index++) {
+      const distance = haversineKm(anchor, remaining[index]);
+      if (distance < bestDistance) {
+        bestIndex = index;
+        bestDistance = distance;
+      }
+    }
+    const [next] = remaining.splice(bestIndex, 1);
+    ordered.push(next);
+    anchor = next;
+  }
+  return ordered;
+}
+
+/** Mirrors server clusterIntoDrivingDays so the plan preview matches saved days. */
+function clusterIntoDrivingDays<T extends GeoPoint>(
+  items: T[],
+  origin: GeoPoint | null,
+  dailyCapacity: number
+): T[][] {
+  const capacity = Math.max(1, dailyCapacity);
+  const remaining = [...items];
+  const days: T[][] = [];
+  let anchor: GeoPoint | null = origin;
+
+  while (remaining.length > 0) {
+    let seedIndex = 0;
+    if (anchor) {
+      let best = haversineKm(anchor, remaining[0]);
+      for (let index = 1; index < remaining.length; index++) {
+        const distance = haversineKm(anchor, remaining[index]);
+        if (distance < best) {
+          best = distance;
+          seedIndex = index;
+        }
+      }
+    }
+    const [seed] = remaining.splice(seedIndex, 1);
+    const day: T[] = [seed];
+    while (day.length < capacity && remaining.length > 0) {
+      let bestIndex = 0;
+      let bestDistance = nearestKmToGroup(remaining[0], day);
+      for (let index = 1; index < remaining.length; index++) {
+        const distance = nearestKmToGroup(remaining[index], day);
+        if (distance < bestDistance) {
+          bestIndex = index;
+          bestDistance = distance;
+        }
+      }
+      if (bestDistance > VISIT_REGION_MAX_KM) break;
+      const [next] = remaining.splice(bestIndex, 1);
+      day.push(next);
+    }
+    const ordered = orderByNearestNeighbour(day, anchor ?? seed);
+    days.push(ordered);
+    const latitude = ordered.reduce((sum, point) => sum + point.latitude, 0) / ordered.length;
+    const longitude = ordered.reduce((sum, point) => sum + point.longitude, 0) / ordered.length;
+    anchor = { latitude, longitude };
+  }
+
+  return days;
+}
 
 export type VisitBatchPreview = {
   batchIndex: number;
@@ -158,18 +255,38 @@ export function formatRecurrenceSummaryLabel(
   } per client)`;
 }
 
+function asGeoPoint(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined
+): GeoPoint | null {
+  if (latitude == null || longitude == null) return null;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude === 0 && longitude === 0) return null;
+  return { latitude, longitude };
+}
+
 export function computeVisitBatchPreviews(
   clients: VisitBatchPreviewClient[],
   startDateIso: string,
   visitDaysOfWeek: number[],
-  batchSize: number
+  batchSize: number,
+  origin?: { latitude: number; longitude: number } | null
 ): VisitBatchPreview[] {
   if (!startDateIso || clients.length === 0 || visitDaysOfWeek.length === 0) {
     return [];
   }
 
+  const located = clients.flatMap((client) => {
+    const point = asGeoPoint(client.latitude, client.longitude);
+    if (!point) return [];
+    return [{ ...client, latitude: point.latitude, longitude: point.longitude }];
+  });
+  if (located.length === 0) return [];
+
+  const anchor = asGeoPoint(origin?.latitude, origin?.longitude);
+
   const startDate = startOfDay(parseISO(startDateIso.slice(0, 10)));
-  const batches = chunkItems(clients, batchSize);
+  const batches = clusterIntoDrivingDays(located, anchor, batchSize);
 
   return batches.map((batchClients, batchIndex) => {
     const visitDate = getVisitSlotDate(startDate, visitDaysOfWeek, batchIndex);
