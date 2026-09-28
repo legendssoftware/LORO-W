@@ -140,6 +140,7 @@ describe('buildSimulationExportDocument', () => {
     expect(document.meta.organisationName).toBe('BitDrywall');
     expect(document.meta.countryLabel).toBe('South Africa');
     expect(document.meta.provinceLabel).toBe('Gauteng');
+    expect(document.meta.cityLabel).toBeNull();
     expect(document.meta.modeLabel).toBe('Catchments and opportunities');
     expect(document.meta.erpMatchedStores).toBe(1);
     expect(document.warnings).toEqual(result.warnings);
@@ -223,6 +224,7 @@ describe('buildSimulationExportDocument', () => {
     expect(document.meta.organisationName).toBe('Organisation');
     expect(document.meta.countryLabel).toBe('All countries');
     expect(document.meta.provinceLabel).toBeNull();
+    expect(document.meta.cityLabel).toBeNull();
     expect(document.meta.modeLabel).toBe('Catchments');
     expect(document.meta.erpError).toBe('ERP store sales unavailable');
     expect(document.catchments[0]?.competitors).toEqual([]);

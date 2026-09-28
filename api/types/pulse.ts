@@ -48,12 +48,14 @@ export interface PulseBranchRow {
   morningScore: number | null;
   eveningScore: number | null;
   trend: 'up' | 'down' | 'flat';
+  countryCode: string | null;
 }
 
 export interface PulseNamedPerson {
   ownerUid: number;
   name: string;
   branchName: string | null;
+  countryCode: string | null;
   morningMood: PulseMood | null;
   eveningMood: PulseMood | null;
   talkTo: PulseTalkTo;

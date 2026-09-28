@@ -107,7 +107,7 @@ export function CompetitorRevenueEditor({ point }: CompetitorRevenueEditorProps)
     <div className="space-y-2 border-t border-border/50 pt-2.5">
       <div className="space-y-1">
         <Label htmlFor={`rev-${uid}`} className="text-[10px] tracking-wide uppercase">
-          Est. annual revenue (ZAR)
+          Monthly turnover (ZAR)
         </Label>
         <Input
           id={`rev-${uid}`}
@@ -117,7 +117,7 @@ export function CompetitorRevenueEditor({ point }: CompetitorRevenueEditorProps)
           inputMode="numeric"
           value={revenueInput}
           onChange={(e) => setRevenueInput(e.target.value)}
-          placeholder="e.g. 36000000"
+          placeholder="e.g. 3000000"
           className="h-8 text-xs tabular-nums"
           disabled={isSaving}
         />

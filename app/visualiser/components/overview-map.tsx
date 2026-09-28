@@ -441,7 +441,7 @@ interface OverviewMapProps {
   enabled?: boolean;
   /** Standard-user map: hide sales-rep tracking and the reps layer. */
   showRepTracking?: boolean;
-  /** Signed-in user's Google-planned visit route. Drawn only for the limited map. */
+  /** Planned visit route for the signed-in user, or the rep opened from Planning. */
   plannedRoute?: OptimizedRoute | null;
 }
 
@@ -506,6 +506,13 @@ export function OverviewMap({
   showRepTracking = true,
   plannedRoute = null,
 }: OverviewMapProps) {
+  const plannedRouteLine = useMemo(
+    () => (plannedRoute ? plannedRouteCoordinates(plannedRoute) : []),
+    [plannedRoute]
+  );
+  const plannedRouteKey = plannedRoute
+    ? `planned-${plannedRoute.userId}-${plannedRoute.routeUid ?? 'route'}`
+    : null;
   const client = useApiClient();
   const queryClient = useQueryClient();
   const [center, setCenter] = useState<[number, number] | null>(null);
@@ -1368,6 +1375,10 @@ export function OverviewMap({
         <FitJourneyBounds
           coordinates={journeyBoundsCoordinates}
           routeKey={journeyRouteKey}
+        />
+        <FitJourneyBounds
+          coordinates={plannedRouteLine}
+          routeKey={plannedRouteKey}
         />
         <FitSimulationBounds
           ranAt={ranAt}

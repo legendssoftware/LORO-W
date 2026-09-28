@@ -45,11 +45,11 @@ export function VisualiserHeaderActions({
             size="sm"
             disabled={disabled}
             onClick={() => setOpenModal('summary')}
-            aria-label="Map data summary"
-            title="Map data summary"
+            aria-label="Summary"
+            title="Summary"
           >
             <BarChart3 className="size-4" />
-            <span className="hidden md:inline">Map data summary</span>
+            <span className="hidden md:inline">Summary</span>
           </Button>
         )}
         <Button

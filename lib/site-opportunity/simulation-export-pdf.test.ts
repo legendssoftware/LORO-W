@@ -17,6 +17,7 @@ function sampleDocument(): SimulationExportDocument {
       ranAtIso: '2026-09-11T06:29:00.000Z',
       countryLabel: 'South Africa',
       provinceLabel: 'KwaZulu-Natal',
+      cityLabel: null,
       modeLabel: 'Opportunities',
       erpMonthLabel: 'Sept 2026',
       erpMatchedStores: 0,

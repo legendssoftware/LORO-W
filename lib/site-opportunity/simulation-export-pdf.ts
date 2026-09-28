@@ -112,7 +112,12 @@ function formatDateTime(iso: string | null): string {
 }
 
 function scopeLine(document: SimulationExportDocument): string {
-  return [document.meta.countryLabel, document.meta.provinceLabel, document.meta.modeLabel]
+  return [
+    document.meta.countryLabel,
+    document.meta.provinceLabel,
+    document.meta.cityLabel,
+    document.meta.modeLabel,
+  ]
     .filter(Boolean)
     .join(' · ');
 }
