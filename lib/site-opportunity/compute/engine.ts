@@ -8,6 +8,7 @@ import type {
 	SiteOpportunitySettings,
 } from '@/api/types/site-opportunity';
 import { DEFAULT_SITE_OPPORTUNITY_SETTINGS } from '@/api/types/site-opportunity';
+import { resolveMarkerAddressParts } from '@/lib/utils/marker-geo-resolve';
 import { countByBrand, sumAddressablePool } from './brands';
 import { countByCategoryFromBrandCounts } from './competitor-category';
 import {
@@ -240,6 +241,75 @@ interface ScoredCluster {
 	byBrand: ReturnType<typeof countByBrand>;
 }
 
+/** Skip postcodes and street lines so a cluster is named after a town or suburb. */
+function isPlaceLabel(label: string): boolean {
+	if (!label) return false;
+	if (/^\d{3,8}$/.test(label)) return false;
+	if (
+		/^\d/.test(label) &&
+		/\b(STREET|ST|ROAD|RD|AVENUE|AVE|DRIVE|DR)\b/i.test(label)
+	) {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Most frequent city or suburb on a cluster, keeping the casing that appears most often.
+ * City wins over suburb when both are present.
+ */
+function placeNameFromCluster(members: GeolocatedMapMarker[]): string | null {
+	const city = mostCommonAddressField(members, 'city');
+	if (city) return city;
+	return mostCommonAddressField(members, 'suburb');
+}
+
+function mostCommonAddressField(
+	members: GeolocatedMapMarker[],
+	field: 'city' | 'suburb',
+): string | null {
+	const byKey = new Map<string, Map<string, number>>();
+	for (const member of members) {
+		const raw = resolveMarkerAddressParts(member)[field].trim();
+		if (!isPlaceLabel(raw)) continue;
+		const key = raw.toLowerCase();
+		const casings = byKey.get(key) ?? new Map<string, number>();
+		casings.set(raw, (casings.get(raw) ?? 0) + 1);
+		byKey.set(key, casings);
+	}
+
+	let bestKey: string | null = null;
+	let bestCount = 0;
+	for (const [key, casings] of byKey) {
+		const count = [...casings.values()].reduce((sum, n) => sum + n, 0);
+		if (count > bestCount) {
+			bestCount = count;
+			bestKey = key;
+		}
+	}
+	if (!bestKey) return null;
+
+	const casings = byKey.get(bestKey);
+	if (!casings) return null;
+	let bestCasing = '';
+	let bestCasingCount = 0;
+	for (const [casing, count] of casings) {
+		if (count > bestCasingCount) {
+			bestCasingCount = count;
+			bestCasing = casing;
+		}
+	}
+	return bestCasing || null;
+}
+
+function greenfieldLabel(place: string | null, rank: number, seen: Map<string, number>): string {
+	const base = place ? `${place} New Branch` : `Opportunity ${rank}`;
+	const next = (seen.get(base) ?? 0) + 1;
+	seen.set(base, next);
+	if (next === 1) return base;
+	return `${base} (${next})`;
+}
+
 function clusterCentroid(members: GeolocatedMapMarker[]): GeoPoint {
 	const lat = members.reduce((s, m) => s + m.lat, 0) / members.length;
 	const lng = members.reduce((s, m) => s + m.lng, 0) / members.length;
@@ -374,7 +444,7 @@ export function computeGreenfieldZones(
 
 	const minSepM = settings.minBranchSeparationKm * 1000;
 	const scored: Array<
-		GreenfieldOpportunityZone & { _nearestM: number | null }
+		GreenfieldOpportunityZone & { _nearestM: number | null; _place: string | null }
 	> = [];
 
 	for (const members of clusters) {
@@ -426,6 +496,7 @@ export function computeGreenfieldZones(
 			id: `greenfield-${cell.lat.toFixed(3)}-${cell.lng.toFixed(3)}`,
 			rank: 0,
 			label: '',
+			_place: placeNameFromCluster(members),
 			address: null,
 			lat: cell.lat,
 			lng: cell.lng,
@@ -451,14 +522,18 @@ export function computeGreenfieldZones(
 		});
 	}
 
+	const seenLabels = new Map<string, number>();
 	return scored
 		.sort(compareGreenfield)
 		.slice(0, settings.topN)
-		.map(({ _nearestM: _, ...z }, i) => ({
-			...z,
-			rank: i + 1,
-			label: `Opportunity ${i + 1}`,
-		}));
+		.map(({ _nearestM: _, _place, ...z }, i) => {
+			const rank = i + 1;
+			return {
+				...z,
+				rank,
+				label: greenfieldLabel(_place, rank, seenLabels),
+			};
+		});
 }
 
 export function computeSiteOpportunities(

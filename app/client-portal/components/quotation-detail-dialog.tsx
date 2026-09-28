@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { Badge } from '@/components/ui/badge';
+import { getBranchDisplayLabel } from '@/api/types/branch';
 
 function formatDate(value?: string): string | null {
   if (!value) return null;
@@ -186,7 +187,7 @@ export function QuotationDetailDialog({
             />
             <MetadataRow label="Promo code" value={quotation.promoCode} />
             <MetadataRow label="Price list" value={quotation.priceListType} />
-            <MetadataRow label="Branch" value={quotation.branch?.name} />
+            <MetadataRow label="Branch" value={getBranchDisplayLabel(quotation.branch) || undefined} />
             <MetadataRow label="Organisation" value={quotation.organisation?.name} />
             <MetadataRow label="Notes" value={quotation.notes} />
             {quotation.pdfURL && (

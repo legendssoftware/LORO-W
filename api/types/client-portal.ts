@@ -140,7 +140,7 @@ export interface ClientQuotation {
   pdfURL?: string;
   client?: { name?: string; email?: string; phone?: string; uid?: number };
   placedBy?: { name?: string; surname?: string; email?: string; uid?: number };
-  branch?: { uid?: number; name?: string };
+  branch?: { uid?: number; name?: string; alias?: string | null };
   organisation?: { uid?: number; name?: string };
   orders?: unknown[];
   quotationItems?: ClientQuotationItem[];
