@@ -204,6 +204,8 @@ export interface OptimizedRouteStop {
 export interface OptimizedRoute {
   routeUid?: number;
   userId: number;
+  /** Assignee first and last name from the saved route. */
+  assigneeName?: string;
   stops: OptimizedRouteStop[];
   totalDistance: number;
   estimatedDuration: number;

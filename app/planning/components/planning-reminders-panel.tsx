@@ -103,7 +103,7 @@ export function PlanningRemindersPanel({
             <p className="text-xs text-muted-foreground">None</p>
           ) : (
             <ul className="space-y-1">
-              {tasks.slice(0, 8).map((t) => (
+              {tasks.map((t) => (
                 <li key={t.uid}>
                   <button
                     type="button"
@@ -133,20 +133,20 @@ export function PlanningRemindersPanel({
   return (
     <aside
       className={cn(
-        'shrink-0 rounded-lg border bg-card p-4',
-        'w-full lg:w-72',
+        'flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-lg border bg-card p-4',
+        'lg:h-full lg:w-72 lg:flex-none lg:self-stretch',
         className
       )}
       data-tour="planning-reminders"
     >
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex shrink-0 items-center gap-2">
         <Bell className="size-4 text-violet-600" />
         <h2 className="text-sm font-semibold">Reminders</h2>
       </div>
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>
       ) : (
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
           {renderSection(
             'Due today',
             <CalendarClock className="size-3.5 text-violet-600" />,

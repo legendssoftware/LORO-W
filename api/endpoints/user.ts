@@ -328,6 +328,7 @@ export interface VisualiserUserPreferences {
   };
   selectedCountry?: string;
   selectedProvince?: string;
+  selectedCity?: string;
   showOpportunities?: boolean;
   showSalesRepLocations?: boolean;
   repLocationsMaxAgeHours?: number;

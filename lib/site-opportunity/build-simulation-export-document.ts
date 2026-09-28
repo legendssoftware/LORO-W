@@ -47,6 +47,7 @@ const ASSUMPTION_BRANDS = [
 export interface SimulationExportRunFilters {
   country: string;
   province: string;
+  city?: string;
   mode: SiteOpportunityMode;
 }
 
@@ -87,6 +88,12 @@ function scopeCountryLabel(country: string | undefined): string {
 function scopeProvinceLabel(province: string | undefined): string | null {
   if (!province || province.trim().toLowerCase() === ALL_SCOPE) return null;
   return province;
+}
+
+function scopeCityLabel(city: string | undefined): string | null {
+  const trimmed = city?.trim() ?? '';
+  if (!trimmed || trimmed.toLowerCase() === ALL_SCOPE) return null;
+  return trimmed;
 }
 
 function zoneTitle(zone: SiteOpportunityZone): string {
@@ -260,6 +267,7 @@ export function buildSimulationExportDocument(
       ranAtIso: input.ranAtIso,
       countryLabel: scopeCountryLabel(input.runFilters?.country),
       provinceLabel: scopeProvinceLabel(input.runFilters?.province),
+      cityLabel: scopeCityLabel(input.runFilters?.city),
       modeLabel: modeLabel(resolvedMode),
       erpMonthLabel,
       erpMatchedStores: input.erpMatchedStores,
@@ -290,6 +298,7 @@ export function buildSimulationExportFilename(
     document.meta.provinceLabel
       ? slugPart(document.meta.provinceLabel)
       : null,
+    document.meta.cityLabel ? slugPart(document.meta.cityLabel) : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join('-');

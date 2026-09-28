@@ -20,6 +20,7 @@ export type SimulationPanelMode = 'configure' | 'results';
 export interface SimulationRunFilters {
   country: string;
   province: string;
+  city: string;
   mode: 'both' | 'catchment' | 'greenfield';
 }
 

@@ -14,6 +14,7 @@ export interface SimulationExportMeta {
   ranAtIso: string | null;
   countryLabel: string;
   provinceLabel: string | null;
+  cityLabel: string | null;
   modeLabel: string;
   erpMonthLabel: string | null;
   erpMatchedStores: number;

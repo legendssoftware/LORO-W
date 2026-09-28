@@ -36,7 +36,10 @@ export function useSubmitPulseMutation() {
   });
 }
 
-export function usePulseDaily(params: { date?: string; branchUid?: number }, enabled = true) {
+export function usePulseDaily(
+  params: { date?: string; branchUid?: number; country?: string },
+  enabled = true
+) {
   const client = useApiClient();
   return useQuery({
     queryKey: [...PULSE_DAILY_QUERY_KEY, params],
@@ -46,7 +49,7 @@ export function usePulseDaily(params: { date?: string; branchUid?: number }, ena
 }
 
 export function usePulseInsights(
-  params: { from?: string; to?: string; branchUid?: number },
+  params: { from?: string; to?: string; branchUid?: number; country?: string },
   enabled = true
 ) {
   const client = useApiClient();
@@ -58,7 +61,7 @@ export function usePulseInsights(
 }
 
 export function usePulseExecutive(
-  params: { from?: string; to?: string; branchUid?: number },
+  params: { from?: string; to?: string; branchUid?: number; country?: string },
   enabled = true
 ) {
   const client = useApiClient();
@@ -70,7 +73,7 @@ export function usePulseExecutive(
 }
 
 export function usePulseCorrelations(
-  params: { from?: string; to?: string; branchUid?: number },
+  params: { from?: string; to?: string; branchUid?: number; country?: string },
   enabled = true
 ) {
   const client = useApiClient();

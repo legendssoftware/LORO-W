@@ -11,6 +11,7 @@ export const VISUALISER_PREFERENCES_STORAGE_KEY = 'visualiser-preferences-v3';
 export interface VisualiserPreferences {
   selectedCountry: string;
   selectedProvince: string;
+  selectedCity: string;
   showOpportunities: boolean;
   opportunityMode: SiteOpportunityMode;
   opportunitySettings: SiteOpportunitySettings;
@@ -22,6 +23,7 @@ export interface VisualiserPreferences {
 const DEFAULT_PREFERENCES: VisualiserPreferences = {
   selectedCountry: 'South Africa',
   selectedProvince: '',
+  selectedCity: '',
   showOpportunities: false,
   opportunityMode: 'both',
   opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
@@ -163,6 +165,10 @@ export function normalizeVisualiserPreferences(
       typeof p.selectedProvince === 'string'
         ? p.selectedProvince
         : DEFAULT_PREFERENCES.selectedProvince,
+    selectedCity:
+      typeof p.selectedCity === 'string'
+        ? p.selectedCity
+        : DEFAULT_PREFERENCES.selectedCity,
     showOpportunities: p.showOpportunities === true,
     opportunityMode: isSiteOpportunityMode(p.opportunityMode)
       ? p.opportunityMode
@@ -202,6 +208,7 @@ export function toVisualiserUserPreferencePayload(
     | 'turnoverOverrides'
     | 'selectedCountry'
     | 'selectedProvince'
+    | 'selectedCity'
   >,
 ): {
   opportunityMode: SiteOpportunityMode;
@@ -209,6 +216,7 @@ export function toVisualiserUserPreferencePayload(
   turnoverOverrides: TurnoverOverrideSettings;
   selectedCountry: string;
   selectedProvince: string;
+  selectedCity: string;
 } {
   return {
     opportunityMode: prefs.opportunityMode,
@@ -216,6 +224,7 @@ export function toVisualiserUserPreferencePayload(
     turnoverOverrides: prefs.turnoverOverrides,
     selectedCountry: prefs.selectedCountry,
     selectedProvince: prefs.selectedProvince,
+    selectedCity: prefs.selectedCity,
   };
 }
 

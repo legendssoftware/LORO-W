@@ -1,12 +1,16 @@
 import type { MapMarkerBase } from '@/api/types/map';
 import {
+  SA_PROVINCES,
   UNMAPPED,
   getMarkerCountryKey,
   getMarkerProvinceKey,
   getMarkerRegionGroupKey,
+  resolveMarkerAddressParts,
 } from '@/lib/utils/marker-geo-resolve';
 
 export { UNMAPPED, getMarkerCountryKey, getMarkerProvinceKey };
+
+const SOUTH_AFRICA = 'South Africa';
 
 const NOT_SET = 'Not set';
 
@@ -21,6 +25,7 @@ export interface MapMarkerFilterInput {
   selectedRegion?: string;
   selectedCountry?: string;
   selectedProvince?: string;
+  selectedCity?: string;
   selectedBusinessType?: string;
 }
 
@@ -28,6 +33,7 @@ export interface MapMarkerFilterInput {
  * Filter markers by geo + business type.
  * Precedence: if `selectedCountry` is set, filter by country (+ province if set).
  * Else if `selectedRegion` is set, exact region-key match (legacy).
+ * A city query then matches resolved city or suburb.
  * Empty / `"all"` country means no country filter.
  */
 export function filterMapMarkers(
@@ -50,12 +56,31 @@ export function filterMapMarkers(
     );
   }
 
+  const city = filters.selectedCity?.trim();
+  if (city && city.toLowerCase() !== 'all') {
+    list = list.filter((marker) => markerMatchesCity(marker, city));
+  }
+
   if (filters.selectedBusinessType) {
     list = list.filter(
       (m) => getMarkerBusinessTypeKey(m) === filters.selectedBusinessType,
     );
   }
   return list;
+}
+
+/** Case-insensitive match on resolved city or suburb. */
+export function markerMatchesCity(
+  marker: MapMarkerBase,
+  cityQuery: string,
+): boolean {
+  const query = cityQuery.trim().toLowerCase();
+  if (!query) return true;
+  const parts = resolveMarkerAddressParts(marker);
+  const places = [parts.city, parts.suburb]
+    .map((place) => place.trim().toLowerCase())
+    .filter(Boolean);
+  return places.some((place) => place === query || place.includes(query));
 }
 
 export function getSortedUniqueCountriesFromMarkers(
@@ -87,4 +112,53 @@ export function getSortedUniqueProvincesFromMarkers(
     if (b === UNMAPPED) return -1;
     return a.localeCompare(b);
   });
+}
+
+/**
+ * Province choices for a simulation run.
+ * South Africa always includes the nine canonical provinces.
+ */
+export function getSimulationProvinceOptions(
+  markers: MapMarkerBase[],
+  country: string,
+): string[] {
+  const fromMarkers = getSortedUniqueProvincesFromMarkers(markers, country);
+  if (country !== SOUTH_AFRICA) return fromMarkers;
+
+  const canonical = new Set<string>(SA_PROVINCES);
+  const extras = fromMarkers.filter(
+    (province) => province !== UNMAPPED && !canonical.has(province),
+  );
+  const unmapped = fromMarkers.includes(UNMAPPED) ? [UNMAPPED] : [];
+  return [...SA_PROVINCES, ...extras, ...unmapped];
+}
+
+function isPlaceSuggestion(label: string): boolean {
+  if (!label) return false;
+  if (/^\d{3,8}$/.test(label)) return false;
+  if (
+    /^\d/.test(label) &&
+    /\b(STREET|ST|ROAD|RD|AVENUE|AVE|DRIVE|DR)\b/i.test(label)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** City and suburb labels on markers already inside the country and province scope. */
+export function getSortedUniqueCitiesFromMarkers(
+  markers: MapMarkerBase[],
+  filters: Pick<MapMarkerFilterInput, 'selectedCountry' | 'selectedProvince'>,
+): string[] {
+  const scoped = filterMapMarkers(markers, filters);
+  const set = new Set<string>();
+  for (const marker of scoped) {
+    const parts = resolveMarkerAddressParts(marker);
+    for (const place of [parts.city, parts.suburb]) {
+      const label = place.trim();
+      if (!isPlaceSuggestion(label)) continue;
+      set.add(label);
+    }
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }

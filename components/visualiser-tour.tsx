@@ -45,7 +45,7 @@ function buildVisualiserSteps(): DriveStep[] {
       popover: {
         title: 'Map tools',
         description:
-          'Map data summary counts what is on the map. Geocode fills missing addresses. Export downloads the simulation. Simulate opens the catchment and turnover panel.',
+          'Summary counts competitor stores and modelled monthly turnover. Geocode fills missing addresses. Export downloads the simulation. Simulate opens the catchment and turnover panel.',
         side: 'bottom',
         align: 'end',
       },

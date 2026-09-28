@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -56,6 +56,7 @@ import { SimulationTrendChart } from '@/app/visualiser/components/simulation-tre
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import { StoreFormatSuggestionCard } from '@/app/visualiser/components/store-format-suggestion';
 import { ExportSimulationButton } from '@/app/visualiser/components/export-simulation-button';
+import { SimulationCityCombobox } from '@/app/visualiser/components/simulation-city-combobox';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
@@ -70,8 +71,10 @@ import { enrichCatchmentsWithDashboardRevenue } from '@/lib/site-opportunity/enr
 import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
 import {
   filterMapMarkers,
+  getSimulationProvinceOptions,
+  getSortedUniqueCitiesFromMarkers,
   getSortedUniqueCountriesFromMarkers,
-  getSortedUniqueProvincesFromMarkers,
+  markerMatchesCity,
 } from '@/lib/site-opportunity/map-marker-filters';
 import {
   buildTurnoverSimulation,
@@ -669,8 +672,9 @@ export function SimulationSidePanel() {
     seedBrandTurnovers(),
   );
   const [mode, setMode] = useState<SiteOpportunityMode>('both');
-  const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
+  const [selectedCountry, setSelectedCountry] = useState('South Africa');
   const [selectedProvince, setSelectedProvince] = useState(ALL_PROVINCES);
+  const [selectedCity, setSelectedCity] = useState('');
 
   const branchesQuery = useBranches({ enabled: panelOpen });
   const competitorsQuery = useCompetitorsMapData({ enabled: panelOpen });
@@ -690,18 +694,53 @@ export function SimulationSidePanel() {
     [branchesQuery.data, competitorsQuery.data, clientsQuery.data],
   );
 
-  const countryOptions = useMemo(
-    () => getSortedUniqueCountriesFromMarkers(allMarkersForFilters),
-    [allMarkersForFilters],
-  );
+  const countryOptions = useMemo(() => {
+    const fromMarkers = getSortedUniqueCountriesFromMarkers(allMarkersForFilters);
+    if (fromMarkers.includes('South Africa')) return fromMarkers;
+    return ['South Africa', ...fromMarkers];
+  }, [allMarkersForFilters]);
 
   const provinceOptions = useMemo(() => {
     if (!selectedCountry || selectedCountry === ALL_COUNTRIES) return [];
-    return getSortedUniqueProvincesFromMarkers(
-      allMarkersForFilters,
-      selectedCountry,
-    );
+    return getSimulationProvinceOptions(allMarkersForFilters, selectedCountry);
   }, [allMarkersForFilters, selectedCountry]);
+
+  const cityScopeFilters = useMemo(
+    () => ({
+      selectedCountry:
+        !selectedCountry || selectedCountry === ALL_COUNTRIES
+          ? undefined
+          : selectedCountry,
+      selectedProvince:
+        !selectedCountry ||
+        selectedCountry === ALL_COUNTRIES ||
+        selectedProvince === ALL_PROVINCES
+          ? undefined
+          : selectedProvince,
+    }),
+    [selectedCountry, selectedProvince],
+  );
+
+  const cityOptions = useMemo(
+    () => getSortedUniqueCitiesFromMarkers(allMarkersForFilters, cityScopeFilters),
+    [allMarkersForFilters, cityScopeFilters],
+  );
+
+  const cityScopeKey = `${cityScopeFilters.selectedCountry ?? ''}|${cityScopeFilters.selectedProvince ?? ''}`;
+  const cityScopeKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (allMarkersForFilters.length === 0) return;
+    const previousScope = cityScopeKeyRef.current;
+    cityScopeKeyRef.current = cityScopeKey;
+    if (previousScope == null || previousScope === cityScopeKey) return;
+    const city = selectedCity.trim();
+    if (!city) return;
+    const scoped = filterMapMarkers(allMarkersForFilters, cityScopeFilters);
+    if (!scoped.some((marker) => markerMatchesCity(marker, city))) {
+      setSelectedCity('');
+    }
+  }, [allMarkersForFilters, cityScopeFilters, cityScopeKey, selectedCity]);
 
   const selectedCatchmentBranchId = useMemo(() => {
     if (!selectedZone || selectedZone.kind !== 'catchment') return null;
@@ -736,9 +775,11 @@ export function SimulationSidePanel() {
     setMode(prefs.opportunityMode);
     const countryPref = prefs.selectedCountry?.trim() ?? '';
     setSelectedCountry(
-      !countryPref || countryPref.toLowerCase() === ALL_COUNTRIES
-        ? ALL_COUNTRIES
-        : countryPref,
+      !countryPref
+        ? 'South Africa'
+        : countryPref.toLowerCase() === ALL_COUNTRIES
+          ? ALL_COUNTRIES
+          : countryPref,
     );
     const provincePref = prefs.selectedProvince?.trim() ?? '';
     setSelectedProvince(
@@ -746,6 +787,7 @@ export function SimulationSidePanel() {
         ? ALL_PROVINCES
         : provincePref,
     );
+    setSelectedCity(prefs.selectedCity?.trim() ?? '');
   }, [
     panelOpen,
     userRef,
@@ -779,6 +821,7 @@ export function SimulationSidePanel() {
       turnoverOverrides,
       selectedCountry: country,
       selectedProvince: province,
+      selectedCity: selectedCity.trim(),
     };
     saveVisualiserPreferences(localPatch);
     return toVisualiserUserPreferencePayload(localPatch);
@@ -804,12 +847,14 @@ export function SimulationSidePanel() {
     setMode('both');
     setSelectedCountry('South Africa');
     setSelectedProvince(ALL_PROVINCES);
+    setSelectedCity('');
     const visualiser = toVisualiserUserPreferencePayload({
       opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
       opportunityMode: 'both',
       turnoverOverrides: { brandTurnoverOverrides: {} },
       selectedCountry: 'South Africa',
       selectedProvince: '',
+      selectedCity: '',
     });
     saveVisualiserPreferences(visualiser);
     if (userRef) {
@@ -913,12 +958,14 @@ export function SimulationSidePanel() {
         !countryFilter || selectedProvince === ALL_PROVINCES
           ? undefined
           : selectedProvince;
+      const cityFilter = selectedCity.trim() || undefined;
       const visualiser = toVisualiserUserPreferencePayload({
         opportunitySettings: settings,
         opportunityMode: mode,
         turnoverOverrides,
         selectedCountry: countryFilter ?? ALL_COUNTRIES,
         selectedProvince: provinceFilter ?? '',
+        selectedCity: cityFilter ?? '',
       });
       saveVisualiserPreferences(visualiser);
       // Persist to profile in background when signed in (non-blocking)
@@ -940,14 +987,15 @@ export function SimulationSidePanel() {
       const filteredMarkers = filterMapMarkers(markers, {
         selectedCountry: countryFilter,
         selectedProvince: provinceFilter,
+        selectedCity: cityFilter,
       });
 
       if (filteredMarkers.length === 0) {
         const scope =
-          [countryFilter, provinceFilter].filter(Boolean).join(' · ') ||
+          [countryFilter, provinceFilter, cityFilter].filter(Boolean).join(' · ') ||
           'selection';
         toast.error(
-          `No geocoded sites in ${scope}. Adjust country/province or geocode map data.`,
+          `No geocoded sites in ${scope}. Adjust country, province, or city, or geocode map data.`,
           { id: 'map-simulate' },
         );
         return;
@@ -1034,15 +1082,13 @@ export function SimulationSidePanel() {
         filters: {
           country: countryFilter ?? ALL_COUNTRIES,
           province: provinceFilter ?? ALL_PROVINCES,
+          city: cityFilter ?? '',
           mode,
         },
         turnoverOverrides,
       });
 
-      const scopeLabel = [
-        countryFilter ?? 'All countries',
-        provinceFilter,
-      ]
+      const scopeLabel = [countryFilter ?? 'All countries', provinceFilter, cityFilter]
         .filter(Boolean)
         .join(' · ');
 
@@ -1157,7 +1203,7 @@ export function SimulationSidePanel() {
           <div className="space-y-4 text-sm">
             <p className="text-muted-foreground text-xs leading-relaxed">
               Use defaults or adjust values, then start. Map stays visible beside
-              this panel. Scope by country and province to run a regional
+              this panel. Scope by province or type a city to run a regional
               simulation.
             </p>
 
@@ -1187,6 +1233,7 @@ export function SimulationSidePanel() {
                     onValueChange={(value) => {
                       setSelectedCountry(value);
                       setSelectedProvince(ALL_PROVINCES);
+                      setSelectedCity('');
                     }}
                   >
                     <SelectTrigger
@@ -1237,6 +1284,16 @@ export function SimulationSidePanel() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sim-city" className="text-[11px]">
+                    City
+                  </Label>
+                  <SimulationCityCombobox
+                    value={selectedCity}
+                    options={cityOptions}
+                    onChange={setSelectedCity}
+                  />
                 </div>
               </div>
             </div>
@@ -1517,6 +1574,7 @@ export function SimulationSidePanel() {
                     runFilters.province !== ALL_PROVINCES
                       ? runFilters.province
                       : null,
+                    runFilters.city.trim() ? runFilters.city : null,
                     modeLabel(runFilters.mode),
                   ]
                     .filter(Boolean)

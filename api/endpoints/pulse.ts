@@ -29,7 +29,7 @@ export async function getPulseMe(
 
 export async function getPulseDaily(
   client: AxiosInstance,
-  params: { date?: string; branchUid?: number } = {}
+  params: { date?: string; branchUid?: number; country?: string } = {}
 ): Promise<PulseDailyResponse> {
   const { data } = await client.get<PulseDailyResponse>('/pulse/daily', { params });
   return data;
@@ -37,7 +37,7 @@ export async function getPulseDaily(
 
 export async function getPulseInsights(
   client: AxiosInstance,
-  params: { from?: string; to?: string; branchUid?: number } = {}
+  params: { from?: string; to?: string; branchUid?: number; country?: string } = {}
 ): Promise<PulseInsightsResponse> {
   const { data } = await client.get<PulseInsightsResponse>('/pulse/insights', { params });
   return data;
@@ -45,7 +45,7 @@ export async function getPulseInsights(
 
 export async function getPulseExecutive(
   client: AxiosInstance,
-  params: { from?: string; to?: string; branchUid?: number } = {}
+  params: { from?: string; to?: string; branchUid?: number; country?: string } = {}
 ): Promise<PulseExecutiveResponse> {
   const { data } = await client.get<PulseExecutiveResponse>('/pulse/executive', { params });
   return data;
@@ -53,7 +53,7 @@ export async function getPulseExecutive(
 
 export async function getPulseCorrelations(
   client: AxiosInstance,
-  params: { from?: string; to?: string; branchUid?: number } = {}
+  params: { from?: string; to?: string; branchUid?: number; country?: string } = {}
 ): Promise<PulseCorrelationsResponse> {
   const { data } = await client.get<PulseCorrelationsResponse>('/pulse/correlations', {
     params,

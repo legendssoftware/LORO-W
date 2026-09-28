@@ -369,7 +369,7 @@ export function PlanningContent() {
             </div>
           </TabsContent>
 
-          <TabsContent value="routes" className="mt-0 min-h-0 flex-1">
+          <TabsContent value="routes" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
             <PlanningRoutesMap
               onOpenTask={(taskId) => {
                 const t =
