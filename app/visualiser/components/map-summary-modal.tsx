@@ -7,7 +7,10 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Label,
   LabelList,
+  Pie,
+  PieChart,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -39,12 +42,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCompetitorsMissingGeocode } from '@/api/hooks/use-competitors-map-data';
 import { MissingCompetitorsList } from '@/app/visualiser/components/missing-competitors-list';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
-import { brandChartColor } from '@/lib/site-opportunity/compute/brands';
-import type { HardwareBrandKey } from '@/api/types/site-opportunity';
 import {
-  getMarkerCountryKey,
-  getMarkerProvinceKey,
-} from '@/lib/utils/marker-geo-resolve';
+  brandChartColor,
+  brandTurnoverZAR,
+  resolveHardwareBrand,
+} from '@/lib/site-opportunity/compute/brands';
+import type { HardwareBrandKey } from '@/api/types/site-opportunity';
+import { getMarkerCountryKey } from '@/lib/utils/marker-geo-resolve';
 import { getCountryFlag, normalizeCountryToken } from '@/lib/utils/country-flags';
 import {
   LAYER_META,
@@ -62,19 +66,11 @@ const LAYER_ORDER: VisualiserLayerId[] = [
 
 const GEO_TOP_N = 12;
 
-type CountryAllocRow = {
+type CountryValueRow = {
   country: string;
   countryLabel: string;
-  clients: number;
-  competitors: number;
-  competitorRevenue: number;
-};
-
-type ProvinceAllocRow = {
-  province: string;
-  clients: number;
-  competitors: number;
-  branches: number;
+  count: number;
+  monthlyValue: number;
 };
 
 function pointGeoMarker(point: VisualiserMapPoint) {
@@ -86,35 +82,20 @@ function pointGeoMarker(point: VisualiserMapPoint) {
   };
 }
 
-function takeTopNByTotal<
-  T extends { clients: number; competitors: number; branches?: number },
->(
-  rows: T[],
-  n: number,
-  makeOther: (totals: {
-    clients: number;
-    competitors: number;
-    branches: number;
-  }) => T,
-): T[] {
-  if (rows.length <= n) return rows;
-  const sorted = [...rows].sort((a, b) => {
-    const totalA = a.clients + a.competitors + (a.branches ?? 0);
-    const totalB = b.clients + b.competitors + (b.branches ?? 0);
-    return totalB - totalA;
-  });
-  const head = sorted.slice(0, n);
-  const rest = sorted.slice(n);
-  const totals = rest.reduce(
-    (acc, row) => ({
-      clients: acc.clients + row.clients,
-      competitors: acc.competitors + row.competitors,
-      branches: acc.branches + (row.branches ?? 0),
-    }),
-    { clients: 0, competitors: 0, branches: 0 },
-  );
-  if (totals.clients + totals.competitors + totals.branches <= 0) return head;
-  return [...head, makeOther(totals)];
+function competitorBrand(point: VisualiserMapPoint): HardwareBrandKey {
+  const token = point.brandKey?.trim();
+  if (token) {
+    return resolveHardwareBrand({ name: point.name, accountName: token });
+  }
+  return resolveHardwareBrand({ name: point.name });
+}
+
+function brandLabel(brand: HardwareBrandKey): string {
+  return brand === 'OTHER' ? 'Other' : brand;
+}
+
+function brandSlug(brand: HardwareBrandKey): string {
+  return brand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
 function countryAxisLabel(country: string): string {
@@ -122,6 +103,34 @@ function countryAxisLabel(country: string): string {
     normalizeCountryToken(country) ?? country,
   ).flag;
   return `${flag} ${country}`;
+}
+
+function takeTopCountries(
+  rows: CountryValueRow[],
+  n: number,
+  rank: (row: CountryValueRow) => number,
+): CountryValueRow[] {
+  const sorted = [...rows].sort((a, b) => rank(b) - rank(a) || b.count - a.count);
+  if (sorted.length <= n) return sorted;
+  const head = sorted.slice(0, n);
+  const rest = sorted.slice(n);
+  const totals = rest.reduce(
+    (acc, row) => ({
+      count: acc.count + row.count,
+      monthlyValue: acc.monthlyValue + row.monthlyValue,
+    }),
+    { count: 0, monthlyValue: 0 },
+  );
+  if (totals.count <= 0 && totals.monthlyValue <= 0) return head;
+  return [
+    ...head,
+    {
+      country: 'Other',
+      countryLabel: countryAxisLabel('Other'),
+      count: totals.count,
+      monthlyValue: totals.monthlyValue,
+    },
+  ];
 }
 
 function CountryTick({
@@ -158,6 +167,11 @@ function formatBarCount(v: number): string {
 function formatBarRevenue(v: number): string {
   if (!Number.isFinite(v) || v <= 0) return '';
   return formatZarShort(v);
+}
+
+function formatShare(value: number, total: number): string {
+  if (!Number.isFinite(value) || total <= 0) return '0%';
+  return `${((value / total) * 100).toFixed(1)}%`;
 }
 
 const BAR_TOP_LABEL_FONT_SIZE = 8;
@@ -209,175 +223,115 @@ export function MapSummaryModal({
   const total = points.length;
   const missingQuery = useCompetitorsMissingGeocode({ enabled: open });
 
-  const barData = useMemo(
-    () =>
-      LAYER_ORDER.map((id) => ({
-        layer: LAYER_META[id].label,
-        count: counts[id],
-        fill: LAYER_META[id].color,
-      })),
-    [counts],
-  );
-
-  const barConfig = useMemo(() => {
-    const config: ChartConfig = {
-      count: { label: 'Mapped points', color: 'var(--chart-1)' },
-    };
-    for (const row of barData) {
-      config[row.layer] = { label: row.layer, color: row.fill };
-    }
-    return config;
-  }, [barData]);
-
-  const competitorBrandChart = useMemo(() => {
-    const byBrand = new Map<
-      HardwareBrandKey | 'UNKNOWN',
-      { count: number; revenue: number }
-    >();
-    for (const point of points) {
-      if (point.layer !== 'competitors') continue;
-      const brand = (point.brandKey as HardwareBrandKey | null) ?? 'UNKNOWN';
-      const prev = byBrand.get(brand) ?? { count: 0, revenue: 0 };
-      const rev =
-        point.estimatedAnnualRevenue != null &&
-        Number.isFinite(point.estimatedAnnualRevenue)
-          ? Number(point.estimatedAnnualRevenue)
-          : 0;
-      byBrand.set(brand, {
-        count: prev.count + 1,
-        revenue: prev.revenue + rev,
-      });
-    }
-    return [...byBrand.entries()]
-      .map(([brand, row]) => ({
-        brand: brand === 'UNKNOWN' ? 'Other' : brand,
-        count: row.count,
-        revenue: row.revenue,
-        fill:
-          brand === 'UNKNOWN'
-            ? LAYER_META.competitors.color
-            : brandChartColor(brand),
-      }))
-      .filter((r) => r.count > 0)
-      .sort((a, b) => b.revenue - a.revenue || b.count - a.count);
-  }, [points]);
-
-  const competitorBrandConfig = useMemo(() => {
-    const config: ChartConfig = {
-      count: { label: 'Stores', color: LAYER_META.competitors.color },
-      revenue: { label: 'Est. revenue', color: 'hsl(38 92% 45%)' },
-    };
-    for (const row of competitorBrandChart) {
-      config[row.brand] = { label: row.brand, color: row.fill };
-    }
-    return config;
-  }, [competitorBrandChart]);
-
-  const competitorRevenueTotal = useMemo(
-    () =>
-      points
-        .filter((p) => p.layer === 'competitors')
-        .reduce((sum, p) => {
-          const rev = p.estimatedAnnualRevenue;
-          return sum + (rev != null && Number.isFinite(rev) ? Number(rev) : 0);
-        }, 0),
+  const competitorPoints = useMemo(
+    () => points.filter((point) => point.layer === 'competitors'),
     [points],
   );
 
-  const countryData = useMemo(() => {
-    const byCountry = new Map<string, CountryAllocRow>();
-    for (const point of points) {
-      if (point.layer !== 'clients' && point.layer !== 'competitors') continue;
+  const brandRows = useMemo(() => {
+    const byBrand = new Map<HardwareBrandKey, { count: number; monthlyValue: number }>();
+    for (const point of competitorPoints) {
+      const brand = competitorBrand(point);
+      const prev = byBrand.get(brand) ?? { count: 0, monthlyValue: 0 };
+      byBrand.set(brand, {
+        count: prev.count + 1,
+        monthlyValue: prev.monthlyValue + brandTurnoverZAR(brand),
+      });
+    }
+    const monthlyTotal = [...byBrand.values()].reduce(
+      (sum, row) => sum + row.monthlyValue,
+      0,
+    );
+    return [...byBrand.entries()]
+      .map(([brand, row]) => ({
+        brand,
+        label: brandLabel(brand),
+        slug: brandSlug(brand),
+        count: row.count,
+        monthlyValue: row.monthlyValue,
+        share: monthlyTotal > 0 ? (row.monthlyValue / monthlyTotal) * 100 : 0,
+        fill: brandChartColor(brand),
+      }))
+      .filter((row) => row.count > 0);
+  }, [competitorPoints]);
+
+  const competitorMonthlyTotal = useMemo(
+    () => brandRows.reduce((sum, row) => sum + row.monthlyValue, 0),
+    [brandRows],
+  );
+
+  const brandCountChart = useMemo(
+    () => [...brandRows].sort((a, b) => b.count - a.count || b.monthlyValue - a.monthlyValue),
+    [brandRows],
+  );
+
+  const brandShareChart = useMemo(
+    () =>
+      [...brandRows].sort(
+        (a, b) => b.monthlyValue - a.monthlyValue || b.count - a.count,
+      ),
+    [brandRows],
+  );
+
+  const brandCountConfig = useMemo(() => {
+    const config: ChartConfig = {
+      count: { label: 'Stores', color: LAYER_META.competitors.color },
+    };
+    for (const row of brandCountChart) {
+      config[row.slug] = { label: row.label, color: row.fill };
+    }
+    return config;
+  }, [brandCountChart]);
+
+  const brandShareConfig = useMemo(() => {
+    const config: ChartConfig = {
+      monthlyValue: { label: 'Monthly turnover', color: 'var(--chart-1)' },
+    };
+    for (const row of brandShareChart) {
+      config[row.slug] = { label: row.label, color: row.fill };
+    }
+    return config;
+  }, [brandShareChart]);
+
+  const countryRows = useMemo(() => {
+    const byCountry = new Map<string, CountryValueRow>();
+    for (const point of competitorPoints) {
       const country = getMarkerCountryKey(pointGeoMarker(point));
+      const brand = competitorBrand(point);
       const row = byCountry.get(country) ?? {
         country,
         countryLabel: countryAxisLabel(country),
-        clients: 0,
-        competitors: 0,
-        competitorRevenue: 0,
+        count: 0,
+        monthlyValue: 0,
       };
-      if (point.layer === 'clients') row.clients += 1;
-      else {
-        row.competitors += 1;
-        const rev = point.estimatedAnnualRevenue;
-        if (rev != null && Number.isFinite(rev)) {
-          row.competitorRevenue += Number(rev);
-        }
-      }
+      row.count += 1;
+      row.monthlyValue += brandTurnoverZAR(brand);
       byCountry.set(country, row);
     }
-    return takeTopNByTotal(
-      Array.from(byCountry.values()),
-      GEO_TOP_N,
-      (totals) => ({
-        country: 'Other',
-        countryLabel: countryAxisLabel('Other'),
-        clients: totals.clients,
-        competitors: totals.competitors,
-        competitorRevenue: 0,
-      }),
-    );
-  }, [points]);
+    return Array.from(byCountry.values());
+  }, [competitorPoints]);
 
-  const countryConfig: ChartConfig = {
-    clients: {
-      label: LAYER_META.clients.label,
-      color: LAYER_META.clients.color,
-    },
-    competitors: {
-      label: LAYER_META.competitors.label,
+  const countryCountChart = useMemo(
+    () => takeTopCountries(countryRows, GEO_TOP_N, (row) => row.count),
+    [countryRows],
+  );
+
+  const countryValueChart = useMemo(
+    () => takeTopCountries(countryRows, GEO_TOP_N, (row) => row.monthlyValue),
+    [countryRows],
+  );
+
+  const countryCountConfig: ChartConfig = {
+    count: {
+      label: 'Stores',
       color: LAYER_META.competitors.color,
     },
   };
 
-  const provinceData = useMemo(() => {
-    const byProvince = new Map<string, ProvinceAllocRow>();
-    for (const point of points) {
-      const isBranchLike =
-        point.layer === 'branches' || point.layer === 'hq';
-      if (
-        point.layer !== 'clients' &&
-        point.layer !== 'competitors' &&
-        !isBranchLike
-      ) {
-        continue;
-      }
-      const province = getMarkerProvinceKey(pointGeoMarker(point));
-      const row = byProvince.get(province) ?? {
-        province,
-        clients: 0,
-        competitors: 0,
-        branches: 0,
-      };
-      if (point.layer === 'clients') row.clients += 1;
-      else if (point.layer === 'competitors') row.competitors += 1;
-      else row.branches += 1;
-      byProvince.set(province, row);
-    }
-    return takeTopNByTotal(
-      Array.from(byProvince.values()),
-      GEO_TOP_N,
-      (totals) => ({
-        province: 'Other',
-        clients: totals.clients,
-        competitors: totals.competitors,
-        branches: totals.branches,
-      }),
-    );
-  }, [points]);
-
-  const provinceConfig: ChartConfig = {
-    clients: {
-      label: LAYER_META.clients.label,
-      color: LAYER_META.clients.color,
-    },
-    competitors: {
-      label: LAYER_META.competitors.label,
-      color: LAYER_META.competitors.color,
-    },
-    branches: {
-      label: LAYER_META.branches.label,
-      color: LAYER_META.branches.color,
+  const countryValueConfig: ChartConfig = {
+    monthlyValue: {
+      label: 'Monthly turnover',
+      color: 'hsl(38 92% 45%)',
     },
   };
 
@@ -385,7 +339,7 @@ export function MapSummaryModal({
     () =>
       LAYER_ORDER.map((id) => {
         const layerPoints = points.filter((p) => p.layer === id);
-        const revenueTotal = layerPoints.reduce((sum, p) => {
+        const storedRevenue = layerPoints.reduce((sum, p) => {
           const rev = p.estimatedAnnualRevenue;
           return sum + (rev != null && Number.isFinite(rev) ? Number(rev) : 0);
         }, 0);
@@ -395,11 +349,12 @@ export function MapSummaryModal({
           count: counts[id],
           share: total > 0 ? (counts[id] / total) * 100 : 0,
           withRevenue: layerPoints.filter((p) => Boolean(p.metricValue)).length,
-          revenueTotal,
+          revenueTotal:
+            id === 'competitors' ? competitorMonthlyTotal : storedRevenue,
           withAddress: layerPoints.filter((p) => Boolean(p.address)).length,
         };
       }),
-    [counts, points, total],
+    [competitorMonthlyTotal, counts, points, total],
   );
 
   const comparisonTotals = useMemo(() => {
@@ -415,16 +370,21 @@ export function MapSummaryModal({
   }, [comparisonRows]);
 
   const missingItems = missingQuery.data ?? [];
+  const competitorCount = competitorPoints.length;
+  const countryAngle = countryCountChart.length > 5 ? -25 : 0;
+  const countryValueAngle = countryValueChart.length > 5 ? -25 : 0;
+  const brandAngle = brandCountChart.length > 4 ? -20 : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] w-[80vw] max-w-[80vw] flex-col overflow-hidden sm:max-w-[80vw]">
         <DialogHeader>
-          <DialogTitle>Map data summary</DialogTitle>
+          <DialogTitle>Summary</DialogTitle>
           <DialogDescription>
-            Snapshot of {total.toLocaleString()} mapped locations across layers.
-            {competitorRevenueTotal > 0
-              ? ` Competitor est. revenue ${formatZarShort(competitorRevenueTotal)}.`
+            Snapshot of {total.toLocaleString()} mapped locations.{' '}
+            {competitorCount.toLocaleString()} competitor stores.
+            {competitorMonthlyTotal > 0
+              ? ` Modelled monthly pool ${formatZarShort(competitorMonthlyTotal)}.`
               : ''}
           </DialogDescription>
         </DialogHeader>
@@ -432,95 +392,38 @@ export function MapSummaryModal({
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1">
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="space-y-2">
-              <h3 className="text-sm font-semibold">Points by layer</h3>
-              <ChartContainer
-                config={barConfig}
-                className="aspect-auto h-[240px] w-full"
-              >
-                <BarChart
-                  data={barData}
-                  margin={{ left: 8, right: 8, top: 24 }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="layer" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} width={40} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" radius={4}>
-                    {barData.map((row) => (
-                      <Cell key={row.layer} fill={row.fill} />
-                    ))}
-                    <LabelList
-                      dataKey="count"
-                      position="top"
-                      className="fill-foreground text-[10px]"
-                      formatter={(v: number) => formatBarCount(v)}
-                    />
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="text-sm font-semibold">
-                Competitors by brand — count &amp; revenue
-              </h3>
-              {competitorBrandChart.length > 0 ? (
+              <h3 className="text-sm font-semibold">Competitors by country</h3>
+              {countryCountChart.length > 0 ? (
                 <ChartContainer
-                  config={competitorBrandConfig}
-                  className="aspect-auto h-[240px] w-full"
+                  config={countryCountConfig}
+                  className="aspect-auto h-[260px] w-full"
                 >
                   <BarChart
-                    data={competitorBrandChart}
-                    margin={{ left: 8, right: 8, top: 28, bottom: 8 }}
+                    data={countryCountChart}
+                    accessibilityLayer
+                    margin={{ left: 8, right: 8, top: 24, bottom: 8 }}
+                    barCategoryGap="20%"
                   >
                     <CartesianGrid vertical={false} />
                     <XAxis
-                      dataKey="brand"
+                      dataKey="countryLabel"
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={6}
+                      tickMargin={8}
                       interval={0}
-                      angle={competitorBrandChart.length > 4 ? -20 : 0}
-                      textAnchor={
-                        competitorBrandChart.length > 4 ? 'end' : 'middle'
-                      }
-                      height={competitorBrandChart.length > 4 ? 56 : 28}
-                      fontSize={10}
+                      angle={countryAngle}
+                      textAnchor={countryAngle !== 0 ? 'end' : 'middle'}
+                      height={countryAngle !== 0 ? 72 : 40}
+                      tick={<CountryTick angle={countryAngle} />}
                     />
                     <YAxis
-                      yAxisId="count"
                       tickLine={false}
                       axisLine={false}
-                      width={36}
+                      width={40}
                       allowDecimals={false}
                     />
-                    <YAxis
-                      yAxisId="revenue"
-                      orientation="right"
-                      tickLine={false}
-                      axisLine={false}
-                      width={48}
-                      tickFormatter={(v: number) =>
-                        formatZarShort(v).replace('R ', '')
-                      }
-                    />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          formatter={(value, name) => {
-                            if (name === 'revenue' && typeof value === 'number') {
-                              return formatZarShort(value);
-                            }
-                            return typeof value === 'number'
-                              ? value.toLocaleString()
-                              : String(value);
-                          }}
-                        />
-                      }
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar
-                      yAxisId="count"
                       dataKey="count"
                       fill="var(--color-count)"
                       radius={4}
@@ -540,15 +443,236 @@ export function MapSummaryModal({
                         )}
                       />
                     </Bar>
+                  </BarChart>
+                </ChartContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No competitor locations mapped.
+                </p>
+              )}
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold">Competitors by brand</h3>
+              {brandCountChart.length > 0 ? (
+                <ChartContainer
+                  config={brandCountConfig}
+                  className="aspect-auto h-[260px] w-full"
+                >
+                  <BarChart
+                    data={brandCountChart}
+                    margin={{ left: 8, right: 8, top: 24, bottom: 8 }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={6}
+                      interval={0}
+                      angle={brandAngle}
+                      textAnchor={brandAngle !== 0 ? 'end' : 'middle'}
+                      height={brandAngle !== 0 ? 56 : 28}
+                      fontSize={10}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" radius={4} name="Stores">
+                      {brandCountChart.map((row) => (
+                        <Cell key={row.slug} fill={row.fill} />
+                      ))}
+                      <LabelList
+                        dataKey="count"
+                        position="top"
+                        content={(props) => (
+                          <BarTopLabel
+                            x={Number(props.x) || 0}
+                            y={Number(props.y) || 0}
+                            width={Number(props.width) || 0}
+                            value={props.value}
+                            formatter={formatBarCount}
+                          />
+                        )}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No competitor stores on the map.
+                </p>
+              )}
+            </section>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold">Market share by brand</h3>
+              {brandShareChart.length > 0 ? (
+                <ChartContainer
+                  config={brandShareConfig}
+                  className="aspect-auto h-[300px] w-full"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent
+                          hideLabel
+                          nameKey="slug"
+                          formatter={(value, name) => {
+                            const slug = String(name ?? '');
+                            const row = brandShareChart.find((item) => item.slug === slug);
+                            const amount =
+                              typeof value === 'number' ? value : Number(value);
+                            const label = row?.label ?? slug;
+                            const formatted = Number.isFinite(amount)
+                              ? `${formatZarShort(amount)} (${formatShare(amount, competitorMonthlyTotal)})`
+                              : String(value);
+                            return (
+                              <span className="flex w-full items-center justify-between gap-3">
+                                <span className="text-muted-foreground">{label}</span>
+                                <span className="text-foreground font-mono font-medium tabular-nums">
+                                  {formatted}
+                                </span>
+                              </span>
+                            );
+                          }}
+                        />
+                      }
+                    />
+                    <Pie
+                      data={brandShareChart}
+                      dataKey="monthlyValue"
+                      nameKey="slug"
+                      innerRadius="62%"
+                      outerRadius="82%"
+                      strokeWidth={2}
+                      paddingAngle={2}
+                      cornerRadius={6}
+                    >
+                      {brandShareChart.map((row) => (
+                        <Cell key={row.slug} fill={row.fill} />
+                      ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                            const cy = viewBox.cy ?? 0;
+                            return (
+                              <text x={viewBox.cx} y={cy} textAnchor="middle">
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={cy - 6}
+                                  className="fill-foreground text-sm font-bold"
+                                >
+                                  {formatZarShort(competitorMonthlyTotal)}
+                                </tspan>
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={cy + 12}
+                                  className="fill-muted-foreground text-xs"
+                                >
+                                  Monthly
+                                </tspan>
+                              </text>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </Pie>
+                    <ChartLegend
+                      content={
+                        <ChartLegendContent
+                          nameKey="slug"
+                          maxItems={8}
+                          className="flex-wrap gap-x-3 gap-y-1"
+                        />
+                      }
+                    />
+                  </PieChart>
+                </ChartContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No competitor stores on the map.
+                </p>
+              )}
+              <p className="text-muted-foreground text-xs">
+                Share of modelled monthly turnover (store count × brand rate).
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold">Market value by country</h3>
+              {countryValueChart.length > 0 ? (
+                <ChartContainer
+                  config={countryValueConfig}
+                  className="aspect-auto h-[300px] w-full"
+                >
+                  <BarChart
+                    data={countryValueChart}
+                    accessibilityLayer
+                    margin={{ left: 8, right: 8, top: 24, bottom: 8 }}
+                    barCategoryGap="20%"
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="countryLabel"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      interval={0}
+                      angle={countryValueAngle}
+                      textAnchor={countryValueAngle !== 0 ? 'end' : 'middle'}
+                      height={countryValueAngle !== 0 ? 72 : 40}
+                      tick={<CountryTick angle={countryValueAngle} />}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      width={56}
+                      tickFormatter={(value: number) =>
+                        formatZarShort(value).replace('R ', '')
+                      }
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, _name, item) => {
+                            const payload = item.payload as
+                              | { countryLabel?: string }
+                              | undefined;
+                            const amount =
+                              typeof value === 'number'
+                                ? formatZarShort(value)
+                                : String(value);
+                            return (
+                              <span className="flex w-full items-center justify-between gap-3">
+                                <span className="text-muted-foreground">
+                                  {payload?.countryLabel ?? 'Monthly turnover'}
+                                </span>
+                                <span className="text-foreground font-mono font-medium tabular-nums">
+                                  {amount}
+                                </span>
+                              </span>
+                            );
+                          }}
+                        />
+                      }
+                    />
                     <Bar
-                      yAxisId="revenue"
-                      dataKey="revenue"
-                      fill="var(--color-revenue)"
+                      dataKey="monthlyValue"
+                      fill="var(--color-monthlyValue)"
                       radius={4}
-                      name="Est. revenue"
+                      name="Monthly turnover"
                     >
                       <LabelList
-                        dataKey="revenue"
+                        dataKey="monthlyValue"
                         position="top"
                         content={(props) => (
                           <BarTopLabel
@@ -565,192 +689,32 @@ export function MapSummaryModal({
                 </ChartContainer>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  No competitor revenue data on the map.
+                  No competitor locations mapped.
                 </p>
               )}
-              {competitorRevenueTotal > 0 ? (
-                <p className="text-muted-foreground text-xs">
-                  Total competitor est. revenue:{' '}
-                  <span className="text-foreground font-semibold tabular-nums">
-                    {formatZarShort(competitorRevenueTotal)}
-                  </span>
-                </p>
-              ) : null}
-            </section>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="space-y-2">
-              <h3 className="text-sm font-semibold">
-                Clients &amp; competitors by country
-              </h3>
-              {countryData.length > 0 ? (
-                <ChartContainer
-                  config={countryConfig}
-                  className="aspect-auto h-[260px] w-full"
-                >
-                  <BarChart
-                    data={countryData}
-                    accessibilityLayer
-                    margin={{ left: 8, right: 8, top: 24, bottom: 8 }}
-                    barCategoryGap="20%"
-                    barGap={4}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="countryLabel"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      interval={0}
-                      angle={countryData.length > 5 ? -25 : 0}
-                      textAnchor={countryData.length > 5 ? 'end' : 'middle'}
-                      height={countryData.length > 5 ? 72 : 40}
-                      tick={
-                        <CountryTick
-                          angle={countryData.length > 5 ? -25 : 0}
-                        />
-                      }
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      width={40}
-                      allowDecimals={false}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar
-                      dataKey="clients"
-                      fill="var(--color-clients)"
-                      radius={4}
-                    >
-                      <LabelList
-                        dataKey="clients"
-                        position="top"
-                        className="fill-foreground text-[9px]"
-                        formatter={(v: number) => formatBarCount(v)}
-                      />
-                    </Bar>
-                    <Bar
-                      dataKey="competitors"
-                      fill="var(--color-competitors)"
-                      radius={4}
-                    >
-                      <LabelList
-                        dataKey="competitors"
-                        position="top"
-                        className="fill-foreground text-[9px]"
-                        formatter={(v: number) => formatBarCount(v)}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No client or competitor locations mapped.
-                </p>
-              )}
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="text-sm font-semibold">
-                Missing address / coordinates
-              </h3>
-              {missingQuery.isLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : missingItems.length > 0 ? (
-                <div className="rounded-lg border p-3">
-                  <MissingCompetitorsList items={missingItems} maxVisible={10} />
-                  <p className="text-muted-foreground mt-2 text-[11px]">
-                    Open the list for full detail, or click a row to edit on the
-                    Competitors page.
-                  </p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  All competitors have an address and map coordinates.
-                </p>
-              )}
+              <p className="text-muted-foreground text-xs">
+                Modelled monthly turnover by country.
+              </p>
             </section>
           </div>
 
           <section className="space-y-2">
             <h3 className="text-sm font-semibold">
-              Clients, competitors &amp; branches by province
+              Missing address / coordinates
             </h3>
-            {provinceData.length > 0 ? (
-              <ChartContainer
-                config={provinceConfig}
-                className="aspect-auto h-[280px] w-full"
-              >
-                <BarChart
-                  data={provinceData}
-                  accessibilityLayer
-                  margin={{ left: 8, right: 8, top: 24, bottom: 8 }}
-                  barCategoryGap="18%"
-                  barGap={3}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="province"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    interval={0}
-                    angle={provinceData.length > 4 ? -30 : 0}
-                    textAnchor={provinceData.length > 4 ? 'end' : 'middle'}
-                    height={provinceData.length > 4 ? 72 : 32}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    width={40}
-                    allowDecimals={false}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar
-                    dataKey="clients"
-                    fill="var(--color-clients)"
-                    radius={4}
-                  >
-                    <LabelList
-                      dataKey="clients"
-                      position="top"
-                      className="fill-foreground text-[9px]"
-                      formatter={(v: number) => formatBarCount(v)}
-                    />
-                  </Bar>
-                  <Bar
-                    dataKey="competitors"
-                    fill="var(--color-competitors)"
-                    radius={4}
-                  >
-                    <LabelList
-                      dataKey="competitors"
-                      position="top"
-                      className="fill-foreground text-[9px]"
-                      formatter={(v: number) => formatBarCount(v)}
-                    />
-                  </Bar>
-                  <Bar
-                    dataKey="branches"
-                    fill="var(--color-branches)"
-                    radius={4}
-                  >
-                    <LabelList
-                      dataKey="branches"
-                      position="top"
-                      className="fill-foreground text-[9px]"
-                      formatter={(v: number) => formatBarCount(v)}
-                    />
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
+            {missingQuery.isLoading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : missingItems.length > 0 ? (
+              <div className="rounded-lg border p-3">
+                <MissingCompetitorsList items={missingItems} maxVisible={10} />
+                <p className="text-muted-foreground mt-2 text-[11px]">
+                  Open the list for full detail, or click a row to edit on the
+                  Competitors page.
+                </p>
+              </div>
             ) : (
               <p className="text-muted-foreground text-sm">
-                No client, competitor, or branch locations mapped.
+                All competitors have an address and map coordinates.
               </p>
             )}
           </section>
@@ -836,6 +800,10 @@ export function MapSummaryModal({
                 </TableFooter>
               </Table>
             </div>
+            <p className="text-muted-foreground text-xs">
+              Competitor revenue is modelled monthly turnover (store count ×
+              brand rate).
+            </p>
           </section>
         </div>
       </DialogContent>

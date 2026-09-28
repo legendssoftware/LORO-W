@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HeartPulse, LayoutDashboard, Sparkles, TrendingUp } from 'lucide-react';
 import { useBranches, useSessionSync, useTokenReady } from '@/api/hooks';
 import {
@@ -25,8 +25,12 @@ import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { ReportsDashboardToolbar } from '@/app/reports/components/reports-dashboard-toolbar';
 import { useReportsDateRange } from '@/app/reports/lib/use-reports-date-range';
+import { normalizeBranchCountryCodeForGrouping } from '@/lib/utils/country-flags';
 import { WellbeingRadialIndex } from './components/wellbeing-radial-index';
-import type { PulseNamedPerson } from '@/api/types/pulse';
+import {
+  WellbeingBranchCountrySections,
+  WellbeingNamedCountrySections,
+} from './components/wellbeing-country-sections';
 
 const tabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -45,59 +49,45 @@ function KpiCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function moodLabel(mood: string | null | undefined): string {
-  if (!mood) return '—';
-  return mood.replaceAll('_', ' ');
-}
-
-function NamedList({ title, rows }: { title: string; rows: PulseNamedPerson[] }) {
-  if (!rows.length) return null;
-  return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <div key={row.ownerUid} className="rounded-lg border border-border/60 p-3">
-            <p className="text-sm font-medium">
-              {row.name}
-              {row.branchName ? ` · ${row.branchName}` : ''}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Morning: {moodLabel(row.morningMood)} · Evening: {moodLabel(row.eveningMood)}
-              {row.riskReason ? ` · ${row.riskReason.replaceAll('_', ' ')}` : ''}
-            </p>
-            {row.comments ? <p className="mt-1 text-xs">{row.comments}</p> : null}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export function WellbeingContent() {
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const allowed = canAccessWellbeingDashboard(backendUserData?.accessLevel);
   const range = useReportsDateRange();
   const [branchId, setBranchId] = useState('all');
+  const [country, setCountry] = useState('all');
   const [tab, setTab] = useState('today');
   const branches = useBranches({ enabled: isTokenReady && allowed });
   const branchUid = branchId && branchId !== 'all' ? Number(branchId) : undefined;
-  const daily = usePulseDaily({ branchUid }, isTokenReady && allowed && tab === 'today');
+  const countryParam = country !== 'all' ? country : undefined;
+  const daily = usePulseDaily(
+    { branchUid, country: countryParam },
+    isTokenReady && allowed && tab === 'today'
+  );
   const insights = usePulseInsights(
-    { from: range.from, to: range.to, branchUid },
+    { from: range.from, to: range.to, branchUid, country: countryParam },
     isTokenReady && allowed && tab === 'insights'
   );
   const executive = usePulseExecutive(
-    { from: range.from, to: range.to, branchUid },
+    { from: range.from, to: range.to, branchUid, country: countryParam },
     isTokenReady && allowed && tab === 'executive'
   );
   const correlations = usePulseCorrelations(
-    { from: range.from, to: range.to, branchUid },
+    { from: range.from, to: range.to, branchUid, country: countryParam },
     isTokenReady && allowed && tab === 'correlations'
   );
 
-  const branchOptions = useMemo(() => branches.data ?? [], [branches.data]);
+  const branchOptions = useMemo(() => {
+    const list = branches.data ?? [];
+    if (!countryParam) return list;
+    return list.filter((branch) => normalizeBranchCountryCodeForGrouping(branch) === countryParam);
+  }, [branches.data, countryParam]);
+
+  useEffect(() => {
+    if (branchId === 'all') return;
+    const stillVisible = branchOptions.some((branch) => String(branch.uid) === branchId);
+    if (!stillVisible) setBranchId('all');
+  }, [branchId, branchOptions]);
 
   if (!allowed) {
     return (
@@ -127,6 +117,8 @@ export function WellbeingContent() {
           branches={branchOptions}
           selectedBranchId={branchId}
           onBranchChange={setBranchId}
+          selectedCountry={country}
+          onCountryChange={setCountry}
         />
         </div>
         <Tabs value={tab} onValueChange={setTab} className="mt-4 flex min-h-0 flex-1 flex-col">
@@ -171,31 +163,12 @@ export function WellbeingContent() {
                     value={String(daily.data?.confidentialSupportCount ?? 0)}
                   />
                 </div>
-                <section>
-                  <h3 className="mb-2 text-sm font-semibold">Branch comparison</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Branch</TableHead>
-                        <TableHead>Morning</TableHead>
-                        <TableHead>Evening</TableHead>
-                        <TableHead>Trend</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(daily.data?.branches ?? []).map((row) => (
-                        <TableRow key={String(row.branchUid ?? row.branchName)}>
-                          <TableCell>{row.branchName}</TableCell>
-                          <TableCell>{row.morningScore ?? '—'}</TableCell>
-                          <TableCell>{row.eveningScore ?? '—'}</TableCell>
-                          <TableCell>{row.trend === 'up' ? 'Up' : row.trend === 'down' ? 'Down' : 'Flat'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold">Branch comparison</h3>
+                  <WellbeingBranchCountrySections rows={daily.data?.branches ?? []} />
                 </section>
-                <NamedList title="Support queue" rows={daily.data?.supportQueue ?? []} />
-                <NamedList title="Action required" rows={daily.data?.highRisk ?? []} />
+                <WellbeingNamedCountrySections title="Support queue" rows={daily.data?.supportQueue ?? []} />
+                <WellbeingNamedCountrySections title="Action required" rows={daily.data?.highRisk ?? []} />
               </>
             )}
           </TabsContent>

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/map';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { VisitListItem } from '@/api/types/visits';
+import { getBranchDisplayLabel } from '@/api/types/branch';
 import { cn } from '@/lib/utils';
 
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
@@ -120,8 +121,8 @@ function ownerPhotoUrl(owner: VisitListItem['owner']): string | undefined {
 function branchLabel(checkIn: VisitListItem): string | undefined {
   const branch = checkIn.branch ?? checkIn.owner?.branch;
   if (!branch) return undefined;
-  const name = branch.name?.trim() || branch.alias?.trim();
-  return name || undefined;
+  const label = getBranchDisplayLabel(branch);
+  return label || undefined;
 }
 
 function formatDateTime(raw: string | null | undefined): string | undefined {

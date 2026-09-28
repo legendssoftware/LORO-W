@@ -37,6 +37,9 @@ function VisualiserBody() {
   const routeDate = UTC_YMD.test(searchParams.get('date') ?? '')
     ? (searchParams.get('date') as string)
     : formatUtcYmd(utcTomorrow());
+  const requestedUserId = Number(searchParams.get('user'));
+  const focusedUserId =
+    Number.isFinite(requestedUserId) && requestedUserId > 0 ? requestedUserId : null;
 
   useVisualiserPrefetch({
     enabled: ready,
@@ -50,18 +53,22 @@ function VisualiserBody() {
     visibility: DEFAULT_LAYER_VISIBILITY,
   });
 
-  const routesQuery = useOptimizedRoutes(routeDate, { enabled: limited });
+  const routesQuery = useOptimizedRoutes(routeDate, {
+    enabled: limited || focusedUserId != null,
+  });
   const calculateMine = useCalculateMyRouteMutation();
   const calculateMyRoute = calculateMine.mutate;
   const ensuredDateRef = useRef<string | null>(null);
 
   const plannedRoute = useMemo((): OptimizedRoute | null => {
-    if (!limited || profile?.uid == null) return null;
-    return routesQuery.data?.find((route) => route.userId === profile.uid) ?? null;
-  }, [limited, profile?.uid, routesQuery.data]);
+    const targetId = focusedUserId ?? (limited ? profile?.uid ?? null : null);
+    if (targetId == null) return null;
+    return routesQuery.data?.find((route) => route.userId === targetId) ?? null;
+  }, [focusedUserId, limited, profile?.uid, routesQuery.data]);
 
   useEffect(() => {
-    if (!limited || profile?.uid == null) return;
+    const planningOwnRoute = focusedUserId == null || focusedUserId === profile?.uid;
+    if (!limited || !planningOwnRoute || profile?.uid == null) return;
     if (routesQuery.isLoading || routesQuery.isFetching) return;
     if ((plannedRoute?.coordinates?.length ?? 0) >= 2) return;
     if (ensuredDateRef.current === routeDate || calculateMine.isPending) return;
@@ -69,6 +76,7 @@ function VisualiserBody() {
     calculateMyRoute(routeDate);
   }, [
     limited,
+    focusedUserId,
     profile?.uid,
     routesQuery.isLoading,
     routesQuery.isFetching,
@@ -120,7 +128,7 @@ function VisualiserBody() {
                   enabled
                   orgRef={orgRef}
                   showRepTracking={!limited}
-                  plannedRoute={limited ? plannedRoute : null}
+                  plannedRoute={plannedRoute}
                 />
               </div>
               {limited ? null : <SimulationSidePanel />}

@@ -182,7 +182,7 @@ export function competitorToMapPoint(
 
   const highlights: VisualiserMapHighlight[] = [];
   if (revenue) {
-    highlights.push({ label: 'Est. annual revenue', value: revenue });
+    highlights.push({ label: 'Monthly turnover', value: revenue });
   }
   if (competitor.threatLevel != null) {
     highlights.push({
@@ -210,7 +210,7 @@ export function competitorToMapPoint(
     address: formatAddressLine(competitor.address),
     phone: competitor.contactPhone ?? null,
     email: competitor.contactEmail ?? null,
-    metricLabel: 'Est. annual revenue',
+    metricLabel: 'Monthly turnover',
     metricValue: revenue,
     highlights,
     positionLabel: competitor.industry ?? 'Competitor',
