@@ -61,10 +61,20 @@ export function buildStaffRoleFilterItems(users: ReportCardUser[]): { value: str
 
 /**
  * Build branch dropdown options from the current user list (dedupes by case-insensitive key).
+ * `extraBranchLabels` adds branches that have no loaded users (e.g. managed branches with no staff today).
  */
-export function buildStaffBranchFilterItems(users: ReportCardUser[]): { value: string; label: string }[] {
+export function buildStaffBranchFilterItems(
+  users: ReportCardUser[],
+  extraBranchLabels: string[] = []
+): { value: string; label: string }[] {
   const byLower = new Map<string, string>();
   let hasUnassigned = false;
+  for (const label of extraBranchLabels) {
+    const trimmed = label?.trim();
+    if (!trimmed) continue;
+    const k = trimmed.toLowerCase();
+    if (!byLower.has(k)) byLower.set(k, trimmed);
+  }
   for (const u of users) {
     const b = u.branch?.trim();
     if (!b) {

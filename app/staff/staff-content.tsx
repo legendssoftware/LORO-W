@@ -9,6 +9,8 @@ import {
   useDailyOverview,
   usePayrollHoursAll,
   useIntakeInvitations,
+  useBranches,
+  getBranchDisplayLabel,
 } from '@/api/hooks';
 import type { MonthlyMetricsUserItem } from '@/api/types';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -230,9 +232,18 @@ export function StaffContent() {
     () => buildStaffRoleFilterItems(statusFilteredUsers),
     [statusFilteredUsers]
   );
+  const branchesQuery = useBranches({ enabled: mounted && isTokenReady });
+  /** Branches the signed-in user manages, so they stay selectable even with no staff loaded. */
+  const managedBranchLabels = useMemo(() => {
+    const managed = new Set(profile?.managedBranches ?? []);
+    if (managed.size === 0) return [];
+    return (branchesQuery.data ?? [])
+      .filter((b) => managed.has(b.uid))
+      .map((b) => getBranchDisplayLabel(b));
+  }, [profile?.managedBranches, branchesQuery.data]);
   const branchFilterItems = useMemo(
-    () => buildStaffBranchFilterItems(statusFilteredUsers),
-    [statusFilteredUsers]
+    () => buildStaffBranchFilterItems(statusFilteredUsers, managedBranchLabels),
+    [statusFilteredUsers, managedBranchLabels]
   );
   const workforceFilterItems = useMemo(
     () => buildStaffWorkforceFilterItems(statusFilteredUsers),
