@@ -13,7 +13,7 @@ import {
   useRestoreUser,
   useDeleteUserPermanently,
   useBranches,
-  useUsers,
+  useAllUsers,
   useClients,
   useSalesAssignedClients,
   useSessionSync,
@@ -86,6 +86,10 @@ import {
 import { AccessLevel, WorkforceType } from '@/api/types';
 import { cn } from '@/lib/utils';
 import { canManageStaffUsers } from '@/lib/access';
+import {
+  getStaffInheritedFromBranches,
+  pruneStaffCoveredByBranches,
+} from '@/lib/user-form/managed-staff';
 import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
 import { ActiveVisitSchedules } from './active-visit-schedules';
 import { UserWarningsCard } from './user-warnings-card';
@@ -246,7 +250,8 @@ export default function UserSettingsPage() {
   const provisionUserMutation = useProvisionUserMutation();
   const reInviteUserMutation = useReInviteUserMutation();
   const { data: branches = [] } = useBranches({ enabled: !!ref });
-  const { data: users = [] } = useUsers({ enabled: !!ref, limit: 200 });
+  // All pages: a single page is capped at 100 by the server, which hid staff from the picker.
+  const { data: users = [] } = useAllUsers({ enabled: !!ref });
   const { data: clients = [] } = useClients({ enabled: !!ref, limit: 100 });
   const { data: salesAssigned } = useSalesAssignedClients(ref ?? undefined, { enabled: !!ref });
 
@@ -358,13 +363,6 @@ export default function UserSettingsPage() {
     [branches, managedBranchesSearch]
   );
 
-  const filteredStaffForPicker = useMemo(() => {
-    const list = users.filter((u) => u.uid !== user?.uid);
-    return list.filter((u) =>
-      userSettingsMatchesSearch(getStaffSearchHaystack(u), managedStaffSearch)
-    );
-  }, [users, user?.uid, managedStaffSearch]);
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -390,6 +388,36 @@ export default function UserSettingsPage() {
       assignedClientIds: [],
     },
   });
+
+  // Staff who join this user's team automatically via managed branches (mirrors the server).
+  const watchedManagedBranches = form.watch('managedBranches');
+  const inheritedStaff = useMemo(
+    () => getStaffInheritedFromBranches(users, watchedManagedBranches, user?.uid),
+    [users, watchedManagedBranches, user?.uid]
+  );
+  const inheritedStaffUids = useMemo(
+    () => new Set(inheritedStaff.map((u) => u.uid)),
+    [inheritedStaff]
+  );
+
+  // Picker only offers staff that are NOT already covered by a managed branch.
+  const filteredStaffForPicker = useMemo(() => {
+    const list = users.filter((u) => u.uid !== user?.uid && !inheritedStaffUids.has(u.uid));
+    return list.filter((u) =>
+      userSettingsMatchesSearch(getStaffSearchHaystack(u), managedStaffSearch)
+    );
+  }, [users, user?.uid, inheritedStaffUids, managedStaffSearch]);
+
+  /** Set managed branches and drop explicit staff that the new branches already cover. */
+  function handleManagedBranchesChange(next: number[]) {
+    form.setValue('managedBranches', next, { shouldDirty: true });
+    const nextInherited = getStaffInheritedFromBranches(users, next, user?.uid);
+    const currentStaff = form.getValues('managedStaff') ?? [];
+    const prunedStaff = pruneStaffCoveredByBranches(currentStaff, nextInherited);
+    if (prunedStaff.length !== currentStaff.length) {
+      form.setValue('managedStaff', prunedStaff, { shouldDirty: true });
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -1716,9 +1744,9 @@ export default function UserSettingsPage() {
                                           onCheckedChange={(checked) => {
                                             const current = field.value ?? [];
                                             if (checked) {
-                                              field.onChange([...current, b.uid]);
+                                              handleManagedBranchesChange([...current, b.uid]);
                                             } else {
-                                              field.onChange(
+                                              handleManagedBranchesChange(
                                                 current.filter((id) => id !== b.uid)
                                               );
                                             }
@@ -1747,7 +1775,7 @@ export default function UserSettingsPage() {
                                 variant="secondary"
                                 className="cursor-pointer"
                                 onClick={() =>
-                                  field.onChange(
+                                  handleManagedBranchesChange(
                                     field.value?.filter((id) => id !== uid) ?? []
                                   )
                                 }
@@ -1769,14 +1797,34 @@ export default function UserSettingsPage() {
 
             <CollapsibleFormSection
               title="Managed staff"
-              description="Staff members this user manages."
+              description="Staff this user manages. Everyone in the managed branches above is included automatically."
             >
                 <FormField
                   control={form.control}
                   name="managedStaff"
-                  render={({ field }) => (
+                  render={({ field }) => {
+                    // Explicit picks only; branch-covered staff are shown separately and never saved twice.
+                    const explicitStaffUids = (field.value ?? []).filter(
+                      (uid) => !inheritedStaffUids.has(uid)
+                    );
+                    return (
                     <FormItem>
                       <FormLabel>Managed staff</FormLabel>
+                      {inheritedStaff.length > 0 && (
+                        <div className="rounded-md border border-dashed p-3 mb-2">
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {inheritedStaff.length} staff added automatically from managed branches
+                            (no need to assign them again):
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {inheritedStaff.map((u) => (
+                              <Badge key={u.uid} variant="outline" title="Via managed branch">
+                                {`${u.name} ${u.surname}`.trim() || u.email}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <Popover
                         open={managedStaffPickerOpen}
                         onOpenChange={(open) => {
@@ -1793,12 +1841,12 @@ export default function UserSettingsPage() {
                               aria-expanded={managedStaffPickerOpen}
                               className={cn(
                                 'w-full justify-between font-normal',
-                                !field.value?.length && 'text-muted-foreground'
+                                !explicitStaffUids.length && 'text-muted-foreground'
                               )}
                             >
-                              {field.value?.length
-                                ? `${field.value.length} selected`
-                                : 'Select staff'}
+                              {explicitStaffUids.length
+                                ? `${explicitStaffUids.length} selected`
+                                : 'Select additional staff'}
                               <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -1812,8 +1860,9 @@ export default function UserSettingsPage() {
                             />
                             <CommandList className="max-h-[200px]">
                               <CommandGroup className="p-2">
-                                {users.filter((u) => u.uid !== user?.uid).length ===
-                                0 ? (
+                                {users.filter(
+                                  (u) => u.uid !== user?.uid && !inheritedStaffUids.has(u.uid)
+                                ).length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
                                     No users available
                                   </p>
@@ -1855,9 +1904,9 @@ export default function UserSettingsPage() {
                           </Command>
                         </PopoverContent>
                       </Popover>
-                      {field.value && field.value.length > 0 && (
+                      {explicitStaffUids.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {field.value.map((uid) => {
+                          {explicitStaffUids.map((uid) => {
                             const u = users.find((x) => x.uid === uid);
                             const label = u
                               ? `${u.name} ${u.surname}`.trim() || u.email
@@ -1881,7 +1930,8 @@ export default function UserSettingsPage() {
                       )}
                       <FormMessage />
                     </FormItem>
-                  )}
+                    );
+                  }}
                 />
               </CollapsibleFormSection>
 

@@ -42,7 +42,7 @@ export function ReportsProductivityTab() {
   const { backendUserData } = useSessionSync();
   const client = useApiClient();
   const accessLevel = backendUserData?.accessLevel;
-  const scope = getReportsDataScope(accessLevel);
+  const scope = getReportsDataScope(accessLevel, backendUserData);
   const isMultiUser = scope !== 'self';
   const showTeamCharts = scope === 'org' || scope === 'team';
   const selfRef =
@@ -95,8 +95,9 @@ export function ReportsProductivityTab() {
         scope,
         selfUid: backendUserData?.uid,
         managedStaff: selfProfileQuery.data?.managedStaff,
+        managedBranches: backendUserData?.managedBranches,
       }),
-    [scope, backendUserData?.uid, selfProfileQuery.data?.managedStaff]
+    [scope, backendUserData?.uid, backendUserData?.managedBranches, selfProfileQuery.data?.managedStaff]
   );
 
   const branchesQuery = useBranches({

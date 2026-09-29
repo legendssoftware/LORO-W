@@ -193,7 +193,7 @@ export function ReportsCallQualityTab() {
   const { backendUserData } = useSessionSync();
   const accessLevel = backendUserData?.accessLevel;
   const canOpenCallRecordings = canAccessCallRecordings(accessLevel);
-  const scope = getReportsDataScope(accessLevel);
+  const scope = getReportsDataScope(accessLevel, backendUserData);
   const isMultiUser = scope !== 'self';
   const selfRef =
     backendUserData?.clerkUserId?.trim() ||
@@ -236,8 +236,9 @@ export function ReportsCallQualityTab() {
         scope,
         selfUid: backendUserData?.uid,
         managedStaff: selfProfileQuery.data?.managedStaff,
+        managedBranches: backendUserData?.managedBranches,
       }),
-    [scope, backendUserData?.uid, selfProfileQuery.data?.managedStaff],
+    [scope, backendUserData?.uid, backendUserData?.managedBranches, selfProfileQuery.data?.managedStaff],
   );
 
   const branchesQuery = useBranches({ enabled: isTokenReady && isMultiUser });

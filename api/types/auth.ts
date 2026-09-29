@@ -33,6 +33,8 @@ export interface SyncProfile {
   workforceType?: WorkforceType | string | null;
   /** Branch uids this user manages (regional / performance tracker access). */
   managedBranches?: number[];
+  /** Explicitly assigned staff uids (branch staff are resolved server-side, not listed here). */
+  managedStaff?: number[];
   role?: string;
   organisationRef?: string;
   branchUid?: number;

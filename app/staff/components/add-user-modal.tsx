@@ -20,7 +20,7 @@ import {
   useBranches,
   useClients,
   useInviteUserMutation,
-  useUsers,
+  useAllUsers,
 } from '@/api/hooks';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { patchUser } from '@/api/endpoints/user';
@@ -56,7 +56,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
   const [step, setStep] = useState(0);
 
   const { data: branches = [] } = useBranches({ enabled: open });
-  const { data: users = [] } = useUsers({ enabled: open, limit: 200 });
+  const { data: users = [] } = useAllUsers({ enabled: open });
   const { data: clients = [] } = useClients({ enabled: open, limit: 100 });
 
   const form = useForm<AddUserWizardValues>({
