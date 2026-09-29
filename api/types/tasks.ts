@@ -209,7 +209,7 @@ export interface OptimizedRoute {
   stops: OptimizedRouteStop[];
   totalDistance: number;
   estimatedDuration: number;
-  /** Google overview polyline as [longitude, latitude]. */
+  /** Road path from Google driving directions, as [longitude, latitude]. */
   coordinates?: [number, number][];
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Control } from 'react-hook-form';
+import { useFormContext, useWatch, type Control } from 'react-hook-form';
 import {
   FormControl,
   FormField,
@@ -41,6 +41,10 @@ import { cn } from '@/lib/utils';
 import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import type { AddUserWizardValues } from '@/lib/user-form';
 import { GENDER_OPTIONS, JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
+import {
+  getStaffInheritedFromBranches,
+  pruneStaffCoveredByBranches,
+} from '@/lib/user-form/managed-staff';
 import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
 
 function matchesSearch(haystack: string, query: string): boolean {
@@ -94,10 +98,39 @@ export function StepAssignments({
     [branches, managedBranchesSearch]
   );
 
+  const { setValue, getValues } = useFormContext<AddUserWizardValues>();
+  const watchedManagedBranches = useWatch({ control, name: 'managedBranches' });
+
+  // Staff who join the team automatically via managed branches (mirrors the server).
+  const inheritedStaff = useMemo(
+    () => getStaffInheritedFromBranches(users, watchedManagedBranches, null),
+    [users, watchedManagedBranches]
+  );
+  const inheritedStaffUids = useMemo(
+    () => new Set(inheritedStaff.map((u) => u.uid)),
+    [inheritedStaff]
+  );
+
+  /** Set managed branches and drop explicit staff that the new branches already cover. */
+  function handleManagedBranchesChange(next: number[]) {
+    setValue('managedBranches', next, { shouldDirty: true });
+    const nextInherited = getStaffInheritedFromBranches(users, next, null);
+    const currentStaff = getValues('managedStaff') ?? [];
+    const prunedStaff = pruneStaffCoveredByBranches(currentStaff, nextInherited);
+    if (prunedStaff.length !== currentStaff.length) {
+      setValue('managedStaff', prunedStaff, { shouldDirty: true });
+    }
+  }
+
+  // Picker only offers staff NOT already covered by a managed branch.
   const filteredStaff = useMemo(
     () =>
-      users.filter((u) => matchesSearch(staffHaystack(u), managedStaffSearch)),
-    [users, managedStaffSearch]
+      users.filter(
+        (u) =>
+          !inheritedStaffUids.has(u.uid) &&
+          matchesSearch(staffHaystack(u), managedStaffSearch)
+      ),
+    [users, inheritedStaffUids, managedStaffSearch]
   );
 
   const filteredClients = useMemo(
@@ -519,9 +552,9 @@ export function StepAssignments({
                                 onCheckedChange={(checked) => {
                                   const current = field.value ?? [];
                                   if (checked) {
-                                    field.onChange([...current, b.uid]);
+                                    handleManagedBranchesChange([...current, b.uid]);
                                   } else {
-                                    field.onChange(
+                                    handleManagedBranchesChange(
                                       current.filter((id) => id !== b.uid)
                                     );
                                   }
@@ -549,7 +582,7 @@ export function StepAssignments({
                       variant="secondary"
                       className="cursor-pointer"
                       onClick={() =>
-                        field.onChange(
+                        handleManagedBranchesChange(
                           field.value?.filter((id) => id !== uid) ?? []
                         )
                       }
@@ -568,9 +601,29 @@ export function StepAssignments({
       <FormField
         control={control}
         name="managedStaff"
-        render={({ field }) => (
+        render={({ field }) => {
+          // Explicit picks only; branch-covered staff are shown separately and never saved twice.
+          const explicitStaffUids = (field.value ?? []).filter(
+            (uid) => !inheritedStaffUids.has(uid)
+          );
+          return (
           <FormItem>
             <FormLabel>Managed staff (optional)</FormLabel>
+            {inheritedStaff.length > 0 && (
+              <div className="rounded-md border border-dashed p-3 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
+                  {inheritedStaff.length} staff added automatically from managed branches (no need
+                  to assign them again):
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {inheritedStaff.map((u) => (
+                    <Badge key={u.uid} variant="outline" title="Via managed branch">
+                      {`${u.name} ${u.surname}`.trim() || u.email}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             <Popover
               open={managedStaffOpen}
               onOpenChange={(open) => {
@@ -586,12 +639,12 @@ export function StepAssignments({
                     role="combobox"
                     className={cn(
                       'w-full justify-between font-normal',
-                      !field.value?.length && 'text-muted-foreground'
+                      !explicitStaffUids.length && 'text-muted-foreground'
                     )}
                   >
-                    {field.value?.length
-                      ? `${field.value.length} selected`
-                      : 'Select staff'}
+                    {explicitStaffUids.length
+                      ? `${explicitStaffUids.length} selected`
+                      : 'Select additional staff'}
                     <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                   </Button>
                 </FormControl>
@@ -645,9 +698,9 @@ export function StepAssignments({
                 </Command>
               </PopoverContent>
             </Popover>
-            {field.value && field.value.length > 0 && (
+            {explicitStaffUids.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {field.value.map((uid) => {
+                {explicitStaffUids.map((uid) => {
                   const u = users.find((x) => x.uid === uid);
                   return (
                     <Badge
@@ -668,7 +721,8 @@ export function StepAssignments({
             )}
             <FormMessage />
           </FormItem>
-        )}
+          );
+        }}
       />
 
       <FormField

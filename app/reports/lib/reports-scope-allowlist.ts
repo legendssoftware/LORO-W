@@ -18,14 +18,22 @@ export const REPORTS_USERS_PAGE_LIMIT = 100;
 /**
  * Resolve the UID allowlist for reports team scope.
  * Always includes the signed-in user; merges managedStaff from profile when present.
+ *
+ * Team scope with managedBranches returns null (no client-side narrowing): branch staff are resolved
+ * server-side and GET /user is already scoped to self + effective team, so the fetched user list is
+ * the team. Narrowing to explicit managedStaff here would hide every branch-derived staff member.
  */
 export function resolveReportsAllowlistUids(opts: {
   scope: 'org' | 'team' | 'self';
   selfUid: number | null | undefined;
   managedStaff?: number[] | null | undefined;
+  managedBranches?: number[] | null | undefined;
 }): number[] | null {
-  const { scope, selfUid, managedStaff } = opts;
+  const { scope, selfUid, managedStaff, managedBranches } = opts;
   if (scope === 'org') return null;
+  if (scope === 'team' && Array.isArray(managedBranches) && managedBranches.length > 0) {
+    return null;
+  }
   const set = new Set<number>();
   if (selfUid != null && Number.isFinite(Number(selfUid))) {
     set.add(Number(selfUid));

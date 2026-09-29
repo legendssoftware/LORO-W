@@ -23,7 +23,7 @@ const reportsTabTriggerClass = cn(
 
 export function ReportsContent() {
   const { backendUserData } = useSessionSync();
-  const scope = getReportsDataScope(backendUserData?.accessLevel);
+  const scope = getReportsDataScope(backendUserData?.accessLevel, backendUserData);
   const [activeTab, setActiveTab] = useState<string>(REPORTS_TABS[0].id);
 
   return (

@@ -17,6 +17,17 @@ import { cn } from '@/lib/utils';
 
 const UNASSIGNED = 'UNASSIGNED';
 
+/**
+ * Shared column layout for every country's branch table. Fixed widths plus identical
+ * alignment classes on header and body cells keep columns aligned across all tables.
+ */
+const BRANCH_COLUMNS = [
+  { key: 'branch', label: 'Branch', className: 'w-[40%] text-left' },
+  { key: 'morning', label: 'Morning', className: 'w-[20%] text-center tabular-nums' },
+  { key: 'evening', label: 'Evening', className: 'w-[20%] text-center tabular-nums' },
+  { key: 'trend', label: 'Trend', className: 'w-[20%] text-center' },
+] as const;
+
 function moodLabel(mood: string | null | undefined): string {
   if (!mood) return '—';
   return mood.replaceAll('_', ' ');
@@ -125,22 +136,31 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
               }
             />
             {open ? (
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Branch</TableHead>
-                    <TableHead>Morning</TableHead>
-                    <TableHead>Evening</TableHead>
-                    <TableHead>Trend</TableHead>
+                    {BRANCH_COLUMNS.map((col) => (
+                      <TableHead key={col.key} className={cn(col.className, 'px-3')}>
+                        {col.label}
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {group.rows.map((row) => (
                     <TableRow key={String(row.branchUid ?? row.branchName)}>
-                      <TableCell>{row.branchName}</TableCell>
-                      <TableCell>{row.morningScore ?? '—'}</TableCell>
-                      <TableCell>{row.eveningScore ?? '—'}</TableCell>
-                      <TableCell>{trendLabel(row.trend)}</TableCell>
+                      <TableCell className={cn(BRANCH_COLUMNS[0].className, 'truncate px-3')}>
+                        {row.branchName}
+                      </TableCell>
+                      <TableCell className={cn(BRANCH_COLUMNS[1].className, 'px-3')}>
+                        {row.morningScore ?? '—'}
+                      </TableCell>
+                      <TableCell className={cn(BRANCH_COLUMNS[2].className, 'px-3')}>
+                        {row.eveningScore ?? '—'}
+                      </TableCell>
+                      <TableCell className={cn(BRANCH_COLUMNS[3].className, 'px-3')}>
+                        {trendLabel(row.trend)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

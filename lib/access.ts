@@ -93,25 +93,45 @@ export function canAccessWellbeingDashboard(accessLevel: string | undefined): bo
 /**
  * Three-tier reports data scope (mirrors server reports-access.util).
  * - org: admin/owner/manager (+ developer, support, hr, supervisor, executive)
- * - team: reserved for self + managedStaff (unused by current access levels)
+ * - team: non-org levels with managedStaff and/or managedBranches assigned (self + their team)
  * - self: everyone else (sales / standard users)
  */
 export function getReportsDataScope(
-    accessLevel: string | undefined
+    accessLevel: string | undefined,
+    assignments?: ReportsTeamAssignments | null
 ): ReportsDataScope {
     const level = normalize(accessLevel);
     if (!level) return "self";
     if (REPORTS_ORG_LEVELS.has(level)) return "org";
+    if (hasReportsTeamAssignments(assignments)) return "team";
     return "self";
+}
+
+/** Team assignments on the signed-in profile that upgrade `self` reports scope to `team`. */
+export type ReportsTeamAssignments = {
+    managedStaff?: number[] | null;
+    managedBranches?: number[] | null;
+};
+
+/** True when the profile has at least one managed staff member or managed branch. */
+export function hasReportsTeamAssignments(
+    assignments?: ReportsTeamAssignments | null
+): boolean {
+    if (!assignments) return false;
+    return (
+        (Array.isArray(assignments.managedStaff) && assignments.managedStaff.length > 0) ||
+        (Array.isArray(assignments.managedBranches) && assignments.managedBranches.length > 0)
+    );
 }
 
 /**
  * True when the user can see multi-user Targets / Overview filters (org or team).
  */
 export function canViewMultiUserReports(
-    accessLevel: string | undefined
+    accessLevel: string | undefined,
+    assignments?: ReportsTeamAssignments | null
 ): boolean {
-    return getReportsDataScope(accessLevel) !== "self";
+    return getReportsDataScope(accessLevel, assignments) !== "self";
 }
 
 /**

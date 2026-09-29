@@ -81,7 +81,7 @@ export {
   SALES_TEAM_COMPOSITION_QUERY_KEY,
 } from './use-sales-team-composition';
 export { useOrganisationProfile } from './use-organisation-profile';
-export { useUsers } from './use-users';
+export { useUsers, useAllUsers } from './use-users';
 export {
   useSearchableUsersList,
   type SearchableUserSnapshot,
