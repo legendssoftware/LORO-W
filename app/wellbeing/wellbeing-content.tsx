@@ -214,24 +214,26 @@ export function WellbeingContent() {
             {correlations.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Finding</TableHead>
-                    <TableHead>Delta</TableHead>
-                    <TableHead>n</TableHead>
-                    <TableHead>Confidence</TableHead>
-                    <TableHead>Source</TableHead>
+                    <TableHead className="w-[38%] px-3 text-left">Finding</TableHead>
+                    <TableHead className="w-[12%] px-3 text-center">Delta</TableHead>
+                    <TableHead className="w-[10%] px-3 text-center">n</TableHead>
+                    <TableHead className="w-[15%] px-3 text-center">Confidence</TableHead>
+                    <TableHead className="w-[25%] px-3 text-left">Source</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(correlations.data?.findings ?? []).map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell>{row.finding}</TableCell>
-                      <TableCell>{row.deltaPct != null ? `${row.deltaPct}%` : '—'}</TableCell>
-                      <TableCell>{row.n}</TableCell>
-                      <TableCell>{row.confidence}</TableCell>
-                      <TableCell>{row.sourceLabel}</TableCell>
+                      <TableCell className="whitespace-normal px-3 text-left">{row.finding}</TableCell>
+                      <TableCell className="px-3 text-center tabular-nums">
+                        {row.deltaPct != null ? `${row.deltaPct}%` : '—'}
+                      </TableCell>
+                      <TableCell className="px-3 text-center tabular-nums">{row.n}</TableCell>
+                      <TableCell className="px-3 text-center">{row.confidence}</TableCell>
+                      <TableCell className="whitespace-normal px-3 text-left">{row.sourceLabel}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

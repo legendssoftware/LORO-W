@@ -445,11 +445,15 @@ interface OverviewMapProps {
   plannedRoute?: OptimizedRoute | null;
 }
 
-/** Road line from the saved Google polyline, or stop order when a legacy row has none. */
+/** Road line from the saved driving polyline. Stops are markers; they are not joined by chords. */
 function plannedRouteCoordinates(route: OptimizedRoute): [number, number][] {
   if (route.coordinates && route.coordinates.length >= 2) {
     return route.coordinates;
   }
+  return [];
+}
+
+function plannedStopCoordinates(route: OptimizedRoute): [number, number][] {
   return route.stops.flatMap((stop) => {
     const latitude = stop.location?.latitude;
     const longitude = stop.location?.longitude;
@@ -510,6 +514,11 @@ export function OverviewMap({
     () => (plannedRoute ? plannedRouteCoordinates(plannedRoute) : []),
     [plannedRoute]
   );
+  const plannedRouteFitLine = useMemo(() => {
+    if (!plannedRoute) return [];
+    if (plannedRouteLine.length >= 2) return plannedRouteLine;
+    return plannedStopCoordinates(plannedRoute);
+  }, [plannedRoute, plannedRouteLine]);
   const plannedRouteKey = plannedRoute
     ? `planned-${plannedRoute.userId}-${plannedRoute.routeUid ?? 'route'}`
     : null;
@@ -1377,7 +1386,7 @@ export function OverviewMap({
           routeKey={journeyRouteKey}
         />
         <FitJourneyBounds
-          coordinates={plannedRouteLine}
+          coordinates={plannedRouteFitLine}
           routeKey={plannedRouteKey}
         />
         <FitSimulationBounds
