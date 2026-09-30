@@ -17,13 +17,14 @@ import { getAttStatus } from '@/api/endpoints/attendance';
 import type { AttCheckInContext } from '@/api/types/attendance';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { showSuccessToast } from '@/lib/utils/toast-helpers';
+import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
+import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
-import { buildClockInNotes, locationContextFailureMessage } from '@/lib/clock-in-options';
+import { locationContextFailureMessage } from '@/lib/clock-in-options';
 import { getBrowserPosition, geolocationFailureMessage } from '@/lib/browser-geolocation';
 import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
@@ -49,7 +50,9 @@ export function DashboardContent() {
   const [pulseOpen, setPulseOpen] = useState(false);
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>('morning');
   const pendingCheckOutRef = useRef(false);
-  const skipPulsePromptRef = useRef(false);
+  const pendingClockInRef = useRef<{ modeLabel: string } | null>(null);
+  /** True while a shift action is checking the server for today's pulse, so a double click cannot start it twice. */
+  const pulseGateBusyRef = useRef(false);
 
   const currentUserForModal = useMemo((): ReportCardUser | null => {
     if (!profile?.uid) return null;
@@ -157,8 +160,45 @@ export function DashboardContent() {
     void refreshClockInContext();
   }, [staffAttendanceEnabled, checkedIn, refreshClockInContext]);
 
-  const handleClockInWithNote = async (modeLabel: string, additionalNote?: string) => {
-    const combined = buildClockInNotes(modeLabel, additionalNote);
+  /**
+   * Whether today's pulse for `period` is in. Always asks the server so a stale cache cannot
+   * let a shift start or end without the form; a failed lookup counts as "not submitted".
+   */
+  const isPulseSubmitted = async (period: PulsePeriod): Promise<boolean> => {
+    const result = await pulseMe.refetch();
+    if (result.isError || !result.data) return false;
+    return period === 'morning' ? result.data.morningSubmitted : result.data.eveningSubmitted;
+  };
+
+  /**
+   * Runs a shift action behind the pulse gate. Ignored while another gated action is still
+   * checking the server.
+   */
+  const runPulseGated = async (action: () => Promise<void>) => {
+    if (pulseGateBusyRef.current) return;
+    pulseGateBusyRef.current = true;
+    try {
+      await action();
+    } finally {
+      pulseGateBusyRef.current = false;
+    }
+  };
+
+  /** Start of shift: the "Start My Day" pulse must be in before the clock-in is sent. */
+  const handleClockInWithMode = (modeLabel: string) =>
+    runPulseGated(async () => {
+      if (!(await isPulseSubmitted('morning'))) {
+        pendingClockInRef.current = { modeLabel };
+        setPulsePeriod('morning');
+        setPulseOpen(true);
+        return;
+      }
+      await performClockIn(modeLabel);
+    });
+
+  const performClockIn = async (modeLabel: string) => {
+    /** The mode label is all `checkInNotes` carries; the server reads it for the at-office geofence. */
+    const combined = modeLabel;
     const position = await getBrowserPosition();
     const noLocationSuffix =
       !position.ok ? ' (browser location not granted)' : '';
@@ -177,23 +217,24 @@ export function DashboardContent() {
       {
         onSuccess: () => {
           showSuccessToast('Shift started', toast);
-          if (!pulseMe.data?.morningSubmitted) {
-            setPulsePeriod('morning');
-            setPulseOpen(true);
-          }
         },
       }
     );
   };
 
-  const handleCheckOut = async () => {
-    if (!skipPulsePromptRef.current && !pulseMe.data?.eveningSubmitted) {
-      pendingCheckOutRef.current = true;
-      setPulsePeriod('evening');
-      setPulseOpen(true);
-      return;
-    }
-    skipPulsePromptRef.current = false;
+  /** End of shift: the "Finish My Day" pulse must be in before the clock-out is sent. */
+  const handleCheckOut = () =>
+    runPulseGated(async () => {
+      if (!(await isPulseSubmitted('evening'))) {
+        pendingCheckOutRef.current = true;
+        setPulsePeriod('evening');
+        setPulseOpen(true);
+        return;
+      }
+      await performCheckOut();
+    });
+
+  const performCheckOut = async () => {
     const position = await getBrowserPosition();
     const noLocationNote = 'Clocked out without location (browser location not granted).';
     attCheckOutMutation.mutate(
@@ -251,34 +292,51 @@ export function DashboardContent() {
     );
   };
 
-  function finishEveningThenCheckout() {
-    setPulseOpen(false);
-    if (pendingCheckOutRef.current) {
-      pendingCheckOutRef.current = false;
-      skipPulsePromptRef.current = true;
-      void handleCheckOut();
-    }
-  }
-
-  function handlePulseSkip() {
-    if (pulsePeriod === 'evening') {
-      finishEveningThenCheckout();
-      return;
-    }
+  /**
+   * Abandons the pending shift action (Escape): nothing is started or ended because the pulse was
+   * not given. A morning prompt with no held clock-in (shift already running without today's
+   * pulse) cannot be dismissed at all, matching the mobile app.
+   */
+  function handlePulseCancel() {
+    if (pulsePeriod === 'morning' && !pendingClockInRef.current) return;
+    pendingClockInRef.current = null;
+    pendingCheckOutRef.current = false;
     setPulseOpen(false);
   }
 
   function handlePulseSubmit(body: PulseSubmitBody) {
     submitPulseMutation.mutate(body, {
+      onError: (error) => {
+        showErrorToast(getQueryErrorMessage(error, 'Could not save your pulse. Please try again.'), toast);
+      },
       onSuccess: () => {
-        if (body.period === 'evening') {
-          finishEveningThenCheckout();
+        setPulseOpen(false);
+        if (body.period === 'morning' && pendingClockInRef.current) {
+          const { modeLabel } = pendingClockInRef.current;
+          pendingClockInRef.current = null;
+          void performClockIn(modeLabel);
           return;
         }
-        setPulseOpen(false);
+        if (body.period === 'evening' && pendingCheckOutRef.current) {
+          pendingCheckOutRef.current = false;
+          void performCheckOut();
+        }
       },
     });
-  };
+  }
+
+  /**
+   * A shift that is already running without today's morning pulse (started on an older build or
+   * another device) is asked for it now, so a pulse is never missing for a worked day.
+   */
+  useEffect(() => {
+    if (!staffAttendanceEnabled || !checkedIn || pulseOpen) return;
+    if (pulseMe.isFetching || pulseMe.isError || !pulseMe.data) return;
+    if (pulseMe.data.morningSubmitted) return;
+    pendingClockInRef.current = null;
+    setPulsePeriod('morning');
+    setPulseOpen(true);
+  }, [staffAttendanceEnabled, checkedIn, pulseOpen, pulseMe.isFetching, pulseMe.isError, pulseMe.data]);
 
   // Render a single consistent tree until mounted to avoid hydration mismatch:
   // server and initial client render both show the same loading placeholder.
@@ -314,7 +372,7 @@ export function DashboardContent() {
               checkedIn={checkedIn}
               onBreak={onBreak}
               loading={attLoading || attQuery.isLoading}
-              onClockInWithNote={handleClockInWithNote}
+              onClockInWithMode={handleClockInWithMode}
               clockInContext={clockInContext}
               clockInContextLoading={clockInContextLoading}
               clockInContextError={clockInContextError}
@@ -330,7 +388,7 @@ export function DashboardContent() {
               open={pulseOpen}
               period={pulsePeriod}
               submitting={submitPulseMutation.isPending}
-              onSkip={handlePulseSkip}
+              onCancel={handlePulseCancel}
               onSubmit={handlePulseSubmit}
             />
             <AttendanceStreakCalendar
