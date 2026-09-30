@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Car, Home, Laptop, MapPin, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,31 +14,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Loader2Icon } from '@/lib/icons';
 import type { AttCheckInContext, ClockInOptionKey } from '@/api/types/attendance';
 import {
-  CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH,
   isAtOfficeOnlyContext,
   isLocationContextUnavailable,
   LOCATION_CONTEXT_UNAVAILABLE_MESSAGE,
   OPTION_KEY_TO_LABEL,
   OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK,
   remoteOptionKeysFromContext,
-  type ClockInOptionLabel,
 } from '@/lib/clock-in-options';
 import { cn } from '@/lib/utils';
 
 export interface AttendanceStatusButtonProps {
   checkedIn: boolean;
   loading: boolean;
-  /** Legacy single Start Shift (used if onClockInWithNote is omitted). */
+  /** Legacy single Start Shift (used if onClockInWithMode is omitted). */
   onCheckIn?: () => void;
   /**
-   * Clock-in with a mode label (At office, Working From Home, etc.) and optional user note.
+   * Clock-in with a mode label (At office, Working From Home, etc.).
    * When set, uses server-driven options when possible.
    */
-  onClockInWithNote?: (modeLabel: string, additionalNote?: string) => void | Promise<void>;
+  onClockInWithMode?: (modeLabel: string) => void | Promise<void>;
   /** From GET /att/status?lat=&lng= — which start options to show */
   clockInContext?: AttCheckInContext | null;
   /** While fetching location + status for clock-in context */
@@ -129,7 +126,7 @@ export function AttendanceStatusButton({
   onBreak = false,
   loading,
   onCheckIn,
-  onClockInWithNote,
+  onClockInWithMode,
   clockInContext = null,
   clockInContextLoading = false,
   clockInContextError = null,
@@ -143,48 +140,10 @@ export function AttendanceStatusButton({
 }: AttendanceStatusButtonProps) {
   const [currentTimer, setCurrentTimer] = useState('00:00:00');
   const [remoteModalOpen, setRemoteModalOpen] = useState(false);
-  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-  const [pendingModeLabel, setPendingModeLabel] = useState<ClockInOptionLabel | null>(null);
-  const [additionalNote, setAdditionalNote] = useState('');
-  const [reopenRemotePickerAfterNoteBack, setReopenRemotePickerAfterNoteBack] = useState(false);
-  const noteConfirmingRef = useRef(false);
 
-  function openNoteStep(modeLabel: ClockInOptionLabel, opts?: { fromRemoteMobilePicker?: boolean }) {
-    setPendingModeLabel(modeLabel);
-    setAdditionalNote('');
-    setReopenRemotePickerAfterNoteBack(opts?.fromRemoteMobilePicker ?? false);
+  function selectMode(modeLabel: string) {
     setRemoteModalOpen(false);
-    setNoteDialogOpen(true);
-  }
-
-  function confirmNoteStep() {
-    if (!pendingModeLabel) return;
-    noteConfirmingRef.current = true;
-    void onClockInWithNote?.(
-      pendingModeLabel,
-      additionalNote.trim() ? additionalNote.trim() : undefined
-    );
-    setPendingModeLabel(null);
-    setAdditionalNote('');
-    setReopenRemotePickerAfterNoteBack(false);
-    setNoteDialogOpen(false);
-    queueMicrotask(() => {
-      noteConfirmingRef.current = false;
-    });
-  }
-
-  function cancelNoteStep() {
-    if (reopenRemotePickerAfterNoteBack) setRemoteModalOpen(true);
-    setReopenRemotePickerAfterNoteBack(false);
-    setPendingModeLabel(null);
-    setAdditionalNote('');
-    setNoteDialogOpen(false);
-  }
-
-  function onNoteDialogOpenChange(open: boolean) {
-    if (open) return;
-    if (noteConfirmingRef.current) return;
-    cancelNoteStep();
+    void onClockInWithMode?.(modeLabel);
   }
 
   useEffect(() => {
@@ -233,9 +192,7 @@ export function AttendanceStatusButton({
             ? remoteClockInModalStackedClass
             : cn(remoteClockInOptionClass, 'w-full md:flex-1 md:min-w-0'),
         )}
-        onClick={() => {
-          openNoteStep(label, { fromRemoteMobilePicker: stacked });
-        }}
+        onClick={() => selectMode(label)}
       >
         {startOptionIcon(key, !stacked)}
         {label}
@@ -266,7 +223,7 @@ export function AttendanceStatusButton({
         {!checkedIn && (
           <div className="flex w-full flex-col gap-3">
             <span className="text-center text-[0.8rem] font-medium uppercase text-foreground sm:text-[0.9rem] md:text-[1rem]">
-              {onClockInWithNote ? 'Start your shift' : 'Ready to start'}
+              {onClockInWithMode ? 'Start your shift' : 'Ready to start'}
             </span>
             {loading || clockInContextLoading ? (
               <div className="flex justify-center py-6">
@@ -275,14 +232,14 @@ export function AttendanceStatusButton({
                   aria-hidden
                 />
               </div>
-            ) : onClockInWithNote ? (
+            ) : onClockInWithMode ? (
               atOfficeOnly ? (
                 <div className="flex justify-center">
                   <Button
                     variant="secondary"
                     size="lg"
                     className={`${soloStartShiftButtonClass} flex w-full max-w-xl items-center justify-center gap-3 bg-green-600 text-white hover:bg-green-700`}
-                    onClick={() => openNoteStep('At office')}
+                    onClick={() => selectMode('At office')}
                   >
                     <Play
                       className="size-10 shrink-0 text-white sm:size-12 md:size-14 lg:size-16"
@@ -358,52 +315,6 @@ export function AttendanceStatusButton({
                 </Button>
               </div>
             ) : null}
-            {onClockInWithNote && (
-              <Dialog open={noteDialogOpen} onOpenChange={onNoteDialogOpenChange}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="text-center text-base font-semibold">
-                      Start your shift
-                    </DialogTitle>
-                    <DialogDescription className="text-center text-xs text-muted-foreground">
-                      Optional note — e.g. time adjustment or on-site issue.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-col gap-3 pt-1">
-                    <p className="text-center text-sm font-medium text-foreground">
-                      {pendingModeLabel ?? ''}
-                    </p>
-                    <Textarea
-                      value={additionalNote}
-                      onChange={(e) =>
-                        setAdditionalNote(
-                          e.target.value.slice(0, CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH)
-                        )
-                      }
-                      placeholder="Additional note (optional) — e.g. time adjustment, issue on site…"
-                      className="min-h-[100px] resize-y text-foreground placeholder:italic placeholder:text-muted-foreground"
-                      aria-label="Optional shift start note"
-                    />
-                    <p className="text-right text-xs text-muted-foreground">
-                      {additionalNote.length}/{CLOCK_IN_ADDITIONAL_NOTE_MAX_LENGTH}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="lg"
-                      className={cn(
-                        'w-full',
-                        actionButtonClass,
-                        'flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0 lg:min-h-12 lg:py-3 lg:text-base',
-                      )}
-                      onClick={confirmNoteStep}
-                    >
-                      Start shift
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
           </div>
         )}
 

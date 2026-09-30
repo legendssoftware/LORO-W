@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -16,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import type { PulseMood, PulsePeriod, PulseSubmitBody, PulseTalkTo } from '@/api/types/pulse';
+import { getMissingPulseFields, NO_CONTRIBUTOR, toggleContributor } from '@/lib/pulse-form';
 
 const MOODS: { value: PulseMood; label: string }[] = [
   { value: 'excellent', label: '😄 Excellent' },
@@ -34,6 +34,7 @@ const MORNING_TAGS = [
   { value: 'conflict_with_colleague', label: 'Conflict with colleague' },
   { value: 'conflict_with_manager', label: 'Conflict with manager' },
   { value: 'poor_sleep', label: 'Poor sleep' },
+  { value: NO_CONTRIBUTOR, label: 'Nothing in particular' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -46,6 +47,7 @@ const EVENING_TAGS = [
   { value: 'felt_appreciated', label: 'Felt appreciated' },
   { value: 'equipment_system_issues', label: 'Equipment/System Issues' },
   { value: 'training_needed', label: 'Training Needed' },
+  { value: NO_CONTRIBUTOR, label: 'Nothing in particular' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -57,38 +59,45 @@ const TALK_TO: { value: PulseTalkTo; label: string }[] = [
   { value: 'confidential', label: 'Confidential Support' },
 ];
 
-const pulseFormSchema = z.object({
-  mood: z.enum(['excellent', 'good', 'okay', 'stressed', 'not_feeling_well']),
-  contributors: z.array(z.string()),
-  talkTo: z.enum(['none', 'manager', 'hr', 'regional_manager', 'confidential']),
-  followUp: z.enum(['no', 'yes']),
-  comments: z.string().max(2000),
-});
+const COMMENTS_MAX_LENGTH = 2000;
+
+/** Section heading; a trailing asterisk marks the sections that must be answered. */
+function SectionTitle({ children, required = true }: { children: string; required?: boolean }) {
+  return (
+    <p className="text-sm font-medium">
+      {children}
+      {required ? <span className="text-destructive" aria-hidden> *</span> : null}
+    </p>
+  );
+}
 
 export interface PulseDialogProps {
   open: boolean;
   period: PulsePeriod;
   submitting?: boolean;
-  onSkip: () => void;
+  /**
+   * Abandons the pending shift action (clock-in or clock-out). The pulse is mandatory, so this
+   * never lets the shift proceed: it is only reachable through Escape.
+   */
+  onCancel: () => void;
   onSubmit: (body: PulseSubmitBody) => void;
 }
 
-export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: PulseDialogProps) {
+export function PulseDialog({ open, period, submitting, onCancel, onSubmit }: PulseDialogProps) {
   const [mood, setMood] = useState<PulseMood | ''>('');
   const [contributors, setContributors] = useState<string[]>([]);
-  const [talkTo, setTalkTo] = useState<PulseTalkTo>('none');
-  const [followUp, setFollowUp] = useState<'no' | 'yes'>('no');
+  // Nothing is pre-selected: an unanswered question must not be recorded as "No".
+  const [talkTo, setTalkTo] = useState<PulseTalkTo | null>(null);
+  const [followUp, setFollowUp] = useState<'no' | 'yes' | ''>('');
   const [comments, setComments] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setMood('');
     setContributors([]);
-    setTalkTo('none');
-    setFollowUp('no');
+    setTalkTo(null);
+    setFollowUp('');
     setComments('');
-    setError(null);
   }, [open, period]);
 
   const tags = period === 'morning' ? MORNING_TAGS : EVENING_TAGS;
@@ -98,44 +107,48 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
       ? 'How are you feeling as you start your day?'
       : "How are you feeling after today's work?";
 
-  const canSubmit = useMemo(() => mood !== '', [mood]);
+  const missing = useMemo(
+    () =>
+      getMissingPulseFields({
+        period,
+        mood,
+        contributors,
+        talkTo,
+        followUpRequested: followUp === '' ? null : followUp === 'yes',
+      }),
+    [period, mood, contributors, talkTo, followUp]
+  );
+  const canSubmit = missing.length === 0;
 
   function toggleTag(value: string, checked: boolean) {
-    setContributors((current) =>
-      checked ? [...current, value] : current.filter((item) => item !== value)
-    );
+    setContributors((current) => toggleContributor(current, value, checked));
   }
 
   function handleSubmit() {
-    const parsed = pulseFormSchema.safeParse({
-      mood,
-      contributors,
-      talkTo,
-      followUp,
-      comments,
-    });
-    if (!parsed.success) {
-      setError('Please choose how you feel.');
-      return;
-    }
-    setError(null);
+    if (!canSubmit || !mood || submitting) return;
     onSubmit({
       period,
-      mood: parsed.data.mood,
-      contributors: parsed.data.contributors,
-      talkTo: period === 'morning' ? parsed.data.talkTo : 'none',
-      followUpRequested: period === 'evening' ? parsed.data.followUp === 'yes' : false,
-      comments: parsed.data.comments.trim() || undefined,
+      mood,
+      contributors,
+      talkTo: period === 'morning' ? (talkTo ?? undefined) : 'none',
+      followUpRequested: period === 'evening' ? followUp === 'yes' : false,
+      comments: comments.trim() || undefined,
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) onSkip(); }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+    <Dialog open={open} onOpenChange={(next) => { if (!next && !submitting) onCancel(); }}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        showCloseButton={false}
+        onPointerDownOutside={(event) => event.preventDefault()}
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+        <SectionTitle>Your mood</SectionTitle>
         <RadioGroup
           value={mood}
           onValueChange={(value) => setMood(value as PulseMood)}
@@ -148,11 +161,11 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
             </div>
           ))}
         </RadioGroup>
-        <p className="text-sm font-medium">
+        <SectionTitle>
           {period === 'morning'
-            ? "What's contributing to how you feel? (Optional)"
-            : 'What influenced your day?'}
-        </p>
+            ? "What's contributing to how you feel? (Select all that apply)"
+            : 'What influenced your day? (Select all that apply)'}
+        </SectionTitle>
         <div className="grid gap-2">
           {tags.map((tag) => (
             <label key={tag.value} className="flex items-center gap-2 text-sm">
@@ -166,8 +179,8 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
         </div>
         {period === 'morning' ? (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Would you like to talk to someone?</p>
-            <RadioGroup value={talkTo} onValueChange={(value) => setTalkTo(value as PulseTalkTo)}>
+            <SectionTitle>Would you like to talk to someone?</SectionTitle>
+            <RadioGroup value={talkTo ?? ''} onValueChange={(value) => setTalkTo(value as PulseTalkTo)}>
               {TALK_TO.map((option) => (
                 <div key={option.value} className="flex items-center gap-2">
                   <RadioGroupItem id={`pulse-talk-${option.value}`} value={option.value} />
@@ -178,7 +191,7 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Would you like someone to follow up?</p>
+            <SectionTitle>Would you like someone to follow up?</SectionTitle>
             <RadioGroup value={followUp} onValueChange={(value) => setFollowUp(value as 'no' | 'yes')}>
               <div className="flex items-center gap-2">
                 <RadioGroupItem id="pulse-follow-no" value="no" />
@@ -191,8 +204,10 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
             </RadioGroup>
           </div>
         )}
+        <SectionTitle required={false}>Note (optional)</SectionTitle>
         <Textarea
           value={comments}
+          maxLength={COMMENTS_MAX_LENGTH}
           onChange={(event) => setComments(event.target.value)}
           placeholder={
             period === 'morning'
@@ -200,11 +215,10 @@ export function PulseDialog({ open, period, submitting, onSkip, onSubmit }: Puls
               : 'Additional comments'
           }
         />
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {!canSubmit ? (
+          <p className="text-sm text-muted-foreground">Still needed: {missing.join(', ')}.</p>
+        ) : null}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onSkip} disabled={submitting}>
-            Skip
-          </Button>
           <Button type="button" onClick={handleSubmit} disabled={!canSubmit || submitting}>
             {title}
           </Button>

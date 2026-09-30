@@ -35,6 +35,7 @@ const REST_GROUPS: ApprovalTypeGroup[] = [
     types: [
       { value: 'invoice', label: 'Invoice' },
       { value: 'quotation', label: 'Quotation' },
+      { value: 'sales_order', label: 'Sales order' },
       { value: 'contract', label: 'Contract' },
       { value: 'report', label: 'Report' },
       { value: 'proposal', label: 'Proposal' },
