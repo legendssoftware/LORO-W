@@ -47,6 +47,29 @@ export function formatFuelZar(value: number | null | undefined): string {
   }
 }
 
+/** Money in any ISO 4217 currency, e.g. `BWP 18.21` / `P18.21` depending on locale. */
+export function formatFuelMoney(
+  value: number | null | undefined,
+  currency: string | null | undefined
+): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  const code = currency?.trim().toUpperCase();
+  if (!code) return value.toFixed(2);
+  if (code === 'ZAR') return formatFuelZar(value);
+  try {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: code,
+      currencyDisplay: 'code',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    // Not an ISO 4217 code Intl knows (e.g. the vendor's `ZWD`).
+    return `${code} ${value.toFixed(2)}`;
+  }
+}
+
 export function formatFuelAsOf(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);

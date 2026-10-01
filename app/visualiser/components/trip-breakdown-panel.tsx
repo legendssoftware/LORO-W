@@ -13,6 +13,7 @@ import {
 import { formatRelativeRecordedAt } from '@/lib/utils/journey-point-format';
 import {
   formatFuelAsOf,
+  formatFuelMoney,
   formatFuelZar,
   formatPaceLabel,
   resolveTripFuelEstimate,
@@ -100,6 +101,11 @@ export function TripBreakdownPanel({
   const fuelEstimate = resolveTripFuelEstimate(journeySummary);
   const fuelPrice = journeySummary.fuelPrice;
   const fuelAsOf = formatFuelAsOf(fuelPrice.asOf);
+  // Show the local-currency price only when it differs from the rand figure.
+  const showLocalPrice =
+    fuelPrice.pricePerLitre != null &&
+    !!fuelPrice.currency &&
+    fuelPrice.currency.toUpperCase() !== 'ZAR';
   const vehicleProfile = journeySummary.vehicleProfile;
   const consumption = journeySummary.consumptionComparison;
   const distanceAdjustment = journeySummary.distanceAdjustment;
@@ -266,12 +272,21 @@ export function TripBreakdownPanel({
               value={`${formatFuelZar(fuelPrice.averagePetrolPerLitreZar)}/L`}
               valueHint={fuelAsOf ? `as of ${fuelAsOf}` : null}
             />
+            {showLocalPrice ? (
+              <MetricRow
+                label={`Local price (${fuelPrice.currency})`}
+                value={`${formatFuelMoney(
+                  fuelPrice.pricePerLitre,
+                  fuelPrice.currency
+                )}/L`}
+              />
+            ) : null}
             {fuelAsOf ? (
               <MetricRow
                 label="Price as of"
                 value={
-                  fuelPrice.source === 'fuel-sa'
-                    ? `${fuelAsOf} (Fuel SA)`
+                  fuelPrice.source === 'globalpetrolprices'
+                    ? `${fuelAsOf} (GlobalPetrolPrices)`
                     : fuelAsOf
                 }
               />
@@ -299,7 +314,9 @@ export function TripBreakdownPanel({
           </>
         ) : (
           <p className="text-muted-foreground px-0.5 text-[11px] leading-snug">
-            Fuel price unavailable — check FUEL_SA_API_KEY on the server.
+            {fuelPrice.country
+              ? `No fuel price available for ${fuelPrice.country}.`
+              : 'Fuel price unavailable — the journey country could not be determined.'}
           </p>
         )}
       </BreakdownSection>

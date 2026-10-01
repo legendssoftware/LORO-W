@@ -2,8 +2,8 @@
 
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
-import { REPORTS_CHART_GREEN } from '@/app/reports/lib/reports-dashboard-chart-helpers';
 import { cn } from '@/lib/utils';
+import { PULSE_TONE_STYLES, getIndexTone, isHigherWorseIndex } from '../lib/pulse-tone';
 
 interface WellbeingRadialIndexProps {
   label: string;
@@ -20,13 +20,19 @@ export function WellbeingRadialIndex({
 }: WellbeingRadialIndexProps) {
   const safe = Math.max(0, Math.min(100, Math.round(value)));
   const chartData = [{ name: label, value: safe, remaining: Math.max(0, 100 - safe) }];
+  const tone = getIndexTone(label, safe);
+  const style = PULSE_TONE_STYLES[tone];
   const config: ChartConfig = {
-    value: { label, color: REPORTS_CHART_GREEN },
+    value: { label, color: style.chart },
     remaining: { label: 'Remaining', color: 'hsl(var(--muted))' },
   };
 
   return (
-    <div className={cn('flex flex-col items-center gap-1', className)}>
+    <div
+      className={cn('flex flex-col items-center gap-1', className)}
+      role="img"
+      aria-label={`${label}: ${safe}${unit}, ${style.caption}${isHigherWorseIndex(label) ? ' (lower is better)' : ''}`}
+    >
       <ChartContainer config={config} className="mx-auto aspect-square w-full max-w-[180px]">
         <RadialBarChart data={chartData} startAngle={180} endAngle={0} innerRadius={52} outerRadius={80}>
           <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
@@ -35,7 +41,12 @@ export function WellbeingRadialIndex({
                 if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
                   return (
                     <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) - 8} className="fill-foreground text-xl font-bold">
+                      <tspan
+                        x={viewBox.cx}
+                        y={(viewBox.cy || 0) - 8}
+                        className="text-xl font-bold"
+                        fill={style.chart}
+                      >
                         {safe}
                         {unit}
                       </tspan>
@@ -51,6 +62,9 @@ export function WellbeingRadialIndex({
         </RadialBarChart>
       </ChartContainer>
       <p className="text-center text-xs font-medium text-muted-foreground">{label}</p>
+      <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-medium', style.badge)}>
+        {style.caption}
+      </span>
     </div>
   );
 }

@@ -104,13 +104,22 @@ export interface RepJourneyEndpoint {
 }
 
 export interface RepJourneyFuelPrice {
+  /** Rand-equivalent price per litre (trip cost is calculated from this). */
   averagePetrolPerLitreZar: number | null;
+  /** Price per litre in the country's own currency (absent on older API builds). */
+  pricePerLitre?: number | null;
+  /** ISO 4217 code of `pricePerLitre`, e.g. `BWP`. */
+  currency?: string | null;
+  priceUsd?: number | null;
+  /** ISO 3166-1 alpha-2 country the price applies to. */
+  countryCode?: string | null;
+  country?: string | null;
+  fuelType?: 'petrol' | 'diesel' | null;
   grade: string | null;
   region: string | null;
   asOf: string | null;
-  source: 'fuel-sa' | null;
+  source: 'globalpetrolprices' | null;
   province?: string | null;
-  fuelZone?: 'Reef' | 'Coast' | null;
   refillBasis?: 'journey-start' | null;
 }
 

@@ -164,4 +164,4 @@ export type TravelAnalysisDocument = {
 };
 
 export const TRAVEL_ANALYSIS_DISCLAIMER =
-  'Figures are estimates from GPS trails, check-ins, assigned vehicle consumption, and Fuel SA prices. They are not a claim settlement, payroll figure, or guaranteed refund. Fuel cost is calculated for South Africa travel only; days outside SA show billable km with fuel blank. Billable km subtracts 20 km home-to-office commute on days with travel.';
+  'Figures are estimates from GPS trails, check-ins, assigned vehicle consumption, and GlobalPetrolPrices weekly national-average fuel prices (converted to rand). They are not a claim settlement, payroll figure, or guaranteed refund. Fuel cost uses the price for the country the rep travelled in; days in countries without a price show billable km with fuel blank. Billable km subtracts 20 km home-to-office commute on days with travel.';
