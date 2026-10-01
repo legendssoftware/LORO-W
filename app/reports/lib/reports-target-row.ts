@@ -7,6 +7,7 @@ import type {
   UserTargetPersonalTargets,
 } from '@/api/endpoints/user';
 import { getBranchDisplayLabel } from '@/api/types/branch';
+import type { PolicyReportRow, PolicyStatus } from '@/api/types/performance-policy';
 import {
   getErpSalesCurrencyForCountry,
   normalizeErpCountryCode,
@@ -62,6 +63,30 @@ export function emptyTravelCell(
   };
 }
 
+/**
+ * Sales performance policy result for the selected range. Present only when the policy is enabled and a date
+ * range is selected (the policy is scored per window, never "all time").
+ */
+export interface ReportsTargetPolicyCell {
+  status: PolicyStatus;
+  /** Org-schedule working days in the range, net of leave and approved exceptions (capped at 20 per period). */
+  expectedDays: number;
+  /** Weighted activity achievement as a fraction (0.9 = 90%); null when no quota applies. */
+  activityPct: number | null;
+  flaggedVisits: number;
+  failedStandards: string[];
+}
+
+export function policyCellFromReportRow(row: PolicyReportRow): ReportsTargetPolicyCell {
+  return {
+    status: row.status,
+    expectedDays: row.expectedDays,
+    activityPct: row.activityPct,
+    flaggedVisits: row.flaggedVisits,
+    failedStandards: row.failedStandards,
+  };
+}
+
 export interface ReportsTargetRow {
   key: string;
   userId: number;
@@ -96,6 +121,10 @@ export interface ReportsTargetRow {
   branchCountryCode?: string | null;
   /** Native ERP sales currency for the branch (ZW → USD). */
   erpCurrency?: string | null;
+  /** Policy scoring for the selected range; null/undefined when unavailable. */
+  policy?: ReportsTargetPolicyCell | null;
+  /** True while the policy batch for this range is in flight. */
+  policyLoading?: boolean;
 }
 
 function resolveBranchCountryCode(
@@ -384,11 +413,21 @@ export function prorateTargetForRange(params: {
   periodEndDate?: string | null;
   rangeFromYmd: string;
   rangeToYmd: string;
+  /**
+   * Server-computed expected days for the range (org schedule, leave and exceptions, capped at 20 per period).
+   * When set it replaces the Mon–Fri count so the Targets tab and the Policy report agree.
+   */
+  expectedDaysOverride?: number | null;
 }): number {
   const periodTarget = Math.max(0, params.periodTarget);
   if (periodTarget <= 0) return 0;
 
   const dailyRate = periodTarget / TARGET_WORKING_DAYS_PER_MONTH;
+
+  const override = params.expectedDaysOverride;
+  if (override != null && Number.isFinite(override)) {
+    return Math.max(0, Math.round(dailyRate * Math.max(0, override)));
+  }
 
   const pStart = params.periodStartDate
     ? formatPeriodYmd(params.periodStartDate)
@@ -500,9 +539,15 @@ export function overlayTargetRowFilters(
     hoursOverlayReady?: boolean;
     travel?: TravelOverlay | null;
     travelReady?: boolean;
+    /** Policy result for this row's range; set before proration so expected days are shared. */
+    policy?: ReportsTargetPolicyCell | null;
+    policyPending?: boolean;
   }
 ): ReportsTargetRow {
-  let next = row;
+  // The policy is scored per date range, so it never applies in all-time mode.
+  let next: ReportsTargetRow = opts.rangeParams
+    ? { ...row, policy: opts.policy ?? null, policyLoading: opts.policyPending === true }
+    : { ...row, policy: null, policyLoading: false };
   const engagementRange =
     opts.engagementRangeParams ??
     (opts.rangeParams
@@ -558,6 +603,9 @@ export function targetRowFromUserListItem(
     hoursOverlayReady?: boolean;
     travelByUid?: Map<number, TravelOverlay>;
     travelReady?: boolean;
+    /** Policy report rows keyed by Clerk user id (the row `ref`). */
+    policyByRef?: ReadonlyMap<string, PolicyReportRow>;
+    policyPending?: boolean;
   }
 ): ReportsTargetRow {
   const row = rowFromUserListItem(user, opts.branchCountryByUid);
@@ -573,7 +621,18 @@ export function targetRowFromUserListItem(
     hoursOverlayReady: opts.hoursOverlayReady,
     travel: opts.travelByUid?.get(row.userId) ?? null,
     travelReady: opts.travelReady,
+    policy: policyCellForRef(opts.policyByRef, row.ref),
+    policyPending: opts.policyPending,
   });
+}
+
+/** Policy cell for a row ref, or null when the policy report has no row for that user. */
+export function policyCellForRef(
+  policyByRef: ReadonlyMap<string, PolicyReportRow> | undefined,
+  ref: string
+): ReportsTargetPolicyCell | null {
+  const policyRow = policyByRef?.get(ref);
+  return policyRow ? policyCellFromReportRow(policyRow) : null;
 }
 
 function personalTargetsFromDashboard(
@@ -797,6 +856,7 @@ export function applyEngagementToRow(
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
     rangeToYmd,
+    expectedDaysOverride: row.policy?.expectedDays,
   });
   const visitTarget = prorateTargetForRange({
     periodTarget: row.visits.target,
@@ -804,6 +864,7 @@ export function applyEngagementToRow(
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
     rangeToYmd,
+    expectedDaysOverride: row.policy?.expectedDays,
   });
   const leadTarget = prorateTargetForRange({
     periodTarget: row.leads.target,
@@ -811,6 +872,7 @@ export function applyEngagementToRow(
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
     rangeToYmd,
+    expectedDaysOverride: row.policy?.expectedDays,
   });
   const quotationsTarget = prorateTargetForRange({
     periodTarget: row.quotations.target,
@@ -818,6 +880,7 @@ export function applyEngagementToRow(
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
     rangeToYmd,
+    expectedDaysOverride: row.policy?.expectedDays,
   });
 
   const callCount = countableCallCountFrom(engagement);
@@ -953,6 +1016,7 @@ export function applyTravelToRow(
           periodEndDate: row.periodEndDate,
           rangeFromYmd,
           rangeToYmd,
+          expectedDaysOverride: row.policy?.expectedDays,
         })
       : periodFuel;
 
@@ -986,6 +1050,7 @@ export function applyHoursToRow(
           periodEndDate: row.periodEndDate,
           rangeFromYmd,
           rangeToYmd,
+          expectedDaysOverride: row.policy?.expectedDays,
         })
       : row.hours.target;
 

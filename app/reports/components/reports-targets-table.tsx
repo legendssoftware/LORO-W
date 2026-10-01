@@ -14,6 +14,13 @@ import {
   type ReportsTargetsCurrencyView,
 } from '@/app/reports/lib/reports-target-currency';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  POLICY_COLUMN_COUNT,
+  PolicyActivityCell,
+  PolicyExpectedDaysCell,
+  PolicyFlaggedCell,
+  PolicyStatusCell,
+} from '@/app/reports/components/reports-targets-policy-cells';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -33,7 +40,7 @@ const WARNING_BADGE: Record<1 | 2 | 3, string> = {
   3: 'bg-red-100 text-red-800 border-red-200/80',
 };
 
-const COL_COUNT = 12;
+const COL_COUNT = 12 + POLICY_COLUMN_COUNT;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -299,6 +306,18 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           <TableCell>
             <Skeleton className="h-10 w-16" />
           </TableCell>
+          <TableCell className="hidden xl:table-cell">
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </TableCell>
+          <TableCell className="hidden xl:table-cell">
+            <Skeleton className="h-4 w-10" />
+          </TableCell>
+          <TableCell className="hidden xl:table-cell">
+            <Skeleton className="h-4 w-12" />
+          </TableCell>
+          <TableCell className="hidden xl:table-cell">
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
           <TableCell>
             <Skeleton className="h-5 w-16 rounded-full" />
           </TableCell>
@@ -374,6 +393,10 @@ export function ReportsTargetsTable({
             Productivity
           </TableHead>
           <TableHead>Achievement</TableHead>
+          <TableHead className="hidden xl:table-cell">Policy</TableHead>
+          <TableHead className="hidden xl:table-cell">Exp. days</TableHead>
+          <TableHead className="hidden xl:table-cell">Policy activity</TableHead>
+          <TableHead className="hidden xl:table-cell">Flagged</TableHead>
           <TableHead>Warnings</TableHead>
           <TableHead>Acknowledged</TableHead>
         </TableRow>
@@ -501,6 +524,18 @@ export function ReportsTargetsTable({
                       {row.achievement}%
                     </p>
                   </div>
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <PolicyStatusCell row={row} />
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <PolicyExpectedDaysCell row={row} />
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <PolicyActivityCell row={row} />
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <PolicyFlaggedCell row={row} />
                 </TableCell>
                 <TableCell>
                   <WarningBadge row={row} />

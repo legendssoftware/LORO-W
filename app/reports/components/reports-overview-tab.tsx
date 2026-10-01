@@ -17,8 +17,10 @@ import {
   useDailyProductivity,
   useBranches,
   useExchangeRates,
+  usePolicyReport,
 } from '@/api/hooks';
 import { getBranchDisplayLabel } from '@/api/types/branch';
+import type { PolicyReportParams, PolicyReportRow } from '@/api/types/performance-policy';
 import {
   ReportsListPagination,
   readStoredReportsPageSize,
@@ -52,6 +54,7 @@ import {
   applyProductivityToRow,
   averageProductivityScore,
   overlayTargetRowFilters,
+  policyCellForRef,
   resolveTargetPeriodEngagementParams,
   rowFromPersonalTarget,
   targetRowFromUserListItem,
@@ -68,6 +71,11 @@ import {
   getPageRowEnrichmentKey,
   usePhasedPageEnrichment,
 } from '@/app/reports/lib/use-phased-page-enrichment';
+import {
+  isPolicyRangeTooLong,
+  isPolicyWindowClosed,
+  toPolicyWindow,
+} from '@/app/reports/lib/reports-policy-window';
 import { exportReportsTargets } from '@/app/reports/lib/reports-targets-export';
 import { downloadTravelExport } from '@/api/endpoints/reports-travel-export';
 import { QueryErrorBanner } from '@/components/query-error-banner';
@@ -172,6 +180,12 @@ function sortTargetRows(
         const sa = a.productivity.score ?? -1;
         const sb = b.productivity.score ?? -1;
         return sb - sa || a.name.localeCompare(b.name);
+      }
+      case 'policy': {
+        // Lowest policy activity first surfaces who needs attention; rows without a policy sort last.
+        const pa = a.policy?.activityPct ?? Number.POSITIVE_INFINITY;
+        const pb = b.policy?.activityPct ?? Number.POSITIVE_INFINITY;
+        return pa - pb || a.name.localeCompare(b.name);
       }
       case 'name':
         return a.name.localeCompare(b.name);
@@ -414,6 +428,32 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && !isSyncing && !!engagementQueryParams,
   });
 
+  /**
+   * One policy report call for the whole range (not per row). Its `expectedDays` is the single source for
+   * target proration so this table and the Policy tab agree. Skipped for all-time and over-long ranges.
+   */
+  const policyParams = useMemo((): PolicyReportParams | null => {
+    if (!rangeParams || isPolicyRangeTooLong(rangeParams.from, rangeParams.to)) return null;
+    return {
+      ...toPolicyWindow(rangeParams.from, rangeParams.to),
+      ...(rangeParams.branchId != null ? { branchUid: rangeParams.branchId } : {}),
+      limit: 500,
+    };
+  }, [rangeParams]);
+
+  const policyQuery = usePolicyReport(policyParams, {
+    enabled: isTokenReady && !isSyncing && !!policyParams,
+    windowIsClosed: policyParams ? isPolicyWindowClosed(rangeParams?.to ?? '') : false,
+  });
+
+  /** A 404/403 (policy off or no access) leaves the map empty so the columns show a dash. */
+  const policyByRef = useMemo(() => {
+    const map = new Map<string, PolicyReportRow>();
+    for (const row of policyQuery.data?.rows ?? []) map.set(row.user.clerkUserId, row);
+    return map;
+  }, [policyQuery.data?.rows]);
+  const policyPending = !!policyParams && policyQuery.isLoading;
+
   const attendanceReportQuery = useAttendanceReport(
     {
       dateFrom: rangeParams?.from,
@@ -651,6 +691,8 @@ export function ReportsOverviewTab() {
         hoursOverlayReady,
         travelByUid,
         travelReady,
+        policyByRef,
+        policyPending,
       })
     );
 
@@ -674,6 +716,8 @@ export function ReportsOverviewTab() {
     travelByUid,
     travelReady,
     branchCountryByUid,
+    policyByRef,
+    policyPending,
   ]);
 
   const total = filteredCohortUsers.length;
@@ -691,6 +735,8 @@ export function ReportsOverviewTab() {
           rangeParams,
           engagementReady: false,
           hoursOverlayReady: false,
+          policyByRef,
+          policyPending,
         })
       );
     }
@@ -706,6 +752,8 @@ export function ReportsOverviewTab() {
     pageSize,
     branchCountryByUid,
     rangeParams,
+    policyByRef,
+    policyPending,
   ]);
 
   const {
@@ -809,6 +857,8 @@ export function ReportsOverviewTab() {
         hoursOverlayReady,
         travel: travelByUid.get(row.userId),
         travelReady,
+        policy: policyCellForRef(policyByRef, row.ref),
+        policyPending,
       });
       const erpPending =
         selfHasSalesTarget &&
@@ -841,6 +891,8 @@ export function ReportsOverviewTab() {
     hoursByUid,
     travelByUid,
     travelReady,
+    policyByRef,
+    policyPending,
     selfHasSalesTarget,
     selfErpSalesQuery.isLoading,
     selfErpSalesQuery.data,
