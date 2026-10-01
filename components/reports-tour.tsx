@@ -67,7 +67,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Report tabs',
         description:
-          'Productivity is activity and travel export. Targets is performance against goals. Call quality is coaching from scored calls. Insights groups activity into clusters.',
+          'Productivity is activity and the travel report. Targets is performance against goals. Call quality is coaching from scored calls. Insights groups activity into clusters.',
         side: 'bottom',
         align: 'start',
       },
@@ -95,9 +95,9 @@ function buildReportsSteps(): DriveStep[] {
     {
       element: SEL_EXPORT,
       popover: {
-        title: 'Travel export',
+        title: 'Travel report',
         description:
-          'On Productivity, export the visits and travel workbook for the current date range.',
+          'On Productivity, download the travel report workbook for the current date range.',
         side: 'bottom',
         align: 'end',
       },

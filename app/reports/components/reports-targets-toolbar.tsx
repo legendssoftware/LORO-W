@@ -361,7 +361,7 @@ export function ReportsTargetsToolbar({
               disabled={travelExportLoading || filterProps.useAllTime}
               onSelect={() => onExportTravel()}
             >
-              Export visits and travel (Excel)
+              Travel report (Excel)
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>

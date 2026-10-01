@@ -30,8 +30,10 @@ import {
 import {
   formatUtcCalendarLabel,
   formatUtcYmd,
+  localPickerDateFromUtcCalendarDate,
   orderUtcCalendarRange,
   previousMondayToSaturdayUtcRange,
+  utcCalendarDateFromLocalPickerDate,
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
@@ -98,11 +100,26 @@ function ReportsDashboardFilterControls({
   exportDataTour,
 }: ReportsDashboardFilterControlsProps) {
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
-  const [draft, setDraft] = useState<DateRange | undefined>({
-    from: startDate,
-    to: endDate,
-  });
+  // Draft is kept in local-picker form (what react-day-picker emits/expects) and
+  // converted to UTC calendar dates only when committed.
+  const [draft, setDraft] = useState<DateRange | undefined>(() => ({
+    from: localPickerDateFromUtcCalendarDate(startDate),
+    to: localPickerDateFromUtcCalendarDate(endDate),
+  }));
   const skipApplyOnCloseRef = useRef(false);
+
+  const commitDraft = useCallback(
+    (range: DateRange | undefined) => {
+      if (!range?.from) return;
+      onRangeChange(
+        orderUtcCalendarRange(
+          utcCalendarDateFromLocalPickerDate(range.from),
+          utcCalendarDateFromLocalPickerDate(range.to ?? range.from)
+        )
+      );
+    },
+    [onRangeChange]
+  );
 
   const today = utcToday();
   const isToday =
@@ -138,19 +155,18 @@ function ReportsDashboardFilterControls({
     (open: boolean) => {
       if (open) {
         skipApplyOnCloseRef.current = false;
-        setDraft({ from: startDate, to: endDate });
+        setDraft({
+          from: localPickerDateFromUtcCalendarDate(startDate),
+          to: localPickerDateFromUtcCalendarDate(endDate),
+        });
         setDateRangePopoverOpen(true);
         return;
       }
-      if (!skipApplyOnCloseRef.current && draft?.from) {
-        const from = draft.from;
-        const to = draft.to ?? draft.from;
-        onRangeChange(orderUtcCalendarRange(from, to));
-      }
+      if (!skipApplyOnCloseRef.current) commitDraft(draft);
       skipApplyOnCloseRef.current = false;
       setDateRangePopoverOpen(false);
     },
-    [draft, onRangeChange, startDate, endDate]
+    [draft, commitDraft, startDate, endDate]
   );
 
   const isStack = layout === 'stack';
@@ -198,7 +214,7 @@ function ReportsDashboardFilterControls({
             selected={draft}
             onSelect={setDraft}
             numberOfMonths={isStack ? 1 : 2}
-            defaultMonth={startDate}
+            defaultMonth={localPickerDateFromUtcCalendarDate(startDate)}
             className={isStack ? 'w-full [--cell-size:2.25rem]' : undefined}
             classNames={
               isStack
@@ -253,9 +269,7 @@ function ReportsDashboardFilterControls({
               size="sm"
               onClick={() => {
                 if (!draft?.from) return;
-                onRangeChange(
-                  orderUtcCalendarRange(draft.from, draft.to ?? draft.from)
-                );
+                commitDraft(draft);
                 skipApplyOnCloseRef.current = true;
                 setDateRangePopoverOpen(false);
               }}
@@ -308,7 +322,7 @@ function ReportsDashboardFilterControls({
           ) : (
             <Download className="size-4" aria-hidden />
           )}
-          Export visits and travel
+          Travel report
         </Button>
       ) : null}
     </div>
@@ -353,7 +367,7 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
             ) : (
               <Download className="size-4" aria-hidden />
             )}
-            Export
+            Travel report
           </Button>
         ) : null}
       </div>
