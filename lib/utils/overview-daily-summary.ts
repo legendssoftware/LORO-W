@@ -183,6 +183,14 @@ export function utcCalendarDateFromLocalPickerDate(d: Date): Date {
 }
 
 /**
+ * Inverse of `utcCalendarDateFromLocalPickerDate`: UTC calendar day -> local-midnight Date,
+ * so react-day-picker highlights the same Y/M/D in any browser timezone.
+ */
+export function localPickerDateFromUtcCalendarDate(d: Date): Date {
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/**
  * Reference day for Targets “below threshold” table: the inclusive range end (UTC),
  * capped at today so future picker values never request tomorrow’s data.
  * Single-day selections resolve to that day.
