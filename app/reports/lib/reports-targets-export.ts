@@ -3,6 +3,7 @@
  */
 
 import type { ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
+import { policyStatusLabel } from '@/app/reports/lib/reports-policy-format';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
@@ -105,6 +106,10 @@ export function buildReportsTargetsExportHeaders(
     'Fuel %',
     'Productivity %',
     'Achievement %',
+    'Policy status',
+    'Policy expected days',
+    'Policy activity %',
+    'Policy flagged visits',
     'Engagement met',
     'Warning level',
     'Warnings acknowledged',
@@ -136,6 +141,18 @@ export function formatExportMoney(
   if (!includeCurrencyPrefix) return amount;
   const code = formatReportCurrencyCode(currency);
   return `${code} ${amount}`;
+}
+
+/** Policy export cells; blank when no policy applies (all-time view or policy disabled). */
+function policyExportCells(row: ReportsTargetRow): [string, string, string, string] {
+  const policy = row.policy;
+  if (!policy) return ['', '', '', ''];
+  return [
+    policyStatusLabel(policy.status),
+    String(policy.expectedDays),
+    policy.activityPct == null ? '' : formatExportPercent(policy.activityPct * 100),
+    String(policy.flaggedVisits),
+  ];
 }
 
 /**
@@ -198,6 +215,7 @@ export function reportsTargetRowToExportRow(
     formatExportPercent(row.travel?.progress ?? 0),
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
+    ...policyExportCells(row),
     row.engagementMet ? 'Yes' : 'No',
     warningLevel,
     formatExportCount(warnings.totalAcknowledged),

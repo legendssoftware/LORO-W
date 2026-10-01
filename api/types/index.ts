@@ -18,3 +18,4 @@ export * from './site-opportunity';
 export * from './competitors';
 export * from './iot';
 export * from './claims';
+export * from './performance-policy';

@@ -276,3 +276,9 @@ export {
   usePulseExecutive,
   usePulseCorrelations,
 } from './use-pulse';
+export {
+  PERFORMANCE_POLICY_REPORT_QUERY_KEY,
+  useExportPolicyReport,
+  useFinalisePolicyMonth,
+  usePolicyReport,
+} from './use-performance-policy';
