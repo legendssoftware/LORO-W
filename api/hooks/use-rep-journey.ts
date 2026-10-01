@@ -1,15 +1,36 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { getRepJourney } from '@/api/endpoints/tracking';
+import { getRepJourney, refreshFuelPrices } from '@/api/endpoints/tracking';
 import type {
+  FuelPriceRefreshResponse,
   RepJourneyCustomRangeParams,
   RepJourneyData,
   RepJourneyRange,
 } from '@/api/types/tracking';
 
 const REP_JOURNEY_QUERY_KEY = ['gps', 'user', 'journey'] as const;
+
+/**
+ * Re-run the server's GlobalPetrolPrices fetch. On a successful refresh the
+ * cached journeys are dropped so the next load shows the new fuel price.
+ */
+export function useRefreshFuelPrices() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation<FuelPriceRefreshResponse, Error>({
+    mutationFn: () => refreshFuelPrices(client),
+    onSuccess: (response) => {
+      const { status } = response.data;
+      // `throttled` means another refresh just ran, so stored prices may be new too.
+      if (status === 'refreshed' || status === 'throttled') {
+        queryClient.removeQueries({ queryKey: REP_JOURNEY_QUERY_KEY });
+      }
+    },
+  });
+}
 
 export function repJourneyQueryKey(
   userId: number,

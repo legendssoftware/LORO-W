@@ -57,6 +57,7 @@ import { useApiClient } from '@/api/hooks/use-api-client';
 import { useBranches, useCheckIns, useSearchableUsersList } from '@/api/hooks';
 import {
   repJourneyQueryKey,
+  useRefreshFuelPrices,
 } from '@/api/hooks/use-rep-journey';
 import { getRepJourney } from '@/api/endpoints/tracking';
 import type {
@@ -143,15 +144,23 @@ async function fetchJourneyRouteState(
   range: RepJourneyRange,
   rangeLabel: string,
   repName: string,
-  customRange?: RepJourneyCustomRangeParams
+  customRange?: RepJourneyCustomRangeParams,
+  options?: { refresh?: boolean }
 ): Promise<JourneyRouteState | null> {
+  const refresh = options?.refresh === true;
   const data = await queryClient.fetchQuery({
     queryKey: repJourneyQueryKey(repUid, range, customRange),
     queryFn: async () => {
-      const response = await getRepJourney(client, repUid, range, customRange);
+      const response = await getRepJourney(
+        client,
+        repUid,
+        range,
+        customRange,
+        { refresh }
+      );
       return response.data;
     },
-    staleTime: range === 'today' ? 0 : 60_000,
+    staleTime: range === 'today' || refresh ? 0 : 60_000,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -720,6 +729,8 @@ export function OverviewMap({
         customRange?: { start: Date; end: Date };
         /** When true, merge into existing routes instead of replacing (multi-rep). */
         append?: boolean;
+        /** Bypass the server journey cache (used after a fuel price refresh). */
+        refreshJourney?: boolean;
       }
     ): Promise<boolean> => {
       const quiet = options?.quiet === true;
@@ -761,7 +772,8 @@ export function OverviewMap({
           range,
           rangeLabel,
           repName,
-          apiCustomRange
+          apiCustomRange,
+          { refresh: options?.refreshJourney }
         );
         if (!routeState) {
           if (!options?.append && !quiet) {
@@ -1046,6 +1058,62 @@ export function OverviewMap({
     return journeyRoutes[0];
   }, [journeyRoutes, trackedUidNum]);
 
+  const { mutateAsync: refreshFuelPricesAsync, isPending: isRetryingFuelPrice } =
+    useRefreshFuelPrices();
+
+  /** Re-run the server's fuel price fetch, then reload the tracked journey. */
+  const handleRetryFuelPrice = useCallback(async () => {
+    const route = primaryJourneyRoute;
+    if (!route) return;
+    const toastId = 'fuel-price-refresh';
+    toast.loading('Fetching fuel prices…', { id: toastId });
+    try {
+      const { data: result } = await refreshFuelPricesAsync();
+
+      if (result.status === 'not-configured') {
+        toast.error('Fuel price provider is not configured on the server', {
+          id: toastId,
+        });
+        return;
+      }
+      if (result.status === 'failed') {
+        toast.error(
+          result.message
+            ? `Fuel price refresh failed: ${result.message}`
+            : 'Fuel price refresh failed',
+          { id: toastId }
+        );
+        return;
+      }
+
+      // `refreshed` and `throttled` (another refresh just ran) may both hold new prices.
+      await handleTraceRoute(route.repUid, route.range, route.repName, {
+        quiet: true,
+        append: true,
+        refreshJourney: true,
+      });
+
+      const { countryCode, country } = route.summary.fuelPrice;
+      if (countryCode && result.missingCountries.includes(countryCode)) {
+        toast.error(
+          `GlobalPetrolPrices returned no price for ${country ?? countryCode}`,
+          { id: toastId }
+        );
+      } else if (result.status === 'throttled') {
+        toast(result.message ?? 'Fuel prices were just refreshed', {
+          id: toastId,
+        });
+      } else {
+        toast.success('Fuel prices updated', { id: toastId });
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to refresh fuel prices',
+        { id: toastId }
+      );
+    }
+  }, [handleTraceRoute, primaryJourneyRoute, refreshFuelPricesAsync]);
+
   const journeyCheckInsQuery = useCheckIns(
     primaryJourneyRoute
       ? {
@@ -1289,6 +1357,10 @@ export function OverviewMap({
           visitActions={primaryJourneyRoute ? visitActions : []}
           selectedVisitId={selectedVisitId}
           onVisitActionClick={handleVisitActionClick}
+          onRetryFuelPrice={
+            primaryJourneyRoute ? () => void handleRetryFuelPrice() : undefined
+          }
+          isRetryingFuelPrice={isRetryingFuelPrice}
           onClear={handleClearTracking}
           searchQuery={repSearchInput}
           onSearchQueryChange={setRepSearchInput}

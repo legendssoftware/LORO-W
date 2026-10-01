@@ -47,6 +47,9 @@ export interface RepTrackerControlProps {
   visitActions?: JourneyVisitAction[];
   selectedVisitId?: number | null;
   onVisitActionClick?: (visit: JourneyVisitAction) => void;
+  /** Re-run the fuel price fetch from the trip breakdown's fuel section. */
+  onRetryFuelPrice?: () => void;
+  isRetryingFuelPrice?: boolean;
   /** True when one or more rep routes are drawn on the map. */
   hasActiveTrail?: boolean;
   className?: string;
@@ -78,6 +81,8 @@ export function RepTrackerControl({
   visitActions = [],
   selectedVisitId = null,
   onVisitActionClick,
+  onRetryFuelPrice,
+  isRetryingFuelPrice = false,
   hasActiveTrail = false,
   className,
   searchQuery,
@@ -159,6 +164,8 @@ export function RepTrackerControl({
           selectedVisitId={selectedVisitId}
           onVisitActionClick={onVisitActionClick}
           statusMessage={statusMessage}
+          onRetryFuelPrice={onRetryFuelPrice}
+          isRetryingFuelPrice={isRetryingFuelPrice}
         />
       ) : statusMessage ? (
         <p className="text-muted-foreground text-[11px] leading-snug">
