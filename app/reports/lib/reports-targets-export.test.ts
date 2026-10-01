@@ -46,7 +46,7 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).not.toContain('Sales currency');
     expect(headers).toContain('Distance (km)');
     expect(headers).toContain('Petrol claims (amount)');
-    expect(headers).toHaveLength(35);
+    expect(headers).toHaveLength(39);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -86,7 +86,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(35);
+    expect(row).toHaveLength(39);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -136,5 +136,29 @@ describe('reportsTargetRowToExportRow', () => {
     );
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(12));
+  });
+
+  it('exports policy columns, blank when no policy applies', () => {
+    const headers = buildReportsTargetsExportHeaders('set');
+    const blank = reportsTargetRowToExportRow(minimalRow(), 'set');
+    expect(blank[headers.indexOf('Policy status')]).toBe('');
+    expect(blank[headers.indexOf('Policy activity %')]).toBe('');
+
+    const withPolicy = reportsTargetRowToExportRow(
+      minimalRow({
+        policy: {
+          status: 'below_standard',
+          expectedDays: 18,
+          activityPct: 0.834,
+          flaggedVisits: 3,
+          failedStandards: ['visits'],
+        },
+      }),
+      'set'
+    );
+    expect(withPolicy[headers.indexOf('Policy status')]).toBe('Below standard');
+    expect(withPolicy[headers.indexOf('Policy expected days')]).toBe('18');
+    expect(withPolicy[headers.indexOf('Policy activity %')]).toBe('83%');
+    expect(withPolicy[headers.indexOf('Policy flagged visits')]).toBe('3');
   });
 });

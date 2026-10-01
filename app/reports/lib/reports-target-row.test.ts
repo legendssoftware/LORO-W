@@ -5,6 +5,8 @@ import {
   applyTravelToRow,
   enrichRowWithTargetDashboard,
   overlayTargetRowFilters,
+  policyCellForRef,
+  prorateTargetForRange,
   resolveTargetPeriodEngagementParams,
   rowFromUserListItem,
   targetRowFromUserListItem,
@@ -12,6 +14,7 @@ import {
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
 import type { UserListItem } from '@/api/endpoints/user';
+import type { PolicyReportRow } from '@/api/types/performance-policy';
 
 function baseRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow {
   return {
@@ -402,5 +405,63 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
     expect(next.visits.current).toBe(88);
     expect(next.travel.visitCount).toBe(88);
     expect(next.travel.distanceKm).toBe(48.2);
+  });
+});
+
+describe('policy expected days', () => {
+  it('prorates from server expected days instead of the Mon-Fri count', () => {
+    // 1200 / 20 = 60 per day; 18 expected days -> 1080 regardless of the calendar span.
+    expect(
+      prorateTargetForRange({
+        periodTarget: 1200,
+        periodStartDate: '2026-03-01',
+        periodEndDate: '2026-03-31',
+        rangeFromYmd: '2026-03-01',
+        rangeToYmd: '2026-03-31',
+        expectedDaysOverride: 18,
+      })
+    ).toBe(1080);
+  });
+
+  it('gives a zero target when the policy says no days are expected (leave all month)', () => {
+    expect(
+      prorateTargetForRange({
+        periodTarget: 1200,
+        rangeFromYmd: '2026-03-01',
+        rangeToYmd: '2026-03-31',
+        expectedDaysOverride: 0,
+      })
+    ).toBe(0);
+  });
+
+  it('applies the policy cell before engagement so calls use its expected days', () => {
+    const policyByRef = new Map<string, PolicyReportRow>([
+      [
+        'u1',
+        {
+          status: 'below_standard',
+          expectedDays: 10,
+          activityPct: 0.5,
+          flaggedVisits: 2,
+          failedStandards: ['visits'],
+        } as PolicyReportRow,
+      ],
+    ]);
+    const next = overlayTargetRowFilters(baseRow({ periodStartDate: '2026-03-01', periodEndDate: '2026-03-31' }), {
+      rangeParams: { from: '2026-03-01', to: '2026-03-31' },
+      engagement: { callCount: 4, visitCount: 0, leadCount: 0, quotationCount: 0, quotationAmount: 0 },
+      engagementReady: true,
+      policy: policyCellForRef(policyByRef, 'u1'),
+    });
+    expect(next.calls.target).toBe(600);
+    expect(next.policy?.flaggedVisits).toBe(2);
+  });
+
+  it('drops the policy in all-time mode and when the user has no policy row', () => {
+    const stale = baseRow({
+      policy: { status: 'meets_all', expectedDays: 20, activityPct: 1, flaggedVisits: 0, failedStandards: [] },
+    });
+    expect(overlayTargetRowFilters(stale, { rangeParams: null }).policy).toBeNull();
+    expect(policyCellForRef(new Map(), 'u1')).toBeNull();
   });
 });

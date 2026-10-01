@@ -51,7 +51,8 @@ export type ReportsTargetsSortMetric =
   | 'leads'
   | 'hours'
   | 'travel'
-  | 'productivity';
+  | 'productivity'
+  | 'policy';
 
 export interface ReportsTargetsToolbarProps {
   searchInput: string;
@@ -100,6 +101,7 @@ const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = 
   { value: 'hours', label: 'Sort: Hours' },
   { value: 'travel', label: 'Sort: Travel' },
   { value: 'productivity', label: 'Sort: Productivity (page)' },
+  { value: 'policy', label: 'Sort: Policy activity (lowest first)' },
 ];
 
 const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; label: string }> = [

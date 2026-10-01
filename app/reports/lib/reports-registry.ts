@@ -1,11 +1,12 @@
 import type { ComponentType } from 'react';
-import { LayoutDashboard, PhoneCall, Sparkles, Target } from 'lucide-react';
+import { LayoutDashboard, PhoneCall, ShieldCheck, Sparkles, Target } from 'lucide-react';
 import { ReportsProductivityTab } from '../components/reports-productivity-tab';
 import { ReportsOverviewTab } from '../components/reports-overview-tab';
 import { ReportsCallQualityTab } from '../components/reports-call-quality-tab';
 import { ReportsInsightsTab } from '../components/reports-insights-tab';
+import { ReportsPolicyTab } from '../components/reports-policy-tab';
 
-export type ReportsTabId = 'productivity' | 'targets' | 'call-quality' | 'insights';
+export type ReportsTabId = 'productivity' | 'targets' | 'policy' | 'call-quality' | 'insights';
 
 export interface ReportsTabDefinition {
   id: ReportsTabId;
@@ -26,6 +27,12 @@ export const REPORTS_TABS: readonly ReportsTabDefinition[] = [
     label: 'Targets',
     icon: Target,
     component: ReportsOverviewTab,
+  },
+  {
+    id: 'policy',
+    label: 'Policy',
+    icon: ShieldCheck,
+    component: ReportsPolicyTab,
   },
   {
     id: 'call-quality',
