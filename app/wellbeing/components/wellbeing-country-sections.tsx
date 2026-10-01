@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import type { PulseBranchRow, PulseNamedPerson } from '@/api/types/pulse';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -14,6 +15,9 @@ import {
 import { getCountryFlag } from '@/lib/utils/country-flags';
 import { PERFORMANCE_COUNTRY_ORDER } from '@/app/performance/lib/constants';
 import { cn } from '@/lib/utils';
+import { describePersonStatus, describeTrend, moodLabel } from '../lib/pulse-explain';
+import { PULSE_TONE_STYLES, getScoreTone } from '../lib/pulse-tone';
+import { WellbeingPersonInfoModal } from './wellbeing-person-info-modal';
 
 const UNASSIGNED = 'UNASSIGNED';
 
@@ -22,16 +26,11 @@ const UNASSIGNED = 'UNASSIGNED';
  * alignment classes on header and body cells keep columns aligned across all tables.
  */
 const BRANCH_COLUMNS = [
-  { key: 'branch', label: 'Branch', className: 'w-[40%] text-left' },
-  { key: 'morning', label: 'Morning', className: 'w-[20%] text-center tabular-nums' },
-  { key: 'evening', label: 'Evening', className: 'w-[20%] text-center tabular-nums' },
-  { key: 'trend', label: 'Trend', className: 'w-[20%] text-center' },
+  { key: 'branch', label: 'Branch', className: 'w-[34%] text-left' },
+  { key: 'morning', label: 'Morning', className: 'w-[18%] text-center tabular-nums' },
+  { key: 'evening', label: 'Evening', className: 'w-[18%] text-center tabular-nums' },
+  { key: 'trend', label: 'Trend', className: 'w-[30%] text-left' },
 ] as const;
-
-function moodLabel(mood: string | null | undefined): string {
-  if (!mood) return '—';
-  return mood.replaceAll('_', ' ');
-}
 
 function average(values: Array<number | null | undefined>): number | null {
   const nums = values.filter((value): value is number => value != null && Number.isFinite(value));
@@ -67,10 +66,11 @@ function countryHeading(countryCode: string): { flag: string; name: string } {
   return { flag: info.flag, name: info.name };
 }
 
-function trendLabel(trend: PulseBranchRow['trend']): string {
-  if (trend === 'up') return 'Up';
-  if (trend === 'down') return 'Down';
-  return 'Flat';
+/** Score rendered in its red / amber / green tone; a dash stays neutral. */
+function ScoreText({ score }: { score: number | null | undefined }) {
+  return (
+    <span className={cn('font-medium', PULSE_TONE_STYLES[getScoreTone(score)].text)}>{score ?? '—'}</span>
+  );
 }
 
 function CountryHeader({
@@ -82,7 +82,7 @@ function CountryHeader({
 }: {
   countryCode: string;
   countLabel: string;
-  detail?: string;
+  detail?: ReactNode;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -124,7 +124,11 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
             <CountryHeader
               countryCode={group.countryCode}
               countLabel={`${count} ${count === 1 ? 'branch' : 'branches'}`}
-              detail={`Morning ${morning ?? '—'} · Evening ${evening ?? '—'}`}
+              detail={
+                <>
+                  Morning <ScoreText score={morning} /> · Evening <ScoreText score={evening} />
+                </>
+              }
               open={open}
               onToggle={() =>
                 setClosed((prev) => {
@@ -147,28 +151,80 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {group.rows.map((row) => (
+                  {group.rows.map((row) => {
+                    const trend = describeTrend(row.morningScore, row.eveningScore);
+                    const trendStyle = PULSE_TONE_STYLES[trend.tone];
+                    return (
                     <TableRow key={String(row.branchUid ?? row.branchName)}>
                       <TableCell className={cn(BRANCH_COLUMNS[0].className, 'truncate px-3')}>
                         {row.branchName}
                       </TableCell>
                       <TableCell className={cn(BRANCH_COLUMNS[1].className, 'px-3')}>
-                        {row.morningScore ?? '—'}
+                        <ScoreText score={row.morningScore} />
                       </TableCell>
                       <TableCell className={cn(BRANCH_COLUMNS[2].className, 'px-3')}>
-                        {row.eveningScore ?? '—'}
+                        <ScoreText score={row.eveningScore} />
                       </TableCell>
-                      <TableCell className={cn(BRANCH_COLUMNS[3].className, 'px-3')}>
-                        {trendLabel(row.trend)}
+                      <TableCell
+                        className={cn(BRANCH_COLUMNS[3].className, 'whitespace-normal px-3')}
+                        title={trend.detail}
+                      >
+                        <span className="inline-flex items-center gap-1.5" aria-label={`${trend.label}. ${trend.detail}`}>
+                          <span className={cn('size-2 shrink-0 rounded-full', trendStyle.dot)} aria-hidden />
+                          <span className={cn('text-xs font-medium', trendStyle.text)}>{trend.label}</span>
+                        </span>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : null}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function PersonCard({
+  person,
+  onExplain,
+}: {
+  person: PulseNamedPerson;
+  onExplain: (person: PulseNamedPerson) => void;
+}) {
+  const status = describePersonStatus(person);
+  const style = PULSE_TONE_STYLES[status.tone];
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-border/60 p-3">
+      <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', style.dot)} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">
+          {person.name}
+          {person.branchName ? ` · ${person.branchName}` : ''}
+        </p>
+        <p className={cn('text-xs font-medium', style.text)} title={status.detail}>
+          {status.label}
+          {status.detail ? <span className="font-normal text-muted-foreground"> · {status.detail}</span> : null}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Morning: {moodLabel(person.morningMood)} · Evening: {moodLabel(person.eveningMood)}
+          {person.riskReason ? ` · ${person.riskReason.replaceAll('_', ' ')}` : ''}
+        </p>
+        {person.comments ? <p className="mt-1 text-xs">{person.comments}</p> : null}
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="-my-1 -mr-1"
+        onClick={() => onExplain(person)}
+        aria-label={`Explain summary for ${person.name}`}
+        title="What does this mean?"
+      >
+        <Info className="size-4" />
+      </Button>
     </div>
   );
 }
@@ -182,6 +238,7 @@ export function WellbeingNamedCountrySections({
 }) {
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
+  const [selectedPerson, setSelectedPerson] = useState<PulseNamedPerson | null>(null);
 
   if (!rows.length) return null;
 
@@ -210,17 +267,7 @@ export function WellbeingNamedCountrySections({
               {open ? (
                 <div className="space-y-2 p-3">
                   {group.rows.map((row) => (
-                    <div key={row.ownerUid} className={cn('rounded-lg border border-border/60 p-3')}>
-                      <p className="text-sm font-medium">
-                        {row.name}
-                        {row.branchName ? ` · ${row.branchName}` : ''}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Morning: {moodLabel(row.morningMood)} · Evening: {moodLabel(row.eveningMood)}
-                        {row.riskReason ? ` · ${row.riskReason.replaceAll('_', ' ')}` : ''}
-                      </p>
-                      {row.comments ? <p className="mt-1 text-xs">{row.comments}</p> : null}
-                    </div>
+                    <PersonCard key={row.ownerUid} person={row} onExplain={setSelectedPerson} />
                   ))}
                 </div>
               ) : null}
@@ -228,6 +275,13 @@ export function WellbeingNamedCountrySections({
           );
         })}
       </div>
+      <WellbeingPersonInfoModal
+        person={selectedPerson}
+        open={selectedPerson != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPerson(null);
+        }}
+      />
     </section>
   );
 }

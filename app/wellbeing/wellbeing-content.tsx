@@ -27,6 +27,7 @@ import { ReportsDashboardToolbar } from '@/app/reports/components/reports-dashbo
 import { useReportsDateRange } from '@/app/reports/lib/use-reports-date-range';
 import { normalizeBranchCountryCodeForGrouping } from '@/lib/utils/country-flags';
 import { WellbeingRadialIndex } from './components/wellbeing-radial-index';
+import { PULSE_TONE_STYLES } from './lib/pulse-tone';
 import {
   WellbeingBranchCountrySections,
   WellbeingNamedCountrySections,
@@ -45,6 +46,22 @@ function KpiCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">{value}</p>
+    </div>
+  );
+}
+
+const LEGEND_TONES = ['good', 'warn', 'bad'] as const;
+
+function ToneLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      {LEGEND_TONES.map((tone) => (
+        <span key={tone} className="inline-flex items-center gap-1.5">
+          <span className={cn('size-2 rounded-full', PULSE_TONE_STYLES[tone].dot)} />
+          {PULSE_TONE_STYLES[tone].caption}
+        </span>
+      ))}
+      <span>Burnout Risk is inverted: a lower percentage is better.</span>
     </div>
   );
 }
@@ -200,10 +217,13 @@ export function WellbeingContent() {
             {executive.isLoading ? (
               <Skeleton className="h-40 w-full" data-tour="wellbeing-radial" />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-tour="wellbeing-radial">
-                {(executive.data?.indices ?? []).map((index) => (
-                  <WellbeingRadialIndex key={index.label} label={index.label} value={index.value} unit={index.unit} />
-                ))}
+              <div className="space-y-4">
+                <ToneLegend />
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-tour="wellbeing-radial">
+                  {(executive.data?.indices ?? []).map((index) => (
+                    <WellbeingRadialIndex key={index.label} label={index.label} value={index.value} unit={index.unit} />
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>

@@ -186,7 +186,7 @@ describe('buildTravelAnalysisDocument', () => {
     expect(document.kpis.billableKm).toBe(100);
     expect(document.kpis.visits).toBe(6);
     expect(document.kpis.claimsLabel).toBe('R1000 - 2');
-    expect(document.vehicleBasis.fuelGrade).toBe('Diesel 50 ppm');
+    expect(document.vehicleBasis.fuelGrade).toBe('Diesel (national avg)');
     expect(document.vehicleBasis.isFleetDefault).toBe(true);
     expect(document.days).toHaveLength(2);
     expect(document.days[1]?.fuelLitres).toBe('—');
