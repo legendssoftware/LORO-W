@@ -173,7 +173,7 @@ function drawChrome(doc: jsPDF, page: number, pageCount: number): void {
   doc.setFontSize(7);
   doc.setTextColor(...COLOR_MUTED);
   doc.text(
-    'Confidential · travel estimates from GPS, visits, and Fuel SA',
+    'Confidential · travel estimates from GPS, visits, and GlobalPetrolPrices',
     MARGIN_X,
     PAGE_H - 7,
   );
@@ -251,7 +251,7 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
     body: [
       ['Vehicle', document.vehicleBasis.vehicle],
       ['Fuel type', document.vehicleBasis.fuelType],
-      ['Fuel SA grade', document.vehicleBasis.fuelGrade],
+      ['Fuel grade', document.vehicleBasis.fuelGrade],
       [
         'Rated consumption',
         document.vehicleBasis.isFleetDefault
@@ -260,7 +260,7 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
       ],
       ['GPS country / region', `${document.vehicleBasis.country} · ${document.vehicleBasis.region}`],
       ['Commute rule', '20 km home-to-office deducted per calendar day with travel'],
-      ['Fuel SA coverage', 'South Africa only. Last saved snapshot is used when a day has no posted price.'],
+      ['Fuel price source', 'GlobalPetrolPrices weekly national average for the country of travel, converted to rand. The price in force that week is used for each day.'],
     ],
     columnStyles: {
       0: { cellWidth: 48, fontStyle: 'bold', textColor: COLOR_MUTED },
@@ -383,7 +383,7 @@ function addFuelUsage(ctx: PdfCursor, document: TravelAnalysisDocument): void {
   addSectionTitle(ctx, 'Fuel usage');
   addParagraph(
     ctx,
-    `Estimated from billable km, vehicle km/L, and Fuel SA ${document.vehicleBasis.fuelGrade}. Totals: ${formatLitres(document.fuelTotals.litres)} · ${formatZar(document.fuelTotals.zar)} across ${document.fuelTotals.daysWithFuel} priced day${document.fuelTotals.daysWithFuel === 1 ? '' : 's'}.`,
+    `Estimated from billable km, vehicle km/L, and GlobalPetrolPrices ${document.vehicleBasis.fuelGrade}. Totals: ${formatLitres(document.fuelTotals.litres)} · ${formatZar(document.fuelTotals.zar)} across ${document.fuelTotals.daysWithFuel} priced day${document.fuelTotals.daysWithFuel === 1 ? '' : 's'}.`,
   );
   if (document.fuelDays.length === 0) {
     addParagraph(ctx, 'No daily fuel rows in this range.');

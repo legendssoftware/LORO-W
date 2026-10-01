@@ -127,7 +127,9 @@ function hasMovement(row: TravelAnalysisDailyRow): boolean {
 }
 
 function fuelGradeLabel(fuelTypeLabel: string): string {
-  return /diesel/i.test(fuelTypeLabel) ? 'Diesel 50 ppm' : 'Unleaded 95';
+  return /diesel/i.test(fuelTypeLabel)
+    ? 'Diesel (national avg)'
+    : 'Gasoline (national avg)';
 }
 
 function formatClaimsLabel(amount: number, count: number): string {
