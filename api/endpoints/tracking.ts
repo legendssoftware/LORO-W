@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  FuelPriceRefreshResponse,
   LatestRepLocationsResponse,
   RepJourneyCustomRangeParams,
   RepJourneyRange,
@@ -65,7 +66,8 @@ export async function getRepJourney(
   client: AxiosInstance,
   userId: number,
   range: RepJourneyRange,
-  customRange?: RepJourneyCustomRangeParams
+  customRange?: RepJourneyCustomRangeParams,
+  options?: { refresh?: boolean }
 ): Promise<RepJourneyResponse> {
   const search = new URLSearchParams();
   search.set('range', range);
@@ -73,6 +75,8 @@ export async function getRepJourney(
     search.set('startDate', customRange.startDate);
     search.set('endDate', customRange.endDate);
   }
+  // Bypass the server's short response cache (e.g. right after a fuel refresh).
+  if (options?.refresh) search.set('refresh', 'true');
   const { data } = await client.get<
     RepJourneyResponse | { data: RepJourneyResponse }
   >(`/gps/user/${userId}/journey?${search.toString()}`);
@@ -87,4 +91,40 @@ export async function getRepJourney(
     return (data as { data: RepJourneyResponse }).data;
   }
   throw new Error('Invalid rep journey response');
+}
+
+function isFuelPriceRefreshResponse(
+  value: unknown
+): value is FuelPriceRefreshResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value &&
+    'data' in value &&
+    typeof (value as FuelPriceRefreshResponse).data === 'object' &&
+    (value as FuelPriceRefreshResponse).data != null &&
+    'status' in (value as FuelPriceRefreshResponse).data
+  );
+}
+
+/**
+ * POST /gps/fuel-prices/refresh — force a GlobalPetrolPrices fetch (staff only).
+ */
+export async function refreshFuelPrices(
+  client: AxiosInstance
+): Promise<FuelPriceRefreshResponse> {
+  const { data } = await client.post<
+    FuelPriceRefreshResponse | { data: FuelPriceRefreshResponse }
+  >('/gps/fuel-prices/refresh');
+
+  if (isFuelPriceRefreshResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isFuelPriceRefreshResponse((data as { data: FuelPriceRefreshResponse }).data)
+  ) {
+    return (data as { data: FuelPriceRefreshResponse }).data;
+  }
+  throw new Error('Invalid fuel price refresh response');
 }
