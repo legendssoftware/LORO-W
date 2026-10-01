@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import type {
   RepJourneyEndpoint,
   RepJourneySummary,
@@ -18,6 +19,7 @@ import {
   formatPaceLabel,
   resolveTripFuelEstimate,
 } from '@/lib/utils/trip-fuel-estimate';
+import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
@@ -84,6 +86,9 @@ type TripBreakdownPanelProps = {
   selectedVisitId?: number | null;
   onVisitActionClick?: (visit: JourneyVisitAction) => void;
   statusMessage?: string | null;
+  /** Re-run the fuel price fetch; the retry button is hidden when omitted. */
+  onRetryFuelPrice?: () => void;
+  isRetryingFuelPrice?: boolean;
   className?: string;
 };
 
@@ -96,6 +101,8 @@ export function TripBreakdownPanel({
   selectedVisitId = null,
   onVisitActionClick,
   statusMessage = null,
+  onRetryFuelPrice,
+  isRetryingFuelPrice = false,
   className,
 }: TripBreakdownPanelProps) {
   const fuelEstimate = resolveTripFuelEstimate(journeySummary);
@@ -313,11 +320,32 @@ export function TripBreakdownPanel({
             ) : null}
           </>
         ) : (
-          <p className="text-muted-foreground px-0.5 text-[11px] leading-snug">
-            {fuelPrice.country
-              ? `No fuel price available for ${fuelPrice.country}.`
-              : 'Fuel price unavailable — the journey country could not be determined.'}
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground px-0.5 text-[11px] leading-snug">
+              {fuelPrice.country
+                ? `No fuel price available for ${fuelPrice.country}.`
+                : 'Fuel price unavailable — the journey country could not be determined.'}
+            </p>
+            {/* A retry only helps when a country is known; otherwise nothing to fetch. */}
+            {fuelPrice.country && onRetryFuelPrice ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                disabled={isRetryingFuelPrice}
+                aria-busy={isRetryingFuelPrice}
+                aria-label={`Retry fetching the fuel price for ${fuelPrice.country}`}
+                onClick={onRetryFuelPrice}
+              >
+                {isRetryingFuelPrice ? (
+                  <Loader2 className="size-3 animate-spin" aria-hidden />
+                ) : (
+                  <RefreshCw className="size-3" aria-hidden />
+                )}
+                {isRetryingFuelPrice ? 'Fetching…' : 'Retry fuel price'}
+              </Button>
+            ) : null}
+          </div>
         )}
       </BreakdownSection>
 

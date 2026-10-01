@@ -217,3 +217,27 @@ export interface RepJourneyResponse {
   message: string;
   data: RepJourneyData | null;
 }
+
+export type FuelPriceRefreshStatus =
+  | 'refreshed'
+  | 'fresh'
+  | 'not-configured'
+  | 'failed'
+  | 'throttled';
+
+/** Outcome of POST /gps/fuel-prices/refresh. */
+export interface FuelPriceRefreshResult {
+  status: FuelPriceRefreshStatus;
+  countries: number;
+  rows: number;
+  sourceDate: string | null;
+  requestedCountries: string[];
+  /** Requested ISO-2 codes the vendor returned no usable price for. */
+  missingCountries: string[];
+  message?: string;
+}
+
+export interface FuelPriceRefreshResponse {
+  message: string;
+  data: FuelPriceRefreshResult;
+}
