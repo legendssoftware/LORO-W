@@ -50,7 +50,8 @@ export async function downloadTravelExport(
       ...(params.branchId != null ? { branchId: params.branchId } : {}),
     },
     responseType: 'blob',
-    timeout: 120_000,
+    // Month-long ranges can take a few minutes the first time (road distances are cached afterwards).
+    timeout: 300_000,
     ...(params.skipErrorToast ? { meta: { skipErrorToast: true } } : {}),
   });
   const disposition =

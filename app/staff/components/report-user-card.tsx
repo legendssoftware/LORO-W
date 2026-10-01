@@ -161,7 +161,7 @@ function TravelExportButton({
   tourAnchor?: boolean;
   onClick: (e: React.MouseEvent) => void;
 }) {
-  const label = 'Export visits and travel';
+  const label = 'Travel report';
   return (
     <Tooltip>
       <TooltipTrigger asChild>

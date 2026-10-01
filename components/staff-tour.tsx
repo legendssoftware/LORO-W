@@ -84,9 +84,9 @@ function buildStaffSteps(): DriveStep[] {
     steps.push({
       element: SEL_TRAVEL,
       popover: {
-        title: 'Export visits and travel',
+        title: 'Travel report',
         description:
-          'On a card, download that person’s visits and travel workbook (Excel) or a day-by-day analysis PDF for a date range you choose.',
+          'On a card, download that person’s travel report workbook (Excel) or a day-by-day analysis PDF for a date range you choose.',
         side: 'left',
         align: 'center',
       },

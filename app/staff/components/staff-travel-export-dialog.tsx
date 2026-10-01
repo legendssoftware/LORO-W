@@ -69,7 +69,7 @@ export function StaffTravelExportDialog({
       toast.success('Travel report downloaded');
       onOpenChange(false);
     } catch (error) {
-      toast.error(getQueryErrorMessage(error, 'Could not export travels'));
+      toast.error(getQueryErrorMessage(error, 'Could not download the travel report'));
     } finally {
       setIsExporting(false);
     }
@@ -109,9 +109,9 @@ export function StaffTravelExportDialog({
           <DialogCloseButton />
         </div>
         <DialogHeader>
-          <DialogTitle>Export travels — {userName}</DialogTitle>
+          <DialogTitle>Travel report — {userName}</DialogTitle>
           <DialogDescription>
-            Choose a date range. Excel is the visits and travel workbook. Analysis is a day-by-day PDF briefing.
+            Choose a date range. Excel is the travel report workbook. Analysis is a day-by-day PDF briefing.
           </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto min-h-0 flex-1 pt-2">
@@ -140,14 +140,14 @@ export function StaffTravelExportDialog({
             className="w-full"
             disabled={isBusy}
             onClick={() => void handleExport()}
-            aria-label={isExporting ? 'Exporting…' : 'Export visits and travel'}
+            aria-label={isExporting ? 'Exporting…' : 'Travel report'}
           >
             {isExporting ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : (
               <Download className="size-4" aria-hidden />
             )}
-            Export visits and travel
+            Travel report
           </Button>
           <Button
             type="button"

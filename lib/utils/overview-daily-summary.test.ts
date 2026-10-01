@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   countCallsByOwnerUid,
+  formatUtcYmd,
   getThresholdReferenceUtcDay,
+  localPickerDateFromUtcCalendarDate,
   previousMondayToSaturdayUtcRange,
   resolveTargetsUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
@@ -135,5 +137,21 @@ describe('countCallsByOwnerUid', () => {
     const counts = countCallsByOwnerUid(checkIns);
     expect(counts.get(1)).toBe(1);
     expect(counts.get(2)).toBe(1);
+  });
+});
+
+describe('local picker <-> UTC calendar date', () => {
+  it('keeps Sep 1 - Sep 30 as the same calendar days regardless of browser timezone', () => {
+    const pickedStart = new Date(2026, 8, 1); // react-day-picker emits local midnight
+    const pickedEnd = new Date(2026, 8, 30);
+    expect(formatUtcYmd(utcCalendarDateFromLocalPickerDate(pickedStart))).toBe('2026-09-01');
+    expect(formatUtcYmd(utcCalendarDateFromLocalPickerDate(pickedEnd))).toBe('2026-09-30');
+  });
+
+  it('round-trips a UTC calendar day back to a local-midnight picker date', () => {
+    const utcDay = new Date(Date.UTC(2026, 8, 1));
+    const local = localPickerDateFromUtcCalendarDate(utcDay);
+    expect([local.getFullYear(), local.getMonth(), local.getDate()]).toEqual([2026, 8, 1]);
+    expect(formatUtcYmd(utcCalendarDateFromLocalPickerDate(local))).toBe('2026-09-01');
   });
 });
