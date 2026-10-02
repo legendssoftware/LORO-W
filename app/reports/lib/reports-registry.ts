@@ -1,27 +1,20 @@
 import type { ComponentType } from 'react';
-import { LayoutDashboard, PhoneCall, ShieldCheck, Sparkles, Target } from 'lucide-react';
-import { ReportsProductivityTab } from '../components/reports-productivity-tab';
+import { PhoneCall, ShieldCheck, Sparkles, Target } from 'lucide-react';
 import { ReportsOverviewTab } from '../components/reports-overview-tab';
 import { ReportsCallQualityTab } from '../components/reports-call-quality-tab';
 import { ReportsInsightsTab } from '../components/reports-insights-tab';
 import { ReportsPolicyTab } from '../components/reports-policy-tab';
 
-export type ReportsTabId = 'productivity' | 'targets' | 'policy' | 'call-quality' | 'insights';
+export type ReportsTabId = 'targets' | 'policy' | 'call-quality' | 'insights';
 
 export interface ReportsTabDefinition {
   id: ReportsTabId;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof Target;
   component: ComponentType;
 }
 
 export const REPORTS_TABS: readonly ReportsTabDefinition[] = [
-  {
-    id: 'productivity',
-    label: 'Productivity',
-    icon: LayoutDashboard,
-    component: ReportsProductivityTab,
-  },
   {
     id: 'targets',
     label: 'Targets',
@@ -53,11 +46,11 @@ export function reportsSubtitle(
 ): string {
   switch (scope) {
     case 'org':
-      return 'Org metrics for calls, visits, leads, and sales targets — plus performance targets, call quality, and activity intelligence.';
+      return 'Org performance targets, policy, call quality, and activity intelligence.';
     case 'team':
-      return 'Your team metrics for calls, visits, leads, and sales targets — plus performance targets, call quality, and activity intelligence.';
+      return 'Your team performance targets, policy, call quality, and activity intelligence.';
     case 'self':
-      return 'Your metrics, performance targets, and activity intelligence for the selected period.';
+      return 'Your performance targets, policy, and activity intelligence for the selected period.';
     default: {
       const _exhaustive: never = scope;
       return _exhaustive;

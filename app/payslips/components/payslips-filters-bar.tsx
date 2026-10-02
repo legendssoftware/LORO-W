@@ -13,6 +13,8 @@ import {
   formatUtcCalendarLabel,
   formatUtcYmd,
   getUtcMonthRange,
+  localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   orderUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
@@ -122,10 +124,7 @@ function PayslipsFilterControls({
       const from = draft?.from ?? startDate;
       const to = draft?.to ?? draft?.from ?? endDate;
       const ordered = orderUtcCalendarRange(from, to);
-      onRangeChange({
-        start: utcCalendarDateFromLocalPickerDate(ordered.start),
-        end: utcCalendarDateFromLocalPickerDate(ordered.end),
-      });
+      onRangeChange({ start: ordered.start, end: ordered.end });
     }
     skipApplyOnCloseRef.current = false;
     setDateRangePopoverOpen(false);
@@ -196,7 +195,8 @@ function PayslipsFilterControls({
             </div>
             <Calendar
               mode="range"
-              selected={draft}
+              selected={localPickerRangeFromUtcCalendarRange(draft)}
+              defaultMonth={localPickerDateFromUtcCalendarDate(draft?.from ?? startDate)}
               disabled={useAllTime}
               onSelect={(range) => {
                 if (useAllTime) return;

@@ -4,6 +4,7 @@ import {
   formatUtcYmd,
   getThresholdReferenceUtcDay,
   localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   previousMondayToSaturdayUtcRange,
   resolveTargetsUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
@@ -153,5 +154,18 @@ describe('local picker <-> UTC calendar date', () => {
     const local = localPickerDateFromUtcCalendarDate(utcDay);
     expect([local.getFullYear(), local.getMonth(), local.getDate()]).toEqual([2026, 8, 1]);
     expect(formatUtcYmd(utcCalendarDateFromLocalPickerDate(local))).toBe('2026-09-01');
+  });
+
+  it('maps a stored UTC range onto the same local calendar days', () => {
+    const range = localPickerRangeFromUtcCalendarRange({
+      from: new Date(Date.UTC(2026, 8, 1)),
+      to: new Date(Date.UTC(2026, 8, 30)),
+    });
+    expect(range?.from && [range.from.getFullYear(), range.from.getMonth(), range.from.getDate()]).toEqual([
+      2026, 8, 1,
+    ]);
+    expect(range?.to && [range.to.getFullYear(), range.to.getMonth(), range.to.getDate()]).toEqual([
+      2026, 8, 30,
+    ]);
   });
 });

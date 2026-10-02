@@ -15,17 +15,14 @@ const SEL_HEADER = '[data-tour="reports-page-header"]';
 const SEL_TABS = '[data-tour="reports-tabs"]';
 const SEL_QUALITY = '[data-tour="reports-call-quality-tab"]';
 const SEL_INSIGHTS = '[data-tour="reports-insights-tab"]';
-const SEL_EXPORT = '[data-tour="reports-travel-export"]';
 const SEL_TAB_QUALITY = '[data-tour="reports-tab-call-quality"]';
 const SEL_TAB_INSIGHTS = '[data-tour="reports-tab-insights"]';
-const SEL_TAB_PRODUCTIVITY = '[data-tour="reports-tab-productivity"]';
 
 const REQUIRED = [SEL_HEADER, SEL_TABS] as const;
 
 const TAB_FOR_STEP: Record<string, string> = {
   [SEL_QUALITY]: SEL_TAB_QUALITY,
   [SEL_INSIGHTS]: SEL_TAB_INSIGHTS,
-  [SEL_EXPORT]: SEL_TAB_PRODUCTIVITY,
 };
 
 function isOnScreen(selector: string): boolean {
@@ -49,7 +46,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Welcome to Reports',
         description:
-          'Reports covers productivity, targets, call quality, and activity insights for the period you can see. The next steps open the newer tabs.',
+          'Reports covers targets, policy, call quality, and activity insights for the period you can see. The next steps open the newer tabs.',
       },
     },
     {
@@ -67,7 +64,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Report tabs',
         description:
-          'Productivity is activity and the travel report. Targets is performance against goals. Call quality is coaching from scored calls. Insights groups activity into clusters.',
+          'Targets is performance against goals. Policy is compliance for the period. Call quality is coaching from scored calls. Insights groups activity into clusters.',
         side: 'bottom',
         align: 'start',
       },
@@ -90,16 +87,6 @@ function buildReportsSteps(): DriveStep[] {
           'Activity intelligence for the same range: clusters of work, flags, and where time went.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      element: SEL_EXPORT,
-      popover: {
-        title: 'Travel report',
-        description:
-          'On Productivity, download the travel report workbook for the current date range.',
-        side: 'bottom',
-        align: 'end',
       },
     },
     {

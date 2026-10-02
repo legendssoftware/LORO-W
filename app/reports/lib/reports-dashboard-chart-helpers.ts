@@ -1,6 +1,5 @@
 import type { ChartConfig } from '@/components/ui/chart';
 import type { ReportDonutSlice } from '@/components/charts/report-donut-chart';
-import type { TeamTargetMember } from '@/api/endpoints/erp-team-targets';
 import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import { takeTopNWithOther } from '@/lib/utils/chart-series';
 import { humanizeReportLabel } from '@/lib/utils/report-labels';
@@ -85,89 +84,11 @@ export function toNamedBars(
   );
 }
 
-export function engagementTotals(
-  users: Array<{
-    callCount?: number;
-    countableCallCount?: number;
-    visitCount?: number;
-    leadCount?: number;
-    deadAirCallCount?: number;
-    unsubstantiatedCallCount?: number;
-  }>
-): {
-  name: string;
-  calls: number;
-  loggedCalls: number;
-  visits: number;
-  leads: number;
-  deadAirCalls: number;
-  unsubstantiatedCalls: number;
-}[] {
-  const loggedCalls = users.reduce((s, u) => s + (u.callCount ?? 0), 0);
-  const calls = users.reduce(
-    (s, u) => s + (u.countableCallCount ?? u.callCount ?? 0),
-    0
-  );
-  const visits = users.reduce((s, u) => s + (u.visitCount ?? 0), 0);
-  const leads = users.reduce((s, u) => s + (u.leadCount ?? 0), 0);
-  const deadAirCalls = users.reduce((s, u) => s + (u.deadAirCallCount ?? 0), 0);
-  const unsubstantiatedCalls = users.reduce(
-    (s, u) => s + (u.unsubstantiatedCallCount ?? 0),
-    0
-  );
-  return [
-    {
-      name: 'Team',
-      calls,
-      loggedCalls,
-      visits,
-      leads,
-      deadAirCalls,
-      unsubstantiatedCalls,
-    },
-  ];
-}
-
 /** Axis / legend label with country flag emoji. */
 export function countryFlagLabel(country: string): string {
   const token = normalizeCountryToken(country) ?? country;
   const { flag } = getCountryFlag(token);
   return `${flag} ${country}`;
-}
-
-export type UserSalesTargetBar = {
-  name: string;
-  revenue: number;
-  target: number;
-  progress: number;
-};
-
-/** Top users by revenue with sales target progress for Productivity section. */
-export function teamMemberSalesBars(
-  members: TeamTargetMember[] | undefined | null,
-  topN = 8
-): UserSalesTargetBar[] {
-  const rows = (members ?? [])
-    .map((m) => {
-      const target = Number(m.targets?.sales?.target ?? 0) || 0;
-      const revenue =
-        Number(m.sales?.totalRevenue ?? m.targets?.sales?.current ?? 0) || 0;
-      const progressRaw = Number(m.targets?.sales?.progress);
-      const progress = Number.isFinite(progressRaw)
-        ? Math.round(Math.min(100, Math.max(0, progressRaw)))
-        : target > 0
-          ? Math.round(Math.min(100, Math.max(0, (revenue / target) * 100)))
-          : 0;
-      const name =
-        m.fullName?.trim() ||
-        m.email?.trim() ||
-        (m.userId != null ? `User ${m.userId}` : 'Unknown');
-      return { name, revenue: Math.round(revenue), target: Math.round(target), progress };
-    })
-    .filter((r) => r.target > 0 || r.revenue > 0)
-    .sort((a, b) => b.revenue - a.revenue || b.progress - a.progress);
-
-  return rows.slice(0, topN);
 }
 
 /**
