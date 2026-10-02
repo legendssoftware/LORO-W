@@ -1,6 +1,7 @@
 import type { VisitListItem } from '@/api/types/visits';
 import { addDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import type { DateRange } from 'react-day-picker';
 
 export type OverviewTimeframe = 'day' | 'month';
 
@@ -191,10 +192,9 @@ export function localPickerDateFromUtcCalendarDate(d: Date): Date {
 }
 
 /** UTC calendar range → local-midnight range for react-day-picker `selected`. */
-export function localPickerRangeFromUtcCalendarRange(range: {
-  from?: Date;
-  to?: Date;
-} | undefined): { from?: Date; to?: Date } | undefined {
+export function localPickerRangeFromUtcCalendarRange(
+  range: { from?: Date; to?: Date } | undefined
+): DateRange | undefined {
   if (!range) return undefined;
   return {
     from: range.from ? localPickerDateFromUtcCalendarDate(range.from) : undefined,
