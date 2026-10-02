@@ -23,6 +23,8 @@ import {
   formatUtcCalendarLabel,
   formatUtcYmd,
   getUtcMonthRange,
+  localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   orderUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
@@ -237,7 +239,8 @@ export function ClaimsFilterControls({
           >
             <Calendar
               mode="range"
-              selected={draft}
+              selected={localPickerRangeFromUtcCalendarRange(draft)}
+              defaultMonth={localPickerDateFromUtcCalendarDate(draft?.from ?? rangeStart)}
               onSelect={(r) => {
                 if (!r) {
                   setDraft(undefined);

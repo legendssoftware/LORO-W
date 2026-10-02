@@ -5,8 +5,10 @@ import type {
   PulseExecutiveResponse,
   PulseInsightsResponse,
   PulseMeResponse,
+  PulseContactFeedbackResponse,
   PulseSubmitBody,
   PulseSubmitResponse,
+  SavePulseContactFeedbackBody,
 } from '@/api/types/pulse';
 
 export async function submitPulse(
@@ -14,6 +16,14 @@ export async function submitPulse(
   body: PulseSubmitBody
 ): Promise<PulseSubmitResponse> {
   const { data } = await client.post<PulseSubmitResponse>('/pulse', body);
+  return data;
+}
+
+export async function savePulseContactFeedback(
+  client: AxiosInstance,
+  body: SavePulseContactFeedbackBody
+): Promise<PulseContactFeedbackResponse> {
+  const { data } = await client.post<PulseContactFeedbackResponse>('/pulse/contact-feedback', body);
   return data;
 }
 

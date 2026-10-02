@@ -190,16 +190,19 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
 function PersonCard({
   person,
   onExplain,
+  footer,
 }: {
   person: PulseNamedPerson;
   onExplain: (person: PulseNamedPerson) => void;
+  footer?: ReactNode;
 }) {
   const status = describePersonStatus(person);
   const style = PULSE_TONE_STYLES[status.tone];
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-border/60 p-3">
-      <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', style.dot)} aria-hidden />
-      <div className="min-w-0 flex-1">
+    <div className="rounded-lg border border-border/60 p-3">
+      <div className="flex items-start gap-2">
+        <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', style.dot)} aria-hidden />
+        <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
           {person.name}
           {person.branchName ? ` · ${person.branchName}` : ''}
@@ -213,18 +216,20 @@ function PersonCard({
           {person.riskReason ? ` · ${person.riskReason.replaceAll('_', ' ')}` : ''}
         </p>
         {person.comments ? <p className="mt-1 text-xs">{person.comments}</p> : null}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="-my-1 -mr-1"
+          onClick={() => onExplain(person)}
+          aria-label={`Explain summary for ${person.name}`}
+          title="What does this mean?"
+        >
+          <Info className="size-4" />
+        </Button>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="-my-1 -mr-1"
-        onClick={() => onExplain(person)}
-        aria-label={`Explain summary for ${person.name}`}
-        title="What does this mean?"
-      >
-        <Info className="size-4" />
-      </Button>
+      {footer}
     </div>
   );
 }
@@ -232,9 +237,11 @@ function PersonCard({
 export function WellbeingNamedCountrySections({
   title,
   rows,
+  renderFooter,
 }: {
   title: string;
   rows: PulseNamedPerson[];
+  renderFooter?: (person: PulseNamedPerson) => ReactNode;
 }) {
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
@@ -267,7 +274,12 @@ export function WellbeingNamedCountrySections({
               {open ? (
                 <div className="space-y-2 p-3">
                   {group.rows.map((row) => (
-                    <PersonCard key={row.ownerUid} person={row} onExplain={setSelectedPerson} />
+                    <PersonCard
+                      key={row.ownerUid}
+                      person={row}
+                      onExplain={setSelectedPerson}
+                      footer={renderFooter?.(row)}
+                    />
                   ))}
                 </div>
               ) : null}

@@ -14,6 +14,7 @@ function person(overrides: Partial<PulseNamedPerson>): PulseNamedPerson {
     followUpRequested: false,
     contributors: [],
     comments: null,
+    contactFeedback: null,
     ...overrides,
   };
 }

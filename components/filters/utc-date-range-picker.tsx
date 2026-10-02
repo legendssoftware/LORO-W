@@ -22,6 +22,7 @@ import {
   formatUtcYmd,
   getUtcMonthRange,
   localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   orderUtcCalendarRange,
   previousMondayToSaturdayUtcRange,
   utcCalendarDateFromLocalPickerDate,
@@ -153,12 +154,7 @@ export function UtcDateRangePicker({
   const calendarDisabled = useAllTime || disabled;
 
   // Draft holds UTC calendar dates; the calendar needs local-midnight dates to highlight the right day.
-  const pickerSelected: DateRange | undefined = draft
-    ? {
-        from: draft.from ? localPickerDateFromUtcCalendarDate(draft.from) : undefined,
-        to: draft.to ? localPickerDateFromUtcCalendarDate(draft.to) : undefined,
-      }
-    : undefined;
+  const pickerSelected = localPickerRangeFromUtcCalendarRange(draft);
 
   const applyDraft = useCallback(() => {
     if (useAllTime) return;

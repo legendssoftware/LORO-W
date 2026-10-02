@@ -28,6 +28,8 @@ import {
   formatUtcCalendarLabel,
   formatUtcYmd,
   getUtcMonthRange,
+  localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   orderUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
@@ -191,7 +193,8 @@ function CallsDateRangePicker({
           </div>
           <Calendar
             mode="range"
-            selected={draft}
+            selected={localPickerRangeFromUtcCalendarRange(draft)}
+            defaultMonth={localPickerDateFromUtcCalendarDate(draft?.from ?? startDate)}
             disabled={useAllTime}
             onSelect={(range) => {
               if (useAllTime) return;

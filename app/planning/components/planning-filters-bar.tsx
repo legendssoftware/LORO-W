@@ -32,6 +32,8 @@ import {
   formatUtcCalendarLabel,
   formatUtcYmd,
   getUtcMonthRange,
+  localPickerDateFromUtcCalendarDate,
+  localPickerRangeFromUtcCalendarRange,
   orderUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
   utcDateFromYmd,
@@ -267,7 +269,8 @@ export function PlanningFilterControls({
             </div>
             <Calendar
               mode="range"
-              selected={draft}
+              selected={localPickerRangeFromUtcCalendarRange(draft)}
+              defaultMonth={localPickerDateFromUtcCalendarDate(draft?.from ?? startDate)}
               disabled={useAllTime}
               onSelect={(r) => {
                 if (useAllTime) return;

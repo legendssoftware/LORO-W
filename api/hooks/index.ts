@@ -272,6 +272,7 @@ export {
   usePulseMe,
   useSubmitPulseMutation,
   usePulseDaily,
+  useSavePulseContactFeedbackMutation,
   usePulseInsights,
   usePulseExecutive,
   usePulseCorrelations,

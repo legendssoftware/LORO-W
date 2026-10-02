@@ -1,6 +1,7 @@
 export type PulsePeriod = 'morning' | 'evening';
 export type PulseMood = 'excellent' | 'good' | 'okay' | 'stressed' | 'not_feeling_well';
 export type PulseTalkTo = 'none' | 'manager' | 'hr' | 'regional_manager' | 'confidential';
+export type PulseContactStatus = 'resolved' | 'unresolved';
 
 export interface PulseSubmitBody {
   period: PulsePeriod;
@@ -11,6 +12,23 @@ export interface PulseSubmitBody {
   comments?: string;
   localDate?: string;
   attendanceUid?: number;
+}
+
+export interface SavePulseContactFeedbackBody {
+  ownerUid: number;
+  status: PulseContactStatus;
+  comment: string;
+  date?: string;
+}
+
+export interface PulseContactFeedback {
+  status: PulseContactStatus;
+  comment: string;
+}
+
+export interface PulseContactFeedbackResponse extends PulseContactFeedback {
+  ownerUid: number;
+  localDate: string;
 }
 
 export interface PulseSubmitResponse {
@@ -63,6 +81,7 @@ export interface PulseNamedPerson {
   contributors: string[];
   comments: string | null;
   riskReason?: 'declining_streak' | 'day_drop' | 'support';
+  contactFeedback: PulseContactFeedback | null;
 }
 
 export interface PulseDailyResponse {
