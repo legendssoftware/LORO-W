@@ -190,6 +190,18 @@ export function localPickerDateFromUtcCalendarDate(d: Date): Date {
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
+/** UTC calendar range → local-midnight range for react-day-picker `selected`. */
+export function localPickerRangeFromUtcCalendarRange(range: {
+  from?: Date;
+  to?: Date;
+} | undefined): { from?: Date; to?: Date } | undefined {
+  if (!range) return undefined;
+  return {
+    from: range.from ? localPickerDateFromUtcCalendarDate(range.from) : undefined,
+    to: range.to ? localPickerDateFromUtcCalendarDate(range.to) : undefined,
+  };
+}
+
 /**
  * Reference day for Targets “below threshold” table: the inclusive range end (UTC),
  * capped at today so future picker values never request tomorrow’s data.

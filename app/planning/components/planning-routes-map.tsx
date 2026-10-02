@@ -2,11 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { Loader2, MapPin, RefreshCw, ExternalLink } from 'lucide-react';
 import { useCalculateRoutesMutation, useOptimizedRoutes, useSessionSync, useUsers } from '@/api/hooks';
 import { canAccessVisualiser } from '@/lib/access';
-import { formatUtcYmd, utcTomorrow } from '@/lib/utils/overview-daily-summary';
+import {
+  formatUtcCalendarLabel,
+  formatUtcYmd,
+  localPickerDateFromUtcCalendarDate,
+  utcCalendarDateFromLocalPickerDate,
+  utcTomorrow,
+} from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -82,16 +87,17 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
               <CalendarIcon className="size-4" />
-              {format(routeDate, 'PPP')}
+              {formatUtcCalendarLabel(routeDate)}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={routeDate}
+              selected={localPickerDateFromUtcCalendarDate(routeDate)}
+              defaultMonth={localPickerDateFromUtcCalendarDate(routeDate)}
               onSelect={(d) => {
                 if (!d) return;
-                setRouteDate(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
+                setRouteDate(utcCalendarDateFromLocalPickerDate(d));
               }}
             />
           </PopoverContent>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { HeartPulse, LayoutDashboard, Sparkles, TrendingUp } from 'lucide-react';
+import { ClipboardCheck, HeartPulse, LayoutDashboard, Sparkles, TrendingUp } from 'lucide-react';
 import { useBranches, useSessionSync, useTokenReady } from '@/api/hooks';
 import {
   usePulseCorrelations,
@@ -32,6 +32,7 @@ import {
   WellbeingBranchCountrySections,
   WellbeingNamedCountrySections,
 } from './components/wellbeing-country-sections';
+import { WellbeingContactFeedbackForm } from './components/wellbeing-contact-feedback-form';
 
 const tabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -79,7 +80,7 @@ export function WellbeingContent() {
   const countryParam = country !== 'all' ? country : undefined;
   const daily = usePulseDaily(
     { branchUid, country: countryParam },
-    isTokenReady && allowed && tab === 'today'
+    isTokenReady && allowed && (tab === 'today' || tab === 'admin')
   );
   const insights = usePulseInsights(
     { from: range.from, to: range.to, branchUid, country: countryParam },
@@ -151,6 +152,9 @@ export function WellbeingContent() {
             </TabsTrigger>
             <TabsTrigger value="correlations" className={tabTriggerClass}>
               <TrendingUp className="size-4" /> Correlations
+            </TabsTrigger>
+            <TabsTrigger value="admin" className={tabTriggerClass}>
+              <ClipboardCheck className="size-4" /> Admin
             </TabsTrigger>
           </TabsList>
           <TabsContent value="today" className="space-y-6" data-tour="wellbeing-today">
@@ -258,6 +262,24 @@ export function WellbeingContent() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </TabsContent>
+          <TabsContent value="admin" className="space-y-3" data-tour="wellbeing-admin">
+            <p className="text-xs text-muted-foreground">
+              After the responsible manager makes contact, record whether it is resolved and add a comment.
+            </p>
+            {daily.isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : (daily.data?.supportQueue.length ?? 0) === 0 ? (
+              <p className="text-sm text-muted-foreground">No one asked to be contacted today.</p>
+            ) : (
+              <WellbeingNamedCountrySections
+                title="Contact feedback"
+                rows={daily.data?.supportQueue ?? []}
+                renderFooter={(person) => (
+                  <WellbeingContactFeedbackForm person={person} date={daily.data?.date ?? ''} />
+                )}
+              />
             )}
           </TabsContent>
         </Tabs>

@@ -8,9 +8,10 @@ import {
   getPulseExecutive,
   getPulseInsights,
   getPulseMe,
+  savePulseContactFeedback,
   submitPulse,
 } from '@/api/endpoints/pulse';
-import type { PulseSubmitBody } from '@/api/types/pulse';
+import type { PulseSubmitBody, SavePulseContactFeedbackBody } from '@/api/types/pulse';
 
 export const PULSE_ME_QUERY_KEY = ['pulse', 'me'] as const;
 export const PULSE_DAILY_QUERY_KEY = ['pulse', 'daily'] as const;
@@ -30,6 +31,17 @@ export function useSubmitPulseMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: PulseSubmitBody) => submitPulse(client, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pulse'] });
+    },
+  });
+}
+
+export function useSavePulseContactFeedbackMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SavePulseContactFeedbackBody) => savePulseContactFeedback(client, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pulse'] });
     },
