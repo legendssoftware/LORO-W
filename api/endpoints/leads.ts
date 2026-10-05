@@ -18,6 +18,8 @@ import type {
   LeadActionResponse,
   EngageDraftParams,
   EngageDraftResponse,
+  BulkEngagePayload,
+  BulkEngageResponse,
   StartApifyLeadRunPayload,
   StartApifyLeadRunResponse,
   ApifyLeadRunStatus,
@@ -271,6 +273,33 @@ export async function sendLeadEngage(
   payload: { channel: 'email' | 'sms' | 'whatsapp'; message: string }
 ): Promise<LeadActionResponse> {
   const { data } = await client.post<LeadActionResponse>(`/leads/${ref}/send-engage`, payload);
+  return data;
+}
+
+/**
+ * GET /leads/engage-campaign-draft - one shared AI message with a {{name}} token.
+ */
+export async function getEngageCampaignDraft(
+  client: AxiosInstance,
+  params: EngageDraftParams
+): Promise<EngageDraftResponse> {
+  const search = new URLSearchParams({ channel: params.channel });
+  if (params.tone) search.set('tone', params.tone);
+  if (params.casualness) search.set('casualness', params.casualness);
+  const { data } = await client.get<EngageDraftResponse>(
+    `/leads/engage-campaign-draft?${search.toString()}`
+  );
+  return data;
+}
+
+/**
+ * POST /leads/bulk-engage - send one message to leads matching the current filters.
+ */
+export async function sendBulkLeadEngage(
+  client: AxiosInstance,
+  payload: BulkEngagePayload
+): Promise<BulkEngageResponse> {
+  const { data } = await client.post<BulkEngageResponse>('/leads/bulk-engage', payload);
   return data;
 }
 

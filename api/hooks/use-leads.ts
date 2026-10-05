@@ -22,7 +22,9 @@ import {
   reactivateLead,
   reassignLeads,
   getEngageDraft,
+  getEngageCampaignDraft,
   sendLeadEngage,
+  sendBulkLeadEngage,
   importLeadsFromCSV,
   startApifyLeadRun,
   importLeadsFromApify,
@@ -37,6 +39,7 @@ import type {
   UpdateLeadPayload,
   ReassignLeadsPayload,
   EngageDraftParams,
+  BulkEngagePayload,
 } from '@/api/types/leads';
 import type { ImportLeadsFromCSVParams } from '@/api/endpoints/leads';
 import type { ImportApifyLeadsPayload, StartApifyLeadRunPayload } from '@/api/types/leads';
@@ -413,6 +416,30 @@ export function useSendLeadEngageMutation() {
     }) => sendLeadEngage(client, ref, { channel, message }),
     onSuccess: (_, { ref }) => {
       invalidateLeadQueries(queryClient, { detailRef: ref, scopes: [] });
+    },
+  });
+}
+
+/**
+ * Shared AI draft for bulk engage. Fills the dialog; it does not send.
+ */
+export function useEngageCampaignDraftMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: async (params: EngageDraftParams) => getEngageCampaignDraft(client, params),
+  });
+}
+
+/**
+ * Send one message to every lead matching the current filters. Invalidates lead lists on success.
+ */
+export function useSendBulkLeadEngageMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: BulkEngagePayload) => sendBulkLeadEngage(client, payload),
+    onSuccess: () => {
+      invalidateLeadQueries(queryClient, { scopes: ['all'] });
     },
   });
 }

@@ -3,6 +3,7 @@ import type {
   PolicyReportFinaliseResponse,
   PolicyReportParams,
   PolicyReportResponse,
+  VerificationQueueResponse,
 } from '@/api/types/performance-policy';
 
 const REPORT_TIMEOUT_MS = 120_000;
@@ -42,5 +43,16 @@ export async function finalisePolicyMonth(
     { month },
     { timeout: REPORT_TIMEOUT_MS },
   );
+  return data;
+}
+
+/** GET /performance-policy/verification-queue: flagged and incomplete visits for managers. */
+export async function getVerificationQueue(
+  client: AxiosInstance,
+  params: { range?: 'week' | 'month' | 'today' } = { range: 'week' },
+): Promise<VerificationQueueResponse> {
+  const { data } = await client.get<VerificationQueueResponse>('/performance-policy/verification-queue', {
+    params,
+  });
   return data;
 }

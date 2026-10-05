@@ -1,6 +1,6 @@
 'use client';
 
-import type { PulseMood, PulseNamedPerson } from '@/api/types/pulse';
+import type { PulseMood, PulseNamedPerson, PulsePersonDay } from '@/api/types/pulse';
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,14 @@ import {
   buildPersonSummary,
   contributorLabel,
   describePersonStatus,
+  moodLabel,
 } from '../lib/pulse-explain';
 import { PULSE_TONE_STYLES, getScoreTone } from '../lib/pulse-tone';
 import { cn } from '@/lib/utils';
 
 interface WellbeingPersonInfoModalProps {
   person: PulseNamedPerson | null;
+  history?: PulsePersonDay[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -51,6 +53,7 @@ function MoodRow({ period, mood }: { period: string; mood: PulseMood | null }) {
  */
 export function WellbeingPersonInfoModal({
   person,
+  history,
   open,
   onOpenChange,
 }: WellbeingPersonInfoModalProps) {
@@ -65,7 +68,9 @@ export function WellbeingPersonInfoModal({
         <DialogHeader>
           <DialogTitle>{person ? `About ${person.name}'s summary` : 'Summary'}</DialogTitle>
           <DialogDescription>
-            What the short line on the card means, in plain words.
+            {history?.length
+              ? 'Morning and evening mood for each day in the selected period.'
+              : 'What the short line on the card means, in plain words.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -129,6 +134,27 @@ export function WellbeingPersonInfoModal({
                 {person.comments ? <li>Their comment: &ldquo;{person.comments}&rdquo;</li> : null}
               </ul>
             </section>
+
+            {history?.length ? (
+              <section className="space-y-2">
+                <h3 className="font-semibold">Wellness over time</h3>
+                <ul className="text-muted-foreground space-y-1.5">
+                  {history.map((day) => (
+                    <li key={day.date} className="flex flex-wrap gap-x-3 gap-y-0.5">
+                      <span className="w-24 shrink-0 font-medium text-foreground">{day.date}</span>
+                      <span>
+                        Morning {moodLabel(day.morningMood)}
+                        {day.morningScore != null ? ` (${day.morningScore}/10)` : ''}
+                      </span>
+                      <span>
+                        Evening {moodLabel(day.eveningMood)}
+                        {day.eveningScore != null ? ` (${day.eveningScore}/10)` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             {reason ? (
               <section className="space-y-2">

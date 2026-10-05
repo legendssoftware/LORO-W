@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { formatUtcYmd, utcToday } from '@/lib/utils/overview-daily-summary';
-import { useTasks, useTasksForUser, useSearchableUsersList, useClients, useBranches } from '@/api/hooks';
+import { useTasks, useTasksForUser, useTask, useSearchableUsersList, useClients, useBranches } from '@/api/hooks';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { usePlanningStore } from '@/store/planning-store';
 import { TaskDetailDialog } from '@/components/planning-table/task-detail-dialog';
@@ -226,6 +227,22 @@ export function PlanningContent() {
     setDetailTask(task);
     setDetailOpen(true);
   }, []);
+
+  const searchParams = useSearchParams();
+  const taskFromQueryRaw = searchParams.get('task');
+  const taskFromQuery = taskFromQueryRaw ? Number.parseInt(taskFromQueryRaw, 10) : NaN;
+  const deepLinkTaskUid =
+    Number.isInteger(taskFromQuery) && taskFromQuery > 0 ? taskFromQuery : null;
+  const deepLinkTaskQuery = useTask(deepLinkTaskUid, {
+    enabled: deepLinkTaskUid != null,
+  });
+
+  useEffect(() => {
+    const linked = deepLinkTaskQuery.data?.task;
+    if (!linked || deepLinkTaskUid == null) return;
+    setDetailTask(linked);
+    setDetailOpen(true);
+  }, [deepLinkTaskQuery.data?.task, deepLinkTaskUid]);
 
   const refetchTasks = useCallback(() => {
     void tasksQuery.refetch();

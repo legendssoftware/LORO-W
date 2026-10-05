@@ -420,3 +420,33 @@ export interface EngageDraftResponse {
   draft: string;
   subject?: string;
 }
+
+/** Filters shared with the leads list for POST /leads/bulk-engage. */
+export interface BulkEngageFilters {
+  status?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  temperature?: string;
+  priority?: string;
+  source?: string;
+  entryType?: LeadEntryTypeApi;
+  ownerId?: number;
+  unassignedOnly?: boolean;
+}
+
+/** Body for POST /leads/bulk-engage. */
+export interface BulkEngagePayload extends BulkEngageFilters {
+  channel: 'email' | 'sms' | 'whatsapp';
+  message: string;
+}
+
+/** Response from POST /leads/bulk-engage. */
+export interface BulkEngageResponse {
+  message: string;
+  channel: 'email' | 'sms' | 'whatsapp';
+  matched: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+}

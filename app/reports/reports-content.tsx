@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSessionSync } from '@/api/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getReportsDataScope } from '@/lib/access';
@@ -24,7 +25,12 @@ const reportsTabTriggerClass = cn(
 export function ReportsContent() {
   const { backendUserData } = useSessionSync();
   const scope = getReportsDataScope(backendUserData?.accessLevel, backendUserData);
-  const [activeTab, setActiveTab] = useState<string>(REPORTS_TABS[0].id);
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab = REPORTS_TABS.some((tab) => tab.id === requestedTab)
+    ? (requestedTab as string)
+    : REPORTS_TABS[0].id;
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   return (
     <div className={appPageScrollWrapClass} data-slot="reports-page">

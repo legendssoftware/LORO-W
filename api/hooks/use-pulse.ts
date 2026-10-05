@@ -8,6 +8,7 @@ import {
   getPulseExecutive,
   getPulseInsights,
   getPulseMe,
+  getPulsePeople,
   savePulseContactFeedback,
   submitPulse,
 } from '@/api/endpoints/pulse';
@@ -56,6 +57,18 @@ export function usePulseDaily(
   return useQuery({
     queryKey: [...PULSE_DAILY_QUERY_KEY, params],
     queryFn: () => getPulseDaily(client, params),
+    enabled,
+  });
+}
+
+export function usePulsePeople(
+  params: { from?: string; to?: string; branchUid?: number; country?: string },
+  enabled = true
+) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ['pulse', 'people', params],
+    queryFn: () => getPulsePeople(client, params),
     enabled,
   });
 }

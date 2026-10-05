@@ -72,6 +72,7 @@ export interface PulseBranchRow {
 export interface PulseNamedPerson {
   ownerUid: number;
   name: string;
+  photoUrl: string | null;
   branchName: string | null;
   countryCode: string | null;
   morningMood: PulseMood | null;
@@ -82,6 +83,32 @@ export interface PulseNamedPerson {
   comments: string | null;
   riskReason?: 'declining_streak' | 'day_drop' | 'support';
   contactFeedback: PulseContactFeedback | null;
+}
+
+export interface PulsePersonDay {
+  date: string;
+  morningMood: PulseMood | null;
+  eveningMood: PulseMood | null;
+  morningScore: number | null;
+  eveningScore: number | null;
+}
+
+export interface PulsePersonHistory {
+  ownerUid: number;
+  name: string;
+  photoUrl: string | null;
+  branchUid: number | null;
+  branchName: string | null;
+  countryCode: string | null;
+  morningScore: number | null;
+  eveningScore: number | null;
+  days: PulsePersonDay[];
+}
+
+export interface PulsePeopleResponse {
+  from: string;
+  to: string;
+  people: PulsePersonHistory[];
 }
 
 export interface PulseDailyResponse {
