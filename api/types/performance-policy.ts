@@ -115,3 +115,21 @@ export type PolicyReportParams = PolicyWindowParams & {
   limit?: number;
   offset?: number;
 };
+
+export interface VerificationQueueItem {
+  checkInUid: number;
+  ownerClerkUserId: string;
+  clientUid: number | null;
+  checkInTime: string;
+  status: string;
+  flags: string[];
+  missing: string[];
+  suggestedAction?: 'review';
+  reason?: string;
+}
+
+export interface VerificationQueueResponse {
+  count: number;
+  truncated: boolean;
+  items: VerificationQueueItem[];
+}

@@ -8,8 +8,11 @@ import {
   usePulseDaily,
   usePulseExecutive,
   usePulseInsights,
+  usePulsePeople,
 } from '@/api/hooks/use-pulse';
+import type { PulseNamedPerson } from '@/api/types/pulse';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -41,6 +44,25 @@ const tabTriggerClass = cn(
   'bg-transparent px-3 pb-2.5 pt-1.5 text-sm font-medium text-muted-foreground shadow-none',
   'data-[state=active]:border-violet-600 data-[state=active]:bg-transparent data-[state=active]:text-foreground'
 );
+
+function mergeAdminPeople(support: PulseNamedPerson[], highRisk: PulseNamedPerson[]): PulseNamedPerson[] {
+  const merged = new Map<number, PulseNamedPerson>();
+  for (const person of support) merged.set(person.ownerUid, person);
+  for (const person of highRisk) {
+    const existing = merged.get(person.ownerUid);
+    merged.set(
+      person.ownerUid,
+      existing
+        ? {
+            ...existing,
+            riskReason: person.riskReason ?? existing.riskReason,
+            contactFeedback: existing.contactFeedback ?? person.contactFeedback,
+          }
+        : person
+    );
+  }
+  return [...merged.values()];
+}
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
@@ -75,12 +97,17 @@ export function WellbeingContent() {
   const [branchId, setBranchId] = useState('all');
   const [country, setCountry] = useState('all');
   const [tab, setTab] = useState('today');
+  const [focusOwnerUid, setFocusOwnerUid] = useState<number | null>(null);
   const branches = useBranches({ enabled: isTokenReady && allowed });
   const branchUid = branchId && branchId !== 'all' ? Number(branchId) : undefined;
   const countryParam = country !== 'all' ? country : undefined;
   const daily = usePulseDaily(
-    { branchUid, country: countryParam },
+    { date: range.to, branchUid, country: countryParam },
     isTokenReady && allowed && (tab === 'today' || tab === 'admin')
+  );
+  const roster = usePulsePeople(
+    { from: range.from, to: range.to, branchUid, country: countryParam },
+    isTokenReady && allowed && tab === 'today'
   );
   const insights = usePulseInsights(
     { from: range.from, to: range.to, branchUid, country: countryParam },
@@ -106,6 +133,19 @@ export function WellbeingContent() {
     const stillVisible = branchOptions.some((branch) => String(branch.uid) === branchId);
     if (!stillVisible) setBranchId('all');
   }, [branchId, branchOptions]);
+
+  const adminPeople = useMemo(
+    () => mergeAdminPeople(daily.data?.supportQueue ?? [], daily.data?.highRisk ?? []),
+    [daily.data?.supportQueue, daily.data?.highRisk]
+  );
+
+  useEffect(() => {
+    if (tab !== 'admin' || focusOwnerUid == null) return;
+    document.getElementById(`wellbeing-admin-person-${focusOwnerUid}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [tab, focusOwnerUid, adminPeople]);
 
   if (!allowed) {
     return (
@@ -186,10 +226,30 @@ export function WellbeingContent() {
                 </div>
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold">Branch comparison</h3>
-                  <WellbeingBranchCountrySections rows={daily.data?.branches ?? []} />
+                  <WellbeingBranchCountrySections
+                    rows={daily.data?.branches ?? []}
+                    people={roster.data?.people ?? []}
+                  />
                 </section>
                 <WellbeingNamedCountrySections title="Support queue" rows={daily.data?.supportQueue ?? []} />
-                <WellbeingNamedCountrySections title="Action required" rows={daily.data?.highRisk ?? []} />
+                <WellbeingNamedCountrySections
+                  title="Action required"
+                  rows={daily.data?.highRisk ?? []}
+                  renderFooter={(person) => (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                      onClick={() => {
+                        setFocusOwnerUid(person.ownerUid);
+                        setTab('admin');
+                      }}
+                    >
+                      Record outcome
+                    </Button>
+                  )}
+                />
               </>
             )}
           </TabsContent>
@@ -270,12 +330,14 @@ export function WellbeingContent() {
             </p>
             {daily.isLoading ? (
               <Skeleton className="h-40 w-full" />
-            ) : (daily.data?.supportQueue.length ?? 0) === 0 ? (
-              <p className="text-sm text-muted-foreground">No one asked to be contacted today.</p>
+            ) : adminPeople.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No one needs a recorded outcome for this day.</p>
             ) : (
               <WellbeingNamedCountrySections
                 title="Contact feedback"
-                rows={daily.data?.supportQueue ?? []}
+                rows={adminPeople}
+                highlightOwnerUid={focusOwnerUid}
+                cardIdFor={(person) => `wellbeing-admin-person-${person.ownerUid}`}
                 renderFooter={(person) => (
                   <WellbeingContactFeedbackForm person={person} date={daily.data?.date ?? ''} />
                 )}

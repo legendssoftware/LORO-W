@@ -5,6 +5,7 @@ import type {
   PulseExecutiveResponse,
   PulseInsightsResponse,
   PulseMeResponse,
+  PulsePeopleResponse,
   PulseContactFeedbackResponse,
   PulseSubmitBody,
   PulseSubmitResponse,
@@ -42,6 +43,14 @@ export async function getPulseDaily(
   params: { date?: string; branchUid?: number; country?: string } = {}
 ): Promise<PulseDailyResponse> {
   const { data } = await client.get<PulseDailyResponse>('/pulse/daily', { params });
+  return data;
+}
+
+export async function getPulsePeople(
+  client: AxiosInstance,
+  params: { from?: string; to?: string; branchUid?: number; country?: string } = {}
+): Promise<PulsePeopleResponse> {
+  const { data } = await client.get<PulsePeopleResponse>('/pulse/people', { params });
   return data;
 }
 

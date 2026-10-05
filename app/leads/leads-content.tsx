@@ -13,7 +13,7 @@ import {
 } from '@/api/hooks';
 import type { BranchListItem } from '@/api/types/branch';
 import { useLeadsStore } from '@/store/leads-store';
-import type { LeadListItem } from '@/api/types/leads';
+import type { BulkEngageFilters, LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
 import { Plus, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -36,6 +36,7 @@ import {
   type LeadsPageSize,
 } from './components/leads-list-pagination';
 import { CreateLeadModal } from './components/create-lead-modal';
+import { EngageLeadsDialog } from './components/engage-leads-dialog';
 import { ImportLeadsModal } from './components/import-leads-modal';
 import { ImportFromApifyModal } from './components/import-from-apify-modal';
 import { LeadDetailDialog } from './components/lead-detail-dialog';
@@ -104,6 +105,7 @@ export function LeadsContent() {
   const [pageSize, setPageSize] = useState<LeadsPageSize>(() => readStoredLeadsPageSize());
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [engageLeadsOpen, setEngageLeadsOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [apifyImportModalOpen, setApifyImportModalOpen] = useState(false);
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
@@ -222,6 +224,29 @@ export function LeadsContent() {
     scope: listScope,
     ...sharedListFilters,
   };
+
+  const engageFilters = useMemo<BulkEngageFilters>(() => {
+    const ownerId =
+      !unassignedOnly &&
+      selectedUserId &&
+      selectedUserId !== 'all' &&
+      !Number.isNaN(Number(selectedUserId))
+        ? Number(selectedUserId)
+        : undefined;
+    return {
+      ...sharedListFilters,
+      ...(!unassignedOnly && selectedPriority && selectedPriority !== 'all'
+        ? { priority: selectedPriority }
+        : {}),
+      ...(ownerId != null ? { ownerId } : {}),
+      ...(unassignedOnly ? { unassignedOnly: true } : {}),
+    };
+  }, [
+    sharedListFilters,
+    unassignedOnly,
+    selectedPriority,
+    selectedUserId,
+  ]);
 
   useEffect(() => {
     setPage(1);
@@ -359,19 +384,31 @@ export function LeadsContent() {
               View, track, and manage your sales leads.
             </p>
           </div>
-          <Button
-            className={cn(
-              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-              'bg-violet-600 text-white hover:bg-violet-700',
-              'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-              '[&_svg]:text-white focus-visible:ring-violet-500/40'
-            )}
-            data-tour="leads-create-button"
-            onClick={() => setCreateModalOpen(true)}
-          >
-            <Plus className="size-4" />
-            Create lead
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+            {canViewAll ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 shrink-0"
+                onClick={() => setEngageLeadsOpen(true)}
+              >
+                Engage leads
+              </Button>
+            ) : null}
+            <Button
+              className={cn(
+                'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
+                'bg-violet-600 text-white hover:bg-violet-700',
+                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                '[&_svg]:text-white focus-visible:ring-violet-500/40'
+              )}
+              data-tour="leads-create-button"
+              onClick={() => setCreateModalOpen(true)}
+            >
+              <Plus className="size-4" />
+              Create lead
+            </Button>
+          </div>
         </div>
 
         {listError != null ? (
@@ -599,6 +636,14 @@ export function LeadsContent() {
           open={createModalOpen}
           onOpenChange={setCreateModalOpen}
         />
+        {canViewAll ? (
+          <EngageLeadsDialog
+            open={engageLeadsOpen}
+            onOpenChange={setEngageLeadsOpen}
+            matchCount={total}
+            filters={engageFilters}
+          />
+        ) : null}
       </main>
     </div>
   );

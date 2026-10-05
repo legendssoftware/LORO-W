@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
-import type { PulseBranchRow, PulseNamedPerson } from '@/api/types/pulse';
+import type { PulseBranchRow, PulseNamedPerson, PulsePersonHistory } from '@/api/types/pulse';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -67,6 +68,43 @@ function countryHeading(countryCode: string): { flag: string; name: string } {
 }
 
 /** Score rendered in its red / amber / green tone; a dash stays neutral. */
+function personInitials(name: string): string {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+  return initials || '?';
+}
+
+function PersonFace({ name, photoUrl }: { name: string; photoUrl: string | null | undefined }) {
+  return (
+    <Avatar size="sm">
+      <AvatarImage src={photoUrl ?? undefined} alt="" />
+      <AvatarFallback>{personInitials(name)}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+function historyAsNamed(person: PulsePersonHistory): PulseNamedPerson {
+  const latest = person.days[person.days.length - 1];
+  return {
+    ownerUid: person.ownerUid,
+    name: person.name,
+    photoUrl: person.photoUrl,
+    branchName: person.branchName,
+    countryCode: person.countryCode,
+    morningMood: latest?.morningMood ?? null,
+    eveningMood: latest?.eveningMood ?? null,
+    talkTo: 'none',
+    followUpRequested: false,
+    contributors: [],
+    comments: null,
+    contactFeedback: null,
+  };
+}
+
 function ScoreText({ score }: { score: number | null | undefined }) {
   return (
     <span className={cn('font-medium', PULSE_TONE_STYLES[getScoreTone(score)].text)}>{score ?? '—'}</span>
@@ -104,15 +142,24 @@ function CountryHeader({
   );
 }
 
-export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[] }) {
+export function WellbeingBranchCountrySections({
+  rows,
+  people = [],
+}: {
+  rows: PulseBranchRow[];
+  people?: PulsePersonHistory[];
+}) {
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
+  const [openBranches, setOpenBranches] = useState<Set<string>>(() => new Set());
+  const [historyPerson, setHistoryPerson] = useState<PulsePersonHistory | null>(null);
 
   if (!rows.length) {
     return <p className="text-sm text-muted-foreground">No branch pulse data for this filter.</p>;
   }
 
   return (
+    <>
     <div className="divide-y overflow-hidden rounded-lg border">
       {groups.map((group) => {
         const open = !closed.has(group.countryCode);
@@ -154,10 +201,27 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
                   {group.rows.map((row) => {
                     const trend = describeTrend(row.morningScore, row.eveningScore);
                     const trendStyle = PULSE_TONE_STYLES[trend.tone];
+                    const branchKey = String(row.branchUid ?? row.branchName);
+                    const branchOpen = openBranches.has(branchKey);
+                    const branchPeople = people.filter((person) => (person.branchUid ?? null) === (row.branchUid ?? null));
                     return (
-                    <TableRow key={String(row.branchUid ?? row.branchName)}>
-                      <TableCell className={cn(BRANCH_COLUMNS[0].className, 'truncate px-3')}>
-                        {row.branchName}
+                    <Fragment key={branchKey}>
+                    <TableRow
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setOpenBranches((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(branchKey)) next.delete(branchKey);
+                          else next.add(branchKey);
+                          return next;
+                        })
+                      }
+                    >
+                      <TableCell className={cn(BRANCH_COLUMNS[0].className, 'px-3')}>
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                          {branchOpen ? <ChevronUp className="size-3.5 shrink-0" /> : <ChevronDown className="size-3.5 shrink-0" />}
+                          <span className="truncate">{row.branchName}</span>
+                        </span>
                       </TableCell>
                       <TableCell className={cn(BRANCH_COLUMNS[1].className, 'px-3')}>
                         <ScoreText score={row.morningScore} />
@@ -175,6 +239,44 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
                         </span>
                       </TableCell>
                     </TableRow>
+                    {branchOpen ? (
+                      <TableRow>
+                        <TableCell colSpan={BRANCH_COLUMNS.length} className="bg-muted/20 px-3 py-3">
+                          {branchPeople.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No ratings in this period.</p>
+                          ) : (
+                            <ul className="space-y-1">
+                              {branchPeople.map((person) => {
+                                const personTrend = describeTrend(person.morningScore, person.eveningScore);
+                                const personTrendStyle = PULSE_TONE_STYLES[personTrend.tone];
+                                return (
+                                  <li key={person.ownerUid}>
+                                    <button
+                                      type="button"
+                                      className="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted"
+                                      onClick={() => setHistoryPerson(person)}
+                                    >
+                                      <PersonFace name={person.name} photoUrl={person.photoUrl} />
+                                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{person.name}</span>
+                                      <span className="shrink-0 text-xs text-muted-foreground">
+                                        Morning <ScoreText score={person.morningScore} />
+                                      </span>
+                                      <span className="shrink-0 text-xs text-muted-foreground">
+                                        Evening <ScoreText score={person.eveningScore} />
+                                      </span>
+                                      <span className={cn('hidden shrink-0 text-xs font-medium sm:inline', personTrendStyle.text)}>
+                                        {personTrend.label}
+                                      </span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                    </Fragment>
                     );
                   })}
                 </TableBody>
@@ -184,6 +286,15 @@ export function WellbeingBranchCountrySections({ rows }: { rows: PulseBranchRow[
         );
       })}
     </div>
+      <WellbeingPersonInfoModal
+        person={historyPerson ? historyAsNamed(historyPerson) : null}
+        history={historyPerson?.days}
+        open={historyPerson != null}
+        onOpenChange={(open) => {
+          if (!open) setHistoryPerson(null);
+        }}
+      />
+    </>
   );
 }
 
@@ -191,17 +302,28 @@ function PersonCard({
   person,
   onExplain,
   footer,
+  cardId,
+  highlighted,
 }: {
   person: PulseNamedPerson;
   onExplain: (person: PulseNamedPerson) => void;
   footer?: ReactNode;
+  cardId?: string;
+  highlighted?: boolean;
 }) {
   const status = describePersonStatus(person);
   const style = PULSE_TONE_STYLES[status.tone];
   return (
-    <div className="rounded-lg border border-border/60 p-3">
+    <div
+      id={cardId}
+      className={cn(
+        'rounded-lg border border-border/60 p-3',
+        highlighted && 'ring-2 ring-violet-600'
+      )}
+    >
       <div className="flex items-start gap-2">
-        <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', style.dot)} aria-hidden />
+        <PersonFace name={person.name} photoUrl={person.photoUrl} />
+        <span className={cn('mt-2.5 size-2 shrink-0 rounded-full', style.dot)} aria-hidden />
         <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
           {person.name}
@@ -238,10 +360,14 @@ export function WellbeingNamedCountrySections({
   title,
   rows,
   renderFooter,
+  highlightOwnerUid,
+  cardIdFor,
 }: {
   title: string;
   rows: PulseNamedPerson[];
   renderFooter?: (person: PulseNamedPerson) => ReactNode;
+  highlightOwnerUid?: number | null;
+  cardIdFor?: (person: PulseNamedPerson) => string;
 }) {
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
@@ -254,7 +380,9 @@ export function WellbeingNamedCountrySections({
       <h3 className="text-sm font-semibold">{title}</h3>
       <div className="divide-y overflow-hidden rounded-lg border">
         {groups.map((group) => {
-          const open = !closed.has(group.countryCode);
+          const containsFocus =
+            highlightOwnerUid != null && group.rows.some((row) => row.ownerUid === highlightOwnerUid);
+          const open = containsFocus || !closed.has(group.countryCode);
           const count = group.rows.length;
           return (
             <div key={group.countryCode}>
@@ -279,6 +407,8 @@ export function WellbeingNamedCountrySections({
                       person={row}
                       onExplain={setSelectedPerson}
                       footer={renderFooter?.(row)}
+                      cardId={cardIdFor?.(row)}
+                      highlighted={highlightOwnerUid != null && row.ownerUid === highlightOwnerUid}
                     />
                   ))}
                 </div>

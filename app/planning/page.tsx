@@ -11,9 +11,19 @@ export const metadata = buildPageMetadata({
   path: '/planning',
 });
 
-export default async function PlanningPage() {
+type PlanningPageProps = {
+  searchParams: Promise<{ task?: string | string[] }>;
+};
+
+export default async function PlanningPage({ searchParams }: PlanningPageProps) {
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) {
+    const params = await searchParams;
+    const raw = params.task;
+    const task = Array.isArray(raw) ? raw[0] : raw;
+    const nextPath = task && /^\d+$/.test(task) ? `/planning?task=${task}` : '/planning';
+    redirect(`/sign-in?redirect_url=${encodeURIComponent(nextPath)}`);
+  }
 
   return <PlanningContent />;
 }

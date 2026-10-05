@@ -46,7 +46,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Welcome to Reports',
         description:
-          'Reports covers targets, policy, call quality, and activity insights for the period you can see. The next steps open the newer tabs.',
+          'Reports covers targets, policy, call quality, tasks and planning, and activity insights for the period you can see. The next steps open the newer tabs.',
       },
     },
     {
@@ -64,7 +64,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Report tabs',
         description:
-          'Targets is performance against goals. Policy is compliance for the period. Call quality is coaching from scored calls. Insights groups activity into clusters.',
+          'Targets is performance against goals. Policy is compliance for the period. Call quality is coaching from scored calls. Insights groups activity into clusters. Tasks & planning compares planned visits with what was done, missed, and time on the job.',
         side: 'bottom',
         align: 'start',
       },
