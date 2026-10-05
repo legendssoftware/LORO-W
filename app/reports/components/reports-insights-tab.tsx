@@ -37,6 +37,7 @@ import { ReportsDashboardToolbar } from './reports-dashboard-toolbar';
 import { ReportsNamedBarChart } from './reports-named-bar-chart';
 import { ReportsChartCard } from './reports-chart-card';
 import { ReportsSection } from './reports-section';
+import { ReportsMorningBrief } from './reports-morning-brief';
 
 function SummaryStat({
   label,
@@ -263,6 +264,7 @@ export function ReportsInsightsTab() {
 
   return (
     <div className="space-y-5 pb-8" data-tour="reports-insights-tab">
+      <ReportsMorningBrief />
       <ReportsDashboardToolbar
         startDate={startDate}
         endDate={endDate}

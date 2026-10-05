@@ -6,6 +6,7 @@ function person(overrides: Partial<PulseNamedPerson>): PulseNamedPerson {
   return {
     ownerUid: 1,
     name: 'Test Person',
+    photoUrl: null,
     branchName: null,
     countryCode: null,
     morningMood: null,

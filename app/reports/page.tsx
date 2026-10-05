@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
@@ -15,5 +16,9 @@ export default async function ReportsPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  return <ReportsContent />;
+  return (
+    <Suspense fallback={null}>
+      <ReportsContent />
+    </Suspense>
+  );
 }

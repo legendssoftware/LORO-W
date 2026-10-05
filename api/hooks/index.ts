@@ -158,7 +158,9 @@ export {
   useReactivateLeadMutation,
   useReassignLeadsMutation,
   useEngageDraftMutation,
+  useEngageCampaignDraftMutation,
   useSendLeadEngageMutation,
+  useSendBulkLeadEngageMutation,
   useImportLeadsMutation,
   useStartApifyLeadRunMutation,
   useImportApifyLeadsMutation,
@@ -272,6 +274,7 @@ export {
   usePulseMe,
   useSubmitPulseMutation,
   usePulseDaily,
+  usePulsePeople,
   useSavePulseContactFeedbackMutation,
   usePulseInsights,
   usePulseExecutive,
@@ -282,4 +285,5 @@ export {
   useExportPolicyReport,
   useFinalisePolicyMonth,
   usePolicyReport,
+  useVerificationQueue,
 } from './use-performance-policy';

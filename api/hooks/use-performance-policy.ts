@@ -6,6 +6,7 @@ import {
   exportPolicyReportCsv,
   finalisePolicyMonth,
   getPolicyReport,
+  getVerificationQueue,
 } from '@/api/endpoints/performance-policy';
 import type { PolicyReportParams } from '@/api/types/performance-policy';
 
@@ -54,5 +55,17 @@ export function useFinalisePolicyMonth() {
     mutationFn: (month: string) => finalisePolicyMonth(client, month),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: PERFORMANCE_POLICY_REPORT_QUERY_KEY }),
+  });
+}
+
+/** Flagged and incomplete visits for the caller's team. 404 means the policy is off. */
+export function useVerificationQueue(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ['performance-policy', 'verification-queue', 'week'],
+    queryFn: () => getVerificationQueue(client, { range: 'week' }),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
   });
 }

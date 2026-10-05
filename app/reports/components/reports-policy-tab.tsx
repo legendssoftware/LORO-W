@@ -9,6 +9,7 @@ import {
   useExportPolicyReport,
   useFinalisePolicyMonth,
   usePolicyReport,
+  useVerificationQueue,
   useSessionSync,
   useTokenReady,
 } from '@/api/hooks';
@@ -66,6 +67,7 @@ export function ReportsPolicyTab() {
   const scope = getReportsDataScope(backendUserData?.accessLevel, backendUserData);
   const isMultiUser = scope !== 'self';
   const canFinalise = scope === 'org';
+  const queue = useVerificationQueue(isTokenReady && isMultiUser);
 
   const monthDefault = useMemo(() => utcWholeMonthRange(), []);
   const { startDate, endDate, from, to, setRange } = useReportsDateRange(monthDefault.start, monthDefault.end);
@@ -371,6 +373,27 @@ export function ReportsPolicyTab() {
                 <p className="text-2xl font-semibold tabular-nums">{totals.pendingExceptions.toLocaleString()}</p>
               </SummaryCard>
             </div>
+          ) : null}
+
+          {queue.data && queue.data.items.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Visits to review</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  {queue.data.items.map((item) => {
+                    const reason =
+                      [...item.flags, ...item.missing.map((entry) => `missing ${entry}`)].join(', ') || item.status;
+                    return (
+                      <li key={item.checkInUid}>
+                        Visit {item.checkInUid}: {reason}. Suggested action: review.
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
           ) : null}
 
           <ReportsPolicyTable

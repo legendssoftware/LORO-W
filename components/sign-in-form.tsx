@@ -27,7 +27,6 @@ export function SignInForm() {
         },
       }}
       signUpUrl="/sign-up"
-      forceRedirectUrl="/dashboard"
       fallbackRedirectUrl="/dashboard"
     />
   );
