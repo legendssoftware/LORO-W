@@ -27,6 +27,8 @@ import {
   staffUserMatchesCountryFilter,
   staffUserHasSalesCode,
   staffUserHasHrid,
+  NO_CLOCK_IN_FILTER_DAYS,
+  staffHasNotClockedInMoreThan,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
 import { canManageStaffUsers, isStaffDashboardVisible } from '@/lib/access';
@@ -169,6 +171,16 @@ export function StaffContent() {
           return true;
         }
       });
+    }
+    if (
+      statusFilter === 'no_clock_in_gt_2' ||
+      statusFilter === 'no_clock_in_gt_7' ||
+      statusFilter === 'no_clock_in_gt_10'
+    ) {
+      const minDays = NO_CLOCK_IN_FILTER_DAYS[statusFilter];
+      return cardUsersWithPayroll.filter((u) =>
+        staffHasNotClockedInMoreThan(u, minDays, today)
+      );
     }
     if (statusFilter === 'sales_warning_1') {
       return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 1);

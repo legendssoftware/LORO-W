@@ -304,27 +304,23 @@ export function PayslipsFiltersBar(props: PayslipsFiltersBarProps) {
   }, []);
 
   return (
-    <>
-      <div className="hidden shrink-0 flex-wrap items-center gap-2 md:flex">
-        <PayslipsFilterControls layout="row" {...props} />
-      </div>
-
-      <div className="flex shrink-0 md:hidden">
+    <div className="mb-4 flex shrink-0 flex-col gap-3">
+      <div className="flex flex-col gap-2 md:hidden">
         <Button
           type="button"
           variant="outline"
-          className="h-9 gap-2"
+          className={cn(selectTriggerClass, 'h-9 w-full min-w-0 justify-center')}
           onClick={() => setFiltersDialogOpen(true)}
         >
-          <Filter className="size-4" />
-          Filters
+          <Filter className="mr-2 size-4 shrink-0" aria-hidden />
+          Filter
         </Button>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Payslip filters</DialogTitle>
+            <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
               Filter by issue date or status.
             </DialogDescription>
@@ -332,7 +328,15 @@ export function PayslipsFiltersBar(props: PayslipsFiltersBarProps) {
           <PayslipsFilterControls layout="stack" {...props} />
         </DialogContent>
       </Dialog>
-    </>
+
+      <div className="hidden w-full min-w-0 items-center justify-between gap-3 md:flex">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
+            <PayslipsFilterControls layout="row" {...props} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

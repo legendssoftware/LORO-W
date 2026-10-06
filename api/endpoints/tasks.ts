@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
   PaginatedTasksResponse,
+  Task,
   TaskDetailResponse,
   TasksForUserResponse,
   GetTasksParams,
@@ -56,10 +57,15 @@ export async function getTasksForUser(
   client: AxiosInstance,
   userRef: number
 ): Promise<TasksForUserResponse> {
-  const { data } = await client.get<TasksForUserResponse>(
+  const { data } = await client.get<TasksForUserResponse & { data?: Task[] }>(
     `/tasks/for/${userRef}`
   );
-  return data;
+  const tasks = Array.isArray(data.tasks)
+    ? data.tasks
+    : Array.isArray(data.data)
+      ? data.data
+      : [];
+  return { ...data, tasks };
 }
 
 /**

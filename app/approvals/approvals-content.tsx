@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useApprovals, useApprovalStats } from '@/api/hooks/use-approvals';
+import { useApprovals } from '@/api/hooks/use-approvals';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import type { Approval } from '@/api/types/approvals';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { QueryErrorBanner } from '@/components/query-error-banner';
-import { Card, CardContent } from '@/components/ui/card';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { canManageApprovals } from '@/lib/access';
 import { useSessionStore } from '@/store/session-store';
@@ -76,8 +75,6 @@ export function ApprovalsContent() {
     },
     { enabled }
   );
-  const statsQuery = useApprovalStats({ enabled });
-
   const rows = useMemo(() => {
     const data = listQuery.data?.data ?? [];
     return data.filter((approval) => matchesSearch(approval, debouncedSearch));
@@ -87,9 +84,6 @@ export function ApprovalsContent() {
     return <LoadingSpinner wrapperClassName="py-12" />;
   }
 
-  const pending = statsQuery.data?.summary.pending ?? 0;
-  const approved = statsQuery.data?.summary.approved ?? 0;
-  const overdue = statsQuery.data?.summary.overdue ?? 0;
   const listError = listQuery.error
     ? getQueryErrorMessage(listQuery.error, 'Could not load approvals')
     : '';
@@ -102,27 +96,6 @@ export function ApprovalsContent() {
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Review pending requests, inspect employee intake forms, and approve or reject from the web.
           </p>
-        </div>
-
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Pending</p>
-              <p className="mt-1 text-2xl font-semibold">{pending}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Approved</p>
-              <p className="mt-1 text-2xl font-semibold">{approved}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Overdue</p>
-              <p className="mt-1 text-2xl font-semibold">{overdue}</p>
-            </CardContent>
-          </Card>
         </div>
 
         <ApprovalsFiltersBar

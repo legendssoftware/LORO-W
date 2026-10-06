@@ -30,8 +30,6 @@ import {
   utcMonthStartThroughToday,
 } from '@/lib/utils/overview-daily-summary';
 
-const AUTO_FETCH_TOTAL_CAP = 200;
-
 function matchesSearch(claim: Claim, q: string): boolean {
   if (!q) return true;
   const s = q.toLowerCase();
@@ -85,19 +83,22 @@ export function ClaimsContent() {
     groupFilter === 'all' || Number.isNaN(Number.parseInt(groupFilter, 10))
       ? undefined
       : Number.parseInt(groupFilter, 10);
+  const folderSelected = claimGroupUid != null;
+  const createdFrom = folderSelected ? undefined : createdRange.from || undefined;
+  const createdTo = folderSelected ? undefined : createdRange.to || undefined;
 
   const claimsQuery = useClaimsInfinite({
     enabled: isTokenReady && !sessionSyncLoading,
     status: statusFilter === 'all' ? undefined : statusFilter,
-    createdFrom: createdRange.from || undefined,
-    createdTo: createdRange.to || undefined,
+    createdFrom,
+    createdTo,
     claimGroupUid,
   });
 
   const summaryQuery = useClaimsSummary(
     {
-      createdFrom: createdRange.from || undefined,
-      createdTo: createdRange.to || undefined,
+      createdFrom,
+      createdTo,
       claimGroupUid,
     },
     { enabled: isTokenReady && !sessionSyncLoading }
@@ -108,23 +109,6 @@ export function ClaimsContent() {
     () => rows.filter((c) => matchesSearch(c, debouncedSearch)),
     [rows, debouncedSearch]
   );
-
-  useEffect(() => {
-    const total = claimsQuery.data?.pages?.[0]?.meta?.total ?? 0;
-    if (
-      total > 0 &&
-      total <= AUTO_FETCH_TOTAL_CAP &&
-      claimsQuery.hasNextPage &&
-      !claimsQuery.isFetchingNextPage
-    ) {
-      void claimsQuery.fetchNextPage();
-    }
-  }, [
-    claimsQuery.data?.pages,
-    claimsQuery.hasNextPage,
-    claimsQuery.isFetchingNextPage,
-    claimsQuery.fetchNextPage,
-  ]);
 
   const err = claimsQuery.error;
   const statusCode = err ? getErrorStatus(err) : undefined;
