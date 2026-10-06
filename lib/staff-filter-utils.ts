@@ -4,6 +4,7 @@
  */
 
 import type { ComponentType } from 'react';
+import { differenceInCalendarDays } from 'date-fns';
 import {
   LayoutGrid,
   UserCheck,
@@ -182,6 +183,28 @@ export function staffUserHasHrid(user: ReportCardUser): boolean {
   return user.hrID != null;
 }
 
+/** Calendar-day thresholds for the “has not clocked in” status options. */
+export const NO_CLOCK_IN_FILTER_DAYS = {
+  no_clock_in_gt_2: 2,
+  no_clock_in_gt_7: 7,
+  no_clock_in_gt_10: 10,
+} as const;
+
+/**
+ * True when the user has no clock-in, or their latest clock-in is more than `minDays` calendar days ago.
+ * Clocking in today (0 days) does not match.
+ */
+export function staffHasNotClockedInMoreThan(
+  user: ReportCardUser,
+  minDays: number,
+  today: Date
+): boolean {
+  if (!user.lastClockInAt) return true;
+  const last = new Date(user.lastClockInAt);
+  if (Number.isNaN(last.getTime())) return true;
+  return differenceInCalendarDays(today, last) > minDays;
+}
+
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
 
 export const STAFF_STATUS_FILTER_OPTIONS: {
@@ -196,6 +219,9 @@ export const STAFF_STATUS_FILTER_OPTIONS: {
   { value: 'early', label: 'Early', icon: Clock },
   { value: 'behind_on_hours', label: 'Behind on hours', icon: AlertCircle },
   { value: 'idle', label: 'Idle (>7 days in-active)', icon: CalendarOff },
+  { value: 'no_clock_in_gt_2', label: 'Has not clocked in more than 2 days', icon: CalendarOff },
+  { value: 'no_clock_in_gt_7', label: 'Has not clocked in more than 7 days', icon: CalendarOff },
+  { value: 'no_clock_in_gt_10', label: 'Has not clocked in more than 10 days', icon: CalendarOff },
   { value: 'at_office', label: OPTION_KEY_TO_LABEL.at_office, icon: Building2 },
   { value: 'work_from_home', label: OPTION_KEY_TO_LABEL.work_from_home, icon: Home },
   { value: 'starting_from_home', label: OPTION_KEY_TO_LABEL.starting_from_home, icon: House },

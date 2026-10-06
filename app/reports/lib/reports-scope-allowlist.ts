@@ -3,7 +3,7 @@
  * Keep identical so both tabs reuse one cache entry.
  */
 import type { AxiosInstance } from 'axios';
-import { getUsers, type UserListItem } from '@/api/endpoints/user';
+import { type UserListItem } from '@/api/endpoints/user';
 import { REPORTS_USERS_QUERY_KEY_PREFIX } from '@/api/query-keys';
 import { userListItemIsActiveForReporting } from '@/lib/utils/user-has-performance-target';
 
@@ -57,25 +57,11 @@ export function userUidInAllowlist(
   return allowlist.includes(Number(uid));
 }
 
-/** Active org users for Reports (matches Staff daily overview cohort). */
+/** Active org users for Reports. One slim roster page (max 500) instead of paging GET /user. */
 export async function fetchReportsOrgUsers(
   client: AxiosInstance
 ): Promise<UserListItem[]> {
-  const all: UserListItem[] = [];
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    const res = await getUsers(client, {
-      page,
-      limit: REPORTS_USERS_PAGE_LIMIT,
-      status: 'active',
-    });
-    const chunk = Array.isArray(res?.data) ? res.data : [];
-    all.push(...chunk);
-    totalPages = Math.max(1, Number(res?.meta?.totalPages) || 1);
-    if (chunk.length === 0) break;
-    page += 1;
-    if (page > 50) break;
-  }
-  return all.filter(userListItemIsActiveForReporting);
+  const { data } = await client.get<{ data?: UserListItem[] }>('/user/roster?limit=500');
+  const rows = Array.isArray(data?.data) ? data.data : [];
+  return rows.filter(userListItemIsActiveForReporting);
 }

@@ -14,7 +14,7 @@ import {
 } from '@/lib/utils/overview-daily-summary';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
@@ -23,6 +23,7 @@ import {
 import type { OptimizedRoute } from '@/api/types/tasks';
 import { CalendarIcon } from '@/lib/icons';
 import { ROUTE_PLANNING_EMPTY } from '@/lib/route-planning-note';
+import { cn } from '@/lib/utils';
 
 interface PlanningRoutesMapProps {
   onOpenTask?: (taskId: number) => void;
@@ -82,10 +83,10 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4" data-tour="planning-routes">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+      <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="h-9 w-full shrink-0 justify-start gap-2 sm:w-auto">
               <CalendarIcon className="size-4" />
               {formatUtcCalendarLabel(routeDate)}
             </Button>
@@ -102,12 +103,16 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             />
           </PopoverContent>
         </Popover>
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <Input
           value={routeSearch}
           onChange={(event) => setRouteSearch(event.target.value)}
           placeholder="Search reps or clients…"
           aria-label="Search routes by rep or client"
-          className="h-9 w-full min-w-[12rem] sm:w-56"
+          className={cn(
+            filterToolbarSearchInputClassName,
+            'w-full min-w-0 sm:w-56 sm:max-w-[16rem] sm:flex-none'
+          )}
         />
         <div className="flex flex-wrap items-center gap-2">
           {showVisualiserLink ? (
@@ -132,6 +137,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             )}
             Recalculate routes
           </Button>
+        </div>
         </div>
       </div>
 

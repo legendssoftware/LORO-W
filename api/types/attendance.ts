@@ -391,6 +391,8 @@ export interface DailyOverviewUser {
     firstAttendanceInPeriod?: string | null;
     /** Last date (yyyy-MM-dd) user attended in the 7-day period. */
     lastAttendanceInPeriod?: string | null;
+    /** Latest clock-in (ISO), with no lookback cap. Null when the user has never clocked in. */
+    lastClockInAt?: string | null;
     /** Last app access from Clerk session lastActiveAt in org timezone. */
     lastAppAccessAt?: string | null;
     /** Device type from Clerk session (phone or laptop). */
