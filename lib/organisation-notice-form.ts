@@ -1,33 +1,22 @@
 import {
   DEFAULT_ORGANISATION_NOTICE_THEME,
   type CreateOrganisationNoticeBody,
+  type OrganisationNoticeContent,
 } from '@/api/types/organisation-notice';
-import type { NoticeSection } from '@/lib/sales-benchmarks-welcome/types';
 
-export const NOTICE_SECTION_LABELS = [
-  'Career impact paragraph',
-  'Company investment paragraph',
-  'Report misconduct paragraph',
-  'Simple message (title + text)',
-  'Consequences (intro + bullets)',
-  'Closing policy paragraph',
-] as const;
+export const DEFAULT_NOTICE_ACKNOWLEDGE_LABEL = 'I have read and understood this notice';
 
 export const NOTICE_FORM_PLACEHOLDERS = {
-  title: 'Notice title',
-  subtitle: 'Notice subtitle',
-  greeting: 'Greeting',
-  introParagraphs: 'One paragraph per line',
-  emphasisIntro: 'Emphasis intro',
-  emphasisBullets: 'One bullet per line',
-  sectionTitle: 'Section title',
-  sectionIntro: 'Section intro',
-  sectionParagraphs: 'One paragraph per line',
-  sectionBullets: 'One bullet per line',
-  closingParagraphs: 'One paragraph per line',
-  closingSignature: 'Closing signature',
-  acknowledgeLabel: 'Acknowledge button label',
+  header: 'First line is the title. Further lines are the subtitle.',
+  body: 'Separate paragraphs with a blank line.',
+  footer: 'Closing lines. The last line is the signature.',
 } as const;
+
+export type NoticeCopyFields = {
+  header: string;
+  body: string;
+  footer: string;
+};
 
 export function emptyNoticeBody(): CreateOrganisationNoticeBody {
   return {
@@ -40,9 +29,9 @@ export function emptyNoticeBody(): CreateOrganisationNoticeBody {
       introParagraphs: [],
       emphasisIntro: '',
       emphasisBullets: [],
-      sections: Array.from({ length: 6 }, () => ({})),
+      sections: [],
       closingParagraphs: [],
-      acknowledgeLabel: '',
+      acknowledgeLabel: DEFAULT_NOTICE_ACKNOWLEDGE_LABEL,
       closingSignature: '',
     },
     showFrom: new Date().toISOString(),
@@ -81,43 +70,105 @@ export function applyNoticeDisplayMode(
   }
 }
 
-export function emptySection(): NoticeSection {
-  return {};
+function trimmedOrNull(value: string | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : null;
 }
 
-export function linesToArray(value: string): string[] {
-  return value
+/** Flatten a stored notice into the three editor fields. */
+export function noticeCopyFromForm(form: CreateOrganisationNoticeBody): NoticeCopyFields {
+  const title = form.title.trim();
+  const subtitle = form.subtitle.trim();
+  const header = subtitle && subtitle !== title ? `${title}\n${subtitle}` : title;
+  const paragraphs: string[] = [];
+  const greeting = trimmedOrNull(form.content.greeting);
+  if (greeting) paragraphs.push(greeting);
+  for (const paragraph of form.content.introParagraphs) {
+    const line = trimmedOrNull(paragraph);
+    if (line) paragraphs.push(line);
+  }
+  const emphasisIntro = trimmedOrNull(form.content.emphasisIntro);
+  if (emphasisIntro) paragraphs.push(emphasisIntro);
+  for (const bullet of form.content.emphasisBullets) {
+    const line = trimmedOrNull(bullet);
+    if (line) paragraphs.push(line);
+  }
+  for (const section of form.content.sections) {
+    const sectionTitle = trimmedOrNull(section.title);
+    if (sectionTitle) paragraphs.push(sectionTitle);
+    const intro = trimmedOrNull(section.intro);
+    if (intro) paragraphs.push(intro);
+    for (const paragraph of section.paragraphs ?? []) {
+      const line = trimmedOrNull(paragraph);
+      if (line) paragraphs.push(line);
+    }
+    for (const bullet of section.bullets ?? []) {
+      const line = trimmedOrNull(bullet);
+      if (line) paragraphs.push(line);
+    }
+  }
+
+  const footerLines = form.content.closingParagraphs.map((line) => line.trim()).filter(Boolean);
+  const signature = form.content.closingSignature.trim();
+  if (signature && footerLines[footerLines.length - 1] !== signature) {
+    footerLines.push(signature);
+  }
+
+  return {
+    header,
+    body: paragraphs.join('\n\n'),
+    footer: footerLines.join('\n'),
+  };
+}
+
+/**
+ * Write header, body, and footer back onto the notice payload.
+ * Emphasis, sections, and table data are cleared because the editor no longer collects them.
+ */
+export function applyNoticeCopy(
+  form: CreateOrganisationNoticeBody,
+  copy: NoticeCopyFields,
+): CreateOrganisationNoticeBody {
+  const headerLines = copy.header
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
-}
+  const title = headerLines[0] ?? '';
+  const subtitle = headerLines.slice(1).join('\n');
+  const introParagraphs = copy.body
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  const footerLines = copy.footer
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const closingSignature = footerLines[footerLines.length - 1] ?? ' ';
+  const content: OrganisationNoticeContent = {
+    noticeTitle: title,
+    noticeSubtitle: subtitle,
+    greeting: '',
+    introParagraphs,
+    emphasisIntro: '',
+    emphasisBullets: [],
+    sections: [],
+    closingParagraphs: footerLines,
+    acknowledgeLabel: DEFAULT_NOTICE_ACKNOWLEDGE_LABEL,
+    closingSignature,
+  };
 
-export function arrayToLines(value: readonly string[] | undefined): string {
-  return value?.join('\n') ?? '';
+  return {
+    ...form,
+    title,
+    subtitle,
+    translations: null,
+    content,
+  };
 }
 
 export function normalizeNoticeFormForSave(
-  form: CreateOrganisationNoticeBody
-): CreateOrganisationNoticeBody {
-  return {
-    ...form,
-    content: {
-      ...form.content,
-      noticeTitle: form.title,
-      noticeSubtitle: form.subtitle,
-    },
-  };
-}
-
-export function updateSection(
   form: CreateOrganisationNoticeBody,
-  index: number,
-  patch: Partial<NoticeSection>
+  copy: NoticeCopyFields,
 ): CreateOrganisationNoticeBody {
-  const sections = [...form.content.sections];
-  sections[index] = { ...sections[index], ...patch };
-  return {
-    ...form,
-    content: { ...form.content, sections },
-  };
+  return applyNoticeCopy(form, copy);
 }

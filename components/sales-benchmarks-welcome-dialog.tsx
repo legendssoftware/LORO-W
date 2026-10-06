@@ -38,6 +38,7 @@ import {
 import {
   DEFAULT_SALES_BENCHMARKS_LOCALE,
   SALES_BENCHMARKS_LANG_ATTR,
+  type NoticeSection,
   type SalesBenchmarksContent,
   type SalesBenchmarksLocale,
 } from '@/lib/sales-benchmarks-welcome';
@@ -57,6 +58,19 @@ import {
   buildNoticeContentFromRecord,
   getNoticeLocaleOptions,
 } from '@/lib/organisation-notice-content';
+
+function hasText(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function sectionHasVisibleContent(section: NoticeSection): boolean {
+  return (
+    hasText(section.title) ||
+    hasText(section.intro) ||
+    (section.paragraphs?.some((paragraph) => hasText(paragraph)) ?? false) ||
+    (section.bullets?.some((bullet) => hasText(bullet)) ?? false)
+  );
+}
 
 function persistDismiss(sessionId: string, noticeUid: number | null) {
   if (typeof window === 'undefined') return;
@@ -287,7 +301,11 @@ export function SalesBenchmarksWelcomeDialog({
           </div>
           <DialogHeader className="gap-1 space-y-0 text-center sm:text-center">
             <DialogTitle className="text-lg font-semibold">{content.noticeTitle}</DialogTitle>
-            <p className="text-sm font-semibold text-foreground">{content.noticeSubtitle}</p>
+            {hasText(content.noticeSubtitle) ? (
+              <p className="whitespace-pre-line text-sm font-semibold text-foreground">
+                {content.noticeSubtitle}
+              </p>
+            ) : null}
             {content.effectiveDate ? (
               <DialogDescription className="text-muted-foreground text-sm">
                 {content.effectiveDate}
@@ -300,22 +318,32 @@ export function SalesBenchmarksWelcomeDialog({
           className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
           lang={SALES_BENCHMARKS_LANG_ATTR[locale] ?? locale}
         >
-          <p className="mb-3 text-sm font-medium text-foreground">{content.greeting}</p>
+          {hasText(content.greeting) ? (
+            <p className="mb-3 text-sm font-medium text-foreground">{content.greeting}</p>
+          ) : null}
 
-          {content.introParagraphs.map((paragraph, index) => (
-            <p key={`intro-${index}`} className="mb-3 text-sm text-foreground/90">
-              {paragraph}
-            </p>
-          ))}
+          {content.introParagraphs.map((paragraph, index) =>
+            hasText(paragraph) ? (
+              <p key={`intro-${index}`} className="mb-3 text-sm text-foreground/90">
+                {paragraph}
+              </p>
+            ) : null,
+          )}
 
-          <section className="mb-5">
-            <p className="mb-2 text-sm font-medium text-foreground">{content.emphasisIntro}</p>
-            <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-              {content.emphasisBullets.map((line, index) => (
-                <li key={`emphasis-${index}`}>{line}</li>
-              ))}
-            </ul>
-          </section>
+          {hasText(content.emphasisIntro) || content.emphasisBullets.some((line) => hasText(line)) ? (
+            <section className="mb-5">
+              {hasText(content.emphasisIntro) ? (
+                <p className="mb-2 text-sm font-medium text-foreground">{content.emphasisIntro}</p>
+              ) : null}
+              {content.emphasisBullets.some((line) => hasText(line)) ? (
+                <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+                  {content.emphasisBullets.map((line, index) =>
+                    hasText(line) ? <li key={`emphasis-${index}`}>{line}</li> : null,
+                  )}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
 
           {content.table?.rows?.length ? (
             <section className="mb-5">
@@ -354,7 +382,7 @@ export function SalesBenchmarksWelcomeDialog({
             </section>
           ) : null}
 
-          {content.sections.map((section, sectionIndex) => (
+          {content.sections.filter(sectionHasVisibleContent).map((section, sectionIndex) => (
             <section key={`section-${sectionIndex}`} className="mb-5 last:mb-0">
               {section.title ? (
                 <h3 className="mb-2 text-base font-semibold text-foreground">{section.title}</h3>
@@ -377,20 +405,24 @@ export function SalesBenchmarksWelcomeDialog({
             </section>
           ))}
 
-          <section className="mt-4 border-t border-border pt-4">
-            {content.closingParagraphs.map((paragraph, index) => (
-              <p
-                key={`closing-${index}`}
-                className={
-                  paragraph === content.closingSignature
-                    ? 'text-sm font-semibold text-foreground'
-                    : 'mb-2 text-sm text-foreground/90'
-                }
-              >
-                {paragraph}
-              </p>
-            ))}
-          </section>
+          {content.closingParagraphs.some((paragraph) => hasText(paragraph)) ? (
+            <section className="mt-4 border-t border-border pt-4">
+              {content.closingParagraphs.map((paragraph, index) =>
+                hasText(paragraph) ? (
+                  <p
+                    key={`closing-${index}`}
+                    className={
+                      paragraph === content.closingSignature
+                        ? 'text-sm font-semibold text-foreground'
+                        : 'mb-2 text-sm text-foreground/90'
+                    }
+                  >
+                    {paragraph}
+                  </p>
+                ) : null,
+              )}
+            </section>
+          ) : null}
         </div>
 
         <DialogFooter className="shrink-0 border-t border-border px-6 py-5 sm:justify-center">

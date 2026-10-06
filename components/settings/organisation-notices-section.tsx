@@ -27,14 +27,12 @@ import {
 import { getNoticeDisplayScheduleLabel, getNoticeStatus } from '@/lib/organisation-notice-content';
 import {
   applyNoticeDisplayMode,
-  arrayToLines,
   emptyNoticeBody,
   getNoticeDisplayMode,
-  linesToArray,
   normalizeNoticeFormForSave,
+  noticeCopyFromForm,
   NOTICE_FORM_PLACEHOLDERS,
-  NOTICE_SECTION_LABELS,
-  updateSection,
+  type NoticeCopyFields,
   type NoticeDisplayMode,
 } from '@/lib/organisation-notice-form';
 import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
@@ -97,6 +95,7 @@ export function OrganisationNoticesSection() {
 
   const [editingUid, setEditingUid] = useState<number | 'new' | null>(null);
   const [form, setForm] = useState<CreateOrganisationNoticeBody>(() => emptyNoticeBody());
+  const [copy, setCopy] = useState<NoticeCopyFields>({ header: '', body: '', footer: '' });
   const [previewNotice, setPreviewNotice] = useState<OrganisationNoticeRecord | null>(null);
 
   const noticesQuery = useQuery({
@@ -113,7 +112,7 @@ export function OrganisationNoticesSection() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      const payload = normalizeNoticeFormForSave(form);
+      const payload = normalizeNoticeFormForSave(form, copy);
       if (editingUid === 'new') {
         return postOrganisationNotice(client, orgRef, payload);
       }
@@ -150,12 +149,16 @@ export function OrganisationNoticesSection() {
   }, [previewNotice]);
 
   function startCreate() {
-    setForm(emptyNoticeBody());
+    const next = emptyNoticeBody();
+    setForm(next);
+    setCopy(noticeCopyFromForm(next));
     setEditingUid('new');
   }
 
   function startEdit(record: OrganisationNoticeRecord) {
-    setForm(recordToForm(record));
+    const next = recordToForm(record);
+    setForm(next);
+    setCopy(noticeCopyFromForm(next));
     setEditingUid(record.uid);
   }
 
@@ -170,12 +173,14 @@ export function OrganisationNoticesSection() {
       return;
     }
 
-    setForm(recordToForm(source));
+    const next = recordToForm(source);
+    setForm(next);
+    setCopy(noticeCopyFromForm(next));
     toast.success('Loaded notice from organisation');
   }
 
   function openPreview() {
-    const normalized = normalizeNoticeFormForSave(form);
+    const normalized = normalizeNoticeFormForSave(form, copy);
     const record: OrganisationNoticeRecord = {
       uid: typeof editingUid === 'number' ? editingUid : 0,
       title: normalized.title,
@@ -282,24 +287,6 @@ export function OrganisationNoticesSection() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="notice-title">Title</Label>
-                <Input
-                  id="notice-title"
-                  placeholder={NOTICE_FORM_PLACEHOLDERS.title}
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notice-subtitle">Subtitle</Label>
-                <Input
-                  id="notice-subtitle"
-                  placeholder={NOTICE_FORM_PLACEHOLDERS.subtitle}
-                  value={form.subtitle}
-                  onChange={(e) => setForm((prev) => ({ ...prev, subtitle: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="notice-show-from">Show from</Label>
                 <Input
                   id="notice-show-from"
@@ -394,195 +381,41 @@ export function OrganisationNoticesSection() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notice-greeting">Greeting</Label>
-              <Input
-                id="notice-greeting"
-                placeholder={NOTICE_FORM_PLACEHOLDERS.greeting}
-                value={form.content.greeting}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    content: { ...prev.content, greeting: e.target.value },
-                  }))
-                }
+              <Label htmlFor="notice-header">Header</Label>
+              <Textarea
+                id="notice-header"
+                rows={3}
+                placeholder={NOTICE_FORM_PLACEHOLDERS.header}
+                value={copy.header}
+                onChange={(e) => setCopy((prev) => ({ ...prev, header: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">
+                The first line is the title. Any further lines are the subtitle.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notice-intro">Intro paragraphs (one per line)</Label>
+              <Label htmlFor="notice-body">Body</Label>
               <Textarea
-                id="notice-intro"
-                rows={8}
-                placeholder={NOTICE_FORM_PLACEHOLDERS.introParagraphs}
-                value={arrayToLines(form.content.introParagraphs)}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    content: {
-                      ...prev.content,
-                      introParagraphs: linesToArray(e.target.value),
-                    },
-                  }))
-                }
+                id="notice-body"
+                rows={12}
+                placeholder={NOTICE_FORM_PLACEHOLDERS.body}
+                value={copy.body}
+                onChange={(e) => setCopy((prev) => ({ ...prev, body: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">Separate paragraphs with a blank line.</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notice-emphasis-intro">Emphasis intro</Label>
+              <Label htmlFor="notice-footer">Footer</Label>
               <Textarea
-                id="notice-emphasis-intro"
-                rows={2}
-                placeholder={NOTICE_FORM_PLACEHOLDERS.emphasisIntro}
-                value={form.content.emphasisIntro}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    content: { ...prev.content, emphasisIntro: e.target.value },
-                  }))
-                }
+                id="notice-footer"
+                rows={4}
+                placeholder={NOTICE_FORM_PLACEHOLDERS.footer}
+                value={copy.footer}
+                onChange={(e) => setCopy((prev) => ({ ...prev, footer: e.target.value }))}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notice-emphasis-bullets">Emphasis bullets (one per line)</Label>
-              <Textarea
-                id="notice-emphasis-bullets"
-                rows={10}
-                placeholder={NOTICE_FORM_PLACEHOLDERS.emphasisBullets}
-                value={arrayToLines(form.content.emphasisBullets)}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    content: {
-                      ...prev.content,
-                      emphasisBullets: linesToArray(e.target.value),
-                    },
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-foreground">Body sections</h4>
-              {form.content.sections.map((section, index) => (
-                <Card key={`section-${index}`} className="space-y-3 p-4">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {NOTICE_SECTION_LABELS[index] ?? `Section ${index + 1}`}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor={`section-title-${index}`}>Section title (optional)</Label>
-                    <Input
-                      id={`section-title-${index}`}
-                      placeholder={NOTICE_FORM_PLACEHOLDERS.sectionTitle}
-                      value={section.title ?? ''}
-                      onChange={(e) =>
-                        setForm((prev) =>
-                          updateSection(prev, index, {
-                            title: e.target.value || undefined,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`section-intro-${index}`}>Section intro (optional)</Label>
-                    <Textarea
-                      id={`section-intro-${index}`}
-                      rows={2}
-                      placeholder={NOTICE_FORM_PLACEHOLDERS.sectionIntro}
-                      value={section.intro ?? ''}
-                      onChange={(e) =>
-                        setForm((prev) =>
-                          updateSection(prev, index, {
-                            intro: e.target.value || undefined,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`section-paragraphs-${index}`}>Paragraphs (one per line)</Label>
-                    <Textarea
-                      id={`section-paragraphs-${index}`}
-                      rows={6}
-                      placeholder={NOTICE_FORM_PLACEHOLDERS.sectionParagraphs}
-                      value={arrayToLines(section.paragraphs)}
-                      onChange={(e) =>
-                        setForm((prev) =>
-                          updateSection(prev, index, {
-                            paragraphs: linesToArray(e.target.value),
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`section-bullets-${index}`}>Bullets (one per line, optional)</Label>
-                    <Textarea
-                      id={`section-bullets-${index}`}
-                      rows={6}
-                      placeholder={NOTICE_FORM_PLACEHOLDERS.sectionBullets}
-                      value={arrayToLines(section.bullets)}
-                      onChange={(e) =>
-                        setForm((prev) =>
-                          updateSection(prev, index, {
-                            bullets: linesToArray(e.target.value),
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="notice-closing">Closing lines (one per line)</Label>
-                <Textarea
-                  id="notice-closing"
-                  rows={4}
-                  placeholder={NOTICE_FORM_PLACEHOLDERS.closingParagraphs}
-                  value={arrayToLines(form.content.closingParagraphs)}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      content: {
-                        ...prev.content,
-                        closingParagraphs: linesToArray(e.target.value),
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notice-closing-signature">Closing signature</Label>
-                <Input
-                  id="notice-closing-signature"
-                  placeholder={NOTICE_FORM_PLACEHOLDERS.closingSignature}
-                  value={form.content.closingSignature}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      content: { ...prev.content, closingSignature: e.target.value },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notice-acknowledge">Acknowledge button label</Label>
-                <Input
-                  id="notice-acknowledge"
-                  placeholder={NOTICE_FORM_PLACEHOLDERS.acknowledgeLabel}
-                  value={form.content.acknowledgeLabel}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      content: { ...prev.content, acknowledgeLabel: e.target.value },
-                    }))
-                  }
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">The last line is the signature.</p>
             </div>
 
             <div className="flex justify-end gap-2">
