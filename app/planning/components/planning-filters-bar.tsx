@@ -445,14 +445,9 @@ export function PlanningFiltersBar({
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  function renderSearchField(className?: string) {
+  function renderSearchField() {
     return (
-      <div
-        className={cn(
-          'relative min-w-0 shrink-0 md:w-56 md:max-w-[16rem]',
-          className
-        )}
-      >
+      <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
           placeholder="Search tasks…"
           value={searchInput}
@@ -463,10 +458,10 @@ export function PlanningFiltersBar({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Clear search"
           >
-            <XIcon className="size-4 text-red-600" />
+            <XIcon className="size-4" />
           </button>
         ) : null}
       </div>
@@ -475,17 +470,19 @@ export function PlanningFiltersBar({
 
   return (
     <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="planning-toolbar">
-      <div className="flex md:hidden flex-col gap-2">
+      <div className="flex flex-col gap-2 md:hidden">
         <Button
           type="button"
           variant="outline"
-          className={cn(selectTriggerClass, 'h-9 w-full justify-center gap-2')}
+          className={cn(selectTriggerClass, 'h-9 w-full min-w-0 justify-center')}
           onClick={() => setFiltersDialogOpen(true)}
         >
-          <Filter className="size-4 shrink-0" aria-hidden />
+          <Filter className="mr-2 size-4 shrink-0" aria-hidden />
           Filter
         </Button>
-        {renderSearchField('w-full')}
+        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {renderSearchField()}
+        </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>

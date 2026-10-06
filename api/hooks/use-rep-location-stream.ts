@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams } from '@/lib/clerk-session-token';
-import { latestRepLocationsQueryKey } from '@/api/hooks/use-latest-rep-locations';
+import { latestRepLocationsQueryKey, setRepLocationStreamConnected } from '@/api/hooks/use-latest-rep-locations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4400';
 
@@ -25,6 +25,17 @@ export function useRepLocationStream(options?: {
     if (!enabled) return;
 
     let aborted = false;
+    let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function scheduleInvalidate(): void {
+      if (invalidateTimer) return;
+      invalidateTimer = setTimeout(() => {
+        invalidateTimer = null;
+        void queryClient.invalidateQueries({
+          queryKey: latestRepLocationsQueryKey({ maxAgeHours }),
+        });
+      }, 2000);
+    }
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function connect() {
@@ -42,6 +53,7 @@ export function useRepLocationStream(options?: {
         });
 
         if (!response.ok || !response.body || aborted) return;
+        setRepLocationStreamConnected(true);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -57,9 +69,7 @@ export function useRepLocationStream(options?: {
 
           for (const chunk of chunks) {
             if (!chunk.includes('data:')) continue;
-            void queryClient.invalidateQueries({
-              queryKey: latestRepLocationsQueryKey({ maxAgeHours }),
-            });
+            scheduleInvalidate();
           }
         }
       } catch {
@@ -75,6 +85,8 @@ export function useRepLocationStream(options?: {
 
     return () => {
       aborted = true;
+      setRepLocationStreamConnected(false);
+      if (invalidateTimer) clearTimeout(invalidateTimer);
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
   }, [

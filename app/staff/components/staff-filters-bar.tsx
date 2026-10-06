@@ -105,7 +105,7 @@ export function StaffFilterControls({
 }: StaffFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
-    ? 'h-9 min-w-0 w-[140px] shrink-0'
+    ? 'h-9 min-w-0 w-[260px] shrink-0'
     : 'h-9 w-full min-w-0';
   const roleTrigger = row
     ? 'h-9 min-w-0 w-[140px] shrink-0'

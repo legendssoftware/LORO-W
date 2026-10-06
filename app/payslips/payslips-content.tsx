@@ -178,7 +178,7 @@ export function PayslipsContent() {
           />
         ) : null}
 
-        <div className="mb-4 shrink-0">
+        <div className="shrink-0">
           <PayslipsFiltersBar
             startDate={startDate}
             endDate={endDate}

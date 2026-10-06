@@ -5,6 +5,7 @@ import {
   useBranches,
   useClientsMapData,
   useLatestRepLocations,
+  useRepLocationStream,
 } from '@/api/hooks';
 import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
 import { useOrganisationProfile } from '@/api/hooks/use-organisation-profile';
@@ -39,6 +40,7 @@ export function useVisualiserMapLayers(options: {
   visibility: VisualiserLayerVisibility;
 }) {
   const { enabled, orgRef, visibility } = options;
+  useRepLocationStream({ enabled, maxAgeHours: 8 });
 
   const branchesQuery = useBranches({ enabled });
   const orgQuery = useOrganisationProfile(orgRef, { enabled });

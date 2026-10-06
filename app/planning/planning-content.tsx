@@ -265,11 +265,14 @@ export function PlanningContent() {
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="planning-page-header"
         >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Planning</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Plan field work, routes, and follow-ups in one place.
-            </p>
+          <div className="flex items-start gap-2">
+            <div>
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Planning</h1>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                Plan field work, routes, and follow-ups in one place.
+              </p>
+            </div>
+            <RoutePlanningNote />
           </div>
           <Button
             className={cn(
@@ -286,8 +289,6 @@ export function PlanningContent() {
           </Button>
         </div>
 
-        <RoutePlanningNote tourAnchor className="mb-4" />
-
         <Tabs value={planningTab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
           <TabsList className="mb-4 w-full justify-start sm:w-auto" data-tour="planning-tabs">
             <TabsTrigger value="all" data-tour="planning-tab-all">
@@ -300,9 +301,7 @@ export function PlanningContent() {
           </TabsList>
 
           <TabsContent value="all" className="mt-0 flex min-h-0 flex-1 flex-col gap-4">
-            <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-                <PlanningFiltersBar
+            <PlanningFiltersBar
                   users={users}
                   branches={branches}
                   clientsList={clientsList}
@@ -330,6 +329,8 @@ export function PlanningContent() {
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
                 />
+            <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
                 <div
                   className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
                   data-tour="planning-task-table"

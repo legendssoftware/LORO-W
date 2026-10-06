@@ -547,14 +547,9 @@ export function LeadsFiltersBar({
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  function renderSearchField(className?: string) {
+  function renderSearchField() {
     return (
-      <div
-        className={cn(
-          'relative min-w-0 shrink-0 md:w-56 md:max-w-[16rem]',
-          className
-        )}
-      >
+      <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
           placeholder="Search leads…"
           value={searchInput}
@@ -568,10 +563,10 @@ export function LeadsFiltersBar({
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Clear search"
           >
-            <XIcon className="size-4 text-red-600" />
+            <XIcon className="size-4" />
           </button>
         ) : null}
       </div>
@@ -634,23 +629,20 @@ export function LeadsFiltersBar({
 
   return (
     <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="leads-toolbar">
-      <div className="flex md:hidden flex-col gap-2">
-        <div className="flex w-full min-w-0 flex-row items-stretch gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              selectTriggerClass,
-              'h-9 min-w-0 flex-1 justify-center gap-2'
-            )}
-            onClick={() => setFiltersDialogOpen(true)}
-          >
-            <Filter className="size-4 shrink-0" aria-hidden />
-            Filter
-          </Button>
-          <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
+      <div className="flex flex-col gap-2 md:hidden">
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(selectTriggerClass, 'h-9 w-full min-w-0 justify-center')}
+          onClick={() => setFiltersDialogOpen(true)}
+        >
+          <Filter className="mr-2 size-4 shrink-0" aria-hidden />
+          Filter
+        </Button>
+        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {renderSearchField()}
+          {actionButtons}
         </div>
-        {renderSearchField('w-full')}
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>

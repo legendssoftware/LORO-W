@@ -9,6 +9,9 @@ export type StatusFilter =
   | 'early'
   | 'behind_on_hours'
   | 'idle'
+  | 'no_clock_in_gt_2'
+  | 'no_clock_in_gt_7'
+  | 'no_clock_in_gt_10'
   | 'at_office'
   | 'work_from_home'
   | 'starting_from_home'
@@ -63,6 +66,8 @@ export interface ReportCardUser {
   /** First attendance datetime (ISO) and last date in 7-day period */
   firstAttendanceInPeriod?: string | null;
   lastAttendanceInPeriod?: string | null;
+  /** Latest clock-in (ISO), with no lookback cap. Null when the user has never clocked in. */
+  lastClockInAt?: string | null;
   /** Last app access (Clerk session lastActiveAt) in org timezone */
   lastAppAccessAt?: string | null;
   /** Device type from Clerk session (phone or laptop) */

@@ -59,6 +59,7 @@ export function fromDailyOverviewMergeMonthly(
       overtimeHours: monthly?.overtimeHours ?? undefined,
       firstAttendanceInPeriod: u.firstAttendanceInPeriod ?? null,
       lastAttendanceInPeriod: u.lastAttendanceInPeriod ?? null,
+      lastClockInAt: u.lastClockInAt ?? null,
       lastAppAccessAt: u.lastAppAccessAt ?? null,
       lastAppAccessDeviceType: u.lastAppAccessDeviceType ?? null,
       distanceFromWorkplaceMeters: present ? (u.distanceFromWorkplaceMeters ?? null) : undefined,
