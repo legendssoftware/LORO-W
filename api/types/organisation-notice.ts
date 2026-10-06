@@ -26,7 +26,7 @@ export type CreateOrganisationNoticeBody = {
   title: string;
   subtitle: string;
   content: OrganisationNoticeContent;
-  translations?: Record<string, OrganisationNoticeContent>;
+  translations?: Record<string, OrganisationNoticeContent> | null;
   showFrom: string;
   showUntil?: string | null;
   theme?: OrganisationNoticeTheme;
