@@ -372,7 +372,7 @@ export function travelRangeQueryKey(
 ) {
   return [
     ...QUERY_KEY_PREFIX,
-    'travel-range-v2',
+    'travel-range-v3',
     params?.from,
     params?.to,
     params?.branchId,

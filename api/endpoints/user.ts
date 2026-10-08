@@ -282,6 +282,7 @@ export interface TravelRangeUserRow {
   uid: number;
   clerkUserId: string | null;
   distanceKm: number;
+  visitCount: number;
   petrolClaimCount: number;
   petrolClaimAmount: number;
   fuelAllowance: number;
