@@ -556,6 +556,7 @@ export function ReportsOverviewTab() {
       number,
       {
         distanceKm: number;
+        visitCount: number;
         petrolClaimCount: number;
         petrolClaimAmount: number;
         fuelAllowance: number;
@@ -564,6 +565,7 @@ export function ReportsOverviewTab() {
     for (const u of travelQuery.data?.users ?? []) {
       map.set(u.uid, {
         distanceKm: u.distanceKm ?? 0,
+        visitCount: u.visitCount ?? 0,
         petrolClaimCount: u.petrolClaimCount ?? 0,
         petrolClaimAmount: u.petrolClaimAmount ?? 0,
         fuelAllowance: u.fuelAllowance ?? 0,
@@ -1091,9 +1093,9 @@ export function ReportsOverviewTab() {
   }
 
   async function handleExportTravel() {
-    if (useAllTime || travelExportLoading) return;
-    const from = formatUtcYmd(startDate);
-    const to = formatUtcYmd(endDate);
+    if (!rangeParams || travelExportLoading) return;
+    const from = rangeParams.from;
+    const to = rangeParams.to;
     const userUid =
       userFilter !== 'all' && Number.isFinite(Number(userFilter))
         ? Number(userFilter)

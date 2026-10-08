@@ -511,6 +511,8 @@ export type EngagementOverlay = {
 
 export type TravelOverlay = {
   distanceKm: number;
+  /** Workbook visit count (every check-in). Falls back to the Visits column when omitted. */
+  visitCount?: number;
   petrolClaimCount: number;
   petrolClaimAmount: number;
   fuelAllowance: number;
@@ -1020,11 +1022,15 @@ export function applyTravelToRow(
         })
       : periodFuel;
 
+  const visitCount = Number.isFinite(travel?.visitCount)
+    ? Math.max(0, Math.round(travel?.visitCount ?? 0))
+    : row.visits.current;
+
   return {
     ...row,
     travel: {
       distanceKm: Math.round(distanceKm * 10) / 10,
-      visitCount: row.visits.current,
+      visitCount,
       petrolClaimCount: Math.round(petrolClaimCount),
       petrolClaimAmount: Math.round(petrolClaimAmount),
       fuelAllowance,

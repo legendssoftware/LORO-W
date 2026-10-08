@@ -17,6 +17,7 @@ import { LandingFaqSection } from '@/components/landing-faq-section';
 import { LandingSiteFooter } from '@/components/marketing/landing-site-footer';
 import { LandingSiteHeader } from '@/components/marketing/landing-site-header';
 import { SmoothScroll } from '@/components/smooth-scroll';
+import { ANDROID_APP_URL } from '@/lib/android-app-url';
 import { getDefaultCoverSlots, getShuffledCoverPaths, COVER_FALLBACK_URLS, HERO_CENTER_IMAGE } from '@/lib/cover-images';
 
 export function LandingPage() {
@@ -83,7 +84,7 @@ export function LandingPage() {
                     size="lg"
                   >
                     <Link
-                      href="https://play.google.com/apps/internaltest/4700940707025220227"
+                      href={ANDROID_APP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -392,7 +393,7 @@ export function LandingPage() {
                   One app for the field and the office. Get started in minutes.
                 </p>
                 <Button asChild className="font-body rounded-lg border-0 bg-transparent text-white hover:bg-purple-600 hover:text-white gap-2" size="lg">
-                  <Link href="https://play.google.com/apps/internaltest/4700940707025220227" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                  <Link href={ANDROID_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                     Download App
                     <ArrowRightIcon size={18} />
                   </Link>
