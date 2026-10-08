@@ -156,7 +156,7 @@ function TravelMetricCell({
         {formatDistanceKm(cell.distanceKm)}
       </p>
       <p className="text-[10px] tabular-nums text-muted-foreground">
-        {formatVisitClaimLine(row.visits.current, cell.petrolClaimAmount)}
+        {formatVisitClaimLine(cell.visitCount, cell.petrolClaimAmount)}
       </p>
       <ReportProgressBar value={cell.progress} />
       {cell.fuelAllowance > 0 ? (

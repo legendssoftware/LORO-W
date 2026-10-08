@@ -1,3 +1,4 @@
+import { ANDROID_APP_URL } from '@/lib/android-app-url';
 import type { BlogPost } from './types';
 
 /**
@@ -139,7 +140,7 @@ See [pipeline in LORO](/solutions/pipeline) alongside [leads](/solutions/field-s
 
 Data costs, load shedding, and long rural runs mean apps must tolerate delay. Test on real devices with real accounts before rollout.
 
-Try the [LORO Android app](https://play.google.com/apps/internaltest/4700940707025220227) or [sign up](/sign-up) for web access.`,
+Try the [LORO Android app](${ANDROID_APP_URL}) or [sign up](/sign-up) for web access.`,
   },
   {
     slug: 'field-sales-kpis-managers',

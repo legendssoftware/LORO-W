@@ -119,7 +119,7 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
   });
 
-  it('exports Travel visits from the Visits column, not a stale travel.visitCount', () => {
+  it('exports Travel visits from the workbook visit count, not the physical Visits column', () => {
     const row = reportsTargetRowToExportRow(
       minimalRow({
         visits: { current: 12, target: 160, progress: 8 },
@@ -135,7 +135,8 @@ describe('reportsTargetRowToExportRow', () => {
       'set'
     );
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(12));
+    expect(row[headers.indexOf('Visits (current)')]).toBe(formatExportCount(12));
+    expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(88));
   });
 
   it('exports policy columns, blank when no policy applies', () => {
