@@ -23,6 +23,7 @@ import {
   TARGET_PERIOD_OPTIONS,
   type AddUserWizardValues,
 } from '@/lib/user-form';
+import { CallTargetSplitDialog } from '@/components/staff/call-target-split-dialog';
 
 const MODAL_SELECT_TRIGGER =
   'h-9 w-full border-border bg-background text-foreground';
@@ -155,17 +156,9 @@ export function StepTargets({
             </FormItem>
           )}
         />
-        <FormField
-          control={control}
-          name="targetCalls"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Target calls</FormLabel>
-              <FormControl>{numField(field)}</FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="sm:col-span-2 lg:col-span-3">
+          <CallTargetSplitDialog />
+        </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <FormField
