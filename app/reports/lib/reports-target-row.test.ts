@@ -408,6 +408,38 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
   });
 });
 
+describe('call day rates', () => {
+  const rates = { monThu: 60, friday: 40, saturday: 30 };
+
+  it('shows 60 on a Monday, 40 on Friday, 30 on Saturday, and 0 on Sunday', () => {
+    const period = {
+      periodTarget: 1370,
+      periodStartDate: '2026-10-01',
+      periodEndDate: '2026-10-31',
+      callDayRates: rates,
+      expectedDaysOverride: 1,
+    };
+    expect(prorateTargetForRange({ ...period, rangeFromYmd: '2026-10-12', rangeToYmd: '2026-10-12' })).toBe(60);
+    expect(prorateTargetForRange({ ...period, rangeFromYmd: '2026-10-16', rangeToYmd: '2026-10-16' })).toBe(40);
+    expect(prorateTargetForRange({ ...period, rangeFromYmd: '2026-10-17', rangeToYmd: '2026-10-17' })).toBe(30);
+    expect(prorateTargetForRange({ ...period, rangeFromYmd: '2026-10-18', rangeToYmd: '2026-10-18' })).toBe(0);
+  });
+
+  it('sums a Mon–Sun week to 310 instead of the monthly total divided by 20', () => {
+    expect(
+      prorateTargetForRange({
+        periodTarget: 1370,
+        periodStartDate: '2026-10-01',
+        periodEndDate: '2026-10-31',
+        rangeFromYmd: '2026-10-12',
+        rangeToYmd: '2026-10-18',
+        expectedDaysOverride: 6,
+        callDayRates: rates,
+      })
+    ).toBe(310);
+  });
+});
+
 describe('policy expected days', () => {
   it('prorates from server expected days instead of the Mon-Fri count', () => {
     // 1200 / 20 = 60 per day; 18 expected days -> 1080 regardless of the calendar span.
