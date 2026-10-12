@@ -47,6 +47,8 @@ export interface SyncProfile {
   targetWarnings?: TargetWarningsPayload | null;
   /** Types this staff user is assigned to approve. Empty means they receive none. */
   approvableTypes?: string[];
+  /** Explicit grant for sales performance tracking. Role and workforce do not grant access. */
+  canAccessPerformanceTracking?: boolean;
 }
 
 /** Response shape of POST /auth/sync-clerk */

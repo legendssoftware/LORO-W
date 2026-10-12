@@ -74,6 +74,7 @@ export const userFormSchema = z.object({
   managedBranches: z.array(z.number()).optional(),
   managedStaff: z.array(z.number()).optional(),
   approvableTypes: z.array(z.string()).optional(),
+  canAccessPerformanceTracking: z.boolean().optional(),
   businesscardURL: z.string().optional().nullable(),
   profile: profileSchema.optional().nullable(),
   employmentProfile: employmentProfileSchema.optional().nullable(),
@@ -106,6 +107,7 @@ export const wizardAccessStepSchema = addUserWizardSchema.pick({
   userref: true,
   branchUid: true,
   approvableTypes: true,
+  canAccessPerformanceTracking: true,
 });
 
 export const wizardTargetsStepSchema = targetFormFieldsSchema.omit({
@@ -133,6 +135,7 @@ export const WIZARD_STEP_FIELDS: Record<number, (keyof AddUserWizardValues)[]> =
     'userref',
     'branchUid',
     'approvableTypes',
+    'canAccessPerformanceTracking',
   ],
   2: [
     'targetSalesAmount',
@@ -194,6 +197,7 @@ export function getDefaultAddUserWizardValues(): AddUserWizardValues {
     managedBranches: [],
     managedStaff: [],
     approvableTypes: [],
+    canAccessPerformanceTracking: false,
     businesscardURL: null,
     profile: getEmptyPersonnelProfile(),
     employmentProfile: getEmptyEmploymentProfile(),

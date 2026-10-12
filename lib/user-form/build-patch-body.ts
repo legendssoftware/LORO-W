@@ -222,6 +222,7 @@ export type UserBaseline = {
   managedBranches?: number[];
   managedStaff?: number[];
   approvableTypes?: string[];
+  canAccessPerformanceTracking?: boolean;
   businesscardURL?: string | null;
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
@@ -291,6 +292,12 @@ export function buildPatchBody(
     body.managedStaff = values.managedStaff ?? [];
   if (!sameStrArr(user.approvableTypes, values.approvableTypes))
     body.approvableTypes = values.approvableTypes ?? [];
+  if (
+    (user.canAccessPerformanceTracking === true) !==
+    (values.canAccessPerformanceTracking === true)
+  ) {
+    body.canAccessPerformanceTracking = values.canAccessPerformanceTracking === true;
+  }
 
   if (norm(user.businesscardURL ?? null) !== norm(values.businesscardURL ?? null))
     body.businesscardURL = values.businesscardURL ?? undefined;
@@ -370,6 +377,9 @@ export function buildInviteFollowUpPatchBody(
     body.managedBranches = values.managedBranches;
   if (values.managedStaff?.length) body.managedStaff = values.managedStaff;
   if (values.approvableTypes?.length) body.approvableTypes = values.approvableTypes;
+  if (values.canAccessPerformanceTracking === true) {
+    body.canAccessPerformanceTracking = true;
+  }
   if (values.assignedClientIds?.length)
     body.assignedClientIds = values.assignedClientIds;
 

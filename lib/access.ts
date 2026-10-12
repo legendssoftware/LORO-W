@@ -49,29 +49,18 @@ export type PerformanceAccessUser = {
     role?: string | null;
     workforceType?: string | null;
     managedBranches?: number[] | null;
+    /** Explicit grant. Role, workforce, and managed branches do not grant access. */
+    canAccessPerformanceTracking?: boolean | null;
 };
-
-const PERFORMANCE_TRACKER_WORKFORCE = new Set(["management", "finance"]);
-const PERFORMANCE_TRACKER_ELEVATED = new Set(["admin", "owner", "manager"]);
 
 /**
  * Sales Performance Tracker (`/performance`) — same rule as APK and GET /reports/performance/*.
- * Allowed: management/finance workforce, admin/owner/manager, or assigned managed branches.
+ * Allowed only when the user has been granted performance tracking.
  */
 export function canAccessPerformanceTracker(
     user: PerformanceAccessUser | null | undefined
 ): boolean {
-    if (!user) return false;
-    const workforce =
-        typeof user.workforceType === "string"
-            ? user.workforceType.trim().toLowerCase()
-            : "";
-    if (PERFORMANCE_TRACKER_WORKFORCE.has(workforce)) return true;
-
-    const level = normalize(user.accessLevel ?? user.role ?? undefined);
-    if (PERFORMANCE_TRACKER_ELEVATED.has(level)) return true;
-
-    return Array.isArray(user.managedBranches) && user.managedBranches.length > 0;
+    return user?.canAccessPerformanceTracking === true;
 }
 
 const WELLBEING_DASHBOARD_LEVELS = new Set([
@@ -358,7 +347,7 @@ function isClientPortalPath(pathNormalized: string): boolean {
  * - `/settings` is allowed for all staff (calendar tab); org tabs gated in the page UI.
  * - `/calls` is admin-only (audio + transcripts).
  * - `/reports` is all staff (Overview + Targets scoped by role).
- * - `/performance` is workforce/role gated (management, finance, elevated, or managed branches).
+ * - `/performance` is an explicit per-user grant (`canAccessPerformanceTracking`).
  * - `/competitors` is not available to restricted (standard) users.
  * - `/visualiser` is available to all staff; standard users get a limited map (no tracking, summary, or simulation).
  * - Restricted roles only get STANDARD_USER_PATHS (plus Performance when eligible).
@@ -415,6 +404,7 @@ export function canAccess(
             role: performanceUser?.role,
             workforceType: performanceUser?.workforceType,
             managedBranches: performanceUser?.managedBranches,
+            canAccessPerformanceTracking: performanceUser?.canAccessPerformanceTracking,
         });
     }
 
@@ -561,6 +551,7 @@ export function getAllowedRoutes(
             role: performanceUser?.role,
             workforceType: performanceUser?.workforceType,
             managedBranches: performanceUser?.managedBranches,
+            canAccessPerformanceTracking: performanceUser?.canAccessPerformanceTracking,
         })
     ) {
         fullNav.push({ path: "/performance", label: "Performance" });
@@ -587,6 +578,7 @@ export function getAllowedRoutes(
             role: performanceUser?.role,
             workforceType: performanceUser?.workforceType,
             managedBranches: performanceUser?.managedBranches,
+            canAccessPerformanceTracking: performanceUser?.canAccessPerformanceTracking,
         }) &&
         !restrictedNav.some((r) => r.path === "/performance")
     ) {

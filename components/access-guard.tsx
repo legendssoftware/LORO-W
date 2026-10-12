@@ -42,6 +42,7 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     backendUserData?.workforceType,
     backendUserData?.managedBranches,
     backendUserData?.role,
+    backendUserData?.canAccessPerformanceTracking,
   ]);
 
   return <>{children}</>;

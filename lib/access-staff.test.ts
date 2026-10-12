@@ -45,37 +45,53 @@ describe('canManageApprovals', () => {
 });
 
 describe('canAccessPerformanceTracker', () => {
-  it('allows admin, owner, and manager by access level', () => {
-    expect(canAccessPerformanceTracker({ accessLevel: 'admin' })).toBe(true);
-    expect(canAccessPerformanceTracker({ accessLevel: 'owner' })).toBe(true);
-    expect(canAccessPerformanceTracker({ accessLevel: 'manager' })).toBe(true);
+  it('allows only an explicit grant', () => {
+    expect(
+      canAccessPerformanceTracker({
+        accessLevel: 'user',
+        canAccessPerformanceTracking: true,
+      })
+    ).toBe(true);
   });
 
-  it('allows management and finance workforce types', () => {
+  it('denies admin, owner, and manager without the grant', () => {
+    expect(canAccessPerformanceTracker({ accessLevel: 'admin' })).toBe(false);
+    expect(canAccessPerformanceTracker({ accessLevel: 'owner' })).toBe(false);
+    expect(canAccessPerformanceTracker({ accessLevel: 'manager' })).toBe(false);
+  });
+
+  it('denies management and finance workforce types without the grant', () => {
     expect(
       canAccessPerformanceTracker({
         accessLevel: 'user',
         workforceType: 'management',
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       canAccessPerformanceTracker({
         accessLevel: 'user',
         workforceType: 'finance',
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it('allows users with managed branches', () => {
+  it('denies users with managed branches unless granted', () => {
     expect(
       canAccessPerformanceTracker({
         accessLevel: 'user',
         managedBranches: [12],
       })
+    ).toBe(false);
+    expect(
+      canAccessPerformanceTracker({
+        accessLevel: 'user',
+        managedBranches: [12],
+        canAccessPerformanceTracking: true,
+      })
     ).toBe(true);
   });
 
-  it('blocks standard users without workforce or branches', () => {
+  it('blocks users without the grant', () => {
     expect(canAccessPerformanceTracker(null)).toBe(false);
     expect(canAccessPerformanceTracker({ accessLevel: 'user' })).toBe(false);
     expect(
@@ -83,6 +99,7 @@ describe('canAccessPerformanceTracker', () => {
         accessLevel: 'user',
         workforceType: 'field_employee',
         managedBranches: [],
+        canAccessPerformanceTracking: false,
       })
     ).toBe(false);
   });
@@ -94,12 +111,19 @@ describe('canAccessPerformanceTracker', () => {
         accessLevel: 'user',
         workforceType: 'finance',
       })
+    ).toBe(false);
+    expect(
+      canAccess('/performance', 'user', null, {
+        accessLevel: 'user',
+        canAccessPerformanceTracking: true,
+      })
     ).toBe(true);
-    expect(canAccess('/performance', 'admin')).toBe(true);
+    expect(canAccess('/performance', 'admin')).toBe(false);
 
     const restrictedRoutes = getAllowedRoutes('user', null, {
       accessLevel: 'user',
       managedBranches: [3],
+      canAccessPerformanceTracking: true,
     });
     expect(restrictedRoutes.some((r) => r.path === '/performance')).toBe(true);
 
