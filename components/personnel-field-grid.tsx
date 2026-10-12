@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { PersonnelFieldSpec } from '@/lib/user-form/personnel-fields';
+import { savedFieldPlaceholder } from '@/lib/user-form/field-placeholder';
 
 const EMPTY_SELECT_VALUE = '__empty__';
 
@@ -63,6 +64,7 @@ function PersonnelFieldControl({
     onChange: (value: unknown) => void;
   };
 }) {
+  const placeholder = savedFieldPlaceholder(field.value, spec.placeholder ?? '');
   switch (spec.kind) {
     case 'date':
       return (
@@ -71,6 +73,7 @@ function PersonnelFieldControl({
             value={(field.value as string | null | undefined) ?? undefined}
             onChange={(value) => field.onChange(value || null)}
             aria-label={spec.label}
+            placeholder={placeholder || 'DD/MM/YYYY'}
             preset={spec.datePreset ?? 'default'}
           />
         </FormControl>
@@ -82,7 +85,7 @@ function PersonnelFieldControl({
             type="number"
             min={0}
             step="1"
-            placeholder={spec.placeholder}
+            placeholder={placeholder || spec.placeholder}
             value={typeof field.value === 'number' ? field.value : ''}
             onChange={(event) => {
               const raw = event.target.value;
@@ -100,7 +103,7 @@ function PersonnelFieldControl({
         >
           <FormControl>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={spec.placeholder ?? `Select ${spec.label.toLowerCase()}`} />
+              <SelectValue placeholder={placeholder || spec.placeholder || `Select ${spec.label.toLowerCase()}`} />
             </SelectTrigger>
           </FormControl>
           <SelectContent>
@@ -120,7 +123,7 @@ function PersonnelFieldControl({
         <FormControl>
           <Input
             type={spec.kind === 'tel' ? 'tel' : 'text'}
-            placeholder={spec.placeholder}
+            placeholder={placeholder || spec.placeholder}
             value={(field.value as string | number | null | undefined) ?? ''}
             onChange={(event) => field.onChange(event.target.value || null)}
           />

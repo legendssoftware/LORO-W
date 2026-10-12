@@ -13,6 +13,7 @@ import { DatePickerField } from '@/components/ui/date-picker-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
 import type { UserFormValues } from '@/lib/user-form';
+import { savedFieldPlaceholder } from '@/lib/user-form/field-placeholder';
 import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
 import { CollapsibleFormSection } from '@/components/collapsible-form-section';
 
@@ -31,7 +32,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Branch ref</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. BR001" />
+                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. BR001')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -44,7 +45,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Position</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Sales Representative" />
+                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. Sales Representative')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -57,7 +58,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Department</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. Sales" />
+                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. Sales')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -70,7 +71,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Start date</FormLabel>
                 <FormControl>
-                  <DatePickerField value={field.value} onChange={field.onChange} />
+                  <DatePickerField value={field.value} onChange={field.onChange} placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -83,7 +84,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>End date</FormLabel>
                 <FormControl>
-                  <DatePickerField value={field.value} onChange={field.onChange} />
+                  <DatePickerField value={field.value} onChange={field.onChange} placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -109,7 +110,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Work email</FormLabel>
                 <FormControl>
-                  <Input type="email" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="work@company.com" />
+                  <Input type="email" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'work@company.com')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -122,7 +123,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
               <FormItem>
                 <FormLabel>Contact number</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="+27 64 123 4567" />
+                  <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, '+27 64 123 4567')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
