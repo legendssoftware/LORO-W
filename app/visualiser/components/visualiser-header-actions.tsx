@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { BarChart3, Info, Loader2, MapPin, Sparkles } from 'lucide-react';
+import { BarChart3, Fuel, Info, Loader2, MapPin, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useRefreshFuelPrices } from '@/api/hooks/use-rep-journey';
+import type { FuelPriceRefreshStatus } from '@/api/types/tracking';
 import { MapSummaryModal } from '@/app/visualiser/components/map-summary-modal';
 import { MapSimulationInfoModal } from '@/app/visualiser/components/map-simulation-info-modal';
 import { ExportSimulationButton } from '@/app/visualiser/components/export-simulation-button';
@@ -18,7 +21,7 @@ interface VisualiserHeaderActionsProps {
   counts: Record<VisualiserLayerId, number>;
   disabled?: boolean;
   /**
-   * Standard-user map: hide summary and simulation.
+   * Standard-user map: hide summary, petrol prices, and simulation.
    * Geocode stays visible and is forced off.
    */
   limited?: boolean;
@@ -33,7 +36,49 @@ export function VisualiserHeaderActions({
   const [openModal, setOpenModal] = useState<ModalId>(null);
   const { openPanel, panelOpen, isActive } = useVisualiserSimulation();
   const geocodeMutation = useGeocodeMapBatchMutation();
+  const fuelRefresh = useRefreshFuelPrices();
   const isGeocoding = geocodeMutation.isPending;
+  const isFetchingFuel = fuelRefresh.isPending;
+
+  async function handleFetchPetrolPrices(): Promise<void> {
+    const toastId = 'fuel-price-refresh';
+    toast.loading('Fetching petrol prices…', { id: toastId });
+    try {
+      const { message, data } = await fuelRefresh.mutateAsync();
+      const status: FuelPriceRefreshStatus = data.status;
+      switch (status) {
+        case 'failed':
+        case 'not-configured':
+          toast.error(message, { id: toastId });
+          return;
+        case 'throttled':
+          toast(message, { id: toastId });
+          return;
+        case 'fresh':
+          toast.success('Petrol prices are already up to date', { id: toastId });
+          return;
+        case 'refreshed':
+          toast.success(
+            data.missingCountries.length > 0
+              ? message
+              : data.rows > 0
+                ? `Updated ${data.rows} petrol price${data.rows === 1 ? '' : 's'}`
+                : message,
+            { id: toastId }
+          );
+          return;
+        default: {
+          const unhandled: never = status;
+          toast.error(message || unhandled, { id: toastId });
+        }
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to fetch petrol prices',
+        { id: toastId }
+      );
+    }
+  }
 
   return (
     <>
@@ -50,6 +95,28 @@ export function VisualiserHeaderActions({
           >
             <BarChart3 className="size-4" />
             <span className="hidden md:inline">Summary</span>
+          </Button>
+        )}
+        {limited ? null : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled || isFetchingFuel}
+            onClick={() => {
+              void handleFetchPetrolPrices();
+            }}
+            aria-label="Fetch petrol prices afresh"
+            title="Fetch petrol prices afresh"
+          >
+            {isFetchingFuel ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Fuel className="size-4" />
+            )}
+            <span className="hidden md:inline">
+              {isFetchingFuel ? 'Fetching…' : 'Petrol prices'}
+            </span>
           </Button>
         )}
         <Button
