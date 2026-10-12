@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2Icon } from '@/lib/icons';
+import { savedFieldPlaceholder } from '@/lib/user-form/field-placeholder';
 
 const VEHICLE_SIZE_OPTIONS = [
   { value: 'compact', label: 'Compact' },
@@ -132,7 +133,7 @@ export function VehicleFormDialog({
             <Input
               value={form.displayName}
               onChange={(e) => updateField('displayName', e.target.value)}
-              placeholder="Sales Hilux"
+              placeholder={savedFieldPlaceholder(form.displayName, 'Sales Hilux')}
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -141,7 +142,7 @@ export function VehicleFormDialog({
               <Input
                 value={form.make}
                 onChange={(e) => updateField('make', e.target.value)}
-                placeholder="Toyota"
+                placeholder={savedFieldPlaceholder(form.make, 'Toyota')}
               />
             </div>
             <div className="grid gap-1">
@@ -149,7 +150,7 @@ export function VehicleFormDialog({
               <Input
                 value={form.model}
                 onChange={(e) => updateField('model', e.target.value)}
-                placeholder="Hilux 2.4 GD-6"
+                placeholder={savedFieldPlaceholder(form.model, 'Hilux 2.4 GD-6')}
               />
             </div>
           </div>
@@ -200,7 +201,7 @@ export function VehicleFormDialog({
                 min="0.1"
                 value={form.ratedKmPerLitre}
                 onChange={(e) => updateField('ratedKmPerLitre', e.target.value)}
-                placeholder="9.5"
+                placeholder={savedFieldPlaceholder(form.ratedKmPerLitre, '9.5')}
               />
             </div>
             <div className="grid gap-1">
@@ -208,7 +209,7 @@ export function VehicleFormDialog({
               <Input
                 value={form.registrationPlate}
                 onChange={(e) => updateField('registrationPlate', e.target.value)}
-                placeholder="CA 123-456"
+                placeholder={savedFieldPlaceholder(form.registrationPlate, 'CA 123-456')}
               />
             </div>
           </div>

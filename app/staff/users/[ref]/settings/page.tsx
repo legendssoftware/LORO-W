@@ -21,7 +21,7 @@ import {
   useReInviteUserMutation,
   getBranchDisplayLabel,
 } from '@/api/hooks';
-import type { UserListItem } from '@/api/endpoints/user';
+import type { UserListItem, UserResponse } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
@@ -115,6 +115,7 @@ import {
   getEmptyPersonnelProfile,
   mapEmploymentFromApi,
   mapProfileFromApi,
+  savedFieldPlaceholder,
   type TargetFormValues,
   type UserFormValues,
 } from '@/lib/user-form';
@@ -222,6 +223,38 @@ function workforceTypeRowIcon(value: string): React.ComponentType<{ className?: 
 
 const formSchema = userFormSchema;
 type FormValues = UserFormValues;
+
+function formValuesFromUser(user: UserResponse): FormValues {
+  const profile = user.userProfile ?? null;
+  const emp = user.userEmployeementProfile ?? null;
+  const empEmail = typeof emp?.email === 'string' ? emp.email.trim() : '';
+  const empContact = typeof emp?.contactNumber === 'string' ? emp.contactNumber.trim() : '';
+  const primaryEmail = (user.email?.trim() || empEmail || '') as string;
+  const primaryPhone = (user.phone?.trim() || empContact || null) as string | null;
+  return {
+    name: user.name ?? '',
+    surname: user.surname ?? '',
+    email: primaryEmail,
+    phone: primaryPhone,
+    pbxExtension: user.pbxExtension ?? null,
+    userref: user.userref ?? null,
+    hrID: user.hrID ?? null,
+    role: (user.role as string) ?? '',
+    status: (user.status as string) ?? 'active',
+    accessLevel: (user.accessLevel as string) ?? '',
+    workforceType: user.workforceType ?? '',
+    departmentId: (user.departmentId as number) ?? null,
+    branchUid: normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null),
+    managedBranches: user.managedBranches ?? [],
+    managedStaff: user.managedStaff ?? [],
+    approvableTypes: Array.isArray(user.approvableTypes) ? user.approvableTypes : [],
+    canAccessPerformanceTracking: user.canAccessPerformanceTracking === true,
+    businesscardURL: user.businesscardURL ?? null,
+    profile: mapProfileFromApi(profile, parseFormDateInput),
+    employmentProfile: mapEmploymentFromApi(emp, parseFormDateInput),
+    assignedClientIds: user.assignedClientIds ?? [],
+  };
+}
 
 /** Format enum value for display (e.g. "event planner" -> "Event planner"). */
 function formatEnumLabel(value: string): string {
@@ -424,46 +457,7 @@ export default function UserSettingsPage() {
 
   useEffect(() => {
     if (user) {
-      const up = user as {
-        userProfile?: Record<string, unknown> | null;
-        userEmployeementProfile?: Record<string, unknown> | null;
-        businesscardURL?: string | null;
-        assignedClientIds?: number[];
-        [key: string]: unknown;
-      };
-      const profile = up.userProfile ?? null;
-      const emp = up.userEmployeementProfile ?? null;
-      const empEmail = (emp?.email as string | undefined)?.trim();
-      const empContact = (emp?.contactNumber as string | undefined)?.trim();
-      const primaryEmail = (user.email?.trim() || empEmail || '') as string;
-      const primaryPhone =
-        (user.phone?.trim() || empContact || null) as string | null;
-      form.reset({
-        name: user.name ?? '',
-        surname: user.surname ?? '',
-        email: primaryEmail,
-        phone: primaryPhone,
-        pbxExtension: user.pbxExtension ?? null,
-        userref: (user as { userref?: string }).userref ?? null,
-        hrID: (user as { hrID?: number }).hrID ?? null,
-        role: (user.role as string) ?? '',
-        status: (user.status as string) ?? 'active',
-        accessLevel: (user.accessLevel as string) ?? '',
-        workforceType: (user as { workforceType?: string | null }).workforceType ?? '',
-        departmentId: (user.departmentId as number) ?? null,
-        branchUid: normalizePrimaryBranchUid(user.branch?.uid ?? user.branchUid ?? null),
-        managedBranches: (user as { managedBranches?: number[] }).managedBranches ?? [],
-        managedStaff: (user as { managedStaff?: number[] }).managedStaff ?? [],
-        approvableTypes: Array.isArray((user as { approvableTypes?: string[] }).approvableTypes)
-          ? ((user as { approvableTypes?: string[] }).approvableTypes ?? [])
-          : [],
-        canAccessPerformanceTracking:
-          (user as { canAccessPerformanceTracking?: boolean }).canAccessPerformanceTracking === true,
-        businesscardURL: up.businesscardURL ?? null,
-        profile: mapProfileFromApi(profile, parseFormDateInput),
-        employmentProfile: mapEmploymentFromApi(emp, parseFormDateInput),
-        assignedClientIds: up.assignedClientIds ?? [],
-      });
+      form.reset(formValuesFromUser(user));
     }
   }, [user, form]);
 
@@ -509,7 +503,7 @@ export default function UserSettingsPage() {
       return;
     }
     patchUser.mutate(body, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         if (hasUserChanges && hasTargetChanges) {
           toast.success('User and targets updated');
         } else if (hasTargetChanges) {
@@ -517,7 +511,18 @@ export default function UserSettingsPage() {
         } else {
           toast.success('User updated');
         }
-        router.push('/staff');
+        if (result.user) {
+          form.reset(formValuesFromUser(result.user));
+          const savedTarget = result.user.userTarget;
+          if (savedTarget && typeof savedTarget === 'object') {
+            const incoming = getDefaultTargetValues(savedTarget as Record<string, unknown>);
+            const next = preserveAssignedVehicleUids(incoming, targetForm.getValues(), {
+              sameUser: lastHydratedTargetUid.current === result.user.uid,
+            });
+            targetForm.reset(next);
+            lastHydratedTargetUid.current = result.user.uid;
+          }
+        }
       },
       onError: (err: Error) => {
         toast.error(err.message || 'Failed to update user');
@@ -637,7 +642,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>First name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Jane" autoComplete="given-name" />
+                          <Input {...field} placeholder={savedFieldPlaceholder(field.value, 'Jane')} autoComplete="given-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -650,7 +655,7 @@ export default function UserSettingsPage() {
                       <FormItem>
                         <FormLabel>Surname</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Smith" autoComplete="family-name" />
+                          <Input {...field} placeholder={savedFieldPlaceholder(field.value, 'Smith')} autoComplete="family-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -667,7 +672,7 @@ export default function UserSettingsPage() {
                         <Input
                           type="email"
                           {...field}
-                          placeholder="jane.smith@example.com"
+                          placeholder={savedFieldPlaceholder(field.value, 'jane.smith@example.com')}
                           autoComplete="email"
                         />
                       </FormControl>
@@ -689,7 +694,7 @@ export default function UserSettingsPage() {
                           onChange={(e) =>
                             field.onChange(e.target.value || null)
                           }
-                          placeholder="+27 64 123 4567"
+                          placeholder={savedFieldPlaceholder(field.value, '+27 64 123 4567')}
                           autoComplete="tel"
                         />
                       </FormControl>
@@ -710,7 +715,7 @@ export default function UserSettingsPage() {
                           onChange={(e) =>
                             field.onChange(e.target.value || null)
                           }
-                          placeholder="2007"
+                          placeholder={savedFieldPlaceholder(field.value, '2007')}
                           autoComplete="off"
                         />
                       </FormControl>
@@ -727,7 +732,7 @@ export default function UserSettingsPage() {
                       <FormControl>
                         <Input
                           type="url"
-                          placeholder="https://..."
+                          placeholder={savedFieldPlaceholder(field.value, 'https://...')}
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) =>
@@ -760,7 +765,7 @@ export default function UserSettingsPage() {
                             onChange={(e) =>
                               field.onChange(e.target.value || null)
                             }
-                            placeholder="e.g. USR123456"
+                            placeholder={savedFieldPlaceholder(field.value, 'e.g. USR123456')}
                           />
                         </FormControl>
                         <FormMessage />
@@ -782,7 +787,7 @@ export default function UserSettingsPage() {
                               const v = e.target.value;
                               field.onChange(v === '' ? null : Number(v));
                             }}
-                            placeholder="HR system ID"
+                            placeholder={savedFieldPlaceholder(field.value, 'HR system ID')}
                           />
                         </FormControl>
                         <FormMessage />
@@ -803,7 +808,7 @@ export default function UserSettingsPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="w-full min-w-0">
-                              <SelectValue placeholder="Role" />
+                              <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Role')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -836,7 +841,7 @@ export default function UserSettingsPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="w-full min-w-0">
-                              <SelectValue placeholder="Access level" />
+                              <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Access level')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -869,7 +874,7 @@ export default function UserSettingsPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="w-full min-w-0">
-                              <SelectValue placeholder="Status" />
+                              <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Status')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -903,7 +908,7 @@ export default function UserSettingsPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="w-full min-w-0">
-                              <SelectValue placeholder="Workforce type" />
+                              <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Workforce type')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -940,7 +945,7 @@ export default function UserSettingsPage() {
                             const v = e.target.value;
                             field.onChange(v === '' ? null : Number(v));
                           }}
-                          placeholder="e.g. 12"
+                          placeholder={savedFieldPlaceholder(field.value, 'e.g. 12')}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1281,7 +1286,7 @@ export default function UserSettingsPage() {
                           >
                             <FormControl>
                               <SelectTrigger className="w-full min-w-0">
-                                <SelectValue placeholder="None" />
+                                <SelectValue placeholder={savedFieldPlaceholder(field.value, 'None')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -1309,7 +1314,7 @@ export default function UserSettingsPage() {
                               <Input
                                 type="number"
                                 step="any"
-                                placeholder="0"
+                                placeholder={savedFieldPlaceholder(field.value, '0')}
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
@@ -1329,7 +1334,7 @@ export default function UserSettingsPage() {
                               <Input
                                 type="number"
                                 step="any"
-                                placeholder="0"
+                                placeholder={savedFieldPlaceholder(field.value, '0')}
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }}
@@ -1357,7 +1362,7 @@ export default function UserSettingsPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
-                                  <SelectValue placeholder="Select currency" />
+                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Select currency')} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -1385,7 +1390,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target hours</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1398,7 +1403,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target new clients</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1411,7 +1416,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target new leads</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1424,7 +1429,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target check-ins</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1437,7 +1442,7 @@ export default function UserSettingsPage() {
                           <FormItem>
                             <FormLabel>Target calls</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1463,7 +1468,7 @@ export default function UserSettingsPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
-                                  <SelectValue placeholder="Select period" />
+                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Select period')} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -1494,6 +1499,7 @@ export default function UserSettingsPage() {
                               <DatePickerField
                             value={field.value}
                             onChange={field.onChange}
+                            placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')}
                           />
                             </FormControl>
                             <FormMessage />
@@ -1510,6 +1516,7 @@ export default function UserSettingsPage() {
                               <DatePickerField
                             value={field.value}
                             onChange={field.onChange}
+                            placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')}
                           />
                             </FormControl>
                             <FormMessage />
@@ -1525,7 +1532,7 @@ export default function UserSettingsPage() {
                             <Select onValueChange={field.onChange} value={field.value ?? ''}>
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
-                                  <SelectValue placeholder="Interval" />
+                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Interval')} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -1586,7 +1593,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Base salary</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1599,7 +1606,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car instalment</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1612,7 +1619,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car insurance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1625,7 +1632,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Fuel</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1638,7 +1645,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Cell phone allowance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1651,7 +1658,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Car maintenance</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1664,7 +1671,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>CGIC costs</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1677,7 +1684,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>Total cost</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
+                                <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1690,7 +1697,7 @@ export default function UserSettingsPage() {
                             <FormItem>
                               <FormLabel>ERP sales rep code</FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder="e.g. REP001" />
+                                <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. REP001')} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
