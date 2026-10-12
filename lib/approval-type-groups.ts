@@ -42,6 +42,8 @@ const REST_GROUPS: ApprovalTypeGroup[] = [
       { value: 'policy', label: 'Policy' },
       { value: 'budget_request', label: 'Budget request' },
       { value: 'purchase_order', label: 'Purchase order' },
+      { value: 'credit_note', label: 'Credit note' },
+      { value: 'customer_refund', label: 'Customer refund' },
       { value: 'financial_report', label: 'Financial report' },
     ],
   },
