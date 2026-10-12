@@ -758,8 +758,11 @@ export function ReportsOverviewTab() {
     policyPending,
   ]);
 
+  const [excludedCustomerCategories, setExcludedCustomerCategories] = useState<string[]>([]);
+
   const {
     enrichmentByKey,
+    customerCategories,
     isEnriching,
     enrichRow: applyPhasedEnrichment,
   } = usePhasedPageEnrichment({
@@ -768,6 +771,7 @@ export function ReportsOverviewTab() {
     enabled: isTokenReady && isMultiUser && pageRows.length > 0,
     rangeFrom: rangeParams?.from ?? null,
     rangeTo: rangeParams?.to ?? null,
+    excludeCustomerCategories: excludedCustomerCategories,
     preserveRangeMetrics: engagementReady,
   });
 
@@ -1163,6 +1167,9 @@ export function ReportsOverviewTab() {
         onExportTravel={handleExportTravel}
         exportDisabled={isLoading || displayRowsWithCurrency.length === 0}
         travelExportLoading={travelExportLoading}
+        customerCategories={customerCategories}
+        excludedCustomerCategoryIds={excludedCustomerCategories}
+        onExcludedCustomerCategoriesChange={setExcludedCustomerCategories}
       />
 
       {errorMessage ? (
