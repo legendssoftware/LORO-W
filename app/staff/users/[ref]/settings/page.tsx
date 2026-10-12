@@ -26,6 +26,7 @@ import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
 import { CalendarDays } from 'lucide-react';
+import { CallTargetSplitDialog } from '@/components/staff/call-target-split-dialog';
 import {
   Check,
   CheckCircle,
@@ -1435,19 +1436,9 @@ export default function UserSettingsPage() {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={targetForm.control}
-                        name="targetCalls"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Target calls</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <CallTargetSplitDialog />
+                      </div>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                       <FormField
