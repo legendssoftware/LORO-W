@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  FuelPriceLatestResponse,
   FuelPriceRefreshResponse,
   LatestRepLocationsResponse,
   RepJourneyCustomRangeParams,
@@ -105,6 +106,37 @@ function isFuelPriceRefreshResponse(
     (value as FuelPriceRefreshResponse).data != null &&
     'status' in (value as FuelPriceRefreshResponse).data
   );
+}
+
+function isFuelPriceLatestResponse(value: unknown): value is FuelPriceLatestResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'data' in value &&
+    typeof (value as FuelPriceLatestResponse).data === 'object' &&
+    (value as FuelPriceLatestResponse).data != null &&
+    'countries' in (value as FuelPriceLatestResponse).data
+  );
+}
+
+/**
+ * GET /gps/fuel-prices — stored national prices. Does not call the vendor.
+ */
+export async function getFuelPrices(client: AxiosInstance): Promise<FuelPriceLatestResponse> {
+  const { data } = await client.get<FuelPriceLatestResponse | { data: FuelPriceLatestResponse }>(
+    '/gps/fuel-prices'
+  );
+
+  if (isFuelPriceLatestResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isFuelPriceLatestResponse((data as { data: FuelPriceLatestResponse }).data)
+  ) {
+    return (data as { data: FuelPriceLatestResponse }).data;
+  }
+  throw new Error('Invalid fuel price response');
 }
 
 /**

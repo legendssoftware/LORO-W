@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
-import { getRepJourney, refreshFuelPrices } from '@/api/endpoints/tracking';
+import { getFuelPrices, getRepJourney, refreshFuelPrices } from '@/api/endpoints/tracking';
 import type {
+  FuelPriceLatestSnapshot,
   FuelPriceRefreshResponse,
   RepJourneyCustomRangeParams,
   RepJourneyData,
@@ -11,6 +12,7 @@ import type {
 } from '@/api/types/tracking';
 
 const REP_JOURNEY_QUERY_KEY = ['gps', 'user', 'journey'] as const;
+export const FUEL_PRICES_QUERY_KEY = ['gps', 'fuel-prices'] as const;
 
 /**
  * Re-run the server's GlobalPetrolPrices fetch. On a successful refresh the
@@ -28,7 +30,24 @@ export function useRefreshFuelPrices() {
       if (status === 'refreshed' || status === 'throttled') {
         queryClient.removeQueries({ queryKey: REP_JOURNEY_QUERY_KEY });
       }
+      if (status === 'refreshed' || status === 'fresh' || status === 'throttled') {
+        void queryClient.invalidateQueries({ queryKey: FUEL_PRICES_QUERY_KEY });
+      }
     },
+  });
+}
+
+/** Stored national fuel prices. Does not fetch from the vendor. */
+export function useFuelPrices(enabled: boolean) {
+  const client = useApiClient();
+
+  return useQuery({
+    queryKey: FUEL_PRICES_QUERY_KEY,
+    queryFn: async (): Promise<FuelPriceLatestSnapshot> => {
+      const response = await getFuelPrices(client);
+      return response.data;
+    },
+    enabled,
   });
 }
 
