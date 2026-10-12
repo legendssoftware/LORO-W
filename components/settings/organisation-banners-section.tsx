@@ -805,37 +805,76 @@ export function OrganisationBannersSection() {
         </DialogContent>
       </Dialog>
 
-      {/* Saved / form preview dialog */}
+      {/* Saved / form preview dialog — phone width, matching the app carousel and detail modal */}
       <Dialog open={Boolean(previewBanner)} onOpenChange={(open) => !open && setPreviewBanner(null)}>
-        <DialogContent className="max-w-lg overflow-hidden">
+        <DialogContent className="max-h-[90vh] w-[390px] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-[390px]">
           <DialogHeader>
-            <DialogTitle>{previewBanner?.title}</DialogTitle>
-            <DialogDescription>{previewBanner?.subtitle}</DialogDescription>
+            <DialogTitle>Mobile preview</DialogTitle>
+            <DialogDescription>
+              Phone-sized carousel and tap dialog, the size reps see in the app.
+            </DialogDescription>
           </DialogHeader>
           {previewBanner?.image ? (
-            <div className="-mx-6 space-y-2">
-              <p className="px-6 text-xs font-medium text-muted-foreground">Carousel preview (image only in app)</p>
-              <img
-                src={previewBanner.image}
-                alt=""
-                className="max-h-48 w-full object-cover"
-              />
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Carousel preview (image only in app)
+              </p>
+              <div className="h-[320px] w-full overflow-hidden rounded-xl bg-muted">
+                <img
+                  src={previewBanner.image}
+                  alt=""
+                  className="size-full object-cover object-center"
+                />
+              </div>
             </div>
           ) : null}
-          <p className="text-sm text-muted-foreground">{previewBanner?.description}</p>
           {previewBanner ? (
-            <p className="text-xs text-muted-foreground">{getBannerScheduleLabel(previewBanner)}</p>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Dialog preview</p>
+              <div className="rounded-2xl bg-black/70 p-4">
+                <div className="mx-auto w-[88%] overflow-hidden rounded-2xl bg-background shadow-md">
+                  {previewBanner.image ? (
+                    <div className="aspect-[1.07/1] w-full overflow-hidden">
+                      <img
+                        src={previewBanner.image}
+                        alt=""
+                        className="size-full object-cover object-center"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="space-y-2 px-5 pt-5 pb-6">
+                    {previewBanner.category ? (
+                      <Badge variant="secondary" className="capitalize">
+                        {previewBanner.category}
+                      </Badge>
+                    ) : null}
+                    <p className="text-xl font-bold leading-tight">{previewBanner.title}</p>
+                    {previewBanner.subtitle ? (
+                      <p className="text-base text-muted-foreground">{previewBanner.subtitle}</p>
+                    ) : null}
+                    {previewBanner.description ? (
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {previewBanner.description}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : null}
           {previewBanner ? (
-            <div className="flex flex-wrap gap-2">
-              {scheduleStatusBadge(getBannerScheduleStatus(previewBanner))}
-              {previewBanner.uid > 0 && liveInAppSet.has(previewBanner.uid) ? (
-                carouselSlotBadge(
-                  getBannerScheduleStatus(previewBanner),
-                  liveAppRank(previewBanner.uid) ?? 1
-                )
-              ) : null}
-              <Badge variant="outline">{previewBanner.category}</Badge>
+            <div className="space-y-2 border-t pt-3">
+              <p className="text-xs text-muted-foreground">{getBannerScheduleLabel(previewBanner)}</p>
+              <div className="flex flex-wrap gap-2">
+                {scheduleStatusBadge(getBannerScheduleStatus(previewBanner))}
+                {previewBanner.uid > 0 && liveInAppSet.has(previewBanner.uid) ? (
+                  carouselSlotBadge(
+                    getBannerScheduleStatus(previewBanner),
+                    liveAppRank(previewBanner.uid) ?? 1
+                  )
+                ) : null}
+                <Badge variant="outline">{previewBanner.category}</Badge>
+              </div>
             </div>
           ) : null}
         </DialogContent>

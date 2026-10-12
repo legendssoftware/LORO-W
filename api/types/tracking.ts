@@ -241,3 +241,30 @@ export interface FuelPriceRefreshResponse {
   message: string;
   data: FuelPriceRefreshResult;
 }
+
+export interface FuelPriceLatestGrade {
+  priceLocal: number;
+  currency: string;
+  priceZar: number | null;
+  sourceDate: string;
+  fetchedAt: string;
+}
+
+export interface FuelPriceLatestCountry {
+  countryCode: string;
+  countryName: string | null;
+  petrol: FuelPriceLatestGrade | null;
+  diesel: FuelPriceLatestGrade | null;
+}
+
+export interface FuelPriceLatestSnapshot {
+  source: 'globalpetrolprices';
+  updatedAt: string | null;
+  sourceDate: string | null;
+  countries: FuelPriceLatestCountry[];
+}
+
+export interface FuelPriceLatestResponse {
+  message: string;
+  data: FuelPriceLatestSnapshot;
+}
