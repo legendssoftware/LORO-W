@@ -23,6 +23,11 @@ import {
   TARGET_WORKING_DAYS_PER_MONTH,
   workingDaysInclusiveYmd,
 } from '@/lib/utils/target-working-days';
+import {
+  readCallDayRates,
+  sumCallTargets,
+  type CallDayRates,
+} from '@/lib/utils/call-day-rates';
 
 export interface ReportsTargetMetricCell {
   current: number;
@@ -115,6 +120,8 @@ export interface ReportsTargetRow {
   /** ISO/date string from user target period — used for date-range overlap filter. */
   periodStartDate?: string | null;
   periodEndDate?: string | null;
+  /** Mon–Thu / Friday / Saturday call rates. When set, the calls target is a calendar sum. */
+  callDayRates?: CallDayRates | null;
   /** HR-set target currency (userTarget.targetCurrency). */
   setCurrency?: string | null;
   /** Branch ERP country code (SA, BOT, ZW, …). */
@@ -418,8 +425,26 @@ export function prorateTargetForRange(params: {
    * When set it replaces the Mon–Fri count so the Targets tab and the Policy report agree.
    */
   expectedDaysOverride?: number | null;
+  /** When set, the calls target is the sum of these rates over the overlap. */
+  callDayRates?: CallDayRates | null;
 }): number {
   const periodTarget = Math.max(0, params.periodTarget);
+  if (periodTarget <= 0 && !params.callDayRates) return 0;
+
+  const pStartEarly = params.periodStartDate
+    ? formatPeriodYmd(params.periodStartDate)
+    : params.rangeFromYmd;
+  const pEndEarly = params.periodEndDate
+    ? formatPeriodYmd(params.periodEndDate)
+    : params.rangeToYmd;
+  const overlapStartEarly =
+    params.rangeFromYmd > pStartEarly ? params.rangeFromYmd : pStartEarly;
+  const overlapEndEarly = params.rangeToYmd < pEndEarly ? params.rangeToYmd : pEndEarly;
+  if (params.callDayRates) {
+    if (overlapStartEarly > overlapEndEarly) return 0;
+    return sumCallTargets(overlapStartEarly, overlapEndEarly, params.callDayRates);
+  }
+
   if (periodTarget <= 0) return 0;
 
   const dailyRate = periodTarget / TARGET_WORKING_DAYS_PER_MONTH;
@@ -493,6 +518,7 @@ export function rowFromUserListItem(
       periodLabel: formatPeriodLabel(ut?.periodStartDate, ut?.periodEndDate),
       periodStartDate: ut?.periodStartDate ?? null,
       periodEndDate: ut?.periodEndDate ?? null,
+      callDayRates: readCallDayRates(ut),
     },
     { setCurrency: currency, branchCountryCode }
   );
@@ -858,7 +884,8 @@ export function applyEngagementToRow(
     periodEndDate: row.periodEndDate,
     rangeFromYmd,
     rangeToYmd,
-    expectedDaysOverride: row.policy?.expectedDays,
+    expectedDaysOverride: row.callDayRates ? null : row.policy?.expectedDays,
+    callDayRates: row.callDayRates,
   });
   const visitTarget = prorateTargetForRange({
     periodTarget: row.visits.target,

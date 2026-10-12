@@ -63,6 +63,12 @@ export interface UserTargetListFields {
   targetCheckIns?: number | null;
   currentCheckIns?: number | null;
   targetCalls?: number | null;
+  /** Calls each Monday–Thursday. With Friday and Saturday, targetCalls is the period sum. */
+  callTargetMonThu?: number | null;
+  /** Calls each Friday. */
+  callTargetFriday?: number | null;
+  /** Calls each Saturday. */
+  callTargetSaturday?: number | null;
   currentCalls?: number | null;
   primaryVehicleAssetUid?: number | null;
   secondaryVehicleAssetUid?: number | null;
@@ -186,6 +192,9 @@ export interface PatchUserTargetBody {
   targetCheckIns?: number;
   currentCheckIns?: number;
   targetCalls?: number;
+  callTargetMonThu?: number | null;
+  callTargetFriday?: number | null;
+  callTargetSaturday?: number | null;
   currentCalls?: number;
   targetPeriod?: string;
   periodStartDate?: string;
