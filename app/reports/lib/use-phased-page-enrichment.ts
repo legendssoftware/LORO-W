@@ -26,11 +26,21 @@ const EMPTY_ENRICHMENT: PageRowEnrichment = {
   productivityLoading: false,
 };
 
+export type CustomerCategoryOption = {
+  id: string;
+  name: string;
+};
+
 type EnrichmentApiRow = {
   userId: number;
   userTarget: UserTargetDashboardShape | Record<string, unknown> | null;
   erpRevenue: number | null;
   productivityScore: number | null;
+};
+
+type EnrichmentApiBody = {
+  data?: EnrichmentApiRow[];
+  customerCategories?: CustomerCategoryOption[];
 };
 
 export function getPageRowEnrichmentKey(row: ReportsTargetRow): string {
@@ -66,16 +76,31 @@ export function usePhasedPageEnrichment(opts: {
   enabled: boolean;
   rangeFrom: string | null;
   rangeTo: string | null;
+  excludeCustomerCategories?: string[];
+  includeCustomerCategories?: string[];
   preserveRangeMetrics?: boolean;
 }): {
   enrichmentByKey: Map<string, PageRowEnrichment>;
+  customerCategories: CustomerCategoryOption[];
   isEnriching: boolean;
   enrichRow: (row: ReportsTargetRow) => ReportsTargetRow;
 } {
-  const { pageRows, client, enabled, rangeFrom, rangeTo, preserveRangeMetrics } = opts;
+  const {
+    pageRows,
+    client,
+    enabled,
+    rangeFrom,
+    rangeTo,
+    excludeCustomerCategories,
+    includeCustomerCategories,
+    preserveRangeMetrics,
+  } = opts;
+  const excludedKey = (excludeCustomerCategories ?? []).slice().sort().join(',');
+  const includedKey = (includeCustomerCategories ?? []).slice().sort().join(',');
   const [enrichmentByKey, setEnrichmentByKey] = useState(
     () => new Map<string, PageRowEnrichment>()
   );
+  const [customerCategories, setCustomerCategories] = useState<CustomerCategoryOption[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
   const generationRef = useRef(0);
 
@@ -87,6 +112,7 @@ export function usePhasedPageEnrichment(opts: {
   useEffect(() => {
     if (!enabled || pageRows.length === 0) {
       setEnrichmentByKey(new Map());
+      setCustomerCategories([]);
       setIsEnriching(false);
       return;
     }
@@ -109,18 +135,27 @@ export function usePhasedPageEnrichment(opts: {
     });
     setIsEnriching(true);
 
+    const excludeCustomerCategoriesBody = excludedKey ? excludedKey.split(',') : undefined;
+    const includeCustomerCategoriesBody = includedKey ? includedKey.split(',') : undefined;
+
     void client
-      .post<{ data?: EnrichmentApiRow[] }>(
+      .post<EnrichmentApiBody>(
         '/reports/targets-page-enrichment',
         {
           userIds,
           from: rangeFrom ?? undefined,
           to: rangeTo ?? undefined,
+          excludeCustomerCategories: excludeCustomerCategoriesBody,
+          includeCustomerCategories: includeCustomerCategoriesBody,
         },
         { signal: abort.signal }
       )
       .then((response) => {
         if (generation !== generationRef.current) return;
+        const categories = (response.data?.customerCategories ?? []).filter(
+          (category) => category.id && category.name
+        );
+        setCustomerCategories(categories);
         const byUser = new Map((response.data?.data ?? []).map((row) => [row.userId, row]));
         setEnrichmentByKey(() => {
           const next = new Map<string, PageRowEnrichment>();
@@ -154,7 +189,7 @@ export function usePhasedPageEnrichment(opts: {
     return () => {
       abort.abort();
     };
-  }, [enabled, pageSignature, rangeFrom, rangeTo, client]);
+  }, [enabled, pageSignature, rangeFrom, rangeTo, excludedKey, includedKey, client]);
 
   const enrichRow = useMemo(() => {
     return (row: ReportsTargetRow) =>
@@ -163,5 +198,5 @@ export function usePhasedPageEnrichment(opts: {
       });
   }, [enrichmentByKey, preserveRangeMetrics]);
 
-  return { enrichmentByKey, isEnriching, enrichRow };
+  return { enrichmentByKey, customerCategories, isEnriching, enrichRow };
 }

@@ -9,6 +9,7 @@ import {
   Globe2,
   Loader2,
   MapPinned,
+  Tags,
 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
 import {
@@ -22,6 +23,9 @@ import {
 } from '@/components/filters/searchable-filter-comboboxes';
 import { UtcDateRangePicker } from '@/components/filters/utc-date-range-picker';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -88,6 +92,10 @@ export interface ReportsTargetsToolbarProps {
   travelExportLoading?: boolean;
   currencyView?: ReportsTargetsCurrencyView;
   onCurrencyViewChange?: (view: ReportsTargetsCurrencyView) => void;
+  /** ERP customer categories for the selected dates. Unchecked codes are excluded from sales. */
+  customerCategories?: Array<{ id: string; name: string }>;
+  excludedCustomerCategoryIds?: string[];
+  onExcludedCustomerCategoriesChange?: (ids: string[]) => void;
 }
 
 const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = [
@@ -143,6 +151,9 @@ function ReportsTargetsFilterControls({
   onSortMetricChange,
   currencyView = 'set',
   onCurrencyViewChange,
+  customerCategories = [],
+  excludedCustomerCategoryIds = [],
+  onExcludedCustomerCategoriesChange,
 }: ReportsTargetsFilterControlsProps) {
   const sortOptions: SearchableOptionRow[] = useMemo(
     () =>
@@ -171,6 +182,14 @@ function ReportsTargetsFilterControls({
     return users.filter((u) => resolveUserBranchUid(u) === branchUid);
   }, [users, selectedBranchId]);
 
+  const excludedCategorySet = useMemo(
+    () => new Set(excludedCustomerCategoryIds),
+    [excludedCustomerCategoryIds]
+  );
+  const excludedCount = customerCategories.filter((category) =>
+    excludedCategorySet.has(category.id)
+  ).length;
+
   const isStack = layout === 'stack';
   const pickerTriggerClass = isStack
     ? cn(reportsFilterSelectTriggerClass, 'w-full')
@@ -197,6 +216,66 @@ function ReportsTargetsFilterControls({
         triggerClassName={isStack ? 'w-full' : undefined}
         stackLayout={isStack}
       />
+      {customerCategories.length > 0 && onExcludedCustomerCategoriesChange ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={cn(
+                'h-9 gap-2 font-normal',
+                isStack && 'w-full justify-start',
+                excludedCount > 0 && 'border-violet-300'
+              )}
+            >
+              <Tags className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span className="truncate">
+                {excludedCount > 0
+                  ? `Categories: ${excludedCount} excluded`
+                  : 'All categories'}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className={cn('w-80 p-3', reportsFilterPortalHighZ)}
+          >
+            <p className="mb-2 text-sm font-medium">Customer categories</p>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Uncheck a category to exclude it from sales, the same way as the performance report.
+            </p>
+            <ScrollArea className="h-48">
+              <div className="space-y-1 pr-3">
+                {customerCategories.map((category) => {
+                  const checked = !excludedCategorySet.has(category.id);
+                  return (
+                    <label
+                      key={category.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(next) => {
+                          const exclude = new Set(excludedCategorySet);
+                          if (next) exclude.delete(category.id);
+                          else exclude.add(category.id);
+                          onExcludedCustomerCategoriesChange(
+                            customerCategories
+                              .map((item) => item.id)
+                              .filter((id) => exclude.has(id))
+                          );
+                        }}
+                      />
+                      <span className="min-w-0 truncate">{category.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+      ) : null}
       {onCurrencyViewChange ? (
         <SearchableOptionListPicker
           options={currencyOptions}
@@ -397,7 +476,7 @@ export function ReportsTargetsToolbar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Date range, currency, location, and sort for the targets table.
+              Date range, customer categories, currency, location, and sort for the targets table.
             </DialogDescription>
           </DialogHeader>
           <ReportsTargetsFilterControls layout="stack" {...filterProps} />
