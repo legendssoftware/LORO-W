@@ -55,11 +55,13 @@ import { DatePickerField } from '@/components/ui/date-picker-field';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -382,6 +384,7 @@ export default function UserSettingsPage() {
       managedBranches: [],
       managedStaff: [],
       approvableTypes: [],
+      canAccessPerformanceTracking: false,
       businesscardURL: null,
       profile: getEmptyPersonnelProfile(),
       employmentProfile: getEmptyEmploymentProfile(),
@@ -454,6 +457,8 @@ export default function UserSettingsPage() {
         approvableTypes: Array.isArray((user as { approvableTypes?: string[] }).approvableTypes)
           ? ((user as { approvableTypes?: string[] }).approvableTypes ?? [])
           : [],
+        canAccessPerformanceTracking:
+          (user as { canAccessPerformanceTracking?: boolean }).canAccessPerformanceTracking === true,
         businesscardURL: up.businesscardURL ?? null,
         profile: mapProfileFromApi(profile, parseFormDateInput),
         employmentProfile: mapEmploymentFromApi(emp, parseFormDateInput),
@@ -738,7 +743,7 @@ export default function UserSettingsPage() {
 
             <CollapsibleFormSection
               title="Identity & access"
-              description="User reference, HR ID, role, access level, workforce type, status, and what they can approve."
+              description="User reference, HR ID, role, access level, workforce type, status, what they can approve, and whether they can open performance tracking."
               contentClassName="space-y-3 sm:space-y-4"
             >
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -950,6 +955,26 @@ export default function UserSettingsPage() {
                       value={field.value}
                       onChange={field.onChange}
                     />
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="canAccessPerformanceTracking"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <div className="space-y-1">
+                        <FormLabel>Performance tracking</FormLabel>
+                        <FormDescription>
+                          When on, this user can open sales performance tracking.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value === true}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
                   )}
                 />
               </CollapsibleFormSection>

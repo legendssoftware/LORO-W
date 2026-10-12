@@ -24,6 +24,8 @@ export interface UserResponse {
   managedBranches?: number[];
   managedStaff?: number[];
   approvableTypes?: string[];
+  /** Explicit grant for sales performance tracking. */
+  canAccessPerformanceTracking?: boolean;
   userProfile?: Record<string, unknown> | null;
   userEmployeementProfile?: Record<string, unknown> | null;
   businesscardURL?: string | null;
@@ -119,6 +121,8 @@ export interface PatchUserBody {
   managedStaff?: number[];
   managedDoors?: number[] | null;
   approvableTypes?: string[];
+  /** Explicit grant for sales performance tracking. */
+  canAccessPerformanceTracking?: boolean;
   profile?: StaffProfileFormValues;
   employmentProfile?: StaffEmploymentFormValues;
   /** Optional: create or update user targets in the same request. If user has no targets they are created; if they exist they are updated. */

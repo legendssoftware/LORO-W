@@ -3,11 +3,13 @@
 import type { Control } from 'react-hook-form';
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -39,7 +41,7 @@ export function StepAccess({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Role, access level, workforce type, primary branch, and what they can approve.
+        Role, access level, workforce type, primary branch, what they can approve, and performance tracking.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <FormField
@@ -240,6 +242,26 @@ export function StepAccess({
             onChange={field.onChange}
             triggerClassName={MODAL_SELECT_TRIGGER}
           />
+        )}
+      />
+      <FormField
+        control={control}
+        name="canAccessPerformanceTracking"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+            <div className="space-y-1">
+              <FormLabel>Performance tracking</FormLabel>
+              <FormDescription>
+                When on, this user can open sales performance tracking.
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value === true}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
         )}
       />
     </div>
