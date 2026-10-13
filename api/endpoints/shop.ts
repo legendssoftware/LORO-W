@@ -27,7 +27,7 @@ export interface CreateQuotationResponse {
   quotationNumber?: string;
 }
 
-/** GET /shop/banners — same feed as the mobile app carousel (latest 5 published). */
+/** GET /shop/banners — same feed as the mobile app carousel (all assigned published banners). */
 export async function getShopBanners(
   client: AxiosInstance
 ): Promise<GetShopBannersResponse> {
