@@ -2,7 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, ImageIcon, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  ImageIcon,
+  Plus,
+  RefreshCw,
+  Save,
+  Smartphone,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
@@ -74,7 +86,6 @@ import {
 
 const PANEL_CLASS = 'rounded-xl border border-border bg-card shadow-sm';
 const DAILY_AI_LIMIT = 5;
-const MAX_ACTIVE = 5;
 
 const BANNER_CATEGORIES = [
   { value: 'news', label: 'News' },
@@ -321,6 +332,11 @@ export function OrganisationBannersSection() {
     [banners]
   );
 
+  const bannersAvailableToAdd = useMemo(
+    () => publishedBanners.filter((banner) => !liveInAppSet.has(banner.uid)),
+    [publishedBanners, liveInAppSet]
+  );
+
   const filteredBanners = useMemo(() => {
     if (listFilter === 'all') return banners;
     return banners.filter((banner) => getBannerScheduleStatus(banner) === listFilter);
@@ -365,27 +381,29 @@ export function OrganisationBannersSection() {
       if (prev.includes(uid)) {
         return prev.filter((id) => id !== uid);
       }
-      if (prev.length >= MAX_ACTIVE) {
-        toast.error(`Maximum ${MAX_ACTIVE} active banners`);
-        return prev;
-      }
       return [...prev, uid];
     });
   }
 
-  function setSlotBanner(slotIndex: number, uid: string) {
-    const bannerUid = uid === 'none' ? null : Number(uid);
+  function moveSlot(slotIndex: number, direction: -1 | 1) {
     setDraftActiveUids((prev) => {
+      const nextIndex = slotIndex + direction;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
       const next = [...prev];
-      if (bannerUid === null) {
-        if (slotIndex < next.length) next.splice(slotIndex, 1);
-        return next;
-      }
-      const existingIndex = next.indexOf(bannerUid);
-      if (existingIndex >= 0) next.splice(existingIndex, 1);
-      next.splice(slotIndex, 0, bannerUid);
-      return next.slice(0, MAX_ACTIVE);
+      const [moved] = next.splice(slotIndex, 1);
+      next.splice(nextIndex, 0, moved);
+      return next;
     });
+  }
+
+  function removeSlot(slotIndex: number) {
+    setDraftActiveUids((prev) => prev.filter((_, index) => index !== slotIndex));
+  }
+
+  function appendBanner(uid: string) {
+    const bannerUid = Number(uid);
+    if (!Number.isFinite(bannerUid)) return;
+    setDraftActiveUids((prev) => (prev.includes(bannerUid) ? prev : [...prev, bannerUid]));
   }
 
   function openAiDialog() {
@@ -411,9 +429,9 @@ export function OrganisationBannersSection() {
               App banners &amp; news
             </h2>
             <p className="text-sm text-muted-foreground">
-              Manage carousel banners shown in the mobile app. Published banners play only inside their
-              start/end window. Currently live published banners enter slot #1 automatically. Choose up
-              to 5 active banners below.
+              Manage carousel banners shown in the mobile app. Every published banner you add can play
+              in Home and Sales, in the order below. Position 1 plays first. New published banners that
+              are already in their play window enter position 1 automatically.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               AI saved today: {aiGeneratedToday}/{DAILY_AI_LIMIT}
@@ -459,7 +477,9 @@ export function OrganisationBannersSection() {
           <div className="flex items-center gap-2">
             <Smartphone className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-medium">Active carousel (mobile app)</h3>
-            <Badge variant="outline">{draftActiveUids.length}/{MAX_ACTIVE}</Badge>
+            <Badge variant="outline">
+              {draftActiveUids.length} active
+            </Badge>
           </div>
           {activeDirty ? (
             <Button
@@ -474,48 +494,43 @@ export function OrganisationBannersSection() {
           ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          Select and order the banners shown in Home and Sales carousels. Slot #1 appears first. Add
-          scheduled banners to a slot so they go live automatically at start time.
+          Add as many published banners as you need. Position 1 appears first in Home and Sales.
+          Scheduled banners stay in this order and go live automatically at their start time.
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {Array.from({ length: MAX_ACTIVE }).map((_, slotIndex) => {
-            const uid = draftActiveUids[slotIndex];
-            const banner = uid ? banners.find((b) => b.uid === uid) : undefined;
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {draftActiveUids.map((uid, slotIndex) => {
+            const banner = banners.find((b) => b.uid === uid);
             const slotStatus = banner ? getBannerScheduleStatus(banner) : null;
             return (
-              <Card key={slotIndex} className="overflow-hidden">
+              <Card key={uid} className="w-52 shrink-0 overflow-hidden">
                 <div className="flex items-center justify-between gap-1 border-b bg-muted/40 px-2 py-1">
                   <Badge className="bg-violet-600">#{slotIndex + 1}</Badge>
-                  {slotStatus ? scheduleStatusBadge(slotStatus) : null}
+                  <div className="flex items-center gap-0.5">
+                    {slotStatus ? scheduleStatusBadge(slotStatus) : null}
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-6"
+                      aria-label={`Remove banner ${slotIndex + 1}`}
+                      onClick={() => removeSlot(slotIndex)}
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </div>
                 </div>
                 {banner?.image ? (
                   <img src={banner.image} alt="" className="h-20 w-full object-cover" />
                 ) : (
                   <div className="flex h-20 items-center justify-center bg-muted text-xs text-muted-foreground">
-                    Empty slot
+                    Missing banner
                   </div>
                 )}
                 <div className="space-y-2 p-2">
-                  <Select
-                    value={uid ? String(uid) : 'none'}
-                    onValueChange={(value) => setSlotBanner(slotIndex, value)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose banner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Empty —</SelectItem>
-                      {publishedBanners.map((b) => {
-                        const status = getBannerScheduleStatus(b);
-                        return (
-                          <SelectItem key={b.uid} value={String(b.uid)}>
-                            {b.title} ({bannerScheduleStatusLabel(status)})
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <p className="line-clamp-2 text-xs font-medium">
+                    {banner?.title ?? `Banner #${uid}`}
+                  </p>
                   {banner ? (
                     <>
                       <p className="line-clamp-1 text-xs text-muted-foreground">{banner.subtitle}</p>
@@ -524,10 +539,68 @@ export function OrganisationBannersSection() {
                       </p>
                     </>
                   ) : null}
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 flex-1 px-2"
+                      disabled={slotIndex === 0}
+                      aria-label={`Move banner ${slotIndex + 1} earlier`}
+                      onClick={() => moveSlot(slotIndex, -1)}
+                    >
+                      <ChevronLeft className="size-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 flex-1 px-2"
+                      disabled={slotIndex === draftActiveUids.length - 1}
+                      aria-label={`Move banner ${slotIndex + 1} later`}
+                      onClick={() => moveSlot(slotIndex, 1)}
+                    >
+                      <ChevronRight className="size-3" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
           })}
+
+          <Card className="flex w-52 shrink-0 flex-col justify-between overflow-hidden">
+            <div className="flex items-center gap-1 border-b bg-muted/40 px-2 py-1">
+              <Badge variant="outline">Add</Badge>
+            </div>
+            <div className="flex flex-1 flex-col justify-center gap-2 p-3">
+              <p className="text-xs text-muted-foreground">
+                Append a published banner to the end of the carousel.
+              </p>
+              <Select
+                key={draftActiveUids.join(',') || 'none'}
+                onValueChange={appendBanner}
+                disabled={bannersAvailableToAdd.length === 0}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue
+                    placeholder={
+                      bannersAvailableToAdd.length === 0 ? 'All published added' : 'Add banner'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {bannersAvailableToAdd.map((banner) => {
+                    const status = getBannerScheduleStatus(banner);
+                    return (
+                      <SelectItem key={banner.uid} value={String(banner.uid)}>
+                        {banner.title} ({bannerScheduleStatusLabel(status)})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
         </div>
       </div>
 
@@ -658,9 +731,9 @@ export function OrganisationBannersSection() {
             <DialogTitle>{editingUid === 'new' ? 'Create banner' : 'Edit banner'}</DialogTitle>
             {editingUid === 'new' ? (
               <DialogDescription>
-                Published banners that are currently in their play window are added to carousel slot #1
-                when saved. Schedule a future start to plan ahead, then add the banner to a slot so it
-                goes live automatically.
+                Published banners that are currently in their play window are added at position 1
+                when saved. Schedule a future start to plan ahead, then add the banner to the carousel
+                so it goes live automatically.
               </DialogDescription>
             ) : null}
           </DialogHeader>
