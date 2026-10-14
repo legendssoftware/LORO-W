@@ -513,6 +513,7 @@ export function LeadsTable({
                           <TableHead className="whitespace-nowrap">Temperature</TableHead>
                           <TableHead className="whitespace-nowrap">Priority</TableHead>
                           <TableHead className="whitespace-nowrap">Created</TableHead>
+                          <TableHead className="whitespace-nowrap">Last updated</TableHead>
                           <TableHead className="whitespace-nowrap">Activity</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -636,6 +637,15 @@ export function LeadsTable({
                               !Number.isNaN(new Date(lead.createdAt).getTime())
                                 ? format(
                                     new Date(lead.createdAt),
+                                    'MMM d, yyyy'
+                                  )
+                                : '-'}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {lead.updatedAt &&
+                              !Number.isNaN(new Date(lead.updatedAt).getTime())
+                                ? format(
+                                    new Date(lead.updatedAt),
                                     'MMM d, yyyy'
                                   )
                                 : '-'}
