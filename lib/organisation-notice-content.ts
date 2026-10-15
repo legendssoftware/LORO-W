@@ -49,11 +49,12 @@ export function getNoticeStatus(notice: OrganisationNoticeRecord, now = new Date
   return 'active';
 }
 
-/** Schedule line for notice list cards: until-date vs 3-times default. */
+/** Schedule line for notice list cards. Every notice stops after 3 views per user. */
 export function getNoticeDisplayScheduleLabel(notice: OrganisationNoticeRecord): string {
   const from = `Show from ${new Date(notice.showFrom).toLocaleString()}`;
+  const cap = '3 times per user';
   if (notice.showUntil) {
-    return `${from} until ${new Date(notice.showUntil).toLocaleString()}`;
+    return `${from} until ${new Date(notice.showUntil).toLocaleString()} · ${cap}`;
   }
-  return `${from} · 3 times per user`;
+  return `${from} · ${cap}`;
 }

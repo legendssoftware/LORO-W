@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Building2, Loader2, MapPin, Pencil, User } from 'lucide-react';
+import { ArrowLeft, Building2, FileText, Loader2, MapPin, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +36,12 @@ import {
   merchandiseStatusTone,
 } from '@/app/merchandise/lib/merchandise-display';
 import { MerchandiseEditDialog } from '../components/merchandise-edit-dialog';
+import { PersonAvatar } from '@/components/person-avatar';
+import {
+  merchandiseFileLabel,
+  merchandiseFileUrls,
+  merchandiseImageUrls,
+} from '@/app/merchandise/lib/merchandise-media';
 
 type PendingAction = 'publish' | 'reject' | 'delete' | null;
 
@@ -156,7 +162,12 @@ export function MerchandiseDetailContent() {
           <CardTitle className="text-base">Owner</CardTitle>
         </CardHeader>
         <CardContent className="flex items-start gap-3 text-sm">
-          <User className="mt-0.5 size-4 text-muted-foreground" />
+          <PersonAvatar
+            name={merchandiseOwnerName(journal)}
+            photoURL={journal.owner?.photoURL}
+            avatar={journal.owner?.avatar}
+            className="size-10"
+          />
           <div>
             <p className="font-medium">{merchandiseOwnerName(journal)}</p>
             {journal.owner?.accessLevel ? (
@@ -225,19 +236,33 @@ export function MerchandiseDetailContent() {
         </Card>
       ) : null}
 
-      {journal.fileURL ? (
+      {merchandiseImageUrls(journal).length > 0 || merchandiseFileUrls(journal).length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Attachment</CardTitle>
           </CardHeader>
-          <CardContent>
-            <a href={journal.fileURL} target="_blank" rel="noreferrer">
-              <img
-                src={journal.fileURL}
-                alt="Merchandise attachment"
-                className="max-h-80 w-full rounded-md object-cover"
-              />
-            </a>
+          <CardContent className="space-y-3">
+            {merchandiseImageUrls(journal).map((url) => (
+              <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                <img
+                  src={url}
+                  alt={journal.clientRef || 'Merchandise photo'}
+                  className="max-h-80 w-full rounded-md bg-muted object-contain"
+                />
+              </a>
+            ))}
+            {merchandiseFileUrls(journal).map((url) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-sm font-medium text-foreground underline-offset-2 hover:underline"
+              >
+                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                {merchandiseFileLabel(url)}
+              </a>
+            ))}
           </CardContent>
         </Card>
       ) : null}

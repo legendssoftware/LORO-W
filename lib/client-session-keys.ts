@@ -12,3 +12,9 @@ export const LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY = 'loro_sales_benchm
 
 /** sessionStorage: notice uid dismissed for the current Clerk session. */
 export const LORO_ORG_NOTICE_DISMISSED_UID_KEY = 'loro_org_notice_dismissed_uid';
+
+/** sessionStorage: Clerk session id for which a notice view was already counted. */
+export const LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY = 'loro_org_notice_counted_session_id';
+
+/** sessionStorage: notice uid whose view was already counted in the current Clerk session. */
+export const LORO_ORG_NOTICE_COUNTED_UID_KEY = 'loro_org_notice_counted_uid';

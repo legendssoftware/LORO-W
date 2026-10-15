@@ -14,6 +14,8 @@ export interface GetJournalsParams {
   limit?: number;
   status?: JournalStatus | string;
   search?: string;
+  authorId?: number;
+  branchId?: number;
   startDate?: string;
   endDate?: string;
 }
@@ -66,6 +68,8 @@ export async function getJournals(
   if (params.limit != null) search.set('limit', String(params.limit));
   if (params.status) search.set('status', params.status);
   if (params.search) search.set('search', params.search);
+  if (params.authorId != null) search.set('authorId', String(params.authorId));
+  if (params.branchId != null) search.set('branchId', String(params.branchId));
   if (params.startDate) search.set('startDate', params.startDate);
   if (params.endDate) search.set('endDate', params.endDate);
   const qs = search.toString();

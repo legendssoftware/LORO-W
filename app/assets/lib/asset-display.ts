@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+import { Armchair, Car, Laptop, Package } from 'lucide-react';
 import type { AssetCategory, AssetRecord } from '@/api/types/asset';
 
 export const ASSET_CATEGORY_OPTIONS: { value: AssetCategory; label: string }[] = [
@@ -6,6 +8,27 @@ export const ASSET_CATEGORY_OPTIONS: { value: AssetCategory; label: string }[] =
   { value: 'OFFICE', label: 'Office' },
   { value: 'OTHER', label: 'Other' },
 ];
+
+/** Icon for an asset category. Vehicles use a car; unknown categories use a package. */
+export function assetCategoryIcon(category?: AssetCategory | null): LucideIcon {
+  switch (category) {
+    case 'IT_EQUIPMENT':
+      return Laptop;
+    case 'VEHICLE':
+      return Car;
+    case 'OFFICE':
+      return Armchair;
+    case 'OTHER':
+      return Package;
+    case undefined:
+    case null:
+      return Package;
+    default: {
+      const exhaustive: never = category;
+      return exhaustive;
+    }
+  }
+}
 
 export function assetCategoryLabel(category?: AssetCategory | null): string {
   return ASSET_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? 'Other';

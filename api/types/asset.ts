@@ -34,6 +34,8 @@ export interface AssetRecord {
     surname?: string;
     email?: string;
     clerkUserId?: string;
+    photoURL?: string | null;
+    avatar?: string | null;
   } | null;
   branch?: {
     uid?: number;
@@ -79,6 +81,10 @@ export interface AssetListParams {
   limit?: number;
   search?: string;
   category?: string;
+  ownerUid?: number;
+  branchUid?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface AssetsByUserResponse {
