@@ -5,6 +5,9 @@ import { clearClerkTokenCache } from '@/lib/clerk-token-cache';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSessionSyncQueryKey } from '@/api/hooks';
 import {
+  LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY,
+  LORO_ORG_NOTICE_COUNTED_UID_KEY,
+  LORO_ORG_NOTICE_DISMISSED_UID_KEY,
   LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
   LORO_SALES_BENCHMARKS_WELCOME_DISMISSED_KEY,
   LORO_WELCOME_SHOWN_SESSION_KEY,
@@ -30,6 +33,9 @@ export function useSignOut() {
       try {
         sessionStorage.removeItem(LORO_WELCOME_SHOWN_SESSION_KEY);
         sessionStorage.removeItem(LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY);
+        sessionStorage.removeItem(LORO_ORG_NOTICE_DISMISSED_UID_KEY);
+        sessionStorage.removeItem(LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY);
+        sessionStorage.removeItem(LORO_ORG_NOTICE_COUNTED_UID_KEY);
         localStorage.removeItem(LORO_SALES_BENCHMARKS_WELCOME_DISMISSED_KEY);
       } catch {
         /* ignore private mode / quota */

@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Boxes } from 'lucide-react';
-import { assetCategoryLabel, assetOwnerLabel, assetTitle } from '../lib/asset-display';
+import { PersonAvatar } from '@/components/person-avatar';
+import { assetCategoryIcon, assetCategoryLabel, assetOwnerLabel, assetTitle } from '../lib/asset-display';
 
 export function AssetCardSkeleton() {
   const isMobile = useIsMobile();
@@ -38,6 +38,8 @@ export function AssetCard({
   onClick?: () => void;
 }) {
   const isMobile = useIsMobile();
+  const CategoryIcon = assetCategoryIcon(asset.category);
+  const ownerName = assetOwnerLabel(asset);
   return (
     <Card
       role={onClick ? 'button' : undefined}
@@ -68,7 +70,7 @@ export function AssetCard({
       >
         <div className="min-w-0 space-y-1">
           <div className="flex items-start gap-2">
-            <Boxes className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <CategoryIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <p className="truncate font-medium leading-tight text-foreground">{assetTitle(asset)}</p>
           </div>
           <p className="truncate text-xs text-muted-foreground">
@@ -76,7 +78,15 @@ export function AssetCard({
           </p>
           <p className="truncate text-xs text-muted-foreground">Serial {asset.serialNumber}</p>
           {showOwner ? (
-            <p className="truncate text-xs text-muted-foreground">{assetOwnerLabel(asset)}</p>
+            <div className="flex min-w-0 items-center gap-2">
+              <PersonAvatar
+                name={ownerName}
+                photoURL={asset.owner?.photoURL}
+                avatar={asset.owner?.avatar}
+                className="size-5"
+              />
+              <p className="truncate text-xs text-muted-foreground">{ownerName}</p>
+            </div>
           ) : null}
         </div>
         <Badge variant="secondary" className="w-fit">

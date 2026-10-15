@@ -13,7 +13,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Pencil, Trash2 } from 'lucide-react';
-import { assetCategoryLabel, assetOwnerLabel, assetTitle } from '../lib/asset-display';
+import { PersonAvatar } from '@/components/person-avatar';
+import { assetCategoryIcon, assetCategoryLabel, assetOwnerLabel, assetTitle } from '../lib/asset-display';
 import { ASSET_MODAL_CONTENT_CLASS } from './asset-dialog-shared';
 
 function ModalRow({ label, value }: { label: string; value: ReactNode }) {
@@ -22,6 +23,16 @@ function ModalRow({ label, value }: { label: string; value: ReactNode }) {
       <span className="shrink-0 text-muted-foreground">{label}</span>
       <span className="break-words text-right font-medium">{value}</span>
     </div>
+  );
+}
+
+function AssetCategoryBadge({ category }: { category: AssetRecord['category'] }) {
+  const Icon = assetCategoryIcon(category);
+  return (
+    <Badge variant="secondary" className="gap-1">
+      <Icon className="size-3" />
+      {assetCategoryLabel(category)}
+    </Badge>
   );
 }
 
@@ -56,7 +67,7 @@ export function AssetDetailDialog({
           <div className="flex items-start justify-between gap-3 pr-8">
             <div className="min-w-0 space-y-2">
               <DialogTitle className="truncate text-left">{asset ? assetTitle(asset) : 'Asset'}</DialogTitle>
-              {asset ? <Badge variant="secondary">{assetCategoryLabel(asset.category)}</Badge> : null}
+              {asset ? <AssetCategoryBadge category={asset.category} /> : null}
             </div>
             <div className="flex shrink-0 gap-2">
               {canEdit && asset ? (
@@ -79,7 +90,19 @@ export function AssetDetailDialog({
             <ModalRow label="Brand" value={asset.brand || '—'} />
             <ModalRow label="Model" value={asset.modelNumber || '—'} />
             <ModalRow label="Serial" value={asset.serialNumber || '—'} />
-            <ModalRow label="Owner" value={assetOwnerLabel(asset)} />
+            <ModalRow
+              label="Owner"
+              value={
+                <span className="inline-flex items-center justify-end gap-2">
+                  <PersonAvatar
+                    name={assetOwnerLabel(asset)}
+                    photoURL={asset.owner?.photoURL}
+                    avatar={asset.owner?.avatar}
+                  />
+                  {assetOwnerLabel(asset)}
+                </span>
+              }
+            />
             {asset.registrationPlate ? (
               <ModalRow label="Registration" value={asset.registrationPlate} />
             ) : null}

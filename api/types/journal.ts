@@ -21,6 +21,7 @@ export interface JournalOwner {
   email?: string;
   accessLevel?: string;
   photoURL?: string | null;
+  avatar?: string | null;
 }
 
 export interface JournalAddress {
@@ -50,6 +51,8 @@ export interface Journal {
   uid: number;
   clientRef?: string | null;
   fileURL?: string | null;
+  /** Extra file URLs stored on the journal row. */
+  attachments?: string[] | null;
   comments?: string | null;
   status?: JournalStatus | string | null;
   type?: string | null;

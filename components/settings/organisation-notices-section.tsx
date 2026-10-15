@@ -207,8 +207,8 @@ export function OrganisationNoticesSection() {
               Organisation notices
             </h2>
             <p className="text-sm text-muted-foreground">
-              Manage the sign-in notice shown on the dashboard. By default each user sees it 3 times.
-              Set a date to keep showing it on every sign-in until then.
+              Manage the sign-in notice shown on the dashboard. Each user sees it at most 3 times.
+              An end date can hide it sooner, and it never appears more than 3 times.
             </p>
           </div>
           <Button type="button" size="sm" onClick={startCreate}>
@@ -322,8 +322,8 @@ export function OrganisationNoticesSection() {
                   </div>
                 </RadioGroup>
                 <p className="text-xs text-muted-foreground">
-                  By default each user sees this notice 3 times. Set a date to keep showing it on every
-                  sign-in until then.
+                  Each user sees this notice at most 3 times. A date can stop it earlier, and it is never
+                  shown more than 3 times.
                 </p>
               </div>
               <div className="space-y-3">
