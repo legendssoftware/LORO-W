@@ -14,6 +14,7 @@ import {
   canAccessReports,
   canAccessUserSettings,
   canAccessWellbeingDashboard,
+  canAccessMerchandise,
   canManageApprovals,
   getAllowedRoutes,
   getClientSidebarRoutes,
@@ -42,6 +43,7 @@ import {
   FolderKanban,
   GitBranch,
   Map,
+  Boxes,
   Package,
   Receipt,
   ShoppingBag,
@@ -50,6 +52,7 @@ import {
   UserCircle,
   Phone,
   HeartPulse,
+  Notebook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
@@ -78,6 +81,7 @@ const ROUTE_ICONS: Record<
   "/dashboard": LayoutDashboardIcon,
   "/visualiser": Map,
   "/visits": MapPinIcon,
+  "/merchandise": Notebook,
   "/calls": Phone,
   "/leads": HandshakeIcon,
   "/pipeline": GitBranch,
@@ -85,6 +89,7 @@ const ROUTE_ICONS: Record<
   "/competitors": Swords,
   "/planning": CheckSquareIcon,
   "/claims": Receipt,
+  "/assets": Boxes,
   "/approvals": FileCheck,
   "/payslips": FileText,
   "/reports": BarChart3,
@@ -112,6 +117,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
 
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
+      if (r.path === "/merchandise") return canAccessMerchandise(accessLevel);
       if (r.path === "/calls") return canAccessCallRecordings(accessLevel);
       if (r.path === "/reports") return canAccessReports(accessLevel);
       if (r.path === "/wellbeing") return canAccessWellbeingDashboard(accessLevel);

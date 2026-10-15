@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   canAccess,
   canAccessCallRecordings,
+  canAccessMerchandise,
+  canManageMerchandise,
+  canViewOrgMerchandiseList,
   canAccessPerformanceTracker,
   canAccessVisualiser,
   canManageApprovals,
@@ -190,5 +193,43 @@ describe('canAccessCallRecordings', () => {
     expect(getAllowedRoutes('owner').some((r) => r.path === '/calls')).toBe(false);
     expect(getAllowedRoutes('manager').some((r) => r.path === '/calls')).toBe(false);
     expect(getAllowedRoutes('user').some((r) => r.path === '/calls')).toBe(false);
+  });
+});
+
+describe('canAccessMerchandise', () => {
+  it('allows journal roles and blocks everyone else', () => {
+    expect(canAccessMerchandise('admin')).toBe(true);
+    expect(canAccessMerchandise('owner')).toBe(true);
+    expect(canAccessMerchandise('manager')).toBe(true);
+    expect(canAccessMerchandise('support')).toBe(true);
+    expect(canAccessMerchandise('user')).toBe(true);
+    expect(canAccessMerchandise('member')).toBe(true);
+    expect(canAccessMerchandise('technician')).toBe(true);
+    expect(canAccessMerchandise('hr')).toBe(false);
+    expect(canAccessMerchandise('client')).toBe(false);
+    expect(canAccessMerchandise(undefined)).toBe(false);
+  });
+
+  it('gates /merchandise and keeps it in the nav after visits', () => {
+    expect(canAccess('/merchandise', 'user')).toBe(true);
+    expect(canAccess('/merchandise/12', 'technician')).toBe(true);
+    expect(canAccess('/merchandise', 'hr')).toBe(false);
+    expect(canAccess('/merchandise', 'client')).toBe(false);
+
+    const userRoutes = getAllowedRoutes('user');
+    const visitsIndex = userRoutes.findIndex((r) => r.path === '/visits');
+    expect(userRoutes[visitsIndex + 1]?.path).toBe('/merchandise');
+    expect(getAllowedRoutes('hr').some((r) => r.path === '/merchandise')).toBe(false);
+    expect(getAllowedRoutes('admin').some((r) => r.path === '/merchandise')).toBe(true);
+  });
+
+  it('limits publish, reject, delete, and the org list', () => {
+    expect(canManageMerchandise('admin')).toBe(true);
+    expect(canManageMerchandise('manager')).toBe(true);
+    expect(canManageMerchandise('owner')).toBe(false);
+    expect(canManageMerchandise('user')).toBe(false);
+    expect(canViewOrgMerchandiseList('admin')).toBe(true);
+    expect(canViewOrgMerchandiseList('owner')).toBe(false);
+    expect(canViewOrgMerchandiseList('manager')).toBe(false);
   });
 });

@@ -1,5 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  AssetItemResponse,
+  AssetListParams,
   AssetsByUserResponse,
   AssetsListResponse,
   CreateAssetPayload,
@@ -39,9 +41,14 @@ function isAssetsListResponse(value: unknown): value is AssetsListResponse {
   );
 }
 
-/** GET /assets — active assets in the caller's organisation (branch-scoped for non-elevated roles). */
-export async function getAssets(client: AxiosInstance): Promise<AssetsListResponse> {
-  const { data } = await client.get<AssetsListResponse | { data: AssetsListResponse }>('/assets');
+/** GET /assets — organisation inventory for admin, owner, and manager; linked assets for everyone else. */
+export async function getAssets(
+  client: AxiosInstance,
+  params?: AssetListParams
+): Promise<AssetsListResponse> {
+  const { data } = await client.get<AssetsListResponse | { data: AssetsListResponse }>('/assets', {
+    params,
+  });
 
   if (isAssetsListResponse(data)) return data;
   if (
@@ -55,14 +62,48 @@ export async function getAssets(client: AxiosInstance): Promise<AssetsListRespon
   throw new Error('Invalid assets list response');
 }
 
-/** GET /assets/for/:userUid — assets assigned to a user. */
+function isAssetItemResponse(value: unknown): value is AssetItemResponse {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'message' in value &&
+    'asset' in value &&
+    typeof (value as AssetItemResponse).asset === 'object' &&
+    (value as AssetItemResponse).asset != null &&
+    typeof (value as AssetItemResponse).asset.uid === 'number'
+  );
+}
+
+/** GET /assets/:ref — one asset when the caller may see it. */
+export async function getAsset(
+  client: AxiosInstance,
+  uid: number
+): Promise<AssetItemResponse> {
+  const { data } = await client.get<AssetItemResponse | { data: AssetItemResponse }>(
+    `/assets/${uid}`
+  );
+
+  if (isAssetItemResponse(data)) return data;
+  if (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    isAssetItemResponse((data as { data: AssetItemResponse }).data)
+  ) {
+    return (data as { data: AssetItemResponse }).data;
+  }
+  throw new Error('Invalid asset response');
+}
+
+/** GET /assets/for/:userUid — assets owned by or assigned to a user. */
 export async function getAssetsByUser(
   client: AxiosInstance,
-  userUid: number
+  userUid: number,
+  params?: AssetListParams
 ): Promise<AssetsByUserResponse> {
   const { data } = await client.get<
     AssetsByUserResponse | { data: AssetsByUserResponse }
-  >(`/assets/for/${userUid}`);
+  >(`/assets/for/${userUid}`, { params });
 
   if (isAssetsByUserResponse(data)) return data;
   if (

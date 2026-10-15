@@ -28,6 +28,23 @@ export interface AssetRecord {
   insuranceProvider?: string | null;
   insuranceExpiryDate?: string | null;
   ownerClerkUserId?: string | null;
+  owner?: {
+    uid?: number;
+    name?: string;
+    surname?: string;
+    email?: string;
+    clerkUserId?: string;
+  } | null;
+  branch?: {
+    uid?: number;
+    name?: string;
+    alias?: string | null;
+  } | null;
+}
+
+export interface AssetItemResponse {
+  message: string;
+  asset: AssetRecord;
 }
 
 export interface CreateAssetPayload {
@@ -50,14 +67,30 @@ export interface CreateAssetPayload {
   branch: { uid: number };
 }
 
+export interface AssetListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AssetListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+}
+
 export interface AssetsByUserResponse {
   message: string;
   assets: AssetRecord[] | null;
+  meta?: AssetListMeta;
 }
 
 export interface AssetsListResponse {
   message: string;
   assets: AssetRecord[] | null;
+  meta?: AssetListMeta;
 }
 
 export interface CreateAssetResponse {
@@ -66,20 +99,11 @@ export interface CreateAssetResponse {
 }
 
 export type UpdateAssetPayload = Partial<
-  Pick<
-    CreateAssetPayload,
-    | 'displayName'
-    | 'brand'
-    | 'modelNumber'
-    | 'modelYear'
-    | 'vehicleSizeClass'
-    | 'fuelType'
-    | 'ratedKmPerLitre'
-    | 'tankCapacityLitres'
-    | 'registrationPlate'
-    | 'serialNumber'
-  >
->;
+  Omit<CreateAssetPayload, 'owner' | 'branch'>
+> & {
+  owner?: { uid: string };
+  branch?: { uid: number };
+};
 
 export interface UpdateAssetResponse {
   message: string;
