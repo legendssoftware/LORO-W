@@ -28,6 +28,7 @@ const ASSET_PAGE_SIZE = 24;
 
 function invalidateAssetQueries(queryClient: QueryClient, detailUid?: number) {
   queryClient.invalidateQueries({ queryKey: [...ASSETS_QUERY_KEY_PREFIX, 'infinite'] });
+  queryClient.invalidateQueries({ queryKey: [...ASSETS_QUERY_KEY_PREFIX, 'page'] });
   queryClient.invalidateQueries({ queryKey: [...ASSETS_QUERY_KEY_PREFIX, 'for-user'] });
   queryClient.invalidateQueries({ queryKey: [...ASSETS_QUERY_KEY_PREFIX, 'for-user-all'] });
   queryClient.invalidateQueries({ queryKey: ORG_VEHICLES_QUERY_KEY });
@@ -173,6 +174,63 @@ export function useAssetsInfinite(options: {
 
   const data = result.data?.pages.flatMap((page) => page.assets ?? []) ?? [];
   return { ...result, data };
+}
+
+/** One page of assets. `mine` uses GET /assets/for/:uid; `org` uses GET /assets. */
+export function useAssetsPage(options: {
+  scope: 'mine' | 'org';
+  userUid?: number | null;
+  search?: string;
+  category?: string;
+  page: number;
+  limit: number;
+  ownerUid?: number;
+  branchUid?: number;
+  startDate?: string;
+  endDate?: string;
+  enabled?: boolean;
+}) {
+  const client = useApiClient();
+  const search = options.search?.trim() || undefined;
+  const category =
+    options.category && options.category !== 'all' ? options.category : undefined;
+  const userUid = options.userUid;
+  const enabled =
+    options.enabled !== false &&
+    (options.scope === 'org' || (userUid != null && userUid > 0));
+
+  return useQuery({
+    queryKey: [
+      ...ASSETS_QUERY_KEY_PREFIX,
+      'page',
+      options.scope,
+      userUid ?? 'self',
+      search ?? '',
+      category ?? '',
+      options.page,
+      options.limit,
+      options.ownerUid ?? '',
+      options.branchUid ?? '',
+      options.startDate ?? '',
+      options.endDate ?? '',
+    ],
+    queryFn: () => {
+      const params: AssetListParams = {
+        page: options.page,
+        limit: options.limit,
+        search,
+        category,
+        ownerUid: options.ownerUid,
+        branchUid: options.branchUid,
+        startDate: options.startDate,
+        endDate: options.endDate,
+      };
+      if (options.scope === 'org') return getAssets(client, params);
+      return getAssetsByUser(client, userUid as number, params);
+    },
+    enabled,
+    staleTime: 60 * 1000,
+  });
 }
 
 export function useAsset(uid: number | null | undefined, enabled = true) {

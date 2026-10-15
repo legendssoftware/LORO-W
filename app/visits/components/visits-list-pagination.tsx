@@ -16,16 +16,20 @@ export type VisitsPageSize = (typeof VISITS_PAGE_SIZE_OPTIONS)[number];
 
 export const VISITS_PAGE_SIZE_STORAGE_KEY = 'loro:visits-page-size';
 
-export function readStoredVisitsPageSize(): VisitsPageSize {
+export function readStoredPageSize(storageKey: string): VisitsPageSize {
   if (typeof window === 'undefined') return 25;
   try {
-    const raw = localStorage.getItem(VISITS_PAGE_SIZE_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     const n = raw != null ? Number(raw) : NaN;
     if (VISITS_PAGE_SIZE_OPTIONS.includes(n as VisitsPageSize)) return n as VisitsPageSize;
   } catch {
     /* ignore */
   }
   return 25;
+}
+
+export function readStoredVisitsPageSize(): VisitsPageSize {
+  return readStoredPageSize(VISITS_PAGE_SIZE_STORAGE_KEY);
 }
 
 export interface VisitsListPaginationProps {
@@ -37,6 +41,7 @@ export interface VisitsListPaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: VisitsPageSize) => void;
   className?: string;
+  dataTour?: string;
 }
 
 function pageNumberWindow(current: number, total: number): number[] {
@@ -57,6 +62,7 @@ export function VisitsListPagination({
   onPageChange,
   onPageSizeChange,
   className,
+  dataTour = 'visits-pagination',
 }: VisitsListPaginationProps) {
   const safeTotalPages = Math.max(totalPages, total > 0 ? 1 : 0);
   const canPrev = page > 1;
@@ -69,7 +75,7 @@ export function VisitsListPagination({
         'flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card/80 px-2 py-2 sm:px-3',
         className
       )}
-      data-tour="visits-pagination"
+      data-tour={dataTour}
     >
       <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
         <span className="hidden sm:inline">Rows per page</span>

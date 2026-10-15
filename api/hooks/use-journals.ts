@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import {
-  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -55,6 +54,12 @@ export type JournalsListFilters = {
   status?: string;
   search?: string;
   enabled?: boolean;
+  page?: number;
+  limit?: number;
+  authorId?: number;
+  branchId?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 function matchesOwnJournal(journal: Journal, filters: JournalsListFilters): boolean {
@@ -62,14 +67,23 @@ function matchesOwnJournal(journal: Journal, filters: JournalsListFilters): bool
     return false;
   }
   const q = (filters.search ?? '').trim().toLowerCase();
-  if (!q) return true;
-  const owner = `${journal.owner?.name ?? ''} ${journal.owner?.surname ?? ''} ${journal.owner?.username ?? ''}`;
-  const haystack = `${journal.clientRef ?? ''} ${journal.comments ?? ''} ${owner}`.toLowerCase();
-  return haystack.includes(q);
+  if (q) {
+    const owner = `${journal.owner?.name ?? ''} ${journal.owner?.surname ?? ''} ${journal.owner?.username ?? ''}`;
+    const haystack = `${journal.clientRef ?? ''} ${journal.comments ?? ''} ${owner}`.toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+  if (filters.authorId != null && journal.owner?.uid !== filters.authorId) return false;
+  if (filters.branchId != null && journal.branch?.uid !== filters.branchId) return false;
+  if (filters.startDate && filters.endDate) {
+    const created = (journal.createdAt ?? '').slice(0, 10);
+    if (created < filters.startDate || created > filters.endDate) return false;
+  }
+  return true;
 }
 
 /**
  * Org list for admins (`GET /journal`), own list for everyone else (`GET /journal/for/:uid`).
+ * Both modes return one page. Own lists are filtered and sliced on the client.
  */
 export function useJournals(filters: JournalsListFilters = {}) {
   const client = useApiClient();
@@ -79,22 +93,34 @@ export function useJournals(filters: JournalsListFilters = {}) {
   const enabled = filters.enabled !== false;
   const status = filters.status && filters.status !== 'all' ? filters.status : undefined;
   const search = filters.search?.trim() || undefined;
+  const page = filters.page ?? 1;
+  const limit = filters.limit ?? LIST_PAGE_SIZE;
 
-  const orgQuery = useInfiniteQuery({
-    queryKey: [...JOURNALS_QUERY_KEY_PREFIX, 'infinite', status ?? '', search ?? ''],
-    queryFn: ({ pageParam }) => {
+  const orgQuery = useQuery({
+    queryKey: [
+      ...JOURNALS_QUERY_KEY_PREFIX,
+      'page',
+      page,
+      limit,
+      status ?? '',
+      search ?? '',
+      filters.authorId ?? '',
+      filters.branchId ?? '',
+      filters.startDate ?? '',
+      filters.endDate ?? '',
+    ],
+    queryFn: () => {
       const params: GetJournalsParams = {
-        page: pageParam,
-        limit: LIST_PAGE_SIZE,
+        page,
+        limit,
         status,
         search,
+        authorId: filters.authorId,
+        branchId: filters.branchId,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
       };
       return getJournals(client, params);
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.meta.page < lastPage.meta.totalPages) return lastPage.meta.page + 1;
-      return undefined;
     },
     enabled: enabled && orgList,
     staleTime: 30 * 1000,
@@ -108,25 +134,35 @@ export function useJournals(filters: JournalsListFilters = {}) {
   });
 
   const rows = useMemo(() => {
-    if (orgList) {
-      return orgQuery.data?.pages.flatMap((page) => page.data ?? []) ?? [];
-    }
-    return (mineQuery.data?.data ?? []).filter((journal) =>
-      matchesOwnJournal(journal, { status: filters.status, search })
+    if (orgList) return orgQuery.data?.data ?? [];
+    const filtered = (mineQuery.data?.data ?? []).filter((journal) =>
+      matchesOwnJournal(journal, filters)
     );
-  }, [orgList, orgQuery.data, mineQuery.data, filters.status, search]);
+    const start = (page - 1) * limit;
+    return filtered.slice(start, start + limit);
+  }, [orgList, orgQuery.data, mineQuery.data, filters, page, limit]);
+
+  const total = orgList
+    ? (orgQuery.data?.meta.total ?? 0)
+    : (mineQuery.data?.data ?? []).filter((journal) => matchesOwnJournal(journal, filters)).length;
+  const totalPages = orgList
+    ? (orgQuery.data?.meta.totalPages ?? 0)
+    : total === 0
+      ? 0
+      : Math.ceil(total / limit);
 
   const activeError = orgList ? orgQuery.error : mineQuery.error;
+  const activeQuery = orgList ? orgQuery : mineQuery;
 
   return {
     rows,
+    total,
+    totalPages,
     orgList,
-    isLoading: orgList ? orgQuery.isLoading : mineQuery.isLoading,
+    isLoading: activeQuery.isLoading,
+    isFetching: activeQuery.isFetching,
     error: activeError,
-    refetch: orgList ? orgQuery.refetch : mineQuery.refetch,
-    fetchNextPage: orgQuery.fetchNextPage,
-    hasNextPage: orgList ? Boolean(orgQuery.hasNextPage) : false,
-    isFetchingNextPage: orgList ? orgQuery.isFetchingNextPage : false,
+    refetch: activeQuery.refetch,
   };
 }
 

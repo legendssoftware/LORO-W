@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/table';
 import { isFullDocumentRoute } from '@/lib/app-shell-routes';
 import {
+  LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY,
+  LORO_ORG_NOTICE_COUNTED_UID_KEY,
   LORO_ORG_NOTICE_DISMISSED_UID_KEY,
   LORO_SALES_BENCHMARKS_DISMISSED_SESSION_ID_KEY,
   LORO_WELCOME_SHOWN_SESSION_KEY,
@@ -100,6 +102,28 @@ function isDismissedForNotice(sessionId: string, noticeUid: number | null): bool
   }
 }
 
+/** True when this sign-in session already counted a display of this notice. */
+function hasCountedView(sessionId: string, noticeUid: number): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const countedFor = sessionStorage.getItem(LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY);
+    const countedUid = sessionStorage.getItem(LORO_ORG_NOTICE_COUNTED_UID_KEY);
+    return countedFor === sessionId && countedUid === String(noticeUid);
+  } catch {
+    return false;
+  }
+}
+
+function persistCountedView(sessionId: string, noticeUid: number) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(LORO_ORG_NOTICE_COUNTED_SESSION_ID_KEY, sessionId);
+    sessionStorage.setItem(LORO_ORG_NOTICE_COUNTED_UID_KEY, String(noticeUid));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 const NOTICE_THEME_STYLES = {
   alert: {
     content: '!flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden border-2 border-red-600 p-0 sm:max-w-2xl',
@@ -152,7 +176,12 @@ export function SalesBenchmarksWelcomeDialog({
   const orgRef = backendUserData?.organisationRef ?? '';
   const [open, setOpen] = useState(false);
   const [locale, setLocale] = useState<SalesBenchmarksLocale>(DEFAULT_SALES_BENCHMARKS_LOCALE);
+  const [latchedNotice, setLatchedNotice] = useState<OrganisationNoticeRecord | null>(null);
   const profile = useSessionStore((s) => s.profileData);
+  /** Keeps the open dialog up after the 3rd view is recorded and the active notice becomes null. */
+  const dialogOpenRef = useRef(false);
+  /** This mount already displayed the notice, so a later effect run must not close it. */
+  const hasOpenedRef = useRef(false);
 
   const activeNoticeQuery = useQuery({
     queryKey: activeOrgNoticeKey(orgRef),
@@ -164,11 +193,14 @@ export function SalesBenchmarksWelcomeDialog({
   const acknowledgeMut = useMutation({
     mutationFn: (uid: number) => acknowledgeOrganisationNotice(client, orgRef, uid),
     onSuccess: async () => {
+      if (dialogOpenRef.current) return;
       await queryClient.invalidateQueries({ queryKey: activeOrgNoticeKey(orgRef) });
     },
   });
+  const acknowledgeNoticeRef = useRef(acknowledgeMut.mutate);
+  acknowledgeNoticeRef.current = acknowledgeMut.mutate;
 
-  const activeNotice = previewNotice ?? activeNoticeQuery.data?.notice ?? null;
+  const activeNotice = previewNotice ?? latchedNotice ?? activeNoticeQuery.data?.notice ?? null;
 
   const localeOptions = useMemo(() => {
     if (!activeNotice) return [];
@@ -190,6 +222,8 @@ export function SalesBenchmarksWelcomeDialog({
       return;
     }
     if (isGeneralWorkerWorkforce(profile?.workforceType)) {
+      dialogOpenRef.current = false;
+      setLatchedNotice(null);
       setOpen(false);
       return;
     }
@@ -197,6 +231,8 @@ export function SalesBenchmarksWelcomeDialog({
       return;
     }
     if (deferForPendingWarning) {
+      dialogOpenRef.current = false;
+      setLatchedNotice(null);
       setOpen(false);
       return;
     }
@@ -204,6 +240,7 @@ export function SalesBenchmarksWelcomeDialog({
       return;
     }
     if (!activeNotice && !previewNotice) {
+      if (dialogOpenRef.current) return;
       if (!isDismissedForNotice(sessionId, null)) {
         persistDismiss(sessionId, null);
       }
@@ -211,11 +248,28 @@ export function SalesBenchmarksWelcomeDialog({
       return;
     }
     if (isDismissedForNotice(sessionId, noticeUid)) {
+      dialogOpenRef.current = false;
+      setLatchedNotice(null);
       setOpen(false);
       return;
     }
-    setLocale(DEFAULT_SALES_BENCHMARKS_LOCALE);
+    if (noticeUid != null && hasCountedView(sessionId, noticeUid) && !hasOpenedRef.current) {
+      setOpen(false);
+      return;
+    }
+    if (!hasOpenedRef.current) {
+      setLocale(DEFAULT_SALES_BENCHMARKS_LOCALE);
+    }
+    hasOpenedRef.current = true;
+    dialogOpenRef.current = true;
+    if (!previewNotice && activeNotice) {
+      setLatchedNotice(activeNotice);
+    }
     setOpen(true);
+    if (noticeUid != null && orgRef && !hasCountedView(sessionId, noticeUid)) {
+      persistCountedView(sessionId, noticeUid);
+      acknowledgeNoticeRef.current(noticeUid);
+    }
   }, [
     isLoaded,
     isSignedIn,
@@ -230,6 +284,7 @@ export function SalesBenchmarksWelcomeDialog({
     previewNotice,
     forceOpen,
     noticeUid,
+    orgRef,
   ]);
 
   const handleOpenChange = (next: boolean) => {
@@ -240,14 +295,21 @@ export function SalesBenchmarksWelcomeDialog({
     }
     /** Do not allow dismiss while warning/target gate still defers this dialog. */
     if (!next && deferForPendingWarning) {
+      dialogOpenRef.current = false;
       setOpen(false);
       return;
     }
     if (!next && sessionId) {
+      dialogOpenRef.current = false;
       persistDismiss(sessionId, noticeUid);
-      if (noticeUid != null && orgRef) {
-        acknowledgeMut.mutate(noticeUid);
+      setLatchedNotice(null);
+      if (orgRef) {
+        void queryClient.invalidateQueries({ queryKey: activeOrgNoticeKey(orgRef) });
       }
+    }
+    if (!next) {
+      dialogOpenRef.current = false;
+      setLatchedNotice(null);
     }
     setOpen(next);
   };
