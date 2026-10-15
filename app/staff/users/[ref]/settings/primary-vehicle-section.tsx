@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSessionSync } from '@/api/hooks/use-session-sync';
+import { canManageOrgAssets } from '@/lib/access';
 import type { Control } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
 import type { AssetRecord } from '@/api/types/asset';
@@ -208,6 +210,8 @@ export function PrimaryVehicleSection({
     isLoading,
     refetch,
   } = useSelectableVehicleAssets(userUid, { primaryUid, secondaryUid });
+  const { backendUserData } = useSessionSync();
+  const canManageFleet = canManageOrgAssets(backendUserData?.accessLevel);
   const createAsset = useCreateAssetMutation();
   const updateAsset = useUpdateAssetMutation();
   const deleteAsset = useDeleteAssetMutation();
@@ -434,15 +438,17 @@ export function PrimaryVehicleSection({
     <div className="sm:col-span-2 lg:col-span-3 space-y-3 rounded-md border border-border/50 bg-muted/20 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium">Vehicles</p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!clerkUserId || !branchUid}
-          onClick={() => setAddOpen(true)}
-        >
-          Add vehicle
-        </Button>
+        {canManageFleet ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!clerkUserId || !branchUid}
+            onClick={() => setAddOpen(true)}
+          >
+            Add vehicle
+          </Button>
+        ) : null}
       </div>
 
       <FormField
@@ -604,7 +610,7 @@ export function PrimaryVehicleSection({
         isPending={updateAsset.isPending}
         isDeletePending={deleteAsset.isPending}
         onSubmit={handleEditVehicle}
-        onDelete={() => setDeleteConfirmOpen(true)}
+        onDelete={canManageFleet ? () => setDeleteConfirmOpen(true) : undefined}
       />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

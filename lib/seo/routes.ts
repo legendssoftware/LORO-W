@@ -129,6 +129,16 @@ export const PAGE_COPY = {
     description:
       'Plan field work with tasks, daily routes, execution checklists, and reminder inbox. My day view, maps, and follow-ups from visits and leads.',
   },
+  assets: {
+    title: 'Assets — Equipment and vehicles linked to you',
+    description:
+      'See assets you own or that are assigned to you. Organisation managers can add, reassign, and retire the full inventory.',
+  },
+  assetDetail: {
+    title: 'Asset — Details, assignment, and history',
+    description:
+      'Open one asset to review its details and, when your role allows, update or reassign it.',
+  },
   clients: {
     title: 'Clients — Account visibility that protects revenue',
     description:
@@ -163,6 +173,11 @@ export const PAGE_COPY = {
     title: 'IoT — Devices, access hardware & branch connections',
     description:
       'Register door sensors and IoT hardware per branch, track status, and keep field attendance integrations trustworthy.',
+  },
+  merchandise: {
+    title: 'Merchandise — Log stock, photos and client references',
+    description:
+      'Record merchandise visits with a client reference, photo, and comments. Managers publish or reject logs from the same inbox.',
   },
   claims: {
     title: 'Claims — Submit and track expense reimbursements',
