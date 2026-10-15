@@ -32,6 +32,8 @@ export {
 } from './use-rep-journey';
 export {
   ASSETS_QUERY_KEY_PREFIX,
+  useAssetsInfinite,
+  useAsset,
   useUserVehicleAssets,
   useSelectableVehicleAssets,
   useCreateAssetMutation,
@@ -201,6 +203,16 @@ export {
   useUserPayslips,
   usePayslipDocument,
 } from './use-payslips';
+export {
+  JOURNALS_QUERY_KEY_PREFIX,
+  invalidateJournalQueries,
+  useJournals,
+  useJournal,
+  useCreateJournalMutation,
+  useUpdateJournalMutation,
+  useJournalStatusMutation,
+  useDeleteJournalMutation,
+} from './use-journals';
 export {
   CLAIMS_QUERY_KEY_PREFIX,
   invalidateClaimsQueries,

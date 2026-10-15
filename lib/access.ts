@@ -12,6 +12,7 @@ export const STANDARD_USER_PATHS = [
     "/clients",
     "/planning",
     "/claims",
+    "/assets",
     "/payslips",
     "/reports",
     "/settings",
@@ -283,6 +284,15 @@ export function canDeleteCompetitors(accessLevel: string | undefined): boolean {
     return normalize(accessLevel) === "admin";
 }
 
+const ORG_ASSET_MANAGER_LEVELS = new Set<string>(["admin", "owner", "manager"]);
+
+/** Create, reassign, delete, and organisation-wide asset inventory. */
+export function canManageOrgAssets(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return ORG_ASSET_MANAGER_LEVELS.has(level);
+}
+
 const CLAIMS_MANAGE_LEVELS = new Set<string>(["admin", "manager"]);
 
 /** Approve / decline / mark paid on claims (aligned with mobile manager actions). */
@@ -290,6 +300,44 @@ export function canManageClaims(accessLevel: string | undefined): boolean {
     const level = normalize(accessLevel);
     if (!level) return false;
     return CLAIMS_MANAGE_LEVELS.has(level);
+}
+
+/** Roles allowed on JournalController (create, list, update). */
+const MERCHANDISE_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+    "support",
+    "user",
+    "member",
+    "technician",
+]);
+
+/**
+ * Merchandise (`/merchandise`) — journal logs from the mobile app.
+ * Matches JournalController @Roles. Clients and other roles are denied.
+ */
+export function canAccessMerchandise(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return MERCHANDISE_ACCESS_LEVELS.has(level);
+}
+
+const MERCHANDISE_MANAGE_LEVELS = new Set<string>(["admin", "manager"]);
+
+/** Publish, reject, and delete merchandise logs (mobile manage bar). */
+export function canManageMerchandise(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return MERCHANDISE_MANAGE_LEVELS.has(level);
+}
+
+/**
+ * Org-wide GET /journal. Matches the mobile admin list.
+ * Other roles use GET /journal/for/:uid.
+ */
+export function canViewOrgMerchandiseList(accessLevel: string | undefined): boolean {
+    return normalize(accessLevel) === "admin";
 }
 
 const APPROVALS_MANAGE_LEVELS = new Set<string>([
@@ -429,6 +477,13 @@ export function canAccess(
         return canAccessVisualiser(accessLevel);
     }
 
+    if (
+        pathNormalized === "/merchandise" ||
+        pathNormalized.startsWith("/merchandise/")
+    ) {
+        return canAccessMerchandise(accessLevel);
+    }
+
     if (isClientPortalUser(accessLevel)) {
         return isClientPortalPath(pathNormalized);
     }
@@ -461,11 +516,13 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/wellbeing", label: "Wellbeing" },
     { path: "/iot", label: "IoT" },
     { path: "/visits", label: "Visits" },
+    { path: "/merchandise", label: "Merchandise" },
     { path: "/calls", label: "Call recordings" },
     { path: "/leads", label: "Leads" },
     { path: "/pipeline", label: "Pipeline" },
     { path: "/clients", label: "Clients" },
     { path: "/claims", label: "Claims" },
+    { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
     { path: "/planning", label: "Planning" },
@@ -527,9 +584,15 @@ export function getAllowedRoutes(
         { path: "/pipeline", label: "Pipeline" },
         { path: "/clients", label: "Clients" },
         { path: "/claims", label: "Claims" },
+        { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
     ];
+
+    if (canAccessMerchandise(accessLevel)) {
+        const visitsIndex = fullNav.findIndex((r) => r.path === "/visits");
+        fullNav.splice(visitsIndex + 1, 0, { path: "/merchandise", label: "Merchandise" });
+    }
 
     if (canAccessCallRecordings(accessLevel)) {
         const visitsIndex = fullNav.findIndex((r) => r.path === "/visits");
@@ -587,6 +650,15 @@ export function getAllowedRoutes(
             reportsIndex >= 0 ? reportsIndex + 1 : restrictedNav.length,
             0,
             { path: "/performance", label: "Performance" }
+        );
+    }
+
+    if (canAccessMerchandise(accessLevel) && !restrictedNav.some((r) => r.path === "/merchandise")) {
+        const visitsIndex = restrictedNav.findIndex((r) => r.path === "/visits");
+        restrictedNav.splice(
+            visitsIndex >= 0 ? visitsIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/merchandise", label: "Merchandise" }
         );
     }
 
