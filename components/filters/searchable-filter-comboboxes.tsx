@@ -398,6 +398,8 @@ export function SearchableUserPicker({
           reportsFilterPortalHighZ
         )}
         align="start"
+        onWheel={(event) => event.stopPropagation()}
+        onTouchMove={(event) => event.stopPropagation()}
         onOpenAutoFocus={(e) => {
           // Keep focus in the search input; map canvases often steal it otherwise.
           e.preventDefault();
@@ -407,13 +409,16 @@ export function SearchableUserPicker({
           input?.focus();
         }}
       >
-        <Command shouldFilter={false}>
+        <Command shouldFilter={false} className="h-auto">
           <CommandInput
             placeholder={searchPlaceholder}
             value={query}
             onValueChange={setQuery}
           />
-          <CommandList>
+          <CommandList
+            className="max-h-[min(300px,50vh)] min-h-0 overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+          >
             <CommandEmpty>
               {isSearchLoading ? 'Searching…' : emptyMessage}
             </CommandEmpty>
