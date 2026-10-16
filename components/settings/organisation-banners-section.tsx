@@ -892,7 +892,7 @@ export function OrganisationBannersSection() {
               <p className="text-xs font-medium text-muted-foreground">
                 Carousel preview (image only in app)
               </p>
-              <div className="h-[320px] w-full overflow-hidden rounded-xl bg-muted">
+              <div className="h-[336px] w-full overflow-hidden rounded-xl bg-muted">
                 <img
                   src={previewBanner.image}
                   alt=""
@@ -904,18 +904,18 @@ export function OrganisationBannersSection() {
           {previewBanner ? (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Dialog preview</p>
-              <div className="rounded-2xl bg-black/70 p-4">
-                <div className="mx-auto w-[88%] overflow-hidden rounded-2xl bg-background shadow-md">
+              <div className="rounded-2xl bg-black/70 p-3">
+                <div className="mx-auto flex h-[min(80dvh,675px)] w-[92%] flex-col overflow-y-auto rounded-2xl bg-background shadow-md">
                   {previewBanner.image ? (
-                    <div className="aspect-[1.07/1] w-full overflow-hidden">
+                    <div className="w-full shrink-0 bg-muted">
                       <img
                         src={previewBanner.image}
                         alt=""
-                        className="size-full object-cover object-center"
+                        className="h-auto w-full object-contain object-center"
                       />
                     </div>
                   ) : null}
-                  <div className="space-y-2 px-5 pt-5 pb-6">
+                  <div className="space-y-2 px-5 pt-5 pb-7">
                     {previewBanner.category ? (
                       <Badge variant="secondary" className="capitalize">
                         {previewBanner.category}
