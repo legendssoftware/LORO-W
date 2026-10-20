@@ -77,6 +77,20 @@ export async function fetchReportsOrgUsers(
     };
   });
   fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'A',location:'reports-scope-allowlist.ts:fetchReportsOrgUsers',message:'roster target fields',data:{count:active.length,withSalesTarget:sample.filter((row)=>Number(row.targetSalesAmount)>0).length,sample},timestamp:Date.now()})}).catch(()=>{});
+  // #region agent log
+  const dateSample = active.slice(0, 12).map((user) => {
+    const ut = (user.userTarget ?? null) as Record<string, unknown> | null;
+    return {
+      uid: user.uid,
+      hasTarget: ut != null,
+      targetSalesAmount: ut?.targetSalesAmount ?? null,
+      periodStartDate: ut?.periodStartDate ?? null,
+      periodEndDate: ut?.periodEndDate ?? null,
+      keys: ut ? Object.keys(ut) : [],
+    };
+  });
+  fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7255bc'},body:JSON.stringify({sessionId:'7255bc',runId:'pre-fix',hypothesisId:'A',location:'reports-scope-allowlist.ts:fetchReportsOrgUsers',message:'roster sales target and period dates',data:{count:active.length,withSalesTarget:dateSample.filter((row)=>Number(row.targetSalesAmount)>0).length,withPeriod:dateSample.filter((row)=>row.periodStartDate!=null&&row.periodEndDate!=null).length,dateSample},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   // #endregion
   return active;
 }

@@ -58,6 +58,15 @@ function mergeEnrichment(
     sales?: { target?: unknown };
   } | null;
   const personal = dashboard?.personalTargets;
+  const personalDates = dashboard?.personalTargets as {
+    periodStartDate?: unknown;
+    periodEndDate?: unknown;
+  } | undefined;
+  // #region agent log
+  if (row.userId > 0) {
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7255bc'},body:JSON.stringify({sessionId:'7255bc',runId:'pre-fix',hypothesisId:'A-C-E',location:'use-phased-page-enrichment.ts:mergeEnrichment',message:'sales target and dates through merge',data:{userId:row.userId,rowSalesTarget:row.sales.target,rowSalesCurrent:row.sales.current,rowPeriodStart:row.periodStartDate??null,rowPeriodEnd:row.periodEndDate??null,rowPeriodLabel:row.periodLabel??null,hasDashboard:!!enrich.dashboard,personalSalesTarget:personal?.sales?.target??null,personalSalesCurrent:personal?.sales?.current??null,personalPeriodStart:personalDates?.periodStartDate??null,personalPeriodEnd:personalDates?.periodEndDate??null,erpRevenue:enrich.erpRevenue},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
   // #region agent log
   if (row.userId > 0) {
     fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'B',location:'use-phased-page-enrichment.ts:mergeEnrichment',message:'sales target before dashboard merge',data:{userId:row.userId,rowSalesTarget:row.sales.target,rowHoursTarget:row.hours.target,rowPeriodStart:row.periodStartDate??null,rowPeriodEnd:row.periodEndDate??null,expectedDays:row.policy?.expectedDays??null,hasDashboard:!!enrich.dashboard,personalSalesTarget:personal?.sales?.target??null,personalSalesCurrent:personal?.sales?.current??null,personalHoursTarget:personal?.hours?.target??null,topSalesTarget:dashboard?.sales?.target??null,erpRevenue:enrich.erpRevenue},timestamp:Date.now()})}).catch(()=>{});
@@ -74,6 +83,11 @@ function mergeEnrichment(
   next = applyProductivityToRow(next, enrich.productivityScore, {
     isLoading: enrich.productivityLoading,
   });
+  // #region agent log
+  if (row.userId > 0) {
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7255bc'},body:JSON.stringify({sessionId:'7255bc',runId:'pre-fix',hypothesisId:'C-E',location:'use-phased-page-enrichment.ts:mergeEnrichment:after',message:'row after sales and date merge',data:{userId:row.userId,salesTarget:next.sales.target,salesCurrent:next.sales.current,periodStart:next.periodStartDate??null,periodEnd:next.periodEndDate??null,periodLabel:next.periodLabel??null},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
   return next;
 }
 
