@@ -29,6 +29,30 @@ import {
   type CallDayRates,
 } from '@/lib/utils/call-day-rates';
 
+/** Full-month hours target when none is stored, and the cap when a stored target is higher. */
+export const MONTHLY_HOURS_TARGET_CAP = 180;
+
+/**
+ * Period hours target for the reports grid.
+ * Missing or 0 becomes {@link MONTHLY_HOURS_TARGET_CAP}. A higher stored target is capped there.
+ * A stored target from 1 through 180 is kept.
+ */
+export function resolveHoursPeriodTarget(stored: unknown): number {
+  const target = targetNum(stored);
+  if (target <= 0) return MONTHLY_HOURS_TARGET_CAP;
+  return Math.min(target, MONTHLY_HOURS_TARGET_CAP);
+}
+
+function hoursMetricCell(current: unknown, storedTarget: unknown): ReportsTargetMetricCell {
+  const worked = targetNum(current);
+  const target = resolveHoursPeriodTarget(storedTarget);
+  return {
+    current: worked,
+    target,
+    progress: calcTargetProgress(worked, target),
+  };
+}
+
 export interface ReportsTargetMetricCell {
   current: number;
   target: number;
@@ -496,7 +520,7 @@ export function rowFromUserListItem(
       currency
     ),
     metricFromList(ut?.currentSalesAmount, ut?.targetSalesAmount, currency),
-    metricFromList(ut?.currentHoursWorked, ut?.targetHoursWorked)
+    hoursMetricCell(ut?.currentHoursWorked, ut?.targetHoursWorked)
   );
   const ref = user.clerkUserId?.trim() || String(user.uid);
   const name = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.email;
@@ -698,7 +722,7 @@ export function rowFromPersonalTarget(params: {
   const leads = metricFromPersonal(personal.newLeads);
   const quotations = quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
-  const hours = metricFromPersonal(personal.hours);
+  const hours = hoursMetricCell(personal.hours?.current, personal.hours?.target);
   const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
@@ -782,7 +806,7 @@ export function enrichRowWithTargetDashboard(
     ? row.quotations
     : quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
-  const hours = metricFromPersonal(personal.hours);
+  const hours = hoursMetricCell(personal.hours?.current, personal.hours?.target);
   const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'

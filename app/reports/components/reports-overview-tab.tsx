@@ -788,6 +788,75 @@ export function ReportsOverviewTab() {
     });
   }, [pageRows, applyPhasedEnrichment, enrichmentByKey]);
 
+  // #region agent log
+  useEffect(() => {
+    const rows = enrichedPageRows.slice(0, 12).map((row) => ({
+      userId: row.userId,
+      quoteCount: row.quotations.current,
+      quoteAmount: row.quotations.amountCurrent ?? null,
+      quoteTarget: row.quotations.target,
+      salesCurrent: row.sales.current,
+      salesTarget: row.sales.target,
+      hoursCurrent: row.hours.current,
+      hoursTarget: row.hours.target,
+      distanceKm: row.travel?.distanceKm ?? null,
+      travelVisits: row.travel?.visitCount ?? null,
+      visitCurrent: row.visits.current,
+      salesLoading: row.salesLoading === true,
+      productivityLoading: row.productivity.isLoading === true,
+    }));
+    const travelUsers = (travelQuery.data?.users ?? []).slice(0, 8).map((user) => ({
+      uid: user.uid,
+      distanceKm: user.distanceKm,
+      visitCount: user.visitCount,
+    }));
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5624dd' },
+      body: JSON.stringify({
+        sessionId: '5624dd',
+        runId: 'pre-fix',
+        hypothesisId: 'A-B-C-D',
+        location: 'reports-overview-tab.tsx:enrichedPageRows',
+        message: 'targets row sources',
+        data: {
+          rangeFrom: rangeParams?.from ?? null,
+          rangeTo: rangeParams?.to ?? null,
+          engagementFrom: engagementQueryParams?.from ?? null,
+          engagementTo: engagementQueryParams?.to ?? null,
+          engagementReady,
+          hoursOverlayPending,
+          hoursOverlayReady,
+          travelOverlayPending,
+          travelReady,
+          travelStatus: travelQuery.status,
+          attendanceStatus: attendanceReportQuery.status,
+          engagementStatus: engagementQuery.status,
+          zeroHourTargets: rows.filter((row) => row.hoursTarget === 0).length,
+          visitsWithZeroKm: rows.filter((row) => (row.travelVisits ?? 0) > 0 && (row.distanceKm ?? 0) === 0).length,
+          quoteSalesMismatch: rows.filter((row) => Math.round(row.quoteAmount ?? 0) !== Math.round(row.salesCurrent)).length,
+          rows,
+          travelUsers,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }, [
+    enrichedPageRows,
+    rangeParams,
+    engagementQueryParams,
+    engagementReady,
+    hoursOverlayPending,
+    hoursOverlayReady,
+    travelOverlayPending,
+    travelReady,
+    travelQuery.data?.users,
+    travelQuery.status,
+    attendanceReportQuery.status,
+    engagementQuery.status,
+  ]);
+  // #endregion
+
   const selfHasSalesTarget = useMemo(() => {
     const ut = selfTargetQuery.data?.userTarget;
     if (!ut || typeof ut !== 'object') return false;

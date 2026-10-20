@@ -136,6 +136,11 @@ export interface OrganisationSettingsRecord {
     reviewScoreThreshold?: number;
     scorecardVersion?: number;
   } | null;
+  performancePolicy?: {
+    enabled?: boolean;
+    shadowMode?: boolean;
+    appliesToCountries?: string[];
+  } | null;
 }
 
 export interface GetOrganisationSettingsResponse {
