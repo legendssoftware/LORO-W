@@ -1074,6 +1074,7 @@ export function ReportsOverviewTab() {
       byId.set(row.userId, row);
     }
     const teams = new Map<number, ReportsTargetRow[]>();
+    const enrichedIds = new Set(displayRowsWithCurrency.map((row) => row.userId));
     for (const row of byId.values()) {
       const memberIds = row.managedStaffUids ?? [];
       if (memberIds.length === 0) continue;
@@ -1082,6 +1083,26 @@ export function ReportsOverviewTab() {
         .filter((member): member is ReportsTargetRow => member != null && member.userId !== row.userId);
       if (members.length > 0) teams.set(row.userId, members);
     }
+    // #region agent log
+    const teamSnap = [...teams.entries()].slice(0, 4).map(([leaderId, members]) => ({
+      leaderId,
+      leaderName: byId.get(leaderId)?.name ?? null,
+      managedStaffCount: byId.get(leaderId)?.managedStaffUids?.length ?? 0,
+      resolved: members.length,
+      missingIds: (byId.get(leaderId)?.managedStaffUids ?? []).filter((id) => !byId.has(id)).length,
+      enrichedMembers: members.filter((member) => enrichedIds.has(member.userId)).length,
+      salesSum: members.reduce((sum, member) => sum + member.sales.current, 0),
+      salesTargetSum: members.reduce((sum, member) => sum + member.sales.target, 0),
+      zeroSales: members.filter((member) => member.sales.current === 0).length,
+      memberSales: members.slice(0, 8).map((member) => ({
+        userId: member.userId,
+        current: member.sales.current,
+        target: member.sales.target,
+        enriched: enrichedIds.has(member.userId),
+      })),
+    }));
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8ebf41'},body:JSON.stringify({sessionId:'8ebf41',runId:'pre-fix',hypothesisId:'H2-H4',location:'reports-overview-tab.tsx:teamMembersByLeaderId',message:'team sales sum vs enriched page rows',data:{teamCount:teams.size,cohort:cohortRows.length,page:displayRowsWithCurrency.length,teamSnap},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     return teams;
   }, [cohortRows, displayRowsWithCurrency, currencyView, exchangeRateMap]);
 

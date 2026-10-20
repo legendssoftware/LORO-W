@@ -78,6 +78,16 @@ export async function fetchReportsOrgUsers(
   });
   fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'A',location:'reports-scope-allowlist.ts:fetchReportsOrgUsers',message:'roster target fields',data:{count:active.length,withSalesTarget:sample.filter((row)=>Number(row.targetSalesAmount)>0).length,sample},timestamp:Date.now()})}).catch(()=>{});
   // #region agent log
+  const leaders = active.filter((user) => Array.isArray(user.managedStaff) && user.managedStaff.length > 0).slice(0, 6).map((user) => ({
+    uid: user.uid,
+    name: user.name,
+    managedStaffCount: Array.isArray(user.managedStaff) ? user.managedStaff.length : 0,
+    managedBranches: (user as { managedBranches?: unknown }).managedBranches ?? null,
+    hasManagedBranchesKey: Object.prototype.hasOwnProperty.call(user, 'managedBranches'),
+  }));
+  fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8ebf41'},body:JSON.stringify({sessionId:'8ebf41',runId:'pre-fix',hypothesisId:'H1',location:'reports-scope-allowlist.ts:fetchReportsOrgUsers',message:'roster leaders managed staff vs branches',data:{leaderCount:active.filter((user)=>Array.isArray(user.managedStaff)&&user.managedStaff.length>0).length,leaders},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  // #region agent log
   const dateSample = active.slice(0, 12).map((user) => {
     const ut = (user.userTarget ?? null) as Record<string, unknown> | null;
     return {
