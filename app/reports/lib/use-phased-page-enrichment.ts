@@ -92,7 +92,8 @@ function mergeEnrichment(
 }
 
 /**
- * One batch request for the visible targets page (target, ERP sales, productivity).
+ * Targets and productivity stay on one batch. ERP sales is a second request so the
+ * Sales column paints without waiting for those heavier rows.
  */
 export function usePhasedPageEnrichment(opts: {
   pageRows: ReportsTargetRow[];
@@ -161,17 +162,55 @@ export function usePhasedPageEnrichment(opts: {
 
     const excludeCustomerCategoriesBody = excludedKey ? excludedKey.split(',') : undefined;
     const includeCustomerCategoriesBody = includedKey ? includedKey.split(',') : undefined;
+    const requestBody = {
+      userIds,
+      from: rangeFrom ?? undefined,
+      to: rangeTo ?? undefined,
+      excludeCustomerCategories: excludeCustomerCategoriesBody,
+      includeCustomerCategories: includeCustomerCategoriesBody,
+    };
 
-    void client
+    const salesRequest = client
+      .post<{ data?: Array<{ userId: number; erpRevenue: number | null }> }>(
+        '/reports/targets-page-sales',
+        requestBody,
+        { signal: abort.signal }
+      )
+      .then((response) => {
+        if (generation !== generationRef.current) return;
+        const byUser = new Map((response.data?.data ?? []).map((row) => [row.userId, row]));
+        setEnrichmentByKey((prev) => {
+          const next = new Map(prev);
+          for (const row of rows) {
+            const key = getPageRowEnrichmentKey(row);
+            const current = next.get(key) ?? { ...EMPTY_ENRICHMENT };
+            const item = byUser.get(row.userId);
+            next.set(key, {
+              ...current,
+              erpRevenue: item?.erpRevenue ?? null,
+              erpLoading: false,
+            });
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        if (generation !== generationRef.current) return;
+        setEnrichmentByKey((prev) => {
+          const next = new Map(prev);
+          for (const row of rows) {
+            const key = getPageRowEnrichmentKey(row);
+            const current = next.get(key) ?? { ...EMPTY_ENRICHMENT };
+            next.set(key, { ...current, erpLoading: false });
+          }
+          return next;
+        });
+      });
+
+    const enrichRequest = client
       .post<EnrichmentApiBody>(
         '/reports/targets-page-enrichment',
-        {
-          userIds,
-          from: rangeFrom ?? undefined,
-          to: rangeTo ?? undefined,
-          excludeCustomerCategories: excludeCustomerCategoriesBody,
-          includeCustomerCategories: includeCustomerCategoriesBody,
-        },
+        { ...requestBody, skipErp: true },
         { signal: abort.signal }
       )
       .then((response) => {
@@ -181,14 +220,15 @@ export function usePhasedPageEnrichment(opts: {
         );
         setCustomerCategories(categories);
         const byUser = new Map((response.data?.data ?? []).map((row) => [row.userId, row]));
-        setEnrichmentByKey(() => {
-          const next = new Map<string, PageRowEnrichment>();
+        setEnrichmentByKey((prev) => {
+          const next = new Map(prev);
           for (const row of rows) {
+            const key = getPageRowEnrichmentKey(row);
+            const current = next.get(key) ?? { ...EMPTY_ENRICHMENT };
             const item = byUser.get(row.userId);
-            next.set(getPageRowEnrichmentKey(row), {
+            next.set(key, {
+              ...current,
               dashboard: item?.userTarget ?? null,
-              erpRevenue: item?.erpRevenue ?? null,
-              erpLoading: false,
               productivityScore: item?.productivityScore ?? null,
               productivityLoading: false,
             });
@@ -198,17 +238,20 @@ export function usePhasedPageEnrichment(opts: {
       })
       .catch(() => {
         if (generation !== generationRef.current) return;
-        setEnrichmentByKey(() => {
-          const next = new Map<string, PageRowEnrichment>();
+        setEnrichmentByKey((prev) => {
+          const next = new Map(prev);
           for (const row of rows) {
-            next.set(getPageRowEnrichmentKey(row), { ...EMPTY_ENRICHMENT });
+            const key = getPageRowEnrichmentKey(row);
+            const current = next.get(key) ?? { ...EMPTY_ENRICHMENT };
+            next.set(key, { ...current, productivityLoading: false });
           }
           return next;
         });
-      })
-      .finally(() => {
-        if (generation === generationRef.current) setIsEnriching(false);
       });
+
+    void Promise.allSettled([salesRequest, enrichRequest]).finally(() => {
+      if (generation === generationRef.current) setIsEnriching(false);
+    });
 
     return () => {
       abort.abort();

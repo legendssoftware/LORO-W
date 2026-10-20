@@ -1,7 +1,7 @@
 'use client';
 
-import type { KeyboardEvent } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { Fragment, useState, type KeyboardEvent } from 'react';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 import {
   ReportProgressBar,
   getProgressColorClasses,
@@ -348,6 +348,112 @@ export interface ReportsTargetsTableProps {
   travelOverlayPending?: boolean;
   /** True when engagement-range succeeded and quote count is available. */
   quotationCountAvailable?: boolean;
+  /** Managed staff rows for each team leader, keyed by the leader's user id. */
+  teamMembersByLeaderId?: Map<number, ReportsTargetRow[]>;
+}
+
+function ratioPercent(current: number, target: number): number {
+  if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
+    return current > 0 ? 100 : 0;
+  }
+  return Math.round((current / target) * 100);
+}
+
+function TeamMetricBar({
+  label,
+  valueLabel,
+  progress,
+  loading = false,
+}: {
+  label: string;
+  valueLabel: string;
+  progress: number;
+  loading?: boolean;
+}) {
+  const colors = getProgressColorClasses(progress);
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className={cn('text-xs font-semibold tabular-nums', colors.text)}>{progress}%</p>
+      </div>
+      {loading ? <Skeleton className="h-2 w-full" /> : <ReportProgressBar value={progress} />}
+      <p className="truncate text-xs tabular-nums text-foreground">{valueLabel}</p>
+    </div>
+  );
+}
+
+function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
+  const salesCurrent = members.reduce((sum, row) => sum + row.sales.current, 0);
+  const salesTarget = members.reduce((sum, row) => sum + row.sales.target, 0);
+  const callsCurrent = members.reduce((sum, row) => sum + row.calls.current, 0);
+  const callsTarget = members.reduce((sum, row) => sum + row.calls.target, 0);
+  const visitsCurrent = members.reduce((sum, row) => sum + row.visits.current, 0);
+  const visitsTarget = members.reduce((sum, row) => sum + row.visits.target, 0);
+  const leadsCurrent = members.reduce((sum, row) => sum + row.leads.current, 0);
+  const leadsTarget = members.reduce((sum, row) => sum + row.leads.target, 0);
+  const quotesCurrent = members.reduce((sum, row) => sum + row.quotations.current, 0);
+  const quotesTarget = members.reduce((sum, row) => sum + row.quotations.target, 0);
+  const hoursCurrent = members.reduce((sum, row) => sum + row.hours.current, 0);
+  const hoursTarget = members.reduce((sum, row) => sum + row.hours.target, 0);
+  const distanceKm = members.reduce((sum, row) => sum + row.travel.distanceKm, 0);
+  const fuelAllowance = members.reduce((sum, row) => sum + row.travel.fuelAllowance, 0);
+  const achievement =
+    members.length === 0
+      ? 0
+      : Math.round(members.reduce((sum, row) => sum + row.achievement, 0) / members.length);
+  const salesLoading = members.some((row) => row.salesLoading === true);
+  const currency = formatReportCurrencyCode(members.find((row) => row.sales.currency)?.sales.currency);
+  const people = members.length === 1 ? '1 person' : `${members.length} people`;
+
+  return (
+    <div className="space-y-3 rounded-lg bg-muted/40 p-3">
+      <p className="text-xs font-medium text-muted-foreground">Team targets · {people}</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <TeamMetricBar
+          label="Sales"
+          loading={salesLoading}
+          progress={ratioPercent(salesCurrent, salesTarget)}
+          valueLabel={`${currency} ${Math.round(salesCurrent).toLocaleString()} / ${Math.round(salesTarget).toLocaleString()}`}
+        />
+        <TeamMetricBar
+          label="Calls"
+          progress={ratioPercent(callsCurrent, callsTarget)}
+          valueLabel={`${formatCount(callsCurrent)} / ${formatCount(callsTarget)}`}
+        />
+        <TeamMetricBar
+          label="Visits"
+          progress={ratioPercent(visitsCurrent, visitsTarget)}
+          valueLabel={`${formatCount(visitsCurrent)} / ${formatCount(visitsTarget)}`}
+        />
+        <TeamMetricBar
+          label="Leads"
+          progress={ratioPercent(leadsCurrent, leadsTarget)}
+          valueLabel={`${formatCount(leadsCurrent)} / ${formatCount(leadsTarget)}`}
+        />
+        <TeamMetricBar
+          label="Quotations"
+          progress={ratioPercent(quotesCurrent, quotesTarget)}
+          valueLabel={`${formatCount(quotesCurrent)} / ${formatCount(quotesTarget)}`}
+        />
+        <TeamMetricBar
+          label="Hours"
+          progress={ratioPercent(hoursCurrent, hoursTarget)}
+          valueLabel={`${formatCount(hoursCurrent)}h / ${formatCount(hoursTarget)}h`}
+        />
+        <TeamMetricBar
+          label="Travel"
+          progress={ratioPercent(distanceKm, fuelAllowance)}
+          valueLabel={`${formatDistanceKm(distanceKm)} / ${formatDistanceKm(fuelAllowance)}`}
+        />
+        <TeamMetricBar
+          label="Achievement"
+          progress={achievement}
+          valueLabel={`${achievement}% average`}
+        />
+      </div>
+    </div>
+  );
 }
 
 function MetricCellSkeleton() {
@@ -366,13 +472,34 @@ export function ReportsTargetsTable({
   hoursOverlayPending = false,
   travelOverlayPending = false,
   quotationCountAvailable = true,
+  teamMembersByLeaderId,
 }: ReportsTargetsTableProps) {
+  const [expandedLeaderIds, setExpandedLeaderIds] = useState<Set<number>>(() => new Set());
+
+  function teamFor(row: ReportsTargetRow): ReportsTargetRow[] {
+    return teamMembersByLeaderId?.get(row.userId) ?? [];
+  }
+
+  function toggleLeader(userId: number) {
+    setExpandedLeaderIds((current) => {
+      const next = new Set(current);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }
+
   function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, row: ReportsTargetRow) {
-    if (!onRowClick) return;
-    if (e.key === 'Enter' || e.key === ' ') {
+    const team = teamFor(row);
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (team.length > 0) {
       e.preventDefault();
-      onRowClick(row);
+      toggleLeader(row.userId);
+      return;
     }
+    if (!onRowClick) return;
+    e.preventDefault();
+    onRowClick(row);
   }
 
   return (
@@ -413,21 +540,40 @@ export function ReportsTargetsTable({
         ) : (
           rows.map((row) => {
             const achievementColors = getProgressColorClasses(row.achievement);
+            const team = teamFor(row);
+            const isLeader = team.length > 0;
+            const isExpanded = isLeader && expandedLeaderIds.has(row.userId);
             return (
+              <Fragment key={row.key}>
               <TableRow
-                key={row.key}
                 className={cn(
-                  onRowClick &&
+                  (onRowClick || isLeader) &&
                     'cursor-pointer transition-colors hover:bg-muted/50'
                 )}
-                role={onRowClick ? 'button' : undefined}
-                tabIndex={onRowClick ? 0 : undefined}
-                onClick={() => onRowClick?.(row)}
+                role={!isLeader && onRowClick ? 'button' : undefined}
+                tabIndex={!isLeader && onRowClick ? 0 : undefined}
+                aria-expanded={isLeader ? isExpanded : undefined}
+                onClick={() => {
+                  if (isLeader) {
+                    toggleLeader(row.userId);
+                    return;
+                  }
+                  onRowClick?.(row);
+                }}
                 onKeyDown={(e) => handleRowKeyDown(e, row)}
                 data-tour="reports-targets-row"
               >
                 <TableCell>
                   <div className="flex min-w-0 items-center gap-2.5">
+                    {isLeader ? (
+                      <ChevronDown
+                        className={cn(
+                          'size-4 shrink-0 text-muted-foreground transition-transform',
+                          isExpanded && 'rotate-180'
+                        )}
+                        aria-hidden
+                      />
+                    ) : null}
                     <Avatar className="size-8 shrink-0">
                       <AvatarImage src={row.photoURL ?? undefined} alt="" />
                       <AvatarFallback className="text-[10px]">
@@ -443,6 +589,18 @@ export function ReportsTargetsTable({
                         <p className="truncate text-[10px] text-muted-foreground/80">
                           {row.periodLabel}
                         </p>
+                      ) : null}
+                      {isLeader ? (
+                        <button
+                          type="button"
+                          className="text-[10px] font-medium text-primary hover:underline"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRowClick?.(row);
+                          }}
+                        >
+                          Open profile
+                        </button>
                       ) : null}
                     </div>
                   </div>
@@ -544,6 +702,14 @@ export function ReportsTargetsTable({
                   <AcknowledgedCell row={row} />
                 </TableCell>
               </TableRow>
+              {isExpanded ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={COL_COUNT} className="bg-muted/20 p-3">
+                    <TeamTargetsPanel members={team} />
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              </Fragment>
             );
           })
         )}

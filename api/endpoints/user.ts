@@ -89,6 +89,8 @@ export interface UserListItem {
   photoURL?: string | null;
   avatar?: string | null;
   workforceType?: string | null;
+  /** User uids this person manages. Present on GET /user/roster. */
+  managedStaff?: number[] | null;
   pbxExtension?: string | null;
   branchUid?: number | null;
   branch?: { uid: number; name?: string; alias?: string | null; country?: string | null } | null;
