@@ -63,5 +63,20 @@ export async function fetchReportsOrgUsers(
 ): Promise<UserListItem[]> {
   const { data } = await client.get<{ data?: UserListItem[] }>('/user/roster?limit=500');
   const rows = Array.isArray(data?.data) ? data.data : [];
-  return rows.filter(userListItemIsActiveForReporting);
+  const active = rows.filter(userListItemIsActiveForReporting);
+  // #region agent log
+  const sample = active.slice(0, 8).map((user) => {
+    const ut = (user.userTarget ?? null) as Record<string, unknown> | null;
+    return {
+      uid: user.uid,
+      targetKeys: ut ? Object.keys(ut) : [],
+      targetSalesAmount: ut?.targetSalesAmount ?? null,
+      targetHoursWorked: ut?.targetHoursWorked ?? null,
+      targetQuotationsAmount: ut?.targetQuotationsAmount ?? null,
+      targetCalls: ut?.targetCalls ?? null,
+    };
+  });
+  fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'A',location:'reports-scope-allowlist.ts:fetchReportsOrgUsers',message:'roster target fields',data:{count:active.length,withSalesTarget:sample.filter((row)=>Number(row.targetSalesAmount)>0).length,sample},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  return active;
 }

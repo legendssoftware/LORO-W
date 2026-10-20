@@ -53,6 +53,16 @@ function mergeEnrichment(
   options?: { preserveRangeMetrics?: boolean }
 ): ReportsTargetRow {
   if (!enrich) return row;
+  const dashboard = enrich.dashboard as {
+    personalTargets?: { sales?: { target?: unknown; current?: unknown }; hours?: { target?: unknown; current?: unknown } };
+    sales?: { target?: unknown };
+  } | null;
+  const personal = dashboard?.personalTargets;
+  // #region agent log
+  if (row.userId > 0) {
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'B',location:'use-phased-page-enrichment.ts:mergeEnrichment',message:'sales target before dashboard merge',data:{userId:row.userId,rowSalesTarget:row.sales.target,rowHoursTarget:row.hours.target,rowPeriodStart:row.periodStartDate??null,rowPeriodEnd:row.periodEndDate??null,expectedDays:row.policy?.expectedDays??null,hasDashboard:!!enrich.dashboard,personalSalesTarget:personal?.sales?.target??null,personalSalesCurrent:personal?.sales?.current??null,personalHoursTarget:personal?.hours?.target??null,topSalesTarget:dashboard?.sales?.target??null,erpRevenue:enrich.erpRevenue},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
   let next = enrich.dashboard
     ? enrichRowWithTargetDashboard(row, enrich.dashboard, {
         preserveRangeMetrics: options?.preserveRangeMetrics,

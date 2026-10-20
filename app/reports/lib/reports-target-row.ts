@@ -568,6 +568,9 @@ export type TravelOverlay = {
   fuelAllowance: number;
 };
 
+let debugHoursOverlayLogs = 0;
+let debugHoursEnrichLogs = 0;
+
 const EMPTY_ENGAGEMENT_OVERLAY: EngagementOverlay = {
   callCount: 0,
   leadCount: 0,
@@ -626,6 +629,12 @@ export function overlayTargetRowFilters(
       opts.rangeParams?.to ?? null
     );
   }
+  // #region agent log
+  if (opts.rangeParams && opts.hoursOverlayReady && debugHoursOverlayLogs < 8) {
+    debugHoursOverlayLogs += 1;
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3b6045'},body:JSON.stringify({sessionId:'3b6045',runId:'pre-fix',hypothesisId:'B-C',location:'reports-target-row.ts:overlayTargetRowFilters',message:'hours overlay vs date range',data:{userId:row.userId,rangeFrom:opts.rangeParams.from,rangeTo:opts.rangeParams.to,hoursOverlayReady:opts.hoursOverlayReady===true,hoursWorked:opts.hoursWorked??null,hoursWorkedMissing:opts.hoursWorked==null,periodTarget:row.hours.target,displayedTarget:next.hours.target,displayedCurrent:next.hours.current,expectedDays:opts.policy?.expectedDays??null,policyStatus:opts.policy?.status??null},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
   if (opts.travelReady) {
     next = applyTravelToRow(
       next,
@@ -807,6 +816,12 @@ export function enrichRowWithTargetDashboard(
     : quotationsFromPersonal(personal.quotations, currency);
   const sales = metricFromPersonal(personal.sales, currency);
   const hours = hoursMetricCell(personal.hours?.current, personal.hours?.target);
+  // #region agent log
+  if (debugHoursEnrichLogs < 8) {
+    debugHoursEnrichLogs += 1;
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3b6045'},body:JSON.stringify({sessionId:'3b6045',runId:'pre-fix',hypothesisId:'A-D',location:'reports-target-row.ts:enrichRowWithTargetDashboard',message:'enrichment hours overwrite',data:{userId:row.userId,preserveRangeMetrics:preserve,beforeCurrent:row.hours.current,beforeTarget:row.hours.target,personalCurrent:personal.hours?.current??null,personalTarget:personal.hours?.target??null,afterCurrent:hours.current,afterTarget:hours.target},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
   const metrics = buildRowMetrics(calls, leads, visits, quotations, sales, hours);
   const warnings =
     personal.targetWarnings && typeof personal.targetWarnings === 'object'
