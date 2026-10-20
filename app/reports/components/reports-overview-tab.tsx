@@ -1062,6 +1062,29 @@ export function ReportsOverviewTab() {
     sortMetric,
   ]);
 
+  const teamMembersByLeaderId = useMemo(() => {
+    const byId = new Map<number, ReportsTargetRow>();
+    for (const row of cohortRows) {
+      byId.set(
+        row.userId,
+        applyCurrencyViewToRow(row, currencyView, exchangeRateMap)
+      );
+    }
+    for (const row of displayRowsWithCurrency) {
+      byId.set(row.userId, row);
+    }
+    const teams = new Map<number, ReportsTargetRow[]>();
+    for (const row of byId.values()) {
+      const memberIds = row.managedStaffUids ?? [];
+      if (memberIds.length === 0) continue;
+      const members = memberIds
+        .map((id) => byId.get(id))
+        .filter((member): member is ReportsTargetRow => member != null && member.userId !== row.userId);
+      if (members.length > 0) teams.set(row.userId, members);
+    }
+    return teams;
+  }, [cohortRows, displayRowsWithCurrency, currencyView, exchangeRateMap]);
+
   /** Keep detail dialog in sync when filter overlays update the same user row. */
   const detailRow = useMemo(() => {
     if (!selectedRow) return null;
@@ -1309,6 +1332,7 @@ export function ReportsOverviewTab() {
             hoursOverlayPending={hoursOverlayPending}
             travelOverlayPending={travelOverlayPending}
             quotationCountAvailable={quotationCountAvailable}
+            teamMembersByLeaderId={teamMembersByLeaderId}
           />
         </div>
         {isMultiUser ? (
