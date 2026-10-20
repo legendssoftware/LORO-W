@@ -790,6 +790,28 @@ export function ReportsOverviewTab() {
 
   // #region agent log
   useEffect(() => {
+    const before = pageRows.slice(0, 8).map((row) => ({
+      userId: row.userId,
+      salesTarget: row.sales.target,
+      hoursTarget: row.hours.target,
+      expectedDays: row.policy?.expectedDays ?? null,
+      periodStart: row.periodStartDate ?? null,
+      periodEnd: row.periodEndDate ?? null,
+    }));
+    const after = enrichedPageRows.slice(0, 8).map((row) => ({
+      userId: row.userId,
+      salesTarget: row.sales.target,
+      salesCurrent: row.sales.current,
+      hoursTarget: row.hours.target,
+      hoursCurrent: row.hours.current,
+      expectedDays: row.policy?.expectedDays ?? null,
+    }));
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'C-D',location:'reports-overview-tab.tsx:pageRows',message:'targets before and after enrichment',data:{rangeFrom:rangeParams?.from??null,rangeTo:rangeParams?.to??null,policyPending,zeroSalesBefore:before.filter((row)=>row.salesTarget===0).length,zeroHoursBefore:before.filter((row)=>row.hoursTarget===0).length,zeroSalesAfter:after.filter((row)=>row.salesTarget===0).length,zeroHoursAfter:after.filter((row)=>row.hoursTarget===0).length,before,after},timestamp:Date.now()})}).catch(()=>{});
+  }, [pageRows, enrichedPageRows, rangeParams, policyPending]);
+  // #endregion
+
+  // #region agent log
+  useEffect(() => {
     const rows = enrichedPageRows.slice(0, 12).map((row) => ({
       userId: row.userId,
       quoteCount: row.quotations.current,
@@ -833,6 +855,10 @@ export function ReportsOverviewTab() {
           attendanceStatus: attendanceReportQuery.status,
           engagementStatus: engagementQuery.status,
           zeroHourTargets: rows.filter((row) => row.hoursTarget === 0).length,
+          hourTargets: rows.map((row) => row.hoursTarget),
+          hourCurrents: rows.map((row) => row.hoursCurrent),
+          attendanceUserCount: attendanceReportQuery.data?.report?.userMetrics?.length ?? 0,
+          hoursMapped: hoursByUid.size,
           visitsWithZeroKm: rows.filter((row) => (row.travelVisits ?? 0) > 0 && (row.distanceKm ?? 0) === 0).length,
           quoteSalesMismatch: rows.filter((row) => Math.round(row.quoteAmount ?? 0) !== Math.round(row.salesCurrent)).length,
           rows,
@@ -841,6 +867,9 @@ export function ReportsOverviewTab() {
         timestamp: Date.now(),
       }),
     }).catch(() => {});
+    // #region agent log
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3b6045'},body:JSON.stringify({sessionId:'3b6045',runId:'pre-fix',hypothesisId:'A-B-E',location:'reports-overview-tab.tsx:enrichedPageRows',message:'visible hours cells',data:{rangeFrom:rangeParams?.from??null,rangeTo:rangeParams?.to??null,hoursOverlayReady,hoursOverlayPending,attendanceStatus:attendanceReportQuery.status,attendanceUserCount:attendanceReportQuery.data?.report?.userMetrics?.length??0,hoursMapped:hoursByUid.size,zeroHourTargets:rows.filter((row)=>row.hoursTarget===0).length,targetsAt180:rows.filter((row)=>row.hoursTarget===180).length,targetsAt9:rows.filter((row)=>row.hoursTarget===9).length,hourTargets:rows.map((row)=>row.hoursTarget),hourCurrents:rows.map((row)=>row.hoursCurrent)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
   }, [
     enrichedPageRows,
     rangeParams,
@@ -848,6 +877,7 @@ export function ReportsOverviewTab() {
     engagementReady,
     hoursOverlayPending,
     hoursOverlayReady,
+    hoursByUid,
     travelOverlayPending,
     travelReady,
     travelQuery.data?.users,
