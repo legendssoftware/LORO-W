@@ -97,6 +97,7 @@ import { PlanClientVisitsDialog } from './plan-client-visits-dialog';
 import { ActiveVisitSchedules } from './active-visit-schedules';
 import { UserWarningsCard } from './user-warnings-card';
 import { PerformanceWarningsCard } from './performance-warnings-card';
+import { PolicyAgreementForm } from '@/app/reports/components/policy-agreement-form';
 import { PrimaryVehicleSection } from './primary-vehicle-section';
 import { PersonnelDetailsCard } from './personnel-details-card';
 import { JobInformationCard } from './job-information-card';
@@ -1576,6 +1577,11 @@ export default function UserSettingsPage() {
                             form.getValues('branchUid')
                         )}
                       />
+                      {user.clerkUserId ? (
+                        <div className="mt-4">
+                          <PolicyAgreementForm clerkUserId={user.clerkUserId} />
+                        </div>
+                      ) : null}
                       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 mt-3">
                         <FormField
                           control={targetForm.control}

@@ -179,6 +179,11 @@ export const PAGE_COPY = {
     description:
       'Record merchandise visits with a client reference, photo, and comments. Managers publish or reject logs from the same inbox.',
   },
+  takeoff: {
+    title: 'Takeoff — Ceiling and partition quantities',
+    description:
+      'Build a bill of quantities from ceiling and partition systems. Measurements stay on the device; the server calculates materials and issues a quotation.',
+  },
   claims: {
     title: 'Claims — Submit and track expense reimbursements',
     description:

@@ -8,6 +8,7 @@ import {
   policyCellForRef,
   prorateTargetForRange,
   resolveTargetPeriodEngagementParams,
+  rowFromPersonalTarget,
   rowFromUserListItem,
   targetRowFromUserListItem,
   totalEngagementCheckIns,
@@ -179,6 +180,89 @@ describe('rowFromUserListItem', () => {
     expect(row.quotations.current).toBe(0);
     expect(row.quotations.amountCurrent).toBe(12000);
     expect(row.quotations.currency).toBe('ZAR');
+    expect(row.hours.target).toBe(180);
+    expect(row.hours.current).toBe(40);
+  });
+
+  it('uses 180 hours when the stored target is 0 or missing, and caps above 180', () => {
+    const person = {
+      uid: 42,
+      name: 'Tian',
+      surname: 'Geyer',
+      email: 'tian@example.com',
+    };
+
+    const missing = rowFromUserListItem({
+      ...person,
+      userTarget: { currentHoursWorked: 204 },
+    } as UserListItem);
+    expect(missing.hours).toEqual({ current: 204, target: 180, progress: 100 });
+
+    const zero = rowFromUserListItem({
+      ...person,
+      userTarget: { targetHoursWorked: 0, currentHoursWorked: 204 },
+    } as UserListItem);
+    expect(zero.hours).toEqual({ current: 204, target: 180, progress: 100 });
+
+    const capped = rowFromUserListItem({
+      ...person,
+      userTarget: { targetHoursWorked: 200, currentHoursWorked: 10 },
+    } as UserListItem);
+    expect(capped.hours.target).toBe(180);
+    expect(capped.hours.progress).toBe(6);
+
+    const partTime = rowFromUserListItem({
+      ...person,
+      userTarget: { targetHoursWorked: 160, currentHoursWorked: 40 },
+    } as UserListItem);
+    expect(partTime.hours).toEqual({ current: 40, target: 160, progress: 25 });
+  });
+
+  it('prorates a missing hours target from 180, not from 0', () => {
+    const row = rowFromUserListItem({
+      uid: 42,
+      name: 'Tian',
+      surname: 'Geyer',
+      email: 'tian@example.com',
+      userTarget: {
+        targetHoursWorked: 0,
+        currentHoursWorked: 0,
+        periodStartDate: '2026-08-01',
+        periodEndDate: '2026-08-31',
+      },
+    } as UserListItem);
+    const next = overlayTargetRowFilters(row, {
+      rangeParams: { from: '2026-08-07', to: '2026-08-07' },
+      hoursWorked: 8,
+      hoursOverlayReady: true,
+    });
+    expect(next.hours.target).toBe(9);
+    expect(next.hours.current).toBe(8);
+    expect(next.hours.progress).toBe(89);
+  });
+});
+
+describe('hours target on personal dashboard rows', () => {
+  it('caps and fills hours the same way as the user list', () => {
+    const row = rowFromPersonalTarget({
+      userId: 1,
+      ref: 'u1',
+      name: 'Test User',
+      email: 'test@example.com',
+      dashboard: {
+        personalTargets: {
+          hours: { current: 204, target: 200, progress: 100 },
+        },
+      },
+    });
+    expect(row?.hours).toEqual({ current: 204, target: 180, progress: 100 });
+
+    const enriched = enrichRowWithTargetDashboard(baseRow({ hours: { current: 0, target: 0, progress: 0 } }), {
+      personalTargets: {
+        hours: { current: 204, target: 0, progress: 0 },
+      },
+    });
+    expect(enriched.hours).toEqual({ current: 204, target: 180, progress: 100 });
   });
 });
 
