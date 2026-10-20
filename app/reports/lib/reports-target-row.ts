@@ -156,6 +156,8 @@ export interface ReportsTargetRow {
   policy?: ReportsTargetPolicyCell | null;
   /** True while the policy batch for this range is in flight. */
   policyLoading?: boolean;
+  /** Active users this person manages. Empty unless they are a team leader. */
+  managedStaffUids?: number[];
 }
 
 function resolveBranchCountryCode(
@@ -543,9 +545,15 @@ export function rowFromUserListItem(
       periodStartDate: ut?.periodStartDate ?? null,
       periodEndDate: ut?.periodEndDate ?? null,
       callDayRates: readCallDayRates(ut),
+      managedStaffUids: managedStaffIds(user.managedStaff),
     },
     { setCurrency: currency, branchCountryCode }
   );
+}
+
+function managedStaffIds(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))];
 }
 
 export type EngagementOverlay = {
