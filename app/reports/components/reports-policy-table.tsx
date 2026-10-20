@@ -33,7 +33,7 @@ const STATUS_BADGE: Record<PolicyStatus, string> = {
   not_measurable: 'bg-muted text-muted-foreground border-border',
 };
 
-const COL_COUNT = 11;
+const COL_COUNT_BASE = 11;
 
 interface ReportsPolicyTableProps {
   rows: readonly PolicyReportRow[];
@@ -175,6 +175,7 @@ export function ReportsPolicyTable({
   }
 
   const sortProps = { active: sort, order, onSortChange };
+  const colCount = showPay ? COL_COUNT_BASE + 1 : COL_COUNT_BASE;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border/60">
@@ -191,18 +192,15 @@ export function ReportsPolicyTable({
             <TableHead>Leads</TableHead>
             <TableHead>Quotes</TableHead>
             <SortableHead label="Flagged" sortKey="flaggedVisits" {...sortProps} />
-            {showPay ? (
-              <SortableHead label="Pay %" sortKey="payPct" {...sortProps} />
-            ) : (
-              <TableHead>Signed</TableHead>
-            )}
+            {showPay ? <SortableHead label="Pay %" sortKey="payPct" {...sortProps} /> : null}
+            <TableHead>Signed</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading
             ? Array.from({ length: 6 }, (_, index) => (
                 <TableRow key={`skeleton-${index}`}>
-                  <TableCell colSpan={COL_COUNT}>
+                  <TableCell colSpan={colCount}>
                     <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
@@ -210,7 +208,7 @@ export function ReportsPolicyTable({
             : null}
           {!isLoading && rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={COL_COUNT} className="py-10 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={colCount} className="py-10 text-center text-sm text-muted-foreground">
                 No employees match these filters.
               </TableCell>
             </TableRow>
@@ -259,13 +257,14 @@ export function ReportsPolicyTable({
                   <TableCell className={cn('tabular-nums', row.flaggedVisits > 0 && 'font-medium text-amber-700')}>
                     {formatPolicyCount(row.flaggedVisits)}
                   </TableCell>
-                  <TableCell className="tabular-nums">
-                    {showPay ? formatPolicyPct(row.payPct) : row.signed ? 'Yes' : 'No'}
-                  </TableCell>
+                  {showPay ? (
+                    <TableCell className="tabular-nums">{formatPolicyPct(row.payPct)}</TableCell>
+                  ) : null}
+                  <TableCell>{row.signed ? 'Yes' : 'No'}</TableCell>
                 </TableRow>
                 {isOpen ? (
                   <TableRow className="bg-muted/20 hover:bg-muted/20">
-                    <TableCell colSpan={COL_COUNT} className="p-0">
+                    <TableCell colSpan={colCount} className="p-0">
                       <ExpandedDetail row={row} />
                     </TableCell>
                   </TableRow>

@@ -44,6 +44,13 @@ import { ReportsDashboardToolbar } from './reports-dashboard-toolbar';
 import { ReportsListPagination, type ReportsPageSize } from './reports-list-pagination';
 import { ReportsPolicySegmentRadial } from './reports-policy-segment-radial';
 import { ReportsPolicyTable } from './reports-policy-table';
+import {
+  PolicyAcknowledgementCard,
+  PolicyCustomerMap,
+  PolicyExceptionsCard,
+  PolicyReviewsPanel,
+  PolicyStockIntel,
+} from './reports-policy-workspace';
 
 function SummaryCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -80,6 +87,8 @@ export function ReportsPolicyTab() {
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<ReportsPageSize>(25);
+  const [signedFilter, setSignedFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'below_standard' | 'meets_all' | 'not_measurable'>('all');
 
   const branchesQuery = useBranches({ enabled: isTokenReady && isMultiUser });
   const usersQuery = useQuery({
@@ -109,12 +118,15 @@ export function ReportsPolicyTab() {
       ...(countryFilter !== 'all' ? { country: countryFilter } : {}),
       ...(search ? { search } : {}),
       ...(selectedClerkId ? { userClerkUserIds: selectedClerkId } : {}),
+      ...(signedFilter === 'yes' ? { signed: true } : {}),
+      ...(signedFilter === 'no' ? { signed: false } : {}),
+      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
       sort,
       order,
       limit: pageSize,
       offset: (page - 1) * pageSize,
     };
-  }, [tooLong, from, to, branchFilter, countryFilter, search, selectedClerkId, sort, order, pageSize, page]);
+  }, [tooLong, from, to, branchFilter, countryFilter, search, selectedClerkId, signedFilter, statusFilter, sort, order, pageSize, page]);
 
   const report = usePolicyReport(params, { enabled: isTokenReady, windowIsClosed });
   const exportReport = useExportPolicyReport();
@@ -211,6 +223,7 @@ export function ReportsPolicyTab() {
           Last month
         </Button>
         {isMultiUser ? (
+          <>
           <Input
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
@@ -228,6 +241,34 @@ export function ReportsPolicyTab() {
             title="Press Enter or leave the field to search"
             className="h-9 w-48"
           />
+          <select
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            aria-label="Signature"
+            value={signedFilter}
+            onChange={(event) => {
+              setSignedFilter(event.target.value as 'all' | 'yes' | 'no');
+              setPage(1);
+            }}
+          >
+            <option value="all">All signatures</option>
+            <option value="no">Not signed</option>
+            <option value="yes">Signed</option>
+          </select>
+          <select
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            aria-label="Standard"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value as 'all' | 'below_standard' | 'meets_all' | 'not_measurable');
+              setPage(1);
+            }}
+          >
+            <option value="all">All standards</option>
+            <option value="below_standard">Below standard</option>
+            <option value="meets_all">Meets standards</option>
+            <option value="not_measurable">Not measurable</option>
+          </select>
+          </>
         ) : null}
         <div className="ml-auto flex items-center gap-2">
           {data?.source === 'snapshot' && data.finalisedAt ? (
@@ -404,6 +445,14 @@ export function ReportsPolicyTab() {
             onSortChange={handleSort}
             showPay={showPay}
           />
+
+          <div className="space-y-4">
+            <PolicyAcknowledgementCard />
+            <PolicyExceptionsCard enabled={isMultiUser && !policyDisabled} />
+            <PolicyReviewsPanel enabled={!policyDisabled} canManage={isMultiUser} />
+            <PolicyCustomerMap enabled={isMultiUser && !policyDisabled} />
+            <PolicyStockIntel enabled={isMultiUser && !policyDisabled} />
+          </div>
 
           {data ? (
             <ReportsListPagination

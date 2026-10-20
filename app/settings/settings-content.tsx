@@ -107,12 +107,14 @@ import {
   ImageIcon,
   PhoneCall,
   MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 import { CalendarIntegrationsSection } from '@/components/settings/calendar-integrations-section';
 import { OrganisationCalendarSettingsSection } from '@/components/settings/organisation-calendar-settings-section';
 import { OrganisationNoticesSection } from '@/components/settings/organisation-notices-section';
 import { OrganisationBannersSection } from '@/components/settings/organisation-banners-section';
 import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
+import { PerformancePolicySettingsSection } from '@/components/settings/performance-policy-settings-section';
 import { ApifyLeadJobsSection } from '@/components/settings/apify-lead-jobs-section';
 import { canAccessOrgSettings } from '@/lib/access';
 import { FORM_PLACEHOLDERS, ADDRESS_FIELD_PLACEHOLDERS } from '@/lib/form-placeholders';
@@ -346,7 +348,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'scrapping' | 'notices' | 'banners' | 'call-quality';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'scrapping' | 'notices' | 'banners' | 'call-quality' | 'performance-policy';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -1381,6 +1383,16 @@ export function SettingsContent() {
             >
               <ImageIcon className="mr-2 size-4" />
               Banners
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab('performance-policy')}
+              className={tabBtnClass('performance-policy')}
+            >
+              <ShieldCheck className="mr-2 size-4" />
+              Performance policy
             </Button>
             <Button
               type="button"
@@ -3238,6 +3250,10 @@ export function SettingsContent() {
 
           {activeTab === 'banners' && (
             <OrganisationBannersSection />
+          )}
+
+          {activeTab === 'performance-policy' && orgRef && (
+            <PerformancePolicySettingsSection orgRef={orgRef} />
           )}
 
           {activeTab === 'call-quality' && orgRef && (
