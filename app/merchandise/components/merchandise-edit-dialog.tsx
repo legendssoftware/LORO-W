@@ -17,6 +17,11 @@ import { uploadFile } from '@/api/endpoints/upload';
 import { useUpdateJournalMutation } from '@/api/hooks/use-journals';
 import type { Journal } from '@/api/types/journal';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import {
+  MERCHANDISE_PHOTO_TOO_LARGE,
+  compressMerchandisePhoto,
+  merchandisePhotoUploadMessage,
+} from '@/app/merchandise/lib/compress-merchandise-photo';
 import { Loader2 } from 'lucide-react';
 import { validateMerchandiseFields } from './merchandise-create-dialog';
 
@@ -40,6 +45,7 @@ export function MerchandiseEditDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(journal.fileURL ?? null);
   const [errors, setErrors] = useState<{ clientRef?: string; comments?: string; file?: string }>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -49,6 +55,7 @@ export function MerchandiseEditDialog({
     setPreviewUrl(journal.fileURL ?? null);
     setErrors({});
     setSubmitError(null);
+    setIsCompressing(false);
   }, [open, journal]);
 
   useEffect(() => {
@@ -57,6 +64,32 @@ export function MerchandiseEditDialog({
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  async function handlePhotoChange(next: File | null): Promise<boolean> {
+    if (!next) {
+      setFile(null);
+      setPreviewUrl(journal.fileURL ?? null);
+      return true;
+    }
+    setIsCompressing(true);
+    setSubmitError(null);
+    try {
+      const prepared = await compressMerchandisePhoto(next);
+      setFile(prepared);
+      setErrors((current) => ({ ...current, file: undefined }));
+      return true;
+    } catch (error) {
+      setFile(null);
+      setPreviewUrl(journal.fileURL ?? null);
+      setErrors((current) => ({
+        ...current,
+        file: error instanceof Error ? error.message : MERCHANDISE_PHOTO_TOO_LARGE,
+      }));
+      return false;
+    } finally {
+      setIsCompressing(false);
+    }
+  }
 
   async function handleSubmit() {
     const nextErrors = validateMerchandiseFields({
@@ -75,7 +108,10 @@ export function MerchandiseEditDialog({
 
     setSubmitError(null);
     try {
-      if (file) payload.fileURL = await uploadFile(client, file);
+      if (file) {
+        const photo = await compressMerchandisePhoto(file);
+        payload.fileURL = await uploadFile(client, photo);
+      }
       if (Object.keys(payload).length === 0) {
         onOpenChange(false);
         return;
@@ -83,11 +119,16 @@ export function MerchandiseEditDialog({
       await updateMutation.mutateAsync({ ref: journal.uid, payload });
       onOpenChange(false);
     } catch (error) {
-      setSubmitError(getQueryErrorMessage(error, 'Could not update merchandise'));
+      setSubmitError(
+        merchandisePhotoUploadMessage(
+          getQueryErrorMessage(error, 'Could not update merchandise'),
+          'Could not update merchandise',
+        ),
+      );
     }
   }
 
-  const pending = updateMutation.isPending;
+  const pending = updateMutation.isPending || isCompressing;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,8 +168,17 @@ export function MerchandiseEditDialog({
               id="edit-merchandise-image"
               type="file"
               accept="image/*"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                const input = event.currentTarget;
+                void handlePhotoChange(input.files?.[0] ?? null).then((accepted) => {
+                  if (!accepted) input.value = '';
+                });
+              }}
+              disabled={isCompressing || pending}
             />
+            {isCompressing ? (
+              <p className="text-xs text-muted-foreground">Preparing photo...</p>
+            ) : null}
             {previewUrl ? (
               <img
                 src={previewUrl}

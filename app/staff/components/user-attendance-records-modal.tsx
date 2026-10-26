@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { format, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
-import { AlertCircle, Car, Building2, Users, Pencil } from 'lucide-react';
+import { AlertCircle, Car, Building2, Users, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   useMonthlyAttendance,
   useCheckIns,
@@ -15,7 +15,12 @@ import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import type { MonthlyCalendarAttendanceRecord } from '@/api/types/attendance';
 import type { VisitListItem } from '@/api/types/visits';
 import { parseDurationToMinutes, formatMinutesToDuration } from '@/lib/duration';
-import { getPayrollPeriodRange } from '@/lib/payroll-period';
+import {
+  formatPayrollCycleLabel,
+  getPayrollPeriodAnchor,
+  getPayrollPeriodRange,
+  MAX_PAYROLL_PERIOD_LOOKBACK,
+} from '@/lib/payroll-period';
 import { canManageStaffUsers } from '@/lib/access';
 import { cn } from '@/lib/utils';
 import {
@@ -88,27 +93,44 @@ export function UserAttendanceRecordsModal({
   const { backendUserData: profile } = useSessionSync();
   const canEditTimes = canManageStaffUsers(profile?.accessLevel);
   const [editingRow, setEditingRow] = useState<DayRecord | null>(null);
+  const [periodOffset, setPeriodOffset] = useState(0);
   const currentUserRef = profile?.uid != null ? String(profile.uid) : null;
   const isViewingAnotherUser = open && user != null && currentUserRef != null && user.ref !== currentUserRef;
+  const userRef = user?.ref ?? null;
 
-  const { periodStartStr, periodEndStr, periodStart, periodEnd, periodEndFull } = useMemo(() => {
-    const { start, end: capEnd } = getPayrollPeriodRange(today);
-    const end = today <= capEnd ? endOfDay(today) : capEnd;
+  useEffect(() => {
+    setPeriodOffset(0);
+  }, [userRef]);
+
+  const {
+    periodStartStr,
+    periodEndStr,
+    periodStart,
+    periodEnd,
+    periodEndFull,
+    periodLabel,
+    isCurrentPeriod,
+    periodMonthA,
+    periodMonthB,
+  } = useMemo(() => {
+    const [year, month, day] = todayKey.split('-').map(Number);
+    const now = new Date(year, month - 1, day, 12, 0, 0);
+    const anchor = getPayrollPeriodAnchor(now, periodOffset);
+    const { start, end: capEnd } = getPayrollPeriodRange(anchor);
+    const isCurrent = periodOffset === 0;
+    const end = isCurrent && now <= capEnd ? endOfDay(now) : capEnd;
     return {
       periodStartStr: format(start, 'yyyy-MM-dd'),
       periodEndStr: format(end, 'yyyy-MM-dd'),
       periodStart: start,
       periodEnd: end,
       periodEndFull: capEnd,
+      periodLabel: formatPayrollCycleLabel(start, capEnd),
+      isCurrentPeriod: isCurrent,
+      periodMonthA: { year: start.getFullYear(), month: start.getMonth() + 1 },
+      periodMonthB: { year: capEnd.getFullYear(), month: capEnd.getMonth() + 1 },
     };
-  }, [todayKey]);
-
-  const { periodMonthA, periodMonthB } = useMemo(() => {
-    const { start, end } = getPayrollPeriodRange(today);
-    const a = { year: start.getFullYear(), month: start.getMonth() + 1 };
-    const b = { year: end.getFullYear(), month: end.getMonth() + 1 };
-    return { periodMonthA: a, periodMonthB: b };
-  }, [todayKey]);
+  }, [todayKey, periodOffset]);
 
   const samePeriodMonth =
     periodMonthA.year === periodMonthB.year && periodMonthA.month === periodMonthB.month;
@@ -414,7 +436,10 @@ export function UserAttendanceRecordsModal({
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (!o && !editingRow) onClose();
+        if (!o && !editingRow) {
+          setPeriodOffset(0);
+          onClose();
+        }
       }}
     >
       <DialogContent
@@ -430,12 +455,38 @@ export function UserAttendanceRecordsModal({
               {user ? `${user.name} – Attendance Records` : 'Attendance Records'}
             </DialogTitle>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
-              Current payroll period (rolling 26th–25th cycle).{' '}
+              {isCurrentPeriod ? 'Current payroll period' : 'Payroll period'} ({periodLabel}).{' '}
               <span className="block sm:inline sm:before:content-['·_'] sm:before:mx-1">
                 Productivity is a target-based 0–100 score (HR targets + ERP); it is not the Utilization % shown on the dashboard card.
               </span>
             </p>
           </DialogHeader>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 mt-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label="Previous payroll period"
+            disabled={periodOffset <= -MAX_PAYROLL_PERIOD_LOOKBACK}
+            onClick={() =>
+              setPeriodOffset((current) => Math.max(-MAX_PAYROLL_PERIOD_LOOKBACK, current - 1))
+            }
+          >
+            <ChevronLeft />
+          </Button>
+          <span className="text-sm font-medium">{periodLabel}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label="Next payroll period"
+            disabled={periodOffset >= 0}
+            onClick={() => setPeriodOffset((current) => Math.min(0, current + 1))}
+          >
+            <ChevronRight />
+          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[60vh]">
@@ -457,7 +508,7 @@ export function UserAttendanceRecordsModal({
             </p>
           ) : records.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8">
-              No attendance records for the current payroll period.
+              No attendance records for {periodLabel}.
             </p>
           ) : (
             <Table>
