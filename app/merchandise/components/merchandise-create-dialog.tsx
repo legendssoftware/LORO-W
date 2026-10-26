@@ -16,6 +16,11 @@ import { useApiClient } from '@/api/hooks/use-api-client';
 import { uploadFile } from '@/api/endpoints/upload';
 import { useCreateJournalMutation } from '@/api/hooks/use-journals';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import {
+  MERCHANDISE_PHOTO_TOO_LARGE,
+  compressMerchandisePhoto,
+  merchandisePhotoUploadMessage,
+} from '@/app/merchandise/lib/compress-merchandise-photo';
 import { Loader2 } from 'lucide-react';
 
 const primaryClass =
@@ -57,6 +62,7 @@ export function MerchandiseCreateDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +72,7 @@ export function MerchandiseCreateDialog({
     setPreviewUrl(null);
     setErrors({});
     setSubmitError(null);
+    setIsCompressing(false);
   }, [open]);
 
   useEffect(() => {
@@ -78,6 +85,30 @@ export function MerchandiseCreateDialog({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  async function handlePhotoChange(next: File | null): Promise<boolean> {
+    if (!next) {
+      setFile(null);
+      return true;
+    }
+    setIsCompressing(true);
+    setSubmitError(null);
+    try {
+      const prepared = await compressMerchandisePhoto(next);
+      setFile(prepared);
+      setErrors((current) => ({ ...current, file: undefined }));
+      return true;
+    } catch (error) {
+      setFile(null);
+      setErrors((current) => ({
+        ...current,
+        file: error instanceof Error ? error.message : MERCHANDISE_PHOTO_TOO_LARGE,
+      }));
+      return false;
+    } finally {
+      setIsCompressing(false);
+    }
+  }
+
   async function handleSubmit() {
     const nextErrors = validateMerchandiseFields({
       clientRef,
@@ -89,7 +120,8 @@ export function MerchandiseCreateDialog({
 
     setSubmitError(null);
     try {
-      const fileURL = await uploadFile(client, file);
+      const photo = await compressMerchandisePhoto(file);
+      const fileURL = await uploadFile(client, photo);
       await createMutation.mutateAsync({
         clientRef: clientRef.trim(),
         comments: comments.trim(),
@@ -97,11 +129,16 @@ export function MerchandiseCreateDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      setSubmitError(getQueryErrorMessage(error, 'Could not create merchandise'));
+      setSubmitError(
+        merchandisePhotoUploadMessage(
+          getQueryErrorMessage(error, 'Could not create merchandise'),
+          'Could not create merchandise',
+        ),
+      );
     }
   }
 
-  const pending = createMutation.isPending;
+  const pending = createMutation.isPending || isCompressing;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,8 +180,17 @@ export function MerchandiseCreateDialog({
               id="merchandise-image"
               type="file"
               accept="image/*"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                const input = event.currentTarget;
+                void handlePhotoChange(input.files?.[0] ?? null).then((accepted) => {
+                  if (!accepted) input.value = '';
+                });
+              }}
+              disabled={isCompressing || pending}
             />
+            {isCompressing ? (
+              <p className="text-xs text-muted-foreground">Preparing photo...</p>
+            ) : null}
             {previewUrl ? (
               <img
                 src={previewUrl}
