@@ -73,6 +73,8 @@ export interface Claim {
   claimGroupUid?: number | null;
   claimGroup?: ClaimGroupRef | null;
   owner?: ClaimOwner | null;
+  /** Clerk user id of the claim owner. Present on list rows even when `owner` is omitted. */
+  ownerClerkUserId?: string | null;
   verifiedBy?: ClaimOwner | null;
   branch?: ClaimBranch | null;
   organisation?: ClaimOrganisation | null;
