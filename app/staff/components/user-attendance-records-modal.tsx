@@ -66,7 +66,7 @@ interface DayRecord {
   shiftType: ShiftType;
 }
 
-/** Per-day aggregates from check-ins (visits), leads report, and claims. */
+/** Per-day aggregates for the opened user: their visits, leads, and claims. */
 interface DayMetrics {
   visitCount: number;
   totalVisitMinutes: number;
@@ -158,8 +158,12 @@ export function UserAttendanceRecordsModal({
     { enabled: open }
   );
   const leadsReportQuery = useLeadsReport(
-    { from: periodStartStr, to: periodEndStr },
-    { enabled: open }
+    {
+      from: periodStartStr,
+      to: periodEndStr,
+      ...(user?.userId != null ? { ownerId: user.userId } : {}),
+    },
+    { enabled: open && user?.userId != null, keepPreviousData: false }
   );
   const claimsQuery = useClaims(
     { createdFrom: periodStartStr, createdTo: periodEndStr, limit: 5000 },
@@ -296,7 +300,15 @@ export function UserAttendanceRecordsModal({
     }
 
     const claimsList = claimsQuery.data?.data ?? [];
+    const viewedClerkId = user?.ref ?? null;
+    const viewedUserId = user?.userId ?? null;
     for (const claim of claimsList) {
+      const ownerClerkId = claim.ownerClerkUserId ?? claim.owner?.clerkUserId ?? null;
+      const ownerUid = claim.owner?.uid ?? null;
+      const belongsToViewedUser =
+        (viewedClerkId != null && ownerClerkId === viewedClerkId) ||
+        (viewedUserId != null && ownerUid === viewedUserId);
+      if (!belongsToViewedUser) continue;
       const created = claim.createdAt;
       if (!created) continue;
       const dateKey = format(new Date(created), 'yyyy-MM-dd');
@@ -309,6 +321,8 @@ export function UserAttendanceRecordsModal({
     checkInsQuery.data?.checkIns,
     leadsReportQuery.data?.byDay,
     claimsQuery.data?.data,
+    user?.ref,
+    user?.userId,
   ]);
 
   const productivityByDate = useMemo(() => {
