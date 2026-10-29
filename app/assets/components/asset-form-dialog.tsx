@@ -261,7 +261,22 @@ export function AssetFormDialog({
   }, [open, mode, asset, defaultOwnerUid, defaultBranchUid, form]);
 
   async function handleSubmit(values: AssetFormValues) {
-    if (mode === 'create' || canReassign) {
+    if (mode === 'create' && !canReassign) {
+      const ownerClerkUserId = defaultOwnerClerkUserId.trim();
+      if (!ownerClerkUserId) {
+        form.setError('brand', { message: 'Your account cannot own assets yet.' });
+        return;
+      }
+      const branchUid = Number(defaultBranchUid);
+      await onCreate(
+        toPayload(values, {
+          ownerClerkUserId,
+          branchUid: Number.isFinite(branchUid) && branchUid > 0 ? branchUid : 0,
+        })
+      );
+      return;
+    }
+    if (canReassign) {
       const ownerClerkUserId = clerkIdForOwner(values.ownerUid, users, {
         uid: asset?.owner?.uid ?? Number(defaultOwnerUid),
         clerkUserId: asset?.owner?.clerkUserId ?? asset?.ownerClerkUserId ?? defaultOwnerClerkUserId,
@@ -301,6 +316,11 @@ export function AssetFormDialog({
             className="flex min-h-0 flex-1 flex-col"
           >
             <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-4 sm:grid-cols-2">
+              {mode === 'create' && !canReassign ? (
+                <p className="text-sm text-muted-foreground sm:col-span-2">
+                  This asset will be assigned to you.
+                </p>
+              ) : null}
               <FormField
                 control={form.control}
                 name="category"

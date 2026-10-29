@@ -32,7 +32,7 @@ import { AssetCard, AssetCardSkeleton } from './components/asset-card';
 import { AssetDetailDialog } from './components/asset-detail-dialog';
 import { AssetFormDialog } from './components/asset-form-dialog';
 import { AssetsFiltersBar } from './components/assets-filters-bar';
-import { assetTitle } from './lib/asset-display';
+import { assetTitle, userOwnsAsset } from './lib/asset-display';
 import {
   createDefaultListDateRange,
   listDateRangeQuery,
@@ -53,6 +53,8 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
   const canManage = canManageOrgAssets(profile?.accessLevel);
+  const accessLevel = profile?.accessLevel?.trim().toLowerCase() ?? '';
+  const canAdd = accessLevel.length > 0 && accessLevel !== 'client';
   const [scope, setScope] = useState<AssetScope>('mine');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -123,6 +125,13 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
   const openedFromRoute = linkedQuery.data ?? null;
   const detailAsset = detail ?? (initialAssetUid != null ? openedFromRoute : null);
   const detailOpen = detail != null || (initialAssetUid != null && openedFromRoute != null);
+  const canWriteDetail =
+    detailAsset != null &&
+    (canManage ||
+      userOwnsAsset(detailAsset, {
+        uid: profile?.uid,
+        clerkUserId: profile?.clerkUserId,
+      }));
 
   if (!isTokenReady) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -173,11 +182,11 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Assets</h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               {canManage
-                ? 'Your linked assets, or the full organisation inventory.'
-                : 'Equipment and vehicles linked to you.'}
+                ? 'Your linked assets, or the full organisation inventory. You can add, edit, and reassign assets.'
+                : 'Add and manage assets you own. You can also view equipment and vehicles linked to you.'}
             </p>
           </div>
-          {canManage ? (
+          {canAdd ? (
             <Button
               type="button"
               data-tour="assets-add-button"
@@ -262,8 +271,8 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
       <AssetDetailDialog
         asset={detailAsset}
         open={detailOpen}
-        canEdit={Boolean(detailAsset)}
-        canDelete={canManage}
+        canEdit={canWriteDetail}
+        canDelete={canWriteDetail}
         onOpenChange={closeDetail}
         onEdit={openEdit}
         onDelete={setPendingDelete}
