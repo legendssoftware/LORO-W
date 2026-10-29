@@ -40,6 +40,19 @@ export function assetTitle(asset: AssetRecord): string {
   return `${asset.brand ?? ''} ${asset.modelNumber ?? ''}`.trim() || `Asset ${asset.uid}`;
 }
 
+/** True when the signed-in user is the asset owner. Assigned vehicles they do not own return false. */
+export function userOwnsAsset(
+  asset: AssetRecord,
+  actor: { uid?: number | null; clerkUserId?: string | null }
+): boolean {
+  const clerkUserId = actor.clerkUserId?.trim();
+  if (clerkUserId && (asset.ownerClerkUserId === clerkUserId || asset.owner?.clerkUserId === clerkUserId)) {
+    return true;
+  }
+  const uid = Number(actor.uid);
+  return Number.isFinite(uid) && uid > 0 && asset.owner?.uid === uid;
+}
+
 export function assetOwnerLabel(asset: AssetRecord): string {
   const name = `${asset.owner?.name ?? ''} ${asset.owner?.surname ?? ''}`.trim();
   if (name) return name;
