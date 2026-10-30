@@ -1,14 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import type { Claim, ClaimGroup, ClaimGroupTotal } from '@/api/types/claims';
 import { useSubmitClaimGroupMutation } from '@/api/hooks/use-claims';
 import { ClaimRowCard, ClaimRowCardSkeleton } from '@/app/claims/components/claim-row-card';
+import { claimPersonDisplayName } from '@/app/claims/components/claim-person-row';
 import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
 import type { BranchListItem } from '@/api/types/branch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 import { formatZarAmount } from '@/lib/utils/zar-fx';
-import { FolderOpen, Loader2, Send } from 'lucide-react';
+import { ChevronRight, FolderOpen, Loader2, Send } from 'lucide-react';
 
 type FolderSection = {
   claimGroupUid: number | null;
@@ -82,6 +91,138 @@ function buildSections(
   return sections;
 }
 
+type OwnerSection = {
+  key: string;
+  title: string;
+  photoURL?: string;
+  count: number;
+  totalZar: number;
+  claims: Claim[];
+};
+
+function ownerSectionKey(claim: Claim): string {
+  if (claim.owner?.uid != null) return `uid:${claim.owner.uid}`;
+  if (claim.ownerClerkUserId) return `clerk:${claim.ownerClerkUserId}`;
+  return 'unknown';
+}
+
+function ownerInitials(title: string): string {
+  if (title === 'Unknown user') return '?';
+  return title
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/** One folder per claim owner. Used when the viewer can see every org claim. */
+function buildOwnerSections(claims: Claim[]): OwnerSection[] {
+  const map = new Map<string, OwnerSection>();
+  for (const claim of claims) {
+    const key = ownerSectionKey(claim);
+    const zar =
+      claim.amountZar != null && Number.isFinite(claim.amountZar)
+        ? claim.amountZar
+        : 0;
+    const existing = map.get(key);
+    if (existing) {
+      existing.claims.push(claim);
+      existing.count += 1;
+      existing.totalZar += zar;
+      continue;
+    }
+    const name = claimPersonDisplayName(claim.owner);
+    map.set(key, {
+      key,
+      title: name === '—' ? 'Unknown user' : name,
+      photoURL: claim.owner?.photoURL,
+      count: 1,
+      totalZar: zar,
+      claims: [claim],
+    });
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    a.title.localeCompare(b.title)
+  );
+}
+
+function OwnerClaimFolders({
+  sections,
+  branchByUid,
+  currencyView,
+}: {
+  sections: OwnerSection[];
+  branchByUid: Map<number, BranchListItem>;
+  currencyView: ClaimsCurrencyView;
+}) {
+  const onlyOne = sections.length === 1;
+  const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
+
+  return (
+    <div className="flex flex-col gap-3">
+      {sections.map((section) => {
+        const open = openKeys[section.key] ?? onlyOne;
+        return (
+          <Collapsible
+            key={section.key}
+            open={open}
+            onOpenChange={(next) =>
+              setOpenKeys((prev) => ({ ...prev, [section.key]: next }))
+            }
+          >
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:border-violet-200 hover:bg-muted/40"
+                aria-expanded={open}
+              >
+                <ChevronRight
+                  className={cn(
+                    'size-4 shrink-0 text-muted-foreground transition-transform',
+                    open && 'rotate-90'
+                  )}
+                  aria-hidden
+                />
+                <Avatar className="size-8 shrink-0 border border-border">
+                  <AvatarImage src={section.photoURL} alt="" />
+                  <AvatarFallback className="bg-muted text-xs font-medium">
+                    {ownerInitials(section.title)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-foreground">
+                    {section.title}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {section.count} claim{section.count === 1 ? '' : 's'}
+                    {section.totalZar > 0
+                      ? ` · ${formatZarAmount(section.totalZar)}`
+                      : ''}
+                  </span>
+                </span>
+                <FolderOpen className="size-4 shrink-0 text-violet-600" aria-hidden />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="grid min-w-0 gap-4 grid-cols-1 pt-3 sm:grid-cols-2 xl:grid-cols-4">
+                {section.claims.map((claim) => (
+                  <ClaimRowCard
+                    key={claim.uid}
+                    claim={claim}
+                    branchByUid={branchByUid}
+                    currencyView={currencyView}
+                  />
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ClaimsGroupedListSkeleton() {
   return (
     <div className="flex flex-col gap-8">
@@ -106,6 +247,7 @@ export function ClaimsGroupedList({
   activeGroupUid,
   branchByUid,
   currencyView,
+  groupByOwner = false,
 }: {
   claims: Claim[];
   groups: ClaimGroup[];
@@ -113,9 +255,31 @@ export function ClaimsGroupedList({
   activeGroupUid: string;
   branchByUid: Map<number, BranchListItem>;
   currencyView: ClaimsCurrencyView;
+  /** Admin, owner, and manager: one collapsible folder per claim owner. */
+  groupByOwner?: boolean;
 }) {
   const submitMutation = useSubmitClaimGroupMutation();
-  const sections = buildSections(claims, groups, byGroup, activeGroupUid);
+  const ownerSections = groupByOwner ? buildOwnerSections(claims) : [];
+  const sections = groupByOwner
+    ? []
+    : buildSections(claims, groups, byGroup, activeGroupUid);
+
+  if (groupByOwner) {
+    if (ownerSections.length === 0) {
+      return (
+        <p className="py-10 text-center text-muted-foreground">
+          No claims match your filters.
+        </p>
+      );
+    }
+    return (
+      <OwnerClaimFolders
+        sections={ownerSections}
+        branchByUid={branchByUid}
+        currencyView={currencyView}
+      />
+    );
+  }
 
   if (sections.length === 0) {
     return (

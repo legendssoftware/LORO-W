@@ -364,12 +364,12 @@ export function canManageApprovals(
 }
 
 /**
- * Paginated GET /claims (org-wide list). Matches APK claims index: admin | owner only.
+ * Paginated GET /claims (org-wide list). Admin, owner, and manager see every claim.
  * Other roles use GET /claims/me on the client.
  */
 export function canViewOrgClaimsList(accessLevel: string | undefined): boolean {
     const level = normalize(accessLevel);
-    return level === "admin" || level === "owner";
+    return level === "admin" || level === "owner" || level === "manager";
 }
 
 function isSettingsPath(pathNormalized: string): boolean {

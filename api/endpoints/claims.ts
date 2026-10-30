@@ -22,6 +22,8 @@ export interface GetClaimsParams {
   createdFrom?: string;
   createdTo?: string;
   claimGroupUid?: number;
+  /** Claim owner user uid. Applied server-side for org-wide list viewers. */
+  ownerUid?: number;
 }
 
 /**
@@ -39,6 +41,7 @@ export async function getClaims(
   if (params.createdTo) search.set('createdTo', params.createdTo);
   if (params.claimGroupUid != null)
     search.set('claimGroupUid', String(params.claimGroupUid));
+  if (params.ownerUid != null) search.set('ownerUid', String(params.ownerUid));
   const qs = search.toString();
   const { data } = await client.get<ClaimsListResponse>(
     `/claims${qs ? `?${qs}` : ''}`
@@ -76,6 +79,8 @@ export interface GetClaimsSummaryParams {
   createdFrom?: string;
   createdTo?: string;
   claimGroupUid?: number;
+  /** Claim owner user uid. Applied server-side for org-wide list viewers. */
+  ownerUid?: number;
 }
 
 /**
@@ -90,6 +95,7 @@ export async function getClaimsSummary(
   if (params.createdTo) search.set('createdTo', params.createdTo);
   if (params.claimGroupUid != null)
     search.set('claimGroupUid', String(params.claimGroupUid));
+  if (params.ownerUid != null) search.set('ownerUid', String(params.ownerUid));
   const qs = search.toString();
   const { data } = await client.get<ClaimsSummaryResponse>(
     `/claims/summary${qs ? `?${qs}` : ''}`
