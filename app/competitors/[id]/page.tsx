@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { CompetitorDetailPage } from './competitor-detail-page';
 
@@ -24,10 +25,9 @@ export default async function CompetitorDetailRoutePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
-
   const { id: idStr } = await params;
+  const { userId } = await auth();
+  if (!userId) redirectToSignIn(`/competitors/${idStr}`);
   const idNum = Number(idStr);
   if (!Number.isFinite(idNum) || idNum <= 0) notFound();
 
