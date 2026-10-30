@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ export const metadata = buildPageMetadata({
 
 export default async function PipelinePage() {
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirectToSignIn('/pipeline');
 
   return (
     <div className={cn(appPageMainClass, 'flex w-full flex-col gap-4 sm:gap-6')}>

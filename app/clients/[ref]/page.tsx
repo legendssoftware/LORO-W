@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { ClientDetailPage } from './client-detail-page';
 
@@ -24,10 +25,9 @@ export default async function ClientDetailRoutePage({
 }: {
   params: Promise<{ ref: string }>;
 }) {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
-
   const { ref: refStr } = await params;
+  const { userId } = await auth();
+  if (!userId) redirectToSignIn(`/clients/${refStr}`);
   const refNum = Number(refStr);
   if (!Number.isFinite(refNum) || refNum <= 0) notFound();
 

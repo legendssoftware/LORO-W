@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { StaffContent } from './staff-content';
 
@@ -13,7 +13,7 @@ export const metadata = buildPageMetadata({
 
 export default async function StaffPage() {
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirectToSignIn('/staff');
 
   return <StaffContent />;
 }

@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { CallsContent } from './calls-content';
 
@@ -13,7 +13,7 @@ export const metadata = buildPageMetadata({
 
 export default async function CallsPage() {
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirectToSignIn('/calls');
 
   return <CallsContent />;
 }
