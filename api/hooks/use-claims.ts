@@ -94,6 +94,7 @@ export type ClaimsInfiniteFilters = {
   createdFrom?: string;
   createdTo?: string;
   claimGroupUid?: number;
+  ownerUid?: number;
   enabled?: boolean;
 };
 
@@ -104,6 +105,7 @@ function filterClaimsClientSide(
     createdFrom?: string;
     createdTo?: string;
     claimGroupUid?: number;
+    ownerUid?: number;
   }
 ): Claim[] {
   let out = claims;
@@ -113,6 +115,9 @@ function filterClaimsClientSide(
   }
   if (f.claimGroupUid != null && Number.isFinite(f.claimGroupUid)) {
     out = out.filter((c) => c.claimGroupUid === f.claimGroupUid);
+  }
+  if (f.ownerUid != null && Number.isFinite(f.ownerUid)) {
+    out = out.filter((c) => c.owner?.uid === f.ownerUid);
   }
   if (f.createdFrom) {
     const start = utcDateFromYmd(f.createdFrom);
@@ -130,7 +135,7 @@ function filterClaimsClientSide(
 }
 
 /**
- * Claims list for the main Claims page: admin/owner → paginated GET /claims;
+ * Claims list for the main Claims page: admin, owner, and manager → paginated GET /claims;
  * everyone else → GET /claims/me with client-side filters (API has no query params on /me).
  */
 export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
@@ -152,6 +157,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
   const createdFrom = filters?.createdFrom?.trim() || undefined;
   const createdTo = filters?.createdTo?.trim() || undefined;
   const claimGroupUid = filters?.claimGroupUid;
+  const ownerUid = filters?.ownerUid;
   const enabled = filters?.enabled !== false && accessLevelKnown;
 
   const pagedEnabled = enabled && pagedList;
@@ -166,6 +172,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       createdFrom ?? '',
       createdTo ?? '',
       claimGroupUid ?? '',
+      ownerUid ?? '',
     ],
     queryFn: async ({ pageParam }) => {
       const result = await getClaims(client, {
@@ -175,6 +182,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
         createdFrom,
         createdTo,
         claimGroupUid,
+        ownerUid,
       });
       if (typeof console !== 'undefined') {
         console.debug('[Claims] GET /claims', {
@@ -185,6 +193,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
           createdFrom,
           createdTo,
           claimGroupUid,
+          ownerUid,
         });
       }
       return result;
@@ -210,6 +219,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       createdFrom ?? '',
       createdTo ?? '',
       claimGroupUid ?? '',
+      ownerUid ?? '',
     ],
     queryFn: async () => {
       const result = await getClaimsMe(client);
@@ -237,8 +247,9 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       createdFrom,
       createdTo,
       claimGroupUid,
+      ownerUid,
     });
-  }, [active.data, pagedList, status, createdFrom, createdTo, claimGroupUid]);
+  }, [active.data, pagedList, status, createdFrom, createdTo, claimGroupUid, ownerUid]);
 
   return {
     ...active,
@@ -271,6 +282,7 @@ export function useClaimsSummary(
       params.createdFrom ?? '',
       params.createdTo ?? '',
       params.claimGroupUid ?? '',
+      params.ownerUid ?? '',
     ],
     queryFn: () => getClaimsSummary(client, params),
     enabled: options?.enabled !== false,

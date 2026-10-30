@@ -7,6 +7,7 @@ import {
   useClaimsSummary,
 } from '@/api/hooks/use-claims';
 import { useBranches } from '@/api/hooks/use-branches';
+import { useSearchableUsersList } from '@/api/hooks/use-searchable-users-list';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import type { BranchListItem } from '@/api/types/branch';
@@ -24,7 +25,9 @@ import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
 import { Plus } from 'lucide-react';
 import type { Claim } from '@/api/types/claims';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
+import { canViewOrgClaimsList } from '@/lib/access';
 import { cn } from '@/lib/utils';
+import { useSessionStore } from '@/store/session-store';
 import {
   formatUtcYmd,
   utcMonthStartThroughToday,
@@ -46,9 +49,23 @@ function matchesSearch(claim: Claim, q: string): boolean {
   );
 }
 
+function parseOwnerUid(userFilter: string): number | undefined {
+  if (userFilter === 'all' || userFilter === '') return undefined;
+  const parsed = Number.parseInt(userFilter, 10);
+  if (!Number.isInteger(parsed) || parsed < 1) return undefined;
+  return parsed;
+}
+
 export function ClaimsContent() {
   const { isTokenReady } = useTokenReady();
-  const { isSyncing: sessionSyncLoading } = useSessionSync();
+  const { isSyncing: sessionSyncLoading, backendUserData } = useSessionSync();
+  const profileAccessLevel = useSessionStore((s) => s.profileData?.accessLevel);
+  const accessLevel =
+    (typeof backendUserData?.accessLevel === 'string'
+      ? backendUserData.accessLevel
+      : undefined) ??
+    (typeof profileAccessLevel === 'string' ? profileAccessLevel : undefined);
+  const showUserFilter = canViewOrgClaimsList(accessLevel);
   const [createOpen, setCreateOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -63,6 +80,7 @@ export function ClaimsContent() {
     return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
   });
   const [groupFilter, setGroupFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
   const [currencyView, setCurrencyView] = useState<ClaimsCurrencyView>('original');
 
   const groupsQuery = useClaimGroups({ enabled: isTokenReady && !sessionSyncLoading });
@@ -71,6 +89,17 @@ export function ClaimsContent() {
   const branchesQuery = useBranches({
     enabled: isTokenReady && !sessionSyncLoading,
   });
+  const {
+    users,
+    searchQuery: userSearchQuery,
+    setSearchQuery: setUserSearchQuery,
+    isSearchLoading: isUserSearchLoading,
+    bindUidChange,
+  } = useSearchableUsersList({
+    enabled: isTokenReady && !sessionSyncLoading && showUserFilter,
+    limit: 100,
+  });
+  const handleUserFilterChange = bindUidChange(setUserFilter);
   const branchByUid = useMemo(() => {
     const map = new Map<number, BranchListItem>();
     for (const b of branchesQuery.data ?? []) {
@@ -87,12 +116,15 @@ export function ClaimsContent() {
   const createdFrom = folderSelected ? undefined : createdRange.from || undefined;
   const createdTo = folderSelected ? undefined : createdRange.to || undefined;
 
+  const ownerUid = showUserFilter ? parseOwnerUid(userFilter) : undefined;
+
   const claimsQuery = useClaimsInfinite({
     enabled: isTokenReady && !sessionSyncLoading,
     status: statusFilter === 'all' ? undefined : statusFilter,
     createdFrom,
     createdTo,
     claimGroupUid,
+    ownerUid,
   });
 
   const summaryQuery = useClaimsSummary(
@@ -100,6 +132,7 @@ export function ClaimsContent() {
       createdFrom,
       createdTo,
       claimGroupUid,
+      ownerUid,
     },
     { enabled: isTokenReady && !sessionSyncLoading }
   );
@@ -173,6 +206,14 @@ export function ClaimsContent() {
           onClaimGroupChange={setGroupFilter}
           currencyView={currencyView}
           onCurrencyViewChange={setCurrencyView}
+          showUserFilter={showUserFilter}
+          userFilter={userFilter}
+          onUserFilterChange={handleUserFilterChange}
+          users={users}
+          branches={branchesQuery.data ?? []}
+          userSearchQuery={userSearchQuery}
+          onUserSearchQueryChange={setUserSearchQuery}
+          isUserSearchLoading={isUserSearchLoading}
         />
 
         <ClaimFoldersPanel
@@ -201,6 +242,7 @@ export function ClaimsContent() {
               activeGroupUid={groupFilter}
               branchByUid={branchByUid}
               currencyView={currencyView}
+              groupByOwner={showUserFilter}
             />
           )}
           {claimsQuery.hasNextPage ? (
