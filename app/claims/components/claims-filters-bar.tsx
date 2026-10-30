@@ -13,10 +13,13 @@ import {
   LayoutGrid,
   XCircle,
 } from 'lucide-react';
+import type { BranchListItem } from '@/api/types/branch';
 import {
   SearchableOptionListPicker,
+  SearchableUserPicker,
   reportsFilterPortalHighZ,
   reportsFilterSelectTriggerClass,
+  type ReportsFilterUserPickable,
   type SearchableOptionRow,
 } from '@/components/filters/searchable-filter-comboboxes';
 import {
@@ -98,6 +101,14 @@ export interface ClaimsFilterControlsProps {
   onCreatedToChange: (v: string) => void;
   currencyView: ClaimsCurrencyView;
   onCurrencyViewChange: (v: ClaimsCurrencyView) => void;
+  showUserFilter: boolean;
+  userFilter: string;
+  onUserFilterChange: (v: string) => void;
+  users: ReportsFilterUserPickable[];
+  branches: BranchListItem[];
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
 }
 
 export function ClaimsFilterControls({
@@ -113,6 +124,14 @@ export function ClaimsFilterControls({
   onCreatedToChange,
   currencyView,
   onCurrencyViewChange,
+  showUserFilter,
+  userFilter,
+  onUserFilterChange,
+  users,
+  branches,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading = false,
 }: ClaimsFilterControlsProps) {
   const row = layout === 'row';
   const statusTrigger = row
@@ -120,6 +139,9 @@ export function ClaimsFilterControls({
     : 'h-9 w-full min-w-0';
   const folderTrigger = row
     ? 'h-9 min-w-0 w-[170px] shrink-0'
+    : 'h-9 w-full min-w-0';
+  const userTrigger = row
+    ? 'h-9 min-w-[140px] w-[200px] shrink-0 sm:min-w-[220px] sm:w-[220px]'
     : 'h-9 w-full min-w-0';
   const rangeBtnWidth = row
     ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
@@ -365,6 +387,34 @@ export function ClaimsFilterControls({
         ) : null}
       </div>
 
+      {showUserFilter ? (
+        <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
+          <SearchableUserPicker
+            users={users}
+            branches={branches}
+            selectedUid={userFilter === '' ? 'all' : userFilter}
+            onUidChange={onUserFilterChange}
+            triggerClassName={userTrigger}
+            allOptionLabel="All users"
+            searchPlaceholder="Search users…"
+            emptyMessage="No user found."
+            searchQuery={userSearchQuery}
+            onSearchQueryChange={onUserSearchQueryChange}
+            isSearchLoading={isUserSearchLoading}
+          />
+          {userFilter !== 'all' && userFilter !== '' ? (
+            <button
+              type="button"
+              onClick={() => onUserFilterChange('all')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
+              aria-label="Clear user filter"
+            >
+              <XIcon className="size-4 text-muted-foreground" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       <ToggleGroup
         type="single"
         value={currencyView}
@@ -403,6 +453,14 @@ export function ClaimsFiltersBar({
   onClaimGroupChange,
   currencyView,
   onCurrencyViewChange,
+  showUserFilter,
+  userFilter,
+  onUserFilterChange,
+  users,
+  branches,
+  userSearchQuery,
+  onUserSearchQueryChange,
+  isUserSearchLoading,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
@@ -417,6 +475,14 @@ export function ClaimsFiltersBar({
   onClaimGroupChange: (v: string) => void;
   currencyView: ClaimsCurrencyView;
   onCurrencyViewChange: (v: ClaimsCurrencyView) => void;
+  showUserFilter: boolean;
+  userFilter: string;
+  onUserFilterChange: (v: string) => void;
+  users: ReportsFilterUserPickable[];
+  branches: BranchListItem[];
+  userSearchQuery?: string;
+  onUserSearchQueryChange?: (query: string) => void;
+  isUserSearchLoading?: boolean;
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -435,6 +501,7 @@ export function ClaimsFiltersBar({
     onStatusChange('all');
     resetClaimsDateRangeToDefault(onCreatedFromChange, onCreatedToChange);
     onClaimGroupChange('all');
+    onUserFilterChange('all');
   }
 
   function renderSearchField() {
@@ -473,6 +540,14 @@ export function ClaimsFiltersBar({
     onCreatedToChange,
     currencyView,
     onCurrencyViewChange,
+    showUserFilter,
+    userFilter,
+    onUserFilterChange,
+    users,
+    branches,
+    userSearchQuery,
+    onUserSearchQueryChange,
+    isUserSearchLoading,
   };
 
   return (
@@ -500,7 +575,7 @@ export function ClaimsFiltersBar({
           <DialogHeader>
             <DialogTitle>Filters</DialogTitle>
             <DialogDescription>
-              Narrow claims by status, created date, and folder.
+              Narrow claims by status, created date, folder, and user.
             </DialogDescription>
           </DialogHeader>
           <ClaimsFilterControls {...filterProps} layout="stack" />
