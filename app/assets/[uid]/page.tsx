@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { AssetsContent } from '../assets-content';
 
@@ -24,10 +25,9 @@ export default async function AssetDetailRoutePage({
 }: {
   params: Promise<{ uid: string }>;
 }) {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
-
   const { uid } = await params;
+  const { userId } = await auth();
+  if (!userId) redirectToSignIn(`/assets/${uid}`);
   const assetUid = Number(uid);
   if (!Number.isFinite(assetUid) || assetUid <= 0) notFound();
 

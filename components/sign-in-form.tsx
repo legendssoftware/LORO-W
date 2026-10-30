@@ -1,6 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
+import { safeReturnPath } from '@/lib/safe-return-path';
 
 const SignIn = dynamic(
   () => import('@clerk/nextjs').then((mod) => mod.SignIn),
@@ -15,19 +17,19 @@ const SignIn = dynamic(
 );
 
 export function SignInForm() {
+  const params = useSearchParams();
+  const returnPath = safeReturnPath(params.get('redirect_url')) ?? '/dashboard';
+
   return (
     <SignIn
       appearance={{
-        variables: {
-          colorPrimary: '#8B5CF6',
-        },
         elements: {
           rootBox: 'mx-auto',
           card: 'shadow-xl',
         },
       }}
       signUpUrl="/sign-up"
-      fallbackRedirectUrl="/dashboard"
+      fallbackRedirectUrl={returnPath}
     />
   );
 }

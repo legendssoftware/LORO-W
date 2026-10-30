@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
-import { AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
+import { AttendanceMonthHighlights, AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
@@ -44,6 +44,9 @@ export function DashboardContent() {
   const apiClient = useApiClient();
   const { backendUserData: profile } = useSessionSync();
   const [attendanceModalUser, setAttendanceModalUser] = useState<ReportCardUser | null>(null);
+  const [attendanceYear, setAttendanceYear] = useState(() => new Date().getFullYear());
+  const [attendanceMonth, setAttendanceMonth] = useState(() => new Date().getMonth() + 1);
+  const didSyncAttendancePeriod = useRef(false);
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
   const [clockInContextError, setClockInContextError] = useState<string | null>(null);
@@ -53,6 +56,14 @@ export function DashboardContent() {
   const pendingClockInRef = useRef<{ modeLabel: string } | null>(null);
   /** True while a shift action is checking the server for today's pulse, so a double click cannot start it twice. */
   const pulseGateBusyRef = useRef(false);
+
+  useEffect(() => {
+    if (didSyncAttendancePeriod.current) return;
+    didSyncAttendancePeriod.current = true;
+    const today = new Date();
+    setAttendanceYear(today.getFullYear());
+    setAttendanceMonth(today.getMonth() + 1);
+  }, []);
 
   const currentUserForModal = useMemo((): ReportCardUser | null => {
     if (!profile?.uid) return null;
@@ -384,6 +395,11 @@ export function DashboardContent() {
               breakStartTime={attStatus?.breakStartTime ?? null}
               orgTimezone={attStatus?.schedule?.timezone ?? null}
             />
+            <AttendanceMonthHighlights
+              userRef={calendarUserRef}
+              year={attendanceYear}
+              month={attendanceMonth}
+            />
             <PulseDialog
               open={pulseOpen}
               period={pulsePeriod}
@@ -393,6 +409,12 @@ export function DashboardContent() {
             />
             <AttendanceStreakCalendar
               userRef={calendarUserRef}
+              year={attendanceYear}
+              month={attendanceMonth}
+              onPeriodChange={(nextYear, nextMonth) => {
+                setAttendanceYear(nextYear);
+                setAttendanceMonth(nextMonth);
+              }}
               headerTrailing={
                 currentUserForModal ? (
                   <button

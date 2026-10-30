@@ -1,6 +1,6 @@
 import nextDynamic from 'next/dynamic';
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 
@@ -28,7 +28,7 @@ const VisualiserContent = nextDynamic(
 
 export default async function VisualiserPage() {
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirectToSignIn('/visualiser');
 
   return <VisualiserContent />;
 }

@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { redirectToSignIn } from '@/lib/auth-redirect';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
 import { ClaimDetailContent } from './claim-detail-content';
 
@@ -11,9 +11,14 @@ export const metadata = buildPageMetadata({
   path: '/claims',
 });
 
-export default async function ClaimDetailPage() {
+export default async function ClaimDetailPage({
+  params,
+}: {
+  params: Promise<{ uid: string }>;
+}) {
+  const { uid } = await params;
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirectToSignIn(`/claims/${uid}`);
 
   return <ClaimDetailContent />;
 }
