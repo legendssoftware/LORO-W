@@ -7,7 +7,11 @@ import {
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
-import type { ReportsTargetMetricCell, ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
+import {
+  sumUniqueErpSales,
+  type ReportsTargetMetricCell,
+  type ReportsTargetRow,
+} from '@/app/reports/lib/reports-target-row';
 import {
   quotationsColumnLabel,
   salesColumnLabel,
@@ -384,7 +388,7 @@ function TeamMetricBar({
 }
 
 function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
-  const salesCurrent = members.reduce((sum, row) => sum + row.sales.current, 0);
+  const salesCurrent = sumUniqueErpSales(members);
   const salesTarget = members.reduce((sum, row) => sum + row.sales.target, 0);
   const callsCurrent = members.reduce((sum, row) => sum + row.calls.current, 0);
   const callsTarget = members.reduce((sum, row) => sum + row.calls.target, 0);
@@ -404,9 +408,6 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
       : Math.round(members.reduce((sum, row) => sum + row.achievement, 0) / members.length);
   const salesLoading = members.some((row) => row.salesLoading === true);
   const currency = formatReportCurrencyCode(members.find((row) => row.sales.currency)?.sales.currency);
-  // #region agent log
-  fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8ebf41'},body:JSON.stringify({sessionId:'8ebf41',runId:'pre-fix',hypothesisId:'H3-H5',location:'reports-targets-table.tsx:TeamTargetsPanel',message:'rendered team sales',data:{people:members.length,salesCurrent,salesTarget,salesLoading,zeroSales:members.filter((row)=>row.sales.current===0).length,currents:members.map((row)=>row.sales.current)},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   const people = members.length === 1 ? '1 person' : `${members.length} people`;
 
   return (
