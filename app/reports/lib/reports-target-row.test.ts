@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyEngagementToRow,
+  applyErpSalesToRow,
   applyQuotationsEngagementToRow,
   applyTravelToRow,
   enrichRowWithTargetDashboard,
@@ -10,6 +11,7 @@ import {
   resolveTargetPeriodEngagementParams,
   rowFromPersonalTarget,
   rowFromUserListItem,
+  sumUniqueErpSales,
   targetRowFromUserListItem,
   totalEngagementCheckIns,
   type ReportsTargetRow,
@@ -469,6 +471,35 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
     expect(next.travel.visitCount).toBe(1);
   });
 
+  it('keeps sales target, hours, and period dates when preserveRangeMetrics is true', () => {
+    const row = baseRow({
+      sales: { current: 10, target: 400, progress: 3, currency: 'ZAR' },
+      hours: { current: 4, target: 9, progress: 44 },
+      periodLabel: '1–7 Aug',
+      periodStartDate: '2026-08-01',
+      periodEndDate: '2026-08-07',
+    });
+    const next = enrichRowWithTargetDashboard(
+      row,
+      {
+        personalTargets: {
+          sales: { current: 999, target: 500000, progress: 0, currency: 'ZAR' },
+          hours: { current: 160, target: 180, progress: 89 },
+          periodStartDate: '2026-08-01',
+          periodEndDate: '2026-08-31',
+        },
+      },
+      { preserveRangeMetrics: true }
+    );
+    expect(next.sales.target).toBe(400);
+    expect(next.sales.current).toBe(10);
+    expect(next.hours.target).toBe(9);
+    expect(next.hours.current).toBe(4);
+    expect(next.periodStartDate).toBe('2026-08-01');
+    expect(next.periodEndDate).toBe('2026-08-07');
+    expect(next.periodLabel).toBe('1–7 Aug');
+  });
+
   it('keeps Travel visitCount aligned with Visits after dashboard overwrite', () => {
     const row = baseRow({
       visits: { current: 12, target: 160, progress: 8 },
@@ -489,6 +520,41 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
     expect(next.visits.current).toBe(88);
     expect(next.travel.visitCount).toBe(88);
     expect(next.travel.distanceKm).toBe(48.2);
+  });
+});
+
+describe('applyErpSalesToRow', () => {
+  it('keeps a negative turnover and does not change the sales target', () => {
+    const row = baseRow({ sales: { current: 0, target: 400, progress: 0, currency: 'ZAR' } });
+    const next = applyErpSalesToRow(row, -1250);
+    expect(next.sales.current).toBe(-1250);
+    expect(next.sales.target).toBe(400);
+  });
+});
+
+describe('sumUniqueErpSales', () => {
+  it('counts a shared rep code once and still adds rows with no code', () => {
+    const shared = baseRow({
+      userId: 1,
+      sales: { current: 500, target: 1000, progress: 50, currency: 'ZAR' },
+      erpSalesRepCode: 'ab',
+      erpSalesCountryCode: 'SA',
+    });
+    const duplicate = baseRow({
+      userId: 2,
+      key: 'u2',
+      ref: 'u2',
+      sales: { current: 500, target: 800, progress: 63, currency: 'ZAR' },
+      erpSalesRepCode: 'AB',
+      erpSalesCountryCode: 'sa',
+    });
+    const other = baseRow({
+      userId: 3,
+      key: 'u3',
+      ref: 'u3',
+      sales: { current: 80, target: 100, progress: 80, currency: 'ZAR' },
+    });
+    expect(sumUniqueErpSales([shared, duplicate, other])).toBe(580);
   });
 });
 

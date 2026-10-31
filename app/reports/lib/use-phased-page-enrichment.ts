@@ -13,6 +13,8 @@ import {
 export type PageRowEnrichment = {
   dashboard: UserTargetDashboardShape | Record<string, unknown> | null;
   erpRevenue: number | null;
+  erpSalesRepCode: string | null;
+  erpSalesCountryCode: string | null;
   erpLoading: boolean;
   productivityScore: number | null;
   productivityLoading: boolean;
@@ -21,6 +23,8 @@ export type PageRowEnrichment = {
 const EMPTY_ENRICHMENT: PageRowEnrichment = {
   dashboard: null,
   erpRevenue: null,
+  erpSalesRepCode: null,
+  erpSalesCountryCode: null,
   erpLoading: false,
   productivityScore: null,
   productivityLoading: false,
@@ -53,25 +57,6 @@ function mergeEnrichment(
   options?: { preserveRangeMetrics?: boolean }
 ): ReportsTargetRow {
   if (!enrich) return row;
-  const dashboard = enrich.dashboard as {
-    personalTargets?: { sales?: { target?: unknown; current?: unknown }; hours?: { target?: unknown; current?: unknown } };
-    sales?: { target?: unknown };
-  } | null;
-  const personal = dashboard?.personalTargets;
-  const personalDates = dashboard?.personalTargets as {
-    periodStartDate?: unknown;
-    periodEndDate?: unknown;
-  } | undefined;
-  // #region agent log
-  if (row.userId > 0) {
-    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7255bc'},body:JSON.stringify({sessionId:'7255bc',runId:'pre-fix',hypothesisId:'A-C-E',location:'use-phased-page-enrichment.ts:mergeEnrichment',message:'sales target and dates through merge',data:{userId:row.userId,rowSalesTarget:row.sales.target,rowSalesCurrent:row.sales.current,rowPeriodStart:row.periodStartDate??null,rowPeriodEnd:row.periodEndDate??null,rowPeriodLabel:row.periodLabel??null,hasDashboard:!!enrich.dashboard,personalSalesTarget:personal?.sales?.target??null,personalSalesCurrent:personal?.sales?.current??null,personalPeriodStart:personalDates?.periodStartDate??null,personalPeriodEnd:personalDates?.periodEndDate??null,erpRevenue:enrich.erpRevenue},timestamp:Date.now()})}).catch(()=>{});
-  }
-  // #endregion
-  // #region agent log
-  if (row.userId > 0) {
-    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'06c950'},body:JSON.stringify({sessionId:'06c950',runId:'pre-fix',hypothesisId:'B',location:'use-phased-page-enrichment.ts:mergeEnrichment',message:'sales target before dashboard merge',data:{userId:row.userId,rowSalesTarget:row.sales.target,rowHoursTarget:row.hours.target,rowPeriodStart:row.periodStartDate??null,rowPeriodEnd:row.periodEndDate??null,expectedDays:row.policy?.expectedDays??null,hasDashboard:!!enrich.dashboard,personalSalesTarget:personal?.sales?.target??null,personalSalesCurrent:personal?.sales?.current??null,personalHoursTarget:personal?.hours?.target??null,topSalesTarget:dashboard?.sales?.target??null,erpRevenue:enrich.erpRevenue},timestamp:Date.now()})}).catch(()=>{});
-  }
-  // #endregion
   let next = enrich.dashboard
     ? enrichRowWithTargetDashboard(row, enrich.dashboard, {
         preserveRangeMetrics: options?.preserveRangeMetrics,
@@ -80,14 +65,14 @@ function mergeEnrichment(
   if (enrich.erpRevenue != null) {
     next = applyErpSalesToRow(next, enrich.erpRevenue);
   }
+  next = {
+    ...next,
+    erpSalesRepCode: enrich.erpSalesRepCode,
+    erpSalesCountryCode: enrich.erpSalesCountryCode,
+  };
   next = applyProductivityToRow(next, enrich.productivityScore, {
     isLoading: enrich.productivityLoading,
   });
-  // #region agent log
-  if (row.userId > 0) {
-    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7255bc'},body:JSON.stringify({sessionId:'7255bc',runId:'pre-fix',hypothesisId:'C-E',location:'use-phased-page-enrichment.ts:mergeEnrichment:after',message:'row after sales and date merge',data:{userId:row.userId,salesTarget:next.sales.target,salesCurrent:next.sales.current,periodStart:next.periodStartDate??null,periodEnd:next.periodEndDate??null,periodLabel:next.periodLabel??null},timestamp:Date.now()})}).catch(()=>{});
-  }
-  // #endregion
   return next;
 }
 
@@ -171,7 +156,14 @@ export function usePhasedPageEnrichment(opts: {
     };
 
     const salesRequest = client
-      .post<{ data?: Array<{ userId: number; erpRevenue: number | null }> }>(
+      .post<{
+        data?: Array<{
+          userId: number;
+          erpRevenue: number | null;
+          erpSalesRepCode?: string | null;
+          erpCountryCode?: string | null;
+        }>;
+      }>(
         '/reports/targets-page-sales',
         requestBody,
         { signal: abort.signal }
@@ -188,6 +180,8 @@ export function usePhasedPageEnrichment(opts: {
             next.set(key, {
               ...current,
               erpRevenue: item?.erpRevenue ?? null,
+              erpSalesRepCode: item?.erpSalesRepCode ?? null,
+              erpSalesCountryCode: item?.erpCountryCode ?? null,
               erpLoading: false,
             });
           }

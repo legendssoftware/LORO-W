@@ -95,7 +95,14 @@ export async function getUserAgreement(client: AxiosInstance, clerkUserId: strin
 export async function upsertUserAgreement(
   client: AxiosInstance,
   clerkUserId: string,
-  body: { participates: boolean; prr?: number; currency?: string; effectiveDate?: string; witnessTypedName?: string },
+  body: {
+    participates: boolean;
+    prr?: number;
+    currency?: string;
+    effectiveDate?: string;
+    witnessTypedName?: string;
+    applyCommercialStandards?: boolean;
+  },
 ): Promise<PolicyAgreement> {
   const { data } = await client.put<PolicyAgreement>(
     `/performance-policy/users/${encodeURIComponent(clerkUserId)}/agreement`,

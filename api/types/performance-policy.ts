@@ -146,6 +146,7 @@ export interface PolicyAgreement {
   effectiveDate: string | null;
   signedAt: string | null;
   witnessTypedName: string | null;
+  applyCommercialStandards: boolean;
 }
 
 export interface PolicyAcknowledgement {

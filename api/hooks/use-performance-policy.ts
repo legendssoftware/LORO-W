@@ -139,7 +139,14 @@ export function useUpsertAgreement(clerkUserId: string) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { participates: boolean; prr?: number; currency?: string; effectiveDate?: string; witnessTypedName?: string }) =>
+    mutationFn: (body: {
+      participates: boolean;
+      prr?: number;
+      currency?: string;
+      effectiveDate?: string;
+      witnessTypedName?: string;
+      applyCommercialStandards?: boolean;
+    }) =>
       upsertUserAgreement(client, clerkUserId, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['performance-policy'] }),
   });

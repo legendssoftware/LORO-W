@@ -16,6 +16,7 @@ export function PolicyAgreementForm({ clerkUserId }: { clerkUserId: string }) {
   const [currency, setCurrency] = useState('ZAR');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [witness, setWitness] = useState('');
+  const [applyCommercialStandards, setApplyCommercialStandards] = useState(false);
 
   useEffect(() => {
     const row = agreement.data;
@@ -25,6 +26,7 @@ export function PolicyAgreementForm({ clerkUserId }: { clerkUserId: string }) {
     setCurrency(row.currency || 'ZAR');
     setEffectiveDate(row.effectiveDate ?? '');
     setWitness(row.witnessTypedName ?? '');
+    setApplyCommercialStandards(row.applyCommercialStandards === true);
   }, [agreement.data]);
 
   if (!clerkUserId) return null;
@@ -56,6 +58,16 @@ export function PolicyAgreementForm({ clerkUserId }: { clerkUserId: string }) {
           <Input id={`effective-${clerkUserId}`} type="date" value={effectiveDate} onChange={(event) => setEffectiveDate(event.target.value)} />
         </div>
       </div>
+      {agreement.data?.positionKey === 'branch_team_leader' ? (
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label htmlFor={`commercial-${clerkUserId}`}>Apply lead and quotation standards</Label>
+          <Switch
+            id={`commercial-${clerkUserId}`}
+            checked={applyCommercialStandards}
+            onCheckedChange={setApplyCommercialStandards}
+          />
+        </div>
+      ) : null}
       <div className="space-y-1">
         <Label htmlFor={`witness-${clerkUserId}`}>Witness name</Label>
         <Input id={`witness-${clerkUserId}`} value={witness} onChange={(event) => setWitness(event.target.value)} />
@@ -70,6 +82,7 @@ export function PolicyAgreementForm({ clerkUserId }: { clerkUserId: string }) {
             currency: currency.trim() || 'ZAR',
             ...(effectiveDate ? { effectiveDate } : {}),
             ...(witness.trim() ? { witnessTypedName: witness.trim() } : {}),
+            ...(agreement.data?.positionKey === 'branch_team_leader' ? { applyCommercialStandards } : {}),
           })
         }
       >
