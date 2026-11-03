@@ -55,7 +55,7 @@ function buildSections(
     const key = uid ?? 'none';
     if (seen.has(key)) return;
     seen.add(key);
-    const loaded = claimsByGroup.get(key) ?? [];
+    const loaded = sortClaimsNewestFirst(claimsByGroup.get(key) ?? []);
     if (loaded.length === 0) return;
     const group = uid != null ? groupByUid.get(uid) : undefined;
     const summary = summaryByUid.get(key);
@@ -100,6 +100,18 @@ type OwnerSection = {
   claims: Claim[];
 };
 
+function claimCreatedTime(claim: Claim): number {
+  if (!claim.createdAt) return 0;
+  const time = new Date(claim.createdAt).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
+function sortClaimsNewestFirst(claims: Claim[]): Claim[] {
+  return [...claims].sort(
+    (a, b) => claimCreatedTime(b) - claimCreatedTime(a)
+  );
+}
+
 function ownerSectionKey(claim: Claim): string {
   if (claim.owner?.uid != null) return `uid:${claim.owner.uid}`;
   if (claim.ownerClerkUserId) return `clerk:${claim.ownerClerkUserId}`;
@@ -142,9 +154,14 @@ function buildOwnerSections(claims: Claim[]): OwnerSection[] {
       claims: [claim],
     });
   }
-  return Array.from(map.values()).sort((a, b) =>
-    a.title.localeCompare(b.title)
+  const sections = Array.from(map.values()).map((section) => ({
+    ...section,
+    claims: sortClaimsNewestFirst(section.claims),
+  }));
+  sections.sort(
+    (a, b) => claimCreatedTime(b.claims[0]) - claimCreatedTime(a.claims[0])
   );
+  return sections;
 }
 
 function OwnerClaimFolders({
