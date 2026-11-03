@@ -87,6 +87,7 @@ export type TravelAnalysisDayRow = {
   start: string;
   end: string;
   region: string;
+  fuelPrice: string;
   fuelLitres: string;
   fuelRand: string;
 };

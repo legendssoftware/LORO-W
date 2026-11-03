@@ -2,6 +2,7 @@ import type { jsPDF } from 'jspdf';
 import { downloadBlob } from '@/lib/utils/report-export';
 import {
   buildTravelAnalysisFilename,
+  formatCountryRegion,
   formatHoursMinutes,
 } from '@/lib/travel-analysis/build-travel-analysis-document';
 import type { TravelAnalysisDocument } from '@/lib/travel-analysis/travel-analysis-types';
@@ -221,7 +222,7 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
       ['Branch', kpis.branch],
       ['Vehicle', kpis.vehicle],
       ['Fuel type / km/L', `${kpis.fuelType} · ${kpis.ratedKmPerLitre}`],
-      ['Country / region', `${kpis.country} · ${kpis.region}`],
+      ['Country / region', formatCountryRegion(kpis.country, kpis.region)],
       ['Billable km', formatKm(kpis.billableKm)],
       ['Recorded km', formatKm(kpis.recordedKm)],
       ['Commute deducted', formatKm(kpis.commuteDeductedKm)],
@@ -258,7 +259,10 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
           ? `${document.vehicleBasis.ratedKmPerLitre} — fleet default used when the assigned vehicle has no km/L`
           : document.vehicleBasis.ratedKmPerLitre,
       ],
-      ['GPS country / region', `${document.vehicleBasis.country} · ${document.vehicleBasis.region}`],
+      [
+        'GPS country / region',
+        formatCountryRegion(document.vehicleBasis.country, document.vehicleBasis.region),
+      ],
       ['Commute rule', '20 km home-to-office deducted per calendar day with travel'],
       ['Fuel price source', 'GlobalPetrolPrices weekly national average for the country of travel, converted to rand. The price in force that week is used for each day.'],
     ],
@@ -272,6 +276,50 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
   addNoteBox(ctx, 'Disclaimer', document.disclaimer);
 }
 
+/** Day-by-day columns. Widths sum to the A4 content width so fuel stays under its header. */
+export const DAY_BY_DAY_HEAD = [
+  'Date',
+  'Recorded',
+  'Billable',
+  'Travel',
+  'Stop',
+  'Region',
+  'Price',
+  'Fuel L',
+  'Fuel R',
+] as const;
+
+const DAY_COLUMN_WIDTHS = [22, 20, 20, 16, 14, 26, 22, 16, 22];
+
+/** Fuel-page columns. Fixed widths so litres and rand sit on the header, not the page edge. */
+export const FUEL_TABLE_HEAD = ['Date', 'Price', 'Litres', 'Estimated R'] as const;
+
+const FUEL_COLUMN_WIDTHS = [32, 36, 28, 36];
+
+function columnStyles(
+  widths: number[],
+  rightAligned: number[],
+): Record<number, { cellWidth: number; halign?: 'right' }> {
+  return Object.fromEntries(
+    widths.map((cellWidth, index) => [
+      index,
+      rightAligned.includes(index) ? { cellWidth, halign: 'right' as const } : { cellWidth },
+    ]),
+  );
+}
+
+function alignHeadRight(columns: number[]) {
+  return (data: {
+    section: string;
+    column: { index: number };
+    cell: { styles: { halign?: string } };
+  }) => {
+    if (data.section === 'head' && columns.includes(data.column.index)) {
+      data.cell.styles.halign = 'right';
+    }
+  };
+}
+
 function addDayByDay(ctx: PdfCursor, document: TravelAnalysisDocument): void {
   addSectionTitle(ctx, 'Day by day');
   if (document.days.length === 0) {
@@ -280,34 +328,23 @@ function addDayByDay(ctx: PdfCursor, document: TravelAnalysisDocument): void {
   }
   ctx.continuationTitle = 'Day by day (continued)';
   addTable(ctx, {
-    head: [[
-      'Date',
-      'Recorded',
-      'Billable',
-      'Travel',
-      'Stop',
-      'Start → end',
-      'Region',
-      'Fuel L',
-      'Fuel R',
-    ]],
+    head: [DAY_BY_DAY_HEAD],
     body: document.days.map((row) => [
       row.date,
       formatKm(row.recordedKm),
       formatKm(row.billableKm),
       row.travelLabel,
       row.stopLabel,
-      `${row.start} → ${row.end}`,
       row.region,
+      row.fuelPrice,
       row.fuelLitres,
       row.fuelRand,
     ]),
+    tableWidth: CONTENT_W,
     styles: { fontSize: 7, cellPadding: 1.1 },
     headStyles: { fontSize: 6.5, fillColor: COLOR_HEAD, fontStyle: 'bold' },
-    columnStyles: {
-      0: { cellWidth: 22 },
-      5: { cellWidth: 42 },
-    },
+    columnStyles: columnStyles(DAY_COLUMN_WIDTHS, [1, 2, 3, 4, 6, 7, 8]),
+    didParseCell: alignHeadRight([1, 2, 3, 4, 6, 7, 8]),
   });
   ctx.continuationTitle = null;
 }
@@ -391,14 +428,11 @@ function addFuelUsage(ctx: PdfCursor, document: TravelAnalysisDocument): void {
   }
   ctx.continuationTitle = 'Fuel usage (continued)';
   addTable(ctx, {
-    head: [['Date', 'Price', 'Litres', 'Estimated R']],
+    head: [FUEL_TABLE_HEAD],
     body: document.fuelDays.map((row) => [row.date, row.price, row.litres, row.zar]),
-    columnStyles: {
-      0: { cellWidth: 32 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 36, halign: 'right' },
-      3: { cellWidth: CONTENT_W - 108, halign: 'right' },
-    },
+    tableWidth: 'wrap',
+    columnStyles: columnStyles(FUEL_COLUMN_WIDTHS, [1, 2, 3]),
+    didParseCell: alignHeadRight([1, 2, 3]),
   });
   ctx.continuationTitle = null;
 }
