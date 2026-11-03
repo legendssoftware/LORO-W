@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { downloadBlob } from '@/lib/utils/report-export';
 import { buildTravelAnalysisDocument } from '@/lib/travel-analysis/build-travel-analysis-document';
-import { downloadTravelAnalysisPdf } from '@/lib/travel-analysis/travel-analysis-pdf';
+import {
+  DAY_BY_DAY_HEAD,
+  FUEL_TABLE_HEAD,
+  downloadTravelAnalysisPdf,
+} from '@/lib/travel-analysis/travel-analysis-pdf';
 import type { TravelAnalysisPayload } from '@/lib/travel-analysis/travel-analysis-types';
 
 vi.mock('@/lib/utils/report-export', () => ({
@@ -78,6 +82,24 @@ function samplePayload(): TravelAnalysisPayload {
     stoppedSampleCount: 2,
   };
 }
+
+describe('travel analysis table heads', () => {
+  it('drops start and end and keeps fuel price beside litres and rand', () => {
+    expect(DAY_BY_DAY_HEAD).not.toContain('Start → end');
+    expect(DAY_BY_DAY_HEAD).toEqual([
+      'Date',
+      'Recorded',
+      'Billable',
+      'Travel',
+      'Stop',
+      'Region',
+      'Price',
+      'Fuel L',
+      'Fuel R',
+    ]);
+    expect(FUEL_TABLE_HEAD).toEqual(['Date', 'Price', 'Litres', 'Estimated R']);
+  });
+});
 
 describe('downloadTravelAnalysisPdf', () => {
   beforeEach(() => {
