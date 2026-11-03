@@ -11,6 +11,7 @@ import {
   Filter,
   FolderOpen,
   LayoutGrid,
+  List,
   XCircle,
 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
@@ -65,9 +66,8 @@ export function resetClaimsDateRangeToDefault(
   onCreatedFromChange: (v: string) => void,
   onCreatedToChange: (v: string) => void
 ) {
-  const { start, end } = utcMonthStartThroughToday();
-  onCreatedFromChange(formatUtcYmd(start));
-  onCreatedToChange(formatUtcYmd(end));
+  onCreatedFromChange('');
+  onCreatedToChange('');
 }
 
 function formatRangeButtonLabel(start: Date, end: Date): string {
@@ -147,68 +147,75 @@ export function ClaimsFilterControls({
     ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
     : 'h-9 w-full shrink-0 justify-start text-left font-normal';
 
-  const { start: rangeStart, end: rangeEnd } = React.useMemo(() => {
-    const hasFrom = Boolean(createdFrom?.trim());
-    const hasTo = Boolean(createdTo?.trim());
-    if (hasFrom && hasTo) {
-      return {
-        start: utcDateFromYmd(createdFrom.trim()),
-        end: utcDateFromYmd(createdTo.trim()),
-      };
-    }
-    return utcMonthStartThroughToday();
-  }, [createdFrom, createdTo]);
-
-  const isDefaultRange = React.useMemo(() => {
-    const { start, end } = utcMonthStartThroughToday();
-    return (
-      formatUtcYmd(rangeStart) === formatUtcYmd(start) &&
-      formatUtcYmd(rangeEnd) === formatUtcYmd(end)
-    );
-  }, [rangeStart, rangeEnd]);
+  const hasRange = Boolean(createdFrom?.trim() && createdTo?.trim());
+  const rangeStart = hasRange
+    ? utcDateFromYmd(createdFrom.trim())
+    : utcToday();
+  const rangeEnd = hasRange ? utcDateFromYmd(createdTo.trim()) : utcToday();
 
   const [rangeOpen, setRangeOpen] = React.useState(false);
-  const [draft, setDraft] = React.useState<DateRange | undefined>({
-    from: rangeStart,
-    to: rangeEnd,
-  });
+  const [draft, setDraft] = React.useState<DateRange | undefined>();
+  const skipFinalizeRef = React.useRef(false);
 
   const finalizeDraftToParent = React.useCallback(() => {
-    const from = draft?.from ?? rangeStart;
-    const to = draft?.to ?? draft?.from ?? rangeEnd;
-    const ordered = orderUtcCalendarRange(from, to);
+    if (!draft?.from) {
+      onCreatedFromChange('');
+      onCreatedToChange('');
+      return;
+    }
+    const to = draft.to ?? draft.from;
+    const ordered = orderUtcCalendarRange(draft.from, to);
     onCreatedFromChange(formatUtcYmd(ordered.start));
     onCreatedToChange(formatUtcYmd(ordered.end));
-  }, [draft, rangeStart, rangeEnd, onCreatedFromChange, onCreatedToChange]);
+  }, [draft, onCreatedFromChange, onCreatedToChange]);
+
+  function closeRangeWithoutFinalize() {
+    skipFinalizeRef.current = true;
+    setRangeOpen(false);
+  }
 
   function handlePopoverOpenChange(open: boolean) {
     if (open) {
-      setDraft({ from: rangeStart, to: rangeEnd });
-    } else {
-      finalizeDraftToParent();
+      skipFinalizeRef.current = false;
+      setDraft(
+        hasRange ? { from: rangeStart, to: rangeEnd } : undefined
+      );
+      setRangeOpen(true);
+      return;
     }
-    setRangeOpen(open);
+    if (skipFinalizeRef.current) {
+      skipFinalizeRef.current = false;
+      setRangeOpen(false);
+      return;
+    }
+    finalizeDraftToParent();
+    setRangeOpen(false);
   }
 
   function handleShortcutToday() {
     const t = utcToday();
     onCreatedFromChange(formatUtcYmd(t));
     onCreatedToChange(formatUtcYmd(t));
-    setRangeOpen(false);
+    closeRangeWithoutFinalize();
   }
 
   function handleShortcutThisMonth() {
     const { start, end } = utcMonthStartThroughToday();
     onCreatedFromChange(formatUtcYmd(start));
     onCreatedToChange(formatUtcYmd(end));
-    setRangeOpen(false);
+    closeRangeWithoutFinalize();
   }
 
   function handleShortcutWholeMonth() {
     const { from, to } = getUtcMonthRange(utcToday());
     onCreatedFromChange(from);
     onCreatedToChange(to);
-    setRangeOpen(false);
+    closeRangeWithoutFinalize();
+  }
+
+  function handleShortcutAllDates() {
+    resetClaimsDateRangeToDefault(onCreatedFromChange, onCreatedToChange);
+    closeRangeWithoutFinalize();
   }
 
   const statusPickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -249,7 +256,9 @@ export function ClaimsFilterControls({
               className={cn(rangeBtnWidth, reportsFilterSelectTriggerClass)}
             >
               <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-              {formatRangeButtonLabel(rangeStart, rangeEnd)}
+              {hasRange
+                ? formatRangeButtonLabel(rangeStart, rangeEnd)
+                : 'All dates'}
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -262,7 +271,9 @@ export function ClaimsFilterControls({
             <Calendar
               mode="range"
               selected={localPickerRangeFromUtcCalendarRange(draft)}
-              defaultMonth={localPickerDateFromUtcCalendarDate(draft?.from ?? rangeStart)}
+              defaultMonth={localPickerDateFromUtcCalendarDate(
+                draft?.from ?? (hasRange ? rangeStart : utcToday())
+              )}
               onSelect={(r) => {
                 if (!r) {
                   setDraft(undefined);
@@ -280,6 +291,14 @@ export function ClaimsFilterControls({
             />
             <div className="flex flex-wrap justify-between gap-2 border-t px-2 py-2">
               <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShortcutAllDates}
+                >
+                  All dates
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -320,7 +339,7 @@ export function ClaimsFilterControls({
             </div>
           </PopoverContent>
         </Popover>
-        {!isDefaultRange ? (
+        {hasRange ? (
           <button
             type="button"
             onClick={() =>
@@ -439,6 +458,8 @@ export function ClaimsFilterControls({
   );
 }
 
+export type ClaimsPageViewMode = 'grid' | 'list';
+
 export function ClaimsFiltersBar({
   searchInput,
   onSearchChange,
@@ -461,6 +482,8 @@ export function ClaimsFiltersBar({
   userSearchQuery,
   onUserSearchQueryChange,
   isUserSearchLoading,
+  viewMode,
+  onViewModeChange,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
@@ -483,6 +506,8 @@ export function ClaimsFiltersBar({
   userSearchQuery?: string;
   onUserSearchQueryChange?: (query: string) => void;
   isUserSearchLoading?: boolean;
+  viewMode: ClaimsPageViewMode;
+  onViewModeChange: (mode: ClaimsPageViewMode) => void;
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -502,6 +527,29 @@ export function ClaimsFiltersBar({
     resetClaimsDateRangeToDefault(onCreatedFromChange, onCreatedToChange);
     onClaimGroupChange('all');
     onUserFilterChange('all');
+  }
+
+  function renderViewToggle() {
+    return (
+      <ToggleGroup
+        type="single"
+        value={viewMode}
+        onValueChange={(value) => {
+          if (value === 'grid' || value === 'list') onViewModeChange(value);
+        }}
+        variant="outline"
+        size="sm"
+        className="shrink-0"
+        aria-label="Claims layout"
+      >
+        <ToggleGroupItem value="grid" aria-label="Folder grid" className="px-2.5">
+          <LayoutGrid className="size-4" />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="list" aria-label="User list" className="px-2.5">
+          <List className="size-4" />
+        </ToggleGroupItem>
+      </ToggleGroup>
+    );
   }
 
   function renderSearchField() {
@@ -556,15 +604,18 @@ export function ClaimsFiltersBar({
       data-tour="claims-toolbar"
     >
       <div className="flex flex-col gap-2 md:hidden">
-        <Button
-          type="button"
-          variant="outline"
-          className={cn(selectTriggerClass, 'h-9 w-full min-w-0 justify-center')}
-          onClick={() => setFiltersDialogOpen(true)}
-        >
-          <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(selectTriggerClass, 'h-9 min-w-0 flex-1 justify-center')}
+            onClick={() => setFiltersDialogOpen(true)}
+          >
+            <Filter className="mr-2 size-4 shrink-0" aria-hidden />
+            Filter
+          </Button>
+          {renderViewToggle()}
+        </div>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
         </div>
@@ -611,6 +662,7 @@ export function ClaimsFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {renderViewToggle()}
           {renderSearchField()}
         </div>
       </div>
