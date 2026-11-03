@@ -10,6 +10,8 @@ import {
 const COMMON_AREA_CAP = 12;
 const ADDRESS_NOISE =
   /^(south africa|botswana|zimbabwe|namibia|lesotho|eswatini|mozambique|zambia|general|kzn|gauteng|western cape|eastern cape|limpopo|mpumalanga|free state|north west|northern cape|0000|n\/a|-)$/i;
+const PLUS_CODE = /[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/i;
+const NUMERIC_ONLY = /^\d+[a-z]?$/i;
 
 const EM_DASH = '—';
 
@@ -55,7 +57,32 @@ function displayCell(value: string | null | undefined): string {
 }
 
 /**
- * Cluster key for a stop: first meaningful address parts, else rounded lat/lng.
+ * Street plus suburb. A leading house number is kept with the street, and an
+ * Open Location Code is dropped so the locality remains.
+ */
+function meaningfulAddressParts(raw: string): string[] {
+  const stripped = raw.replace(PLUS_CODE, ' ').replace(/\s{2,}/g, ' ').trim();
+  if (!stripped || stripped === '-') return [];
+  const parts = stripped
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && !ADDRESS_NOISE.test(part) && !PLUS_CODE.test(part));
+  const merged: string[] = [];
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index] ?? '';
+    const next = parts[index + 1];
+    if (NUMERIC_ONLY.test(part) && next) {
+      merged.push(`${part} ${next}`);
+      index += 1;
+      continue;
+    }
+    merged.push(part);
+  }
+  return merged;
+}
+
+/**
+ * Cluster key for a stop: street and suburb, else rounded lat/lng.
  */
 export function normalizeStopArea(stop: {
   place: string;
@@ -64,12 +91,8 @@ export function normalizeStopArea(stop: {
 }): string {
   const raw = stop.place?.trim() ?? '';
   if (raw && raw !== '-') {
-    const parts = raw
-      .split(',')
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0 && !ADDRESS_NOISE.test(part));
+    const parts = meaningfulAddressParts(raw);
     if (parts.length > 0) return parts.slice(0, 2).join(', ');
-    return raw;
   }
   const lat = Number(stop.lat);
   const lng = Number(stop.lng);
@@ -77,6 +100,22 @@ export function normalizeStopArea(stop: {
     return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   }
   return 'Unknown';
+}
+
+/** Province only, so `Gauteng · South Africa` fits the day table. */
+export function provinceLabel(region: string | null | undefined): string {
+  const trimmed = region?.trim() ?? '';
+  if (trimmed === '' || trimmed === '-') return EM_DASH;
+  const province = trimmed.split('·')[0]?.trim();
+  return province || trimmed;
+}
+
+/** One country/region line. Region often already names the country. */
+export function formatCountryRegion(country: string, region: string): string {
+  if (country === EM_DASH) return region;
+  if (region === EM_DASH) return country;
+  if (region.toLowerCase().includes(country.toLowerCase())) return region;
+  return `${country} · ${region}`;
 }
 
 /**
@@ -221,7 +260,7 @@ export function buildTravelAnalysisDocument(
       fuelType: displayCell(summary?.fuelTypeLabel),
       ratedKmPerLitre: displayCell(summary?.ratedKmPerLitreLabel),
       country: displayCell(summary?.country),
-      region: displayCell(summary?.region),
+      region: formatCountryRegion(displayCell(summary?.country), displayCell(summary?.region)),
       branch: displayCell(summary?.branch),
     },
     vehicleBasis: {
@@ -241,7 +280,8 @@ export function buildTravelAnalysisDocument(
       stopLabel: formatHoursMinutes(row.stopMin),
       start: displayPlace(row.startPlace),
       end: displayPlace(row.endPlace),
-      region: displayCell(row.region),
+      region: provinceLabel(row.region),
+      fuelPrice: displayCell(row.fuelPricePerLitre),
       fuelLitres: displayCell(row.fuelLitres),
       fuelRand: displayCell(row.fuelRand),
     })),
@@ -267,8 +307,16 @@ export function buildTravelAnalysisDocument(
       dwellBrief,
       dwellWorking,
       dwellLong,
-      typicalStart: mostFrequentPlace(daily.map((row) => row.startPlace)),
-      typicalEnd: mostFrequentPlace(daily.map((row) => row.endPlace)),
+      typicalStart: normalizeStopArea({
+        place: mostFrequentPlace(daily.map((row) => row.startPlace)),
+        lat: '-',
+        lng: '-',
+      }),
+      typicalEnd: normalizeStopArea({
+        place: mostFrequentPlace(daily.map((row) => row.endPlace)),
+        lat: '-',
+        lng: '-',
+      }),
       movingSampleCount: payload.movingSampleCount ?? 0,
       stoppedSampleCount: payload.stoppedSampleCount ?? 0,
     },
