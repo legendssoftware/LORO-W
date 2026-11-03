@@ -54,7 +54,7 @@ export function StaffTravelExportDialog({
   }, [open]);
 
   /**
-   * Downloads the 5-sheet travel workbook scoped to this user and the selected UTC range.
+   * Downloads the travel workbook (including the Claims sheet) scoped to this user and the selected UTC range.
    */
   async function handleExport() {
     if (isBusy) return;
