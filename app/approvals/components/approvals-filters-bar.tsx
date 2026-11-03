@@ -45,7 +45,7 @@ export function ApprovalsFilterControls({
     ? 'h-9 min-w-0 w-[160px] shrink-0'
     : 'h-9 w-full min-w-0';
   const typeTrigger = row
-    ? 'h-9 min-w-0 w-[180px] shrink-0'
+    ? 'h-9 min-w-0 w-[240px] shrink-0'
     : 'h-9 w-full min-w-0';
 
   const statusOptions = React.useMemo<SearchableOptionRow[]>(
