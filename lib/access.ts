@@ -13,6 +13,7 @@ export const STANDARD_USER_PATHS = [
     "/planning",
     "/claims",
     "/takeoff",
+    "/deliveries",
     "/assets",
     "/payslips",
     "/reports",
@@ -524,6 +525,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/clients", label: "Clients" },
     { path: "/claims", label: "Claims" },
     { path: "/takeoff", label: "Takeoff" },
+    { path: "/deliveries", label: "Deliveries" },
     { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
@@ -536,6 +538,18 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
 
 /** Sidebar item for user settings (calendar for all staff; org tabs for admin / owner / manager). */
 export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
+
+/**
+ * Whether the user may assign and cancel ePOD deliveries.
+ * Mirrors the server DISPATCH_ACCESS_LEVELS — admin, manager, and owner only.
+ * HR can open `/deliveries` but must not dispatch, so this is deliberately
+ * narrower than canManageStaffUsers.
+ */
+export function canDispatchDeliveries(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return level === 'admin' || level === 'manager' || level === 'owner';
+}
 
 /** Whether the user may invite or provision staff accounts. */
 export function canManageStaffUsers(accessLevel: string | undefined): boolean {
@@ -587,6 +601,7 @@ export function getAllowedRoutes(
         { path: "/clients", label: "Clients" },
         { path: "/claims", label: "Claims" },
         { path: "/takeoff", label: "Takeoff" },
+        { path: "/deliveries", label: "Deliveries" },
         { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
