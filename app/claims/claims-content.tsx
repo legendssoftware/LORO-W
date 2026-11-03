@@ -1,11 +1,14 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   useClaimsInfinite,
   useClaimGroups,
   useClaimsSummary,
 } from '@/api/hooks/use-claims';
+import { getClaims } from '@/api/endpoints/claims';
+import { useApiClient } from '@/api/hooks/use-api-client';
 import { useBranches } from '@/api/hooks/use-branches';
 import { useSearchableUsersList } from '@/api/hooks/use-searchable-users-list';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
@@ -13,7 +16,10 @@ import { useTokenReady } from '@/api/hooks/use-token-ready';
 import type { BranchListItem } from '@/api/types/branch';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { ClaimsFiltersBar } from '@/app/claims/components/claims-filters-bar';
+import {
+  ClaimsFiltersBar,
+  type ClaimsPageViewMode,
+} from '@/app/claims/components/claims-filters-bar';
 import { ClaimCreateDialog } from '@/app/claims/components/claim-create-dialog';
 import { ClaimFoldersPanel } from '@/app/claims/components/claim-folders-panel';
 import { ClaimsSummaryCards } from '@/app/claims/components/claims-summary-cards';
@@ -22,16 +28,13 @@ import {
   ClaimsGroupedListSkeleton,
 } from '@/app/claims/components/claims-grouped-list';
 import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
-import { Plus } from 'lucide-react';
+import { exportClaimsPerUserCsv } from '@/app/claims/lib/export-claims-csv';
+import { Download, Loader2, Plus } from 'lucide-react';
 import type { Claim } from '@/api/types/claims';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
 import { canViewOrgClaimsList } from '@/lib/access';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/store/session-store';
-import {
-  formatUtcYmd,
-  utcMonthStartThroughToday,
-} from '@/lib/utils/overview-daily-summary';
 
 function matchesSearch(claim: Claim, q: string): boolean {
   if (!q) return true;
@@ -56,7 +59,10 @@ function parseOwnerUid(userFilter: string): number | undefined {
   return parsed;
 }
 
+const EXPORT_PAGE_SIZE = 100;
+
 export function ClaimsContent() {
+  const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading, backendUserData } = useSessionSync();
   const profileAccessLevel = useSessionStore((s) => s.profileData?.accessLevel);
@@ -67,6 +73,8 @@ export function ClaimsContent() {
     (typeof profileAccessLevel === 'string' ? profileAccessLevel : undefined);
   const showUserFilter = canViewOrgClaimsList(accessLevel);
   const [createOpen, setCreateOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [viewMode, setViewMode] = useState<ClaimsPageViewMode>('list');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
@@ -75,10 +83,7 @@ export function ClaimsContent() {
   }, [searchInput]);
 
   const [statusFilter, setStatusFilter] = useState('all');
-  const [createdRange, setCreatedRange] = useState(() => {
-    const { start, end } = utcMonthStartThroughToday();
-    return { from: formatUtcYmd(start), to: formatUtcYmd(end) };
-  });
+  const [createdRange, setCreatedRange] = useState({ from: '', to: '' });
   const [groupFilter, setGroupFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [currencyView, setCurrencyView] = useState<ClaimsCurrencyView>('original');
@@ -128,12 +133,7 @@ export function ClaimsContent() {
   });
 
   const summaryQuery = useClaimsSummary(
-    {
-      createdFrom,
-      createdTo,
-      claimGroupUid,
-      ownerUid,
-    },
+    {},
     { enabled: isTokenReady && !sessionSyncLoading }
   );
 
@@ -146,6 +146,49 @@ export function ClaimsContent() {
   const err = claimsQuery.error;
   const statusCode = err ? getErrorStatus(err) : undefined;
   const errMsg = err ? getQueryErrorMessage(err, 'Could not load claims') : '';
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      let claims = filteredRows;
+      if (showUserFilter) {
+        const collected: Claim[] = [];
+        for (let page = 1; page <= 500; page += 1) {
+          const result = await getClaims(client, {
+            page,
+            limit: EXPORT_PAGE_SIZE,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            createdFrom,
+            createdTo,
+            claimGroupUid,
+            ownerUid,
+          });
+          const batch = result.data ?? [];
+          collected.push(...batch);
+          const totalPages = result.meta?.totalPages ?? 1;
+          if (page >= totalPages || batch.length === 0) break;
+        }
+        claims = collected.filter((claim) =>
+          matchesSearch(claim, debouncedSearch)
+        );
+      }
+      if (claims.length === 0) {
+        toast.error('No claims to export');
+        return;
+      }
+      exportClaimsPerUserCsv(claims, groups);
+    } catch (error) {
+      toast.error(getQueryErrorMessage(error, 'Could not export claims'));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function handleSelectGroup(uid: string) {
+    setGroupFilter(uid);
+    if (uid !== 'all') setViewMode('list');
+  }
 
   if (!isTokenReady || sessionSyncLoading) {
     return <LoadingSpinner wrapperClassName="py-12" />;
@@ -169,18 +212,36 @@ export function ClaimsContent() {
               Submit expenses, attach receipts, and track approvals to payment.
             </p>
           </div>
-          <Button
-            className={cn(
-              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-              'bg-violet-600 text-white hover:bg-violet-700',
-              'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-              '[&_svg]:text-white focus-visible:ring-violet-500/40'
-            )}
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="size-4" />
-            New claim
-          </Button>
+          <div className="flex shrink-0 items-center gap-2 self-start">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 gap-2 px-4"
+              disabled={exporting}
+              onClick={() => {
+                void handleExport();
+              }}
+            >
+              {exporting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              Export
+            </Button>
+            <Button
+              className={cn(
+                'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+                'bg-violet-600 text-white hover:bg-violet-700',
+                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                '[&_svg]:text-white focus-visible:ring-violet-500/40'
+              )}
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="size-4" />
+              New claim
+            </Button>
+          </div>
         </div>
 
         <ClaimsSummaryCards
@@ -203,7 +264,7 @@ export function ClaimsContent() {
           onCreatedToChange={(v) => setCreatedRange((r) => ({ ...r, to: v }))}
           groups={groups}
           claimGroupUid={groupFilter}
-          onClaimGroupChange={setGroupFilter}
+          onClaimGroupChange={handleSelectGroup}
           currencyView={currencyView}
           onCurrencyViewChange={setCurrencyView}
           showUserFilter={showUserFilter}
@@ -214,14 +275,18 @@ export function ClaimsContent() {
           userSearchQuery={userSearchQuery}
           onUserSearchQueryChange={setUserSearchQuery}
           isUserSearchLoading={isUserSearchLoading}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
-        <ClaimFoldersPanel
-          groups={groups}
-          isLoading={groupsQuery.isLoading}
-          activeGroupUid={groupFilter}
-          onSelectGroup={setGroupFilter}
-        />
+        {viewMode === 'grid' ? (
+          <ClaimFoldersPanel
+            groups={groups}
+            isLoading={groupsQuery.isLoading}
+            activeGroupUid={groupFilter}
+            onSelectGroup={handleSelectGroup}
+          />
+        ) : null}
 
         {statusCode === 403 ? (
           <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -231,34 +296,36 @@ export function ClaimsContent() {
           <p className="mt-6 text-center text-sm text-destructive">{errMsg}</p>
         ) : null}
 
-        <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {isLoading ? (
-            <ClaimsGroupedListSkeleton />
-          ) : (
-            <ClaimsGroupedList
-              claims={filteredRows}
-              groups={groups}
-              byGroup={summaryQuery.data?.byGroup}
-              activeGroupUid={groupFilter}
-              branchByUid={branchByUid}
-              currencyView={currencyView}
-              groupByOwner={showUserFilter}
-            />
-          )}
-          {claimsQuery.hasNextPage ? (
-            <div className="flex justify-center py-6">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-border bg-background"
-                disabled={isFetchingNext}
-                onClick={() => claimsQuery.fetchNextPage()}
-              >
-                {isFetchingNext ? 'Loading…' : 'Load more'}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        {viewMode === 'list' ? (
+          <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
+            {isLoading ? (
+              <ClaimsGroupedListSkeleton />
+            ) : (
+              <ClaimsGroupedList
+                claims={filteredRows}
+                groups={groups}
+                byGroup={summaryQuery.data?.byGroup}
+                activeGroupUid={groupFilter}
+                branchByUid={branchByUid}
+                currencyView={currencyView}
+                groupByOwner={showUserFilter}
+              />
+            )}
+            {claimsQuery.hasNextPage ? (
+              <div className="flex justify-center py-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-border bg-background"
+                  disabled={isFetchingNext}
+                  onClick={() => claimsQuery.fetchNextPage()}
+                >
+                  {isFetchingNext ? 'Loading…' : 'Load more'}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </main>
 
       <ClaimCreateDialog open={createOpen} onOpenChange={setCreateOpen} />

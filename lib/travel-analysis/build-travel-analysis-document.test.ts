@@ -165,6 +165,26 @@ describe('normalizeStopArea', () => {
       }),
     ).toBe('-26.108, 28.057');
   });
+
+  it('keeps a split house number with the street and the suburb', () => {
+    expect(
+      normalizeStopArea({
+        place: '148, 150 Van Riebeeck Ave, Denver, Johannesburg, South Africa',
+        lat: '-',
+        lng: '-',
+      }),
+    ).toBe('148 150 Van Riebeeck Ave, Denver');
+  });
+
+  it('drops an Open Location Code and keeps the locality', () => {
+    expect(
+      normalizeStopArea({
+        place: 'V62H+F7 Kempton Park',
+        lat: '-26.1',
+        lng: '28.2',
+      }),
+    ).toBe('Kempton Park');
+  });
 });
 
 describe('clusterCommonAreas', () => {
@@ -195,7 +215,7 @@ describe('buildTravelAnalysisDocument', () => {
     expect(document.patterns.dwellBrief).toBe(1);
     expect(document.patterns.dwellWorking).toBe(2);
     expect(document.patterns.dwellLong).toBe(1);
-    expect(document.patterns.typicalStart).toBe('Sandton, Gauteng');
+    expect(document.patterns.typicalStart).toBe('Sandton');
     expect(document.fuelTotals.daysWithFuel).toBe(1);
     expect(document.disclaimer).toBe(TRAVEL_ANALYSIS_DISCLAIMER);
   });

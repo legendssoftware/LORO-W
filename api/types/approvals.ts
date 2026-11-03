@@ -1,3 +1,5 @@
+import { APPROVAL_TYPE_GROUPS } from '@/lib/approval-type-groups';
+
 export type ApprovalPerson = {
   uid?: number;
   name?: string;
@@ -107,10 +109,11 @@ export const APPROVAL_STATUS_FILTERS = [
   { value: 'rejected', label: 'Rejected' },
 ] as const;
 
+const approvalTypeFilterOptions = APPROVAL_TYPE_GROUPS.flatMap((group) => group.types).filter(
+  (type, index, types) => types.findIndex((candidate) => candidate.value === type.value) === index,
+);
+
 export const APPROVAL_TYPE_FILTERS = [
   { value: 'all', label: 'All types' },
-  { value: 'user_access', label: 'Employee access' },
-  { value: 'expense_claim', label: 'Expense claim' },
-  { value: 'leave_request', label: 'Leave request' },
-  { value: 'credit_limit', label: 'Credit limit' },
-] as const;
+  ...approvalTypeFilterOptions,
+];
