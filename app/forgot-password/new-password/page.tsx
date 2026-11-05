@@ -11,7 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthPageShell } from '@/components/auth-page-shell';
-import { LORO_RESET_EMAIL_KEY, LORO_RESET_CODE_KEY } from '@/lib/auth-reset-storage';
+import {
+  LORO_RESET_EMAIL_KEY,
+  clearPasswordResetCode,
+  getPasswordResetCode,
+} from '@/lib/auth-reset-storage';
 
 export default function NewPasswordPage() {
   const { isSignedIn } = useAuth();
@@ -36,7 +40,7 @@ export default function NewPasswordPage() {
 
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return;
-    const code = sessionStorage.getItem(LORO_RESET_CODE_KEY);
+    const code = getPasswordResetCode();
     if (!code) router.replace('/forgot-password');
     else setHasCode(true);
   }, [mounted, router]);
@@ -48,8 +52,7 @@ export default function NewPasswordPage() {
       setError('Passwords do not match.');
       return;
     }
-    const code =
-      typeof window !== 'undefined' ? sessionStorage.getItem(LORO_RESET_CODE_KEY) : null;
+    const code = getPasswordResetCode();
     if (!code) {
       setError('Session expired. Please start the reset process again.');
       router.replace('/forgot-password');
@@ -63,8 +66,8 @@ export default function NewPasswordPage() {
         code,
         password,
       });
+      clearPasswordResetCode();
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem(LORO_RESET_CODE_KEY);
         sessionStorage.removeItem(LORO_RESET_EMAIL_KEY);
       }
       if (result.status === 'needs_second_factor') {

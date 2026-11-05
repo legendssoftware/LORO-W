@@ -7,7 +7,7 @@ import { policyStatusLabel } from '@/app/reports/lib/reports-policy-format';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
-import { exportToCsv, exportToExcel } from '@/lib/utils/report-export';
+import { exportToCsv } from '@/lib/utils/csv-export';
 
 const CURRENCY_VIEW_LABEL: Record<ReportsTargetsCurrencyView, string> = {
   set: 'Target (set)',
@@ -236,12 +236,15 @@ export function exportReportsTargets(
 ): void {
   const headers = buildReportsTargetsExportHeaders(currencyView);
   const body = rows.map((row) => reportsTargetRowToExportRow(row, currencyView));
-  if (exportFormat === 'csv') exportToCsv(headers, body, baseName);
-  else {
+  if (exportFormat === 'csv') {
+    exportToCsv(headers, body, baseName);
+    return;
+  }
+  void import('@/lib/utils/report-export').then(({ exportToExcel }) => {
     exportToExcel(headers, body, baseName, {
       boldHeader: true,
       sheetName: 'Targets',
       freezeHeader: true,
     });
-  }
+  });
 }

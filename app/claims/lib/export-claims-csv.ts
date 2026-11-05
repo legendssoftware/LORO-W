@@ -1,5 +1,5 @@
 import type { Claim, ClaimGroup } from '@/api/types/claims';
-import { exportToCsv } from '@/lib/utils/report-export';
+import { exportToCsv } from '@/lib/utils/csv-export';
 
 function ownerName(claim: Claim): string {
   const person = claim.owner;

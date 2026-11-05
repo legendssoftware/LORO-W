@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadBlob } from '@/lib/utils/report-export';
+import { downloadBlob } from '@/lib/utils/download-file';
 import { buildTravelAnalysisDocument } from '@/lib/travel-analysis/build-travel-analysis-document';
 import {
   DAY_BY_DAY_HEAD,
@@ -8,7 +8,7 @@ import {
 } from '@/lib/travel-analysis/travel-analysis-pdf';
 import type { TravelAnalysisPayload } from '@/lib/travel-analysis/travel-analysis-types';
 
-vi.mock('@/lib/utils/report-export', () => ({
+vi.mock('@/lib/utils/download-file', () => ({
   downloadBlob: vi.fn(),
 }));
 

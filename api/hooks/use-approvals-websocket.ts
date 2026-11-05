@@ -36,7 +36,7 @@ export function useApprovalsWebSocket(params: {
         if (!token || !mounted) return;
 
         const socket = io(getWebSocketUrl(), {
-          query: { token },
+          auth: { token },
           transports: ['websocket'],
           upgrade: true,
         });

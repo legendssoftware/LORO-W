@@ -44,5 +44,7 @@ describe('visit media helpers', () => {
     expect(isAllowedVisitMediaFile(big)).toBe(false);
     const video = new File(['ok'], 'clip.mp4', { type: 'video/mp4' });
     expect(isAllowedVisitMediaFile(video)).toBe(false);
+    const htmlNamedPdf = new File(['<html>'], 'note.pdf', { type: 'text/html' });
+    expect(isAllowedVisitMediaFile(htmlNamedPdf)).toBe(false);
   });
 });

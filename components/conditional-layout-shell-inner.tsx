@@ -7,21 +7,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { AccessGuard } from '@/components/access-guard';
 import { PostAuthRouteHandler } from '@/components/post-auth-route-handler';
 import { SalesWelcomeFlow } from '@/components/sales-welcome-flow';
-import { DashboardAttendanceTour } from '@/components/dashboard-attendance-tour';
-import { LeadsTour } from '@/components/leads-tour';
-import { VisitsTour } from '@/components/visits-tour';
-import { StaffTour } from '@/components/staff-tour';
-import { ClientsTour } from '@/components/clients-tour';
-import { PipelineTour } from '@/components/pipeline-tour';
-import { PlanningTour } from '@/components/planning-tour';
-import { SettingsTour } from '@/components/settings-tour';
-import { CallsTour } from '@/components/calls-tour';
-import { ReportsTour } from '@/components/reports-tour';
-import { WellbeingTour } from '@/components/wellbeing-tour';
-import { VisualiserTour } from '@/components/visualiser-tour';
-import { PerformanceTour } from '@/components/performance-tour';
-import { AssetsTour } from '@/components/assets-tour';
-import { MerchandiseTour } from '@/components/merchandise-tour';
+import { RouteTours } from '@/components/route-tours';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import { useSessionSync } from '@/api/hooks';
 import { isClientPortalUser } from '@/lib/access';
@@ -54,25 +40,7 @@ export function ConditionalLayoutShellInner({ children }: { children: ReactNode 
           aria-hidden={blockChrome || undefined}
         >
           <ConditionalAppHeader />
-          {!isClient && (
-            <>
-              <DashboardAttendanceTour />
-              <LeadsTour />
-              <VisitsTour />
-              <StaffTour />
-              <ClientsTour />
-              <PipelineTour />
-              <PlanningTour />
-              <SettingsTour />
-              <CallsTour />
-              <ReportsTour />
-              <WellbeingTour />
-              <VisualiserTour />
-              <PerformanceTour />
-              <AssetsTour />
-              <MerchandiseTour />
-            </>
-          )}
+          {!isClient && <RouteTours />}
           <PostAuthRouteHandler />
           <ErrorBoundary>
             <AccessGuard>

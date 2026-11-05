@@ -6,6 +6,7 @@ import {
   buildLandingJsonLd,
   buildPageMetadata,
   PAGE_COPY,
+  safeJsonLd,
   siteName,
 } from '@/lib/seo';
 
@@ -35,7 +36,7 @@ export default async function Home() {
       <LandingHeroSeo />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(landingJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(landingJsonLd) }}
       />
       <LandingPage />
     </>

@@ -52,9 +52,6 @@ export function PerformancePolicySettingsSection({ orgRef }: { orgRef: string })
   useEffect(() => {
     const raw = settingsQuery.data?.settings?.performancePolicy;
     if (!settingsQuery.isSuccess) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55277d'},body:JSON.stringify({sessionId:'55277d',hypothesisId:'E',location:'performance-policy-settings-section.tsx:toForm',message:'settings form received stored policy',data:{storedPresent:raw!=null,storedEnabled:raw?.enabled??null,formEnabled:raw?.enabled===true,shadowMode:raw?.shadowMode??null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     setForm(toForm(raw));
   }, [settingsQuery.data?.settings?.performancePolicy, settingsQuery.isSuccess]);
 
