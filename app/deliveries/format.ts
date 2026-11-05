@@ -23,12 +23,22 @@ export function formatDeliveryException(exception: DeliveryException | null): st
   return EXCEPTION_LABELS[exception] ?? exception;
 }
 
-/** Badge tone per status, using the existing badge variants. */
-export function deliveryStatusVariant(status: DeliveryStatus): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (status === 'recorded') return 'default';
-  if (status === 'in_progress') return 'secondary';
-  if (status === 'cancelled') return 'destructive';
-  return 'outline';
+/** Pill colors that stay readable on the dark deliveries table. */
+export function deliveryStatusClassName(status: DeliveryStatus): string {
+  switch (status) {
+    case 'assigned':
+      return 'border-sky-500/40 bg-sky-500/15 text-sky-800 dark:text-sky-200';
+    case 'in_progress':
+      return 'border-amber-500/40 bg-amber-500/15 text-amber-900 dark:text-amber-200';
+    case 'recorded':
+      return 'border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200';
+    case 'cancelled':
+      return 'border-red-500/40 bg-red-500/15 text-red-800 dark:text-red-200';
+    default: {
+      const unreachable: never = status;
+      return unreachable;
+    }
+  }
 }
 
 /** `-25.995, 28.123` for a captured GPS pair, or an em dash when the stop has none. */

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ExternalLink, FileText } from 'lucide-react';
 import {
   canCancelDelivery,
   useCancelDeliveryMutation,
@@ -9,7 +10,6 @@ import {
   useDeliveryPdfMutation,
   useSessionSync,
 } from '@/api/hooks';
-import type { DeliveryDetail, DeliveryMediaKind } from '@/api/types/epod';
 import { canDispatchDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,19 +25,12 @@ import {
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import {
-  deliveryStatusVariant,
+  deliveryStatusClassName,
   formatCoordinates,
   formatDeliveryException,
   formatDeliveryStatus,
   formatDeliveryTimestamp,
 } from '@/app/deliveries/format';
-
-const MEDIA_LABELS: Record<DeliveryMediaKind, string> = {
-  goods: 'Goods photo',
-  document: 'Receiver document',
-  receiver: 'Receiver photo',
-  signature: 'Signature',
-};
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -48,53 +41,36 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProofMedia({ delivery }: { delivery: DeliveryDetail }) {
-  if (delivery.media.length === 0) {
-    return <p className="text-muted-foreground text-sm">No proof images were captured.</p>;
-  }
-
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {delivery.media.map((item) => (
-        <a
-          key={item.uid}
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="border-border flex flex-col gap-2 rounded-md border p-2 text-sm underline-offset-4 hover:underline"
-        >
-          {/* Proof images are arbitrary storage URLs, so the plain img tag avoids remote-loader config. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.url}
-            alt={MEDIA_LABELS[item.kind]}
-            className="bg-muted h-32 w-full rounded object-cover"
-          />
-          <span>{MEDIA_LABELS[item.kind]}</span>
-        </a>
-      ))}
-    </div>
-  );
-}
-
-export function DeliveryDetailContent({ uid }: { uid: number }) {
+export function DeliveryDetailContent({
+  uid,
+  onClose,
+}: {
+  uid: number;
+  /** When set, Back and a successful cancel close the host dialog instead of leaving the page. */
+  onClose?: () => void;
+}) {
   const router = useRouter();
+  const embedded = onClose != null;
   const query = useDelivery(uid);
   const { backendUserData } = useSessionSync();
-  const canDispatch = canDispatchDeliveries(backendUserData?.accessLevel);
+  const canDispatch = canDispatchDeliveries(backendUserData);
   const cancel = useCancelDeliveryMutation(uid);
   const pdf = useDeliveryPdfMutation(uid);
 
   if (query.isLoading) {
     return (
-      <div className="p-6">
+      <div className={embedded ? undefined : 'p-6'}>
         <LoadingSpinner />
       </div>
     );
   }
 
   if (query.isError || !query.data) {
-    return <p className="text-destructive p-6 text-sm">{getQueryErrorMessage(query.error)}</p>;
+    return (
+      <p className={embedded ? 'text-destructive text-sm' : 'text-destructive p-6 text-sm'}>
+        {getQueryErrorMessage(query.error)}
+      </p>
+    );
   }
 
   const delivery = query.data;
@@ -103,11 +79,15 @@ export function DeliveryDetailContent({ uid }: { uid: number }) {
 
   async function onCancel() {
     await cancel.mutateAsync();
+    if (onClose) {
+      onClose();
+      return;
+    }
     router.push('/deliveries');
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className={embedded ? 'flex flex-col gap-6' : 'flex flex-col gap-6 p-4 md:p-6'}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{delivery.deliveryNumber}</h1>
@@ -118,12 +98,18 @@ export function DeliveryDetailContent({ uid }: { uid: number }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={deliveryStatusVariant(delivery.status)}>
+          <Badge variant="outline" className={deliveryStatusClassName(delivery.status)}>
             {formatDeliveryStatus(delivery.status)}
           </Badge>
-          <Button variant="outline" asChild>
-            <Link href="/deliveries">Back</Link>
-          </Button>
+          {onClose ? (
+            <Button type="button" variant="outline" onClick={onClose}>
+              Back
+            </Button>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link href="/deliveries">Back</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -196,36 +182,53 @@ export function DeliveryDetailContent({ uid }: { uid: number }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Captured images</CardTitle>
+          <CardTitle className="text-base">Proof of delivery</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ProofMedia delivery={delivery} />
+        <CardContent className="flex flex-col gap-4">
+          <div className="border-border flex flex-col items-center gap-2 rounded-md border p-6 text-center">
+            <FileText className="text-violet-500" size={40} strokeWidth={1.5} />
+            <p className="text-sm">{delivery.deliveryNumber}.pdf</p>
+            <p className="text-muted-foreground text-xs">
+              {delivery.receiverName
+                ? `Signed by ${delivery.receiverName}${delivery.receiverCompany ? `, ${delivery.receiverCompany}` : ''}`
+                : 'Signed proof of delivery'}
+            </p>
+          </div>
+
+          {delivery.status !== 'recorded' ? (
+            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+              The ePOD document is available once the driver records this delivery.
+            </p>
+          ) : pdf.isPending ? (
+            <p className="text-muted-foreground text-sm">Preparing the document…</p>
+          ) : pdf.isError && !pdfUrl ? (
+            <p className="text-destructive text-sm">{getQueryErrorMessage(pdf.error)}</p>
+          ) : null}
+
+          {pdfUrl ? (
+            <Button asChild className="bg-violet-600 text-white hover:bg-violet-700">
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="size-4" />
+                Open document
+              </a>
+            </Button>
+          ) : delivery.status === 'recorded' ? (
+            <Button
+              type="button"
+              className="bg-violet-600 text-white hover:bg-violet-700"
+              disabled={pdf.isPending}
+              onClick={() => void pdf.mutateAsync()}
+              aria-label="Open the ePOD document"
+            >
+              <ExternalLink className="size-4" />
+              {pdf.isPending ? 'Preparing…' : 'Open document'}
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {pdfUrl ? (
-          <Button asChild>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-              Open ePOD PDF
-            </a>
-          </Button>
-        ) : delivery.status === 'recorded' ? (
-          <Button
-            type="button"
-            disabled={pdf.isPending}
-            onClick={() => void pdf.mutateAsync()}
-            aria-label="Generate the ePOD PDF"
-          >
-            {pdf.isPending ? 'Preparing…' : 'Get ePOD PDF'}
-          </Button>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            The ePOD PDF is available once the driver records this delivery.
-          </p>
-        )}
-
-        {showCancel ? (
+      {showCancel ? (
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -235,10 +238,9 @@ export function DeliveryDetailContent({ uid }: { uid: number }) {
           >
             {cancel.isPending ? 'Cancelling…' : 'Cancel delivery'}
           </Button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      {pdf.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(pdf.error)}</p> : null}
       {cancel.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(cancel.error)}</p> : null}
     </div>
   );

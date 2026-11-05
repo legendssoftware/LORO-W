@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { PackagePlus } from 'lucide-react';
 import { useDeliveries, useDeliveryDrivers, useSessionSync, useTokenReady } from '@/api/hooks';
 import type { DeliveryStatus } from '@/api/types/epod';
-import { canDispatchDeliveries } from '@/lib/access';
+import { canDispatchDeliveries, canViewOrganisationDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -20,9 +19,10 @@ import {
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
+import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
 import {
-  deliveryStatusVariant,
+  deliveryStatusClassName,
   formatDeliveryStatus,
   todayDateString,
 } from '@/app/deliveries/format';
@@ -32,22 +32,24 @@ const ANY_VALUE = 'all';
 export function DeliveriesListContent() {
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
-  const canDispatch = canDispatchDeliveries(backendUserData?.accessLevel);
+  const canDispatch = canDispatchDeliveries(backendUserData);
+  const canViewOrganisation = canViewOrganisationDeliveries(backendUserData);
 
   const [date, setDate] = useState<string | null>(todayDateString);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedUid, setSelectedUid] = useState<number | null>(null);
 
   const query = useDeliveries(
     {
       ...(date ? { date } : {}),
       ...(status !== ANY_VALUE ? { status: status as DeliveryStatus } : {}),
-      ...(canDispatch && driverUid !== ANY_VALUE ? { driverUid: Number(driverUid) } : {}),
+      ...(canViewOrganisation && driverUid !== ANY_VALUE ? { driverUid: Number(driverUid) } : {}),
     },
     isTokenReady,
   );
-  const driversQuery = useDeliveryDrivers(isTokenReady && canDispatch);
+  const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
 
   const rows = query.data?.deliveries ?? [];
 
@@ -62,13 +64,20 @@ export function DeliveriesListContent() {
       </div>
 
       {canDispatch ? <AssignDeliveryDialog open={assignOpen} onOpenChange={setAssignOpen} /> : null}
+      <DeliveryDetailDialog
+        uid={selectedUid}
+        open={selectedUid != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedUid(null);
+        }}
+      />
 
       <DeliveriesFiltersBar
         date={date}
         onDateChange={setDate}
         status={status}
         onStatusChange={setStatus}
-        showDriverFilter={canDispatch}
+        showDriverFilter={canViewOrganisation}
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
         drivers={driversQuery.data ?? []}
@@ -113,14 +122,21 @@ export function DeliveriesListContent() {
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.uid}>
+              <TableRow
+                key={row.uid}
+                tabIndex={0}
+                className="cursor-pointer"
+                aria-label={`Open ${row.deliveryNumber}`}
+                onClick={() => setSelectedUid(row.uid)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedUid(row.uid);
+                  }
+                }}
+              >
                 <TableCell>
-                  <Link
-                    className="font-medium underline-offset-4 hover:underline"
-                    href={`/deliveries/${row.uid}`}
-                  >
-                    {row.deliveryNumber}
-                  </Link>
+                  <span className="font-medium">{row.deliveryNumber}</span>
                   <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
                 </TableCell>
                 <TableCell>
@@ -131,7 +147,9 @@ export function DeliveriesListContent() {
                 </TableCell>
                 <TableCell>{row.routeCode || '—'}</TableCell>
                 <TableCell>
-                  <Badge variant={deliveryStatusVariant(row.status)}>{formatDeliveryStatus(row.status)}</Badge>
+                  <Badge variant="outline" className={deliveryStatusClassName(row.status)}>
+                    {formatDeliveryStatus(row.status)}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
               </TableRow>

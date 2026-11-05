@@ -540,15 +540,37 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
 export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
 
 /**
- * Whether the user may assign and cancel ePOD deliveries.
- * Mirrors the server DISPATCH_ACCESS_LEVELS — admin, manager, and owner only.
- * HR can open `/deliveries` but must not dispatch, so this is deliberately
- * narrower than canManageStaffUsers.
+ * Whether the user may assign, cancel, and otherwise run ePOD dispatch.
+ * Admin, manager, and owner qualify. Workforce type management qualifies on its own.
+ * HR can open `/deliveries` but must not dispatch.
  */
-export function canDispatchDeliveries(accessLevel: string | undefined): boolean {
-    const level = normalize(accessLevel);
-    if (!level) return false;
-    return level === 'admin' || level === 'manager' || level === 'owner';
+export function canDispatchDeliveries(
+    accessLevelOrUser:
+        | string
+        | { accessLevel?: string | null; workforceType?: string | null }
+        | null
+        | undefined,
+): boolean {
+    if (accessLevelOrUser == null || accessLevelOrUser === '') return false;
+    const accessLevel = typeof accessLevelOrUser === 'string' ? accessLevelOrUser : accessLevelOrUser.accessLevel;
+    const workforceType = typeof accessLevelOrUser === 'string' ? undefined : accessLevelOrUser.workforceType;
+    const level = normalize(accessLevel ?? undefined);
+    if (level === 'admin' || level === 'manager' || level === 'owner') return true;
+    return normalize(workforceType ?? undefined) === 'management';
+}
+
+/**
+ * Whether the deliveries list shows every stop in the organisation.
+ * Dispatch access levels qualify. Workforce type management qualifies on its own,
+ * so a management profile with access level user still sees the office list.
+ */
+export function canViewOrganisationDeliveries(user: {
+    accessLevel?: string;
+    workforceType?: string | null;
+} | null | undefined): boolean {
+    if (!user) return false;
+    if (canDispatchDeliveries(user.accessLevel)) return true;
+    return normalize(user.workforceType ?? undefined) === 'management';
 }
 
 /** Whether the user may invite or provision staff accounts. */

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canAccess,
   canDispatchDeliveries,
+  canViewOrganisationDeliveries,
   getAllowedRoutes,
   STANDARD_USER_PATHS,
 } from './access';
@@ -27,6 +28,30 @@ describe('canDispatchDeliveries', () => {
     expect(canDispatchDeliveries('client')).toBe(false);
     expect(canDispatchDeliveries(undefined)).toBe(false);
     expect(canDispatchDeliveries('')).toBe(false);
+  });
+
+  it('lets a management workforce type dispatch even when the access level is user', () => {
+    expect(canDispatchDeliveries({ accessLevel: 'user', workforceType: 'management' })).toBe(true);
+    expect(canDispatchDeliveries({ accessLevel: 'hr', workforceType: 'field_employee' })).toBe(false);
+  });
+});
+
+describe('canViewOrganisationDeliveries', () => {
+  it('shows the organisation list to admin, manager, and owner', () => {
+    expect(canViewOrganisationDeliveries({ accessLevel: 'admin', workforceType: 'field_employee' })).toBe(true);
+    expect(canViewOrganisationDeliveries({ accessLevel: 'manager' })).toBe(true);
+    expect(canViewOrganisationDeliveries({ accessLevel: 'owner' })).toBe(true);
+  });
+
+  it('reads workforce type so management sees the organisation list without a manager access level', () => {
+    expect(canViewOrganisationDeliveries({ accessLevel: 'user', workforceType: 'management' })).toBe(true);
+    expect(canViewOrganisationDeliveries({ accessLevel: 'hr', workforceType: ' Management ' })).toBe(true);
+  });
+
+  it('keeps other staff on their own stops', () => {
+    expect(canViewOrganisationDeliveries({ accessLevel: 'user', workforceType: 'driver' })).toBe(false);
+    expect(canViewOrganisationDeliveries({ accessLevel: 'user', workforceType: 'field_employee' })).toBe(false);
+    expect(canViewOrganisationDeliveries(undefined)).toBe(false);
   });
 });
 

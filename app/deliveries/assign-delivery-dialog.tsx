@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Package, PackagePlus, Truck } from 'lucide-react';
 import {
-  filterAssignableOrders,
   useAssignDeliveryMutation,
   useAssignableOrders,
   useDeliveryDrivers,
@@ -21,8 +21,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { DatePickerField } from '@/components/ui/date-picker-field';
+import {
+  SearchableOptionListPicker,
+  type SearchableOptionRow,
+} from '@/components/filters/searchable-filter-comboboxes';
+import {
+  DETAIL_DIALOG_CONTENT_CLASS,
+  DetailDialogCloseButton,
+} from '@/components/detail-dialog/detail-dialog-primitives';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { todayDateString } from '@/app/deliveries/format';
+
+const EMPTY_VALUE = '';
+
+const assignButtonClass =
+  'bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white';
 
 export interface AssignDeliveryDialogProps {
   open: boolean;
@@ -36,24 +49,44 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
   const driversQuery = useDeliveryDrivers(isTokenReady && open);
   const assign = useAssignDeliveryMutation();
 
-  const [search, setSearch] = useState('');
-  const [orderUid, setOrderUid] = useState('');
-  const [driverUid, setDriverUid] = useState('');
+  const [orderUid, setOrderUid] = useState(EMPTY_VALUE);
+  const [driverUid, setDriverUid] = useState(EMPTY_VALUE);
   const [routeCode, setRouteCode] = useState('');
   const [scheduledDate, setScheduledDate] = useState<string | null>(todayDateString);
 
-  const orders = useMemo(
-    () => filterAssignableOrders(ordersQuery.data ?? [], search),
-    [ordersQuery.data, search],
+  const orders = ordersQuery.data ?? [];
+
+  const orderOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      orders.map((order) => ({
+        value: String(order.uid),
+        label: `${order.orderNumber} · ${order.clientName || 'No client'} · ${order.itemCount} items`,
+        icon: <Package className="size-4 shrink-0" />,
+        searchExtra: `${order.orderNumber} ${order.clientName} ${order.status}`,
+      })),
+    [orders],
+  );
+
+  const driverOptions = useMemo<SearchableOptionRow[]>(
+    () =>
+      (driversQuery.data ?? []).map((driver) => {
+        const name = `${driver.name} ${driver.surname}`.trim();
+        return {
+          value: String(driver.uid),
+          label: driver.phone ? `${name} · ${driver.phone}` : name,
+          icon: <Truck className="size-4 shrink-0" />,
+          searchExtra: `${name} ${driver.phone ?? ''} ${driver.workforceType ?? ''} ${driver.role ?? ''}`,
+        };
+      }),
+    [driversQuery.data],
   );
 
   const isComplete =
     Boolean(orderUid) && Boolean(driverUid) && routeCode.trim().length > 0 && Boolean(scheduledDate);
 
   function reset() {
-    setSearch('');
-    setOrderUid('');
-    setDriverUid('');
+    setOrderUid(EMPTY_VALUE);
+    setDriverUid(EMPTY_VALUE);
     setRouteCode('');
     setScheduledDate(todayDateString());
     assign.reset();
@@ -64,24 +97,32 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     onOpenChange(next);
   }
 
-  async function onAssign() {
-    if (!isComplete || !scheduledDate) return;
-    await assign.mutateAsync({
-      orderUid: Number(orderUid),
-      driverUid: Number(driverUid),
-      routeCode: routeCode.trim(),
-      scheduledDate,
-    });
-    handleOpenChange(false);
+  function onAssign(event: FormEvent) {
+    event.preventDefault();
+    if (!isComplete || !scheduledDate || assign.isPending) return;
+    void assign
+      .mutateAsync({
+        orderUid: Number(orderUid),
+        driverUid: Number(driverUid),
+        routeCode: routeCode.trim(),
+        scheduledDate,
+      })
+      .then(() => handleOpenChange(false));
   }
 
   const isLoadingOptions = ordersQuery.isLoading || driversQuery.isLoading;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-2rem)] flex-col overflow-y-auto sm:max-w-lg">
+      <DialogContent showCloseButton={false} className={DETAIL_DIALOG_CONTENT_CLASS}>
+        <div className="absolute top-4 right-4 z-10">
+          <DetailDialogCloseButton />
+        </div>
         <DialogHeader>
-          <DialogTitle>Assign delivery</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <PackagePlus className="size-5" />
+            Assign delivery
+          </DialogTitle>
           <DialogDescription>
             Pick a packed order and the driver who will deliver it. The order moves to out for delivery.
           </DialogDescription>
@@ -97,33 +138,26 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
         ) : null}
 
         {!isLoadingOptions ? (
-          <div className="grid gap-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="assign-search">Find an order</Label>
-              <Input
-                id="assign-search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Order number or client"
-                aria-label="Search assignable orders"
+          <form onSubmit={onAssign} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Order</Label>
+              <SearchableOptionListPicker
+                selectedValue={orderUid}
+                onValueChange={setOrderUid}
+                options={orderOptions}
+                includeAllOption={false}
+                allOptionValue={EMPTY_VALUE}
+                placeholderLabelWhenAll="Select an order"
+                searchPlaceholder="Search order number or client…"
+                emptyMessage={
+                  ordersQuery.data?.length
+                    ? 'No order matches that search.'
+                    : 'No orders are waiting to be assigned.'
+                }
+                triggerIcon={<Package className="size-4 shrink-0" />}
+                triggerClassName="h-9 w-full"
               />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="assign-order">Order</Label>
-              <select
-                id="assign-order"
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-                value={orderUid}
-                onChange={(event) => setOrderUid(event.target.value)}
-              >
-                <option value="">Select an order</option>
-                {orders.map((order) => (
-                  <option key={order.uid} value={order.uid}>
-                    {`${order.orderNumber} · ${order.clientName || 'No client'} · ${order.itemCount} items`}
-                  </option>
-                ))}
-              </select>
               {!ordersQuery.isError && orders.length === 0 ? (
                 <p className="text-muted-foreground text-xs">
                   {ordersQuery.data?.length
@@ -133,69 +167,70 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="assign-driver">Driver</Label>
-              <select
-                id="assign-driver"
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-                value={driverUid}
-                onChange={(event) => setDriverUid(event.target.value)}
-              >
-                <option value="">Select a driver</option>
-                {(driversQuery.data ?? []).map((driver) => (
-                  <option key={driver.uid} value={driver.uid}>
-                    {`${driver.name} ${driver.surname}`.trim()}
-                    {driver.phone ? ` · ${driver.phone}` : ''}
-                  </option>
-                ))}
-              </select>
-              {!driversQuery.isError && (driversQuery.data ?? []).length === 0 ? (
+            <div className="space-y-1.5">
+              <Label>Driver</Label>
+              <SearchableOptionListPicker
+                selectedValue={driverUid}
+                onValueChange={setDriverUid}
+                options={driverOptions}
+                includeAllOption={false}
+                allOptionValue={EMPTY_VALUE}
+                placeholderLabelWhenAll="Select a driver"
+                searchPlaceholder="Search drivers…"
+                emptyMessage="No driver profiles yet. Set a staff member's workforce type to driver."
+                triggerIcon={<Truck className="size-4 shrink-0" />}
+                triggerClassName="h-9 w-full"
+              />
+              {!driversQuery.isError && driverOptions.length === 0 ? (
                 <p className="text-muted-foreground text-xs">
-                  No driver profiles yet. Set a staff member&apos;s workforce type or role to driver.
+                  No driver profiles yet. Set a staff member&apos;s workforce type to driver.
                 </p>
               ) : null}
             </div>
-
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="assign-route">Route code</Label>
-              <Input
-                id="assign-route"
-                value={routeCode}
-                onChange={(event) => setRouteCode(event.target.value)}
-                placeholder="GP-07"
-                aria-label="Route code"
-              />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="assign-date">Scheduled day</Label>
-              <DatePickerField
-                id="assign-date"
-                value={scheduledDate}
-                onChange={setScheduledDate}
-                aria-label="Scheduled day"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="assign-route">Route code</Label>
+                <Input
+                  id="assign-route"
+                  value={routeCode}
+                  onChange={(event) => setRouteCode(event.target.value)}
+                  placeholder="GP-07"
+                  aria-label="Route code"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="assign-date">Scheduled day</Label>
+                <DatePickerField
+                  id="assign-date"
+                  value={scheduledDate}
+                  onChange={setScheduledDate}
+                  aria-label="Scheduled day"
+                  className="w-full"
+                />
+              </div>
             </div>
 
             {assign.isError ? (
               <p className="text-destructive text-sm">{getQueryErrorMessage(assign.error)}</p>
             ) : null}
-          </div>
-        ) : null}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={!isComplete || assign.isPending}
-            onClick={() => void onAssign()}
-            aria-label="Assign this delivery"
-          >
-            {assign.isPending ? 'Assigning…' : 'Assign'}
-          </Button>
-        </DialogFooter>
+            <DialogFooter className="flex flex-wrap items-center justify-end gap-4 sm:gap-4">
+              <Button type="button" variant="cancel" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className={assignButtonClass}
+                disabled={!isComplete || assign.isPending}
+                aria-label="Assign this delivery"
+              >
+                {assign.isPending ? 'Assigning…' : 'Assign'}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
