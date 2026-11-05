@@ -13,6 +13,7 @@ export const STANDARD_USER_PATHS = [
     "/planning",
     "/claims",
     "/takeoff",
+    "/deliveries",
     "/assets",
     "/payslips",
     "/reports",
@@ -524,6 +525,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/clients", label: "Clients" },
     { path: "/claims", label: "Claims" },
     { path: "/takeoff", label: "Takeoff" },
+    { path: "/deliveries", label: "Deliveries" },
     { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
@@ -536,6 +538,40 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
 
 /** Sidebar item for user settings (calendar for all staff; org tabs for admin / owner / manager). */
 export const STAFF_SETTINGS_ROUTE = { path: "/settings", label: "Settings" } as const;
+
+/**
+ * Whether the user may assign, cancel, and otherwise run ePOD dispatch.
+ * Admin, manager, and owner qualify. Workforce type management qualifies on its own.
+ * HR can open `/deliveries` but must not dispatch.
+ */
+export function canDispatchDeliveries(
+    accessLevelOrUser:
+        | string
+        | { accessLevel?: string | null; workforceType?: string | null }
+        | null
+        | undefined,
+): boolean {
+    if (accessLevelOrUser == null || accessLevelOrUser === '') return false;
+    const accessLevel = typeof accessLevelOrUser === 'string' ? accessLevelOrUser : accessLevelOrUser.accessLevel;
+    const workforceType = typeof accessLevelOrUser === 'string' ? undefined : accessLevelOrUser.workforceType;
+    const level = normalize(accessLevel ?? undefined);
+    if (level === 'admin' || level === 'manager' || level === 'owner') return true;
+    return normalize(workforceType ?? undefined) === 'management';
+}
+
+/**
+ * Whether the deliveries list shows every stop in the organisation.
+ * Dispatch access levels qualify. Workforce type management qualifies on its own,
+ * so a management profile with access level user still sees the office list.
+ */
+export function canViewOrganisationDeliveries(user: {
+    accessLevel?: string;
+    workforceType?: string | null;
+} | null | undefined): boolean {
+    if (!user) return false;
+    if (canDispatchDeliveries(user.accessLevel)) return true;
+    return normalize(user.workforceType ?? undefined) === 'management';
+}
 
 /** Whether the user may invite or provision staff accounts. */
 export function canManageStaffUsers(accessLevel: string | undefined): boolean {
@@ -587,6 +623,7 @@ export function getAllowedRoutes(
         { path: "/clients", label: "Clients" },
         { path: "/claims", label: "Claims" },
         { path: "/takeoff", label: "Takeoff" },
+        { path: "/deliveries", label: "Deliveries" },
         { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },

@@ -27,6 +27,7 @@ export function DatePickerField({
   placeholder = 'DD/MM/YYYY',
   disabled,
   className,
+  popoverClassName,
   id,
   preset = 'default',
   'aria-label': ariaLabel,
@@ -38,6 +39,8 @@ export function DatePickerField({
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Extra classes for the calendar popover, such as a higher z-index inside a dialog. */
+  popoverClassName?: string;
   id?: string;
   preset?: DatePickerPreset;
   'aria-label'?: string;
@@ -111,7 +114,7 @@ export function DatePickerField({
             <CalendarIcon className="size-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className={cn('z-[10001] w-auto p-0', popoverClassName)} align="end">
           <Calendar
             mode="single"
             captionLayout="dropdown"

@@ -179,6 +179,11 @@ export const PAGE_COPY = {
     description:
       'Record merchandise visits with a client reference, photo, and comments. Managers publish or reject logs from the same inbox.',
   },
+  deliveries: {
+    title: 'Deliveries — Dispatch and proof of delivery',
+    description:
+      'Assign shop orders to a driver and review the signed proof of delivery: quantities, exceptions, receiver details, arrival GPS, and the ePOD PDF.',
+  },
   takeoff: {
     title: 'Takeoff — Ceiling and partition quantities',
     description:
