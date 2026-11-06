@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getAllBlogSlugs, getBlogPost } from '@/lib/blog';
 import { MarkdownBody } from '@/components/marketing/markdown-body';
 import { MarketingCta } from '@/components/marketing/marketing-shell';
-import { buildPageMetadata, getSiteUrl, PAGE_COPY } from '@/lib/seo';
+import { buildPageMetadata, getSiteUrl, PAGE_COPY, safeJsonLd } from '@/lib/seo';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -52,7 +52,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     <div className="w-full">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }}
       />
       <Link
         href="/blog"

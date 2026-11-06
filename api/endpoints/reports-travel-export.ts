@@ -3,7 +3,7 @@
  */
 
 import type { AxiosInstance } from 'axios';
-import { downloadBlob } from '@/lib/utils/report-export';
+import { downloadBlob } from '@/lib/utils/download-file';
 
 export type TravelExportParams = {
   from: string;

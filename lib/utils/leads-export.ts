@@ -5,7 +5,7 @@
 
 import { format } from 'date-fns';
 import type { LeadListItem } from '@/api/types/leads';
-import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
+import { exportToCsv } from './csv-export';
 
 export const LEADS_EXPORT_HEADERS = [
   'Name',
@@ -63,7 +63,17 @@ export function exportLeads(
 ): void {
   const rows = leads.map(leadToExportRow);
   const headers = [...LEADS_EXPORT_HEADERS];
-  if (exportFormat === 'csv') exportToCsv(headers, rows, baseName);
-  else if (exportFormat === 'excel') exportToExcel(headers, rows, baseName);
-  else exportToPdf(headers, rows, baseName);
+  if (exportFormat === 'csv') {
+    exportToCsv(headers, rows, baseName);
+    return;
+  }
+  if (exportFormat === 'excel') {
+    void import('./report-export').then(({ exportToExcel }) => {
+      exportToExcel(headers, rows, baseName);
+    });
+    return;
+  }
+  void import('./report-export').then(({ exportToPdf }) => {
+    exportToPdf(headers, rows, baseName);
+  });
 }

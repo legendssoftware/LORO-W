@@ -11,7 +11,7 @@ import {
   CATEGORY_LABELS,
   resolveCompetitorCategory,
 } from '@/lib/site-opportunity/compute/competitor-category';
-import { downloadBlob } from '@/lib/utils/report-export';
+import { downloadBlob } from '@/lib/utils/download-file';
 import { buildSimulationExportFilename } from '@/lib/site-opportunity/build-simulation-export-document';
 import {
   SIMULATION_EXPORT_LEGAL_DISCLAIMER,

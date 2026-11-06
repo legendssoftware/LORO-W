@@ -21,11 +21,7 @@ import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
-import {
-  deliveryStatusClassName,
-  formatDeliveryStatus,
-  todayDateString,
-} from '@/app/deliveries/format';
+import { deliveryStatusClassName, formatDeliveryStatus } from '@/app/deliveries/format';
 
 const ANY_VALUE = 'all';
 
@@ -35,7 +31,7 @@ export function DeliveriesListContent() {
   const canDispatch = canDispatchDeliveries(backendUserData);
   const canViewOrganisation = canViewOrganisationDeliveries(backendUserData);
 
-  const [date, setDate] = useState<string | null>(todayDateString);
+  const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
   const [assignOpen, setAssignOpen] = useState(false);

@@ -491,7 +491,7 @@ export function canAccess(
     }
 
     if (!level) {
-        return true;
+        return false;
     }
 
     if (RESTRICTED_ACCESS_LEVELS.has(level)) {
@@ -667,7 +667,11 @@ export function getAllowedRoutes(
         );
     }
 
-    if (!level || !RESTRICTED_ACCESS_LEVELS.has(level)) {
+    if (!level) {
+        return [];
+    }
+
+    if (!RESTRICTED_ACCESS_LEVELS.has(level)) {
         return fullNav;
     }
 

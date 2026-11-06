@@ -5,6 +5,12 @@ export const MERCHANDISE_PHOTO_TOO_LARGE = 'Photo must be under 5 MB';
 
 const IMAGE_EXTENSION = /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i;
 
+export const MERCHANDISE_PHOTO_NOT_ALLOWED = 'SVG photos are not allowed';
+
+function isSvgMerchandiseFile(file: File): boolean {
+  return file.type.toLowerCase() === 'image/svg+xml' || /\.svg$/i.test(file.name);
+}
+
 export const MERCHANDISE_PHOTO_STEPS: ReadonlyArray<{ maxEdge: number; quality: number }> = [
   { maxEdge: 1920, quality: 0.82 },
   { maxEdge: 1920, quality: 0.66 },
@@ -20,6 +26,7 @@ type EncodeMerchandisePhoto = (source: File, maxEdge: number, quality: number) =
  * Whether the file is a photo the merchandise form can shrink before upload.
  */
 export function isMerchandisePhotoFile(file: File): boolean {
+  if (isSvgMerchandiseFile(file)) return false;
   if (file.type.toLowerCase().startsWith('image/')) return true;
   return IMAGE_EXTENSION.test(file.name);
 }
@@ -102,6 +109,9 @@ export async function compressMerchandisePhoto(
   options?: { maxBytes?: number; encode?: EncodeMerchandisePhoto },
 ): Promise<File> {
   const maxBytes = options?.maxBytes ?? MERCHANDISE_PHOTO_MAX_BYTES;
+  if (isSvgMerchandiseFile(file)) {
+    throw new Error(MERCHANDISE_PHOTO_NOT_ALLOWED);
+  }
   if (!isMerchandisePhotoFile(file) || file.size < maxBytes) return file;
 
   const encode = options?.encode ?? encodeMerchandisePhoto;

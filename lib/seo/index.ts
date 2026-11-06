@@ -13,6 +13,7 @@ export {
 } from './marketing-paths';
 export { APP_DISALLOW_PATHS } from './app-disallow-paths';
 export { buildLandingJsonLd } from './build-landing-json-ld';
+export { safeJsonLd } from './safe-json-ld';
 
 const defaultTitleSegment =
   'Field sales software for South Africa — visits, routes & pipeline';

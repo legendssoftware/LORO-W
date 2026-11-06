@@ -29,6 +29,7 @@ export function SignInForm() {
         },
       }}
       signUpUrl="/sign-up"
+      forceRedirectUrl={returnPath}
       fallbackRedirectUrl={returnPath}
     />
   );
