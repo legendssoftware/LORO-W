@@ -12,6 +12,14 @@ describe('compressMerchandisePhoto', () => {
     expect(isMerchandisePhotoFile(new File(['a'], 'shelf.jpg', { type: 'image/jpeg' }))).toBe(true);
     expect(isMerchandisePhotoFile(new File(['a'], 'IMG.HEIC', { type: '' }))).toBe(true);
     expect(isMerchandisePhotoFile(new File(['a'], 'notes.pdf', { type: 'application/pdf' }))).toBe(false);
+    expect(isMerchandisePhotoFile(new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' }))).toBe(false);
+  });
+
+  it('rejects SVG instead of uploading it unchanged', async () => {
+    const file = new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' });
+    const encode = vi.fn();
+    await expect(compressMerchandisePhoto(file, { encode })).rejects.toThrow(/SVG/);
+    expect(encode).not.toHaveBeenCalled();
   });
 
   it('returns a photo already under 5 MB without encoding', async () => {

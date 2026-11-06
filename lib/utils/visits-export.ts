@@ -8,7 +8,7 @@ import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
 import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
-import { exportToCsv, exportToExcel, exportToPdf } from './report-export';
+import { exportToCsv } from './csv-export';
 
 /** Minimal branch ref from API (visit, owner, or user list). `name` is display label (alias preferred when resolving). */
 export type VisitBranchRef = { uid?: number; name?: string; alias?: string | null };
@@ -468,7 +468,17 @@ export function exportVisits(
 ): void {
   const rows = checkIns.map(visitToExportRow);
   const headers = [...VISITS_EXPORT_HEADERS];
-  if (exportFormat === 'csv') exportToCsv(headers, rows, baseName);
-  else if (exportFormat === 'excel') exportToExcel(headers, rows, baseName);
-  else exportToPdf(headers, rows, baseName);
+  if (exportFormat === 'csv') {
+    exportToCsv(headers, rows, baseName);
+    return;
+  }
+  if (exportFormat === 'excel') {
+    void import('./report-export').then(({ exportToExcel }) => {
+      exportToExcel(headers, rows, baseName);
+    });
+    return;
+  }
+  void import('./report-export').then(({ exportToPdf }) => {
+    exportToPdf(headers, rows, baseName);
+  });
 }

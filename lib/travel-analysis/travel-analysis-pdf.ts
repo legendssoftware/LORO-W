@@ -1,5 +1,5 @@
 import type { jsPDF } from 'jspdf';
-import { downloadBlob } from '@/lib/utils/report-export';
+import { downloadBlob } from '@/lib/utils/download-file';
 import {
   buildTravelAnalysisFilename,
   formatCountryRegion,

@@ -1,13 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ComponentType } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useSessionSync } from '@/api/hooks';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getReportsDataScope } from '@/lib/access';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
-import { REPORTS_TABS, reportsSubtitle } from './lib/reports-registry';
+import { REPORTS_TABS, reportsSubtitle, type ReportsTabId } from './lib/reports-registry';
+
+function ReportsTabFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <LoadingSpinner />
+    </div>
+  );
+}
+
+const ReportsOverviewTab = dynamic(
+  () => import('./components/reports-overview-tab').then((mod) => mod.ReportsOverviewTab),
+  { loading: ReportsTabFallback },
+);
+const ReportsPolicyTab = dynamic(
+  () => import('./components/reports-policy-tab').then((mod) => mod.ReportsPolicyTab),
+  { loading: ReportsTabFallback },
+);
+const ReportsCallQualityTab = dynamic(
+  () => import('./components/reports-call-quality-tab').then((mod) => mod.ReportsCallQualityTab),
+  { loading: ReportsTabFallback },
+);
+const ReportsInsightsTab = dynamic(
+  () => import('./components/reports-insights-tab').then((mod) => mod.ReportsInsightsTab),
+  { loading: ReportsTabFallback },
+);
+const ReportsTasksTab = dynamic(
+  () => import('./components/reports-tasks-tab').then((mod) => mod.ReportsTasksTab),
+  { loading: ReportsTabFallback },
+);
+
+function reportsTabComponent(id: ReportsTabId): ComponentType {
+  switch (id) {
+    case 'targets':
+      return ReportsOverviewTab;
+    case 'policy':
+      return ReportsPolicyTab;
+    case 'call-quality':
+      return ReportsCallQualityTab;
+    case 'insights':
+      return ReportsInsightsTab;
+    case 'tasks':
+      return ReportsTasksTab;
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
 
 const reportsTabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -70,7 +120,7 @@ export function ReportsContent() {
           </TabsList>
 
           {REPORTS_TABS.map((tab) => {
-            const TabComponent = tab.component;
+            const TabComponent = reportsTabComponent(tab.id);
             return (
               <TabsContent
                 key={tab.id}

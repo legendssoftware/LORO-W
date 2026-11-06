@@ -2,6 +2,7 @@
 
 import toast from 'react-hot-toast';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Clock } from 'lucide-react';
 import {
@@ -32,7 +33,16 @@ import { ClientDashboardHome } from '@/app/client-portal/components/client-dashb
 import { PulseDialog } from '@/components/pulse-dialog';
 import { usePulseMe, useSubmitPulseMutation } from '@/api/hooks/use-pulse';
 import type { PulsePeriod, PulseSubmitBody } from '@/api/types/pulse';
-import { DashboardVariableRemCard } from '@/components/dashboard-variable-rem-card';
+
+const DashboardVariableRemCard = dynamic(
+  () =>
+    import('@/components/dashboard-variable-rem-card').then(
+      (mod) => mod.DashboardVariableRemCard,
+    ),
+  {
+    loading: () => <Skeleton className="h-40 w-full" />,
+  },
+);
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);

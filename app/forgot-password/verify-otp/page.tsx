@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthPageShell } from '@/components/auth-page-shell';
-import { LORO_RESET_EMAIL_KEY, LORO_RESET_CODE_KEY } from '@/lib/auth-reset-storage';
+import { LORO_RESET_EMAIL_KEY, setPasswordResetCode } from '@/lib/auth-reset-storage';
 
 export default function VerifyOtpPage() {
   const { isSignedIn } = useAuth();
@@ -37,8 +37,8 @@ export default function VerifyOtpPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (typeof window !== 'undefined' && code.trim()) {
-      sessionStorage.setItem(LORO_RESET_CODE_KEY, code.trim());
+    if (code.trim()) {
+      setPasswordResetCode(code.trim());
       router.push('/forgot-password/new-password');
     } else {
       setError('Please enter the code from your email.');

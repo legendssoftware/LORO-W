@@ -34,12 +34,15 @@ const ALLOWED_VISIT_MEDIA_MIME = new Set([
 ]);
 
 /**
- * Whether a file is within the 5MB limit and a type accepted by POST /docs/upload.
+ * Whether a file is within the 5MB limit and both the extension and MIME are accepted.
+ * An empty MIME is allowed when the extension matches, because some phones omit it.
  */
 export function isAllowedVisitMediaFile(file: File): boolean {
   if (file.size > MAX_VISIT_MEDIA_BYTES) return false;
-  if (ALLOWED_VISIT_MEDIA_EXT.test(file.name)) return true;
-  return ALLOWED_VISIT_MEDIA_MIME.has(file.type.toLowerCase());
+  if (!ALLOWED_VISIT_MEDIA_EXT.test(file.name)) return false;
+  const mime = file.type.toLowerCase();
+  if (mime === '' || mime === 'application/octet-stream') return true;
+  return ALLOWED_VISIT_MEDIA_MIME.has(mime);
 }
 
 export type VisitMediaFileKind = 'PDF' | 'WORD' | 'MP4' | 'IMG' | 'FILE';

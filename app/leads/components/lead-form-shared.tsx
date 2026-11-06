@@ -33,6 +33,8 @@ import { Image as ImageIcon, Paperclip as PaperclipIcon } from 'lucide-react';
 import { ChevronDownIcon, ChevronUpIcon, XIcon, MapPinIcon } from '@/lib/icons';
 import type { CreateLeadPayload, UpdateLeadPayload } from '@/api/types/leads';
 import type { BranchListItem } from '@/api/types/branch';
+import toast from 'react-hot-toast';
+import { isAllowedLeadAttachment, isHttpsAttachmentUrl } from '@/lib/lead-attachments';
 
 /** Collapsible section ids (accordion). */
 export type LeadFormCollapsedKey =
@@ -1091,10 +1093,15 @@ export function LeadFormBody({
               ref={attachmentInputRef}
               type="file"
               multiple
+              accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.bmp,.doc,.docx,.xls,.xlsx,.txt,.csv,application/pdf,image/png,image/jpeg"
               className="hidden"
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
-                onAttachmentFilesAdded(files);
+                const allowed = files.filter(isAllowedLeadAttachment);
+                if (allowed.length !== files.length) {
+                  toast.error('Attachments must be documents or photos under 5 MB.');
+                }
+                if (allowed.length > 0) onAttachmentFilesAdded(allowed);
                 e.target.value = '';
               }}
             />
@@ -1110,19 +1117,26 @@ export function LeadFormBody({
             </Button>
             {existingAttachmentUrls.length > 0 && (
               <ul className="flex flex-col gap-1 text-sm">
-                {existingAttachmentUrls.map((url) => (
+                {existingAttachmentUrls.map((url) => {
+                  const linkable = isHttpsAttachmentUrl(url);
+                  const label = url.length > 60 ? `${url.slice(0, 60)}…` : url;
+                  return (
                   <li
                     key={url}
                     className="flex items-center justify-between gap-2 rounded border px-2 py-1"
                   >
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-w-0 truncate text-primary underline"
-                    >
-                      {url.length > 60 ? `${url.slice(0, 60)}…` : url}
-                    </a>
+                    {linkable ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-w-0 truncate text-primary underline"
+                      >
+                        {label}
+                      </a>
+                    ) : (
+                      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+                    )}
                     {onRemoveExistingAttachment ? (
                       <Button
                         type="button"
@@ -1135,7 +1149,8 @@ export function LeadFormBody({
                       </Button>
                     ) : null}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
             {attachmentFiles.length > 0 && (

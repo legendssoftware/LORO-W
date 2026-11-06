@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadBlob } from '@/lib/utils/report-export';
+import { downloadBlob } from '@/lib/utils/download-file';
 import { SIMULATION_EXPORT_DISCLAIMER } from '@/lib/site-opportunity/simulation-export-types';
 import type { SimulationExportDocument } from '@/lib/site-opportunity/simulation-export-types';
 import { downloadSimulationExportPdf, shortenCompetitorAddress } from '@/lib/site-opportunity/simulation-export-pdf';
 
-vi.mock('@/lib/utils/report-export', () => ({
+vi.mock('@/lib/utils/download-file', () => ({
   downloadBlob: vi.fn(),
 }));
 

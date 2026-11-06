@@ -92,3 +92,25 @@ describe('deliveries navigation', () => {
     expect(paths).not.toContain('/deliveries');
   });
 });
+
+describe('canAccess with a missing level', () => {
+  it('allows public paths', () => {
+    expect(canAccess('/sign-in', undefined)).toBe(true);
+    expect(canAccess('/', '')).toBe(true);
+  });
+
+  it('denies app paths until a role is known', () => {
+    expect(canAccess('/staff', undefined)).toBe(false);
+    expect(canAccess('/payslips', undefined)).toBe(false);
+    expect(canAccess('/clients', '')).toBe(false);
+    expect(canAccess('/dashboard', undefined)).toBe(false);
+    expect(getAllowedRoutes(undefined)).toEqual([]);
+    expect(getAllowedRoutes('')).toEqual([]);
+  });
+
+  it('still allows admins and owners onto those paths', () => {
+    expect(canAccess('/staff', 'admin')).toBe(true);
+    expect(canAccess('/payslips', 'owner')).toBe(true);
+    expect(canAccess('/clients', 'manager')).toBe(true);
+  });
+});
