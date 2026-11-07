@@ -41,7 +41,19 @@ export function useSignOut() {
         /* ignore private mode / quota */
       }
     }
-    await Promise.resolve(signOut());
+    // #region agent log
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-sign-out.ts:performSignOut',message:'sign-out started',data:{hypothesisId:'B'},timestamp:Date.now(),hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
+    try {
+      await Promise.resolve(signOut());
+      // #region agent log
+      fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-sign-out.ts:performSignOut',message:'clerk signOut resolved',data:{hypothesisId:'B'},timestamp:Date.now(),hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+    } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-sign-out.ts:performSignOut',message:'clerk signOut rejected',data:{hypothesisId:'B',error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+    }
     if (typeof window !== 'undefined') {
       window.location.assign(SIGN_IN_PATH);
     }
