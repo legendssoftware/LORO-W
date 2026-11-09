@@ -114,15 +114,19 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[salesCurrentIdx]).toMatch(/^10[,.\s]?327$/);
   });
 
-  it('shows 100% for calls/leads when engagement met', () => {
+  it('exports each column percent from its own progress when engagement is met', () => {
     const row = reportsTargetRowToExportRow(
-      minimalRow({ engagementMet: true, calls: { current: 85, target: 500, progress: 17 } }),
+      minimalRow({
+        engagementMet: true,
+        calls: { current: 39, target: 60, progress: 65 },
+        leads: { current: 29, target: 60, progress: 48 },
+      }),
       'set'
     );
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('All Activity %')]).toBe('100%');
-    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(85));
-    expect(row[headers.indexOf('Leads %')]).toBe('100%');
+    expect(row[headers.indexOf('All Activity %')]).toBe('65%');
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(39));
+    expect(row[headers.indexOf('Leads %')]).toBe('48%');
   });
 
   it('includes percent suffix on metric progress columns', () => {

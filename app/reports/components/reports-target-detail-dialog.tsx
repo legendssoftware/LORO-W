@@ -651,7 +651,10 @@ export function ReportsTargetDetailDialog({
                   <MetricDetail
                     label="All Activity"
                     cell={displayRow.calls}
-                    done={displayRow.engagementMet && displayRow.calls.target > 0}
+                    done={
+                      displayRow.calls.target > 0 &&
+                      displayRow.calls.current >= displayRow.calls.target
+                    }
                     formatValue={(c) =>
                       `${formatCount(c.current)} / ${formatCount(c.target)}`
                     }
@@ -666,7 +669,10 @@ export function ReportsTargetDetailDialog({
                   <MetricDetail
                     label="Leads"
                     cell={displayRow.leads}
-                    done={displayRow.engagementMet && displayRow.leads.target > 0}
+                    done={
+                      displayRow.leads.target > 0 &&
+                      displayRow.leads.current >= displayRow.leads.target
+                    }
                     formatValue={(c) =>
                       `${formatCount(c.current)} / ${formatCount(c.target)}`
                     }

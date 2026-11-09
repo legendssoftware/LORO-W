@@ -160,7 +160,7 @@ export function reportsTargetRowToExportRow(
     row.periodLabel?.trim() || '-',
     formatExportCount(row.calls.current),
     formatExportCount(row.calls.target),
-    formatExportPercent(row.engagementMet ? 100 : row.calls.progress),
+    formatExportPercent(row.calls.progress),
     formatExportCount(activity.telephone),
     formatExportCount(activity.whatsapp),
     formatExportCount(activity.email),
@@ -170,7 +170,7 @@ export function reportsTargetRowToExportRow(
     formatExportPercent(row.visits.progress),
     formatExportCount(row.leads.current),
     formatExportCount(row.leads.target),
-    formatExportPercent(row.engagementMet ? 100 : row.leads.progress),
+    formatExportPercent(row.leads.progress),
     formatExportCount(row.quotations.current),
     formatExportMoney(
       row.quotations.amountCurrent ?? 0,
