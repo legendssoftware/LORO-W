@@ -3,10 +3,8 @@
  */
 
 import type { ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
-import { policyStatusLabel } from '@/app/reports/lib/reports-policy-format';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
-import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
 import { exportToCsv } from '@/lib/utils/csv-export';
 
 const CURRENCY_VIEW_LABEL: Record<ReportsTargetsCurrencyView, string> = {
@@ -79,9 +77,13 @@ export function buildReportsTargetsExportHeaders(
     'User',
     'Branch',
     'Period',
-    'Calls (current)',
-    'Calls (target)',
-    'Calls %',
+    'All Activity (current)',
+    'All Activity (target)',
+    'All Activity %',
+    'Telephone',
+    'WhatsApp',
+    'Email',
+    'Landline',
     'Visits (current)',
     'Visits (target)',
     'Visits %',
@@ -99,21 +101,13 @@ export function buildReportsTargetsExportHeaders(
     'Hours (target)',
     'Hours %',
     'Distance (km)',
-    'Visits (travel)',
+    'Check-ins (travel)',
     'Petrol claims (count)',
     'Petrol claims (amount)',
     'Fuel allowance',
     'Fuel %',
     'Productivity %',
     'Achievement %',
-    'Policy status',
-    'Policy expected days',
-    'Policy activity %',
-    'Policy flagged visits',
-    'Engagement met',
-    'Warning level',
-    'Warnings acknowledged',
-    'Warnings issued',
     'Currency view',
   ];
 }
@@ -143,18 +137,6 @@ export function formatExportMoney(
   return `${code} ${amount}`;
 }
 
-/** Policy export cells; blank when no policy applies (all-time view or policy disabled). */
-function policyExportCells(row: ReportsTargetRow): [string, string, string, string] {
-  const policy = row.policy;
-  if (!policy) return ['', '', '', ''];
-  return [
-    policyStatusLabel(policy.status),
-    String(policy.expectedDays),
-    policy.activityPct == null ? '' : formatExportPercent(policy.activityPct * 100),
-    String(policy.flaggedVisits),
-  ];
-}
-
 /**
  * Build a single export row; column order matches buildReportsTargetsExportHeaders.
  */
@@ -162,15 +144,15 @@ export function reportsTargetRowToExportRow(
   row: ReportsTargetRow,
   currencyView: ReportsTargetsCurrencyView = 'set'
 ): string[] {
-  const warnings = summarizeTargetWarnings(row.targetWarnings);
-  const warningLevel =
-    warnings.currentLevel === 1 ||
-    warnings.currentLevel === 2 ||
-    warnings.currentLevel === 3
-      ? String(warnings.currentLevel)
-      : '';
-
   const includeSalesCurrencyPrefix = currencyView !== 'zar';
+  const activity = row.activity ?? {
+    all: 0,
+    telephone: 0,
+    whatsapp: 0,
+    email: 0,
+    landline: 0,
+    other: 0,
+  };
 
   return [
     row.name?.trim() || '-',
@@ -179,6 +161,10 @@ export function reportsTargetRowToExportRow(
     formatExportCount(row.calls.current),
     formatExportCount(row.calls.target),
     formatExportPercent(row.engagementMet ? 100 : row.calls.progress),
+    formatExportCount(activity.telephone),
+    formatExportCount(activity.whatsapp),
+    formatExportCount(activity.email),
+    formatExportCount(activity.landline),
     formatExportCount(row.visits.current),
     formatExportCount(row.visits.target),
     formatExportPercent(row.visits.progress),
@@ -200,7 +186,7 @@ export function reportsTargetRowToExportRow(
     formatExportCount(row.hours.target),
     formatExportPercent(row.hours.progress),
     Number.isFinite(row.travel?.distanceKm) ? String(row.travel.distanceKm) : '0',
-    formatExportCount(row.travel?.visitCount ?? row.visits.current),
+    formatExportCount(row.travel?.visitCount ?? 0),
     formatExportCount(row.travel?.petrolClaimCount ?? 0),
     formatExportMoney(
       row.travel?.petrolClaimAmount ?? 0,
@@ -215,11 +201,6 @@ export function reportsTargetRowToExportRow(
     formatExportPercent(row.travel?.progress ?? 0),
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
-    ...policyExportCells(row),
-    row.engagementMet ? 'Yes' : 'No',
-    warningLevel,
-    formatExportCount(warnings.totalAcknowledged),
-    formatExportCount(warnings.totalIssued),
     CURRENCY_VIEW_LABEL[currencyView],
   ];
 }
@@ -230,14 +211,23 @@ export function reportsTargetRowToExportRow(
  */
 export function exportReportsTargets(
   rows: ReportsTargetRow[],
-  exportFormat: 'csv' | 'excel',
+  exportFormat: 'csv' | 'excel' | 'pdf',
   baseName: string,
-  currencyView: ReportsTargetsCurrencyView = 'set'
+  currencyView: ReportsTargetsCurrencyView = 'set',
+  heading?: string
 ): void {
   const headers = buildReportsTargetsExportHeaders(currencyView);
   const body = rows.map((row) => reportsTargetRowToExportRow(row, currencyView));
   if (exportFormat === 'csv') {
     exportToCsv(headers, body, baseName);
+    return;
+  }
+  if (exportFormat === 'pdf') {
+    const period = rows[0]?.periodLabel?.trim();
+    const title = heading?.trim() || (period ? `Activity report · ${period}` : 'Activity report');
+    void import('@/lib/utils/report-export').then(({ exportToPdf }) => {
+      exportToPdf(headers, body, baseName, title);
+    });
     return;
   }
   void import('@/lib/utils/report-export').then(({ exportToExcel }) => {

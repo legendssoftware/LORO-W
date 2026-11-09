@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   CalendarIcon,
   Filter,
+  Phone,
 } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -18,6 +19,10 @@ import {
   reportsFilterSelectTriggerClass,
   type SearchableOptionRow,
 } from '@/components/filters/searchable-filter-comboboxes';
+import {
+  ACTIVITY_CHANNEL_FILTERS,
+  activityChannelFilterLabel,
+} from '@/lib/activity-channel';
 import {
   formatUtcCalendarLabel,
   formatUtcYmd,
@@ -345,8 +350,16 @@ function VisitFilterControls({
   isUserSearchLoading = false,
   onUserUidChange,
 }: VisitFilterControlsProps) {
-  const { selectedRegion, selectedBusinessType, selectedUserUid, setSelectedRegion, setSelectedBusinessType, setSelectedUserUid } =
-    useVisitsStore();
+  const {
+    selectedRegion,
+    selectedBusinessType,
+    selectedUserUid,
+    activityChannel,
+    setSelectedRegion,
+    setSelectedBusinessType,
+    setSelectedUserUid,
+    setActivityChannel,
+  } = useVisitsStore();
 
   const row = layout === 'row';
   const pickerTriggerClass = row
@@ -384,6 +397,23 @@ function VisitFilterControls({
 
   return (
     <div className={wrapClass}>
+      <SearchableOptionListPicker
+        selectedValue={activityChannel}
+        onValueChange={(value) => {
+          const next = ACTIVITY_CHANNEL_FILTERS.find((channel) => channel === value);
+          setActivityChannel(next ?? 'physical');
+        }}
+        options={ACTIVITY_CHANNEL_FILTERS.map((channel) => ({
+          value: channel,
+          label: activityChannelFilterLabel(channel),
+        }))}
+        placeholderLabelWhenAll="Physical visits"
+        searchPlaceholder="Search activity…"
+        emptyMessage="No activity type found."
+        triggerIcon={<Phone className="size-4 shrink-0" />}
+        triggerClassName={pickerTriggerClass}
+        includeAllOption={false}
+      />
       {showDateRange ? <VisitDateRangePicker layout={layout} /> : null}
       {showRegionFilter ? (
         <SearchableOptionListPicker
@@ -462,6 +492,7 @@ export function VisitHistoryToolbar({
     setSelectedRegion,
     setSelectedBusinessType,
     setSelectedUserUid,
+    setActivityChannel,
   } = useVisitsStore();
 
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
@@ -482,6 +513,7 @@ export function VisitHistoryToolbar({
     if (showBusinessTypeFilter) setSelectedBusinessType('');
     if (showUserFilter) setSelectedUserUid('');
     if (showSearch) setSearchQuery('');
+    setActivityChannel('physical');
   }
 
   function renderSearchField(className?: string) {

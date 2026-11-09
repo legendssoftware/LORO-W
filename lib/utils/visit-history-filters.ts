@@ -1,10 +1,13 @@
 import type { VisitExportItem } from '@/api/types/reports';
+import { classifyActivityChannel, type ActivityChannelFilter } from '@/lib/activity-channel';
 import { getRegionGroupKey, visitToExportRow } from '@/lib/utils/visits-export';
 
 export interface VisitHistoryFilterInput {
   selectedRegion: string;
   selectedBusinessType: string;
   searchQuery: string;
+  /** Physical visits by default. `all` keeps every channel. */
+  activityChannel?: ActivityChannelFilter;
 }
 
 /**
@@ -15,6 +18,10 @@ export function filterVisitCheckIns(
   filters: VisitHistoryFilterInput
 ): VisitExportItem[] {
   let list = checkIns;
+  const channel = filters.activityChannel ?? 'physical';
+  if (channel !== 'all') {
+    list = list.filter((c) => classifyActivityChannel(c) === channel);
+  }
   if (filters.selectedRegion) {
     list = list.filter((c) => getRegionGroupKey(c) === filters.selectedRegion);
   }

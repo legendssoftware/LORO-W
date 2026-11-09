@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activityCountsFromEngagement,
   applyEngagementToRow,
   applyErpSalesToRow,
   applyQuotationsEngagementToRow,
@@ -26,6 +27,7 @@ function baseRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow {
     ref: 'u1',
     name: 'Test User',
     email: 'test@example.com',
+    activity: { all: 0, telephone: 0, whatsapp: 0, email: 0, landline: 0, other: 0 },
     calls: { current: 0, target: 1200, progress: 0 },
     visits: { current: 0, target: 160, progress: 0 },
     leads: { current: 0, target: 1200, progress: 0 },
@@ -49,6 +51,25 @@ function baseRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow {
     ...overrides,
   };
 }
+
+describe('activityCountsFromEngagement', () => {
+  it('keeps All activity equal to the channel columns plus physical visits', () => {
+    const counts = activityCountsFromEngagement({
+      callCount: 7,
+      countableCallCount: 4,
+      visitCount: 2,
+      telephoneCount: 3,
+      whatsappCount: 1,
+      emailCount: 1,
+      landlineCount: 2,
+      otherCount: 1,
+      allActivityCount: 10,
+    });
+    expect(counts.all).toBe(
+      counts.telephone + counts.whatsapp + counts.email + counts.landline + counts.other + 2
+    );
+  });
+});
 
 describe('totalEngagementCheckIns', () => {
   it('sums call and visit counts', () => {
@@ -85,6 +106,45 @@ describe('applyEngagementToRow', () => {
       '2026-03-02'
     );
     expect(next.calls.target).toBe(60);
+  });
+
+  it('splits channels and keeps the call target on countable remote contacts', () => {
+    const row = baseRow();
+    const next = applyEngagementToRow(
+      row,
+      {
+        callCount: 7,
+        countableCallCount: 4,
+        leadCount: 0,
+        visitCount: 2,
+        telephoneCount: 3,
+        whatsappCount: 1,
+        emailCount: 1,
+        landlineCount: 2,
+        otherCount: 1,
+        allActivityCount: 10,
+      },
+      '2026-08-07',
+      '2026-08-07'
+    );
+    expect(next.activity).toEqual({
+      all: 10,
+      telephone: 3,
+      whatsapp: 1,
+      email: 1,
+      landline: 2,
+      other: 1,
+    });
+    expect(next.visits.current).toBe(2);
+    expect(next.calls.current).toBe(4);
+    expect(
+      next.activity.telephone +
+        next.activity.whatsapp +
+        next.activity.email +
+        next.activity.landline +
+        next.activity.other +
+        next.visits.current
+    ).toBe(next.activity.all);
   });
 
   it('uses countableCallCount for target overlay instead of logged volume', () => {

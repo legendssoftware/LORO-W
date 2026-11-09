@@ -5,10 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import type { VisitExportItem } from '@/api/types/reports';
 import type { UpdateVisitDetailsPayload } from '@/api/types/visits';
-import {
-  formatContactAddress,
-  formatMethodOfContact,
-} from '@/lib/utils/visits-export';
+import { formatContactAddress } from '@/lib/utils/visits-export';
+import { activityMethodLabel } from '@/lib/activity-channel';
 import {
   buildMapsUrl,
   buildTelUrl,
@@ -298,15 +296,9 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'method',
-    label: 'Method of visit',
+    label: 'Method',
     width: 'quarter',
-    render: (c) => {
-      if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
-      const hasLocation =
-        (c.checkInLocation && c.checkInLocation !== '-') ||
-        (c.checkOutLocation && c.checkOutLocation !== '-');
-      return hasLocation ? 'Physical' : '-';
-    },
+    render: (c) => activityMethodLabel(c),
   },
   {
     key: 'buildingType',
@@ -1463,7 +1455,7 @@ function VisitDetailDialog({
                   <DetailFieldRow
                     label="Method"
                     icon={MessageSquare}
-                    value={visit.methodOfContact ? formatMethodOfContact(visit.methodOfContact) : '-'}
+                    value={activityMethodLabel(visit)}
                   />
                   <DetailFieldRow
                     label="Building type"

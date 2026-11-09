@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState, type KeyboardEvent } from 'react';
-import { AlertTriangle, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import {
   ReportProgressBar,
   getProgressColorClasses,
@@ -18,14 +18,6 @@ import {
   type ReportsTargetsCurrencyView,
 } from '@/app/reports/lib/reports-target-currency';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  POLICY_COLUMN_COUNT,
-  PolicyActivityCell,
-  PolicyExpectedDaysCell,
-  PolicyFlaggedCell,
-  PolicyStatusCell,
-} from '@/app/reports/components/reports-targets-policy-cells';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -35,16 +27,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { summarizeTargetWarnings } from '@/lib/target-warnings-summary';
 import { cn } from '@/lib/utils';
 
-const WARNING_BADGE: Record<1 | 2 | 3, string> = {
-  1: 'bg-green-100 text-green-800 border-green-200/80',
-  2: 'bg-amber-100 text-amber-900 border-amber-200/80',
-  3: 'bg-red-100 text-red-800 border-red-200/80',
-};
-
-const COL_COUNT = 12 + POLICY_COLUMN_COUNT;
+const COL_COUNT = 14;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -93,11 +78,16 @@ function formatDistanceKm(km: number): string {
   return `${km.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`;
 }
 
-function formatVisitClaimLine(visits: number, claimAmount: number): string {
-  const visitLabel =
-    Math.round(visits) === 1 ? '1 visit' : `${formatCount(visits)} visits`;
+function formatVisitClaimLine(checkIns: number, claimAmount: number): string {
+  const count = Math.round(checkIns);
+  const label = count === 1 ? '1 check-in' : `${formatCount(count)} check-ins`;
   const claims = Math.round(claimAmount);
-  return `${visitLabel} · R ${claims.toLocaleString()}`;
+  return `${label} · R ${claims.toLocaleString()}`;
+}
+
+function CountCell({ value, pending }: { value: number; pending?: boolean }) {
+  if (pending) return <MetricCellSkeleton />;
+  return <p className="text-sm font-medium tabular-nums text-foreground">{formatCount(value)}</p>;
 }
 
 function QuotationsMetricCell({
@@ -201,45 +191,6 @@ function MetricCell({
   );
 }
 
-function WarningBadge({ row }: { row: ReportsTargetRow }) {
-  const summary = summarizeTargetWarnings(row.targetWarnings);
-  const level = summary.currentLevel;
-  if (level !== 1 && level !== 2 && level !== 3) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-  return (
-    <Badge
-      variant="outline"
-      className={cn('gap-1 text-[10px] font-medium', WARNING_BADGE[level])}
-      title={`Performance warning: Level ${level}`}
-      aria-label={`Performance warning: Level ${level}`}
-    >
-      <AlertTriangle className="size-3" />
-      Level {level}
-    </Badge>
-  );
-}
-
-function AcknowledgedCell({ row }: { row: ReportsTargetRow }) {
-  const summary = summarizeTargetWarnings(row.targetWarnings);
-  if (summary.totalIssued === 0) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-  const notAcked = Math.max(0, summary.totalIssued - summary.totalAcknowledged);
-  return (
-    <div className="min-w-[5.5rem] space-y-0.5">
-      <p className="text-xs font-medium tabular-nums text-foreground">
-        {summary.totalAcknowledged} / {summary.totalIssued}
-      </p>
-      {summary.pendingCount > 0 || notAcked > 0 ? (
-        <p className="text-[10px] text-amber-700">Still pending · Needs attention</p>
-      ) : (
-        <p className="text-[10px] text-muted-foreground">All acknowledged</p>
-      )}
-    </div>
-  );
-}
-
 function ProductivityCell({ row }: { row: ReportsTargetRow }) {
   const { score, isLoading } = row.productivity;
   if (isLoading) {
@@ -287,6 +238,18 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
             <Skeleton className="h-10 w-24" />
           </TableCell>
           <TableCell>
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
+          <TableCell>
             <Skeleton className="h-10 w-24" />
           </TableCell>
           <TableCell>
@@ -306,24 +269,6 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           </TableCell>
           <TableCell>
             <Skeleton className="h-10 w-16" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-10 w-16" />
-          </TableCell>
-          <TableCell className="hidden xl:table-cell">
-            <Skeleton className="h-5 w-20 rounded-full" />
-          </TableCell>
-          <TableCell className="hidden xl:table-cell">
-            <Skeleton className="h-4 w-10" />
-          </TableCell>
-          <TableCell className="hidden xl:table-cell">
-            <Skeleton className="h-4 w-12" />
-          </TableCell>
-          <TableCell className="hidden xl:table-cell">
-            <Skeleton className="h-4 w-8" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-16 rounded-full" />
           </TableCell>
           <TableCell>
             <Skeleton className="h-8 w-14" />
@@ -413,6 +358,12 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
   return (
     <div className="space-y-3 rounded-lg bg-muted/40 p-3">
       <p className="text-xs font-medium text-muted-foreground">Team targets · {people}</p>
+      <p className="text-xs tabular-nums text-muted-foreground">
+        Telephone {formatCount(members.reduce((sum, row) => sum + row.activity.telephone, 0))}
+        {' · '}WhatsApp {formatCount(members.reduce((sum, row) => sum + row.activity.whatsapp, 0))}
+        {' · '}Email {formatCount(members.reduce((sum, row) => sum + row.activity.email, 0))}
+        {' · '}Landline {formatCount(members.reduce((sum, row) => sum + row.activity.landline, 0))}
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <TeamMetricBar
           label="Sales"
@@ -421,7 +372,7 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
           valueLabel={`${currency} ${Math.round(salesCurrent).toLocaleString()} / ${Math.round(salesTarget).toLocaleString()}`}
         />
         <TeamMetricBar
-          label="Calls"
+          label="All Activity"
           progress={ratioPercent(callsCurrent, callsTarget)}
           valueLabel={`${formatCount(callsCurrent)} / ${formatCount(callsTarget)}`}
         />
@@ -511,8 +462,16 @@ export function ReportsTargetsTable({
       <TableHeader>
         <TableRow>
           <TableHead className="min-w-[12rem]">User</TableHead>
-          <TableHead>Calls</TableHead>
-          <TableHead>Visits</TableHead>
+          <TableHead title="Countable telephone, landline, email, and WhatsApp versus the call quota">
+            All Activity
+          </TableHead>
+          <TableHead title="Telephone logs that are not landline-only, including voicemail and no-answer">
+            Telephone
+          </TableHead>
+          <TableHead>WhatsApp</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead title="Telephone logs with a landline number and no cell number">Landline</TableHead>
+          <TableHead title="Physical visits to a location">Visits</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
@@ -524,12 +483,6 @@ export function ReportsTargetsTable({
             Productivity
           </TableHead>
           <TableHead>Achievement</TableHead>
-          <TableHead className="hidden xl:table-cell">Policy</TableHead>
-          <TableHead className="hidden xl:table-cell">Exp. days</TableHead>
-          <TableHead className="hidden xl:table-cell">Policy activity</TableHead>
-          <TableHead className="hidden xl:table-cell">Flagged</TableHead>
-          <TableHead>Warnings</TableHead>
-          <TableHead>Acknowledged</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -621,6 +574,18 @@ export function ReportsTargetsTable({
                   )}
                 </TableCell>
                 <TableCell>
+                  <CountCell value={row.activity.telephone} pending={engagementOverlayPending} />
+                </TableCell>
+                <TableCell>
+                  <CountCell value={row.activity.whatsapp} pending={engagementOverlayPending} />
+                </TableCell>
+                <TableCell>
+                  <CountCell value={row.activity.email} pending={engagementOverlayPending} />
+                </TableCell>
+                <TableCell>
+                  <CountCell value={row.activity.landline} pending={engagementOverlayPending} />
+                </TableCell>
+                <TableCell>
                   {engagementOverlayPending ? (
                     <MetricCellSkeleton />
                   ) : (
@@ -686,24 +651,6 @@ export function ReportsTargetsTable({
                       {row.achievement}%
                     </p>
                   </div>
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <PolicyStatusCell row={row} />
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <PolicyExpectedDaysCell row={row} />
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <PolicyActivityCell row={row} />
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <PolicyFlaggedCell row={row} />
-                </TableCell>
-                <TableCell>
-                  <WarningBadge row={row} />
-                </TableCell>
-                <TableCell>
-                  <AcknowledgedCell row={row} />
                 </TableCell>
               </TableRow>
               {isExpanded ? (
