@@ -352,12 +352,6 @@ export function ClaimsFilterControls({
           </button>
         ) : null}
       </div>
-      {claimGroupUid !== 'all' ? (
-        <p className={cn('text-xs text-muted-foreground', row && 'shrink-0')}>
-          Date range is not applied while a folder is open.
-        </p>
-      ) : null}
-
       <div className={cn('flex items-center gap-1 min-w-0', !row && 'w-full')}>
         <SearchableOptionListPicker
           selectedValue={statusFilter}
