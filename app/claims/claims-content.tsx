@@ -21,6 +21,7 @@ import {
   type ClaimsPageViewMode,
 } from '@/app/claims/components/claims-filters-bar';
 import { ClaimCreateDialog } from '@/app/claims/components/claim-create-dialog';
+import { ClaimExportDialog } from '@/app/claims/components/claim-export-dialog';
 import { ClaimFoldersPanel } from '@/app/claims/components/claim-folders-panel';
 import { ClaimsSummaryCards } from '@/app/claims/components/claims-summary-cards';
 import {
@@ -73,6 +74,7 @@ export function ClaimsContent() {
     (typeof profileAccessLevel === 'string' ? profileAccessLevel : undefined);
   const showUserFilter = canViewOrgClaimsList(accessLevel);
   const [createOpen, setCreateOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [viewMode, setViewMode] = useState<ClaimsPageViewMode>('list');
   const [searchInput, setSearchInput] = useState('');
@@ -117,9 +119,8 @@ export function ClaimsContent() {
     groupFilter === 'all' || Number.isNaN(Number.parseInt(groupFilter, 10))
       ? undefined
       : Number.parseInt(groupFilter, 10);
-  const folderSelected = claimGroupUid != null;
-  const createdFrom = folderSelected ? undefined : createdRange.from || undefined;
-  const createdTo = folderSelected ? undefined : createdRange.to || undefined;
+  const createdFrom = createdRange.from || undefined;
+  const createdTo = createdRange.to || undefined;
 
   const ownerUid = showUserFilter ? parseOwnerUid(userFilter) : undefined;
 
@@ -133,7 +134,13 @@ export function ClaimsContent() {
   });
 
   const summaryQuery = useClaimsSummary(
-    {},
+    {
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      createdFrom,
+      createdTo,
+      claimGroupUid,
+      ownerUid,
+    },
     { enabled: isTokenReady && !sessionSyncLoading }
   );
 
@@ -147,37 +154,37 @@ export function ClaimsContent() {
   const statusCode = err ? getErrorStatus(err) : undefined;
   const errMsg = err ? getQueryErrorMessage(err, 'Could not load claims') : '';
 
-  async function handleExport() {
+  async function handleExport(range: { from: string; to: string }) {
     if (exporting) return;
     setExporting(true);
+    const exportFrom = range.from || undefined;
+    const exportTo = range.to || undefined;
     try {
-      let claims = filteredRows;
-      if (showUserFilter) {
-        const collected: Claim[] = [];
-        for (let page = 1; page <= 500; page += 1) {
-          const result = await getClaims(client, {
-            page,
-            limit: EXPORT_PAGE_SIZE,
-            status: statusFilter === 'all' ? undefined : statusFilter,
-            createdFrom,
-            createdTo,
-            claimGroupUid,
-            ownerUid,
-          });
-          const batch = result.data ?? [];
-          collected.push(...batch);
-          const totalPages = result.meta?.totalPages ?? 1;
-          if (page >= totalPages || batch.length === 0) break;
-        }
-        claims = collected.filter((claim) =>
-          matchesSearch(claim, debouncedSearch)
-        );
+      const collected: Claim[] = [];
+      for (let page = 1; page <= 500; page += 1) {
+        const result = await getClaims(client, {
+          page,
+          limit: EXPORT_PAGE_SIZE,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          createdFrom: exportFrom,
+          createdTo: exportTo,
+          claimGroupUid,
+          ownerUid,
+        });
+        const batch = result.data ?? [];
+        collected.push(...batch);
+        const totalPages = result.meta?.totalPages ?? 1;
+        if (page >= totalPages || batch.length === 0) break;
       }
+      const claims = collected.filter((claim) =>
+        matchesSearch(claim, debouncedSearch)
+      );
       if (claims.length === 0) {
         toast.error('No claims to export');
         return;
       }
       exportClaimsPerUserCsv(claims, groups);
+      setExportOpen(false);
     } catch (error) {
       toast.error(getQueryErrorMessage(error, 'Could not export claims'));
     } finally {
@@ -218,9 +225,7 @@ export function ClaimsContent() {
               variant="outline"
               className="h-9 gap-2 px-4"
               disabled={exporting}
-              onClick={() => {
-                void handleExport();
-              }}
+              onClick={() => setExportOpen(true)}
             >
               {exporting ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -279,14 +284,13 @@ export function ClaimsContent() {
           onViewModeChange={setViewMode}
         />
 
-        {viewMode === 'grid' ? (
-          <ClaimFoldersPanel
-            groups={groups}
-            isLoading={groupsQuery.isLoading}
-            activeGroupUid={groupFilter}
-            onSelectGroup={handleSelectGroup}
-          />
-        ) : null}
+        <ClaimFoldersPanel
+          groups={groups}
+          byGroup={summaryQuery.data?.byGroup}
+          isLoading={groupsQuery.isLoading}
+          activeGroupUid={groupFilter}
+          onSelectGroup={handleSelectGroup}
+        />
 
         {statusCode === 403 ? (
           <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -305,6 +309,7 @@ export function ClaimsContent() {
                 claims={filteredRows}
                 groups={groups}
                 byGroup={summaryQuery.data?.byGroup}
+                byOwner={summaryQuery.data?.byOwner}
                 activeGroupUid={groupFilter}
                 branchByUid={branchByUid}
                 currencyView={currencyView}
@@ -329,6 +334,16 @@ export function ClaimsContent() {
       </main>
 
       <ClaimCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <ClaimExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        initialFrom={createdRange.from}
+        initialTo={createdRange.to}
+        exporting={exporting}
+        onExport={(range) => {
+          void handleExport(range);
+        }}
+      />
     </div>
   );
 }
