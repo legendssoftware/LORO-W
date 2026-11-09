@@ -17,6 +17,7 @@ function minimalRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow
     email: 'anathi@gmail.com',
     branch: 'BitGeorge',
     periodLabel: 'Aug 4, 2026 - Aug 4, 2026',
+    activity: { all: 110, telephone: 70, whatsapp: 8, email: 4, landline: 3, other: 1 },
     calls: { current: 85, target: 500, progress: 17 },
     visits: { current: 12, target: 160, progress: 8 },
     leads: { current: 6, target: 50, progress: 12 },
@@ -40,13 +41,25 @@ function minimalRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow
 }
 
 describe('buildReportsTargetsExportHeaders', () => {
-  it('excludes Email and Sales currency columns', () => {
+  it('keeps the Email activity column and omits a sales currency column', () => {
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(headers).not.toContain('Email');
+    expect(headers).toContain('Email');
     expect(headers).not.toContain('Sales currency');
     expect(headers).toContain('Distance (km)');
+    expect(headers).toContain('All Activity (current)');
+    expect(headers).toContain('All Activity (target)');
+    expect(headers).toContain('All Activity %');
+    expect(headers).toContain('Telephone');
+    expect(headers).toContain('WhatsApp');
+    expect(headers).toContain('Email');
+    expect(headers).toContain('Landline');
+    expect(headers).not.toContain('Other');
+    expect(headers).not.toContain('Call target');
+    expect(headers).toContain('Check-ins (travel)');
+    expect(headers).not.toContain('Policy status');
+    expect(headers).not.toContain('Warnings acknowledged');
     expect(headers).toContain('Petrol claims (amount)');
-    expect(headers).toHaveLength(39);
+    expect(headers).toHaveLength(35);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -86,7 +99,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(39);
+    expect(row).toHaveLength(35);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -107,19 +120,21 @@ describe('reportsTargetRowToExportRow', () => {
       'set'
     );
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('Calls %')]).toBe('100%');
+    expect(row[headers.indexOf('All Activity %')]).toBe('100%');
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(85));
     expect(row[headers.indexOf('Leads %')]).toBe('100%');
   });
 
   it('includes percent suffix on metric progress columns', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('Calls %')]).toBe('17%');
+    expect(row[headers.indexOf('All Activity %')]).toBe('17%');
+    expect(row[headers.indexOf('Telephone')]).toBe(formatExportCount(70));
     expect(row[headers.indexOf('Sales %')]).toBe('2%');
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
   });
 
-  it('exports Travel visits from the workbook visit count, not the physical Visits column', () => {
+  it('exports travel check-ins separately from physical visits', () => {
     const row = reportsTargetRowToExportRow(
       minimalRow({
         visits: { current: 12, target: 160, progress: 8 },
@@ -136,30 +151,6 @@ describe('reportsTargetRowToExportRow', () => {
     );
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('Visits (current)')]).toBe(formatExportCount(12));
-    expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(88));
-  });
-
-  it('exports policy columns, blank when no policy applies', () => {
-    const headers = buildReportsTargetsExportHeaders('set');
-    const blank = reportsTargetRowToExportRow(minimalRow(), 'set');
-    expect(blank[headers.indexOf('Policy status')]).toBe('');
-    expect(blank[headers.indexOf('Policy activity %')]).toBe('');
-
-    const withPolicy = reportsTargetRowToExportRow(
-      minimalRow({
-        policy: {
-          status: 'below_standard',
-          expectedDays: 18,
-          activityPct: 0.834,
-          flaggedVisits: 3,
-          failedStandards: ['visits'],
-        },
-      }),
-      'set'
-    );
-    expect(withPolicy[headers.indexOf('Policy status')]).toBe('Below standard');
-    expect(withPolicy[headers.indexOf('Policy expected days')]).toBe('18');
-    expect(withPolicy[headers.indexOf('Policy activity %')]).toBe('83%');
-    expect(withPolicy[headers.indexOf('Policy flagged visits')]).toBe('3');
+    expect(row[headers.indexOf('Check-ins (travel)')]).toBe(formatExportCount(88));
   });
 });

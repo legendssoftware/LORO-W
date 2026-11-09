@@ -15,7 +15,8 @@ import {
   useSessionSync,
 } from '@/api/hooks';
 import type { MethodOfContact } from '@/api/types/visits';
-import { mapCheckInsFromApi } from '@/lib/utils/visits-export';
+import { exportVisits, mapCheckInsFromApi } from '@/lib/utils/visits-export';
+import { activityChannelFilterLabel } from '@/lib/activity-channel';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -75,6 +76,7 @@ export function VisitsContent({
     endDate,
     useAllTime,
     selectedRegion,
+    activityChannel,
     selectedBusinessType,
     selectedUserUid,
     searchQuery,
@@ -176,8 +178,9 @@ export function VisitsContent({
         selectedRegion,
         selectedBusinessType,
         searchQuery,
+        activityChannel,
       }),
-    [checkIns, searchQuery, selectedRegion, selectedBusinessType]
+    [checkIns, searchQuery, selectedRegion, selectedBusinessType, activityChannel]
   );
 
   const total = filteredCheckIns.length;
@@ -194,6 +197,7 @@ export function VisitsContent({
     endDate,
     useAllTime,
     selectedRegion,
+    activityChannel,
     selectedBusinessType,
     selectedUserUid,
     searchQuery,
@@ -262,9 +266,9 @@ export function VisitsContent({
           data-tour="visits-page-header"
         >
           <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Calls</h1>
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Start or end a call or field visit and view your activity history.
+              Physical visits are listed by default. Use the activity filter for telephone, WhatsApp, email, or landline.
             </p>
           </div>
           {checkedIn ? (
@@ -375,6 +379,44 @@ export function VisitsContent({
           onUserSearchQueryChange={setUserSearchQuery}
           isUserSearchLoading={isUserSearchLoading}
           onUserUidChange={handleSelectedUserUidChange}
+          extraActions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                disabled={filteredCheckIns.length === 0}
+                onClick={() =>
+                  exportVisits(
+                    filteredCheckIns,
+                    'csv',
+                    'loro-visits',
+                    `Visits · ${activityChannelFilterLabel(activityChannel)}`
+                  )
+                }
+              >
+                Export CSV
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                disabled={filteredCheckIns.length === 0}
+                onClick={() =>
+                  exportVisits(
+                    filteredCheckIns,
+                    'pdf',
+                    'loro-visits',
+                    `Visits · ${activityChannelFilterLabel(activityChannel)}`
+                  )
+                }
+              >
+                Export PDF
+              </Button>
+            </>
+          }
         />
         <div
           data-tour="visits-history-content"
@@ -387,7 +429,7 @@ export function VisitsContent({
               emptyMessage={
                 checkIns.length === 0
                   ? 'No visits yet. Start a visit to see it here.'
-                  : 'No visits match your search.'
+                  : `No ${activityChannelFilterLabel(activityChannel).toLowerCase()} match your filters.`
               }
               onVisitUpdated={() => checkInsQuery.refetch()}
             />

@@ -65,7 +65,12 @@ const PDF_MARGIN = 20;
  * Always landscape; equal column widths spread across full page width.
  * TODO: Embed Urbanist via doc.addFileToVFS + doc.addFont (base64 TTF in web/public/fonts or loaded at build time), then set styles: { font: 'Urbanist' } and headStyles.font for brand consistency.
  */
-export function exportToPdf(headers: string[], rows: string[][], filename: string): void {
+export function exportToPdf(
+  headers: string[],
+  rows: string[][],
+  filename: string,
+  title?: string
+): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { jsPDF } = require('jspdf');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -81,13 +86,20 @@ export function exportToPdf(headers: string[], rows: string[][], filename: strin
   for (let i = 0; i < columnCount; i++) {
     columnStyles[i] = { cellWidth: columnWidth };
   }
+  const heading = title?.trim();
+  if (heading) {
+    doc.setFontSize(11);
+    doc.text(heading, PDF_MARGIN, 28);
+  }
   autoTable(doc, {
     head: [headers],
     body: rows,
     theme: 'plain',
     margin: PDF_MARGIN,
+    startY: heading ? 40 : PDF_MARGIN,
     tableWidth,
     columnStyles,
+    styles: { fontSize: columnCount > 20 ? 6 : 8, overflow: 'linebreak' },
     headStyles: {
       fillColor: [242, 242, 242],
       textColor: [0, 0, 0],

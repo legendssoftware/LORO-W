@@ -140,8 +140,8 @@ export function VisitsSummaryModal({
                               )}
                             </span>
                             <span className="text-sm text-muted-foreground shrink-0">
-                              {group.visits.length} visit
-                              {group.visits.length !== 1 ? 's' : ''}
+                              {group.visits.length}{' '}
+                              {group.visits.length === 1 ? 'activity' : 'activities'}
                             </span>
                             <ChevronRight
                               className={cn(

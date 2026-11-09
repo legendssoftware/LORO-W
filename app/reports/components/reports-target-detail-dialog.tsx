@@ -640,10 +640,16 @@ export function ReportsTargetDetailDialog({
                 </p>
               </ModalSection>
 
-              <ModalSection title="Calls, visits & leads">
+              <ModalSection title="Activity, visits & leads">
+                <p className="mb-2 text-xs tabular-nums text-muted-foreground">
+                  Telephone {formatCount(displayRow.activity.telephone)}
+                  {' · '}WhatsApp {formatCount(displayRow.activity.whatsapp)}
+                  {' · '}Email {formatCount(displayRow.activity.email)}
+                  {' · '}Landline {formatCount(displayRow.activity.landline)}
+                </p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <MetricDetail
-                    label="Calls"
+                    label="All Activity"
                     cell={displayRow.calls}
                     done={displayRow.engagementMet && displayRow.calls.target > 0}
                     formatValue={(c) =>

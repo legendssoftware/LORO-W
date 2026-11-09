@@ -279,7 +279,14 @@ export interface EngagementRangeUserRow {
   countableCallCount?: number;
   deadAirCallCount?: number;
   unsubstantiatedCallCount?: number;
+  /** Physical visits only. */
   visitCount: number;
+  telephoneCount?: number;
+  whatsappCount?: number;
+  emailCount?: number;
+  landlineCount?: number;
+  otherCount?: number;
+  allActivityCount?: number;
   leadCount: number;
   quotationCount: number;
   quotationAmount: number;

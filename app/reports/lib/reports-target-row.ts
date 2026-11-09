@@ -62,6 +62,48 @@ export interface ReportsTargetMetricCell {
   amountCurrent?: number | null;
 }
 
+/** Raw logged check-ins by channel. Physical visits stay on `visits.current`. */
+export interface ReportsActivityCounts {
+  all: number;
+  telephone: number;
+  whatsapp: number;
+  email: number;
+  landline: number;
+  other: number;
+}
+
+export function emptyActivityCounts(): ReportsActivityCounts {
+  return { all: 0, telephone: 0, whatsapp: 0, email: 0, landline: 0, other: 0 };
+}
+
+/** Channel counts from engagement-range. Falls back to the lumped call count only when the split is absent. */
+export function activityCountsFromEngagement(engagement: {
+  callCount?: number;
+  visitCount?: number;
+  telephoneCount?: number;
+  whatsappCount?: number;
+  emailCount?: number;
+  landlineCount?: number;
+  otherCount?: number;
+  allActivityCount?: number;
+}): ReportsActivityCounts {
+  const telephone = engagement.telephoneCount ?? engagement.callCount ?? 0;
+  const whatsapp = engagement.whatsappCount ?? 0;
+  const email = engagement.emailCount ?? 0;
+  const landline = engagement.landlineCount ?? 0;
+  const other = engagement.otherCount ?? 0;
+  const physical = engagement.visitCount ?? 0;
+  const summed = telephone + whatsapp + email + landline + other + physical;
+  return {
+    all: engagement.allActivityCount ?? summed,
+    telephone,
+    whatsapp,
+    email,
+    landline,
+    other,
+  };
+}
+
 /** Average daily productivity score (0–100) for the selected date range. */
 export interface ReportsTargetProductivityCell {
   /** Averaged score across days with a score; null when unavailable. */
@@ -124,7 +166,11 @@ export interface ReportsTargetRow {
   email: string;
   photoURL?: string | null;
   branch?: string | null;
+  /** Logged check-ins split by channel. Does not include the call-target gate. */
+  activity: ReportsActivityCounts;
+  /** Countable remote contacts versus the call quota. */
   calls: ReportsTargetMetricCell;
+  /** Physical visits versus the visit quota. */
   visits: ReportsTargetMetricCell;
   leads: ReportsTargetMetricCell;
   quotations: ReportsTargetMetricCell;
@@ -541,6 +587,7 @@ export function rowFromUserListItem(
       email: user.email,
       photoURL: user.photoURL ?? user.avatar ?? null,
       branch: branchLabel,
+      activity: emptyActivityCounts(),
       ...metrics,
       productivity: { score: null },
       travel: emptyTravelCell(targetNum(ut?.currentCheckIns)),
@@ -565,7 +612,14 @@ export type EngagementOverlay = {
   countableCallCount?: number;
   deadAirCallCount?: number;
   unsubstantiatedCallCount?: number;
+  telephoneCount?: number;
+  whatsappCount?: number;
+  emailCount?: number;
+  landlineCount?: number;
+  otherCount?: number;
+  allActivityCount?: number;
   leadCount: number;
+  /** Physical visits only. */
   visitCount: number;
   quotationCount: number;
   quotationAmount: number;
@@ -750,6 +804,7 @@ export function rowFromPersonalTarget(params: {
       email: params.email,
       photoURL: params.photoURL ?? null,
       branch: params.branch ?? null,
+      activity: emptyActivityCounts(),
       ...metrics,
       productivity: { score: null },
       travel: emptyTravelCell(visits.current),
@@ -929,6 +984,12 @@ export function applyEngagementToRow(
     | {
         callCount: number;
         countableCallCount?: number;
+        telephoneCount?: number;
+        whatsappCount?: number;
+        emailCount?: number;
+        landlineCount?: number;
+        otherCount?: number;
+        allActivityCount?: number;
         leadCount: number;
         visitCount?: number;
         quotationCount?: number;
@@ -1006,6 +1067,7 @@ export function applyEngagementToRow(
   return {
     ...row,
     ...metrics,
+    activity: activityCountsFromEngagement(engagement),
   };
 }
 

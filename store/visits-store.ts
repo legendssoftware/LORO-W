@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand';
 import type { MethodOfContact } from '@/api/types/visits';
+import type { ActivityChannelFilter } from '@/lib/activity-channel';
 import type { ClientListItem } from '@/api/endpoints/clients';
 import { utcMonthStartThroughToday } from '@/lib/utils/overview-daily-summary';
 
@@ -20,6 +21,8 @@ export interface VisitsFiltersState {
   endDate: Date;
   useAllTime: boolean;
   selectedRegion: string;
+  /** Defaults to physical visits. `all` shows every channel. */
+  activityChannel: ActivityChannelFilter;
   selectedBusinessType: string;
   selectedUserUid: string;
   searchQuery: string;
@@ -40,6 +43,7 @@ interface VisitsStore extends VisitsFiltersState, VisitsUIState {
   setEndDate: (date: Date) => void;
   setUseAllTime: (value: boolean) => void;
   setSelectedRegion: (region: string) => void;
+  setActivityChannel: (channel: ActivityChannelFilter) => void;
   setSelectedBusinessType: (businessType: string) => void;
   setSelectedUserUid: (userUid: string) => void;
   setSearchQuery: (query: string) => void;
@@ -59,6 +63,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   endDate: defaultEnd,
   useAllTime: false,
   selectedRegion: '',
+  activityChannel: 'physical',
   selectedBusinessType: '',
   selectedUserUid: '',
   searchQuery: '',
@@ -74,6 +79,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   setEndDate: (date) => set({ endDate: date }),
   setUseAllTime: (value) => set({ useAllTime: value }),
   setSelectedRegion: (region) => set({ selectedRegion: region }),
+  setActivityChannel: (activityChannel) => set({ activityChannel }),
   setSelectedBusinessType: (businessType) => set({ selectedBusinessType: businessType }),
   setSelectedUserUid: (userUid) => set({ selectedUserUid: userUid }),
   setSearchQuery: (query) => set({ searchQuery: query }),
