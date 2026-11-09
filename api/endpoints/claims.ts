@@ -81,10 +81,11 @@ export interface GetClaimsSummaryParams {
   claimGroupUid?: number;
   /** Claim owner user uid. Applied server-side for org-wide list viewers. */
   ownerUid?: number;
+  status?: string;
 }
 
 /**
- * GET /claims/summary — ZAR totals by status and folder (same RBAC as list).
+ * GET /claims/summary — ZAR totals by status, folder, and owner (same RBAC as list).
  */
 export async function getClaimsSummary(
   client: AxiosInstance,
@@ -96,6 +97,7 @@ export async function getClaimsSummary(
   if (params.claimGroupUid != null)
     search.set('claimGroupUid', String(params.claimGroupUid));
   if (params.ownerUid != null) search.set('ownerUid', String(params.ownerUid));
+  if (params.status && params.status !== 'all') search.set('status', params.status);
   const qs = search.toString();
   const { data } = await client.get<ClaimsSummaryResponse>(
     `/claims/summary${qs ? `?${qs}` : ''}`

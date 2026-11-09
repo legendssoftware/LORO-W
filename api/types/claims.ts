@@ -184,11 +184,19 @@ export interface ClaimGroupTotal {
   totalZar: number;
 }
 
+export interface ClaimOwnerTotal {
+  ownerUid: number | null;
+  name: string;
+  count: number;
+  totalZar: number;
+}
+
 export interface ClaimsSummaryResponse {
   totalZar: number;
   unconvertedCount: number;
   byStatus: ClaimStatusTotal[];
   byGroup: ClaimGroupTotal[];
+  byOwner: ClaimOwnerTotal[];
 }
 
 export interface ClaimGroupDetailResponse {

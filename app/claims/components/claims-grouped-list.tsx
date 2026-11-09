@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { Claim, ClaimGroup, ClaimGroupTotal } from '@/api/types/claims';
+import type { Claim, ClaimGroup, ClaimGroupTotal, ClaimOwnerTotal } from '@/api/types/claims';
 import { useSubmitClaimGroupMutation } from '@/api/hooks/use-claims';
+import { ClaimFolderActions } from '@/app/claims/components/claim-folder-actions';
 import { ClaimRowCard, ClaimRowCardSkeleton } from '@/app/claims/components/claim-row-card';
 import { claimPersonDisplayName } from '@/app/claims/components/claim-person-row';
 import type { ClaimsCurrencyView } from '@/app/claims/lib/claim-display';
@@ -68,8 +69,8 @@ function buildSections(
     sections.push({
       claimGroupUid: uid,
       title: summary?.title ?? group?.title ?? 'No folder',
-      count: loaded.length,
-      totalZar: loadedZar,
+      count: summary?.count ?? loaded.length,
+      totalZar: summary?.totalZar ?? loadedZar,
       isDraft,
       claims: loaded,
     });
@@ -129,7 +130,7 @@ function ownerInitials(title: string): string {
 }
 
 /** One folder per claim owner. Used when the viewer can see every org claim. */
-function buildOwnerSections(claims: Claim[]): OwnerSection[] {
+function buildOwnerSections(claims: Claim[], byOwner?: ClaimOwnerTotal[]): OwnerSection[] {
   const map = new Map<string, OwnerSection>();
   for (const claim of claims) {
     const key = ownerSectionKey(claim);
@@ -161,7 +162,18 @@ function buildOwnerSections(claims: Claim[]): OwnerSection[] {
   sections.sort(
     (a, b) => claimCreatedTime(b.claims[0]) - claimCreatedTime(a.claims[0])
   );
-  return sections;
+  if (!byOwner?.length) return sections;
+  return sections.map((section) => {
+    const ownerUid = section.claims.find((claim) => claim.owner?.uid != null)?.owner?.uid;
+    const row = ownerUid != null ? byOwner.find((item) => item.ownerUid === ownerUid) : undefined;
+    if (!row) return section;
+    return {
+      ...section,
+      title: row.name || section.title,
+      count: row.count,
+      totalZar: row.totalZar,
+    };
+  });
 }
 
 function OwnerClaimFolders({
@@ -261,6 +273,7 @@ export function ClaimsGroupedList({
   claims,
   groups,
   byGroup,
+  byOwner,
   activeGroupUid,
   branchByUid,
   currencyView,
@@ -269,6 +282,7 @@ export function ClaimsGroupedList({
   claims: Claim[];
   groups: ClaimGroup[];
   byGroup: ClaimGroupTotal[] | undefined;
+  byOwner?: ClaimOwnerTotal[];
   activeGroupUid: string;
   branchByUid: Map<number, BranchListItem>;
   currencyView: ClaimsCurrencyView;
@@ -276,7 +290,7 @@ export function ClaimsGroupedList({
   groupByOwner?: boolean;
 }) {
   const submitMutation = useSubmitClaimGroupMutation();
-  const ownerSections = groupByOwner ? buildOwnerSections(claims) : [];
+  const ownerSections = groupByOwner ? buildOwnerSections(claims, byOwner) : [];
   const sections = groupByOwner
     ? []
     : buildSections(claims, groups, byGroup, activeGroupUid);
@@ -328,26 +342,31 @@ export function ClaimsGroupedList({
             ) : null}
             <p className="text-xs text-muted-foreground">
               {section.count} claim{section.count === 1 ? '' : 's'}
-              {section.totalZar > 0 ? ` · ${formatZarAmount(section.totalZar)}` : ''}
+              {` · ${formatZarAmount(section.totalZar)}`}
             </p>
-            {section.isDraft &&
-            section.claimGroupUid != null &&
-            section.count > 0 ? (
-              <Button
-                type="button"
-                size="sm"
-                className="ml-auto h-8 gap-1 bg-violet-600 text-xs text-white hover:bg-violet-700"
-                disabled={submitMutation.isPending}
-                onClick={() => submitMutation.mutate(section.claimGroupUid!)}
-              >
-                {submitMutation.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Send className="size-3.5" />
-                )}
-                Submit folder
-              </Button>
-            ) : null}
+            <div className="ml-auto flex flex-wrap items-center gap-1">
+              {section.claimGroupUid != null ? (
+                <ClaimFolderActions uid={section.claimGroupUid} title={section.title} />
+              ) : null}
+              {section.isDraft &&
+              section.claimGroupUid != null &&
+              section.count > 0 ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 gap-1 bg-violet-600 text-xs text-white hover:bg-violet-700"
+                  disabled={submitMutation.isPending}
+                  onClick={() => submitMutation.mutate(section.claimGroupUid!)}
+                >
+                  {submitMutation.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Send className="size-3.5" />
+                  )}
+                  Submit folder
+                </Button>
+              ) : null}
+            </div>
           </div>
           {section.claims.length === 0 ? null : (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
