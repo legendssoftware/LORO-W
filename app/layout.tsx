@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import localFont from 'next/font/local';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkProvider } from '@clerk/nextjs';
+import { googleOnlySocialElements } from '@/lib/clerk-social-appearance';
 import { Toaster } from 'react-hot-toast';
 import { OrgIdProvider } from '@/lib/org-id-context';
 import { QueryProvider } from '@/api/providers/query-provider';
@@ -77,7 +78,11 @@ export default async function RootLayout({
   const initialOrgId = await resolveInitialOrgId();
 
   return (
-    <ClerkProvider afterSignOutUrl="/sign-in" dynamic>
+    <ClerkProvider
+      afterSignOutUrl="/sign-in"
+      dynamic
+      appearance={{ elements: googleOnlySocialElements }}
+    >
       <html lang="en" suppressHydrationWarning>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
           <ThemeProvider

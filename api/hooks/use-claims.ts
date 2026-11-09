@@ -22,6 +22,7 @@ import {
   getClaimsSummary,
   listClaimGroups,
   updateClaim,
+  updateClaimGroup,
 } from '@/api/endpoints/claims';
 import type { GetClaimsParams, GetClaimsSummaryParams } from '@/api/endpoints/claims';
 import type {
@@ -283,6 +284,7 @@ export function useClaimsSummary(
       params.createdTo ?? '',
       params.claimGroupUid ?? '',
       params.ownerUid ?? '',
+      params.status ?? '',
     ],
     queryFn: () => getClaimsSummary(client, params),
     enabled: options?.enabled !== false,
@@ -373,6 +375,23 @@ export function useCreateClaimGroupMutation() {
       queryClient.invalidateQueries({ queryKey: CLAIM_GROUPS_KEY });
     },
     onError: (err) => mutationToastError(err, 'Could not create folder'),
+  });
+}
+
+export function useUpdateClaimGroupMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ uid, title }: { uid: number; title: string }) =>
+      updateClaimGroup(client, uid, { title }),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Folder renamed');
+      queryClient.invalidateQueries({ queryKey: CLAIM_GROUPS_KEY });
+      queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'summary'] });
+      queryClient.invalidateQueries({ queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'infinite'] });
+    },
+    onError: (err) => mutationToastError(err, 'Could not rename folder'),
   });
 }
 

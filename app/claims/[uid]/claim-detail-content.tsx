@@ -40,6 +40,8 @@ import {
   Building2,
   User,
   Receipt,
+  Trash2,
+  FolderMinus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
@@ -47,6 +49,11 @@ import {
   claimPrimaryAmount,
   claimSecondaryAmount,
 } from '@/app/claims/lib/claim-display';
+
+function isReceiptImage(url: string): boolean {
+  const path = url.split('?')[0]?.split('#')[0] ?? url;
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
+}
 
 function formatLabel(s: string | undefined) {
   if (!s) return '—';
@@ -81,7 +88,7 @@ export function ClaimDetailContent() {
   const { backendUserData: profile } = useSessionSync();
   const [editOpen, setEditOpen] = useState(false);
   const [confirm, setConfirm] = useState<
-    null | 'approve' | 'decline' | 'paid' | 'delete'
+    null | 'approve' | 'decline' | 'paid' | 'delete' | 'remove'
   >(null);
 
   const claimQuery = useClaim(Number.isFinite(uid) && uid > 0 ? uid : null, {
@@ -110,10 +117,9 @@ export function ClaimDetailContent() {
     !!myClerkId &&
     claim.owner.clerkUserId === myClerkId;
   const st = (claim?.status ?? '').toLowerCase();
-  const isDeclined = ['declined', 'rejected', 'cancelled'].includes(st);
-  const canEdit =
-    isOwner &&
-    !['paid', 'deleted', 'declined', 'rejected', 'cancelled'].includes(st);
+  const canActOnClaim = isOwner || manage;
+  const canEdit = canActOnClaim && !['paid', 'deleted'].includes(st);
+  const canDelete = canActOnClaim && st !== 'deleted';
 
   function runStatusUpdate(
     next: 'approved' | 'declined' | 'paid',
@@ -227,6 +233,28 @@ export function ClaimDetailContent() {
                 Edit
               </Button>
             ) : null}
+            {canActOnClaim && claim.claimGroupUid != null ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1"
+                onClick={() => setConfirm('remove')}
+              >
+                <FolderMinus className="size-4" />
+                Remove from folder
+              </Button>
+            ) : null}
+            {canDelete ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="gap-1"
+                onClick={() => setConfirm('delete')}
+              >
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -301,7 +329,7 @@ export function ClaimDetailContent() {
                   >
                     Open receipt
                   </a>
-                  {/\.(jpg|jpeg|png|gif|webp)$/i.test(claim.documentUrl) ? (
+                  {isReceiptImage(claim.documentUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={claim.documentUrl}
@@ -391,13 +419,6 @@ export function ClaimDetailContent() {
           </div>
         ) : null}
 
-        {manage && isDeclined ? (
-          <div className="mt-8 flex justify-end">
-            <Button size="sm" variant="destructive" onClick={() => setConfirm('delete')}>
-              Delete
-            </Button>
-          </div>
-        ) : null}
       </main>
 
       <ClaimEditDialog claim={claim} open={editOpen} onOpenChange={setEditOpen} />
@@ -464,6 +485,33 @@ export function ClaimDetailContent() {
               onClick={() => runStatusUpdate('paid', claim.uid)}
             >
               Mark paid
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={confirm === 'remove'}
+        onOpenChange={(o) => !o && setConfirm(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from folder?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The claim stays in the list and is no longer grouped in this folder.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                updateMutation.mutate(
+                  { ref: claim.uid, body: { claimGroupUid: null } },
+                  { onSuccess: () => setConfirm(null) }
+                )
+              }
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
