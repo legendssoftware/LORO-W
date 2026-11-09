@@ -149,7 +149,7 @@ function sortTargetRows(
       case 'calls':
         return (
           b.calls.progress - a.calls.progress ||
-          b.calls.current - a.calls.current ||
+          b.activity.all - a.activity.all ||
           a.name.localeCompare(b.name)
         );
       case 'visits':
@@ -493,6 +493,12 @@ export function ReportsOverviewTab() {
       {
         callCount: number;
         countableCallCount?: number;
+        telephoneCount?: number;
+        whatsappCount?: number;
+        emailCount?: number;
+        landlineCount?: number;
+        otherCount?: number;
+        allActivityCount?: number;
         leadCount: number;
         visitCount: number;
         quotationCount: number;
@@ -503,6 +509,12 @@ export function ReportsOverviewTab() {
       map.set(u.uid, {
         callCount: u.callCount,
         countableCallCount: u.countableCallCount,
+        telephoneCount: u.telephoneCount,
+        whatsappCount: u.whatsappCount,
+        emailCount: u.emailCount,
+        landlineCount: u.landlineCount,
+        otherCount: u.otherCount,
+        allActivityCount: u.allActivityCount,
         leadCount: u.leadCount,
         visitCount: u.visitCount,
         quotationCount: u.quotationCount ?? 0,
@@ -1119,6 +1131,20 @@ export function ReportsOverviewTab() {
     exportReportsTargets(displayRowsWithCurrency, 'excel', exportFileBaseName(), currencyView);
   }
 
+  function handleExportPdf() {
+    if (displayRowsWithCurrency.length === 0) return;
+    const rangeLabel = useAllTime
+      ? 'All time'
+      : `${formatUtcYmd(startDate)} to ${formatUtcYmd(endDate)}`;
+    exportReportsTargets(
+      displayRowsWithCurrency,
+      'pdf',
+      exportFileBaseName(),
+      currencyView,
+      `Activity report · ${rangeLabel}`
+    );
+  }
+
   async function handleExportTravel() {
     if (!rangeParams || travelExportLoading) return;
     const from = rangeParams.from;
@@ -1187,6 +1213,7 @@ export function ReportsOverviewTab() {
         onCurrencyViewChange={setCurrencyView}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
+        onExportPdf={handleExportPdf}
         onExportTravel={handleExportTravel}
         exportDisabled={isLoading || displayRowsWithCurrency.length === 0}
         travelExportLoading={travelExportLoading}

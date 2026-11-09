@@ -86,6 +86,7 @@ export interface ReportsTargetsToolbarProps {
   /** Export currently visible/filtered table rows. */
   onExportCsv?: () => void;
   onExportExcel?: () => void;
+  onExportPdf?: () => void;
   /** Download the multi-sheet visits/travel workbook for the current date filters. */
   onExportTravel?: () => void;
   exportDisabled?: boolean;
@@ -103,7 +104,7 @@ const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = 
   { value: 'achievement', label: 'Sort: Achievement (page)' },
   { value: 'sales', label: 'Sort: Sales (page)' },
   { value: 'quotations', label: 'Sort: Quotations' },
-  { value: 'calls', label: 'Sort: Calls' },
+  { value: 'calls', label: 'Sort: All Activity' },
   { value: 'visits', label: 'Sort: Visits' },
   { value: 'leads', label: 'Sort: Leads' },
   { value: 'hours', label: 'Sort: Hours' },
@@ -121,7 +122,7 @@ const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; label: s
 interface ReportsTargetsFilterControlsProps
   extends Omit<
     ReportsTargetsToolbarProps,
-    'searchInput' | 'onSearchInputChange' | 'showSearch' | 'onExportCsv' | 'onExportExcel' | 'onExportTravel' | 'exportDisabled' | 'travelExportLoading'
+    'searchInput' | 'onSearchInputChange' | 'showSearch' | 'onExportCsv' | 'onExportExcel' | 'onExportPdf' | 'onExportTravel' | 'exportDisabled' | 'travelExportLoading'
   > {
   layout: 'row' | 'stack';
 }
@@ -354,6 +355,7 @@ export function ReportsTargetsToolbar({
   showSearch = true,
   onExportCsv,
   onExportExcel,
+  onExportPdf,
   onExportTravel,
   exportDisabled = false,
   travelExportLoading = false,
@@ -398,7 +400,7 @@ export function ReportsTargetsToolbar({
   }
 
   function renderExportButton() {
-    if (!onExportCsv && !onExportExcel && !onExportTravel) return null;
+    if (!onExportCsv && !onExportExcel && !onExportPdf && !onExportTravel) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -435,6 +437,14 @@ export function ReportsTargetsToolbar({
               Export Excel
             </DropdownMenuItem>
           ) : null}
+          {onExportPdf ? (
+            <DropdownMenuItem
+              disabled={exportDisabled}
+              onSelect={() => onExportPdf()}
+            >
+              Export PDF
+            </DropdownMenuItem>
+          ) : null}
           {onExportTravel ? (
             <DropdownMenuItem
               disabled={travelExportLoading || filterProps.useAllTime}
@@ -448,7 +458,7 @@ export function ReportsTargetsToolbar({
     );
   }
 
-  const hasExport = Boolean(onExportCsv || onExportExcel || onExportTravel);
+  const hasExport = Boolean(onExportCsv || onExportExcel || onExportPdf || onExportTravel);
   const hasMobileActions = showSearch || hasExport;
 
   return (

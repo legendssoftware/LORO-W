@@ -8,6 +8,7 @@ import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
 import type { VisitExportItem, CheckInContactAddress } from '@/api/types/reports';
 import { formatSalesValue } from '@/components/visits-table/visits-table-utils';
 import type { VisitListItem } from '@/api/types/visits';
+import { activityMethodLabel } from '@/lib/activity-channel';
 import { exportToCsv } from './csv-export';
 
 /** Minimal branch ref from API (visit, owner, or user list). `name` is display label (alias preferred when resolving). */
@@ -283,11 +284,7 @@ function normalizeDurationDisplay(duration: string | null | undefined): string {
 }
 
 function getMethodDisplay(c: VisitExportItem): string {
-  if (c.methodOfContact) return formatMethodOfContact(c.methodOfContact);
-  const hasLocation =
-    (c.checkInLocation && c.checkInLocation !== '-') ||
-    (c.checkOutLocation && c.checkOutLocation !== '-');
-  return hasLocation ? 'Physical' : '-';
+  return activityMethodLabel(c);
 }
 
 export function formatContactAddress(address: CheckInContactAddress | null | undefined): string {
@@ -464,7 +461,8 @@ export function visitToExportRow(c: VisitExportItem): string[] {
 export function exportVisits(
   checkIns: VisitExportItem[],
   exportFormat: 'csv' | 'excel' | 'pdf',
-  baseName: string
+  baseName: string,
+  title?: string
 ): void {
   const rows = checkIns.map(visitToExportRow);
   const headers = [...VISITS_EXPORT_HEADERS];
@@ -479,6 +477,6 @@ export function exportVisits(
     return;
   }
   void import('./report-export').then(({ exportToPdf }) => {
-    exportToPdf(headers, rows, baseName);
+    exportToPdf(headers, rows, baseName, title);
   });
 }
