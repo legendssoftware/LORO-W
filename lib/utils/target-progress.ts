@@ -89,8 +89,8 @@ export function calcCallsLeadsEngagementProgress(
 
 /**
  * Per-column progress for Calls/Leads cells.
- * When both quotas are set and engagement is met, both columns show 100 (Done).
- * Otherwise each column keeps its own current/target progress for transparency.
+ * Each column is current/target. The combined engagement gate stays on
+ * `engagementMet` / `engagementProgress` and does not paint a short column as 100.
  */
 export function resolveCallsLeadsCellProgress(
   params: CallsLeadsEngagementInput
@@ -111,12 +111,8 @@ export function resolveCallsLeadsCellProgress(
 
   if (hasCalls && hasLeads) {
     return {
-      callsProgress: engagementMet
-        ? 100
-        : calcTargetProgress(actualCalls, targetCalls),
-      leadsProgress: engagementMet
-        ? 100
-        : calcTargetProgress(actualLeads, targetLeads),
+      callsProgress: calcTargetProgress(actualCalls, targetCalls),
+      leadsProgress: calcTargetProgress(actualLeads, targetLeads),
       engagementProgress,
       engagementMet,
     };
