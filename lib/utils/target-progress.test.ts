@@ -116,16 +116,16 @@ describe('calcCallsLeadsEngagementProgress', () => {
 });
 
 describe('resolveCallsLeadsCellProgress', () => {
-  it('marks both cells 100 when engagement met via mix', () => {
+  it('keeps each column on its own ratio when the mix meets engagement', () => {
     const r = resolveCallsLeadsCellProgress({
-      actualCalls: 30,
-      actualLeads: 30,
+      actualCalls: 39,
+      actualLeads: 29,
       targetCalls: 60,
       targetLeads: 60,
     });
     expect(r.engagementMet).toBe(true);
-    expect(r.callsProgress).toBe(100);
-    expect(r.leadsProgress).toBe(100);
+    expect(r.callsProgress).toBe(65);
+    expect(r.leadsProgress).toBe(48);
     expect(r.engagementProgress).toBe(100);
   });
 

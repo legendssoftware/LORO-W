@@ -171,7 +171,7 @@ function MetricCell({
 }: {
   cell: ReportsTargetMetricCell;
   formatValue: (cell: ReportsTargetMetricCell) => string;
-  /** Calls+leads engagement gate met — show 100% / Done. */
+  /** This column's count has reached its own target. */
   done?: boolean;
 }) {
   const displayProgress = done ? 100 : cell.progress;
@@ -568,7 +568,7 @@ export function ReportsTargetsTable({
                   ) : (
                     <MetricCell
                       cell={row.calls}
-                      done={row.engagementMet && row.calls.target > 0}
+                      done={row.calls.target > 0 && row.calls.current >= row.calls.target}
                       formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                     />
                   )}
@@ -601,7 +601,7 @@ export function ReportsTargetsTable({
                   ) : (
                     <MetricCell
                       cell={row.leads}
-                      done={row.engagementMet && row.leads.target > 0}
+                      done={row.leads.target > 0 && row.leads.current >= row.leads.target}
                       formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                     />
                   )}
