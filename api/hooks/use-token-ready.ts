@@ -55,6 +55,9 @@ export function useTokenReady() {
           }
           setIsTokenReady(!!token);
           setSessionToken(token);
+          // #region agent log
+          fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-token-ready.ts:getToken',message:'token resolved',data:{hypothesisId:'C',hasToken:Boolean(token)},timestamp:Date.now(),hypothesisId:'C',runId:'post-fix'})}).catch(()=>{});
+          // #endregion
         }
         if (isApiDebugEnabled()) {
           debugApi('useTokenReady result', {
@@ -68,6 +71,9 @@ export function useTokenReady() {
           clearClerkTokenCache();
           setIsTokenReady(false);
           setSessionToken(null);
+          // #region agent log
+          fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-token-ready.ts:getToken',message:'token rejected',data:{hypothesisId:'C',error:err instanceof Error?err.message:String(err)},timestamp:Date.now(),hypothesisId:'C',runId:'post-fix'})}).catch(()=>{});
+          // #endregion
         }
         if (isApiDebugEnabled()) {
           debugApi('useTokenReady getToken rejected', {

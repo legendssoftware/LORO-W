@@ -41,6 +41,17 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     : false;
 
   useEffect(() => {
+    // #region agent log
+    const onCsp = (event: SecurityPolicyViolationEvent) => {
+      fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'access-guard.tsx:csp',message:'csp violation',data:{hypothesisId:'E',directive:event.effectiveDirective,blocked:event.blockedURI},timestamp:Date.now(),hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
+    };
+    document.addEventListener('securitypolicyviolation', onCsp);
+    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'access-guard.tsx:gate',message:'access gate',data:{hypothesisId:'A',isLoaded,isSignedIn:Boolean(isSignedIn),publicPath,profileReady,waitingForProfile,syncFailed,isSyncing,hasError:Boolean(error),allowed,pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+    return () => document.removeEventListener('securitypolicyviolation', onCsp);
+    // #endregion
+  }, [allowed, error, isLoaded, isSignedIn, isSyncing, pathname, profileReady, publicPath, syncFailed, waitingForProfile]);
+
+  useEffect(() => {
     if (!isLoaded || !isSignedIn || publicPath) return;
     if (waitingForProfile || (isSyncing && !profileReady)) return;
     if (syncFailed) {
