@@ -308,6 +308,10 @@ export interface TravelRangeUserRow {
   petrolClaimCount: number;
   petrolClaimAmount: number;
   fuelAllowance: number;
+  /** Stored closed-day fuel cost in ZAR for the range. */
+  fuelSpentZar: number;
+  /** True when at least one closed day has a stored fuel cost. */
+  fuelPriced: boolean;
 }
 
 export interface GetTravelRangeResponse {

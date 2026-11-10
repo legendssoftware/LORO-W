@@ -574,6 +574,8 @@ export function ReportsOverviewTab() {
         petrolClaimCount: number;
         petrolClaimAmount: number;
         fuelAllowance: number;
+        fuelSpentZar: number;
+        fuelPriced: boolean;
       }
     >();
     for (const u of travelQuery.data?.users ?? []) {
@@ -583,6 +585,8 @@ export function ReportsOverviewTab() {
         petrolClaimCount: u.petrolClaimCount ?? 0,
         petrolClaimAmount: u.petrolClaimAmount ?? 0,
         fuelAllowance: u.fuelAllowance ?? 0,
+        fuelSpentZar: u.fuelSpentZar ?? 0,
+        fuelPriced: u.fuelPriced === true,
       });
     }
     return map;
@@ -1058,6 +1062,7 @@ export function ReportsOverviewTab() {
   const reviewEndYmd = useAllTime ? null : formatUtcYmd(endDate);
 
   const emptyMessage = useMemo(() => {
+    if (errorMessage) return 'Targets did not load. Use Retry to fetch them again.';
     if (!isMultiUser) return 'You do not have personal performance targets set.';
     if (branchFilterPending) return 'Loading branch users…';
     if (geoFiltersActive && geoScopedBranches.length === 0) {
@@ -1095,6 +1100,7 @@ export function ReportsOverviewTab() {
     scope,
     branchScopedUsers.length,
     cohortUsersForToolbar.length,
+    errorMessage,
   ]);
 
   function handlePageSizeChange(size: ReportsPageSize) {

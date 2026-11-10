@@ -31,6 +31,9 @@ function minimalRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow
       petrolClaimAmount: 1240,
       fuelAllowance: 2000,
       progress: 62,
+      fuelSpentZar: 800,
+      fuelPriced: true,
+      fuelUsedPercent: 40,
     },
     productivity: { score: 72 },
     achievement: 45,
@@ -59,7 +62,7 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).not.toContain('Policy status');
     expect(headers).not.toContain('Warnings acknowledged');
     expect(headers).toContain('Petrol claims (amount)');
-    expect(headers).toHaveLength(36);
+    expect(headers).toHaveLength(38);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -99,7 +102,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(36);
+    expect(row).toHaveLength(38);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -151,6 +154,9 @@ describe('reportsTargetRowToExportRow', () => {
           petrolClaimAmount: 1240,
           fuelAllowance: 2000,
           progress: 62,
+          fuelSpentZar: 800,
+          fuelPriced: true,
+          fuelUsedPercent: 40,
         },
       }),
       'set'
@@ -158,5 +164,7 @@ describe('reportsTargetRowToExportRow', () => {
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('Visits (current)')]).toBe(formatExportCount(12));
     expect(row[headers.indexOf('Check-ins (travel)')]).toBe(formatExportCount(88));
+    expect(row[headers.indexOf('Fuel spent')]).toBe(formatExportMoney(800, 'ZAR', true));
+    expect(row[headers.indexOf('Fuel used %')]).toBe('40%');
   });
 });

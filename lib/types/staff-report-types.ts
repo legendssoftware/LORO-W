@@ -1,3 +1,4 @@
+import type { FuelAllowanceBalance } from '@/api/endpoints/fuel-allowance';
 import type { TargetWarningsPayload } from '@/api/endpoints/user';
 
 /** Filter for attendance status in reports. */
@@ -98,4 +99,6 @@ export interface ReportCardUser {
   payrollExpectedByNow?: number;
   /** Progress % toward payroll period total: (payrollHours / payrollTargetHours) × 100, capped at 100. */
   payrollProgressPercent?: number;
+  /** Remaining monthly fuel allowance after billable travel. */
+  fuelBalance?: FuelAllowanceBalance | null;
 }

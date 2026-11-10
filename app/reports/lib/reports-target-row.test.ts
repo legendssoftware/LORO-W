@@ -43,6 +43,9 @@ function baseRow(overrides: Partial<ReportsTargetRow> = {}): ReportsTargetRow {
       petrolClaimAmount: 0,
       fuelAllowance: 0,
       progress: 0,
+      fuelSpentZar: 0,
+      fuelPriced: false,
+      fuelUsedPercent: 0,
     },
     achievement: 0,
     engagementMet: false,
@@ -420,11 +423,16 @@ describe('applyTravelToRow', () => {
         petrolClaimCount: 2,
         petrolClaimAmount: 1240,
         fuelAllowance: 5000,
+        fuelSpentZar: 400,
+        fuelPriced: true,
       },
       '2026-03-02',
       '2026-03-02'
     );
     expect(next.travel.distanceKm).toBe(48.2);
+    expect(next.travel.fuelSpentZar).toBe(400);
+    expect(next.travel.fuelPriced).toBe(true);
+    expect(next.travel.fuelUsedPercent).toBeGreaterThan(100);
     expect(next.travel.visitCount).toBe(12);
     expect(next.travel.petrolClaimCount).toBe(2);
     expect(next.travel.petrolClaimAmount).toBe(1240);
@@ -592,6 +600,9 @@ describe('enrichRowWithTargetDashboard preserveRangeMetrics', () => {
         petrolClaimAmount: 1240,
         fuelAllowance: 500,
         progress: 40,
+        fuelSpentZar: 0,
+        fuelPriced: false,
+        fuelUsedPercent: 0,
       },
     });
     const next = enrichRowWithTargetDashboard(row, {
