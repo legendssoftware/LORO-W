@@ -10,6 +10,8 @@ describe('contentSecurityPolicy', () => {
 
     expect(policy).toContain('https://clerk.loro.co.za');
     expect(policy).toContain('https://accounts.loro.co.za');
+    expect(policy).toContain('https://appleid.apple.com');
+    expect(policy).toContain('https://appleid.cdn-apple.com');
     expect(policy).toContain('wss://clerk.loro.co.za');
     expect(policy).toContain("connect-src 'self' blob: https://api.loro.co.za");
     expect(clerkBrowserOrigins(undefined)).toEqual([
