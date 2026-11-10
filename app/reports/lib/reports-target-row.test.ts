@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   activityCountsFromEngagement,
+  allActivityMetric,
   applyEngagementToRow,
   applyErpSalesToRow,
   applyQuotationsEngagementToRow,
@@ -67,6 +68,27 @@ describe('activityCountsFromEngagement', () => {
     });
     expect(counts.all).toBe(
       counts.telephone + counts.whatsapp + counts.email + counts.landline + counts.other + 2
+    );
+  });
+});
+
+describe('allActivityMetric', () => {
+  it('equals the channel columns and leaves physical visits on Visits', () => {
+    const row = baseRow({
+      activity: { all: 12, telephone: 3, whatsapp: 1, email: 1, landline: 2, other: 1 },
+      calls: { current: 4, target: 60, progress: 7 },
+      visits: { current: 4, target: 20, progress: 20 },
+    });
+    const metric = allActivityMetric(row);
+    expect(metric.current).toBe(8);
+    expect(metric.target).toBe(60);
+    expect(metric.progress).toBe(13);
+    expect(metric.current).toBe(
+      row.activity.telephone +
+        row.activity.whatsapp +
+        row.activity.email +
+        row.activity.landline +
+        row.activity.other
     );
   });
 });

@@ -76,6 +76,33 @@ export function emptyActivityCounts(): ReportsActivityCounts {
   return { all: 0, telephone: 0, whatsapp: 0, email: 0, landline: 0, other: 0 };
 }
 
+/**
+ * Logged remote check-ins shown in the channel columns.
+ * Physical visits stay on the Visits column and are not included.
+ */
+export function loggedChannelTotal(activity: ReportsActivityCounts | null | undefined): number {
+  if (!activity) return 0;
+  return (
+    activity.telephone + activity.whatsapp + activity.email + activity.landline + activity.other
+  );
+}
+
+/**
+ * All Activity cell: the channel breakdown versus the call quota.
+ * The numerator is every logged remote check-in, so it equals Telephone + WhatsApp + Email + Landline + Other.
+ */
+export function allActivityMetric(
+  row: Pick<ReportsTargetRow, 'activity' | 'calls'>
+): ReportsTargetMetricCell {
+  const current = loggedChannelTotal(row.activity);
+  const target = row.calls.target;
+  return {
+    current,
+    target,
+    progress: calcTargetProgress(current, target),
+  };
+}
+
 /** Channel counts from engagement-range. Falls back to the lumped call count only when the split is absent. */
 export function activityCountsFromEngagement(engagement: {
   callCount?: number;

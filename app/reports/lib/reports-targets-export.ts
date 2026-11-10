@@ -2,7 +2,7 @@
  * Export Reports Targets table rows to CSV / Excel.
  */
 
-import type { ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
+import { allActivityMetric, type ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { exportToCsv } from '@/lib/utils/csv-export';
@@ -84,6 +84,7 @@ export function buildReportsTargetsExportHeaders(
     'WhatsApp',
     'Email',
     'Landline',
+    'Other',
     'Visits (current)',
     'Visits (target)',
     'Visits %',
@@ -153,18 +154,20 @@ export function reportsTargetRowToExportRow(
     landline: 0,
     other: 0,
   };
+  const activityMetric = allActivityMetric({ ...row, activity });
 
   return [
     row.name?.trim() || '-',
     row.branch?.trim() || '-',
     row.periodLabel?.trim() || '-',
-    formatExportCount(row.calls.current),
-    formatExportCount(row.calls.target),
-    formatExportPercent(row.calls.progress),
+    formatExportCount(activityMetric.current),
+    formatExportCount(activityMetric.target),
+    formatExportPercent(activityMetric.progress),
     formatExportCount(activity.telephone),
     formatExportCount(activity.whatsapp),
     formatExportCount(activity.email),
     formatExportCount(activity.landline),
+    formatExportCount(activity.other),
     formatExportCount(row.visits.current),
     formatExportCount(row.visits.target),
     formatExportPercent(row.visits.progress),
