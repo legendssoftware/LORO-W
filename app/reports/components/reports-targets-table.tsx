@@ -8,6 +8,8 @@ import {
 } from '@/app/staff/components/report-progress-bar';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import {
+  allActivityMetric,
+  loggedChannelTotal,
   sumUniqueErpSales,
   type ReportsTargetMetricCell,
   type ReportsTargetRow,
@@ -29,7 +31,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const COL_COUNT = 14;
+const COL_COUNT = 15;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -250,6 +252,9 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
             <Skeleton className="h-4 w-8" />
           </TableCell>
           <TableCell>
+            <Skeleton className="h-4 w-8" />
+          </TableCell>
+          <TableCell>
             <Skeleton className="h-10 w-24" />
           </TableCell>
           <TableCell>
@@ -335,7 +340,7 @@ function TeamMetricBar({
 function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
   const salesCurrent = sumUniqueErpSales(members);
   const salesTarget = members.reduce((sum, row) => sum + row.sales.target, 0);
-  const callsCurrent = members.reduce((sum, row) => sum + row.calls.current, 0);
+  const callsCurrent = members.reduce((sum, row) => sum + loggedChannelTotal(row.activity), 0);
   const callsTarget = members.reduce((sum, row) => sum + row.calls.target, 0);
   const visitsCurrent = members.reduce((sum, row) => sum + row.visits.current, 0);
   const visitsTarget = members.reduce((sum, row) => sum + row.visits.target, 0);
@@ -363,6 +368,7 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
         {' · '}WhatsApp {formatCount(members.reduce((sum, row) => sum + row.activity.whatsapp, 0))}
         {' · '}Email {formatCount(members.reduce((sum, row) => sum + row.activity.email, 0))}
         {' · '}Landline {formatCount(members.reduce((sum, row) => sum + row.activity.landline, 0))}
+        {' · '}Other {formatCount(members.reduce((sum, row) => sum + row.activity.other, 0))}
       </p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <TeamMetricBar
@@ -462,7 +468,7 @@ export function ReportsTargetsTable({
       <TableHeader>
         <TableRow>
           <TableHead className="min-w-[12rem]">User</TableHead>
-          <TableHead title="Countable telephone, landline, email, and WhatsApp versus the call quota">
+          <TableHead title="Telephone + WhatsApp + Email + Landline + Other, versus the call quota. Physical visits are in the Visits column.">
             All Activity
           </TableHead>
           <TableHead title="Telephone logs that are not landline-only, including voicemail and no-answer">
@@ -471,6 +477,7 @@ export function ReportsTargetsTable({
           <TableHead>WhatsApp</TableHead>
           <TableHead>Email</TableHead>
           <TableHead title="Telephone logs with a landline number and no cell number">Landline</TableHead>
+          <TableHead title="Blank or unknown contact method">Other</TableHead>
           <TableHead title="Physical visits to a location">Visits</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
@@ -567,8 +574,11 @@ export function ReportsTargetsTable({
                     <MetricCellSkeleton />
                   ) : (
                     <MetricCell
-                      cell={row.calls}
-                      done={row.calls.target > 0 && row.calls.current >= row.calls.target}
+                      cell={allActivityMetric(row)}
+                      done={
+                        row.calls.target > 0 &&
+                        loggedChannelTotal(row.activity) >= row.calls.target
+                      }
                       formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                     />
                   )}
@@ -584,6 +594,9 @@ export function ReportsTargetsTable({
                 </TableCell>
                 <TableCell>
                   <CountCell value={row.activity.landline} pending={engagementOverlayPending} />
+                </TableCell>
+                <TableCell>
+                  <CountCell value={row.activity.other} pending={engagementOverlayPending} />
                 </TableCell>
                 <TableCell>
                   {engagementOverlayPending ? (

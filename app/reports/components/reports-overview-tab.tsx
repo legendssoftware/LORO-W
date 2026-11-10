@@ -50,9 +50,11 @@ import {
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
 import type { UserListItem, UserTargetListFields } from '@/api/endpoints/user';
 import {
+  allActivityMetric,
   applyErpSalesToRow,
   applyProductivityToRow,
   averageProductivityScore,
+  loggedChannelTotal,
   overlayTargetRowFilters,
   policyCellForRef,
   resolveTargetPeriodEngagementParams,
@@ -148,8 +150,8 @@ function sortTargetRows(
         );
       case 'calls':
         return (
-          b.calls.progress - a.calls.progress ||
-          b.activity.all - a.activity.all ||
+          allActivityMetric(b).progress - allActivityMetric(a).progress ||
+          loggedChannelTotal(b.activity) - loggedChannelTotal(a.activity) ||
           a.name.localeCompare(b.name)
         );
       case 'visits':

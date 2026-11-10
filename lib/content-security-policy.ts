@@ -90,13 +90,14 @@ export function contentSecurityPolicy(env: {
     "wss://*.vapi.ai",
     "https://*.daily.co",
     "wss://*.daily.co",
+    "https://appleid.apple.com",
   ].join(" ");
 
   const clerkHttps = clerkOrigins.join(" ");
 
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${clerkHttps} https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com`,
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${clerkHttps} https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://appleid.cdn-apple.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
@@ -104,10 +105,10 @@ export function contentSecurityPolicy(env: {
     `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
     "child-src 'self' blob:",
-    `frame-src 'self' ${clerkHttps} https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com`,
+    `frame-src 'self' ${clerkHttps} https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com https://appleid.apple.com`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    `form-action 'self' ${clerkHttps} https://*.clerk.accounts.dev https://*.clerk.com`,
+    `form-action 'self' ${clerkHttps} https://*.clerk.accounts.dev https://*.clerk.com https://appleid.apple.com`,
   ].join("; ");
 }

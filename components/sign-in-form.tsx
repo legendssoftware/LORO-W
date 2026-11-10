@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { googleOnlySocialElements } from '@/lib/clerk-social-appearance';
 import { safeReturnPath } from '@/lib/safe-return-path';
 
 const SignIn = dynamic(
@@ -27,7 +26,6 @@ export function SignInForm() {
         elements: {
           rootBox: 'mx-auto',
           card: 'shadow-xl',
-          ...googleOnlySocialElements,
         },
       }}
       signUpUrl="/sign-up"
