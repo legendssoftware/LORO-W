@@ -27,6 +27,7 @@ import type { ClientListItem } from '@/api/types/clients';
 import { Loader2Icon, ChevronLeftIcon, ChevronDownIcon, MapPinIcon } from '@/lib/icons';
 import { CalendarDays } from 'lucide-react';
 import { CallTargetSplitDialog } from '@/components/staff/call-target-split-dialog';
+import { FuelAllowanceReadout } from './fuel-allowance-readout';
 import {
   Check,
   CheckCircle,
@@ -1635,6 +1636,9 @@ export default function UserSettingsPage() {
                             </FormItem>
                           )}
                         />
+                        <div className="sm:col-span-2 lg:col-span-3">
+                          <FuelAllowanceReadout userRef={effectiveRef ?? ref ?? String(user.uid)} />
+                        </div>
                         <FormField
                           control={targetForm.control}
                           name="cellPhoneAllowance"

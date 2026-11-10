@@ -145,7 +145,14 @@ export interface ReportsTargetTravelCell {
   petrolClaimCount: number;
   petrolClaimAmount: number;
   fuelAllowance: number;
+  /** Petrol claims as a percent of the prorated fuel allowance, capped at 100. */
   progress: number;
+  /** Priced fuel cost (ZAR) for the selected range. Not prorated. */
+  fuelSpentZar: number;
+  /** True when the range has at least one day with a stored fuel cost. */
+  fuelPriced: boolean;
+  /** Spent / prorated allowance as a percent. Not capped, so overspend stays visible. */
+  fuelUsedPercent: number;
 }
 
 export function emptyTravelCell(
@@ -158,6 +165,9 @@ export function emptyTravelCell(
     petrolClaimAmount: 0,
     fuelAllowance: 0,
     progress: 0,
+    fuelSpentZar: 0,
+    fuelPriced: false,
+    fuelUsedPercent: 0,
   };
 }
 
@@ -659,6 +669,8 @@ export type TravelOverlay = {
   petrolClaimCount: number;
   petrolClaimAmount: number;
   fuelAllowance: number;
+  fuelSpentZar?: number;
+  fuelPriced?: boolean;
 };
 
 const EMPTY_ENGAGEMENT_OVERLAY: EngagementOverlay = {
@@ -1203,6 +1215,8 @@ export function applyTravelToRow(
   const visitCount = Number.isFinite(travel?.visitCount)
     ? Math.max(0, Math.round(travel?.visitCount ?? 0))
     : row.visits.current;
+  const fuelSpentZar = Math.round(Math.max(0, travel?.fuelSpentZar ?? 0) * 100) / 100;
+  const fuelPriced = travel?.fuelPriced === true;
 
   return {
     ...row,
@@ -1213,8 +1227,17 @@ export function applyTravelToRow(
       petrolClaimAmount: Math.round(petrolClaimAmount),
       fuelAllowance,
       progress: calcTargetProgress(petrolClaimAmount, fuelAllowance),
+      fuelSpentZar,
+      fuelPriced,
+      fuelUsedPercent: fuelUsedPercent(fuelSpentZar, fuelAllowance),
     },
   };
+}
+
+/** Allowance used for the selected range. Uncapped so overspend stays on the label. */
+function fuelUsedPercent(spentZar: number, allowanceZar: number): number {
+  if (allowanceZar <= 0) return 0;
+  return Math.round((spentZar / allowanceZar) * 100);
 }
 
 export function applyHoursToRow(

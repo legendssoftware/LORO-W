@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format, subDays, getDay } from 'date-fns';
 import { useMonthlyAttendance, useSessionSync } from '@/api/hooks';
 import { ReportProgressBar, getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
+import { FuelAllowanceMeter } from '@/app/staff/components/fuel-allowance-meter';
 import { PerformanceWarningsDialog } from '@/app/staff/components/performance-warnings-dialog';
 import { StaffTravelExportDialog } from '@/app/staff/components/staff-travel-export-dialog';
 import {
@@ -782,6 +783,7 @@ export function ReportUserCard({
               <p className="text-xs text-muted-foreground truncate">
                 {staffMetaLine(user)}
               </p>
+              <FuelAllowanceMeter balance={user.fuelBalance} compact />
             </div>
           </div>
         </CardContent>
@@ -902,6 +904,7 @@ export function ReportUserCard({
               {usePayroll ? (user.payrollProgressPercent ?? 0) : user.progressPercent}%
             </span>
           </div>
+          <FuelAllowanceMeter balance={user.fuelBalance} />
           {user.lastAppAccessAt && (
             <p className="text-xs text-muted-foreground flex items-center gap-2">
               {user.lastAppAccessDeviceType === 'phone' && (

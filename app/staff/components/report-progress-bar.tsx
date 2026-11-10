@@ -26,8 +26,15 @@ const SEGMENT_COUNT = 4;
 const TRACK = 'bg-muted';
 
 /** Four-segment progress bar: quarters of total expected. Fill is red when <70%, green when ≥70%. */
-export function ReportProgressBar({ value }: { value: number }) {
-  const fillClass = getProgressColorClasses(value).bg;
+export function ReportProgressBar({
+  value,
+  tone = 'default',
+}: {
+  value: number;
+  /** `danger` keeps the red fill used when hours are behind, for an overspent fuel allowance. */
+  tone?: 'default' | 'danger';
+}) {
+  const fillClass = tone === 'danger' ? 'bg-red-500' : getProgressColorClasses(value).bg;
   return (
     <div
       className="flex w-full gap-1.5 items-stretch"
