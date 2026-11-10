@@ -179,6 +179,11 @@ export const PAGE_COPY = {
     description:
       'Record merchandise visits with a client reference, photo, and comments. Managers publish or reject logs from the same inbox.',
   },
+  storeOperations: {
+    title: 'Store operations — openings, checklists and stock take',
+    description:
+      'See which branches opened and closed on time, which checklists are complete, and which stock counts are still due.',
+  },
   deliveries: {
     title: 'Deliveries — Dispatch and proof of delivery',
     description:
