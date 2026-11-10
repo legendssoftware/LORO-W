@@ -11,7 +11,9 @@ import {
   useIntakeInvitations,
   useBranches,
   getBranchDisplayLabel,
+  useFuelBalances,
 } from '@/api/hooks';
+import type { FuelAllowanceBalance } from '@/api/endpoints/fuel-allowance';
 import type { MonthlyMetricsUserItem } from '@/api/types';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { StaffFiltersBar } from '@/app/staff/components/staff-filters-bar';
@@ -142,17 +144,33 @@ export function StaffContent() {
     });
   }, [cardUsers, payrollQuery.data, today.getTime()]);
 
+  const fuelQuery = useFuelBalances({ enabled: mounted && isTokenReady });
+  const fuelByUserId = useMemo(() => {
+    const map = new Map<number, FuelAllowanceBalance>();
+    for (const row of fuelQuery.data?.users ?? []) map.set(row.userId, row);
+    return map;
+  }, [fuelQuery.data]);
+
+  const cardUsersWithFuel = useMemo((): ReportCardUser[] => {
+    if (fuelByUserId.size === 0) return cardUsersWithPayroll;
+    return cardUsersWithPayroll.map((user) => {
+      const fuelBalance = fuelByUserId.get(user.userId);
+      if (!fuelBalance) return user;
+      return { ...user, fuelBalance };
+    });
+  }, [cardUsersWithPayroll, fuelByUserId]);
+
   const branchLocationRadiusMeters =
     dailyQuery.data?.data?.branchLocationRadiusMeters ?? 50;
 
   const statusFilteredUsers = useMemo(() => {
-    if (statusFilter === 'all') return cardUsersWithPayroll;
-    if (statusFilter === 'present') return cardUsersWithPayroll.filter((u) => u.isPresent);
-    if (statusFilter === 'absent') return cardUsersWithPayroll.filter((u) => !u.isPresent);
-    if (statusFilter === 'late') return cardUsersWithPayroll.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
-    if (statusFilter === 'early') return cardUsersWithPayroll.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
+    if (statusFilter === 'all') return cardUsersWithFuel;
+    if (statusFilter === 'present') return cardUsersWithFuel.filter((u) => u.isPresent);
+    if (statusFilter === 'absent') return cardUsersWithFuel.filter((u) => !u.isPresent);
+    if (statusFilter === 'late') return cardUsersWithFuel.filter((u) => u.isPresent && (u.lateMinutes != null && u.lateMinutes > 0));
+    if (statusFilter === 'early') return cardUsersWithFuel.filter((u) => u.isPresent && (u.earlyMinutes != null && u.earlyMinutes > 0));
     if (statusFilter === 'behind_on_hours') {
-      return cardUsersWithPayroll.filter((u) => {
+      return cardUsersWithFuel.filter((u) => {
         if (u.payrollExpectedByNow != null && u.payrollHours != null) {
           return (u.payrollExpectedByNow - u.payrollHours) > HOURS_BEHIND_BADGE_THRESHOLD;
         }
@@ -162,7 +180,7 @@ export function StaffContent() {
     }
     if (statusFilter === 'idle') {
       const sevenDaysAgo = subDays(today, 7);
-      return cardUsersWithPayroll.filter((u) => {
+      return cardUsersWithFuel.filter((u) => {
         if (!u.lastAppAccessAt) return true;
         try {
           const lastAt = parse(u.lastAppAccessAt, 'MMM d, yyyy h:mm a', new Date());
@@ -178,18 +196,18 @@ export function StaffContent() {
       statusFilter === 'no_clock_in_gt_10'
     ) {
       const minDays = NO_CLOCK_IN_FILTER_DAYS[statusFilter];
-      return cardUsersWithPayroll.filter((u) =>
+      return cardUsersWithFuel.filter((u) =>
         staffHasNotClockedInMoreThan(u, minDays, today)
       );
     }
     if (statusFilter === 'sales_warning_1') {
-      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 1);
+      return cardUsersWithFuel.filter((u) => u.targetWarnings?.level === 1);
     }
     if (statusFilter === 'sales_warning_2') {
-      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 2);
+      return cardUsersWithFuel.filter((u) => u.targetWarnings?.level === 2);
     }
     if (statusFilter === 'sales_warning_3') {
-      return cardUsersWithPayroll.filter((u) => u.targetWarnings?.level === 3);
+      return cardUsersWithFuel.filter((u) => u.targetWarnings?.level === 3);
     }
     if (
       statusFilter === 'at_office' ||
@@ -198,7 +216,7 @@ export function StaffContent() {
       statusFilter === 'offsite' ||
       statusFilter === 'driving'
     ) {
-      return cardUsersWithPayroll.filter(
+      return cardUsersWithFuel.filter(
         (u) =>
           clockInModeKeyForFilter(
             u.isPresent,
@@ -209,32 +227,32 @@ export function StaffContent() {
       );
     }
     if (statusFilter === 'with_vehicle') {
-      return cardUsersWithPayroll.filter((u) => u.hasVehicle);
+      return cardUsersWithFuel.filter((u) => u.hasVehicle);
     }
     if (statusFilter === 'without_vehicle') {
-      return cardUsersWithPayroll.filter((u) => !u.hasVehicle);
+      return cardUsersWithFuel.filter((u) => !u.hasVehicle);
     }
     if (statusFilter === 'with_targets') {
-      return cardUsersWithPayroll.filter((u) => u.hasTargets);
+      return cardUsersWithFuel.filter((u) => u.hasTargets);
     }
     if (statusFilter === 'without_targets') {
-      return cardUsersWithPayroll.filter((u) => !u.hasTargets);
+      return cardUsersWithFuel.filter((u) => !u.hasTargets);
     }
     if (statusFilter === 'with_sales_code') {
-      return cardUsersWithPayroll.filter((u) => staffUserHasSalesCode(u));
+      return cardUsersWithFuel.filter((u) => staffUserHasSalesCode(u));
     }
     if (statusFilter === 'without_sales_code') {
-      return cardUsersWithPayroll.filter((u) => !staffUserHasSalesCode(u));
+      return cardUsersWithFuel.filter((u) => !staffUserHasSalesCode(u));
     }
     if (statusFilter === 'with_hrid') {
-      return cardUsersWithPayroll.filter((u) => staffUserHasHrid(u));
+      return cardUsersWithFuel.filter((u) => staffUserHasHrid(u));
     }
     if (statusFilter === 'without_hrid') {
-      return cardUsersWithPayroll.filter((u) => !staffUserHasHrid(u));
+      return cardUsersWithFuel.filter((u) => !staffUserHasHrid(u));
     }
-    return cardUsersWithPayroll;
+    return cardUsersWithFuel;
   }, [
-    cardUsersWithPayroll,
+    cardUsersWithFuel,
     statusFilter,
     today.getTime(),
     branchLocationRadiusMeters,

@@ -107,6 +107,8 @@ export function buildReportsTargetsExportHeaders(
     'Petrol claims (amount)',
     'Fuel allowance',
     'Fuel %',
+    'Fuel spent',
+    'Fuel used %',
     'Productivity %',
     'Achievement %',
     'Currency view',
@@ -202,6 +204,8 @@ export function reportsTargetRowToExportRow(
       includeSalesCurrencyPrefix
     ),
     formatExportPercent(row.travel?.progress ?? 0),
+    formatExportMoney(row.travel?.fuelSpentZar ?? 0, 'ZAR', includeSalesCurrencyPrefix),
+    formatExportPercent(row.travel?.fuelUsedPercent ?? 0),
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
     CURRENCY_VIEW_LABEL[currencyView],

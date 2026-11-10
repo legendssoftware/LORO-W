@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const COL_COUNT = 15;
+const COL_COUNT = 16;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -83,8 +83,11 @@ function formatDistanceKm(km: number): string {
 function formatVisitClaimLine(checkIns: number, claimAmount: number): string {
   const count = Math.round(checkIns);
   const label = count === 1 ? '1 check-in' : `${formatCount(count)} check-ins`;
-  const claims = Math.round(claimAmount);
-  return `${label} · R ${claims.toLocaleString()}`;
+  return `${label} · ${formatRand(claimAmount)}`;
+}
+
+function formatRand(amount: number): string {
+  return `R ${Math.round(amount).toLocaleString()}`;
 }
 
 function CountCell({ value, pending }: { value: number; pending?: boolean }) {
@@ -144,6 +147,9 @@ function TravelMetricCell({
     petrolClaimAmount: 0,
     fuelAllowance: 0,
     progress: 0,
+    fuelSpentZar: 0,
+    fuelPriced: false,
+    fuelUsedPercent: 0,
   };
   const colors = getProgressColorClasses(cell.progress);
   return (
@@ -161,6 +167,55 @@ function TravelMetricCell({
         </p>
       ) : (
         <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
+      )}
+    </div>
+  );
+}
+
+function FuelMetricCell({ row }: { row: ReportsTargetRow }) {
+  const cell = row.travel ?? {
+    distanceKm: 0,
+    visitCount: row.visits.current,
+    petrolClaimCount: 0,
+    petrolClaimAmount: 0,
+    fuelAllowance: 0,
+    progress: 0,
+    fuelSpentZar: 0,
+    fuelPriced: false,
+    fuelUsedPercent: 0,
+  };
+  const unpriced = cell.distanceKm > 0 && !cell.fuelPriced;
+  const overspent = cell.fuelUsedPercent > 100;
+  const colors = overspent
+    ? { text: 'text-red-600', bg: 'bg-red-500' }
+    : getProgressColorClasses(cell.fuelUsedPercent);
+
+  return (
+    <div className="min-w-[7.5rem] space-y-1.5">
+      <p className="text-xs font-medium text-foreground tabular-nums">
+        {formatDistanceKm(cell.distanceKm)}
+      </p>
+      {unpriced ? (
+        <p className="text-[10px] tabular-nums text-muted-foreground">Fuel is not deducted</p>
+      ) : (
+        <>
+          <p className="text-[10px] tabular-nums text-muted-foreground">
+            {cell.fuelAllowance > 0
+              ? `${formatRand(cell.fuelSpentZar)} of ${formatRand(cell.fuelAllowance)}`
+              : '—'}
+          </p>
+          <ReportProgressBar
+            value={Math.min(100, cell.fuelUsedPercent)}
+            tone={overspent ? 'danger' : 'default'}
+          />
+          {cell.fuelAllowance > 0 ? (
+            <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
+              {cell.fuelUsedPercent}%
+            </p>
+          ) : (
+            <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
+          )}
+        </>
       )}
     </div>
   );
@@ -272,6 +327,9 @@ function ReportsTargetsTableSkeleton({ rows = 6 }: { rows?: number }) {
           <TableCell className="hidden md:table-cell">
             <Skeleton className="h-10 w-24" />
           </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-10 w-24" />
+          </TableCell>
           <TableCell>
             <Skeleton className="h-10 w-16" />
           </TableCell>
@@ -318,20 +376,29 @@ function TeamMetricBar({
   valueLabel,
   progress,
   loading = false,
+  overspent = false,
 }: {
   label: string;
   valueLabel: string;
   progress: number;
   loading?: boolean;
+  /** Red fill when the fuel allowance is overspent. The label keeps the true percent. */
+  overspent?: boolean;
 }) {
-  const colors = getProgressColorClasses(progress);
+  const colors = overspent
+    ? { text: 'text-red-600', bg: 'bg-red-500' }
+    : getProgressColorClasses(progress);
   return (
     <div className="min-w-0 space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <p className={cn('text-xs font-semibold tabular-nums', colors.text)}>{progress}%</p>
       </div>
-      {loading ? <Skeleton className="h-2 w-full" /> : <ReportProgressBar value={progress} />}
+      {loading ? (
+        <Skeleton className="h-2 w-full" />
+      ) : (
+        <ReportProgressBar value={progress} tone={overspent ? 'danger' : 'default'} />
+      )}
       <p className="truncate text-xs tabular-nums text-foreground">{valueLabel}</p>
     </div>
   );
@@ -351,7 +418,13 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
   const hoursCurrent = members.reduce((sum, row) => sum + row.hours.current, 0);
   const hoursTarget = members.reduce((sum, row) => sum + row.hours.target, 0);
   const distanceKm = members.reduce((sum, row) => sum + row.travel.distanceKm, 0);
+  const claimAmount = members.reduce((sum, row) => sum + row.travel.petrolClaimAmount, 0);
   const fuelAllowance = members.reduce((sum, row) => sum + row.travel.fuelAllowance, 0);
+  const fuelSpent = members.reduce((sum, row) => sum + row.travel.fuelSpentZar, 0);
+  const fuelUnpriced =
+    members.some((row) => row.travel.distanceKm > 0) &&
+    members.every((row) => row.travel.distanceKm <= 0 || !row.travel.fuelPriced);
+  const fuelUsed = ratioPercent(fuelSpent, fuelAllowance);
   const achievement =
     members.length === 0
       ? 0
@@ -404,8 +477,18 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
         />
         <TeamMetricBar
           label="Travel"
-          progress={ratioPercent(distanceKm, fuelAllowance)}
-          valueLabel={`${formatDistanceKm(distanceKm)} / ${formatDistanceKm(fuelAllowance)}`}
+          progress={ratioPercent(claimAmount, fuelAllowance)}
+          valueLabel={`${formatDistanceKm(distanceKm)} · ${formatRand(claimAmount)} / ${formatRand(fuelAllowance)}`}
+        />
+        <TeamMetricBar
+          label="Fuel"
+          progress={fuelUsed}
+          overspent={fuelUsed > 100}
+          valueLabel={
+            fuelUnpriced
+              ? `${formatDistanceKm(distanceKm)} · Fuel is not deducted`
+              : `${formatDistanceKm(distanceKm)} · ${formatRand(fuelSpent)} of ${formatRand(fuelAllowance)}`
+          }
         />
         <TeamMetricBar
           label="Achievement"
@@ -484,6 +567,9 @@ export function ReportsTargetsTable({
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
           <TableHead className="hidden md:table-cell">Travel</TableHead>
+          <TableHead className="hidden md:table-cell" title="Distance travelled. The bar is priced fuel used against the prorated allowance.">
+            Fuel
+          </TableHead>
           <TableHead
             title={PRODUCTIVITY_COLUMN_HINT}
           >
@@ -653,6 +739,9 @@ export function ReportsTargetsTable({
                   ) : (
                     <TravelMetricCell row={row} />
                   )}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {travelOverlayPending ? <MetricCellSkeleton /> : <FuelMetricCell row={row} />}
                 </TableCell>
                 <TableCell>
                   <ProductivityCell row={row} />
