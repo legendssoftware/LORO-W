@@ -269,6 +269,18 @@ describe('rowFromUserListItem', () => {
     expect(row.quotations.currency).toBe('ZAR');
     expect(row.hours.target).toBe(180);
     expect(row.hours.current).toBe(40);
+    expect(row.workforceType).toBeNull();
+  });
+
+  it('keeps workforce type so internal staff can hide fuel', () => {
+    const row = rowFromUserListItem({
+      uid: 7,
+      name: 'Internal',
+      surname: 'Rep',
+      email: 'internal@example.com',
+      workforceType: 'internal_sales',
+    } as UserListItem);
+    expect(row.workforceType).toBe('internal_sales');
   });
 
   it('uses 180 hours when the stored target is 0 or missing, and caps above 180', () => {
@@ -450,6 +462,25 @@ describe('applyTravelToRow', () => {
     });
     expect(next.travel.progress).toBe(0);
     expect(next.travel.fuelAllowance).toBe(0);
+  });
+
+  it('drops a seeded fuel allowance for anyone who is not external sales', () => {
+    const next = applyTravelToRow(
+      baseRow({ workforceType: 'internal_sales' }),
+      {
+        distanceKm: 12,
+        petrolClaimCount: 0,
+        petrolClaimAmount: 0,
+        fuelAllowance: 5000,
+        fuelSpentZar: 200,
+        fuelPriced: true,
+      }
+    );
+    expect(next.travel.distanceKm).toBe(12);
+    expect(next.travel.fuelAllowance).toBe(0);
+    expect(next.travel.fuelSpentZar).toBe(0);
+    expect(next.travel.fuelPriced).toBe(false);
+    expect(next.travel.fuelUsedPercent).toBe(0);
   });
 });
 

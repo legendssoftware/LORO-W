@@ -10,6 +10,7 @@ import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format
 import {
   allActivityMetric,
   loggedChannelTotal,
+  showsFuelAllowance,
   sumUniqueErpSales,
   type ReportsTargetMetricCell,
   type ReportsTargetRow,
@@ -173,6 +174,10 @@ function TravelMetricCell({
 }
 
 function FuelMetricCell({ row }: { row: ReportsTargetRow }) {
+  if (!showsFuelAllowance(row)) {
+    return <p className="text-xs font-medium text-muted-foreground">None</p>;
+  }
+
   const cell = row.travel ?? {
     distanceKm: 0,
     visitCount: row.visits.current,
@@ -189,33 +194,28 @@ function FuelMetricCell({ row }: { row: ReportsTargetRow }) {
   const colors = overspent
     ? { text: 'text-red-600', bg: 'bg-red-500' }
     : getProgressColorClasses(cell.fuelUsedPercent);
+  const allowanceLabel =
+    cell.fuelAllowance > 0
+      ? `${formatRand(cell.fuelSpentZar)} of ${formatRand(cell.fuelAllowance)}`
+      : '—';
 
   return (
     <div className="min-w-[7.5rem] space-y-1.5">
-      <p className="text-xs font-medium text-foreground tabular-nums">
-        {formatDistanceKm(cell.distanceKm)}
-      </p>
       {unpriced ? (
         <p className="text-[10px] tabular-nums text-muted-foreground">Fuel is not deducted</p>
       ) : (
-        <>
-          <p className="text-[10px] tabular-nums text-muted-foreground">
-            {cell.fuelAllowance > 0
-              ? `${formatRand(cell.fuelSpentZar)} of ${formatRand(cell.fuelAllowance)}`
-              : '—'}
-          </p>
-          <ReportProgressBar
-            value={Math.min(100, cell.fuelUsedPercent)}
-            tone={overspent ? 'danger' : 'default'}
-          />
-          {cell.fuelAllowance > 0 ? (
-            <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
-              {cell.fuelUsedPercent}%
-            </p>
-          ) : (
-            <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
-          )}
-        </>
+        <p className="text-xs font-medium text-foreground tabular-nums">{allowanceLabel}</p>
+      )}
+      <ReportProgressBar
+        value={Math.min(100, cell.fuelUsedPercent)}
+        tone={overspent ? 'danger' : 'default'}
+      />
+      {cell.fuelAllowance > 0 ? (
+        <p className={cn('text-xs font-medium tabular-nums', colors.text)}>
+          {cell.fuelUsedPercent}%
+        </p>
+      ) : (
+        <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
       )}
     </div>
   );
@@ -419,12 +419,19 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
   const hoursTarget = members.reduce((sum, row) => sum + row.hours.target, 0);
   const distanceKm = members.reduce((sum, row) => sum + row.travel.distanceKm, 0);
   const claimAmount = members.reduce((sum, row) => sum + row.travel.petrolClaimAmount, 0);
-  const fuelAllowance = members.reduce((sum, row) => sum + row.travel.fuelAllowance, 0);
-  const fuelSpent = members.reduce((sum, row) => sum + row.travel.fuelSpentZar, 0);
+  const fuelMembers = members.filter((row) => showsFuelAllowance(row));
+  const fuelAllowance = fuelMembers.reduce((sum, row) => sum + row.travel.fuelAllowance, 0);
+  const fuelSpent = fuelMembers.reduce((sum, row) => sum + row.travel.fuelSpentZar, 0);
   const fuelUnpriced =
-    members.some((row) => row.travel.distanceKm > 0) &&
-    members.every((row) => row.travel.distanceKm <= 0 || !row.travel.fuelPriced);
+    fuelMembers.some((row) => row.travel.distanceKm > 0) &&
+    fuelMembers.every((row) => row.travel.distanceKm <= 0 || !row.travel.fuelPriced);
   const fuelUsed = ratioPercent(fuelSpent, fuelAllowance);
+  const fuelValueLabel =
+    fuelMembers.length === 0
+      ? 'None'
+      : fuelUnpriced
+        ? 'Fuel is not deducted'
+        : `${formatRand(fuelSpent)} of ${formatRand(fuelAllowance)}`;
   const achievement =
     members.length === 0
       ? 0
@@ -477,18 +484,14 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
         />
         <TeamMetricBar
           label="Travel"
-          progress={ratioPercent(claimAmount, fuelAllowance)}
+          progress={fuelAllowance > 0 ? ratioPercent(claimAmount, fuelAllowance) : 0}
           valueLabel={`${formatDistanceKm(distanceKm)} · ${formatRand(claimAmount)} / ${formatRand(fuelAllowance)}`}
         />
         <TeamMetricBar
           label="Fuel"
-          progress={fuelUsed}
+          progress={fuelMembers.length === 0 ? 0 : fuelUsed}
           overspent={fuelUsed > 100}
-          valueLabel={
-            fuelUnpriced
-              ? `${formatDistanceKm(distanceKm)} · Fuel is not deducted`
-              : `${formatDistanceKm(distanceKm)} · ${formatRand(fuelSpent)} of ${formatRand(fuelAllowance)}`
-          }
+          valueLabel={fuelValueLabel}
         />
         <TeamMetricBar
           label="Achievement"
@@ -567,7 +570,7 @@ export function ReportsTargetsTable({
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
           <TableHead className="hidden md:table-cell">Travel</TableHead>
-          <TableHead className="hidden md:table-cell" title="Distance travelled. The bar is priced fuel used against the prorated allowance.">
+          <TableHead className="hidden md:table-cell" title="Priced fuel used against the prorated allowance, in rand. Kilometres stay in Travel. Internal staff show None.">
             Fuel
           </TableHead>
           <TableHead
