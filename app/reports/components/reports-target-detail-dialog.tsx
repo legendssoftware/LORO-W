@@ -41,6 +41,7 @@ import type {
   ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
 import {
+  allActivityMetric,
   applyErpSalesToRow,
   enrichRowWithTargetDashboard,
 } from '@/app/reports/lib/reports-target-row';
@@ -646,14 +647,15 @@ export function ReportsTargetDetailDialog({
                   {' · '}WhatsApp {formatCount(displayRow.activity.whatsapp)}
                   {' · '}Email {formatCount(displayRow.activity.email)}
                   {' · '}Landline {formatCount(displayRow.activity.landline)}
+                  {' · '}Other {formatCount(displayRow.activity.other)}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <MetricDetail
                     label="All Activity"
-                    cell={displayRow.calls}
+                    cell={allActivityMetric(displayRow)}
                     done={
                       displayRow.calls.target > 0 &&
-                      displayRow.calls.current >= displayRow.calls.target
+                      allActivityMetric(displayRow).current >= displayRow.calls.target
                     }
                     formatValue={(c) =>
                       `${formatCount(c.current)} / ${formatCount(c.target)}`

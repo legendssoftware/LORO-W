@@ -1,8 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { googleOnlySocialElements } from '@/lib/clerk-social-appearance';
-
 const SignUp = dynamic(
   () => import('@clerk/nextjs').then((mod) => mod.SignUp),
   {
@@ -25,7 +23,6 @@ export function SignUpForm() {
         elements: {
           rootBox: 'mx-auto',
           card: 'shadow-xl',
-          ...googleOnlySocialElements,
         },
       }}
       signInUrl="/sign-in"

@@ -53,13 +53,13 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).toContain('WhatsApp');
     expect(headers).toContain('Email');
     expect(headers).toContain('Landline');
-    expect(headers).not.toContain('Other');
+    expect(headers).toContain('Other');
     expect(headers).not.toContain('Call target');
     expect(headers).toContain('Check-ins (travel)');
     expect(headers).not.toContain('Policy status');
     expect(headers).not.toContain('Warnings acknowledged');
     expect(headers).toContain('Petrol claims (amount)');
-    expect(headers).toHaveLength(35);
+    expect(headers).toHaveLength(36);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -99,7 +99,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(35);
+    expect(row).toHaveLength(36);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -124,8 +124,9 @@ describe('reportsTargetRowToExportRow', () => {
       'set'
     );
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('All Activity %')]).toBe('65%');
-    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(39));
+    expect(row[headers.indexOf('All Activity %')]).toBe('100%');
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(86));
+    expect(row[headers.indexOf('Other')]).toBe(formatExportCount(1));
     expect(row[headers.indexOf('Leads %')]).toBe('48%');
   });
 
@@ -133,6 +134,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('All Activity %')]).toBe('17%');
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(86));
     expect(row[headers.indexOf('Telephone')]).toBe(formatExportCount(70));
     expect(row[headers.indexOf('Sales %')]).toBe('2%');
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
