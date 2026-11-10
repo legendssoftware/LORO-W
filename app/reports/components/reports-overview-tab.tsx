@@ -868,6 +868,7 @@ export function ReportsOverviewTab() {
       photoURL: backendUserData.photoURL ?? backendUserData.avatar ?? null,
       branch: branchLabel,
       branchCountryCode,
+      workforceType: backendUserData.workforceType ?? null,
       dashboard: selfTargetQuery.data?.userTarget ?? null,
     });
     if (row) {

@@ -76,6 +76,31 @@ export function emptyActivityCounts(): ReportsActivityCounts {
   return { all: 0, telephone: 0, whatsapp: 0, email: 0, landline: 0, other: 0 };
 }
 
+/** Petrol allowance is only for external sales reps. */
+export const EXTERNAL_SALES_WORKFORCE = 'external_sales';
+
+/**
+ * True when this workforce type receives a fuel allowance.
+ * @param workforceType Raw workforce type from the user profile
+ */
+export function isExternalSalesWorkforce(workforceType: string | null | undefined): boolean {
+  return (workforceType ?? '').trim().toLowerCase() === EXTERNAL_SALES_WORKFORCE;
+}
+
+/**
+ * Whether the Fuel column should show a rand balance.
+ * A known non-external workforce is always None. An unknown workforce falls back to a positive allowance.
+ * @param row Target row
+ */
+export function showsFuelAllowance(row: {
+  workforceType?: string | null;
+  travel?: { fuelAllowance?: number | null };
+}): boolean {
+  const workforce = row.workforceType?.trim();
+  if (workforce) return isExternalSalesWorkforce(workforce);
+  return (row.travel?.fuelAllowance ?? 0) > 0;
+}
+
 /**
  * Logged remote check-ins shown in the channel columns.
  * Physical visits stay on the Visits column and are not included.
@@ -233,6 +258,8 @@ export interface ReportsTargetRow {
   setCurrency?: string | null;
   /** Branch ERP country code (SA, BOT, ZW, …). */
   branchCountryCode?: string | null;
+  /** Workforce cohort. Fuel allowance applies only to external sales. */
+  workforceType?: string | null;
   /** Normalized Pastel rep code from the sales batch. Shared codes are counted once in team totals. */
   erpSalesRepCode?: string | null;
   /** Canonical country database used for that rep's turnover. */
@@ -624,6 +651,7 @@ export function rowFromUserListItem(
       email: user.email,
       photoURL: user.photoURL ?? user.avatar ?? null,
       branch: branchLabel,
+      workforceType: user.workforceType ?? null,
       activity: emptyActivityCounts(),
       ...metrics,
       productivity: { score: null },
@@ -813,6 +841,7 @@ export function rowFromPersonalTarget(params: {
   photoURL?: string | null;
   branch?: string | null;
   branchCountryCode?: string | null;
+  workforceType?: string | null;
   dashboard: UserTargetDashboardShape | Record<string, unknown> | null;
 }): ReportsTargetRow | null {
   const personal = personalTargetsFromDashboard(params.dashboard);
@@ -843,6 +872,7 @@ export function rowFromPersonalTarget(params: {
       email: params.email,
       photoURL: params.photoURL ?? null,
       branch: params.branch ?? null,
+      workforceType: params.workforceType ?? null,
       activity: emptyActivityCounts(),
       ...metrics,
       productivity: { score: null },
@@ -1215,8 +1245,15 @@ export function applyTravelToRow(
   const visitCount = Number.isFinite(travel?.visitCount)
     ? Math.max(0, Math.round(travel?.visitCount ?? 0))
     : row.visits.current;
-  const fuelSpentZar = Math.round(Math.max(0, travel?.fuelSpentZar ?? 0) * 100) / 100;
-  const fuelPriced = travel?.fuelPriced === true;
+  const rawSpent = Math.round(Math.max(0, travel?.fuelSpentZar ?? 0) * 100) / 100;
+  const rawPriced = travel?.fuelPriced === true;
+  const fuelEligible = showsFuelAllowance({
+    workforceType: row.workforceType,
+    travel: { fuelAllowance },
+  });
+  const resolvedAllowance = fuelEligible ? fuelAllowance : 0;
+  const fuelSpentZar = fuelEligible ? rawSpent : 0;
+  const fuelPriced = fuelEligible && rawPriced;
 
   return {
     ...row,
@@ -1225,11 +1262,11 @@ export function applyTravelToRow(
       visitCount,
       petrolClaimCount: Math.round(petrolClaimCount),
       petrolClaimAmount: Math.round(petrolClaimAmount),
-      fuelAllowance,
-      progress: calcTargetProgress(petrolClaimAmount, fuelAllowance),
+      fuelAllowance: resolvedAllowance,
+      progress: calcTargetProgress(petrolClaimAmount, resolvedAllowance),
       fuelSpentZar,
       fuelPriced,
-      fuelUsedPercent: fuelUsedPercent(fuelSpentZar, fuelAllowance),
+      fuelUsedPercent: fuelUsedPercent(fuelSpentZar, resolvedAllowance),
     },
   };
 }

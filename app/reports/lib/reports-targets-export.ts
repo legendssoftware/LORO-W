@@ -2,7 +2,11 @@
  * Export Reports Targets table rows to CSV / Excel.
  */
 
-import { allActivityMetric, type ReportsTargetRow } from '@/app/reports/lib/reports-target-row';
+import {
+  allActivityMetric,
+  showsFuelAllowance,
+  type ReportsTargetRow,
+} from '@/app/reports/lib/reports-target-row';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { exportToCsv } from '@/lib/utils/csv-export';
@@ -148,6 +152,7 @@ export function reportsTargetRowToExportRow(
   currencyView: ReportsTargetsCurrencyView = 'set'
 ): string[] {
   const includeSalesCurrencyPrefix = currencyView !== 'zar';
+  const fuelVisible = showsFuelAllowance(row);
   const activity = row.activity ?? {
     all: 0,
     telephone: 0,
@@ -198,14 +203,18 @@ export function reportsTargetRowToExportRow(
       row.quotations.currency,
       includeSalesCurrencyPrefix
     ),
-    formatExportMoney(
-      row.travel?.fuelAllowance ?? 0,
-      row.quotations.currency,
-      includeSalesCurrencyPrefix
-    ),
-    formatExportPercent(row.travel?.progress ?? 0),
-    formatExportMoney(row.travel?.fuelSpentZar ?? 0, 'ZAR', includeSalesCurrencyPrefix),
-    formatExportPercent(row.travel?.fuelUsedPercent ?? 0),
+    fuelVisible
+      ? formatExportMoney(
+          row.travel?.fuelAllowance ?? 0,
+          row.quotations.currency,
+          includeSalesCurrencyPrefix
+        )
+      : 'None',
+    fuelVisible ? formatExportPercent(row.travel?.progress ?? 0) : 'None',
+    fuelVisible
+      ? formatExportMoney(row.travel?.fuelSpentZar ?? 0, 'ZAR', includeSalesCurrencyPrefix)
+      : 'None',
+    fuelVisible ? formatExportPercent(row.travel?.fuelUsedPercent ?? 0) : 'None',
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
     CURRENCY_VIEW_LABEL[currencyView],
