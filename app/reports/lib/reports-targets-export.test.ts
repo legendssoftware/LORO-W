@@ -167,4 +167,29 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Fuel spent')]).toBe(formatExportMoney(800, 'ZAR', true));
     expect(row[headers.indexOf('Fuel used %')]).toBe('40%');
   });
+
+  it('exports None for fuel when the person is not external sales', () => {
+    const row = reportsTargetRowToExportRow(
+      minimalRow({
+        workforceType: 'internal_employee',
+        travel: {
+          distanceKm: 10,
+          visitCount: 2,
+          petrolClaimCount: 1,
+          petrolClaimAmount: 400,
+          fuelAllowance: 5000,
+          progress: 8,
+          fuelSpentZar: 100,
+          fuelPriced: true,
+          fuelUsedPercent: 2,
+        },
+      }),
+      'set'
+    );
+    const headers = buildReportsTargetsExportHeaders('set');
+    expect(row[headers.indexOf('Distance (km)')]).toBe('10');
+    expect(row[headers.indexOf('Fuel allowance')]).toBe('None');
+    expect(row[headers.indexOf('Fuel spent')]).toBe('None');
+    expect(row[headers.indexOf('Fuel used %')]).toBe('None');
+  });
 });
