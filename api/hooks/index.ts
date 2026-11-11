@@ -317,6 +317,7 @@ export {
   useVerificationQueue,
   useWeeklyReviews,
 } from './use-performance-policy';
+export { STORE_OPERATIONS_QUERY_KEY, useStoreOperationsDashboard } from './use-store-operations';
 export {
   EPOD_QUERY_KEY,
   canCancelDelivery,
