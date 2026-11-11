@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import {
   AlertTriangle,
   CalendarIcon,
-  CheckCircle2,
   ChevronsUpDown,
   Clock3,
   Filter,
@@ -13,13 +12,11 @@ import {
   Info,
   LayoutDashboard,
   List,
-  MapPin,
   MapPinned,
-  Store,
 } from 'lucide-react';
 import { useSessionSync, useStoreOperationsDashboard, useTokenReady } from '@/api/hooks';
 import { getBranchDisplayLabel } from '@/api/types/branch';
-import type { StoreOperationsMapPoint, StoreOperationsStore } from '@/api/types/store-operations';
+import type { StoreOperationsStore } from '@/api/types/store-operations';
 import {
   SearchableOptionListPicker,
   reportsFilterPortalHighZ,
@@ -48,7 +45,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Map as MapView, MapControls, MapMarker, MarkerContent } from '@/components/ui/map';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Tooltip,
@@ -68,6 +64,7 @@ import {
   parseFlexibleDate,
   toIsoDateString,
 } from '@/lib/user-form/date-input';
+import { getCountryFlag } from '@/lib/utils/country-flags';
 import { cn } from '@/lib/utils';
 
 const FEATURES = [
@@ -89,6 +86,16 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const ALL_FILTER = 'all';
+
+export type StoreCardFilter =
+  | 'all'
+  | 'opened_on_time'
+  | 'late'
+  | 'missed'
+  | 'closed_on_time'
+  | 'checklists';
+
+export type OpeningTone = 'missed' | 'late' | 'early' | 'on_time' | 'neutral';
 const FILTER_TRIGGER_CLASS = 'h-9 min-w-0 w-[160px] shrink-0';
 const FILTER_TRIGGER_STACK = 'h-9 w-full min-w-0';
 const TAB_LIST_CLASS =
@@ -115,6 +122,7 @@ export function StoreOperationsContent() {
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [tab, setTab] = useState('overview');
+  const [cardFilter, setCardFilter] = useState<StoreCardFilter>('all');
   const query = useStoreOperationsDashboard(
     {
       date,
@@ -162,11 +170,16 @@ export function StoreOperationsContent() {
   }
 
   const data = query.data;
-  const stores = data?.stores ?? [];
+  const stores = (data?.stores ?? []).filter((store) => storeMatchesCard(store, cardFilter));
   const total = stores.length;
   const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
   const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
   const pagedStores = stores.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  function selectCard(next: StoreCardFilter) {
+    setCardFilter((current) => nextCardFilter(current, next));
+    setPage(1);
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -272,12 +285,46 @@ export function StoreOperationsContent() {
           <>
             <TabsContent value="overview" className="mt-0 flex min-h-0 flex-1 flex-col outline-none">
               <section className="mb-4 grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                <SummaryCard label="Total Stores" value={String(data.summary.totalStores)} />
-                <SummaryCard label="Opened On Time" value={String(data.summary.openedOnTime)} hint={formatPercent(data.summary.openedOnTimePercent)} />
-                <SummaryCard label="Late Opening" value={String(data.summary.lateOpenings)} hint={formatPercent(data.summary.latePercent)} />
-                <SummaryCard label="Missed Openings" value={String(data.summary.missedOpenings)} />
-                <SummaryCard label="Closed On Time" value={String(data.summary.closedOnTime)} hint={formatPercent(data.summary.closedOnTimePercent)} />
-                <SummaryCard label="Checklists Completed" value={String(data.summary.checklistsCompleted)} hint={formatPercent(data.summary.checklistsPercent)} />
+                <SummaryCard
+                  label="Total Stores"
+                  value={String(data.summary.totalStores)}
+                  active={cardFilter === 'all'}
+                  onClick={() => selectCard('all')}
+                />
+                <SummaryCard
+                  label="Opened On Time"
+                  value={String(data.summary.openedOnTime)}
+                  hint={formatPercent(data.summary.openedOnTimePercent)}
+                  active={cardFilter === 'opened_on_time'}
+                  onClick={() => selectCard('opened_on_time')}
+                />
+                <SummaryCard
+                  label="Late Opening"
+                  value={String(data.summary.lateOpenings)}
+                  hint={formatPercent(data.summary.latePercent)}
+                  active={cardFilter === 'late'}
+                  onClick={() => selectCard('late')}
+                />
+                <SummaryCard
+                  label="Missed Openings"
+                  value={String(data.summary.missedOpenings)}
+                  active={cardFilter === 'missed'}
+                  onClick={() => selectCard('missed')}
+                />
+                <SummaryCard
+                  label="Closed On Time"
+                  value={String(data.summary.closedOnTime)}
+                  hint={formatPercent(data.summary.closedOnTimePercent)}
+                  active={cardFilter === 'closed_on_time'}
+                  onClick={() => selectCard('closed_on_time')}
+                />
+                <SummaryCard
+                  label="Checklists Completed"
+                  value={String(data.summary.checklistsCompleted)}
+                  hint={formatPercent(data.summary.checklistsPercent)}
+                  active={cardFilter === 'checklists'}
+                  onClick={() => selectCard('checklists')}
+                />
               </section>
 
               <div className="flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
@@ -294,7 +341,6 @@ export function StoreOperationsContent() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="whitespace-nowrap">Store</TableHead>
-                          <TableHead className="whitespace-nowrap">Country</TableHead>
                           <TableHead className="whitespace-nowrap">Scheduled Open</TableHead>
                           <TableHead className="whitespace-nowrap">Actual Open</TableHead>
                           <TableHead className="whitespace-nowrap">Scheduled Close</TableHead>
@@ -332,9 +378,13 @@ export function StoreOperationsContent() {
                       <div key={kpi.key}>
                         <div className="mb-1 flex justify-between text-xs">
                           <span>{kpi.label}</span>
-                          <span>{formatPercent(kpi.percent)}</span>
+                          <span className={kpiPercentClass(kpi.percent)}>{formatPercent(kpi.percent)}</span>
                         </div>
-                        <Progress value={kpi.percent ?? 0} />
+                        <Progress
+                          value={kpi.percent ?? 0}
+                          className={kpi.percent == null ? 'bg-muted' : undefined}
+                          indicatorClassName={kpiIndicatorClass(kpi.percent)}
+                        />
                       </div>
                     ))}
                   </div>
@@ -363,16 +413,6 @@ export function StoreOperationsContent() {
                   )}
                 </section>
               </div>
-
-              {tab === 'details' ? (
-                <StoreMap
-                  stores={stores}
-                  points={data.map}
-                  isError={query.isError}
-                  errorMessage={getQueryErrorMessage(query.error)}
-                  onRetry={() => query.refetch()}
-                />
-              ) : null}
             </TabsContent>
           </>
         ) : null}
@@ -596,35 +636,59 @@ function FeaturesDialog({
   );
 }
 
-function SummaryCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function SummaryCard({
+  label,
+  value,
+  hint,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <article className="rounded-xl border border-border bg-card p-3">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-xl border border-border bg-card p-3 text-left transition-shadow',
+        'hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active && 'ring-2 ring-violet-600',
+      )}
+    >
       <p className="text-2xl font-semibold">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
       {hint ? <p className="text-xs font-medium">{hint}</p> : null}
-    </article>
+    </button>
   );
 }
 
 function StoreRow({ store }: { store: StoreOperationsStore }) {
   const label = getBranchDisplayLabel({ name: store.name, alias: store.alias });
+  const flag = store.country.trim() ? getCountryFlag(store.country).flag : '🌍';
+  const tone = openingTone(store);
   return (
     <TableRow>
-      <TableCell className="max-w-[12rem] font-medium">
+      <TableCell className="max-w-[14rem] font-medium">
         <span className="inline-flex max-w-full items-center gap-2">
-          <Store className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="truncate" title={store.name}>
+          <span className="shrink-0 text-base leading-none" aria-hidden>
+            {flag}
+          </span>
+          <span className="truncate" title={store.country ? `${label || store.name} · ${store.country}` : store.name}>
             {label || store.name}
           </span>
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap">{store.country || '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{store.scheduledOpen ?? '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{store.actualOpen ?? '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{store.scheduledClose ?? '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{store.actualClose ?? '—'}</TableCell>
       <TableCell className="whitespace-nowrap">
-        <Badge variant={store.status === 'open' ? 'default' : 'secondary'}>
+        <Badge variant="outline" className={cn('border-transparent', statusPillClass(tone))}>
           {STATUS_LABEL[store.status] ?? store.status}
         </Badge>
       </TableCell>
@@ -633,106 +697,75 @@ function StoreRow({ store }: { store: StoreOperationsStore }) {
   );
 }
 
-function StoreMap({
-  stores,
-  points,
-  isError,
-  errorMessage,
-  onRetry,
-}: {
-  stores: StoreOperationsStore[];
-  points: StoreOperationsMapPoint[];
-  isError: boolean;
-  errorMessage: string;
-  onRetry: () => void;
-}) {
-  const markers = useMemo(() => {
-    const byUid = new Map(stores.map((store) => [store.branchUid, store]));
-    return points.map((point) => {
-      const store = byUid.get(point.branchUid);
-      const label = getBranchDisplayLabel({ name: store?.name ?? point.name, alias: store?.alias });
-      return {
-        ...point,
-        label: label || point.name,
-        punctuality: store ? openingPunctuality(store) : null,
-      };
-    });
-  }, [points, stores]);
-  const openedMarkers = markers.filter((marker) => marker.punctuality != null);
-  const center = useMemo<[number, number]>(() => {
-    if (markers.length === 0) return [28.0473, -26.2041];
-    const lng = markers.reduce((sum, point) => sum + point.lng, 0) / markers.length;
-    const lat = markers.reduce((sum, point) => sum + point.lat, 0) / markers.length;
-    return [lng, lat];
-  }, [markers]);
-
-  return (
-    <section className="flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <h2 className="shrink-0 border-b border-border px-4 py-3 text-sm font-semibold">
-        Store Map – Operating Status
-      </h2>
-      {isError ? (
-        <div className="p-4">
-          <QueryErrorBanner message={errorMessage} onRetry={onRetry} />
-        </div>
-      ) : markers.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-          No branches have coordinates for this filter.
-        </p>
-      ) : openedMarkers.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-          No opening or closing times to plot for this day.
-        </p>
-      ) : (
-        <div className="relative min-h-[28rem] flex-1">
-          <MapView
-            key={markers.map((marker) => marker.branchUid).join('-')}
-            center={center}
-            zoom={markers.length === 1 ? 11 : 5}
-            className="absolute inset-0 size-full"
-          >
-            <MapControls showZoom />
-            {markers.map((point) => (
-              <MapMarker key={point.branchUid} longitude={point.lng} latitude={point.lat}>
-                <MarkerContent>
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border bg-background px-2 py-1 text-[11px]',
-                      point.punctuality === 'on_time' && 'border-emerald-600 text-emerald-700',
-                      point.punctuality === 'late' && 'border-red-600 text-red-700',
-                      point.punctuality == null && 'border-border text-muted-foreground',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'size-2.5 shrink-0 rounded-full',
-                        point.punctuality === 'on_time' && 'bg-emerald-500',
-                        point.punctuality === 'late' && 'bg-red-500',
-                        point.punctuality == null && 'bg-muted-foreground/40',
-                      )}
-                      aria-hidden
-                    />
-                    {point.punctuality === 'on_time' ? (
-                      <CheckCircle2 className="size-3" aria-hidden />
-                    ) : (
-                      <MapPin className="size-3" aria-hidden />
-                    )}
-                    {point.label}
-                  </span>
-                </MarkerContent>
-              </MapMarker>
-            ))}
-          </MapView>
-        </div>
-      )}
-    </section>
-  );
+/** Clicking the active card, or Total Stores, clears the table filter. */
+export function nextCardFilter(current: StoreCardFilter, next: StoreCardFilter): StoreCardFilter {
+  if (next === 'all' || current === next) return 'all';
+  return next;
 }
 
-/** Green when actual open is on or before the schedule; red when it is later. */
-function openingPunctuality(store: StoreOperationsStore): 'on_time' | 'late' | null {
-  if (!store.actualOpen || !store.scheduledOpen) return null;
-  return store.actualOpen > store.scheduledOpen ? 'late' : 'on_time';
+export function storeMatchesCard(store: StoreOperationsStore, filter: StoreCardFilter): boolean {
+  switch (filter) {
+    case 'all':
+      return true;
+    case 'opened_on_time':
+      return Boolean(store.actualOpen) && !store.openedLate;
+    case 'late':
+      return store.openedLate;
+    case 'missed':
+      return store.status === 'missed';
+    case 'closed_on_time':
+      return (
+        store.status === 'closed' &&
+        store.actualClose != null &&
+        store.scheduledClose != null &&
+        store.actualClose <= store.scheduledClose
+      );
+    case 'checklists':
+      return store.checklistPercent === 100;
+    default: {
+      const unreachable: never = filter;
+      return unreachable;
+    }
+  }
+}
+
+/** Missed is red. Opened stores use early, on time, or late. */
+export function openingTone(store: StoreOperationsStore): OpeningTone {
+  if (store.status === 'missed') return 'missed';
+  if (store.openedLate) return 'late';
+  if (store.actualOpen && store.scheduledOpen && store.actualOpen < store.scheduledOpen) return 'early';
+  if (store.actualOpen) return 'on_time';
+  return 'neutral';
+}
+
+export function statusPillClass(tone: OpeningTone): string {
+  switch (tone) {
+    case 'missed':
+      return 'bg-red-600 text-white';
+    case 'late':
+      return 'bg-amber-500 text-white';
+    case 'early':
+      return 'bg-blue-600 text-white';
+    case 'on_time':
+      return 'bg-emerald-600 text-white';
+    case 'neutral':
+      return 'border-border bg-transparent text-muted-foreground';
+    default: {
+      const unreachable: never = tone;
+      return unreachable;
+    }
+  }
+}
+
+/** Red under 50, green at 50 and above. Null stays on the neutral track. */
+export function kpiIndicatorClass(percent: number | null): string | undefined {
+  if (percent == null) return 'bg-muted-foreground/25';
+  return percent >= 50 ? 'bg-emerald-500' : 'bg-red-500';
+}
+
+export function kpiPercentClass(percent: number | null): string | undefined {
+  if (percent == null) return undefined;
+  return percent >= 50 ? 'font-medium text-emerald-600' : 'font-medium text-red-600';
 }
 
 function formatPercent(value: number | null): string {
