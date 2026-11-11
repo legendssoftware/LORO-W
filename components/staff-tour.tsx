@@ -9,7 +9,6 @@ import { getCurrentYearMonth, readStaffTourState, writeStaffTourState } from '@/
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
@@ -21,23 +20,13 @@ const SEL_TRAVEL = '[data-tour="staff-travel-export"]';
 
 const REQUIRED_SELECTORS = [SEL_HEADER, SEL_TOOLBAR, SEL_GRID] as const;
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is the Staff page: see who is present or absent today, filter by status, role, and branch, and open a teammate for more detail. The next steps walk through the header, filters, and the card grid.';
-
 function buildStaffSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Staff',
-        description: TOUR_INTRO_DESCRIPTION,
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Staff overview',
-        description:
-          'Use this page to review attendance and activity for your team for the current day at a glance.',
+        title: 'Staff',
+        description: 'See who is present or absent today.',
         side: 'bottom',
         align: 'start',
       },
@@ -48,9 +37,9 @@ function buildStaffSteps(): DriveStep[] {
     steps.push({
       element: SEL_ADD_USER,
       popover: {
-        title: 'Invite a teammate',
+        title: 'Add a teammate',
         description:
-          'Add user creates a staff account. Send intake link, beside it, lets someone finish onboarding themselves.',
+          'Add user creates a staff account. Send intake link lets them finish onboarding themselves.',
         side: 'bottom',
         align: 'end',
       },
@@ -63,7 +52,7 @@ function buildStaffSteps(): DriveStep[] {
       popover: {
         title: 'Filter and search',
         description:
-          'Narrow the list by status (present, absent, location mode, and more), role, workforce, branch, and country. Search by name or email.',
+          'Filter by status, role, workforce, branch, or country. Search by name or email.',
         side: 'bottom',
         align: 'center',
       },
@@ -73,7 +62,7 @@ function buildStaffSteps(): DriveStep[] {
       popover: {
         title: 'Teammate cards',
         description:
-          'Each card shows today’s context for a person. Click a card to open full detail; use the clock where available to see attendance history.',
+          'Click a card for that person’s detail. Click the clock, when it is shown, for their attendance history.',
         side: 'top',
         align: 'center',
       },
@@ -86,19 +75,12 @@ function buildStaffSteps(): DriveStep[] {
       popover: {
         title: 'Travel report',
         description:
-          'On a card, download that person’s travel report workbook (Excel) or a day-by-day analysis PDF for a date range you choose.',
+          'Download that person’s Excel workbook or a day-by-day PDF for the dates you pick.',
         side: 'left',
         align: 'center',
       },
     });
   }
-
-  steps.push({
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
-    },
-  });
 
   return steps;
 }

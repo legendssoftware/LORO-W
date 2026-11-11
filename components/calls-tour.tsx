@@ -9,7 +9,6 @@ import { canAccessCallRecordings } from '@/lib/access';
 import { readCallsTourState, writeCallsTourState } from '@/lib/calls-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="calls-page-header"]';
 const SEL_TOOLBAR = '[data-tour="calls-toolbar"]';
@@ -20,18 +19,11 @@ const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_TABLE] as const;
 function buildCallsSteps(): DriveStep[] {
   return [
     {
-      popover: {
-        title: 'Welcome to Call recordings',
-        description:
-          'Company-line and in-app calls land here with origin, score, and transcript status. The next steps cover filters and the recording list.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Recordings overview',
+        title: 'Call recordings',
         description:
-          'PBX calls come from Linkus or a desk handset. In-app calls were started from LORO. Visits on the Visits page are a separate log.',
+          'PBX calls (Linkus or a desk phone) and in-app LORO calls are listed here with score and transcript status. Visits stay on the Visits page.',
         side: 'bottom',
         align: 'start',
       },
@@ -41,7 +33,7 @@ function buildCallsSteps(): DriveStep[] {
       popover: {
         title: 'Filter recordings',
         description:
-          'Narrow by date, status, direction, branch, and search. The default range is this month through today.',
+          'The range is this month through today. Change date, status, direction, branch, or search to narrow the list.',
         side: 'bottom',
         align: 'center',
       },
@@ -50,16 +42,9 @@ function buildCallsSteps(): DriveStep[] {
       element: SEL_TABLE,
       popover: {
         title: 'Open a recording',
-        description:
-          'Each row shows when the call happened, who was on it, duration, score, and transcript status. Open a row for the transcript, score, and audio.',
+        description: 'Click a row for the transcript, score, and audio.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     },
   ];

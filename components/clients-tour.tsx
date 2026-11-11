@@ -13,26 +13,15 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is the Clients page: create organisation clients, filter by status and category, and search. The next steps show the page header, filters, and your client cards.';
-
 const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to Clients',
-      description: TOUR_INTRO_DESCRIPTION,
-    },
-  },
   {
     element: '[data-tour="clients-page-header"]',
     popover: {
-      title: 'Clients overview',
-      description:
-        'Use Add client to register a new client. The subtitle reminds you that this area is for organisation-wide client records.',
+      title: 'Clients',
+      description: 'Click Add client to register a client for the organisation.',
       side: 'bottom',
       align: 'start',
     },
@@ -42,7 +31,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Filter and search',
       description:
-        'Filter by client status and category, then search by name, email, or phone. Clear each filter with the X when you want the full list again.',
+        'Filter by status and category. Search by name, email, or phone. Click X on a filter to clear it.',
       side: 'bottom',
       align: 'center',
     },
@@ -51,16 +40,9 @@ const TOUR_STEPS: DriveStep[] = [
     element: '[data-tour="clients-grid"]',
     popover: {
       title: 'Client cards',
-      description:
-        'Open a card to see full client details. At the bottom, Load more appears when more results are available from the server.',
+      description: 'Click a card for the full record. Click Load more to fetch the next page.',
       side: 'top',
       align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
     },
   },
 ];

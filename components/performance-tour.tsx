@@ -12,7 +12,6 @@ import {
 } from '@/lib/performance-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="performance-page-header"]';
 const SEL_TOOLBAR = '[data-tour="performance-toolbar"]';
@@ -25,18 +24,11 @@ const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_CONSOLIDATED] as const;
 function buildPerformanceSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Performance',
-        description:
-          'Sales performance for the countries, branches, and dates you can see. The next steps cover filters, targets, charts, and the consolidated statement.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Performance tracker',
+        title: 'Performance',
         description:
-          'The title switches to Consolidated Statement when that view is open.',
+          'Sales for the countries, branches, and dates you can see. The title switches to Consolidated Statement when that view is on.',
         side: 'bottom',
         align: 'start',
       },
@@ -46,7 +38,7 @@ function buildPerformanceSteps(): DriveStep[] {
       popover: {
         title: 'Dates and filters',
         description:
-          'Set the date range, open filters for country, branch, and category, and refresh when you want a new pull from the server.',
+          'Set the date range. Open filters for country, branch, and category. Click refresh to pull the latest numbers.',
         side: 'bottom',
         align: 'center',
       },
@@ -56,7 +48,7 @@ function buildPerformanceSteps(): DriveStep[] {
       popover: {
         title: 'Consolidated statement',
         description:
-          'Switch to the consolidated income statement across countries and branches, then come back to the performance report.',
+          'Turn this on for the income statement across countries and branches. Turn it off to return to the performance report.',
         side: 'bottom',
         align: 'end',
       },
@@ -68,8 +60,7 @@ function buildPerformanceSteps(): DriveStep[] {
       element: SEL_SUMMARY,
       popover: {
         title: 'Target and gross profit',
-        description:
-          'Revenue against target, and gross profit for the same range, when those figures are available.',
+        description: 'Revenue against target, and gross profit, for this range.',
         side: 'bottom',
         align: 'center',
       },
@@ -82,19 +73,12 @@ function buildPerformanceSteps(): DriveStep[] {
       popover: {
         title: 'Charts',
         description:
-          'Category, branch, payment mix, products, salespeople, and hourly sales for the current filters.',
+          'Category, branch, payment mix, products, salespeople, and hourly sales for the filters you set.',
         side: 'top',
         align: 'center',
       },
     });
   }
-
-  steps.push({
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
-    },
-  });
 
   return steps;
 }

@@ -9,7 +9,6 @@ import { canAccessReports } from '@/lib/access';
 import { readReportsTourState, writeReportsTourState } from '@/lib/reports-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="reports-page-header"]';
 const SEL_TABS = '[data-tour="reports-tabs"]';
@@ -43,18 +42,11 @@ function revealReportsStep(stepElement: string, activeDriver: Driver): void {
 function buildReportsSteps(): DriveStep[] {
   return [
     {
-      popover: {
-        title: 'Welcome to Reports',
-        description:
-          'Reports covers targets, policy, call quality, tasks and planning, and activity insights for the period you can see. The next steps open the newer tabs.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Reports overview',
+        title: 'Reports',
         description:
-          'The subtitle matches your access: your own numbers, your team, or the whole organisation.',
+          'Targets, policy, call quality, tasks, and activity for the period your access allows.',
         side: 'bottom',
         align: 'start',
       },
@@ -64,7 +56,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Report tabs',
         description:
-          'Targets is performance against goals. Policy is compliance for the period. Call quality is coaching from scored calls. Insights groups activity into clusters. Tasks & planning compares planned visits with what was done, missed, and time on the job.',
+          'Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done.',
         side: 'bottom',
         align: 'start',
       },
@@ -73,8 +65,7 @@ function buildReportsSteps(): DriveStep[] {
       element: SEL_QUALITY,
       popover: {
         title: 'Call quality',
-        description:
-          'Leaderboard, funnel, and coaching notes from scored conversations in the selected range.',
+        description: 'Leaderboard, funnel, and coaching notes for scored calls in this range.',
         side: 'top',
         align: 'center',
       },
@@ -83,16 +74,9 @@ function buildReportsSteps(): DriveStep[] {
       element: SEL_INSIGHTS,
       popover: {
         title: 'Insights',
-        description:
-          'Activity intelligence for the same range: clusters of work, flags, and where time went.',
+        description: 'Clusters of work, flags, and where time went for the same range.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     },
   ];

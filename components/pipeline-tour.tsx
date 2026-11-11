@@ -13,7 +13,6 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
@@ -22,9 +21,6 @@ const SEL_TARGETS = '[data-tour="pipeline-targets-section"]';
 const SEL_QUOTATIONS = '[data-tour="pipeline-quotations-section"]';
 const SEL_LEAD = '[data-tour="pipeline-lead-pipeline-section"]';
 const SEL_VISITS = '[data-tour="pipeline-visits-section"]';
-
-const TOUR_INTRO_DESCRIPTION =
-  'Pipeline brings together your sales targets, ERP and LORO quotations, lead analytics, and visit outcomes for the current period. The next steps call out each area on this page.';
 
 const REQUIRED_SELECTORS = [SEL_HEADER, SEL_QUOTATIONS, SEL_LEAD, SEL_VISITS] as const;
 
@@ -35,17 +31,11 @@ function areRequiredDomTargetsReady(): boolean {
 function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Pipeline',
-        description: TOUR_INTRO_DESCRIPTION,
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Pipeline overview',
+        title: 'Pipeline',
         description:
-          'The title is fixed; the subtitle reflects what you are allowed to see (for example, personal pipeline vs organisation-wide, depending on your access).',
+          'Targets, quotations, leads, and visit outcomes for the period you can see.',
         side: 'bottom',
         align: 'start',
       },
@@ -55,9 +45,9 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     steps.push({
       element: SEL_TARGETS,
       popover: {
-        title: 'Targets and progress',
+        title: 'Targets',
         description:
-          'When your profile has targets, these cards show progress for sales, leads, check-ins, and calls for the current target period.',
+          'Progress on sales, leads, check-ins, and calls for the current target period.',
         side: 'bottom',
         align: 'center',
       },
@@ -67,9 +57,9 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     {
       element: SEL_QUOTATIONS,
       popover: {
-        title: 'Quotations (ERP and LORO)',
+        title: 'Quotations',
         description:
-          'Review ERP quotation lines for your range, adjust the ERP date window, and compare with LORO app quotations in period.',
+          'Change the ERP date window to load quotation lines. Compare them with LORO quotations in the same period.',
         side: 'bottom',
         align: 'center',
       },
@@ -77,9 +67,9 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     {
       element: SEL_LEAD,
       popover: {
-        title: 'Lead pipeline',
+        title: 'Leads',
         description:
-          'See lead counts, pipeline value, and visit-linked quote value, then dig into status breakdowns and charts for the selected range.',
+          'Counts, pipeline value, and quote value from visits. Open a status to see the breakdown for this range.',
         side: 'bottom',
         align: 'center',
       },
@@ -88,16 +78,9 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
       element: SEL_VISITS,
       popover: {
         title: 'Visits',
-        description:
-          'Summarises check-out outcomes in range: totals, sales, quotes, and values where data exists.',
+        description: 'Check-out totals for this range: visits, sales, quotes, and values.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     }
   );
