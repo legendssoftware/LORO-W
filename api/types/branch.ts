@@ -29,6 +29,8 @@ export interface BranchListItem {
   logoUrl?: string | null;
   /** Retail floor area in square metres — visualiser capacity simulation. */
   floorSizeSqm?: number | null;
+  /** Internal-sales user who owns outbound company-phone calls from this branch. */
+  primaryInternalSalesUserUid?: number | null;
 }
 
 /** Response shape for GET /branch (findAll). */

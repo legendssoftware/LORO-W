@@ -49,7 +49,7 @@ export interface DeliverySummary {
   status: DeliveryStatus;
   routeCode: string;
   scheduledDate: string;
-  orderUid: number;
+  orderUid: number | null;
   orderNumber: string | null;
   driverUid: number;
   clientName: string;
@@ -100,9 +100,10 @@ export interface DriverOption {
   accessLevel: string;
 }
 
-/** Row from GET /epod/assignable-orders — a shop order with no open delivery. */
+/** Row from GET /epod/assignable-orders — an open ERP sales order. */
 export interface AssignableOrder {
-  uid: number;
+  docNumber: string;
+  store: string;
   orderNumber: string;
   status: string;
   clientName: string;
@@ -110,7 +111,8 @@ export interface AssignableOrder {
 }
 
 export interface CreateDeliveryBody {
-  orderUid: number;
+  docNumber: string;
+  store: string;
   driverUid: number;
   routeCode: string;
   scheduledDate: string;

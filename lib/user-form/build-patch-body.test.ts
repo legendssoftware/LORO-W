@@ -128,6 +128,14 @@ describe('buildUserTargetPatchBody', () => {
     expect(body?.secondaryVehicleAssetUid).toBeNull();
   });
 
+  it('sends null to clear a saved fuel price', () => {
+    const body = buildUserTargetPatchBody(
+      { ...empty, fuelPricePerLitreZar: 23.5 },
+      { ...empty, fuelPricePerLitreZar: null }
+    );
+    expect(body?.fuelPricePerLitreZar).toBeNull();
+  });
+
   it('includes vehicle keys when marked dirty even if values match', () => {
     const assigned = withVehicles(empty, 42, null);
     const body = buildUserTargetPatchBody(assigned, assigned, {

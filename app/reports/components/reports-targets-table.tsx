@@ -6,10 +6,10 @@ import {
   ReportProgressBar,
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
+import { fuelUpfrontLabel } from '@/app/staff/components/fuel-allowance-meter';
 import { formatReportCurrencyCode } from '@/app/reports/lib/reports-chart-format';
 import {
   allActivityMetric,
-  loggedChannelTotal,
   showsFuelAllowance,
   sumUniqueErpSales,
   type ReportsTargetMetricCell,
@@ -217,6 +217,16 @@ function FuelMetricCell({ row }: { row: ReportsTargetRow }) {
       ) : (
         <p className="text-xs font-medium tabular-nums text-muted-foreground">—</p>
       )}
+      {cell.fuelProjectedEndZar != null ? (
+        <p className="text-[10px] tabular-nums text-muted-foreground">
+          On pace for {formatRand(cell.fuelProjectedEndZar)}
+        </p>
+      ) : null}
+      {cell.fuelPayDecision ? (
+        <p className="text-[10px] tabular-nums text-muted-foreground">
+          {fuelUpfrontLabel(cell.fuelPayDecision, cell.fuelUpfrontPayZar ?? null, formatRand)}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -407,7 +417,7 @@ function TeamMetricBar({
 function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
   const salesCurrent = sumUniqueErpSales(members);
   const salesTarget = members.reduce((sum, row) => sum + row.sales.target, 0);
-  const callsCurrent = members.reduce((sum, row) => sum + loggedChannelTotal(row.activity), 0);
+  const callsCurrent = members.reduce((sum, row) => sum + allActivityMetric(row).current, 0);
   const callsTarget = members.reduce((sum, row) => sum + row.calls.target, 0);
   const visitsCurrent = members.reduce((sum, row) => sum + row.visits.current, 0);
   const visitsTarget = members.reduce((sum, row) => sum + row.visits.target, 0);
@@ -570,7 +580,7 @@ export function ReportsTargetsTable({
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
           <TableHead className="hidden md:table-cell">Travel</TableHead>
-          <TableHead className="hidden md:table-cell" title="Priced fuel used against the prorated allowance, in rand. Kilometres stay in Travel. Internal staff show None.">
+          <TableHead className="hidden md:table-cell" title="Priced fuel used against the prorated allowance for the selected dates. On pace and the upfront amount use the full allowance period. Internal staff show None.">
             Fuel
           </TableHead>
           <TableHead
@@ -666,7 +676,7 @@ export function ReportsTargetsTable({
                       cell={allActivityMetric(row)}
                       done={
                         row.calls.target > 0 &&
-                        loggedChannelTotal(row.activity) >= row.calls.target
+                        allActivityMetric(row).current >= row.calls.target
                       }
                       formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                     />

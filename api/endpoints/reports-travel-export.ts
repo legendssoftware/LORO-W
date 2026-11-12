@@ -10,6 +10,8 @@ export type TravelExportParams = {
   to: string;
   userUid?: number;
   branchId?: number;
+  /** Rand per litre for this download only. Omit to use the saved override. */
+  fuelPricePerLitreZar?: number;
   /** When true, the Axios error interceptor does not toast; the caller shows its own. */
   skipErrorToast?: boolean;
 };
@@ -48,6 +50,9 @@ export async function downloadTravelExport(
       to: params.to,
       ...(params.userUid != null ? { userUid: params.userUid } : {}),
       ...(params.branchId != null ? { branchId: params.branchId } : {}),
+      ...(params.fuelPricePerLitreZar != null
+        ? { fuelPricePerLitreZar: params.fuelPricePerLitreZar }
+        : {}),
     },
     responseType: 'blob',
     // Month-long ranges can take a few minutes the first time (road distances are cached afterwards).

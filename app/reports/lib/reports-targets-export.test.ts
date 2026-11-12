@@ -62,7 +62,9 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).not.toContain('Policy status');
     expect(headers).not.toContain('Warnings acknowledged');
     expect(headers).toContain('Petrol claims (amount)');
-    expect(headers).toHaveLength(38);
+    expect(headers).toContain('Fuel on pace');
+    expect(headers).toContain('Fuel upfront');
+    expect(headers).toHaveLength(40);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -102,7 +104,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(38);
+    expect(row).toHaveLength(40);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -128,7 +130,7 @@ describe('reportsTargetRowToExportRow', () => {
     );
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('All Activity %')]).toBe('100%');
-    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(86));
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(110));
     expect(row[headers.indexOf('Other')]).toBe(formatExportCount(1));
     expect(row[headers.indexOf('Leads %')]).toBe('48%');
   });
@@ -136,8 +138,8 @@ describe('reportsTargetRowToExportRow', () => {
   it('includes percent suffix on metric progress columns', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     const headers = buildReportsTargetsExportHeaders('set');
-    expect(row[headers.indexOf('All Activity %')]).toBe('17%');
-    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(86));
+    expect(row[headers.indexOf('All Activity %')]).toBe('22%');
+    expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(110));
     expect(row[headers.indexOf('Telephone')]).toBe(formatExportCount(70));
     expect(row[headers.indexOf('Sales %')]).toBe('2%');
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
@@ -166,6 +168,34 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Check-ins (travel)')]).toBe(formatExportCount(88));
     expect(row[headers.indexOf('Fuel spent')]).toBe(formatExportMoney(800, 'ZAR', true));
     expect(row[headers.indexOf('Fuel used %')]).toBe('40%');
+    expect(row[headers.indexOf('Fuel on pace')]).toBe('');
+    expect(row[headers.indexOf('Fuel upfront')]).toBe('');
+  });
+
+  it('exports the period forecast separately from the filter spend', () => {
+    const row = reportsTargetRowToExportRow(
+      minimalRow({
+        travel: {
+          distanceKm: 48.2,
+          visitCount: 12,
+          petrolClaimCount: 2,
+          petrolClaimAmount: 1240,
+          fuelAllowance: 2000,
+          progress: 62,
+          fuelSpentZar: 800,
+          fuelPriced: true,
+          fuelUsedPercent: 40,
+          fuelProjectedEndZar: 4040,
+          fuelPayDecision: 'pay-projected',
+          fuelUpfrontPayZar: 4040,
+        },
+      }),
+      'set'
+    );
+    const headers = buildReportsTargetsExportHeaders('set');
+    expect(row[headers.indexOf('Fuel used %')]).toBe('40%');
+    expect(row[headers.indexOf('Fuel on pace')]).toBe(formatExportMoney(4040, 'ZAR', true));
+    expect(row[headers.indexOf('Fuel upfront')]).toBe(formatExportMoney(4040, 'ZAR', true));
   });
 
   it('exports None for fuel when the person is not external sales', () => {
@@ -191,5 +221,7 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Fuel allowance')]).toBe('None');
     expect(row[headers.indexOf('Fuel spent')]).toBe('None');
     expect(row[headers.indexOf('Fuel used %')]).toBe('None');
+    expect(row[headers.indexOf('Fuel on pace')]).toBe('None');
+    expect(row[headers.indexOf('Fuel upfront')]).toBe('None');
   });
 });

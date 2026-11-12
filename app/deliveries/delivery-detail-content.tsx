@@ -122,7 +122,7 @@ export function DeliveryDetailContent({
             <DetailRow label="Address" value={delivery.clientAddress || '—'} />
             <DetailRow label="Contact" value={delivery.contactName || '—'} />
             <DetailRow label="Phone" value={delivery.contactPhone || '—'} />
-            <DetailRow label="Order" value={delivery.orderNumber || `#${delivery.orderUid}`} />
+            <DetailRow label="Order" value={delivery.orderNumber || (delivery.orderUid != null ? `#${delivery.orderUid}` : '—')} />
             <DetailRow label="Client location" value={formatCoordinates(delivery.latitude, delivery.longitude)} />
           </CardContent>
         </Card>

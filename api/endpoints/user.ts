@@ -208,6 +208,8 @@ export interface PatchUserTargetBody {
   carInstalment?: number;
   carInsurance?: number;
   fuel?: number;
+  /** Rand per litre. Null clears the override and travel uses the country price. */
+  fuelPricePerLitreZar?: number | null;
   primaryVehicleAssetUid?: number | null;
   secondaryVehicleAssetUid?: number | null;
   cellPhoneAllowance?: number;

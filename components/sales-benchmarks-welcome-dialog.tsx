@@ -161,11 +161,18 @@ export function SalesBenchmarksWelcomeDialog({
   previewNotice = null,
   forceOpen = false,
   onPreviewClose,
+  paceNotice = null,
+  onPaceAcknowledge,
+  paceAcknowledging = false,
 }: {
   deferForPendingWarning?: boolean;
   previewNotice?: OrganisationNoticeRecord | null;
   forceOpen?: boolean;
   onPreviewClose?: () => void;
+  /** Personal pace nudge. Acknowledge is an explicit click and does not use the org-notice view cap. */
+  paceNotice?: OrganisationNoticeRecord | null;
+  onPaceAcknowledge?: () => void;
+  paceAcknowledging?: boolean;
 } = {}) {
   const pathname = usePathname() ?? '';
   const { isLoaded, isSignedIn, sessionId } = useAuth();
@@ -186,7 +193,7 @@ export function SalesBenchmarksWelcomeDialog({
   const activeNoticeQuery = useQuery({
     queryKey: activeOrgNoticeKey(orgRef),
     queryFn: () => getActiveOrganisationNotice(client, orgRef),
-    enabled: !previewNotice && Boolean(orgRef) && isTokenReady && isSignedIn,
+    enabled: !previewNotice && !paceNotice && Boolean(orgRef) && isTokenReady && isSignedIn,
     staleTime: 60_000,
   });
 
@@ -200,7 +207,7 @@ export function SalesBenchmarksWelcomeDialog({
   const acknowledgeNoticeRef = useRef(acknowledgeMut.mutate);
   acknowledgeNoticeRef.current = acknowledgeMut.mutate;
 
-  const activeNotice = previewNotice ?? latchedNotice ?? activeNoticeQuery.data?.notice ?? null;
+  const activeNotice = paceNotice ?? previewNotice ?? latchedNotice ?? activeNoticeQuery.data?.notice ?? null;
 
   const localeOptions = useMemo(() => {
     if (!activeNotice) return [];
@@ -217,6 +224,14 @@ export function SalesBenchmarksWelcomeDialog({
   const noticeUid = activeNotice?.uid ?? null;
 
   useEffect(() => {
+    if (paceNotice) {
+      if (deferForPendingWarning || !isLoaded || !isSignedIn || !inAppShell || !isDashboard) {
+        setOpen(false);
+        return;
+      }
+      setOpen(true);
+      return;
+    }
     if (forceOpen) {
       setOpen(true);
       return;
@@ -285,6 +300,7 @@ export function SalesBenchmarksWelcomeDialog({
     forceOpen,
     noticeUid,
     orgRef,
+    paceNotice,
   ]);
 
   const handleOpenChange = (next: boolean) => {
@@ -318,7 +334,11 @@ export function SalesBenchmarksWelcomeDialog({
     return null;
   }
 
-  const dialogOpen = forceOpen ? open : open && !deferForPendingWarning;
+  const dialogOpen = paceNotice
+    ? open && !deferForPendingWarning
+    : forceOpen
+      ? open
+      : open && !deferForPendingWarning;
   const themeStyles = getNoticeThemeStyles(activeNotice?.theme);
   const ThemeIcon = themeStyles.Icon;
 
@@ -492,7 +512,14 @@ export function SalesBenchmarksWelcomeDialog({
             type="button"
             variant="success"
             className="h-auto min-h-12 w-full max-w-md whitespace-normal px-4 py-3 text-center text-sm leading-snug"
-            onClick={() => handleOpenChange(false)}
+            onClick={() => {
+              if (paceNotice) {
+                onPaceAcknowledge?.();
+                return;
+              }
+              handleOpenChange(false);
+            }}
+            disabled={paceAcknowledging}
           >
             {content.acknowledgeLabel}
           </Button>

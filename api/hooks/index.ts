@@ -103,6 +103,8 @@ export {
   usePatchUserTarget,
   useClearSelectedPerformanceWarnings,
   useAcknowledgePerformanceWarning,
+  usePaceNotice,
+  useAcknowledgePaceNotice,
   useSubThresholdDailyCalls,
   useEngagementRange,
   useTravelRange,
