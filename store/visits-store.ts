@@ -21,7 +21,7 @@ export interface VisitsFiltersState {
   endDate: Date;
   useAllTime: boolean;
   selectedRegion: string;
-  /** Defaults to physical visits. `all` shows every channel. */
+  /** Defaults to every channel. A specific channel narrows the list. */
   activityChannel: ActivityChannelFilter;
   selectedBusinessType: string;
   selectedUserUid: string;
@@ -63,7 +63,7 @@ export const useVisitsStore = create<VisitsStore>((set) => ({
   endDate: defaultEnd,
   useAllTime: false,
   selectedRegion: '',
-  activityChannel: 'physical',
+  activityChannel: 'all',
   selectedBusinessType: '',
   selectedUserUid: '',
   searchQuery: '',

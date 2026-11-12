@@ -401,13 +401,13 @@ function VisitFilterControls({
         selectedValue={activityChannel}
         onValueChange={(value) => {
           const next = ACTIVITY_CHANNEL_FILTERS.find((channel) => channel === value);
-          setActivityChannel(next ?? 'physical');
+          setActivityChannel(next ?? 'all');
         }}
         options={ACTIVITY_CHANNEL_FILTERS.map((channel) => ({
           value: channel,
           label: activityChannelFilterLabel(channel),
         }))}
-        placeholderLabelWhenAll="Physical visits"
+        placeholderLabelWhenAll="All activity"
         searchPlaceholder="Search activity…"
         emptyMessage="No activity type found."
         triggerIcon={<Phone className="size-4 shrink-0" />}
@@ -513,7 +513,7 @@ export function VisitHistoryToolbar({
     if (showBusinessTypeFilter) setSelectedBusinessType('');
     if (showUserFilter) setSelectedUserUid('');
     if (showSearch) setSearchQuery('');
-    setActivityChannel('physical');
+    setActivityChannel('all');
   }
 
   function renderSearchField(className?: string) {

@@ -268,7 +268,7 @@ export function VisitsContent({
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Physical visits are listed by default. Use the activity filter for telephone, WhatsApp, email, or landline.
+              All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.
             </p>
           </div>
           {checkedIn ? (
@@ -429,7 +429,9 @@ export function VisitsContent({
               emptyMessage={
                 checkIns.length === 0
                   ? 'No visits yet. Start a visit to see it here.'
-                  : `No ${activityChannelFilterLabel(activityChannel).toLowerCase()} match your filters.`
+                  : activityChannel === 'all'
+                    ? 'No activity matches your filters.'
+                    : `No ${activityChannelFilterLabel(activityChannel).toLowerCase()} match your filters.`
               }
               onVisitUpdated={() => checkInsQuery.refetch()}
             />
