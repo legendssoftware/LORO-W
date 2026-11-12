@@ -6,7 +6,7 @@ export interface VisitHistoryFilterInput {
   selectedRegion: string;
   selectedBusinessType: string;
   searchQuery: string;
-  /** Physical visits by default. `all` keeps every channel. */
+  /** Every channel by default. A specific channel narrows the list. */
   activityChannel?: ActivityChannelFilter;
 }
 
@@ -18,7 +18,7 @@ export function filterVisitCheckIns(
   filters: VisitHistoryFilterInput
 ): VisitExportItem[] {
   let list = checkIns;
-  const channel = filters.activityChannel ?? 'physical';
+  const channel = filters.activityChannel ?? 'all';
   if (channel !== 'all') {
     list = list.filter((c) => classifyActivityChannel(c) === channel);
   }
