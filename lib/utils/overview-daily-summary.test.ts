@@ -8,6 +8,7 @@ import {
   previousMondayToSaturdayUtcRange,
   resolveTargetsUtcCalendarRange,
   utcCalendarDateFromLocalPickerDate,
+  orgRangeIsoFromUtcCalendarStoredRange,
   utcRangeIsoFromUtcCalendarStoredRange,
   utcWholeMonthRange,
 } from './overview-daily-summary';
@@ -28,6 +29,16 @@ describe('utcRangeIsoFromUtcCalendarStoredRange', () => {
     const r = utcRangeIsoFromUtcCalendarStoredRange(a, b);
     expect(r.startDate).toBe('2026-05-05T00:00:00.000Z');
     expect(r.endDate).toBe('2026-05-06T23:59:59.999Z');
+  });
+});
+
+describe('orgRangeIsoFromUtcCalendarStoredRange', () => {
+  it('starts 1 Nov SAST at 22:00 UTC the previous day', () => {
+    const day = new Date(Date.UTC(2026, 10, 1));
+    expect(orgRangeIsoFromUtcCalendarStoredRange(day, day)).toEqual({
+      startDate: '2026-10-31T22:00:00.000Z',
+      endDate: '2026-11-01T21:59:59.999Z',
+    });
   });
 });
 

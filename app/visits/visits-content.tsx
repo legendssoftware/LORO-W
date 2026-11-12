@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgName } from '@/lib/org-id-context';
-import { utcRangeIsoFromUtcCalendarStoredRange, utcDateFromYmd } from '@/lib/utils/overview-daily-summary';
+import { orgRangeIsoFromUtcCalendarStoredRange, utcDateFromYmd } from '@/lib/utils/overview-daily-summary';
 import {
   useCheckIns,
   useCheckInStatus,
@@ -133,7 +133,7 @@ export function VisitsContent({
 
   const checkInsDateRange = useMemo(
     () =>
-      useAllTime ? null : utcRangeIsoFromUtcCalendarStoredRange(startDate, endDate),
+      useAllTime ? null : orgRangeIsoFromUtcCalendarStoredRange(startDate, endDate),
     [useAllTime, startDate, endDate]
   );
 
