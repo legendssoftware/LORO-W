@@ -6,12 +6,12 @@
 export type ActivityChannel = 'physical' | 'telephone' | 'landline' | 'email' | 'whatsapp' | 'other';
 
 export const ACTIVITY_CHANNEL_FILTERS = [
+  'all',
   'physical',
   'telephone',
   'whatsapp',
   'email',
   'landline',
-  'all',
 ] as const;
 
 export type ActivityChannelFilter = (typeof ACTIVITY_CHANNEL_FILTERS)[number];
