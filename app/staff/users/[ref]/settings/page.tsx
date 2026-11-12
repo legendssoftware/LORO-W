@@ -1636,6 +1636,33 @@ export default function UserSettingsPage() {
                             </FormItem>
                           )}
                         />
+                        <FormField
+                          control={targetForm.control}
+                          name="fuelPricePerLitreZar"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fuel price override (R/L)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  min={0}
+                                  placeholder={savedFieldPlaceholder(field.value, 'Country price')}
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    field.onChange(v === '' ? null : Number(v));
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Rand per litre for travel reports. Leave blank to use the national price for the country driven that day. The travel dialog can replace this for one download.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <div className="sm:col-span-2 lg:col-span-3">
                           <FuelAllowanceReadout userRef={effectiveRef ?? ref ?? String(user.uid)} />
                         </div>

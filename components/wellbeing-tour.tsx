@@ -9,7 +9,6 @@ import { canAccessWellbeingDashboard } from '@/lib/access';
 import { readWellbeingTourState, writeWellbeingTourState } from '@/lib/wellbeing-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="wellbeing-page-header"]';
 const SEL_TOOLBAR = '[data-tour="wellbeing-toolbar"]';
@@ -37,18 +36,10 @@ function revealWellbeingStep(stepElement: string, activeDriver: Driver): void {
 function buildWellbeingSteps(): DriveStep[] {
   return [
     {
-      popover: {
-        title: 'Welcome to Wellbeing',
-        description:
-          'This dashboard is the daily employee pulse for managers, HR, and executives. The next steps cover filters, today’s board, and the executive index.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Wellbeing overview',
-        description:
-          'Mood check-ins, named follow-ups, and how mood lines up with performance in the selected window.',
+        title: 'Wellbeing',
+        description: 'Mood check-ins, follow-ups, and how mood lines up with performance.',
         side: 'bottom',
         align: 'start',
       },
@@ -58,7 +49,7 @@ function buildWellbeingSteps(): DriveStep[] {
       popover: {
         title: 'Date and branch',
         description:
-          'Insights, Executive, and Correlations use this date range and branch. Today is the live board and does not depend on the range.',
+          'Insights, Executive, and Correlations use this date range and branch. Today ignores the range.',
         side: 'bottom',
         align: 'center',
       },
@@ -68,7 +59,7 @@ function buildWellbeingSteps(): DriveStep[] {
       popover: {
         title: 'Today, Insights, Executive, Correlations',
         description:
-          'Today is check-ins and follow-ups. Insights summarises the range. Executive shows radial indexes. Correlations compares mood with performance. These are estimates, not causes.',
+          'Today is live check-ins. Insights summarises the range. Executive is the index charts. Correlations compares mood with performance. These are estimates, not causes.',
         side: 'bottom',
         align: 'start',
       },
@@ -77,8 +68,7 @@ function buildWellbeingSteps(): DriveStep[] {
       element: SEL_TODAY,
       popover: {
         title: 'Today',
-        description:
-          'KPIs, branch comparison, and named lists for support and people who need a follow-up.',
+        description: 'KPIs, branch comparison, and named lists of people who need support or a follow-up.',
         side: 'top',
         align: 'center',
       },
@@ -87,16 +77,9 @@ function buildWellbeingSteps(): DriveStep[] {
       element: SEL_RADIAL,
       popover: {
         title: 'Executive index',
-        description:
-          'On Executive, each radial is a rolled-up index for the selected range and branch.',
+        description: 'Each chart is one rolled-up index for the range and branch you set.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     },
   ];

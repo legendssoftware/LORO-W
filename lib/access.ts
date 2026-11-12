@@ -486,6 +486,13 @@ export function canAccess(
         return canAccessMerchandise(accessLevel);
     }
 
+    if (
+        pathNormalized === "/store-operations" ||
+        pathNormalized.startsWith("/store-operations/")
+    ) {
+        return canAccessStoreOperations(accessLevel);
+    }
+
     if (isClientPortalUser(accessLevel)) {
         return isClientPortalPath(pathNormalized);
     }
@@ -526,6 +533,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/claims", label: "Claims" },
     { path: "/takeoff", label: "Takeoff" },
     { path: "/deliveries", label: "Deliveries" },
+    { path: "/store-operations", label: "Store operations" },
     { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
@@ -571,6 +579,24 @@ export function canViewOrganisationDeliveries(user: {
     if (!user) return false;
     if (canDispatchDeliveries(user.accessLevel)) return true;
     return normalize(user.workforceType ?? undefined) === 'management';
+}
+
+const STORE_OPERATIONS_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+    "supervisor",
+    "executive",
+    "operations",
+    "developer",
+]);
+
+/**
+ * All-stores operations dashboard. Store managers and the roles above them.
+ * @param accessLevel Signed-in access level
+ */
+export function canAccessStoreOperations(accessLevel: string | undefined): boolean {
+    return STORE_OPERATIONS_LEVELS.has(normalize(accessLevel));
 }
 
 /** Whether the user may invite or provision staff accounts. */
@@ -624,6 +650,9 @@ export function getAllowedRoutes(
         { path: "/claims", label: "Claims" },
         { path: "/takeoff", label: "Takeoff" },
         { path: "/deliveries", label: "Deliveries" },
+        ...(canAccessStoreOperations(accessLevel)
+            ? [{ path: "/store-operations", label: "Store operations" }]
+            : []),
         { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
@@ -694,6 +723,15 @@ export function getAllowedRoutes(
             reportsIndex >= 0 ? reportsIndex + 1 : restrictedNav.length,
             0,
             { path: "/performance", label: "Performance" }
+        );
+    }
+
+    if (canAccessStoreOperations(accessLevel) && !restrictedNav.some((r) => r.path === "/store-operations")) {
+        const deliveriesIndex = restrictedNav.findIndex((r) => r.path === "/deliveries");
+        restrictedNav.splice(
+            deliveriesIndex >= 0 ? deliveriesIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/store-operations", label: "Store operations" }
         );
     }
 

@@ -8,7 +8,10 @@ export interface FuelAllowanceDay {
   costZar: number;
 }
 
-/** Remaining monthly fuel costing after recorded travel. */
+/** Whether the allowance can be paid now, and how much. */
+export type FuelPayDecision = 'hold' | 'overspent' | 'pay-full' | 'pay-projected';
+
+/** Remaining monthly fuel costing after recorded travel, plus the end-of-period forecast. */
 export interface FuelAllowanceBalance {
   userId: number;
   clerkUserId: string | null;
@@ -22,6 +25,19 @@ export interface FuelAllowanceBalance {
   balanceZar: number | null;
   periodStart: string;
   periodEnd: string;
+  /** Monday–Friday days from the period start through yesterday. */
+  elapsedWorkingDays: number;
+  /** Monday–Friday days from tomorrow through the period end. */
+  remainingWorkingDays: number;
+  /** Closed-day spend per weekday. Null before any weekday has closed. */
+  rateZarPerDay: number | null;
+  /** Spend to date plus the rate times weekdays still left. */
+  projectedEndZar: number | null;
+  /** Allowance minus the projected end. Null when no allowance is set. */
+  projectedBalanceZar: number | null;
+  payDecision: FuelPayDecision;
+  /** Null while the decision is hold. */
+  upfrontPayZar: number | null;
 }
 
 export interface FuelAllowanceBalanceDetail extends FuelAllowanceBalance {

@@ -32,14 +32,21 @@ export function AppHeader() {
   const { performSignOut } = useSignOut();
   const welcomeShown = useRef(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  // User resource is absent in Clerk's SSR auth snapshot, so reading it on the first client paint mismatches the server HTML.
+  const [isProfileMounted, setIsProfileMounted] = useState(false);
   const { backendUserData } = useSessionSync();
   const { toggleSidebar, open, openMobile, isMobile } = useSidebar();
   const sidebarOpen = isMobile ? openMobile : open;
+  const profileUser = isProfileMounted ? user : undefined;
 
   const handleSignOut = () => {
     setIsSigningOut(true);
     void performSignOut();
   };
+
+  useEffect(() => {
+    setIsProfileMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user || welcomeShown.current) return;
@@ -77,8 +84,8 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">
-      {isSignedIn ? (
-        sidebarOpen ? (
+      <SignedIn>
+        {sidebarOpen ? (
           <div className="size-9 shrink-0" aria-hidden />
         ) : (
           <Button
@@ -90,15 +97,13 @@ export function AppHeader() {
           >
             <LayoutDashboardIcon className="size-6" />
           </Button>
-        )
-      ) : (
-        <Link
-          href="/"
-          className="text-xl font-bold text-foreground"
-        >
+        )}
+      </SignedIn>
+      <SignedOut>
+        <Link href="/" className="text-xl font-bold text-foreground">
           Home
         </Link>
-      )}
+      </SignedOut>
 
       <div className="flex flex-1 items-center justify-end gap-3">
         <SignedOut>
@@ -127,18 +132,18 @@ export function AppHeader() {
               }}
             >
               <div className="min-w-0 max-w-[130px] shrink text-right sm:max-w-[200px] md:max-w-none">
-                <p className="truncate text-sm font-medium text-foreground" title={user?.fullName ?? user?.firstName ?? undefined}>
-                  {user?.fullName ?? user?.firstName ?? 'User'}
+                <p className="truncate text-sm font-medium text-foreground" title={profileUser?.fullName ?? profileUser?.firstName ?? undefined}>
+                  {profileUser ? (profileUser.fullName ?? profileUser.firstName ?? 'User') : '\u00a0'}
                 </p>
-                <p className="truncate text-xs text-muted-foreground" title={user?.primaryEmailAddress?.emailAddress ?? undefined}>
-                  {user?.primaryEmailAddress?.emailAddress ?? ''}
+                <p className="truncate text-xs text-muted-foreground" title={profileUser?.primaryEmailAddress?.emailAddress ?? undefined}>
+                  {profileUser?.primaryEmailAddress?.emailAddress ?? ''}
                 </p>
               </div>
               <Avatar className="size-9 shrink-0">
-                <AvatarImage src={user?.imageUrl} alt={user?.fullName ?? undefined} />
+                <AvatarImage src={profileUser?.imageUrl} alt={profileUser?.fullName ?? undefined} />
                 <AvatarFallback className="text-xs">
-                  {user?.firstName?.[0]}
-                  {user?.lastName?.[0]}
+                  {profileUser?.firstName?.[0]}
+                  {profileUser?.lastName?.[0]}
                 </AvatarFallback>
               </Avatar>
             </button>

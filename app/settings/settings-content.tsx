@@ -32,6 +32,8 @@ import type {
   PatchOrganisationSettingsBody,
 } from '@/api/types/organisation';
 import { getBranchDisplayLabel, type BranchListItem } from '@/api/types/branch';
+import { useUsers } from '@/api/hooks/use-users';
+import { WorkforceType } from '@/api/types/user';
 import type { WeekdayKey } from './settings-types';
 import {
   BRANCHES_LIST_QUERY_KEY,
@@ -385,6 +387,10 @@ function branchListItemToForm(b: BranchListItem) {
     state: formatAddressForDisplay(b.address?.state),
     addrCountry: formatAddressForDisplay(b.address?.country),
     postalCode: addressPostalCode(b.address).trim(),
+    primaryInternalSalesUserUid:
+      b.primaryInternalSalesUserUid != null && b.primaryInternalSalesUserUid > 0
+        ? String(b.primaryInternalSalesUserUid)
+        : '',
   };
 }
 
@@ -958,6 +964,7 @@ export function SettingsContent() {
     addrCountry: '',
     postalCode: '',
     floorSizeSqm: '',
+    primaryInternalSalesUserUid: '',
   });
   const [branchFormDirty, setBranchFormDirty] = useState(false);
 
@@ -971,6 +978,19 @@ export function SettingsContent() {
     queryFn: () => getBranchByRef(client, branchRef),
     enabled: enabled && activeTab === 'branches' && Boolean(branchRef),
   });
+
+  const selectedBranchUid =
+    branchDetailQuery.data?.branch?.ref === branchRef
+      ? branchDetailQuery.data.branch.uid
+      : branches.find((branch) => branch.ref === branchRef)?.uid;
+  const branchStaffQuery = useUsers({
+    enabled: enabled && activeTab === 'branches' && selectedBranchUid != null,
+    branchId: selectedBranchUid,
+    limit: 100,
+  });
+  const internalSalesAtBranch = (branchStaffQuery.data ?? []).filter(
+    (user) => user.workforceType === WorkforceType.INTERNAL_SALES,
+  );
 
   useEffect(() => {
     const first = branches.find((b) => b.ref)?.ref ?? '';
@@ -1036,6 +1056,9 @@ export function SettingsContent() {
         status: branchForm.status,
         country: branchForm.country.trim() || 'SA',
         floorSizeSqm: parseOptionalFloorSizeSqm(branchForm.floorSizeSqm),
+        primaryInternalSalesUserUid: branchForm.primaryInternalSalesUserUid
+          ? Number(branchForm.primaryInternalSalesUserUid)
+          : null,
         address,
       });
     },
@@ -2919,6 +2942,41 @@ export function SettingsContent() {
                         }
                         placeholder={FORM_PLACEHOLDERS.fullName}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="br-primary-sales">Primary internal sales</Label>
+                      <Select
+                        value={branchForm.primaryInternalSalesUserUid || 'none'}
+                        onValueChange={(value) =>
+                          setBranchFormUser((current) => ({
+                            ...current,
+                            primaryInternalSalesUserUid: value === 'none' ? '' : value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="br-primary-sales">
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {branchForm.primaryInternalSalesUserUid &&
+                          !internalSalesAtBranch.some(
+                            (user) => String(user.uid) === branchForm.primaryInternalSalesUserUid,
+                          ) ? (
+                            <SelectItem value={branchForm.primaryInternalSalesUserUid}>
+                              Selected user
+                            </SelectItem>
+                          ) : null}
+                          {internalSalesAtBranch.map((user) => (
+                            <SelectItem key={user.uid} value={String(user.uid)}>
+                              {[user.name, user.surname].filter(Boolean).join(' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Outbound company-phone calls from this branch count as this person&apos;s landline calls.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="br-web">Website</Label>

@@ -1,3 +1,4 @@
+import type { FuelAllowanceBalance, FuelPayDecision } from '@/api/endpoints/fuel-allowance';
 import type {
   TargetWarningsPayload,
   UserListItem,
@@ -103,7 +104,7 @@ export function showsFuelAllowance(row: {
 
 /**
  * Logged remote check-ins shown in the channel columns.
- * Physical visits stay on the Visits column and are not included.
+ * Physical visits stay on the Visits column as well, and All Activity adds them back.
  */
 export function loggedChannelTotal(activity: ReportsActivityCounts | null | undefined): number {
   if (!activity) return 0;
@@ -113,13 +114,27 @@ export function loggedChannelTotal(activity: ReportsActivityCounts | null | unde
 }
 
 /**
- * All Activity cell: the channel breakdown versus the call quota.
- * The numerator is every logged remote check-in, so it equals Telephone + WhatsApp + Email + Landline + Other.
+ * Every logged check-in for All Activity.
+ * Uses the larger of the stored total and the channel columns plus physical visits,
+ * so a visit count is never dropped when `activity.all` was left at the remote-only sum.
+ */
+export function allActivityCount(
+  row: Pick<ReportsTargetRow, 'activity' | 'visits'>
+): number {
+  const channels = loggedChannelTotal(row.activity);
+  const visits = row.visits?.current ?? 0;
+  const recorded = row.activity?.all ?? 0;
+  return Math.max(recorded, channels + visits);
+}
+
+/**
+ * All Activity cell: every check-in versus the call quota.
+ * The numerator is Telephone + WhatsApp + Email + Landline + Other + physical visits.
  */
 export function allActivityMetric(
-  row: Pick<ReportsTargetRow, 'activity' | 'calls'>
+  row: Pick<ReportsTargetRow, 'activity' | 'calls' | 'visits'>
 ): ReportsTargetMetricCell {
-  const current = loggedChannelTotal(row.activity);
+  const current = allActivityCount(row);
   const target = row.calls.target;
   return {
     current,
@@ -178,6 +193,16 @@ export interface ReportsTargetTravelCell {
   fuelPriced: boolean;
   /** Spent / prorated allowance as a percent. Not capped, so overspend stays visible. */
   fuelUsedPercent: number;
+  /** Closed-day rand per weekday for the full allowance period. */
+  fuelRateZarPerDay?: number | null;
+  /** Forecast spend at the end of the allowance period. */
+  fuelProjectedEndZar?: number | null;
+  /** Allowance minus the forecast. */
+  fuelProjectedBalanceZar?: number | null;
+  /** Upfront pay outcome for the full allowance period. */
+  fuelPayDecision?: FuelPayDecision | null;
+  /** Rand that can be paid now. Null while the decision is hold. */
+  fuelUpfrontPayZar?: number | null;
 }
 
 export function emptyTravelCell(
@@ -1275,6 +1300,40 @@ export function applyTravelToRow(
 function fuelUsedPercent(spentZar: number, allowanceZar: number): number {
   if (allowanceZar <= 0) return 0;
   return Math.round((spentZar / allowanceZar) * 100);
+}
+
+/**
+ * Attach the full-period fuel forecast without changing the filter spend or its percent.
+ * @param row Target row already overlaid with travel for the selected dates.
+ * @param forecast Balance row for this user, or nothing when the balance has not loaded.
+ */
+export function applyFuelForecastToRow(
+  row: ReportsTargetRow,
+  forecast:
+    | Pick<
+        FuelAllowanceBalance,
+        | 'rateZarPerDay'
+        | 'projectedEndZar'
+        | 'projectedBalanceZar'
+        | 'payDecision'
+        | 'upfrontPayZar'
+      >
+    | null
+    | undefined
+): ReportsTargetRow {
+  if (!forecast) return row;
+  const travel = row.travel ?? emptyTravelCell(row.visits.current);
+  return {
+    ...row,
+    travel: {
+      ...travel,
+      fuelRateZarPerDay: forecast.rateZarPerDay,
+      fuelProjectedEndZar: forecast.projectedEndZar,
+      fuelProjectedBalanceZar: forecast.projectedBalanceZar,
+      fuelPayDecision: forecast.payDecision,
+      fuelUpfrontPayZar: forecast.upfrontPayZar,
+    },
+  };
 }
 
 export function applyHoursToRow(

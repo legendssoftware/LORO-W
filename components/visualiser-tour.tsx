@@ -12,7 +12,6 @@ import {
 } from '@/lib/visualiser-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="visualiser-page-header"]';
 const SEL_ACTIONS = '[data-tour="visualiser-header-actions"]';
@@ -24,18 +23,10 @@ const REQUIRED = [SEL_HEADER, SEL_ACTIONS, SEL_MAP] as const;
 function buildVisualiserSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Competitor Overview',
-        description:
-          'Map branches, competitors, and clients, then simulate catchments and turnover. Planning Routes can send you here when you need the map.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Map overview',
-        description:
-          'Search the map and follow a sales rep’s route, or open the side panel to simulate a catchment.',
+        title: 'Competitor Overview',
+        description: 'Search the map or follow a rep’s route. Open Simulate to model a catchment.',
         side: 'bottom',
         align: 'start',
       },
@@ -45,7 +36,7 @@ function buildVisualiserSteps(): DriveStep[] {
       popover: {
         title: 'Map tools',
         description:
-          'Summary counts competitor stores and modelled monthly turnover. Petrol prices fetches the latest fuel prices and leaves stored prices unchanged when nothing moved. Geocode fills missing addresses. Export downloads the simulation. Simulate opens the catchment and turnover panel.',
+          'Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. Simulate opens the catchment panel.',
         side: 'bottom',
         align: 'end',
       },
@@ -54,8 +45,7 @@ function buildVisualiserSteps(): DriveStep[] {
       element: SEL_MAP,
       popover: {
         title: 'The map',
-        description:
-          'Branches, HQ, competitors, and clients. Planning’s Routes tab links here when you want the geographic view.',
+        description: 'Pins are branches, HQ, competitors, and clients.',
         side: 'top',
         align: 'center',
       },
@@ -67,20 +57,12 @@ function buildVisualiserSteps(): DriveStep[] {
       element: SEL_PANEL,
       popover: {
         title: 'Simulation panel',
-        description:
-          'Set a catchment, run turnover, and review the stores that fall inside the radius.',
+        description: 'Set the catchment radius, run turnover, and see which stores fall inside it.',
         side: 'left',
         align: 'start',
       },
     });
   }
-
-  steps.push({
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
-    },
-  });
 
   return steps;
 }

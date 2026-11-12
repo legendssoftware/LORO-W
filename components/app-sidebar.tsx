@@ -15,6 +15,7 @@ import {
   canAccessUserSettings,
   canAccessWellbeingDashboard,
   canAccessMerchandise,
+  canAccessStoreOperations,
   canManageApprovals,
   getAllowedRoutes,
   getClientSidebarRoutes,
@@ -51,6 +52,7 @@ import {
   Swords,
   TrendingUp,
   Truck,
+  Store,
   UserCircle,
   Phone,
   HeartPulse,
@@ -93,6 +95,7 @@ const ROUTE_ICONS: Record<
   "/claims": Receipt,
   "/takeoff": Ruler,
   "/deliveries": Truck,
+  "/store-operations": Store,
   "/assets": Boxes,
   "/approvals": FileCheck,
   "/payslips": FileText,
@@ -122,6 +125,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
   if (isStaffDashboardVisible(accessLevel)) {
     const staffRoutes = STAFF_SIDEBAR_ROUTES.filter((r) => {
       if (r.path === "/merchandise") return canAccessMerchandise(accessLevel);
+      if (r.path === "/store-operations") return canAccessStoreOperations(accessLevel);
       if (r.path === "/calls") return canAccessCallRecordings(accessLevel);
       if (r.path === "/reports") return canAccessReports(accessLevel);
       if (r.path === "/wellbeing") return canAccessWellbeingDashboard(accessLevel);

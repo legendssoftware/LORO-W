@@ -33,6 +33,22 @@ import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { todayDateString } from '@/app/deliveries/format';
 
 const EMPTY_VALUE = '';
+const ORDER_SPLIT = '\u001f';
+
+/** Picker value for one ERP sales order. Store and document number travel together. */
+function orderOptionValue(store: string, docNumber: string): string {
+  return `${store}${ORDER_SPLIT}${docNumber}`;
+}
+
+/** Splits a picker value back into the ERP store and document number. */
+function parseOrderOption(value: string): { store: string; docNumber: string } | null {
+  const splitAt = value.indexOf(ORDER_SPLIT);
+  if (splitAt <= 0) return null;
+  const store = value.slice(0, splitAt);
+  const docNumber = value.slice(splitAt + ORDER_SPLIT.length);
+  if (!store || !docNumber) return null;
+  return { store, docNumber };
+}
 
 const assignButtonClass =
   'bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white';
@@ -42,14 +58,14 @@ export interface AssignDeliveryDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Assigns a packed shop order to a driver without leaving the list. */
+/** Assigns an open ERP sales order to a workforce-type driver. */
 export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialogProps) {
   const { isTokenReady } = useTokenReady();
   const ordersQuery = useAssignableOrders(isTokenReady && open);
   const driversQuery = useDeliveryDrivers(isTokenReady && open);
   const assign = useAssignDeliveryMutation();
 
-  const [orderUid, setOrderUid] = useState(EMPTY_VALUE);
+  const [orderKey, setOrderKey] = useState(EMPTY_VALUE);
   const [driverUid, setDriverUid] = useState(EMPTY_VALUE);
   const [routeCode, setRouteCode] = useState('');
   const [scheduledDate, setScheduledDate] = useState<string | null>(todayDateString);
@@ -59,10 +75,10 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
   const orderOptions = useMemo<SearchableOptionRow[]>(
     () =>
       orders.map((order) => ({
-        value: String(order.uid),
+        value: orderOptionValue(order.store, order.docNumber),
         label: `${order.orderNumber} · ${order.clientName || 'No client'} · ${order.itemCount} items`,
         icon: <Package className="size-4 shrink-0" />,
-        searchExtra: `${order.orderNumber} ${order.clientName} ${order.status}`,
+        searchExtra: `${order.docNumber} ${order.store} ${order.clientName} ${order.status}`,
       })),
     [orders],
   );
@@ -81,11 +97,12 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     [driversQuery.data],
   );
 
+  const selectedOrder = parseOrderOption(orderKey);
   const isComplete =
-    Boolean(orderUid) && Boolean(driverUid) && routeCode.trim().length > 0 && Boolean(scheduledDate);
+    selectedOrder != null && Boolean(driverUid) && routeCode.trim().length > 0 && Boolean(scheduledDate);
 
   function reset() {
-    setOrderUid(EMPTY_VALUE);
+    setOrderKey(EMPTY_VALUE);
     setDriverUid(EMPTY_VALUE);
     setRouteCode('');
     setScheduledDate(todayDateString());
@@ -99,10 +116,11 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
 
   function onAssign(event: FormEvent) {
     event.preventDefault();
-    if (!isComplete || !scheduledDate || assign.isPending) return;
+    if (!isComplete || !selectedOrder || !scheduledDate || assign.isPending) return;
     void assign
       .mutateAsync({
-        orderUid: Number(orderUid),
+        docNumber: selectedOrder.docNumber,
+        store: selectedOrder.store,
         driverUid: Number(driverUid),
         routeCode: routeCode.trim(),
         scheduledDate,
@@ -124,7 +142,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
             Assign delivery
           </DialogTitle>
           <DialogDescription>
-            Pick a packed order and the driver who will deliver it. The order moves to out for delivery.
+            Pick an open ERP sales order and a driver whose workforce type is driver.
           </DialogDescription>
         </DialogHeader>
 
@@ -143,8 +161,8 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
               <div className="space-y-1.5">
                 <Label>Order</Label>
               <SearchableOptionListPicker
-                selectedValue={orderUid}
-                onValueChange={setOrderUid}
+                selectedValue={orderKey}
+                onValueChange={setOrderKey}
                 options={orderOptions}
                 includeAllOption={false}
                 allOptionValue={EMPTY_VALUE}
@@ -153,7 +171,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                 emptyMessage={
                   ordersQuery.data?.length
                     ? 'No order matches that search.'
-                    : 'No orders are waiting to be assigned.'
+                    : 'No open ERP sales orders.'
                 }
                 triggerIcon={<Package className="size-4 shrink-0" />}
                 triggerClassName="h-9 w-full"
@@ -162,7 +180,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                 <p className="text-muted-foreground text-xs">
                   {ordersQuery.data?.length
                     ? 'No order matches that search.'
-                    : 'No orders are waiting to be assigned.'}
+                    : 'No open ERP sales orders.'}
                 </p>
               ) : null}
             </div>

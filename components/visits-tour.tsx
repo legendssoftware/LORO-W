@@ -13,26 +13,16 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is the Visits page: start or end a field visit or phone visit, log how it went, and review your history in one place. Scored call recordings live under Call recordings in the sidebar. The next steps walk through the header action, filters, and your activity list or map.';
-
 const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to Visits',
-      description: TOUR_INTRO_DESCRIPTION,
-    },
-  },
   {
     element: '[data-tour="visits-page-header"]',
     popover: {
-      title: 'Visits overview',
+      title: 'Visits',
       description:
-        'The heading reminds you that this page is for live visit actions and for looking back at what you have already done. Open Call recordings when you need a transcript, score, or audio file.',
+        'Start or end a visit here, then review what you already logged. Scored recordings are under Call recordings.',
       side: 'bottom',
       align: 'start',
     },
@@ -42,7 +32,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Start or end a visit',
       description:
-        'Use Start visit in the page header to pick how you are connecting (in person, phone, and so on). While a visit is running, End visit appears here in red so you can close it and capture notes and outcomes.',
+        'Click Start visit and choose in person or phone. While a visit is running, click the red End visit to add notes and the outcome.',
       side: 'bottom',
       align: 'end',
     },
@@ -50,9 +40,9 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="visits-toolbar"]',
     popover: {
-      title: 'Filter and explore history',
+      title: 'Filter history',
       description:
-        'By default, your range runs from the start of this month through today. Change the dates, region, type of business, teammate, or search text whenever you need another slice of history. Open the visits summary for a grid report, or open Competitor Overview in the sidebar for the org-wide map view.',
+        'The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Open the summary for the grid report.',
       side: 'bottom',
       align: 'center',
     },
@@ -60,17 +50,11 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="visits-history-content"]',
     popover: {
-      title: 'Your visit list or map',
+      title: 'List or map',
       description:
-        'In table view, use rows to open and update visit details. In map view, see where visits happened. Toggle between them from the bar above when you need a different view.',
+        'Click a row to update that visit. Switch to the map to see where visits happened.',
       side: 'top',
       align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
     },
   },
 ];

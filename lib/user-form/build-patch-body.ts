@@ -56,6 +56,7 @@ const TARGET_PATCH_FIELD_KEYS = [
   'carInstalment',
   'carInsurance',
   'fuel',
+  'fuelPricePerLitreZar',
   'primaryVehicleAssetUid',
   'secondaryVehicleAssetUid',
   'cellPhoneAllowance',
@@ -183,6 +184,12 @@ export function buildUserTargetPatchBody(
     }
     if (isVehicleAssetUidKey(k)) {
       body[k] = v == null || v === '' ? null : Number(v);
+      continue;
+    }
+    if (k === 'fuelPricePerLitreZar') {
+      const price = v == null || v === '' ? null : Number(v);
+      body.fuelPricePerLitreZar =
+        price != null && Number.isFinite(price) && price > 0 ? price : null;
       continue;
     }
     if (v !== undefined && v !== null && v !== '') {
@@ -521,6 +528,7 @@ export function getDefaultTargetValues(
       carInstalment: null,
       carInsurance: null,
       fuel: null,
+      fuelPricePerLitreZar: null,
       primaryVehicleAssetUid: null,
       secondaryVehicleAssetUid: null,
       cellPhoneAllowance: null,
@@ -558,6 +566,10 @@ export function getDefaultTargetValues(
     carInstalment: num(src.carInstalment),
     carInsurance: num(src.carInsurance),
     fuel: num(src.fuel),
+    fuelPricePerLitreZar: num(
+      src.fuelPricePerLitreZar ??
+        (ut && ut !== src ? (ut as { fuelPricePerLitreZar?: unknown }).fuelPricePerLitreZar : null)
+    ),
     primaryVehicleAssetUid: coerceAssetUid(
       (ut as { primaryVehicleAssetUid?: unknown }).primaryVehicleAssetUid ??
         src.primaryVehicleAssetUid

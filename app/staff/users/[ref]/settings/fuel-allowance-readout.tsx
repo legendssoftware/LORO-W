@@ -1,7 +1,7 @@
 'use client';
 
 import { useFuelBalance } from '@/api/hooks';
-import { formatFuelZar } from '@/app/staff/components/fuel-allowance-meter';
+import { formatFuelZar, fuelPaceLabel, fuelUpfrontLabel } from '@/app/staff/components/fuel-allowance-meter';
 
 /**
  * Read-only spend against the Fuel costing field. The input above stays the amount given.
@@ -29,6 +29,7 @@ export function FuelAllowanceReadout({ userRef }: { userRef: string }) {
 
   const remaining = balance.balanceZar ?? balance.allowanceZar;
   const overspent = remaining < 0;
+  const pace = fuelPaceLabel(balance, formatFuelZar);
 
   return (
     <div className="space-y-2 rounded-md border border-border/60 bg-muted/30 p-3">
@@ -36,6 +37,12 @@ export function FuelAllowanceReadout({ userRef }: { userRef: string }) {
         <strong>{formatFuelZar(remaining)}</strong>
         <span className="text-muted-foreground"> left of {formatFuelZar(balance.allowanceZar)}</span>
       </p>
+      {pace ? <p className="text-xs text-muted-foreground">{pace}</p> : null}
+      {balance.payDecision ? (
+        <p className="text-xs text-foreground">
+          {fuelUpfrontLabel(balance.payDecision, balance.upfrontPayZar, formatFuelZar)}
+        </p>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         {balance.distanceKm.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} km ·{' '}
         {balance.litres.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} L · spent{' '}

@@ -34,6 +34,8 @@ export interface PatchBranchBody {
   status?: string;
   country?: string;
   floorSizeSqm?: number | null;
+  /** Active internal-sales user at this branch. Null clears the primary. */
+  primaryInternalSalesUserUid?: number | null;
   address?: {
     street?: string;
     suburb?: string;

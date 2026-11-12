@@ -32,7 +32,7 @@ export async function getDelivery(client: AxiosInstance, uid: number): Promise<D
   return data;
 }
 
-/** POST /epod/deliveries — assigns a shop order to a driver and moves the order out for delivery. */
+/** POST /epod/deliveries — assigns an ERP sales order to a workforce-type driver. */
 export async function createDelivery(
   client: AxiosInstance,
   body: CreateDeliveryBody,
@@ -53,13 +53,13 @@ export async function getDeliveryPdf(client: AxiosInstance, uid: number): Promis
   return data;
 }
 
-/** GET /epod/drivers — staff whose workforce type or role is driver. */
+/** GET /epod/drivers — app users whose workforce type is driver. */
 export async function listDrivers(client: AxiosInstance): Promise<DriverOption[]> {
   const { data } = await client.get<DriverOption[]>('/epod/drivers');
   return Array.isArray(data) ? data : [];
 }
 
-/** GET /epod/assignable-orders — orders that may still be assigned to a driver. */
+/** GET /epod/assignable-orders — open ERP sales orders that may still be assigned. */
 export async function listAssignableOrders(client: AxiosInstance): Promise<AssignableOrder[]> {
   const { data } = await client.get<AssignableOrder[]>('/epod/assignable-orders');
   return Array.isArray(data) ? data : [];

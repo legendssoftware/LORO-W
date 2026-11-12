@@ -1,7 +1,7 @@
 'use client';
 
 import { ReportProgressBar } from '@/app/staff/components/report-progress-bar';
-import type { FuelAllowanceBalance } from '@/api/endpoints/fuel-allowance';
+import type { FuelAllowanceBalance, FuelPayDecision } from '@/api/endpoints/fuel-allowance';
 import { cn } from '@/lib/utils';
 
 /** Rand amount for the staff card and the settings readout. */
@@ -18,6 +18,44 @@ function formatKm(value: number): string {
 
 function formatLitres(value: number): string {
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} L`;
+}
+
+/**
+ * Sentence for the upfront amount.
+ * @param decision Pay outcome from the fuel balance.
+ * @param upfrontPayZar Rand to pay now. Null while the decision is hold.
+ * @param formatAmount Existing rand formatter for the surface.
+ */
+export function fuelUpfrontLabel(
+  decision: FuelPayDecision,
+  upfrontPayZar: number | null,
+  formatAmount: (value: number) => string
+): string {
+  switch (decision) {
+    case 'pay-projected':
+      return upfrontPayZar != null ? `Pay ${formatAmount(upfrontPayZar)} upfront` : 'Too early to pay';
+    case 'pay-full':
+      return 'Pay the full allowance';
+    case 'hold':
+      return 'Too early to pay';
+    case 'overspent':
+      return 'Allowance already used';
+    default: {
+      const unreachable: never = decision;
+      return unreachable;
+    }
+  }
+}
+
+/** Rate and end value, when a closed weekday has already passed. */
+export function fuelPaceLabel(
+  balance: Pick<FuelAllowanceBalance, 'rateZarPerDay' | 'projectedEndZar'>,
+  formatAmount: (value: number) => string
+): string | null {
+  const parts: string[] = [];
+  if (balance.rateZarPerDay != null) parts.push(`${formatAmount(balance.rateZarPerDay)} a day`);
+  if (balance.projectedEndZar != null) parts.push(`on pace for ${formatAmount(balance.projectedEndZar)}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 /**
@@ -76,6 +114,11 @@ export function FuelAllowanceMeter({
         </span>
       </p>
       <ReportProgressBar value={spentPercent} tone={overspent ? 'danger' : 'default'} />
+      {balance.projectedEndZar != null ? (
+        <p className={cn('text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}>
+          On pace for {formatFuelZar(balance.projectedEndZar)}
+        </p>
+      ) : null}
     </div>
   );
 }

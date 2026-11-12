@@ -13,7 +13,6 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 import { ROUTE_PLANNING_NOTE, ROUTE_PLANNING_NOTE_TITLE } from '@/lib/route-planning-note';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
@@ -40,8 +39,90 @@ const ALL_TASKS_SELECTORS = new Set<string>([
   SEL_PAGINATION,
 ]);
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is the Planning page: track tasks, create work, and open the day’s routes. The next steps walk through the overview, All tasks, and Routes.';
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: SEL_HEADER,
+    popover: {
+      title: 'Planning',
+      description: 'Tasks, today’s work, and the day’s routes.',
+      side: 'bottom',
+      align: 'start',
+    },
+  },
+  {
+    element: SEL_CREATE,
+    popover: {
+      title: 'Create a task',
+      description: 'Click Create task, fill it in, and assign it. It shows up in All tasks.',
+      side: 'bottom',
+      align: 'center',
+    },
+  },
+  {
+    element: SEL_TABS,
+    popover: {
+      title: 'All tasks, My day, Routes',
+      description: 'All tasks is the full list. My day is due today. Routes is the planned field day.',
+      side: 'bottom',
+      align: 'start',
+    },
+  },
+  {
+    element: SEL_ROUTE_NOTE,
+    popover: {
+      title: ROUTE_PLANNING_NOTE_TITLE,
+      description: ROUTE_PLANNING_NOTE,
+      side: 'bottom',
+      align: 'start',
+    },
+  },
+  {
+    element: SEL_REMINDERS,
+    popover: {
+      title: 'Reminders',
+      description: 'On All tasks, this is due today, overdue, and upcoming. Open an item to work it.',
+      side: 'left',
+      align: 'start',
+    },
+  },
+  {
+    element: SEL_TOOLBAR,
+    popover: {
+      title: 'Filter tasks',
+      description:
+        'Set date, status, priority, assignee, client, branch, overdue only, or search. The list below updates to match.',
+      side: 'bottom',
+      align: 'center',
+    },
+  },
+  {
+    element: SEL_TABLE,
+    popover: {
+      title: 'Task list',
+      description: 'Click a task to open it and update status or details.',
+      side: 'top',
+      align: 'center',
+    },
+  },
+  {
+    element: SEL_PAGINATION,
+    popover: {
+      title: 'Pages',
+      description: 'Change rows per page, or move to the next page.',
+      side: 'top',
+      align: 'center',
+    },
+  },
+  {
+    element: SEL_ROUTES,
+    popover: {
+      title: 'Routes',
+      description: 'Pick the day, click Recalculate to rebuild routes, or open Competitor Overview for the map.',
+      side: 'top',
+      align: 'center',
+    },
+  },
+];
 
 function clickPlanningTab(selector: string): void {
   const tab = document.querySelector(selector);
@@ -61,109 +142,6 @@ function revealStepTarget(stepElement: string): void {
   }
   if (ALL_TASKS_SELECTORS.has(stepElement)) clickPlanningTab(SEL_TAB_ALL);
 }
-
-const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to Planning',
-      description: TOUR_INTRO_DESCRIPTION,
-    },
-  },
-  {
-    element: SEL_HEADER,
-    popover: {
-      title: 'Planning overview',
-      description:
-        'This header confirms you are in Planning, where tasks can be viewed, tracked, and managed.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: SEL_CREATE,
-    popover: {
-      title: 'Create tasks quickly',
-      description:
-        'Use Create task in the page header to add a new task and assign it to the right people.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: SEL_TABS,
-    popover: {
-      title: 'All tasks, My day, Routes',
-      description:
-        'All tasks is the full list. My day is work due today. Routes is the planned field day: pick the date, recalculate, or open Competitor Overview.',
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: SEL_ROUTE_NOTE,
-    popover: {
-      title: ROUTE_PLANNING_NOTE_TITLE,
-      description: ROUTE_PLANNING_NOTE,
-      side: 'bottom',
-      align: 'start',
-    },
-  },
-  {
-    element: SEL_REMINDERS,
-    popover: {
-      title: 'Reminders inbox',
-      description:
-        'On All tasks, see due today, overdue, and upcoming tasks without waiting for push notifications.',
-      side: 'left',
-      align: 'start',
-    },
-  },
-  {
-    element: SEL_TOOLBAR,
-    popover: {
-      title: 'Filter and search tasks',
-      description:
-        'On All tasks, refine the list by date, status, priority, assignee, client, branch, overdue only, and search text.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: SEL_TABLE,
-    popover: {
-      title: 'Task list',
-      description:
-        'Review matching tasks as cards. Open a row to inspect details and make updates as work progresses.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    element: SEL_PAGINATION,
-    popover: {
-      title: 'Pagination',
-      description: 'Change rows per page and move between pages when you have many tasks.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    element: SEL_ROUTES,
-    popover: {
-      title: 'Routes',
-      description:
-        'Pick the day the visits were planned, recalculate routes, and open Competitor Overview when you need the map.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
-    },
-  },
-];
 
 function areTourTargetsReady(): boolean {
   return REQUIRED_SELECTORS.every((selector) => document.querySelector(selector) !== null);

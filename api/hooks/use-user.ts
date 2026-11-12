@@ -31,6 +31,7 @@ import {
   type ClearSelectedPerformanceWarningsBody,
   type ReportsDashboardPreferences,
 } from '@/api/endpoints/user';
+import { acknowledgePaceNotice, getPaceNotice } from '@/api/endpoints/pace-notice';
 
 const QUERY_KEY_PREFIX = ['user'] as const;
 export const USER_TARGET_QUERY_KEY_PREFIX = ['user', 'target'] as const;
@@ -430,6 +431,36 @@ export function useEngagementRange(
     staleTime: engagementRangeStaleTimeMs(params),
     gcTime: 15 * 60 * 1000,
     retry: false,
+  });
+}
+
+export const PACE_NOTICE_QUERY_KEY = ['user', 'pace-notice'] as const;
+
+/** Personal notice created when the signed-in user is behind on activity pace. */
+export function usePaceNotice(ref: string | null, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...PACE_NOTICE_QUERY_KEY, ref],
+    queryFn: () => getPaceNotice(client, ref as string),
+    enabled: enabled && !!ref,
+    staleTime: 60_000,
+  });
+}
+
+/** Acknowledge the current pace notice so it stays dismissed for this target period. */
+export function useAcknowledgePaceNotice(ref: string | null) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!ref) throw new Error('User ref required');
+      return acknowledgePaceNotice(client, ref);
+    },
+    onSuccess: () => {
+      if (ref) {
+        queryClient.invalidateQueries({ queryKey: [...PACE_NOTICE_QUERY_KEY, ref] });
+      }
+    },
   });
 }
 

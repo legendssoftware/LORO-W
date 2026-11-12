@@ -15,26 +15,16 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is Settings, where organisation configuration is managed. The next steps highlight tabs, the active form panel, and where to save your changes.';
-
 const TOUR_STEPS: DriveStep[] = [
-  {
-    popover: {
-      title: 'Welcome to Settings',
-      description: TOUR_INTRO_DESCRIPTION,
-    },
-  },
   {
     element: '[data-tour="settings-page-header"]',
     popover: {
-      title: 'Settings overview',
+      title: 'Settings',
       description:
-        'Use this page to manage organisation profile, appearance, regional defaults, operating hours, branches, Calendar, Scrapping, Notices, Banners, and Call quality.',
+        'Organisation profile, appearance, hours, branches, calendar, scraping, notices, banners, and call quality.',
       side: 'bottom',
       align: 'start',
     },
@@ -42,9 +32,9 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="settings-tab-nav"]',
     popover: {
-      title: 'Switch between sections',
+      title: 'Sections',
       description:
-        'Tabs cover profile, appearance, regional defaults, operating hours, branches, Calendar (Outlook or Google), Scrapping (Google Maps jobs), Notices, Banners, and Call quality. Select a tab to edit that section. This tour stays on the tab you already have open.',
+        'Click a tab to edit that section. This tour stays on the tab you already have open.',
       side: 'bottom',
       align: 'start',
     },
@@ -52,9 +42,8 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="settings-active-panel"]',
     popover: {
-      title: 'Active settings panel',
-      description:
-        'The selected tab renders here. Update fields for the current section before saving at the bottom.',
+      title: 'This section',
+      description: 'Edit the fields for the open tab. Nothing is saved until you click Save changes.',
       side: 'top',
       align: 'center',
     },
@@ -62,17 +51,10 @@ const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="settings-panel-actions"]',
     popover: {
-      title: 'Save or discard',
-      description:
-        'Use Save changes to persist updates for this section, or Cancel to revert local form edits.',
+      title: 'Save or cancel',
+      description: 'Save changes keeps this section. Cancel drops unsaved edits.',
       side: 'top',
       align: 'end',
-    },
-  },
-  {
-    popover: {
-      title: 'Having issues?',
-      description: TOUR_FAQ_DESCRIPTION,
     },
   },
 ];
