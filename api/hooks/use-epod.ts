@@ -16,6 +16,7 @@ import type {
   CreateDeliveryBody,
   DeliveryListQuery,
   DeliveryStatus,
+  DeliverySummary,
 } from '@/api/types/epod';
 
 export const EPOD_QUERY_KEY = ['epod'] as const;
@@ -30,6 +31,23 @@ const CANCELLABLE_STATUSES = new Set<DeliveryStatus>(['assigned', 'in_progress']
 export function canCancelDelivery(status: DeliveryStatus | undefined): boolean {
   if (!status) return false;
   return CANCELLABLE_STATUSES.has(status);
+}
+
+/**
+ * Narrows the deliveries overview by ERP invoice number.
+ * An empty search returns every row. Matching is case-insensitive and partial, same as staff search.
+ * @param deliveries Rows already limited by day, status, and driver
+ * @param search Raw search box text
+ */
+export function filterDeliveriesByInvoice(
+  deliveries: readonly DeliverySummary[],
+  search: string,
+): DeliverySummary[] {
+  const term = search.trim().toLowerCase();
+  if (!term) return [...deliveries];
+  return deliveries.filter((delivery) =>
+    (delivery.invoiceNumber ?? '').toLowerCase().includes(term),
+  );
 }
 
 /**

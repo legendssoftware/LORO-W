@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PackagePlus } from 'lucide-react';
-import { useDeliveries, useDeliveryDrivers, useSessionSync, useTokenReady } from '@/api/hooks';
+import {
+  filterDeliveriesByInvoice,
+  useDeliveries,
+  useDeliveryDrivers,
+  useSessionSync,
+  useTokenReady,
+} from '@/api/hooks';
 import type { DeliveryStatus } from '@/api/types/epod';
 import { canDispatchDeliveries, canViewOrganisationDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +40,7 @@ export function DeliveriesListContent() {
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
+  const [invoiceSearch, setInvoiceSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
 
@@ -47,7 +54,11 @@ export function DeliveriesListContent() {
   );
   const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
 
-  const rows = query.data?.deliveries ?? [];
+  const rows = useMemo(
+    () => filterDeliveriesByInvoice(query.data?.deliveries ?? [], invoiceSearch),
+    [query.data?.deliveries, invoiceSearch],
+  );
+  const hasInvoiceSearch = invoiceSearch.trim().length > 0;
 
   return (
     <div className="flex flex-col p-4 md:p-6">
@@ -73,6 +84,8 @@ export function DeliveriesListContent() {
         onDateChange={setDate}
         status={status}
         onStatusChange={setStatus}
+        search={invoiceSearch}
+        onSearchChange={setInvoiceSearch}
         showDriverFilter={canViewOrganisation}
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
@@ -102,7 +115,9 @@ export function DeliveriesListContent() {
       ) : null}
 
       {!query.isLoading && !query.isError && rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No deliveries for this day.</p>
+        <p className="text-muted-foreground text-sm">
+          {hasInvoiceSearch ? 'No deliveries match this invoice number.' : 'No deliveries for this day.'}
+        </p>
       ) : null}
 
       {rows.length > 0 ? (
@@ -110,6 +125,7 @@ export function DeliveriesListContent() {
           <TableHeader>
             <TableRow>
               <TableHead>Delivery</TableHead>
+              <TableHead>Invoice</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Route</TableHead>
               <TableHead>Status</TableHead>
@@ -135,6 +151,7 @@ export function DeliveriesListContent() {
                   <span className="font-medium">{row.deliveryNumber}</span>
                   <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
                 </TableCell>
+                <TableCell>{row.invoiceNumber || '—'}</TableCell>
                 <TableCell>
                   {row.clientName || '—'}
                   {row.clientAddress ? (

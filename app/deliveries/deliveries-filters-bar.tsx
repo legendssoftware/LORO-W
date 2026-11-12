@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { XIcon } from '@/lib/icons';
 import {
@@ -250,10 +250,14 @@ export function DeliveriesFilterControls({
 }
 
 export interface DeliveriesFiltersBarProps extends Omit<DeliveriesFilterControlsProps, 'layout'> {
+  search: string;
+  onSearchChange: (value: string) => void;
   actions?: React.ReactNode;
 }
 
 export function DeliveriesFiltersBar({
+  search,
+  onSearchChange,
   actions,
   ...filterProps
 }: DeliveriesFiltersBarProps) {
@@ -269,6 +273,30 @@ export function DeliveriesFiltersBar({
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  function renderSearchField() {
+    return (
+      <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
+        <Input
+          placeholder="Search by invoice no."
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          aria-label="Search by invoice number"
+          className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
+        />
+        {search ? (
+          <button
+            type="button"
+            onClick={() => onSearchChange('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Clear search"
+          >
+            <XIcon className="size-4" />
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="mb-4 flex shrink-0 flex-col gap-3">
       <div className="flex flex-col gap-2 md:hidden">
@@ -281,11 +309,10 @@ export function DeliveriesFiltersBar({
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
           Filter
         </Button>
-        {actions ? (
-          <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {actions}
-          </div>
-        ) : null}
+        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {renderSearchField()}
+          {actions}
+        </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
@@ -304,7 +331,10 @@ export function DeliveriesFiltersBar({
             <DeliveriesFilterControls {...filterProps} layout="row" />
           </div>
         </div>
-        {actions ? <div className="flex shrink-0 flex-nowrap items-center gap-2">{actions}</div> : null}
+        <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {renderSearchField()}
+          {actions}
+        </div>
       </div>
     </div>
   );

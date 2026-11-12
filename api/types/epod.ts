@@ -51,6 +51,8 @@ export interface DeliverySummary {
   scheduledDate: string;
   orderUid: number;
   orderNumber: string | null;
+  /** ERP invoice number from the linked shop order. Null when the order has none. */
+  invoiceNumber: string | null;
   driverUid: number;
   clientName: string;
   clientAddress: string;
