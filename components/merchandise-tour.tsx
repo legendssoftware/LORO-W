@@ -9,7 +9,6 @@ import { canAccessMerchandise } from '@/lib/access';
 import { readMerchandiseTourState, writeMerchandiseTourState } from '@/lib/merchandise-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="merchandise-page-header"]';
 const SEL_CREATE = '[data-tour="merchandise-create-button"]';
@@ -21,18 +20,10 @@ const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_LIST] as const;
 function buildMerchandiseSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Merchandise',
-        description:
-          'Merchandise logs are photos and notes from the field. The next steps cover creating a log, filtering the list, and opening an entry.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Merchandise overview',
-        description:
-          'This page tracks merchandise logs, their review status, and the photos attached to each one.',
+        title: 'Merchandise',
+        description: 'Field photos and notes, with review status on each log.',
         side: 'bottom',
         align: 'start',
       },
@@ -45,7 +36,7 @@ function buildMerchandiseSteps(): DriveStep[] {
       popover: {
         title: 'New merchandise',
         description:
-          'Use New merchandise to attach a photo, name the client, and add comments. The log starts in review until it is published.',
+          'Click New merchandise. Attach a photo, name the client, and add comments. The log stays in review until it is published.',
         side: 'bottom',
         align: 'end',
       },
@@ -57,8 +48,7 @@ function buildMerchandiseSteps(): DriveStep[] {
       element: SEL_TOOLBAR,
       popover: {
         title: 'Filter logs',
-        description:
-          'Filter by date, how many rows to show, branch, teammate, status, or search. Icons on each control match the visits filters.',
+        description: 'Filter by date, page size, branch, teammate, status, or search.',
         side: 'bottom',
         align: 'center',
       },
@@ -67,16 +57,9 @@ function buildMerchandiseSteps(): DriveStep[] {
       element: SEL_LIST,
       popover: {
         title: 'Open a log',
-        description:
-          'Each row shows the attached photo, client, status, and owner. Open a row for the full image, organisation, and review actions.',
+        description: 'Click a row for the full photo and review actions.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     }
   );

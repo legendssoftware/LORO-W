@@ -9,7 +9,6 @@ import { readLeadsTourState, writeLeadsTourState, getCurrentYearMonth } from '@/
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
@@ -25,10 +24,92 @@ const SEL_LEAD_DIALOG = '[data-tour="lead-detail-dialog"]';
 /** Selectors that only exist after expand / open — do not block tour start. */
 const DYNAMIC_STEP_SELECTORS = new Set<string>([SEL_FIRST_LEAD, SEL_LEAD_DIALOG]);
 
-const TOUR_INTRO_DESCRIPTION =
-  'Welcome to Leads. This page helps you create leads quickly, filter and search your pipeline, and manage follow-ups in one place. The next steps highlight the main areas you will use every day.';
+function buildEmptyTourSteps(): DriveStep[] {
+  return [
+    {
+      element: SEL_HEADER,
+      popover: {
+        title: 'Leads',
+        description: 'Create a lead, search the list, and open a person to follow up.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: SEL_CREATE,
+      popover: {
+        title: 'Create lead',
+        description: 'Click Create lead, fill the form, and the new lead appears in the list.',
+        side: 'bottom',
+        align: 'center',
+      },
+    },
+    {
+      element: SEL_TOOLBAR,
+      popover: {
+        title: 'Filter and search',
+        description:
+          'The date range starts as this month. Change dates, filters, or search to show a different set of leads.',
+        side: 'bottom',
+        align: 'center',
+      },
+    },
+    {
+      element: () => visibleImportButton() ?? document.body,
+      popover: {
+        title: 'Import leads',
+        description:
+          'Click Import to add leads from a spreadsheet or Google Maps. For Maps, review the places and assign owners before they show in this list.',
+        side: 'bottom',
+        align: 'end',
+      },
+    },
+    {
+      element: SEL_TABLE,
+      popover: {
+        title: 'Lead list',
+        description:
+          'Leads are grouped by owner, or Unassigned. Click a person to expand them. Click a lead to open it.',
+        side: 'top',
+        align: 'center',
+      },
+    },
+  ];
+}
 
-/** Prefer the import control that is actually on screen (mobile and desktop each render one). */
+function buildDataTourSteps(): DriveStep[] {
+  return [
+    ...buildEmptyTourSteps(),
+    {
+      element: SEL_FIRST_GROUP,
+      popover: {
+        title: 'Expand a group',
+        description: 'Click this row. Every lead in that group opens underneath.',
+        side: 'bottom',
+        align: 'start',
+      },
+    },
+    {
+      element: SEL_FIRST_LEAD,
+      popover: {
+        title: 'Open a lead',
+        description: 'Click this row. The lead detail opens.',
+        side: 'top',
+        align: 'center',
+      },
+    },
+    {
+      element: SEL_LEAD_DIALOG,
+      popover: {
+        title: 'Lead detail',
+        description:
+          'Start or end a call, message them on WhatsApp, email, or SMS, and read the call score. Close the dialog to return to the list.',
+        side: 'left',
+        align: 'start',
+      },
+    },
+  ];
+}
 function visibleImportButton(): Element | undefined {
   const nodes = Array.from(document.querySelectorAll(SEL_IMPORT));
   const visible = nodes.find(
@@ -48,166 +129,6 @@ function areBaseTargetsReady(steps: DriveStep[]): boolean {
 
 function hasNonEmptyLeadList(): boolean {
   return document.querySelector(SEL_FIRST_GROUP) !== null;
-}
-
-function buildEmptyTourSteps(): DriveStep[] {
-  return [
-    {
-      popover: {
-        title: 'Welcome to Leads',
-        description: TOUR_INTRO_DESCRIPTION,
-      },
-    },
-    {
-      element: SEL_HEADER,
-      popover: {
-        title: 'Leads overview',
-        description: 'This section gives context for the page and your lead workflow.',
-        side: 'bottom',
-        align: 'start',
-      },
-    },
-    {
-      element: SEL_CREATE,
-      popover: {
-        title: 'Create lead',
-        description: 'Use this button in the page header to add new leads immediately.',
-        side: 'bottom',
-        align: 'center',
-      },
-    },
-    {
-      element: SEL_TOOLBAR,
-      popover: {
-        title: 'Filter, search, and import',
-        description:
-          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters and search to narrow the list.',
-        side: 'bottom',
-        align: 'center',
-      },
-    },
-    {
-      element: () => visibleImportButton() ?? document.body,
-      popover: {
-        title: 'Import leads',
-        description:
-          'Open Import to add leads from a spreadsheet or from Google Maps. A Google Maps run scrapes places, then you review them and assign owners before they appear in this list.',
-        side: 'bottom',
-        align: 'end',
-      },
-    },
-    {
-      element: SEL_TABLE,
-      popover: {
-        title: 'Lead history',
-        description:
-          'Leads are grouped by owner (or Unassigned). Click a person row to expand that group. Inside the table, click a lead row to open full lead details in a dialog.',
-        side: 'top',
-        align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
-      },
-    },
-  ];
-}
-
-function buildDataTourSteps(): DriveStep[] {
-  return [
-    {
-      popover: {
-        title: 'Welcome to Leads',
-        description: TOUR_INTRO_DESCRIPTION,
-      },
-    },
-    {
-      element: SEL_HEADER,
-      popover: {
-        title: 'Leads overview',
-        description: 'This section gives context for the page and your lead workflow.',
-        side: 'bottom',
-        align: 'start',
-      },
-    },
-    {
-      element: SEL_CREATE,
-      popover: {
-        title: 'Create lead',
-        description: 'Use this button in the page header to add new leads immediately.',
-        side: 'bottom',
-        align: 'center',
-      },
-    },
-    {
-      element: SEL_TOOLBAR,
-      popover: {
-        title: 'Filter, search, and import',
-        description:
-          'By default, your date range is this month so you see current pipeline activity. Change the date range whenever you need to review another period. Combine filters and search to narrow the list.',
-        side: 'bottom',
-        align: 'center',
-      },
-    },
-    {
-      element: () => visibleImportButton() ?? document.body,
-      popover: {
-        title: 'Import leads',
-        description:
-          'Open Import to add leads from a spreadsheet or from Google Maps. A Google Maps run scrapes places, then you review them and assign owners before they appear in this list.',
-        side: 'bottom',
-        align: 'end',
-      },
-    },
-    {
-      element: SEL_TABLE,
-      popover: {
-        title: 'Lead history',
-        description:
-          'Leads are grouped by owner (or Unassigned). Click a person row to expand that group. Inside the table, click a lead row to open full lead details in a dialog.',
-        side: 'top',
-        align: 'center',
-      },
-    },
-    {
-      element: SEL_FIRST_GROUP,
-      popover: {
-        title: 'Expand a group',
-        description:
-          'Each row is a teammate or Unassigned. Use the chevron to know it expands—click the row to see every lead in that bucket.',
-        side: 'bottom',
-        align: 'start',
-      },
-    },
-    {
-      element: SEL_FIRST_LEAD,
-      popover: {
-        title: 'Open a lead',
-        description:
-          'We are opening the first lead in this group for you. Any row opens the same detail view—pick the lead you care about.',
-        side: 'top',
-        align: 'center',
-      },
-    },
-    {
-      element: SEL_LEAD_DIALOG,
-      popover: {
-        title: 'Lead detail',
-        description:
-          'This dialog is the workspace for one lead. Start or end a call, reach them on WhatsApp, email, or SMS, use team chat, and review linked call scores. Close it when you are done to return to the list.',
-        side: 'left',
-        align: 'start',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
-      },
-    },
-  ];
 }
 
 function getActiveStepElement(driverInstance: Driver): string {
@@ -297,8 +218,6 @@ export function LeadsTour() {
           completedThisMonth: false,
         });
 
-        const faqIndex = steps.length - 1;
-
         const driverObj = driver({
           showProgress: true,
           smoothScroll: true,
@@ -362,9 +281,10 @@ export function LeadsTour() {
               window.setTimeout(() => {
                 if (document.querySelector(SEL_FIRST_LEAD)) {
                   activeDriver.moveNext();
-                } else {
-                  activeDriver.moveTo(faqIndex);
+                  return;
                 }
+                wasCompletedRef.current = true;
+                activeDriver.destroy();
               }, 180);
               return;
             }

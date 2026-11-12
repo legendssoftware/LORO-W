@@ -5,6 +5,8 @@ export type TravelAnalysisParams = {
   from: string;
   to: string;
   userUid: number;
+  /** Rand per litre for this PDF only. Omit to use the saved override. */
+  fuelPricePerLitreZar?: number;
   skipErrorToast?: boolean;
 };
 
@@ -34,6 +36,9 @@ export async function fetchTravelAnalysis(
         from: params.from,
         to: params.to,
         userUid: params.userUid,
+        ...(params.fuelPricePerLitreZar != null
+          ? { fuelPricePerLitreZar: params.fuelPricePerLitreZar }
+          : {}),
       },
       timeout: 120_000,
       ...(params.skipErrorToast ? { meta: { skipErrorToast: true } } : {}),

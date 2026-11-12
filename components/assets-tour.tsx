@@ -7,7 +7,6 @@ import type { DriveStep } from 'driver.js';
 import { readAssetsTourState, writeAssetsTourState } from '@/lib/assets-tour-storage';
 import { useMonthlyPageTour } from '@/lib/use-monthly-page-tour';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const SEL_HEADER = '[data-tour="assets-page-header"]';
 const SEL_ADD = '[data-tour="assets-add-button"]';
@@ -19,18 +18,11 @@ const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_GRID] as const;
 function buildAssetsSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to Assets',
-        description:
-          'This page lists equipment and vehicles linked to you, or the whole organisation when you manage inventory. The next steps cover adding an asset, filtering, and opening a record.',
-      },
-    },
-    {
       element: SEL_HEADER,
       popover: {
-        title: 'Assets overview',
+        title: 'Assets',
         description:
-          'The heading tells you whether you are looking at your linked assets or the organisation inventory. Managers can switch that scope from the filters.',
+          'Your linked equipment and vehicles, or the whole organisation inventory if you manage it. Managers switch that scope in the filters.',
         side: 'bottom',
         align: 'start',
       },
@@ -42,8 +34,7 @@ function buildAssetsSteps(): DriveStep[] {
       element: SEL_ADD,
       popover: {
         title: 'Add an asset',
-        description:
-          'Use Add asset to record equipment or a vehicle, including who owns it and which branch it belongs to.',
+        description: 'Click Add asset. Record the item, who owns it, and which branch it belongs to.',
         side: 'bottom',
         align: 'end',
       },
@@ -56,7 +47,7 @@ function buildAssetsSteps(): DriveStep[] {
       popover: {
         title: 'Filter the inventory',
         description:
-          'Narrow by date, branch, owner, category, or search. The page size control under the grid sets how many cards load at once.',
+          'Filter by date, branch, owner, category, or search. Page size under the grid sets how many cards load.',
         side: 'bottom',
         align: 'center',
       },
@@ -65,16 +56,9 @@ function buildAssetsSteps(): DriveStep[] {
       element: SEL_GRID,
       popover: {
         title: 'Open an asset',
-        description:
-          'Each card shows the type icon, name, serial, and owner. Open a card for purchase and insurance details, or to edit and delete.',
+        description: 'Click a card for purchase and insurance details, or to edit and delete it.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     }
   );

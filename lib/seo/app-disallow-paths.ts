@@ -14,6 +14,7 @@ export const APP_DISALLOW_PATHS = [
   '/claims',
   '/takeoff',
   '/deliveries',
+  '/store-operations',
   '/approvals',
   '/reports',
   '/performance',

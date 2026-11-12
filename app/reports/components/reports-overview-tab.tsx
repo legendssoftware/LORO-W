@@ -18,6 +18,7 @@ import {
   useBranches,
   useExchangeRates,
   usePolicyReport,
+  useFuelBalances,
 } from '@/api/hooks';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import type { PolicyReportParams, PolicyReportRow } from '@/api/types/performance-policy';
@@ -48,13 +49,14 @@ import {
   hasActiveGeoFilters,
 } from '@/app/reports/lib/reports-branch-geo';
 import { resolveAttendanceReportPeriodHours } from '@/api/types/attendance';
+import type { FuelAllowanceBalance } from '@/api/endpoints/fuel-allowance';
 import type { UserListItem, UserTargetListFields } from '@/api/endpoints/user';
 import {
   allActivityMetric,
   applyErpSalesToRow,
+  applyFuelForecastToRow,
   applyProductivityToRow,
   averageProductivityScore,
-  loggedChannelTotal,
   overlayTargetRowFilters,
   policyCellForRef,
   resolveTargetPeriodEngagementParams,
@@ -151,7 +153,7 @@ function sortTargetRows(
       case 'calls':
         return (
           allActivityMetric(b).progress - allActivityMetric(a).progress ||
-          loggedChannelTotal(b.activity) - loggedChannelTotal(a.activity) ||
+          allActivityMetric(b).current - allActivityMetric(a).current ||
           a.name.localeCompare(b.name)
         );
       case 'visits':
@@ -926,12 +928,18 @@ export function ReportsOverviewTab() {
     branchCountryByUid,
   ]);
 
+  const fuelBalancesQuery = useFuelBalances({
+    enabled: isTokenReady && !isSyncing,
+  });
+  const fuelByUserId = useMemo(() => {
+    const map = new Map<number, FuelAllowanceBalance>();
+    for (const user of fuelBalancesQuery.data?.users ?? []) map.set(user.userId, user);
+    return map;
+  }, [fuelBalancesQuery.data?.users]);
+
   const displayRows = useMemo(() => {
-    const rows = isMultiUser
-      ? enrichedPageRows
-      : selfRow
-        ? [selfRow]
-        : [];
+    const source = isMultiUser ? enrichedPageRows : selfRow ? [selfRow] : [];
+    const rows = source.map((row) => applyFuelForecastToRow(row, fuelByUserId.get(row.userId)));
     // Page-local re-sort for metrics that depend on phased enrich (sales / ERP /
     // achievement / productivity). Calls / leads / hours / name already sorted
     // across the full filtered cohort before pagination.
@@ -939,7 +947,7 @@ export function ReportsOverviewTab() {
       return sortTargetRows(rows, sortMetric);
     }
     return rows;
-  }, [isMultiUser, enrichedPageRows, selfRow, sortMetric]);
+  }, [isMultiUser, enrichedPageRows, selfRow, sortMetric, fuelByUserId]);
 
   const needsForex = useMemo(
     () => currencyViewNeedsRates(displayRows, currencyView),

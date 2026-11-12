@@ -13,7 +13,6 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { TOUR_FAQ_DESCRIPTION } from '@/lib/tour-faq-copy';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
@@ -27,23 +26,14 @@ const SEL_LIST = '[data-tour="monthly-attendance-list"]';
 
 const REQUIRED_SELECTORS = [SEL_ATTENDANCE, SEL_SECTION, SEL_MONTH, SEL_LOGS, SEL_LIST] as const;
 
-const TOUR_INTRO_DESCRIPTION =
-  'This is your Home dashboard: start and end your shift, review attendance, and see variable pay when it applies to you. The next steps walk through each part that is on screen.';
-
 function buildDashboardSteps(): DriveStep[] {
   const steps: DriveStep[] = [
     {
-      popover: {
-        title: 'Welcome to your dashboard',
-        description: TOUR_INTRO_DESCRIPTION,
-      },
-    },
-    {
       element: SEL_ATTENDANCE,
       popover: {
-        title: 'Attendance actions',
+        title: 'Clock in and out',
         description:
-          'Start your shift, take breaks, and end your shift here. Clock-in asks how you are working, such as office or work from home. After you clock in or out, Pulse may ask for a short check-in. This tour does not open Pulse.',
+          'Click here to start your shift, take a break, or end it. Clock-in asks office or work from home. Pulse may ask a short check-in after you clock in or out.',
         side: 'bottom',
         align: 'center',
       },
@@ -54,9 +44,9 @@ function buildDashboardSteps(): DriveStep[] {
     steps.push({
       element: SEL_VARIABLE_REM,
       popover: {
-        title: 'Variable remuneration',
+        title: 'Variable pay',
         description:
-          'Live extra pay on top of commission for this month: which gates are open, progress toward the maximum, and what is still available.',
+          'Extra pay on top of commission this month. It shows which gates are open, how close you are to the maximum, and what is still left.',
         side: 'top',
         align: 'center',
       },
@@ -68,7 +58,7 @@ function buildDashboardSteps(): DriveStep[] {
       element: SEL_BONUS,
       popover: {
         title: 'Year-end bonus',
-        description: 'Year-end bonus status for the current cycle, when your profile includes it.',
+        description: 'Your year-end bonus status for the current cycle.',
         side: 'top',
         align: 'center',
       },
@@ -77,20 +67,10 @@ function buildDashboardSteps(): DriveStep[] {
 
   steps.push(
     {
-      element: SEL_SECTION,
-      popover: {
-        title: 'Attendance section',
-        description: 'Review your monthly attendance card, legend, and quick actions in one place.',
-        side: 'top',
-        align: 'center',
-      },
-    },
-    {
       element: SEL_MONTH,
       popover: {
         title: 'Change month',
-        description:
-          'Use this menu to pick a recent month and view your attendance for past months (up to the last three months).',
+        description: 'Open this menu to switch among the last three months.',
         side: 'bottom',
         align: 'start',
       },
@@ -99,7 +79,7 @@ function buildDashboardSteps(): DriveStep[] {
       element: SEL_LOGS,
       popover: {
         title: 'View logs',
-        description: 'Open your attendance logs for detailed daily records.',
+        description: 'Click View logs for the day-by-day attendance record.',
         side: 'bottom',
         align: 'center',
       },
@@ -107,16 +87,10 @@ function buildDashboardSteps(): DriveStep[] {
     {
       element: SEL_LIST,
       popover: {
-        title: 'Monthly attendance list',
-        description: 'This monthly view shows attended, missed, and future days.',
+        title: 'This month',
+        description: 'Each day is marked attended, missed, or still ahead.',
         side: 'top',
         align: 'center',
-      },
-    },
-    {
-      popover: {
-        title: 'Having issues?',
-        description: TOUR_FAQ_DESCRIPTION,
       },
     }
   );

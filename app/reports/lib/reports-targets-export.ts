@@ -113,6 +113,8 @@ export function buildReportsTargetsExportHeaders(
     'Fuel %',
     'Fuel spent',
     'Fuel used %',
+    'Fuel on pace',
+    'Fuel upfront',
     'Productivity %',
     'Achievement %',
     'Currency view',
@@ -215,6 +217,16 @@ export function reportsTargetRowToExportRow(
       ? formatExportMoney(row.travel?.fuelSpentZar ?? 0, 'ZAR', includeSalesCurrencyPrefix)
       : 'None',
     fuelVisible ? formatExportPercent(row.travel?.fuelUsedPercent ?? 0) : 'None',
+    fuelVisible && row.travel?.fuelProjectedEndZar != null
+      ? formatExportMoney(row.travel.fuelProjectedEndZar, 'ZAR', includeSalesCurrencyPrefix)
+      : fuelVisible
+        ? ''
+        : 'None',
+    fuelVisible && row.travel?.fuelUpfrontPayZar != null
+      ? formatExportMoney(row.travel.fuelUpfrontPayZar, 'ZAR', includeSalesCurrencyPrefix)
+      : fuelVisible
+        ? ''
+        : 'None',
     row.productivity.score != null ? formatExportPercent(row.productivity.score) : '',
     formatExportPercent(row.achievement),
     CURRENCY_VIEW_LABEL[currencyView],

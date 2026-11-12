@@ -76,23 +76,33 @@ describe('activityCountsFromEngagement', () => {
 });
 
 describe('allActivityMetric', () => {
-  it('equals the channel columns and leaves physical visits on Visits', () => {
+  it('includes physical check-ins with the channel columns', () => {
     const row = baseRow({
       activity: { all: 12, telephone: 3, whatsapp: 1, email: 1, landline: 2, other: 1 },
       calls: { current: 4, target: 60, progress: 7 },
       visits: { current: 4, target: 20, progress: 20 },
     });
     const metric = allActivityMetric(row);
-    expect(metric.current).toBe(8);
+    expect(metric.current).toBe(12);
     expect(metric.target).toBe(60);
-    expect(metric.progress).toBe(13);
+    expect(metric.progress).toBe(20);
     expect(metric.current).toBe(
       row.activity.telephone +
         row.activity.whatsapp +
         row.activity.email +
         row.activity.landline +
-        row.activity.other
+        row.activity.other +
+        row.visits.current
     );
+  });
+
+  it('adds visit check-ins when the stored all total omitted them', () => {
+    const row = baseRow({
+      activity: { all: 8, telephone: 3, whatsapp: 1, email: 1, landline: 2, other: 1 },
+      calls: { current: 4, target: 60, progress: 7 },
+      visits: { current: 4, target: 20, progress: 20 },
+    });
+    expect(allActivityMetric(row).current).toBe(12);
   });
 });
 
