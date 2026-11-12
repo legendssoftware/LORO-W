@@ -106,7 +106,7 @@ export function buildReportsTargetsExportHeaders(
     'Hours (target)',
     'Hours %',
     'Distance (km)',
-    'Check-ins (travel)',
+    'Visits (travel)',
     'Petrol claims (count)',
     'Petrol claims (amount)',
     'Fuel allowance',

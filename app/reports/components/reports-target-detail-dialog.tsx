@@ -51,8 +51,8 @@ import {
   type ReportsTargetsCurrencyView,
 } from '@/app/reports/lib/reports-target-currency';
 import {
+  orgRangeIsoFromUtcCalendarStoredRange,
   utcDateFromYmd,
-  utcRangeIsoFromUtcCalendarStoredRange,
 } from '@/lib/utils/overview-daily-summary';
 import {
   aggregateLeadActions,
@@ -319,7 +319,7 @@ export function ReportsTargetDetailDialog({
 
   const checkInsIsoRange = useMemo(() => {
     if (!reportFrom || !reportTo) return null;
-    return utcRangeIsoFromUtcCalendarStoredRange(
+    return orgRangeIsoFromUtcCalendarStoredRange(
       utcDateFromYmd(reportFrom),
       utcDateFromYmd(reportTo)
     );

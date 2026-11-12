@@ -81,9 +81,9 @@ function formatDistanceKm(km: number): string {
   return `${km.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`;
 }
 
-function formatVisitClaimLine(checkIns: number, claimAmount: number): string {
-  const count = Math.round(checkIns);
-  const label = count === 1 ? '1 check-in' : `${formatCount(count)} check-ins`;
+function formatVisitClaimLine(visits: number, claimAmount: number): string {
+  const count = Math.round(visits);
+  const label = count === 1 ? '1 visit' : `${formatCount(count)} visits`;
   return `${label} · ${formatRand(claimAmount)}`;
 }
 

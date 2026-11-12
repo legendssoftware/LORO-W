@@ -1,6 +1,6 @@
 import type { VisitListItem } from '@/api/types/visits';
 import { addDays } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import type { DateRange } from 'react-day-picker';
 
 export type OverviewTimeframe = 'day' | 'month';
@@ -165,6 +165,26 @@ export function utcRangeIsoFromUtcCalendarStoredRange(
   return {
     startDate: new Date(startMs).toISOString(),
     endDate: new Date(endMs).toISOString(),
+  };
+}
+
+/** Org calendar used by reports engagement and travel. */
+export const ORG_CALENDAR_TIMEZONE = 'Africa/Johannesburg';
+
+/**
+ * ISO bounds for a calendar range stored as UTC Y/M/D, read as Africa/Johannesburg days.
+ * 1 Nov starts at 22:00 UTC the previous day, matching the reports date filter.
+ */
+export function orgRangeIsoFromUtcCalendarStoredRange(
+  start: Date,
+  end: Date,
+  timezone = ORG_CALENDAR_TIMEZONE
+): { startDate: string; endDate: string } {
+  const fromYmd = formatUtcYmd(start);
+  const toYmd = formatUtcYmd(end);
+  return {
+    startDate: fromZonedTime(`${fromYmd}T00:00:00.000`, timezone).toISOString(),
+    endDate: fromZonedTime(`${toYmd}T23:59:59.999`, timezone).toISOString(),
   };
 }
 
