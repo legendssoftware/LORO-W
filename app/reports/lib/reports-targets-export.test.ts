@@ -58,7 +58,7 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).toContain('Landline');
     expect(headers).toContain('Other');
     expect(headers).not.toContain('Call target');
-    expect(headers).toContain('Check-ins (travel)');
+    expect(headers).toContain('Visits (travel)');
     expect(headers).not.toContain('Policy status');
     expect(headers).not.toContain('Warnings acknowledged');
     expect(headers).toContain('Petrol claims (amount)');
@@ -145,7 +145,7 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('Achievement %')]).toBe('45%');
   });
 
-  it('exports travel check-ins separately from physical visits', () => {
+  it('exports the travel visit count in its own column', () => {
     const row = reportsTargetRowToExportRow(
       minimalRow({
         visits: { current: 12, target: 160, progress: 8 },
@@ -165,7 +165,7 @@ describe('reportsTargetRowToExportRow', () => {
     );
     const headers = buildReportsTargetsExportHeaders('set');
     expect(row[headers.indexOf('Visits (current)')]).toBe(formatExportCount(12));
-    expect(row[headers.indexOf('Check-ins (travel)')]).toBe(formatExportCount(88));
+    expect(row[headers.indexOf('Visits (travel)')]).toBe(formatExportCount(88));
     expect(row[headers.indexOf('Fuel spent')]).toBe(formatExportMoney(800, 'ZAR', true));
     expect(row[headers.indexOf('Fuel used %')]).toBe('40%');
     expect(row[headers.indexOf('Fuel on pace')]).toBe('');
