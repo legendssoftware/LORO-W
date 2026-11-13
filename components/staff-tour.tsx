@@ -52,7 +52,7 @@ function buildStaffSteps(): DriveStep[] {
       popover: {
         title: 'Filter and search',
         description:
-          'Filter by status, role, workforce, branch, or country. Search by name or email.',
+          'Filter by status, role, workforce, branch, or country. Search by name, email, or HR ID.',
         side: 'bottom',
         align: 'center',
       },

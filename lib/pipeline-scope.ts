@@ -1,33 +1,36 @@
 /**
  * Pipeline list/report scope vs server behaviour (leads report + check-ins).
- * Keep aligned with LeadsService.getReport / CheckInsService.getAllCheckIns.
+ * Keep aligned with resolveReportsScopeForUser.
  */
 
-function normalizeLevel(accessLevel: string | undefined): string {
-  if (accessLevel == null || accessLevel === '') return '';
-  return accessLevel.toLowerCase().trim();
+import { getReportsDataScope, type ReportsTeamAssignments } from '@/lib/access';
+
+/** Organisation-wide pipeline data. Admin and owner, or other org roles with no team. */
+export function isPipelineLeadsOrgWide(
+  accessLevel: string | undefined,
+  assignments?: ReportsTeamAssignments | null,
+): boolean {
+  return getReportsDataScope(accessLevel, assignments) === 'org';
 }
 
-/** Matches GET /leads/report org-wide scope (admin or owner only). */
-export function isPipelineLeadsOrgWide(accessLevel: string | undefined): boolean {
-  const n = normalizeLevel(accessLevel);
-  return n === 'admin' || n === 'owner';
+/** Same rule as leads. A team viewer must not request the whole organisation's visits. */
+export function isPipelineVisitsOrgWide(
+  accessLevel: string | undefined,
+  assignments?: ReportsTeamAssignments | null,
+): boolean {
+  return getReportsDataScope(accessLevel, assignments) === 'org';
 }
 
-/** Matches check-ins elevated list (omit userUid for org-wide visits). */
-export function isPipelineVisitsOrgWide(accessLevel: string | undefined): boolean {
-  const n = normalizeLevel(accessLevel);
-  return n === 'admin' || n === 'owner' || n === 'manager';
-}
-
-export function getPipelinePageSubtitle(accessLevel: string | undefined): string {
-  const leadsWide = isPipelineLeadsOrgWide(accessLevel);
-  const visitsWide = isPipelineVisitsOrgWide(accessLevel);
-  if (leadsWide) {
-    return 'Organisation pipeline for the selected period (admin or owner view).';
+export function getPipelinePageSubtitle(
+  accessLevel: string | undefined,
+  assignments?: ReportsTeamAssignments | null,
+): string {
+  const scope = getReportsDataScope(accessLevel, assignments);
+  if (scope === 'org') {
+    return 'Organisation pipeline for the selected period.';
   }
-  if (visitsWide && !leadsWide) {
-    return 'Leads scoped to you; visits show the whole organisation for the selected period.';
+  if (scope === 'team') {
+    return 'Targets, leads, and visits for your team.';
   }
   return 'Targets, leads, and visits for your period—scoped to you.';
 }

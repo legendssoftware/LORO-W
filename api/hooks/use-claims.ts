@@ -152,7 +152,7 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
     !sessionSyncLoading &&
     typeof accessLevelForList === 'string' &&
     accessLevelForList.length > 0;
-  const pagedList = canViewOrgClaimsList(accessLevelForList);
+  const pagedList = canViewOrgClaimsList(accessLevelForList, backendUserData);
 
   const status = filters?.status?.trim() || undefined;
   const createdFrom = filters?.createdFrom?.trim() || undefined;

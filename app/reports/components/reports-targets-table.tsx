@@ -12,6 +12,7 @@ import {
   allActivityMetric,
   showsFuelAllowance,
   sumUniqueErpSales,
+  type ImportBookSummary,
   type ReportsTargetMetricCell,
   type ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const COL_COUNT = 16;
+const COL_COUNT = 17;
 
 const PRODUCTIVITY_COLUMN_HINT =
   'Target-based score (0–100) from HR targets and ERP activity. Not the same as Utilization % on the dashboard.';
@@ -94,6 +95,29 @@ function formatRand(amount: number): string {
 function CountCell({ value, pending }: { value: number; pending?: boolean }) {
   if (pending) return <MetricCellSkeleton />;
   return <p className="text-sm font-medium tabular-nums text-foreground">{formatCount(value)}</p>;
+}
+
+function ImportBookCell({
+  book,
+  pending,
+}: {
+  book?: ImportBookSummary | null;
+  pending?: boolean;
+}) {
+  if (pending) return <MetricCellSkeleton />;
+  if (!book || book.total === 0) {
+    return <p className="text-sm tabular-nums text-muted-foreground">—</p>;
+  }
+  return (
+    <div className="min-w-[7.5rem]">
+      <p className="text-sm font-medium tabular-nums text-foreground">
+        {formatCount(book.touched)} / {formatCount(book.total)} touched
+      </p>
+      <p className="text-[10px] tabular-nums text-muted-foreground">
+        {formatCount(book.discarded)} discarded · {formatCount(book.deleted)} deleted
+      </p>
+    </div>
+  );
 }
 
 function QuotationsMetricCell({
@@ -446,6 +470,11 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
     members.length === 0
       ? 0
       : Math.round(members.reduce((sum, row) => sum + row.achievement, 0) / members.length);
+  const importLoading = members.some((row) => row.importBookLoading === true);
+  const importTouched = members.reduce((sum, row) => sum + (row.importBook?.touched ?? 0), 0);
+  const importTotal = members.reduce((sum, row) => sum + (row.importBook?.total ?? 0), 0);
+  const importDiscarded = members.reduce((sum, row) => sum + (row.importBook?.discarded ?? 0), 0);
+  const importDeleted = members.reduce((sum, row) => sum + (row.importBook?.deleted ?? 0), 0);
   const salesLoading = members.some((row) => row.salesLoading === true);
   const currency = formatReportCurrencyCode(members.find((row) => row.sales.currency)?.sales.currency);
   const people = members.length === 1 ? '1 person' : `${members.length} people`;
@@ -481,6 +510,18 @@ function TeamTargetsPanel({ members }: { members: ReportsTargetRow[] }) {
           label="Leads"
           progress={ratioPercent(leadsCurrent, leadsTarget)}
           valueLabel={`${formatCount(leadsCurrent)} / ${formatCount(leadsTarget)}`}
+        />
+        <TeamMetricBar
+          label="Import book"
+          loading={importLoading}
+          progress={importTotal > 0 ? ratioPercent(importTouched, importTotal) : 0}
+          valueLabel={
+            importLoading
+              ? '…'
+              : importTotal === 0
+                ? '—'
+                : `${formatCount(importTouched)} / ${formatCount(importTotal)} touched · ${formatCount(importDiscarded)} discarded · ${formatCount(importDeleted)} deleted`
+          }
         />
         <TeamMetricBar
           label="Quotations"
@@ -576,6 +617,9 @@ export function ReportsTargetsTable({
           <TableHead title="Blank or unknown contact method">Other</TableHead>
           <TableHead title="Physical visits to a location">Visits</TableHead>
           <TableHead>Leads</TableHead>
+          <TableHead title="Imported leads still on this person's book. Ignores the date filter. Touched includes discarded and deleted.">
+            Import book
+          </TableHead>
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">Hours</TableHead>
@@ -717,6 +761,9 @@ export function ReportsTargetsTable({
                       formatValue={(c) => `${formatCount(c.current)} / ${formatCount(c.target)}`}
                     />
                   )}
+                </TableCell>
+                <TableCell>
+                  <ImportBookCell book={row.importBook} pending={row.importBookLoading === true} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {engagementOverlayPending || quotationEngagementPending ? (

@@ -183,6 +183,21 @@ export function staffUserHasHrid(user: ReportCardUser): boolean {
   return user.hrID != null;
 }
 
+/**
+ * Name, email, phone, or HR ID substring match. An empty query matches everyone.
+ * HR ID is compared as digits so a typed code finds the employee.
+ */
+export function staffUserMatchesSearch(user: ReportCardUser, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    user.name.toLowerCase().includes(q) ||
+    user.email.toLowerCase().includes(q) ||
+    (!!user.phone && user.phone.toLowerCase().includes(q)) ||
+    (user.hrID != null && String(user.hrID).toLowerCase().includes(q))
+  );
+}
+
 /** Calendar-day thresholds for the “has not clocked in” status options. */
 export const NO_CLOCK_IN_FILTER_DAYS = {
   no_clock_in_gt_2: 2,

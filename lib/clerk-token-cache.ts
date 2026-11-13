@@ -3,7 +3,11 @@
  * Avoids awaiting getToken() on every HTTP request when the session token is unchanged.
  */
 
-const REFRESH_BEFORE_EXPIRY_SEC = 60;
+/**
+ * Refresh this many seconds before JWT exp. Clerk session tokens last about 60s;
+ * a 60s window made every cached token look expired as soon as it was stored.
+ */
+const REFRESH_BEFORE_EXPIRY_SEC = 15;
 
 type CacheEntry = {
   token: string;

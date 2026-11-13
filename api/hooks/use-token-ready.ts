@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useOrgId, useActiveClerkOrganizationId } from '@/lib/org-id-context';
 import { getClerkTokenParams, isClerkOrganizationId } from '@/lib/clerk-session-token';
+import { clerkTokenCacheKey } from '@/lib/clerk-token-cache';
 import {
-  clerkTokenCacheKey,
-  clearClerkTokenCache,
-  seedClerkTokenCache,
-} from '@/lib/clerk-token-cache';
+  resetClerkTokenWatch,
+  retryClerkTokenWatch,
+  watchClerkToken,
+  type ClerkTokenWatchState,
+} from '@/lib/clerk-token-watch';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 
 /**
- * Resolves the Clerk token once when the user is signed in so we can gate API
- * requests on "token ready" and avoid firing requests before the token is available.
- * Returns isTokenReady (true after getToken() resolved with a non-null token) and
- * isTokenLoading (derived: true whenever signed in and token not yet ready, including first render).
+ * Gates API calls on a Clerk session token.
+ * Retries while signed in, including after the tab wakes, and keeps `isTokenReady`
+ * true once a token has been minted so a later refresh failure does not blank the app.
  */
 export function useTokenReady() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -23,20 +24,36 @@ export function useTokenReady() {
   const activeClerkOrganizationId = useActiveClerkOrganizationId();
   const [isTokenReady, setIsTokenReady] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState<Error | null>(null);
   const cacheKey = clerkTokenCacheKey(orgId, activeClerkOrganizationId);
+  const getTokenRef = useRef(getToken);
+
+  const applyState = useCallback((state: ClerkTokenWatchState) => {
+    setIsTokenReady(state.ready);
+    setSessionToken(state.token);
+    setTokenError(state.error);
+    if (!isApiDebugEnabled()) return;
+    debugApi('useTokenReady result', {
+      hasToken: Boolean(state.token),
+      ready: state.ready,
+      error: state.error?.message ?? null,
+    });
+  }, []);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
+    getTokenRef.current = getToken;
+  });
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
       if (isApiDebugEnabled()) {
         debugApi('useTokenReady', { isLoaded, isSignedIn, reset: true });
       }
-      clearClerkTokenCache();
-      setIsTokenReady(false);
-      setSessionToken(null);
+      resetClerkTokenWatch();
       return;
     }
 
-    let cancelled = false;
     const tokenParams = getClerkTokenParams(orgId, activeClerkOrganizationId);
     if (isApiDebugEnabled()) {
       debugApi('useTokenReady getToken', {
@@ -47,46 +64,25 @@ export function useTokenReady() {
       });
     }
 
-    getToken(tokenParams)
-      .then((token) => {
-        if (!cancelled) {
-          if (token) {
-            seedClerkTokenCache(token, cacheKey);
-          }
-          setIsTokenReady(!!token);
-          setSessionToken(token);
-          // #region agent log
-          fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-token-ready.ts:getToken',message:'token resolved',data:{hypothesisId:'C',hasToken:Boolean(token)},timestamp:Date.now(),hypothesisId:'C',runId:'post-fix'})}).catch(()=>{});
-          // #endregion
-        }
-        if (isApiDebugEnabled()) {
-          debugApi('useTokenReady result', {
-            hasToken: !!token,
-            tokenLength: token ? token.length : 0,
-          });
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          clearClerkTokenCache();
-          setIsTokenReady(false);
-          setSessionToken(null);
-          // #region agent log
-          fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'use-token-ready.ts:getToken',message:'token rejected',data:{hypothesisId:'C',error:err instanceof Error?err.message:String(err)},timestamp:Date.now(),hypothesisId:'C',runId:'post-fix'})}).catch(()=>{});
-          // #endregion
-        }
-        if (isApiDebugEnabled()) {
-          debugApi('useTokenReady getToken rejected', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      });
+    return watchClerkToken(
+      cacheKey,
+      (params) => getTokenRef.current(params),
+      tokenParams,
+      applyState,
+    );
+  }, [applyState, isLoaded, isSignedIn, orgId, activeClerkOrganizationId, cacheKey]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, isSignedIn, orgId, activeClerkOrganizationId, getToken, cacheKey]);
+  const retryToken = useCallback(() => {
+    retryClerkTokenWatch();
+  }, []);
 
-  const isTokenLoading = isSignedIn && !isTokenReady;
-  return { isTokenReady, isTokenLoading, sessionToken };
+  const signedOut = Boolean(isLoaded && !isSignedIn);
+  const isTokenLoading = Boolean(isSignedIn) && !isTokenReady;
+  return {
+    isTokenReady: signedOut ? false : isTokenReady,
+    isTokenLoading,
+    sessionToken: signedOut ? null : sessionToken,
+    tokenError: signedOut ? null : tokenError,
+    retryToken,
+  };
 }

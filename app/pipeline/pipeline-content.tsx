@@ -301,8 +301,8 @@ export function PipelineContent() {
   const accessLevel =
     profile?.accessLevel != null ? String(profile.accessLevel) : undefined;
 
-  const leadsOrgWide = isPipelineLeadsOrgWide(accessLevel);
-  const visitsOrgWide = isPipelineVisitsOrgWide(accessLevel);
+  const leadsOrgWide = isPipelineLeadsOrgWide(accessLevel, profile);
+  const visitsOrgWide = isPipelineVisitsOrgWide(accessLevel, profile);
 
   const targetQuery = useUserTarget(userRef, {
     enabled: !isSyncing && !!userRef,

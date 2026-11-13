@@ -46,6 +46,7 @@ import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { useSessionStore } from '@/store/session-store';
 import { canViewAllOrgLeads, canDedupeOrgLeads, leadEntryTypeToApiParam } from '@/lib/leads-scope';
+import { getReportsDataScope } from '@/lib/access';
 import {
   Dialog,
   DialogContent,
@@ -174,14 +175,18 @@ export function LeadsContent() {
     () => canViewAllOrgLeads(profile?.accessLevel ?? profile?.role),
     [profile?.accessLevel, profile?.role]
   );
+  const seesTeamLeads = useMemo(
+    () => getReportsDataScope(profile?.accessLevel ?? profile?.role, profile) === 'team',
+    [profile]
+  );
   const canDedupe = useMemo(
     () => canDedupeOrgLeads(profile?.accessLevel, profile?.role),
     [profile?.accessLevel, profile?.role]
   );
 
   const dedupeMutation = useDedupeLeadsMutation();
-  /** Org-wide list for admin/owner; personal list otherwise (no UI toggle). */
-  const listScope: 'me' | 'all' = canViewAll ? 'all' : 'me';
+  /** Admin/owner: whole organisation. Team managers: their team. Everyone else: own leads. */
+  const listScope: 'me' | 'all' = canViewAll || seesTeamLeads ? 'all' : 'me';
 
   const sharedListFilters = {
     ...(useAllTime
@@ -446,6 +451,7 @@ export function LeadsContent() {
           onSelectedPriorityChange={setSelectedPriority}
           onSelectedUserIdChange={handleSelectedUserIdChange}
           unassignedOnly={unassignedOnly}
+          allowUnassigned={canViewAll}
           onUnassignedOnlyChange={handleUnassignedOnlyChange}
           userSearchQuery={userSearchQuery}
           onUserSearchQueryChange={setUserSearchQuery}
