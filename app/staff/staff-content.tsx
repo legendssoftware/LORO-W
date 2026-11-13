@@ -29,11 +29,12 @@ import {
   staffUserMatchesCountryFilter,
   staffUserHasSalesCode,
   staffUserHasHrid,
+  staffUserMatchesSearch,
   NO_CLOCK_IN_FILTER_DAYS,
   staffHasNotClockedInMoreThan,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
-import { canManageStaffUsers, isStaffDashboardVisible } from '@/lib/access';
+import { canManageStaffUsers, getReportsDataScope, isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/lib/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-types';
 import {
@@ -314,16 +315,10 @@ export function StaffContent() {
     );
   }, [statusFilteredUsers, roleFilter, workforceFilter, branchFilter, countryFilter]);
 
-  const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return dimensionFilteredUsers;
-    return dimensionFilteredUsers.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.phone && u.phone.toLowerCase().includes(q))
-    );
-  }, [dimensionFilteredUsers, search]);
+  const filteredUsers = useMemo(
+    () => dimensionFilteredUsers.filter((u) => staffUserMatchesSearch(u, search)),
+    [dimensionFilteredUsers, search]
+  );
 
   const branchFilterTriggerLabel = useMemo(
     () => branchFilterItems.find((i) => i.value === branchFilter)?.label ?? 'All branches',
@@ -334,7 +329,9 @@ export function StaffContent() {
     [countryFilterItems, countryFilter]
   );
 
-  const isStaff = isStaffDashboardVisible(profile?.accessLevel);
+  const isStaff =
+    isStaffDashboardVisible(profile?.accessLevel) ||
+    getReportsDataScope(profile?.accessLevel, profile) === 'team';
   const isLoading =
     (!!singleDateStr && dailyQuery.isLoading) || monthlyQuery.isLoading;
 

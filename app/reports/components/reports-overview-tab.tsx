@@ -55,6 +55,7 @@ import {
   allActivityMetric,
   applyErpSalesToRow,
   applyFuelForecastToRow,
+  applyImportBookToRow,
   applyProductivityToRow,
   averageProductivityScore,
   overlayTargetRowFilters,
@@ -81,6 +82,7 @@ import {
   toPolicyWindow,
 } from '@/app/reports/lib/reports-policy-window';
 import { exportReportsTargets } from '@/app/reports/lib/reports-targets-export';
+import { useLeadIngestion } from '@/app/reports/lib/use-lead-ingestion';
 import { downloadTravelExport } from '@/api/endpoints/reports-travel-export';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getReportsDataScope } from '@/lib/access';
@@ -928,6 +930,24 @@ export function ReportsOverviewTab() {
     branchCountryByUid,
   ]);
 
+  const ingestionUserIds = useMemo(() => {
+    const ids = new Set<number>();
+    const source = isMultiUser ? pageRows : selfRow ? [selfRow] : [];
+    for (const row of source) {
+      if (row.userId > 0) ids.add(row.userId);
+      for (const memberId of row.managedStaffUids ?? []) {
+        if (memberId > 0) ids.add(memberId);
+      }
+    }
+    return [...ids];
+  }, [isMultiUser, pageRows, selfRow]);
+
+  const ingestionQuery = useLeadIngestion({
+    client,
+    userIds: ingestionUserIds,
+    enabled: isTokenReady && !isSyncing && ingestionUserIds.length > 0,
+  });
+
   const fuelBalancesQuery = useFuelBalances({
     enabled: isTokenReady && !isSyncing,
   });
@@ -939,7 +959,13 @@ export function ReportsOverviewTab() {
 
   const displayRows = useMemo(() => {
     const source = isMultiUser ? enrichedPageRows : selfRow ? [selfRow] : [];
-    const rows = source.map((row) => applyFuelForecastToRow(row, fuelByUserId.get(row.userId)));
+    const rows = source.map((row) =>
+      applyImportBookToRow(
+        applyFuelForecastToRow(row, fuelByUserId.get(row.userId)),
+        ingestionQuery.data?.get(row.userId) ?? null,
+        ingestionQuery.isLoading
+      )
+    );
     // Page-local re-sort for metrics that depend on phased enrich (sales / ERP /
     // achievement / productivity). Calls / leads / hours / name already sorted
     // across the full filtered cohort before pagination.
@@ -947,7 +973,7 @@ export function ReportsOverviewTab() {
       return sortTargetRows(rows, sortMetric);
     }
     return rows;
-  }, [isMultiUser, enrichedPageRows, selfRow, sortMetric, fuelByUserId]);
+  }, [isMultiUser, enrichedPageRows, selfRow, sortMetric, fuelByUserId, ingestionQuery.data, ingestionQuery.isLoading]);
 
   const needsForex = useMemo(
     () => currencyViewNeedsRates(displayRows, currencyView),
@@ -1007,11 +1033,18 @@ export function ReportsOverviewTab() {
       if (memberIds.length === 0) continue;
       const members = memberIds
         .map((id) => byId.get(id))
-        .filter((member): member is ReportsTargetRow => member != null && member.userId !== row.userId);
+        .filter((member): member is ReportsTargetRow => member != null && member.userId !== row.userId)
+        .map((member) =>
+          applyImportBookToRow(
+            member,
+            ingestionQuery.data?.get(member.userId) ?? member.importBook ?? null,
+            ingestionQuery.isLoading && member.importBook == null
+          )
+        );
       if (members.length > 0) teams.set(row.userId, members);
     }
     return teams;
-  }, [cohortRows, displayRowsWithCurrency, currencyView, exchangeRateMap]);
+  }, [cohortRows, displayRowsWithCurrency, currencyView, exchangeRateMap, ingestionQuery.data, ingestionQuery.isLoading]);
 
   /** Keep detail dialog in sync when filter overlays update the same user row. */
   const detailRow = useMemo(() => {

@@ -64,7 +64,10 @@ describe('buildReportsTargetsExportHeaders', () => {
     expect(headers).toContain('Petrol claims (amount)');
     expect(headers).toContain('Fuel on pace');
     expect(headers).toContain('Fuel upfront');
-    expect(headers).toHaveLength(40);
+    expect(headers).toContain('Import discarded');
+    expect(headers).toContain('Import deleted');
+    expect(headers).toContain('Import touched');
+    expect(headers).toHaveLength(51);
   });
 
   it('includes R in sales headers for ZAR consolidated view', () => {
@@ -104,7 +107,7 @@ describe('reportsTargetRowToExportRow', () => {
     const row = reportsTargetRowToExportRow(minimalRow(), 'set');
     expect(row).not.toContain('anathi@gmail.com');
     expect(row[0]).toBe('Anathi Malikiti');
-    expect(row).toHaveLength(40);
+    expect(row).toHaveLength(51);
   });
 
   it('formats sales with currency prefix in set view', () => {
@@ -133,6 +136,7 @@ describe('reportsTargetRowToExportRow', () => {
     expect(row[headers.indexOf('All Activity (current)')]).toBe(formatExportCount(110));
     expect(row[headers.indexOf('Other')]).toBe(formatExportCount(1));
     expect(row[headers.indexOf('Leads %')]).toBe('48%');
+    expect(row[headers.indexOf('Import touched')]).toBe(formatExportCount(0));
   });
 
   it('includes percent suffix on metric progress columns', () => {

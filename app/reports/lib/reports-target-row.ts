@@ -54,6 +54,56 @@ function hoursMetricCell(current: unknown, storedTarget: unknown): ReportsTarget
   };
 }
 
+export interface ImportBookCounts {
+  total: number;
+  touched: number;
+  untouched: number;
+  deleted: number;
+  discarded: number;
+  declined: number;
+  cancelled: number;
+  converted: number;
+  approved: number;
+  review: number;
+  pendingTouched: number;
+}
+
+export interface ImportBookUploader extends ImportBookCounts {
+  importedByClerkUserId: string | null;
+  uploaderName: string;
+}
+
+export interface ImportBookSummary extends ImportBookCounts {
+  byUploader: ImportBookUploader[];
+}
+
+export function emptyImportBook(): ImportBookSummary {
+  return {
+    total: 0,
+    touched: 0,
+    untouched: 0,
+    deleted: 0,
+    discarded: 0,
+    declined: 0,
+    cancelled: 0,
+    converted: 0,
+    approved: 0,
+    review: 0,
+    pendingTouched: 0,
+    byUploader: [],
+  };
+}
+
+/** Attach the import book without changing achievement or the Leads target cell. */
+export function applyImportBookToRow(
+  row: ReportsTargetRow,
+  book: ImportBookSummary | null,
+  loading: boolean
+): ReportsTargetRow {
+  if (loading) return { ...row, importBookLoading: true, importBook: null };
+  return { ...row, importBookLoading: false, importBook: book ?? emptyImportBook() };
+}
+
 export interface ReportsTargetMetricCell {
   current: number;
   target: number;
@@ -260,6 +310,9 @@ export interface ReportsTargetRow {
   /** Physical visits versus the visit quota. */
   visits: ReportsTargetMetricCell;
   leads: ReportsTargetMetricCell;
+  /** Lifetime imported leads still owned by this person. Independent of the date filter. */
+  importBook?: ImportBookSummary | null;
+  importBookLoading?: boolean;
   quotations: ReportsTargetMetricCell;
   sales: ReportsTargetMetricCell;
   hours: ReportsTargetMetricCell;

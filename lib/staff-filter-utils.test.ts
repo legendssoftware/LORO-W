@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
-import { staffHasNotClockedInMoreThan } from './staff-filter-utils';
+import { staffHasNotClockedInMoreThan, staffUserMatchesSearch } from './staff-filter-utils';
 
 function userWithClockIn(lastClockInAt: string | null): ReportCardUser {
   return {
@@ -20,6 +20,31 @@ const today = new Date(2026, 9, 6, 12, 0, 0);
 function isoDaysBefore(days: number): string {
   return new Date(2026, 9, 6 - days, 8, 0, 0).toISOString();
 }
+
+describe('staffUserMatchesSearch', () => {
+  const user: ReportCardUser = {
+    ...userWithClockIn(null),
+    name: 'Amina Nkosi',
+    email: 'amina@example.com',
+    phone: '+27 82 111 2222',
+    hrID: 10482,
+  };
+
+  it('matches a typed HR ID', () => {
+    expect(staffUserMatchesSearch(user, '10482')).toBe(true);
+    expect(staffUserMatchesSearch(user, '048')).toBe(true);
+  });
+
+  it('keeps name, email, and phone matching', () => {
+    expect(staffUserMatchesSearch(user, 'amina')).toBe(true);
+    expect(staffUserMatchesSearch(user, 'example.com')).toBe(true);
+    expect(staffUserMatchesSearch(user, '111')).toBe(true);
+  });
+
+  it('does not treat a missing HR ID as the text null', () => {
+    expect(staffUserMatchesSearch({ ...user, hrID: null }, 'null')).toBe(false);
+  });
+});
 
 describe('staffHasNotClockedInMoreThan', () => {
   it('includes staff who have never clocked in', () => {

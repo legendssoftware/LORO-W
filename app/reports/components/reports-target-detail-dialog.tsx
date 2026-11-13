@@ -37,6 +37,7 @@ import {
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
 import type {
+  ImportBookSummary,
   ReportsTargetMetricCell,
   ReportsTargetRow,
 } from '@/app/reports/lib/reports-target-row';
@@ -167,6 +168,84 @@ function toYmd(value: string | null | undefined): string | null {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString().slice(0, 10);
+}
+
+function ImportBookSection({ row }: { row: ReportsTargetRow }) {
+  const book = row.importBook;
+  if (row.importBookLoading) {
+    return (
+      <ModalSection title="Import book">
+        <Skeleton className="h-24 w-full" />
+      </ModalSection>
+    );
+  }
+  if (!book || book.total === 0) {
+    return (
+      <ModalSection title="Import book">
+        <p className="text-sm text-muted-foreground">No imported leads on this book.</p>
+      </ModalSection>
+    );
+  }
+  return (
+    <ModalSection title="Import book">
+      <p className="mb-3 text-sm text-muted-foreground">
+        {book.touched.toLocaleString()} / {book.total.toLocaleString()} touched
+        {' · '}
+        {book.untouched.toLocaleString()} untouched
+        {' · '}
+        {book.discarded.toLocaleString()} discarded
+        {' · '}
+        {book.deleted.toLocaleString()} deleted
+      </p>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Uploader</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Touched</TableHead>
+              <TableHead>Untouched</TableHead>
+              <TableHead>Pending</TableHead>
+              <TableHead>Review</TableHead>
+              <TableHead>Approved</TableHead>
+              <TableHead>Converted</TableHead>
+              <TableHead>Declined</TableHead>
+              <TableHead>Cancelled</TableHead>
+              <TableHead>Discarded</TableHead>
+              <TableHead>Deleted</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {book.byUploader.map((uploader) => (
+              <ImportBookUploaderRow
+                key={uploader.importedByClerkUserId ?? 'unknown'}
+                uploader={uploader}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </ModalSection>
+  );
+}
+
+function ImportBookUploaderRow({ uploader }: { uploader: ImportBookSummary['byUploader'][number] }) {
+  return (
+    <TableRow>
+      <TableCell>{uploader.uploaderName}</TableCell>
+      <TableCell className="tabular-nums">{uploader.total}</TableCell>
+      <TableCell className="tabular-nums">{uploader.touched}</TableCell>
+      <TableCell className="tabular-nums">{uploader.untouched}</TableCell>
+      <TableCell className="tabular-nums">{uploader.pendingTouched}</TableCell>
+      <TableCell className="tabular-nums">{uploader.review}</TableCell>
+      <TableCell className="tabular-nums">{uploader.approved}</TableCell>
+      <TableCell className="tabular-nums">{uploader.converted}</TableCell>
+      <TableCell className="tabular-nums">{uploader.declined}</TableCell>
+      <TableCell className="tabular-nums">{uploader.cancelled}</TableCell>
+      <TableCell className="tabular-nums">{uploader.discarded}</TableCell>
+      <TableCell className="tabular-nums">{uploader.deleted}</TableCell>
+    </TableRow>
+  );
 }
 
 function ModalSection({ title, children }: { title: string; children: ReactNode }) {
@@ -821,6 +900,8 @@ export function ReportsTargetDetailDialog({
                     isLoading={visitsQuery.isLoading || visitPlanQuery.isLoading}
                   />
                 </ModalSection>
+
+                {row ? <ImportBookSection row={row} /> : null}
 
                 <ModalSection title="Leads">
                   <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted-foreground">

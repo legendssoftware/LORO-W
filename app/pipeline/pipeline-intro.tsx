@@ -8,7 +8,8 @@ export function PipelineIntro() {
   const subtitle = getPipelinePageSubtitle(
     backendUserData?.accessLevel != null
       ? String(backendUserData.accessLevel)
-      : undefined
+      : undefined,
+    backendUserData,
   );
 
   return (
