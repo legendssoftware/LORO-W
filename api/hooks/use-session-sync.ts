@@ -41,10 +41,12 @@ export function useSessionSync() {
   const activeClerkOrganizationId = useActiveClerkOrganizationId();
   const { isSignedIn, isLoaded: isClerkLoaded, getToken, sessionId } = useAuth();
   const { user: clerkUser } = useUser();
-  const { isTokenReady } = useTokenReady();
+  const { isTokenReady, tokenError, retryToken } = useTokenReady();
   const queryClient = useQueryClient();
   const updateSessionMetadata = useSessionStore((s) => s.updateSessionMetadata);
   const startSession = useSessionStore((s) => s.startSession);
+  const storedProfile = useSessionStore((s) => s.profileData);
+  const storedClerkUserId = useSessionStore((s) => s.clerkUserId);
   const { performSignOut } = useSignOut();
   const signOutAfterSyncHandledRef = useRef(false);
 
@@ -55,37 +57,19 @@ export function useSessionSync() {
     [isSignedIn, sessionId, orgId]
   );
 
-  const existingBackendData = useMemo(
-    () => queryClient.getQueryData(queryKey),
-    [queryClient, queryKey]
-  );
-
-  const shouldSync = Boolean(
-    isClerkLoaded && isSignedIn && !existingBackendData
-  );
-
-  const syncQueryEnabled = shouldSync && isTokenReady;
+  const syncQueryEnabled = Boolean(isClerkLoaded && isSignedIn && isTokenReady);
 
   useEffect(() => {
     if (!isApiDebugEnabled()) return;
     debugApi('useSessionSync gate', {
-      shouldSync,
       isTokenReady,
       enabled: syncQueryEnabled,
-      hasCachedProfile: Boolean(existingBackendData),
       isClerkLoaded,
       isSignedIn,
     });
-  }, [
-    shouldSync,
-    isTokenReady,
-    syncQueryEnabled,
-    existingBackendData,
-    isClerkLoaded,
-    isSignedIn,
-  ]);
+  }, [isTokenReady, syncQueryEnabled, isClerkLoaded, isSignedIn]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey,
     enabled: syncQueryEnabled,
     queryFn: async (): Promise<SyncResult> => {
@@ -101,8 +85,8 @@ export function useSessionSync() {
     retry: defaultQueryRetry,
     retryDelay: defaultQueryRetryDelay,
     refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const forceSyncMutation = useMutation({
@@ -160,6 +144,16 @@ export function useSessionSync() {
   }, [sessionId, isSignedIn]);
 
   useEffect(() => {
+    function refetchIfStale() {
+      if (!isSignedIn || !isTokenReady) return;
+      if (document.visibilityState !== 'visible') return;
+      void queryClient.refetchQueries({ queryKey });
+    }
+    document.addEventListener('visibilitychange', refetchIfStale);
+    return () => document.removeEventListener('visibilitychange', refetchIfStale);
+  }, [isSignedIn, isTokenReady, queryClient, queryKey]);
+
+  useEffect(() => {
     const syncErr = error ?? forceSyncMutation.error;
     if (!syncErr || !shouldEndSessionAfterClerkSyncFailure(syncErr)) return;
     if (signOutAfterSyncHandledRef.current) return;
@@ -199,6 +193,7 @@ export function useSessionSync() {
     }
     prevClerkProfileRef.current = profileKey;
   }, [
+    clerkUser,
     clerkUser?.imageUrl,
     clerkUser?.firstName,
     clerkUser?.primaryEmailAddress?.emailAddress,
@@ -206,16 +201,31 @@ export function useSessionSync() {
     refetchWithForceSync,
   ]);
 
-  const backendUserData = useMemo(
-    () => (data ? getProfileFromSyncData(data) : null),
-    [data]
-  );
+  const clerkUserId = clerkUser?.id ?? null;
+  const profileFromQuery = data ? getProfileFromSyncData(data) : null;
+  const heldMatchesSignedInUser =
+    storedClerkUserId == null ||
+    clerkUserId == null ||
+    storedClerkUserId === clerkUserId;
+  const backendUserData =
+    profileFromQuery ?? (isSignedIn && heldMatchesSignedInUser ? storedProfile : null);
+
+  const queryError = error ?? forceSyncMutation.error ?? null;
+  const blockingError = backendUserData ? null : (queryError ?? tokenError);
+
+  const retrySessionSync = useCallback(() => {
+    retryToken();
+    void refetch();
+  }, [refetch, retryToken]);
 
   return {
     isSyncing: isLoading || forceSyncMutation.isPending,
-    error: error ?? forceSyncMutation.error,
+    /** True while the first profile fetch is in flight and nothing is on screen yet. */
+    isProfileFetchPending: isFetching && !backendUserData,
+    error: blockingError,
     backendUserData,
     refetchWithForceSync,
+    retrySessionSync,
   };
 }
 

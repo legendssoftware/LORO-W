@@ -99,6 +99,8 @@ export interface LeadsFilterControlsProps {
   onSelectedPriorityChange: (v: string) => void;
   onSelectedUserIdChange: (v: string) => void;
   onUnassignedOnlyChange: (v: boolean) => void;
+  /** Unassigned pool is organisation-wide. Hidden for team viewers. */
+  allowUnassigned?: boolean;
   /** Controlled user-picker search (server-backed when parent wires useSearchableUsersList). */
   userSearchQuery?: string;
   onUserSearchQueryChange?: (query: string) => void;
@@ -132,6 +134,7 @@ export function LeadsFilterControls({
   onSelectedPriorityChange,
   onSelectedUserIdChange,
   onUnassignedOnlyChange,
+  allowUnassigned = true,
   userSearchQuery,
   onUserSearchQueryChange,
   isUserSearchLoading = false,
@@ -497,6 +500,7 @@ export function LeadsFilterControls({
         />
       ) : null}
 
+      {allowUnassigned ? (
       <Button
         type="button"
         variant={unassignedOnly ? 'default' : 'outline'}
@@ -511,6 +515,7 @@ export function LeadsFilterControls({
         <Users className="mr-2 size-4 shrink-0" aria-hidden />
         Un-Assigned
       </Button>
+      ) : null}
     </div>
   );
 }

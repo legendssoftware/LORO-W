@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useSessionSync } from '@/api/hooks';
+import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { canAccess, PUBLIC_OR_AUTH_PATHS } from '@/lib/access';
+import { shouldEndSessionAfterClerkSyncFailure } from '@/lib/api/query-error';
 import { getDefaultRoute } from '@/lib/user-mode';
 
 function isPublicPath(pathname: string): boolean {
@@ -18,19 +20,29 @@ function isPublicPath(pathname: string): boolean {
 /**
  * Client-side route guard. Protected pages stay unmounted until the backend
  * profile is loaded, and a missing access level is denied by canAccess.
+ * A failed sync stays on this screen with a retry. It does not send the user
+ * to another gated route.
  */
 export function AccessGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { backendUserData, isSyncing, error } = useSessionSync();
+  const { backendUserData, isSyncing, isProfileFetchPending, error, retrySessionSync } =
+    useSessionSync();
 
   const publicPath = isPublicPath(pathname);
   const profileReady = Boolean(backendUserData);
+  const endingSession = Boolean(error && shouldEndSessionAfterClerkSyncFailure(error));
   const waitingForProfile =
-    Boolean(isSignedIn) && !publicPath && !profileReady && !error;
+    Boolean(isSignedIn) && !publicPath && !profileReady && !error && !endingSession;
   const syncFailed =
-    Boolean(isSignedIn) && !publicPath && !profileReady && Boolean(error) && !isSyncing;
+    Boolean(isSignedIn) &&
+    !publicPath &&
+    !profileReady &&
+    Boolean(error) &&
+    !isSyncing &&
+    !isProfileFetchPending &&
+    !endingSession;
   const allowed = profileReady
     ? canAccess(
         pathname,
@@ -41,40 +53,9 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     : false;
 
   useEffect(() => {
-    // #region agent log
-    const onCsp = (event: SecurityPolicyViolationEvent) => {
-      fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'access-guard.tsx:csp',message:'csp violation',data:{hypothesisId:'E',directive:event.effectiveDirective,blocked:event.blockedURI},timestamp:Date.now(),hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
-    };
-    document.addEventListener('securitypolicyviolation', onCsp);
-    fetch('http://127.0.0.1:7852/ingest/c5d038c6-84ee-4625-93ea-42139de8e50d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2fb95d'},body:JSON.stringify({sessionId:'2fb95d',location:'access-guard.tsx:gate',message:'access gate',data:{hypothesisId:'A',isLoaded,isSignedIn:Boolean(isSignedIn),publicPath,profileReady,waitingForProfile,syncFailed,isSyncing,hasError:Boolean(error),allowed,pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-    return () => document.removeEventListener('securitypolicyviolation', onCsp);
-    // #endregion
-  }, [allowed, error, isLoaded, isSignedIn, isSyncing, pathname, profileReady, publicPath, syncFailed, waitingForProfile]);
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || publicPath) return;
-    if (waitingForProfile || (isSyncing && !profileReady)) return;
-    if (syncFailed) {
-      const fallback = getDefaultRoute(undefined);
-      if (pathname !== fallback) router.replace(fallback);
-      return;
-    }
-    if (profileReady && !allowed) {
-      router.replace(getDefaultRoute(backendUserData ?? undefined));
-    }
-  }, [
-    allowed,
-    backendUserData,
-    isLoaded,
-    isSignedIn,
-    isSyncing,
-    pathname,
-    profileReady,
-    publicPath,
-    router,
-    syncFailed,
-    waitingForProfile,
-  ]);
+    if (!isLoaded || !isSignedIn || publicPath || !profileReady || allowed) return;
+    router.replace(getDefaultRoute(backendUserData ?? undefined));
+  }, [allowed, backendUserData, isLoaded, isSignedIn, pathname, profileReady, publicPath, router]);
 
   if (!isLoaded && !publicPath) {
     return (
@@ -86,7 +67,12 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
 
   if (!isSignedIn || publicPath) return <>{children}</>;
 
-  if (waitingForProfile || (isSyncing && !profileReady)) {
+  if (
+    endingSession ||
+    waitingForProfile ||
+    (isSyncing && !profileReady) ||
+    isProfileFetchPending
+  ) {
     return (
       <div className="flex min-h-[50vh] w-full items-center justify-center p-8">
         <LoadingSpinner />
@@ -94,10 +80,21 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (syncFailed || !allowed) {
+  if (syncFailed) {
     return (
-      <div className="flex min-h-[50vh] w-full items-center justify-center p-8 text-sm text-muted-foreground">
-        {syncFailed ? 'Could not load your profile.' : null}
+      <div className="flex min-h-[50vh] w-full flex-col items-center justify-center gap-3 p-8 text-sm text-muted-foreground">
+        <p>Could not load your profile.</p>
+        <Button type="button" variant="outline" onClick={retrySessionSync}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="flex min-h-[50vh] w-full items-center justify-center p-8">
+        <LoadingSpinner />
       </div>
     );
   }

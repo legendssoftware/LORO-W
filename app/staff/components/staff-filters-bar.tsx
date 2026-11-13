@@ -406,9 +406,9 @@ export function StaffFiltersBar({
 
   function renderSearchField() {
     return (
-      <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
+      <div className="relative min-w-0 flex-1 md:w-72 md:max-w-[20rem] md:flex-none">
         <Input
-          placeholder="Search by name or email"
+          placeholder="Search by name, email, or HR ID"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}

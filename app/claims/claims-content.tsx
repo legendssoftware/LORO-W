@@ -72,7 +72,7 @@ export function ClaimsContent() {
       ? backendUserData.accessLevel
       : undefined) ??
     (typeof profileAccessLevel === 'string' ? profileAccessLevel : undefined);
-  const showUserFilter = canViewOrgClaimsList(accessLevel);
+  const showUserFilter = canViewOrgClaimsList(accessLevel, backendUserData);
   const [createOpen, setCreateOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);

@@ -23,15 +23,19 @@ export const STANDARD_USER_PATHS = [
 /** Reports data visibility: org = everyone, team = self+managedStaff, self = authenticated user only. */
 export type ReportsDataScope = "org" | "team" | "self";
 
-/** Admin / owner / manager (+ ops roles) see full organisation reports. */
+/** Admin and owner always see the full organisation, even with a team assigned. */
+const REPORTS_UNRESTRICTED_ORG_LEVELS = new Set<string>(["admin", "owner"]);
+
+/**
+ * Organisation-wide only when they do not manage a team.
+ * Manager and supervisor are excluded: they see self + their team.
+ */
 const REPORTS_ORG_LEVELS = new Set<string>([
     "admin",
     "owner",
-    "manager",
     "developer",
     "support",
     "hr",
-    "supervisor",
     "executive",
 ]);
 
@@ -52,6 +56,7 @@ export type PerformanceAccessUser = {
     role?: string | null;
     workforceType?: string | null;
     managedBranches?: number[] | null;
+    managedStaff?: number[] | null;
     /** Explicit grant. Role, workforce, and managed branches do not grant access. */
     canAccessPerformanceTracking?: boolean | null;
 };
@@ -83,10 +88,10 @@ export function canAccessWellbeingDashboard(accessLevel: string | undefined): bo
 }
 
 /**
- * Three-tier reports data scope (mirrors server reports-access.util).
- * - org: admin/owner/manager (+ developer, support, hr, supervisor, executive)
- * - team: non-org levels with managedStaff and/or managedBranches assigned (self + their team)
- * - self: everyone else (sales / standard users)
+ * Three-tier reports data scope (mirrors server resolveReportsScopeForUser).
+ * - org: admin/owner always; developer, support, hr, executive only when they have no team
+ * - team: anyone except admin/owner who has managedStaff and/or managedBranches (self + their team)
+ * - self: manager, supervisor, and everyone else with no team
  */
 export function getReportsDataScope(
     accessLevel: string | undefined,
@@ -94,8 +99,9 @@ export function getReportsDataScope(
 ): ReportsDataScope {
     const level = normalize(accessLevel);
     if (!level) return "self";
-    if (REPORTS_ORG_LEVELS.has(level)) return "org";
+    if (REPORTS_UNRESTRICTED_ORG_LEVELS.has(level)) return "org";
     if (hasReportsTeamAssignments(assignments)) return "team";
+    if (REPORTS_ORG_LEVELS.has(level)) return "org";
     return "self";
 }
 
@@ -365,12 +371,16 @@ export function canManageApprovals(
 }
 
 /**
- * Paginated GET /claims (org-wide list). Admin, owner, and manager see every claim.
- * Other roles use GET /claims/me on the client.
+ * Paginated GET /claims. Admin and owner see every claim. A user who manages a team
+ * sees that team's claims. Everyone else uses GET /claims/me.
  */
-export function canViewOrgClaimsList(accessLevel: string | undefined): boolean {
+export function canViewOrgClaimsList(
+    accessLevel: string | undefined,
+    assignments?: ReportsTeamAssignments | null
+): boolean {
     const level = normalize(accessLevel);
-    return level === "admin" || level === "owner" || level === "manager";
+    if (level === "admin" || level === "owner") return true;
+    return getReportsDataScope(accessLevel, assignments) === "team";
 }
 
 function isSettingsPath(pathNormalized: string): boolean {
@@ -484,6 +494,10 @@ export function canAccess(
         pathNormalized.startsWith("/merchandise/")
     ) {
         return canAccessMerchandise(accessLevel);
+    }
+
+    if (pathNormalized === "/staff" || pathNormalized.startsWith("/staff/")) {
+        if (hasReportsTeamAssignments(performanceUser)) return true;
     }
 
     if (
@@ -751,6 +765,13 @@ export function getAllowedRoutes(
             0,
             { path: "/approvals", label: "Approvals" }
         );
+    }
+
+    if (
+        hasReportsTeamAssignments(performanceUser) &&
+        !restrictedNav.some((r) => r.path === "/staff")
+    ) {
+        restrictedNav.unshift({ path: "/staff", label: "Staff" });
     }
 
     if (canAccessWellbeingDashboard(accessLevel) && !restrictedNav.some((r) => r.path === "/wellbeing")) {
