@@ -34,19 +34,21 @@ export function canCancelDelivery(status: DeliveryStatus | undefined): boolean {
 }
 
 /**
- * Narrows the deliveries overview by ERP invoice number.
+ * Narrows the deliveries overview by invoice, driver, truck registration, or client.
  * An empty search returns every row. Matching is case-insensitive and partial, same as staff search.
  * @param deliveries Rows already limited by day, status, and driver
  * @param search Raw search box text
  */
-export function filterDeliveriesByInvoice(
+export function filterDeliveries(
   deliveries: readonly DeliverySummary[],
   search: string,
 ): DeliverySummary[] {
   const term = search.trim().toLowerCase();
   if (!term) return [...deliveries];
   return deliveries.filter((delivery) =>
-    (delivery.invoiceNumber ?? '').toLowerCase().includes(term),
+    [delivery.invoiceNumber, delivery.driverName, delivery.truckRegistration, delivery.clientName].some((value) =>
+      (value ?? '').toLowerCase().includes(term),
+    ),
   );
 }
 

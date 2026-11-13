@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { PackagePlus } from 'lucide-react';
 import {
-  filterDeliveriesByInvoice,
+  filterDeliveries,
   useDeliveries,
   useDeliveryDrivers,
   useSessionSync,
@@ -40,7 +40,7 @@ export function DeliveriesListContent() {
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
-  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
 
@@ -55,10 +55,10 @@ export function DeliveriesListContent() {
   const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
 
   const rows = useMemo(
-    () => filterDeliveriesByInvoice(query.data?.deliveries ?? [], invoiceSearch),
-    [query.data?.deliveries, invoiceSearch],
+    () => filterDeliveries(query.data?.deliveries ?? [], search),
+    [query.data?.deliveries, search],
   );
-  const hasInvoiceSearch = invoiceSearch.trim().length > 0;
+  const hasSearch = search.trim().length > 0;
 
   return (
     <div className="flex flex-col p-4 md:p-6">
@@ -84,8 +84,8 @@ export function DeliveriesListContent() {
         onDateChange={setDate}
         status={status}
         onStatusChange={setStatus}
-        search={invoiceSearch}
-        onSearchChange={setInvoiceSearch}
+        search={search}
+        onSearchChange={setSearch}
         showDriverFilter={canViewOrganisation}
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
@@ -116,7 +116,7 @@ export function DeliveriesListContent() {
 
       {!query.isLoading && !query.isError && rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          {hasInvoiceSearch ? 'No deliveries match this invoice number.' : 'No deliveries for this day.'}
+          {hasSearch ? 'No deliveries match this search.' : 'No deliveries for this day.'}
         </p>
       ) : null}
 

@@ -7,7 +7,12 @@ import type {
   DeliveryListResponse,
   DeliveryPdfResponse,
   DriverOption,
+  PublicDelivery,
+  PublicRatingResponse,
+  SubmitDeliveryRatingBody,
 } from '@/api/types/epod';
+
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4400';
 
 /**
  * GET /epod/deliveries — dispatchers see the organisation, a driver only sees their own stops.
@@ -57,6 +62,40 @@ export async function getDeliveryPdf(client: AxiosInstance, uid: number): Promis
 export async function listDrivers(client: AxiosInstance): Promise<DriverOption[]> {
   const { data } = await client.get<DriverOption[]>('/epod/drivers');
   return Array.isArray(data) ? data : [];
+}
+
+async function readPublicJson<T>(res: Response): Promise<T> {
+  const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+  if (!res.ok) {
+    const message = Array.isArray(body.message)
+      ? body.message.join(', ')
+      : body.message || `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+  return body as T;
+}
+
+/** GET /epod/public/:token — customer tracking page. No login. */
+export async function getPublicDelivery(token: string): Promise<PublicDelivery> {
+  const res = await fetch(`${PUBLIC_API_URL}/epod/public/${encodeURIComponent(token)}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  return readPublicJson<PublicDelivery>(res);
+}
+
+/** POST /epod/public/:token/rating — one score after the proof is recorded. */
+export async function submitPublicDeliveryRating(
+  token: string,
+  body: SubmitDeliveryRatingBody,
+): Promise<PublicRatingResponse> {
+  const res = await fetch(`${PUBLIC_API_URL}/epod/public/${encodeURIComponent(token)}/rating`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return readPublicJson<PublicRatingResponse>(res);
 }
 
 /** GET /epod/assignable-orders — orders that may still be assigned to a driver. */

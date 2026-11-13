@@ -322,7 +322,7 @@ export {
   EPOD_QUERY_KEY,
   canCancelDelivery,
   filterAssignableOrders,
-  filterDeliveriesByInvoice,
+  filterDeliveries,
   useAssignDeliveryMutation,
   useAssignableOrders,
   useCancelDeliveryMutation,

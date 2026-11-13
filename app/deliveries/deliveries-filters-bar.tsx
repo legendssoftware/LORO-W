@@ -277,10 +277,10 @@ export function DeliveriesFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
-          placeholder="Search by invoice no."
+          placeholder="Search deliveries"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          aria-label="Search by invoice number"
+          aria-label="Search by invoice, driver, truck, or client"
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
         />
         {search ? (

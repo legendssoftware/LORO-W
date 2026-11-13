@@ -54,6 +54,10 @@ export interface DeliverySummary {
   /** ERP invoice number from the linked shop order. Null when the order has none. */
   invoiceNumber: string | null;
   driverUid: number;
+  /** Driver first name and surname. Null when the list did not load the driver. */
+  driverName: string | null;
+  /** Registration plates of the driver's vehicles. Null when none are assigned. */
+  truckRegistration: string | null;
   clientName: string;
   clientAddress: string;
   contactName: string;
@@ -80,6 +84,31 @@ export interface DeliveryDetail extends DeliverySummary {
   submitLat: number | null;
   submitLng: number | null;
   clientSubmissionId: string | null;
+  ratingScore: number | null;
+  ratingComment: string | null;
+  ratedAt: string | null;
+}
+
+export interface PublicDelivery {
+  status: DeliveryStatus;
+  statusLabel: string;
+  driverFirstName: string;
+  invoiceNumber: string;
+  clientName: string;
+  ratingOpen: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  arrivalLat: number | null;
+  arrivalLng: number | null;
+}
+
+export interface SubmitDeliveryRatingBody {
+  score: number;
+  comment?: string;
+}
+
+export interface PublicRatingResponse {
+  message: string;
 }
 
 export interface DeliveryListResponse {

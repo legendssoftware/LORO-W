@@ -148,6 +148,23 @@ export function DeliveryDetailContent({
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Rating</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {delivery.ratingScore == null ? (
+            <p className="text-muted-foreground text-sm">Not rated yet.</p>
+          ) : (
+            <>
+              <DetailRow label="Score" value={`${delivery.ratingScore} / 5`} />
+              <DetailRow label="Comment" value={delivery.ratingComment?.trim() || '—'} />
+              <DetailRow label="Rated" value={formatDeliveryTimestamp(delivery.ratedAt)} />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Items</CardTitle>
         </CardHeader>
         <CardContent>
