@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { PackagePlus } from 'lucide-react';
-import { useDeliveries, useDeliveryDrivers, useSessionSync, useTokenReady } from '@/api/hooks';
+import {
+  filterDeliveries,
+  useDeliveries,
+  useDeliveryDrivers,
+  useSessionSync,
+  useTokenReady,
+} from '@/api/hooks';
 import type { DeliveryStatus } from '@/api/types/epod';
 import { canDispatchDeliveries, canViewOrganisationDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +46,7 @@ export function DeliveriesListContent() {
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
+  const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
   const [page, setPage] = useState(1);
@@ -55,7 +62,11 @@ export function DeliveriesListContent() {
   );
   const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
 
-  const rows = query.data?.deliveries ?? [];
+  const rows = useMemo(
+    () => filterDeliveries(query.data?.deliveries ?? [], search),
+    [query.data?.deliveries, search],
+  );
+  const hasSearch = search.trim().length > 0;
   const total = rows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const pageRows = useMemo(() => {
@@ -65,7 +76,7 @@ export function DeliveriesListContent() {
 
   useEffect(() => {
     setPage(1);
-  }, [date, status, driverUid, pageSize]);
+  }, [date, status, driverUid, pageSize, search]);
 
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) setPage(totalPages);
@@ -104,6 +115,8 @@ export function DeliveriesListContent() {
         onDateChange={setDate}
         status={status}
         onStatusChange={setStatus}
+        search={search}
+        onSearchChange={setSearch}
         showDriverFilter={canViewOrganisation}
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
@@ -135,7 +148,9 @@ export function DeliveriesListContent() {
           ) : null}
 
           {!query.isLoading && !query.isError && rows.length === 0 ? (
-            <p className="text-muted-foreground p-4 text-sm">No deliveries match these filters.</p>
+            <p className="text-muted-foreground p-4 text-sm">
+              {hasSearch ? 'No deliveries match this search.' : 'No deliveries match these filters.'}
+            </p>
           ) : null}
 
           {pageRows.length > 0 ? (
@@ -143,6 +158,7 @@ export function DeliveriesListContent() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Delivery</TableHead>
+                  <TableHead>Invoice</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Route</TableHead>
                   <TableHead>Status</TableHead>
@@ -168,6 +184,7 @@ export function DeliveriesListContent() {
                       <span className="font-medium">{row.deliveryNumber}</span>
                       <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
                     </TableCell>
+                    <TableCell>{row.invoiceNumber || '—'}</TableCell>
                     <TableCell>
                       {row.clientName || '—'}
                       {row.clientAddress ? (
