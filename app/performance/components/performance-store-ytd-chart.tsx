@@ -24,7 +24,22 @@ export function PerformanceStoreYtdChart({
 }: PerformanceStoreYtdChartProps) {
   const stores = masterData?.branches ?? [];
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(undefined);
+  const [isChartVisible, setIsChartVisible] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
   const userChoseAllRef = useRef(false);
+
+  useEffect(() => {
+    const node = chartRef.current;
+    if (!node || isChartVisible) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setIsChartVisible(true);
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isChartVisible]);
 
   useEffect(() => {
     if (stores.length === 0) return;
@@ -51,7 +66,7 @@ export function PerformanceStoreYtdChart({
   const { monthlyData, isLoading, isError, refetch } = usePerformanceStoreYtd({
     filters,
     storeId: chartStoreId,
-    enabled: isScopeReady && stores.length > 0,
+    enabled: isChartVisible && isScopeReady && stores.length > 0,
   });
 
   const chartPoints = monthlyData.map((row) => ({
@@ -64,7 +79,7 @@ export function PerformanceStoreYtdChart({
     : 'All Stores';
 
   return (
-    <div className="space-y-3">
+    <div ref={chartRef} className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium">Store performance history</p>
         <Select

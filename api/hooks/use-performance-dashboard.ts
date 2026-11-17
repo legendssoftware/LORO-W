@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
@@ -51,6 +51,7 @@ export function usePerformanceDashboard(options: {
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: defaultQueryRetry,
+    placeholderData: keepPreviousData,
     // First visit has no cache, so the query still loads. Later visits keep that
     // cache until the user presses Refresh.
     refetchOnMount: false,

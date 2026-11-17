@@ -46,7 +46,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Reports',
         description:
-          'Targets, policy, call quality, tasks, and activity for the period your access allows.',
+          'Targets, policy, call quality, tasks, leads activity, and activity for the period your access allows.',
         side: 'bottom',
         align: 'start',
       },
@@ -56,7 +56,7 @@ function buildReportsSteps(): DriveStep[] {
       popover: {
         title: 'Report tabs',
         description:
-          'Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done.',
+          'Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done. Leads activity is imported leads by status for each person.',
         side: 'bottom',
         align: 'start',
       },

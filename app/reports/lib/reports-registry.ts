@@ -1,6 +1,6 @@
-import { ClipboardList, PhoneCall, ShieldCheck, Sparkles, Target } from 'lucide-react';
+import { ClipboardList, PhoneCall, ShieldCheck, Sparkles, Target, Users } from 'lucide-react';
 
-export type ReportsTabId = 'targets' | 'policy' | 'call-quality' | 'insights' | 'tasks';
+export type ReportsTabId = 'targets' | 'policy' | 'call-quality' | 'insights' | 'tasks' | 'leads-activity';
 
 export interface ReportsTabDefinition {
   id: ReportsTabId;
@@ -34,16 +34,21 @@ export const REPORTS_TABS: readonly ReportsTabDefinition[] = [
     label: 'Tasks & planning',
     icon: ClipboardList,
   },
+  {
+    id: 'leads-activity',
+    label: 'Leads activity',
+    icon: Users,
+  },
 ] as const;
 
 export function reportsSubtitle(scope: 'org' | 'team' | 'self'): string {
   switch (scope) {
     case 'org':
-      return 'Org performance targets, policy, call quality, tasks and planning, and activity intelligence.';
+      return 'Org performance targets, policy, call quality, tasks and planning, leads activity, and activity intelligence.';
     case 'team':
-      return 'Your team performance targets, policy, call quality, tasks and planning, and activity intelligence.';
+      return 'Your team performance targets, policy, call quality, tasks and planning, leads activity, and activity intelligence.';
     case 'self':
-      return 'Your performance targets, policy, tasks and planning, and activity intelligence for the selected period.';
+      return 'Your performance targets, policy, tasks and planning, leads activity, and activity intelligence for the selected period.';
     default: {
       const _exhaustive: never = scope;
       return _exhaustive;
