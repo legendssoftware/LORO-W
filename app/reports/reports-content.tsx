@@ -39,6 +39,10 @@ const ReportsTasksTab = dynamic(
   () => import('./components/reports-tasks-tab').then((mod) => mod.ReportsTasksTab),
   { loading: ReportsTabFallback },
 );
+const ReportsLeadsActivityTab = dynamic(
+  () => import('./components/reports-leads-activity-tab').then((mod) => mod.ReportsLeadsActivityTab),
+  { loading: ReportsTabFallback },
+);
 
 function reportsTabComponent(id: ReportsTabId): ComponentType {
   switch (id) {
@@ -52,6 +56,8 @@ function reportsTabComponent(id: ReportsTabId): ComponentType {
       return ReportsInsightsTab;
     case 'tasks':
       return ReportsTasksTab;
+    case 'leads-activity':
+      return ReportsLeadsActivityTab;
     default: {
       const _exhaustive: never = id;
       return _exhaustive;
@@ -60,7 +66,7 @@ function reportsTabComponent(id: ReportsTabId): ComponentType {
 }
 
 const reportsTabListClass =
-  'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
+  'mb-4 h-auto w-full flex-wrap justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
 
 const reportsTabTriggerClass = cn(
   'relative inline-flex h-auto items-center gap-2 rounded-none border-0 border-b-2 border-transparent',
