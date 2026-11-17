@@ -109,7 +109,7 @@ export function VisualiserHeaderActions({
               type="button"
               size="sm"
               disabled={disabled}
-              onClick={() => openPanel(isActive ? 'results' : 'configure')}
+              onClick={() => openPanel('configure')}
               aria-label={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
               title={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
             >

@@ -22,6 +22,8 @@ export interface SimulationRunFilters {
   province: string;
   city: string;
   mode: 'both' | 'catchment' | 'greenfield';
+  /** Shown after a run, e.g. the typed area or "Sandton — stores within 30 km". */
+  areaLabel?: string;
 }
 
 export interface VisualiserSimulationState {
@@ -101,8 +103,8 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
         ranAt: result ? new Date().toISOString() : null,
         erpMatchedStores: meta?.erpMatchedStores ?? 0,
         erpError: meta?.erpError ?? null,
-        panelOpen: true,
-        panelMode: result != null ? 'results' : prev.panelMode,
+        panelOpen: result != null ? false : prev.panelOpen,
+        panelMode: 'configure',
         runMarkers: meta?.markers ?? prev.runMarkers,
         runFilters:
           result == null ? null : (meta?.filters ?? prev.runFilters),
@@ -116,7 +118,7 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
   );
 
   const selectZone = useCallback((zoneId: string | null) => {
-    setState((prev) => ({ ...prev, selectedZoneId: zoneId, panelMode: 'results' }));
+    setState((prev) => ({ ...prev, selectedZoneId: zoneId }));
   }, []);
 
   const clearSimulation = useCallback(() => {
@@ -127,11 +129,11 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
     }));
   }, []);
 
-  const openPanel = useCallback((mode: SimulationPanelMode = 'configure') => {
+  const openPanel = useCallback((_mode: SimulationPanelMode = 'configure') => {
     setState((prev) => ({
       ...prev,
       panelOpen: true,
-      panelMode: prev.isActive && mode === 'configure' ? 'configure' : mode,
+      panelMode: 'configure',
     }));
   }, []);
 

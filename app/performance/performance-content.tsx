@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import {
@@ -51,6 +51,13 @@ export function PerformanceContent() {
   } = usePerformanceFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showConsolidatedView, setShowConsolidatedView] = useState(false);
+  const cachedOnOpen = useRef<boolean | null>(null);
+  if (hydrated && cachedOnOpen.current === null) {
+    cachedOnOpen.current = Boolean(
+      queryClient.getQueryData(performanceQueryKeys.dashboard(filters, false))
+    );
+  }
+  const isRevisit = cachedOnOpen.current === true;
 
   const canAccess = canAccessPerformanceTracker(backendUserData);
   const hasCustomerCategoryFilters = selectHasCustomerCategoryFilters(filters);
@@ -77,10 +84,14 @@ export function PerformanceContent() {
   );
 
   useEffect(() => {
-    if (skipCache && dashboardQuery.isSuccess) {
+    if (skipCache && dashboardQuery.isSuccess && dashboardQuery.data) {
+      queryClient.setQueryData(
+        performanceQueryKeys.dashboard(filters, false),
+        dashboardQuery.data
+      );
       setSkipCache(false);
     }
-  }, [skipCache, dashboardQuery.isSuccess, setSkipCache]);
+  }, [skipCache, dashboardQuery.isSuccess, dashboardQuery.data, filters, queryClient, setSkipCache]);
 
   if (!isTokenReady || isSyncing || !hydrated) {
     return (
@@ -129,6 +140,7 @@ export function PerformanceContent() {
           filters={filters}
           hasActiveFilters={hasActiveFilters}
           showConsolidatedView={showConsolidatedView}
+          emphasizeRefresh={isRevisit}
           isRefetching={dashboardQuery.isFetching}
           onToggleFilters={() => setFiltersOpen(true)}
           onToggleConsolidatedView={() => setShowConsolidatedView((v) => !v)}

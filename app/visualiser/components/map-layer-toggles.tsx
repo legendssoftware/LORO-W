@@ -2,10 +2,14 @@
 
 import { useState, type ComponentType, type CSSProperties } from 'react';
 import {
+  Building,
   Building2,
   ChevronDown,
   Handshake,
+  Mountain,
+  Satellite,
   Store,
+  SunMedium,
   Swords,
   UserRound,
 } from 'lucide-react';
@@ -22,6 +26,11 @@ import {
 } from '@/app/visualiser/components/plotted-sales-reps-list';
 import { cn } from '@/lib/utils';
 import type { VisualiserLayerVisibility } from '@/app/visualiser/hooks/use-visualiser-map-layers';
+import {
+  BASEMAP_LAYERS,
+  type BasemapLayerId,
+  type BasemapLayerVisibility,
+} from '@/app/visualiser/components/map-basemap-layers';
 import {
   LAYER_META,
   type VisualiserLayerId,
@@ -47,10 +56,22 @@ const LAYER_ICONS: Record<
   reps: UserRound,
 };
 
+const BASEMAP_ICONS: Record<
+  BasemapLayerId,
+  ComponentType<{ className?: string }>
+> = {
+  satellite: Satellite,
+  terrain: Mountain,
+  hillshade: SunMedium,
+  buildings3d: Building,
+};
+
 interface MapLayerTogglesProps {
   visibility: VisualiserLayerVisibility;
   counts: Record<VisualiserLayerId, number>;
   onChange: (layer: VisualiserLayerId, visible: boolean) => void;
+  basemap?: BasemapLayerVisibility;
+  onBasemapChange?: (layer: BasemapLayerId, visible: boolean) => void;
   repPoints?: VisualiserMapPoint[];
   selectedRepUid?: number | null;
   onRepClick?: (point: VisualiserMapPoint) => void;
@@ -94,6 +115,8 @@ export function MapLayerToggles({
   repPoints = [],
   selectedRepUid = null,
   onRepClick,
+  basemap,
+  onBasemapChange,
   hideReps = false,
   className,
 }: MapLayerTogglesProps) {
@@ -204,6 +227,41 @@ export function MapLayerToggles({
           );
         })}
       </ul>
+      {basemap && onBasemapChange ? (
+        <div className="mt-3 border-t pt-3">
+          <p className="text-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+            Basemap
+          </p>
+          <ul className="space-y-2">
+            {BASEMAP_LAYERS.map((layer) => {
+              const Icon = BASEMAP_ICONS[layer.id];
+              const id = `basemap-${layer.id}`;
+              return (
+                <li
+                  key={layer.id}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="text-muted-foreground size-3.5 shrink-0" />
+                    <Label htmlFor={id} className="truncate text-sm font-normal">
+                      {layer.label}
+                    </Label>
+                  </div>
+                  <Switch
+                    id={id}
+                    size="sm"
+                    checked={basemap[layer.id]}
+                    onCheckedChange={(checked) =>
+                      onBasemapChange(layer.id, checked)
+                    }
+                    className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-red-500"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

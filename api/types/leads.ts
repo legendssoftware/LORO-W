@@ -31,6 +31,11 @@ export interface LeadListItem {
   /** How the lead entered the system: manual (user-created) or import (CSV). */
   entryType?: LeadEntryTypeApi;
   notes?: string;
+  industry?: string;
+  painPoints?: string;
+  bantQualification?: {
+    need?: { description?: string | null; painPoints?: string[] | null };
+  } | null;
   leadScore?: number;
   temperature?: string;
   priority?: string;
@@ -408,11 +413,15 @@ export interface LeadActionResponse {
   fallbackUrl?: string;
 }
 
-/** Params for GET /leads/:ref/engage-draft */
+/** Params for GET /leads/:ref/engage-draft and the shared campaign draft. */
 export interface EngageDraftParams {
   channel: 'email' | 'sms' | 'whatsapp';
-  tone?: 'professional' | 'friendly' | 'formal';
-  casualness?: 'casual' | 'neutral' | 'formal';
+  intent?: 'first_contact' | 'follow_up' | 'proposal_check_in' | 'quote_follow_up' | 're_engage';
+  tone?: 'professional' | 'friendly' | 'direct' | 'formal';
+  /** Industry enum value. Omit on a bulk draft to stay industry-neutral. */
+  industry?: string;
+  /** Short need or offer. Send an empty string to keep a stored need out of a single-lead draft. */
+  need?: string;
 }
 
 /** Response from GET /leads/:ref/engage-draft */

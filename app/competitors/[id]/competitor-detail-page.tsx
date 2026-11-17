@@ -22,6 +22,7 @@ import {
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { CompetitorFormDialog } from '../components/competitor-form-dialog';
@@ -67,7 +68,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
   const addr = competitor?.address;
 
   return (
-    <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
+    <div className={appPageMainClass}>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Button variant="outline" size="icon" className="shrink-0 border-border bg-background" asChild>

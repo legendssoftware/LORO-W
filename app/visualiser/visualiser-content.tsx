@@ -105,7 +105,7 @@ function VisualiserBody() {
             <p className="mt-1 text-sm text-muted-foreground">
               {limited
                 ? 'Map branches, HQ, competitors, and clients, plus your planned visit route for the selected day.'
-                : 'Map branches, HQ, competitors, and clients — search and track a sales rep’s route on the map, or simulate catchments and turnover in the side panel.'}
+                : 'Map branches, HQ, competitors, and clients — search and track a sales rep’s route on the map, or open Simulate to model catchments and turnover.'}
             </p>
           </div>
           <VisualiserHeaderActions
@@ -130,8 +130,8 @@ function VisualiserBody() {
                   showRepTracking={!limited}
                   plannedRoute={plannedRoute}
                 />
+                {ready && !limited ? <SimulationSidePanel /> : null}
               </div>
-              {limited ? null : <SimulationSidePanel />}
             </>
           )}
         </div>

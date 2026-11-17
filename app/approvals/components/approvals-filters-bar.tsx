@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Filter, LayoutGrid, Tags } from 'lucide-react';
+import { CheckCircle2, Clock, Filter, LayoutGrid, Tags, XCircle } from 'lucide-react';
 import {
   SearchableOptionListPicker,
   type SearchableOptionRow,
@@ -17,6 +17,7 @@ import {
 import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import {
   APPROVAL_STATUS_FILTERS,
   APPROVAL_TYPE_FILTERS,
@@ -24,6 +25,13 @@ import {
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
+
+function approvalStatusIcon(value: string): React.ReactNode {
+  const tone = statusFilterIconClass(value);
+  if (value === 'approved') return <CheckCircle2 className={cn('size-4 shrink-0', tone)} />;
+  if (value === 'rejected') return <XCircle className={cn('size-4 shrink-0', tone)} />;
+  return <Clock className={cn('size-4 shrink-0', tone)} />;
+}
 
 export interface ApprovalsFilterControlsProps {
   layout: 'row' | 'stack';
@@ -54,7 +62,7 @@ export function ApprovalsFilterControls({
         (option) => ({
           value: option.value,
           label: option.label,
-          icon: <LayoutGrid className="size-4 shrink-0" />,
+          icon: approvalStatusIcon(option.value),
         })
       ),
     []

@@ -218,8 +218,9 @@ export function IotFiltersBar({
 
   return (
     <div className="flex flex-col gap-3 shrink-0 mb-4">
-      <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center min-w-0 flex-1">
+      <div className="flex w-full min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
           <IotToolbarEnumPicker
             Icon={Activity}
             allLabel="All statuses"
@@ -259,8 +260,9 @@ export function IotFiltersBar({
             triggerClassName="h-9 w-full sm:w-[200px]"
           />
         </div>
+        </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center shrink-0">
+        <div className="flex shrink-0 flex-nowrap items-center gap-2">
           {renderSearchField()}
           <Button
             type="button"

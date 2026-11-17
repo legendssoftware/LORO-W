@@ -26,6 +26,7 @@ export function mapStoreProduct(row: Record<string, unknown>): StoreProduct {
     palletOnPromotion: Boolean(row.palletOnPromotion),
     itemsPerPack: row.itemsPerPack != null ? Number(row.itemsPerPack) : undefined,
     packsPerPallet: row.packsPerPallet != null ? Number(row.packsPerPallet) : undefined,
+    packPrice: row.packPrice != null ? Number(row.packPrice) : undefined,
   };
 }
 

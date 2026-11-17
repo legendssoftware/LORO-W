@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { PackagePlus } from 'lucide-react';
-import { useDeliveries, useDeliveryDrivers, useSessionSync, useTokenReady } from '@/api/hooks';
+import {
+  filterDeliveries,
+  useDeliveries,
+  useDeliveryDrivers,
+  useSessionSync,
+  useTokenReady,
+} from '@/api/hooks';
 import type { DeliveryStatus } from '@/api/types/epod';
 import { canDispatchDeliveries, canViewOrganisationDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
@@ -40,6 +47,7 @@ export function DeliveriesListContent() {
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
+  const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
   const [page, setPage] = useState(1);
@@ -55,7 +63,11 @@ export function DeliveriesListContent() {
   );
   const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
 
-  const rows = query.data?.deliveries ?? [];
+  const rows = useMemo(
+    () => filterDeliveries(query.data?.deliveries ?? [], search),
+    [query.data?.deliveries, search],
+  );
+  const hasSearch = search.trim().length > 0;
   const total = rows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const pageRows = useMemo(() => {
@@ -65,7 +77,7 @@ export function DeliveriesListContent() {
 
   useEffect(() => {
     setPage(1);
-  }, [date, status, driverUid, pageSize]);
+  }, [date, status, driverUid, pageSize, search]);
 
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) setPage(totalPages);
@@ -81,7 +93,7 @@ export function DeliveriesListContent() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4 md:p-6">
+    <div className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
       <div className="mb-6 shrink-0">
         <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Deliveries</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
@@ -104,6 +116,8 @@ export function DeliveriesListContent() {
         onDateChange={setDate}
         status={status}
         onStatusChange={setStatus}
+        search={search}
+        onSearchChange={setSearch}
         showDriverFilter={canViewOrganisation}
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
@@ -135,7 +149,9 @@ export function DeliveriesListContent() {
           ) : null}
 
           {!query.isLoading && !query.isError && rows.length === 0 ? (
-            <p className="text-muted-foreground p-4 text-sm">No deliveries match these filters.</p>
+            <p className="text-muted-foreground p-4 text-sm">
+              {hasSearch ? 'No deliveries match this search.' : 'No deliveries match these filters.'}
+            </p>
           ) : null}
 
           {pageRows.length > 0 ? (
@@ -143,9 +159,11 @@ export function DeliveriesListContent() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Delivery</TableHead>
+                  <TableHead>Invoice</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Route</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Rating</TableHead>
                   <TableHead>Items</TableHead>
                 </TableRow>
               </TableHeader>
@@ -168,6 +186,7 @@ export function DeliveriesListContent() {
                       <span className="font-medium">{row.deliveryNumber}</span>
                       <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
                     </TableCell>
+                    <TableCell>{row.invoiceNumber || row.orderNumber || '—'}</TableCell>
                     <TableCell>
                       {row.clientName || '—'}
                       {row.clientAddress ? (
@@ -180,6 +199,7 @@ export function DeliveriesListContent() {
                         {formatDeliveryStatus(row.status)}
                       </Badge>
                     </TableCell>
+                    <TableCell>{row.ratingScore == null ? '—' : `${row.ratingScore}/5`}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
                   </TableRow>
                 ))}

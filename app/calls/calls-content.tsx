@@ -57,6 +57,7 @@ import {
   transcriptStatusIcon,
 } from './call-display';
 import { getScoreColorClasses } from './lib/score-colors';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 
 /** Month-to-date UTC range, matching Visits/Leads default. */
@@ -168,7 +169,7 @@ export function CallsContent() {
   if (!isTokenReady || isSyncing) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+        <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
           <LoadingSpinner wrapperClassName="py-24" />
         </main>
       </div>
@@ -178,7 +179,7 @@ export function CallsContent() {
   if (!canView) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+        <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
           <h1 className="text-xl font-semibold">Call recordings</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             You do not have access to call recordings.
@@ -190,7 +191,7 @@ export function CallsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div className="mb-6 flex shrink-0 flex-col gap-1" data-tour="calls-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Call recordings</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">

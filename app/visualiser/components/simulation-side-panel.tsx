@@ -1,31 +1,29 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
-  Check,
   ChevronDown,
   Loader2,
   MapPin,
   RotateCcw,
   Save,
-  Settings2,
   Sparkles,
   Store,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { GroupedNumberInput } from '@/app/visualiser/components/grouped-number-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,6 +39,7 @@ import {
 } from '@/api/hooks';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
+import { geocodePlace } from '@/api/endpoints/geocode-place';
 import { patchUserPreferences } from '@/api/endpoints/user';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -56,7 +55,7 @@ import { SimulationTrendChart } from '@/app/visualiser/components/simulation-tre
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import { StoreFormatSuggestionCard } from '@/app/visualiser/components/store-format-suggestion';
 import { ExportSimulationButton } from '@/app/visualiser/components/export-simulation-button';
-import { SimulationCityCombobox } from '@/app/visualiser/components/simulation-city-combobox';
+import { SimulationAreaInput } from '@/app/visualiser/components/simulation-area-input';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
   type HardwareBrandKey,
@@ -70,11 +69,10 @@ import { buildOpportunityMarkers } from '@/lib/site-opportunity/build-opportunit
 import { enrichCatchmentsWithDashboardRevenue } from '@/lib/site-opportunity/enrich-catchment-revenue';
 import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
 import {
-  filterMapMarkers,
-  getSimulationProvinceOptions,
-  getSortedUniqueCitiesFromMarkers,
-  getSortedUniqueCountriesFromMarkers,
-  markerMatchesCity,
+  AREA_GEOCODE_RADIUS_KM,
+  filterMarkersByArea,
+  filterMarkersNearPoint,
+  getAreaSuggestions,
 } from '@/lib/site-opportunity/map-marker-filters';
 import {
   buildTurnoverSimulation,
@@ -128,9 +126,6 @@ const EDITABLE_BRANDS: HardwareBrandKey[] = [
   'SUPERTEC',
   'UBS',
 ];
-
-const ALL_COUNTRIES = 'all';
-const ALL_PROVINCES = 'all';
 
 const MODE_OPTIONS: { value: SiteOpportunityMode; label: string }[] = [
   { value: 'both', label: 'Both' },
@@ -620,15 +615,13 @@ function ZoneAccordionRow({
 }
 
 /**
- * Docked simulation panel: configure defaults, run, and review results beside the map.
- * ~20% width so the map gains ~10pp vs the previous 30% panel.
+ * Simulation settings dialog. Results render in a sidebar on the map.
  */
 export function SimulationSidePanel() {
   const {
     panelOpen,
-    panelMode,
-    setPanelMode,
     closePanel,
+    openPanel,
     result,
     isActive,
     selectedZoneId,
@@ -672,17 +665,20 @@ export function SimulationSidePanel() {
     seedBrandTurnovers(),
   );
   const [mode, setMode] = useState<SiteOpportunityMode>('both');
-  const [selectedCountry, setSelectedCountry] = useState('South Africa');
-  const [selectedProvince, setSelectedProvince] = useState(ALL_PROVINCES);
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedArea, setSelectedArea] = useState('');
 
-  const branchesQuery = useBranches({ enabled: panelOpen });
-  const competitorsQuery = useCompetitorsMapData({ enabled: panelOpen });
-  const missingGeocodeQuery = useCompetitorsMissingGeocode({
-    enabled: panelOpen && isActive,
+  const simulationDataEnabled = panelOpen || isActive;
+  const branchesQuery = useBranches({ enabled: simulationDataEnabled });
+  const competitorsQuery = useCompetitorsMapData({
+    enabled: simulationDataEnabled,
   });
-  const clientsQuery = useClientsMapData({ enabled: panelOpen });
-  const storesSalesQuery = useStoresSales(undefined, { enabled: panelOpen });
+  const missingGeocodeQuery = useCompetitorsMissingGeocode({
+    enabled: isActive,
+  });
+  const clientsQuery = useClientsMapData({ enabled: simulationDataEnabled });
+  const storesSalesQuery = useStoresSales(undefined, {
+    enabled: simulationDataEnabled,
+  });
 
   const allMarkersForFilters = useMemo(
     () =>
@@ -694,53 +690,10 @@ export function SimulationSidePanel() {
     [branchesQuery.data, competitorsQuery.data, clientsQuery.data],
   );
 
-  const countryOptions = useMemo(() => {
-    const fromMarkers = getSortedUniqueCountriesFromMarkers(allMarkersForFilters);
-    if (fromMarkers.includes('South Africa')) return fromMarkers;
-    return ['South Africa', ...fromMarkers];
-  }, [allMarkersForFilters]);
-
-  const provinceOptions = useMemo(() => {
-    if (!selectedCountry || selectedCountry === ALL_COUNTRIES) return [];
-    return getSimulationProvinceOptions(allMarkersForFilters, selectedCountry);
-  }, [allMarkersForFilters, selectedCountry]);
-
-  const cityScopeFilters = useMemo(
-    () => ({
-      selectedCountry:
-        !selectedCountry || selectedCountry === ALL_COUNTRIES
-          ? undefined
-          : selectedCountry,
-      selectedProvince:
-        !selectedCountry ||
-        selectedCountry === ALL_COUNTRIES ||
-        selectedProvince === ALL_PROVINCES
-          ? undefined
-          : selectedProvince,
-    }),
-    [selectedCountry, selectedProvince],
+  const areaSuggestions = useMemo(
+    () => getAreaSuggestions(allMarkersForFilters),
+    [allMarkersForFilters],
   );
-
-  const cityOptions = useMemo(
-    () => getSortedUniqueCitiesFromMarkers(allMarkersForFilters, cityScopeFilters),
-    [allMarkersForFilters, cityScopeFilters],
-  );
-
-  const cityScopeKey = `${cityScopeFilters.selectedCountry ?? ''}|${cityScopeFilters.selectedProvince ?? ''}`;
-  const cityScopeKeyRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (allMarkersForFilters.length === 0) return;
-    const previousScope = cityScopeKeyRef.current;
-    cityScopeKeyRef.current = cityScopeKey;
-    if (previousScope == null || previousScope === cityScopeKey) return;
-    const city = selectedCity.trim();
-    if (!city) return;
-    const scoped = filterMapMarkers(allMarkersForFilters, cityScopeFilters);
-    if (!scoped.some((marker) => markerMatchesCity(marker, city))) {
-      setSelectedCity('');
-    }
-  }, [allMarkersForFilters, cityScopeFilters, cityScopeKey, selectedCity]);
 
   const selectedCatchmentBranchId = useMemo(() => {
     if (!selectedZone || selectedZone.kind !== 'catchment') return null;
@@ -749,7 +702,7 @@ export function SimulationSidePanel() {
   }, [selectedZone]);
 
   const teamCompositionEnabled =
-    panelOpen && isActive && selectedCatchmentBranchId != null;
+    isActive && selectedCatchmentBranchId != null;
   const teamCompositionQuery = useSalesTeamComposition({
     enabled: teamCompositionEnabled,
     ...(selectedCatchmentBranchId != null
@@ -757,7 +710,7 @@ export function SimulationSidePanel() {
       : {}),
   });
   const teamTargetsQuery = useTeamTargets({
-    enabled: panelOpen && isActive && selectedCatchmentBranchId != null,
+    enabled: isActive && selectedCatchmentBranchId != null,
   });
 
   useEffect(() => {
@@ -773,21 +726,15 @@ export function SimulationSidePanel() {
     });
     setBrandTurnovers(seedBrandTurnovers(prefs.turnoverOverrides));
     setMode(prefs.opportunityMode);
-    const countryPref = prefs.selectedCountry?.trim() ?? '';
-    setSelectedCountry(
-      !countryPref
-        ? 'South Africa'
-        : countryPref.toLowerCase() === ALL_COUNTRIES
-          ? ALL_COUNTRIES
-          : countryPref,
-    );
+    const cityPref = prefs.selectedCity?.trim() ?? '';
     const provincePref = prefs.selectedProvince?.trim() ?? '';
-    setSelectedProvince(
-      !provincePref || provincePref.toLowerCase() === ALL_PROVINCES
-        ? ALL_PROVINCES
-        : provincePref,
-    );
-    setSelectedCity(prefs.selectedCity?.trim() ?? '');
+    const legacyProvince =
+      provincePref &&
+      provincePref.toLowerCase() !== 'all' &&
+      provincePref.toLowerCase() !== 'all provinces'
+        ? provincePref
+        : '';
+    setSelectedArea(cityPref || legacyProvince);
   }, [
     panelOpen,
     userRef,
@@ -809,19 +756,13 @@ export function SimulationSidePanel() {
 
   function persistLocalAndBuildPayload() {
     const turnoverOverrides = buildCurrentTurnoverOverrides();
-    const country =
-      selectedCountry === ALL_COUNTRIES ? ALL_COUNTRIES : selectedCountry;
-    const province =
-      selectedProvince === ALL_PROVINCES || country === ALL_COUNTRIES
-        ? ''
-        : selectedProvince;
     const localPatch = {
       opportunitySettings: settings,
       opportunityMode: mode,
       turnoverOverrides,
-      selectedCountry: country,
-      selectedProvince: province,
-      selectedCity: selectedCity.trim(),
+      selectedCountry: '',
+      selectedProvince: '',
+      selectedCity: selectedArea.trim(),
     };
     saveVisualiserPreferences(localPatch);
     return toVisualiserUserPreferencePayload(localPatch);
@@ -845,14 +786,12 @@ export function SimulationSidePanel() {
     setSettings({ ...DEFAULT_SITE_OPPORTUNITY_SETTINGS });
     setBrandTurnovers(seedBrandTurnovers());
     setMode('both');
-    setSelectedCountry('South Africa');
-    setSelectedProvince(ALL_PROVINCES);
-    setSelectedCity('');
+    setSelectedArea('');
     const visualiser = toVisualiserUserPreferencePayload({
       opportunitySettings: DEFAULT_SITE_OPPORTUNITY_SETTINGS,
       opportunityMode: 'both',
       turnoverOverrides: { brandTurnoverOverrides: {} },
-      selectedCountry: 'South Africa',
+      selectedCountry: '',
       selectedProvince: '',
       selectedCity: '',
     });
@@ -952,20 +891,14 @@ export function SimulationSidePanel() {
       }
 
       const turnoverOverrides = buildCurrentTurnoverOverrides();
-      const countryFilter =
-        selectedCountry === ALL_COUNTRIES ? undefined : selectedCountry;
-      const provinceFilter =
-        !countryFilter || selectedProvince === ALL_PROVINCES
-          ? undefined
-          : selectedProvince;
-      const cityFilter = selectedCity.trim() || undefined;
+      const area = selectedArea.trim();
       const visualiser = toVisualiserUserPreferencePayload({
         opportunitySettings: settings,
         opportunityMode: mode,
         turnoverOverrides,
-        selectedCountry: countryFilter ?? ALL_COUNTRIES,
-        selectedProvince: provinceFilter ?? '',
-        selectedCity: cityFilter ?? '',
+        selectedCountry: '',
+        selectedProvince: '',
+        selectedCity: area,
       });
       saveVisualiserPreferences(visualiser);
       // Persist to profile in background when signed in (non-blocking)
@@ -984,18 +917,44 @@ export function SimulationSidePanel() {
         clients,
       });
 
-      const filteredMarkers = filterMapMarkers(markers, {
-        selectedCountry: countryFilter,
-        selectedProvince: provinceFilter,
-        selectedCity: cityFilter,
-      });
+      let filteredMarkers = markers;
+      let areaLabel = 'Whole map';
+      if (area) {
+        const matched = filterMarkersByArea(markers, area);
+        if (matched.length > 0) {
+          filteredMarkers = matched;
+          areaLabel = area;
+        } else {
+          toast.loading(`Looking up “${area}”…`, { id: 'map-simulate' });
+          let place: Awaited<ReturnType<typeof geocodePlace>>;
+          try {
+            place = await geocodePlace(client, area);
+          } catch {
+            toast.error(
+              `Could not find “${area}”. Try a city, suburb, or region name.`,
+              { id: 'map-simulate' },
+            );
+            return;
+          }
+          filteredMarkers = filterMarkersNearPoint(
+            markers,
+            { lat: place.latitude, lng: place.longitude },
+            AREA_GEOCODE_RADIUS_KM,
+          );
+          areaLabel = `${place.formattedAddress} — stores within ${AREA_GEOCODE_RADIUS_KM} km`;
+          if (filteredMarkers.length === 0) {
+            toast.error(
+              `No geocoded stores within ${AREA_GEOCODE_RADIUS_KM} km of ${place.formattedAddress}.`,
+              { id: 'map-simulate' },
+            );
+            return;
+          }
+        }
+      }
 
       if (filteredMarkers.length === 0) {
-        const scope =
-          [countryFilter, provinceFilter, cityFilter].filter(Boolean).join(' · ') ||
-          'selection';
         toast.error(
-          `No geocoded sites in ${scope}. Adjust country, province, or city, or geocode map data.`,
+          'No geocoded sites on the map. Geocode map data, then run again.',
           { id: 'map-simulate' },
         );
         return;
@@ -1080,17 +1039,16 @@ export function SimulationSidePanel() {
         erpError: erpErr,
         markers: filteredMarkers,
         filters: {
-          country: countryFilter ?? ALL_COUNTRIES,
-          province: provinceFilter ?? ALL_PROVINCES,
-          city: cityFilter ?? '',
+          country: '',
+          province: '',
+          city: area ? areaLabel : '',
           mode,
+          areaLabel,
         },
         turnoverOverrides,
       });
 
-      const scopeLabel = [countryFilter ?? 'All countries', provinceFilter, cityFilter]
-        .filter(Boolean)
-        .join(' · ');
+      const scopeLabel = areaLabel;
 
       toast.success(
         `Simulation ready: ${computed.catchments.length} catchments, ${computed.greenfield.length} opportunities${matched ? ` · ${matched} with ERP (${monthLabel})` : ''}${scopeLabel ? ` · ${scopeLabel}` : ''}.`,
@@ -1104,8 +1062,6 @@ export function SimulationSidePanel() {
       setIsRunning(false);
     }
   }
-
-  if (!panelOpen) return null;
 
   const captureLowPctDisplay = Math.round(settings.captureLowPct * 100);
   const captureHighPctDisplay = Math.round(settings.captureHighPct * 100);
@@ -1137,79 +1093,33 @@ export function SimulationSidePanel() {
   }
 
   return (
-    <aside
-      className="border-border bg-background flex h-full w-[20%] min-w-[16rem] max-w-[22rem] shrink-0 flex-col overflow-hidden border-l"
-      data-tour="visualiser-simulation-panel"
+    <>
+    <Dialog
+      open={panelOpen}
+      onOpenChange={(open) => {
+        if (!open) closePanel();
+      }}
     >
-      <div className="flex shrink-0 items-start justify-between gap-2 border-b px-3 py-2.5">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Store turnover simulation</h2>
-          <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
-            {(settings.radiusMeters / 1000).toFixed(0)} km pool × brand turnovers →{' '}
-            {captureLowPctDisplay}% / {captureHighPctDisplay}% potential
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={closePanel}
-          aria-label="Close simulation panel"
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
+      <DialogContent className="flex max-h-[min(90vh,40rem)] w-full max-w-xl flex-col overflow-hidden sm:max-w-xl">
+      <DialogHeader className="pr-8">
+        <DialogTitle>Store turnover simulation</DialogTitle>
+        <DialogDescription>
+          {(settings.radiusMeters / 1000).toFixed(0)} km pool × brand turnovers →{' '}
+          {captureLowPctDisplay}% / {captureHighPctDisplay}% potential.
+        </DialogDescription>
+      </DialogHeader>
 
-      <div className="flex shrink-0 gap-1 border-b px-2 py-1.5">
-        <Button
-          type="button"
-          size="sm"
-          className={cn(
-            'h-7 flex-1 text-xs',
-            panelMode === 'configure'
-              ? 'bg-red-600 text-white hover:bg-red-600/90'
-              : 'bg-red-600/15 text-red-700 hover:bg-red-600/25 dark:text-red-300',
-          )}
-          onClick={() => setPanelMode('configure')}
-        >
-          <Settings2 className="size-3.5" />
-          Settings
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          className={cn(
-            'h-7 flex-1 text-xs',
-            isActive
-              ? panelMode === 'results'
-                ? 'bg-green-600 text-white hover:bg-green-600/90'
-                : 'bg-green-600/20 text-green-800 hover:bg-green-600/30 dark:text-green-300'
-              : 'bg-muted text-muted-foreground',
-          )}
-          disabled={!isActive}
-          onClick={() => setPanelMode('results')}
-        >
-          {isActive ? (
-            <Check className="size-3.5" />
-          ) : (
-            <Store className="size-3.5" />
-          )}
-          Results
-        </Button>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {panelMode === 'configure' ? (
+      <div className="min-h-0 flex-1 overflow-y-auto px-1">
           <div className="space-y-4 text-sm">
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Use defaults or adjust values, then start. Map stays visible beside
-              this panel. Scope by province or type a city to run a regional
-              simulation.
+              Type a city, suburb, town, or region. It does not have to be a
+              place already on the map. Leave it empty to use the whole loaded
+              map.
             </p>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium">Scope</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-xs font-medium">What to simulate</p>
+              <div className="flex max-w-md flex-wrap gap-1">
                 {MODE_OPTIONS.map((opt) => (
                   <Button
                     key={opt.value}
@@ -1223,212 +1133,124 @@ export function SimulationSidePanel() {
                   </Button>
                 ))}
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="sim-country" className="text-[11px]">
-                    Country
-                  </Label>
-                  <Select
-                    value={selectedCountry}
-                    onValueChange={(value) => {
-                      setSelectedCountry(value);
-                      setSelectedProvince(ALL_PROVINCES);
-                      setSelectedCity('');
-                    }}
-                  >
-                    <SelectTrigger
-                      id="sim-country"
-                      size="sm"
-                      className="h-8 w-full text-xs"
-                    >
-                      <SelectValue placeholder="All countries" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_COUNTRIES}>
-                        All countries
-                      </SelectItem>
-                      {countryOptions.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="sim-province" className="text-[11px]">
-                    Province / region
-                  </Label>
-                  <Select
-                    value={selectedProvince}
-                    onValueChange={setSelectedProvince}
-                    disabled={
-                      !selectedCountry || selectedCountry === ALL_COUNTRIES
-                    }
-                  >
-                    <SelectTrigger
-                      id="sim-province"
-                      size="sm"
-                      className="h-8 w-full text-xs"
-                    >
-                      <SelectValue placeholder="All provinces" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_PROVINCES}>
-                        All provinces
-                      </SelectItem>
-                      {provinceOptions.map((province) => (
-                        <SelectItem key={province} value={province}>
-                          {province}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="sim-city" className="text-[11px]">
-                    City
-                  </Label>
-                  <SimulationCityCombobox
-                    value={selectedCity}
-                    options={cityOptions}
-                    onChange={setSelectedCity}
-                  />
-                </div>
+              <div className="max-w-md space-y-1">
+                <Label htmlFor="sim-area" className="text-[11px]">
+                  Area
+                </Label>
+                <SimulationAreaInput
+                  value={selectedArea}
+                  suggestions={areaSuggestions}
+                  onChange={setSelectedArea}
+                />
+                <p className="text-muted-foreground text-[10px] leading-snug">
+                  Type any area. Suggestions are places already on the map.
+                  Empty means every loaded store.
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               <div className="space-y-1">
                 <Label htmlFor="sim-radius" className="text-[11px]">
                   Radius (km)
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-radius"
-                  type="number"
+                  value={settings.radiusMeters / 1000}
+                  allowDecimal
                   min={1}
                   max={20}
-                  step={0.5}
-                  value={settings.radiusMeters / 1000}
-                  onChange={(e) => {
-                    const km = Number(e.target.value);
-                    if (!Number.isFinite(km)) return;
+                  onValueChange={(km) => {
                     setSettings((s) => ({
                       ...s,
                       radiusMeters: Math.round(km * 1000),
                     }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 5"
+                  placeholder="5"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-sep" className="text-[11px]">
                   Dist to Branch
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-sep"
-                  type="number"
+                  value={settings.minBranchSeparationKm}
                   min={5}
                   max={50}
-                  step={1}
-                  value={settings.minBranchSeparationKm}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (!Number.isFinite(v)) return;
+                  onValueChange={(v) => {
                     setSettings((s) => ({ ...s, minBranchSeparationKm: v }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 15"
+                  placeholder="10"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-cap-low" className="text-[11px]">
                   Capture low %
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-cap-low"
-                  type="number"
+                  value={captureLowPctDisplay}
                   min={1}
                   max={100}
-                  step={1}
-                  value={captureLowPctDisplay}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (!Number.isFinite(v)) return;
+                  onValueChange={(v) => {
                     setSettings((s) => ({
                       ...s,
                       captureLowPct: Math.min(1, Math.max(0.01, v / 100)),
                     }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 10"
+                  placeholder="5"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-cap-high" className="text-[11px]">
                   Capture high %
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-cap-high"
-                  type="number"
+                  value={captureHighPctDisplay}
                   min={1}
                   max={100}
-                  step={1}
-                  value={captureHighPctDisplay}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (!Number.isFinite(v)) return;
+                  onValueChange={(v) => {
                     setSettings((s) => ({
                       ...s,
                       captureHighPct: Math.min(1, Math.max(0.01, v / 100)),
                     }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 30"
+                  placeholder="20"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-topn" className="text-[11px]">
                   Top N opportunities
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-topn"
-                  type="number"
+                  value={settings.topN}
                   min={3}
                   max={30}
-                  step={1}
-                  value={settings.topN}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (!Number.isFinite(v)) return;
+                  onValueChange={(v) => {
                     setSettings((s) => ({ ...s, topN: Math.round(v) }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 10"
+                  placeholder="5"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sim-revenue-sqm" className="text-[11px]">
                   Revenue / sqm (ZAR/mo)
                 </Label>
-                <Input
+                <GroupedNumberInput
                   id="sim-revenue-sqm"
-                  type="number"
-                  min={100}
-                  max={10000}
-                  step={50}
                   value={settings.revenuePerSqmMonthlyZAR ?? 1_500}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (!Number.isFinite(v)) return;
+                  min={100}
+                  max={10_000}
+                  onValueChange={(v) => {
                     setSettings((s) => ({
                       ...s,
                       revenuePerSqmMonthlyZAR: Math.max(0, v),
                     }));
                   }}
-                  className="h-8 text-xs"
-                  placeholder="e.g. 1500"
+                  placeholder="1,500"
                 />
               </div>
             </div>
@@ -1464,7 +1286,7 @@ export function SimulationSidePanel() {
 
             <div className="space-y-2">
               <p className="text-xs font-medium">Brand turnover (R / month)</p>
-              <div className="space-y-1.5">
+              <div className="grid gap-1.5 sm:grid-cols-2">
                 {EDITABLE_BRANDS.map((brand) => (
                   <div
                     key={brand}
@@ -1472,23 +1294,20 @@ export function SimulationSidePanel() {
                   >
                     <Label
                       htmlFor={`brand-${brand}`}
-                      className="text-muted-foreground w-32 shrink-0 text-[11px]"
+                      className="text-muted-foreground w-28 shrink-0 truncate text-[11px]"
                     >
                       {brand}
                     </Label>
-                    <Input
+                    <GroupedNumberInput
                       id={`brand-${brand}`}
-                      type="number"
-                      min={100_000}
-                      step={100_000}
                       value={brandTurnovers[brand]}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (!Number.isFinite(v) || v <= 0) return;
+                      min={100_000}
+                      onValueChange={(v) => {
+                        if (v <= 0) return;
                         setBrandTurnovers((prev) => ({ ...prev, [brand]: v }));
                       }}
-                      className="h-7 text-xs"
-                      placeholder="e.g. 5000000"
+                      className="h-7 w-28"
+                      placeholder="5,000,000"
                     />
                   </div>
                 ))}
@@ -1524,7 +1343,35 @@ export function SimulationSidePanel() {
               </Button>
             </div>
           </div>
-        ) : (
+      </div>
+
+      <div className="flex shrink-0 justify-end border-t pt-3">
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => void handleRunSimulation()}
+          disabled={
+            isRunning ||
+            branchesQuery.isLoading ||
+            competitorsQuery.isLoading
+          }
+        >
+          {isRunning ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="size-3.5" />
+          )}
+          {isRunning ? 'Running…' : 'Start simulation'}
+        </Button>
+      </div>
+      </DialogContent>
+    </Dialog>
+    {isActive && result ? (
+      <aside className="bg-background/95 absolute top-3 right-3 bottom-3 z-30 flex w-[min(100%-1.5rem,22rem)] flex-col overflow-hidden rounded-lg border shadow-lg backdrop-blur">
+        <div className="shrink-0 border-b px-3 py-2">
+          <p className="text-sm font-semibold">Simulation results</p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
           <div className="space-y-4 text-sm">
             {result?.warnings?.length ? (
               <div className="rounded-md border border-amber-500/30 bg-amber-50/50 px-2.5 py-2 text-[11px] text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
@@ -1568,23 +1415,17 @@ export function SimulationSidePanel() {
                 Scoped to{' '}
                 <span className="text-foreground font-medium">
                   {[
-                    runFilters.country === ALL_COUNTRIES
-                      ? 'All countries'
-                      : runFilters.country,
-                    runFilters.province !== ALL_PROVINCES
-                      ? runFilters.province
-                      : null,
-                    runFilters.city.trim() ? runFilters.city : null,
+                    runFilters.areaLabel?.trim() ||
+                      runFilters.city.trim() ||
+                      'Whole map',
                     modeLabel(runFilters.mode),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  ].join(' · ')}
                 </span>
               </p>
             ) : null}
 
             {result ? (
-              <>
+              <div className="space-y-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <h3 className="flex items-center gap-1 text-xs font-semibold">
@@ -1643,56 +1484,35 @@ export function SimulationSidePanel() {
                     Expand a catchment or opportunity row for detail.
                   </p>
                 ) : null}
-              </>
+              </div>
             ) : (
               <p className="text-muted-foreground text-xs">
                 Run a simulation from Settings to see results here.
               </p>
             )}
           </div>
-        )}
-      </div>
-
-      <div className="flex shrink-0 flex-col gap-2 border-t px-3 py-2.5">
-        {isActive ? (
-          <>
-            <ExportSimulationButton />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                clearSimulation();
-                toast.success('Simulation overlay cleared');
-              }}
-            >
-              <X className="size-3.5" />
-              Clear overlay
-            </Button>
-          </>
-        ) : null}
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => void handleRunSimulation()}
-          disabled={
-            isRunning ||
-            branchesQuery.isLoading ||
-            competitorsQuery.isLoading
-          }
-        >
-          {isRunning ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-3 py-2">
+          <ExportSimulationButton />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              clearSimulation();
+              toast.success('Simulation overlay cleared');
+            }}
+          >
+            <X className="size-3.5" />
+            Clear overlay
+          </Button>
+          <Button type="button" size="sm" onClick={() => openPanel('configure')}>
             <Sparkles className="size-3.5" />
-          )}
-          {isRunning
-            ? 'Running…'
-            : isActive
-              ? 'Re-run simulation'
-              : 'Start simulation'}
-        </Button>
-      </div>
-    </aside>
+            Re-run simulation
+          </Button>
+        </div>
+      </aside>
+    ) : null}
+    </>
   );
 }

@@ -22,6 +22,7 @@ import { PlanningRoutesMap } from './components/planning-routes-map';
 import { RoutePlanningNote } from './components/route-planning-note';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/api/types/tasks';
 
@@ -260,7 +261,7 @@ export function PlanningContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div
           className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="planning-page-header"
@@ -274,19 +275,6 @@ export function PlanningContent() {
             </div>
             <RoutePlanningNote />
           </div>
-          <Button
-            className={cn(
-              'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-              'bg-violet-600 text-white hover:bg-violet-700',
-              'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-              '[&_svg]:text-white focus-visible:ring-violet-500/40'
-            )}
-            data-tour="planning-create-button"
-            onClick={() => setCreateModalOpen(true)}
-          >
-            <Plus className="size-4" />
-            Create task
-          </Button>
         </div>
 
         <Tabs value={planningTab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
@@ -328,6 +316,21 @@ export function PlanningContent() {
                   isUserSearchLoading={isUserSearchLoading}
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
+                  actions={
+                    <Button
+                      className={cn(
+                        'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+                        'bg-violet-600 text-white hover:bg-violet-700',
+                        'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                        '[&_svg]:text-white focus-visible:ring-violet-500/40'
+                      )}
+                      data-tour="planning-create-button"
+                      onClick={() => setCreateModalOpen(true)}
+                    >
+                      <Plus className="size-4" />
+                      Create task
+                    </Button>
+                  }
                 />
             <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
               <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">

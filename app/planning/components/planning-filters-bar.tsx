@@ -46,6 +46,7 @@ import {
   TASK_PRIORITY_OPTIONS_WITH_ALL,
 } from '@/lib/task-form-utils';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
@@ -185,7 +186,9 @@ export function PlanningFilterControls({
   const statusOptions = TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => ({
     value: opt.value,
     label: opt.label,
-    icon: <opt.icon className="size-4 shrink-0" />,
+    icon: (
+      <opt.icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
+    ),
     searchExtra: opt.label,
   }));
 
@@ -426,11 +429,13 @@ export interface PlanningFiltersBarProps
   extends Omit<PlanningFilterControlsProps, 'layout'> {
   searchInput: string;
   onSearchChange: (value: string) => void;
+  actions?: React.ReactNode;
 }
 
 export function PlanningFiltersBar({
   searchInput,
   onSearchChange,
+  actions,
   ...filterProps
 }: PlanningFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
@@ -482,6 +487,7 @@ export function PlanningFiltersBar({
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
+          {actions}
         </div>
       </div>
 
@@ -505,6 +511,7 @@ export function PlanningFiltersBar({
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

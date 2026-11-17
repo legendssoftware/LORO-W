@@ -172,6 +172,7 @@ export const PUBLIC_OR_AUTH_PATHS = [
     "/forgot-password",
     "/onboarding",
     "/employee-intake",
+    "/delivery",
 ] as const;
 
 /** Client portal routes (linked-client users with accessLevel client). */

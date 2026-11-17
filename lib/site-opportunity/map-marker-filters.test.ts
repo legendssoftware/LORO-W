@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { MapMarkerBase } from '@/api/types/map';
 import {
   filterMapMarkers,
+  filterMarkersByArea,
+  filterMarkersNearPoint,
+  getAreaSuggestions,
   getSimulationProvinceOptions,
   getSortedUniqueCitiesFromMarkers,
   markerMatchesCity,
@@ -11,13 +14,17 @@ import { SA_PROVINCES } from '@/lib/utils/marker-geo-resolve';
 function marker(
   id: string,
   address: { city?: string; suburb?: string; state?: string; country?: string },
+  coords: { latitude: number; longitude: number } = {
+    latitude: -26.2,
+    longitude: 28.04,
+  },
 ): MapMarkerBase {
   return {
     id,
     name: id,
-    position: [-26.2, 28.04],
-    latitude: -26.2,
-    longitude: 28.04,
+    position: [coords.longitude, coords.latitude],
+    latitude: coords.latitude,
+    longitude: coords.longitude,
     markerType: 'competitor',
     address,
   };
@@ -67,5 +74,32 @@ describe('simulation geo scope', () => {
         selectedProvince: 'Gauteng',
       }),
     ).toEqual(['Johannesburg', 'Sandton']);
+  });
+
+  it('matches a typed province or country, not only cities on the data', () => {
+    expect(filterMarkersByArea(markers, 'KwaZulu-Natal').map((item) => item.id)).toEqual([
+      'durban',
+    ]);
+    expect(filterMarkersByArea(markers, 'South Africa').map((item) => item.id)).toEqual([
+      'sandton',
+      'durban',
+    ]);
+    expect(getAreaSuggestions(markers)).toEqual(
+      expect.arrayContaining(['Sandton', 'Gauteng', 'South Africa', 'Durban']),
+    );
+  });
+
+  it('keeps stores within 30 km of a geocoded point', () => {
+    const far = marker(
+      'polokwane',
+      { city: 'Polokwane', state: 'Limpopo', country: 'South Africa' },
+      { latitude: -23.9, longitude: 29.45 },
+    );
+    const near = filterMarkersNearPoint(
+      [...markers, far],
+      { lat: -26.2, lng: 28.04 },
+      30,
+    );
+    expect(near.map((item) => item.id)).toEqual(['sandton', 'durban']);
   });
 });

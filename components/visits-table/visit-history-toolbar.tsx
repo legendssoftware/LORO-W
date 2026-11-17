@@ -4,7 +4,6 @@ import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import {
-  Table2,
   MoreHorizontal,
   CalendarIcon,
   Filter,
@@ -51,11 +50,6 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { XIcon, MapPinIcon, BriefcaseIcon } from '@/lib/icons';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useVisitsStore } from '@/store/visits-store';
 import { cn } from '@/lib/utils';
 
@@ -72,12 +66,8 @@ export interface VisitHistoryToolbarProps {
   businessTypeIconMap: Map<string, VisitHistoryBusinessIcon>;
   /** Org users from GET /user (must include branchUid/branch for picker subtitles). */
   usersList?: UserListItem[];
-  visitsSummaryDisabled?: boolean;
-  onOpenVisitsSummary?: () => void;
   /** Enables branch labels in the user combobox when organization branches are available. */
   branches?: BranchListItem[];
-  /** When false, hides the visits summary (grid) button — e.g. if parent has no modal. */
-  showVisitsSummaryButton?: boolean;
   /** Optional section heading above the toolbar. Default: none. */
   sectionHeading?: ReactNode | null;
   /** When false, hides the user filter (e.g. self-scoped Reports visualiser). Default true. */
@@ -468,10 +458,7 @@ export function VisitHistoryToolbar({
   businessTypeLabelMap,
   businessTypeIconMap,
   usersList = [],
-  visitsSummaryDisabled = false,
-  onOpenVisitsSummary,
   branches = [],
-  showVisitsSummaryButton = true,
   sectionHeading = null,
   showUserFilter = true,
   showDateRange = true,
@@ -539,28 +526,7 @@ export function VisitHistoryToolbar({
     );
   }
 
-  const actionButtons = (
-    <>
-      {extraActions}
-      {showVisitsSummaryButton && onOpenVisitsSummary ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 shrink-0 border-border bg-background p-0 text-foreground"
-              onClick={onOpenVisitsSummary}
-              disabled={visitsSummaryDisabled}
-              aria-label="View visits summary"
-            >
-              <Table2 className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>View visits summary</TooltipContent>
-        </Tooltip>
-      ) : null}
-    </>
-  );
+  const actionButtons = extraActions;
 
   const filterProps: VisitFilterControlsProps = {
     layout: 'row',

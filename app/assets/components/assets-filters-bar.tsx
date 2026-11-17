@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { AssetCategory } from '@/api/types/asset';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -21,6 +22,7 @@ import {
 } from '@/components/filters/list-date-range-filter';
 import { Boxes, Building2, User } from 'lucide-react';
 import { ASSET_CATEGORY_OPTIONS, assetCategoryIcon } from '../lib/asset-display';
+import { cn } from '@/lib/utils';
 
 type AssetScope = 'mine' | 'org';
 
@@ -43,6 +45,7 @@ export function AssetsFiltersBar({
   userSearchQuery,
   onUserSearchQueryChange,
   isUserSearchLoading,
+  actions,
 }: {
   canManage: boolean;
   scope: AssetScope;
@@ -62,74 +65,82 @@ export function AssetsFiltersBar({
   userSearchQuery: string;
   onUserSearchQueryChange: (query: string) => void;
   isUserSearchLoading: boolean;
+  actions?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-      <ListDateRangeFilter value={dateRange} onChange={onDateRangeChange} />
-      <SearchableBranchPicker
-        branches={branches}
-        selectedBranchId={selectedBranchId}
-        onBranchChange={onBranchChange}
-        triggerClassName="h-9 sm:w-44"
-      />
-      <SearchableUserPicker
-        users={users}
-        branches={branches}
-        selectedUid={selectedUserUid}
-        onUidChange={onUserUidChange}
-        triggerClassName="h-9 sm:w-48"
-        searchQuery={userSearchQuery}
-        onSearchQueryChange={onUserSearchQueryChange}
-        isSearchLoading={isUserSearchLoading}
-        allOptionLabel="All users"
-      />
-      {canManage ? (
-        <Select value={scope} onValueChange={(value) => onScopeChange(value as AssetScope)}>
-          <SelectTrigger className="h-9 w-full border-border bg-background sm:w-48" aria-label="Asset scope">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="mine">
-              <User className="size-4 text-muted-foreground" />
-              My assets
-            </SelectItem>
-            <SelectItem value="org">
-              <Building2 className="size-4 text-muted-foreground" />
-              Organisation
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      ) : null}
-      <Select
-        value={category}
-        onValueChange={(value) => onCategoryChange(value as AssetCategory | 'all')}
-      >
-        <SelectTrigger className="h-9 w-full border-border bg-background sm:w-48" aria-label="Asset category">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">
-            <Boxes className="size-4 text-muted-foreground" />
-            All categories
-          </SelectItem>
-          {ASSET_CATEGORY_OPTIONS.map((option) => {
-            const Icon = assetCategoryIcon(option.value);
-            return (
-              <SelectItem key={option.value} value={option.value}>
-                <Icon className="size-4 text-muted-foreground" />
-                {option.label}
+    <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
+      <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
+          <ListDateRangeFilter value={dateRange} onChange={onDateRangeChange} />
+          <SearchableBranchPicker
+            branches={branches}
+            selectedBranchId={selectedBranchId}
+            onBranchChange={onBranchChange}
+            triggerClassName="h-9 w-44 shrink-0"
+          />
+          <SearchableUserPicker
+            users={users}
+            branches={branches}
+            selectedUid={selectedUserUid}
+            onUidChange={onUserUidChange}
+            triggerClassName="h-9 w-48 shrink-0"
+            searchQuery={userSearchQuery}
+            onSearchQueryChange={onUserSearchQueryChange}
+            isSearchLoading={isUserSearchLoading}
+            allOptionLabel="All users"
+          />
+          {canManage ? (
+            <Select value={scope} onValueChange={(value) => onScopeChange(value as AssetScope)}>
+              <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label="Asset scope">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mine">
+                  <User className="size-4 text-muted-foreground" />
+                  My assets
+                </SelectItem>
+                <SelectItem value="org">
+                  <Building2 className="size-4 text-muted-foreground" />
+                  Organisation
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Select
+            value={category}
+            onValueChange={(value) => onCategoryChange(value as AssetCategory | 'all')}
+          >
+            <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label="Asset category">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <Boxes className="size-4 text-muted-foreground" />
+                All categories
               </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
-      <Input
-        value={searchInput}
-        onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Search name, serial, owner"
-        className={filterToolbarSearchInputClassName}
-        aria-label="Search assets"
-      />
+              {ASSET_CATEGORY_OPTIONS.map((option) => {
+                const Icon = assetCategoryIcon(option.value);
+                return (
+                  <SelectItem key={option.value} value={option.value}>
+                    <Icon className="size-4 text-muted-foreground" />
+                    {option.label}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-nowrap items-center gap-2">
+        <Input
+          value={searchInput}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Search name, serial, owner"
+          className={cn(filterToolbarSearchInputClassName, 'w-56 max-w-[16rem]')}
+          aria-label="Search assets"
+        />
+        {actions}
+      </div>
     </div>
   );
 }

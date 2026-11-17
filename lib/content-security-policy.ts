@@ -80,6 +80,8 @@ export function contentSecurityPolicy(env: {
     "https://challenges.cloudflare.com",
     "https://basemaps.cartocdn.com",
     "https://*.basemaps.cartocdn.com",
+    "https://tiles.maps.eox.at",
+    "https://s3.amazonaws.com",
     "https://nominatim.openstreetmap.org",
     "https://api.mapbox.com",
     "https://*.tiles.mapbox.com",

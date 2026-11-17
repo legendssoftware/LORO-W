@@ -1,4 +1,6 @@
 import type { MapMarkerBase } from '@/api/types/map';
+import type { GeoPoint } from '@/api/types/site-opportunity';
+import { haversineMeters, markerToPoint } from '@/lib/site-opportunity/compute/geo';
 import {
   SA_PROVINCES,
   UNMAPPED,
@@ -67,6 +69,72 @@ export function filterMapMarkers(
     );
   }
   return list;
+}
+
+/** How far from a geocoded place to include stores when the name is not on the data. */
+export const AREA_GEOCODE_RADIUS_KM = 30;
+
+/**
+ * Case-insensitive match on city, suburb, province, or country.
+ * Empty query matches every marker.
+ */
+export function markerMatchesArea(
+  marker: MapMarkerBase,
+  areaQuery: string,
+): boolean {
+  const query = areaQuery.trim().toLowerCase();
+  if (!query) return true;
+  const parts = resolveMarkerAddressParts(marker);
+  const unmapped = UNMAPPED.toLowerCase();
+  const province = getMarkerProvinceKey(marker).trim().toLowerCase();
+  const country = getMarkerCountryKey(marker).trim().toLowerCase();
+  if (province && province !== unmapped && province === query) return true;
+  if (country && country !== unmapped && country === query) return true;
+  return [parts.city, parts.suburb].some((place) => {
+    const label = place.trim().toLowerCase();
+    if (!label) return false;
+    return label === query || (query.length >= 3 && label.includes(query));
+  });
+}
+
+/** Keep markers whose city, suburb, province, or country matches the typed area. */
+export function filterMarkersByArea(
+  markers: MapMarkerBase[],
+  areaQuery: string,
+): MapMarkerBase[] {
+  const query = areaQuery.trim();
+  if (!query) return markers;
+  return markers.filter((marker) => markerMatchesArea(marker, query));
+}
+
+/** Keep geolocated markers within `radiusKm` of a point. */
+export function filterMarkersNearPoint(
+  markers: MapMarkerBase[],
+  center: GeoPoint,
+  radiusKm: number,
+): MapMarkerBase[] {
+  const radiusMeters = radiusKm * 1000;
+  return markers.filter((marker) => {
+    const point = markerToPoint(marker);
+    if (!point) return false;
+    return haversineMeters(point, center) <= radiusMeters;
+  });
+}
+
+/** Cities, suburbs, provinces, and countries a user can pick while typing an area. */
+export function getAreaSuggestions(markers: MapMarkerBase[]): string[] {
+  const labels = new Set<string>(getSortedUniqueCitiesFromMarkers(markers, {}));
+  for (const marker of markers) {
+    for (const place of [
+      getMarkerProvinceKey(marker),
+      getMarkerCountryKey(marker),
+    ]) {
+      const label = place.trim();
+      if (!label || label === UNMAPPED) continue;
+      labels.add(label);
+    }
+  }
+  return Array.from(labels).sort((a, b) => a.localeCompare(b));
 }
 
 /** Case-insensitive match on resolved city or suburb. */
