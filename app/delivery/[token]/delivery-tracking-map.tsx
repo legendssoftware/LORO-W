@@ -101,7 +101,7 @@ export function DeliveryTrackingMap({
   return (
     <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-border">
       <MapView center={[drop.lng, drop.lat]} zoom={14} className="size-full">
-        <MapControls showZoom showLocate showFullscreen />
+        <MapControls showZoom showFullscreen />
         <FitBothPoints bounds={bounds ?? null} />
         {showRoute && driver ? (
           <MapRoute
@@ -135,10 +135,10 @@ export function DeliveryTrackingMap({
               <span
                 className="block size-3 rounded-full border-2 border-white bg-emerald-600"
                 role="img"
-                aria-label={`Driver location, ${driverLabel}`}
+                aria-label={`Arrival point, ${driverLabel}`}
               />
               <MarkerLabel position="bottom" className="bg-background/90 border-border max-w-[10rem] truncate rounded border px-1.5 py-0.5">
-                {driverLabel}
+                Arrived
               </MarkerLabel>
             </MarkerContent>
           </MapMarker>

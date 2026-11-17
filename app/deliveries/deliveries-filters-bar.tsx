@@ -1,7 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarIcon, ChevronsUpDown, Filter, LayoutGrid, Truck } from 'lucide-react';
+import {
+  CalendarIcon,
+  CheckCircle2,
+  ChevronsUpDown,
+  Clock,
+  Filter,
+  LayoutGrid,
+  Truck,
+  XCircle,
+} from 'lucide-react';
 import { DELIVERY_STATUSES, type DriverOption } from '@/api/types/epod';
 import { formatDeliveryStatus } from '@/app/deliveries/format';
 import {
@@ -30,6 +39,14 @@ import {
   toIsoDateString,
 } from '@/lib/user-form/date-input';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
+
+function deliveryStatusIcon(status: string): React.ReactNode {
+  const tone = statusFilterIconClass(status);
+  if (status === 'recorded') return <CheckCircle2 className={cn('size-4 shrink-0', tone)} />;
+  if (status === 'cancelled') return <XCircle className={cn('size-4 shrink-0', tone)} />;
+  return <Clock className={cn('size-4 shrink-0', tone)} />;
+}
 
 const ANY_VALUE = 'all';
 const selectTriggerClass = 'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -190,7 +207,7 @@ export function DeliveriesFilterControls({
       DELIVERY_STATUSES.map((option) => ({
         value: option,
         label: formatDeliveryStatus(option),
-        icon: <LayoutGrid className="size-4 shrink-0" />,
+        icon: deliveryStatusIcon(option),
       })),
     [],
   );
@@ -280,7 +297,7 @@ export function DeliveriesFiltersBar({
           placeholder="Search deliveries"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          aria-label="Search by invoice, driver, truck, or client"
+          aria-label="Search by invoice, order, delivery, driver, truck, or client"
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
         />
         {search ? (

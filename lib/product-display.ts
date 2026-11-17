@@ -34,6 +34,28 @@ export function getProductImageUri(
 }
 
 /**
+ * True when a product can be ordered by the box.
+ * @param product Pack fields from the catalog
+ */
+export function canOrderByBox(product: {
+  itemsPerPack?: number | null;
+  packPrice?: number | null;
+}): boolean {
+  return (product.itemsPerPack ?? 0) > 1 && (product.packPrice ?? 0) > 0;
+}
+
+/**
+ * True when a product can be ordered by the pallet.
+ * @param product Pallet fields from the catalog
+ */
+export function canOrderByPallet(product: {
+  palletAvailable?: boolean | null;
+  palletPrice?: number | null;
+}): boolean {
+  return product.palletAvailable === true && (product.palletPrice ?? 0) > 0;
+}
+
+/**
  * Returns product name trimmed to 30 characters, with fallback when missing.
  */
 export function getProductDisplayName(name: string | undefined): string {

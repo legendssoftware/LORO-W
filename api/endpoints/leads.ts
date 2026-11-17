@@ -247,17 +247,24 @@ export async function reactivateLead(
   return data;
 }
 
+function engageDraftSearch(params: EngageDraftParams): URLSearchParams {
+  const search = new URLSearchParams({ channel: params.channel });
+  if (params.intent) search.set('intent', params.intent);
+  if (params.tone) search.set('tone', params.tone);
+  if (params.industry) search.set('industry', params.industry);
+  if (params.need !== undefined) search.set('need', params.need);
+  return search;
+}
+
 /**
- * GET /leads/engage-draft/:ref - AI-generated follow-up draft for the lead (Gemini RAG).
+ * GET /leads/engage-draft/:ref - AI draft for one lead, shaped by intent, tone, industry, and need.
  */
 export async function getEngageDraft(
   client: AxiosInstance,
   leadRef: number,
   params: EngageDraftParams
 ): Promise<EngageDraftResponse> {
-  const search = new URLSearchParams({ channel: params.channel });
-  if (params.tone) search.set('tone', params.tone);
-  if (params.casualness) search.set('casualness', params.casualness);
+  const search = engageDraftSearch(params);
   const { data } = await client.get<EngageDraftResponse>(
     `/leads/engage-draft/${leadRef}?${search.toString()}`
   );
@@ -283,9 +290,7 @@ export async function getEngageCampaignDraft(
   client: AxiosInstance,
   params: EngageDraftParams
 ): Promise<EngageDraftResponse> {
-  const search = new URLSearchParams({ channel: params.channel });
-  if (params.tone) search.set('tone', params.tone);
-  if (params.casualness) search.set('casualness', params.casualness);
+  const search = engageDraftSearch(params);
   const { data } = await client.get<EngageDraftResponse>(
     `/leads/engage-campaign-draft?${search.toString()}`
   );

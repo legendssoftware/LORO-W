@@ -17,6 +17,7 @@ import type { BulkEngageFilters, LeadListItem } from '@/api/types/leads';
 import { Button } from '@/components/ui/button';
 import { Plus, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import {
   leadToEndVisitInitialForm,
@@ -378,42 +379,12 @@ export function LeadsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
-        <div
-          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-          data-tour="leads-page-header"
-        >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Leads</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              View, track, and manage your sales leads.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
-            {canViewAll ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 shrink-0"
-                onClick={() => setEngageLeadsOpen(true)}
-              >
-                Engage leads
-              </Button>
-            ) : null}
-            <Button
-              className={cn(
-                'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-                'bg-violet-600 text-white hover:bg-violet-700',
-                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-                '[&_svg]:text-white focus-visible:ring-violet-500/40'
-              )}
-              data-tour="leads-create-button"
-              onClick={() => setCreateModalOpen(true)}
-            >
-              <Plus className="size-4" />
-              Create lead
-            </Button>
-          </div>
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
+        <div className="mb-6 shrink-0" data-tour="leads-page-header">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Leads</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            View, track, and manage your sales leads.
+          </p>
         </div>
 
         {listError != null ? (
@@ -463,6 +434,33 @@ export function LeadsContent() {
           onImportClick={() => setImportModalOpen(true)}
           onImportApifyClick={() => setApifyImportModalOpen(true)}
           onDedupeClick={() => setDedupeDialogOpen(true)}
+          actions={
+            <>
+              {canViewAll ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0"
+                  onClick={() => setEngageLeadsOpen(true)}
+                >
+                  Engage leads
+                </Button>
+              ) : null}
+              <Button
+                className={cn(
+                  'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+                  'bg-violet-600 text-white hover:bg-violet-700',
+                  'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                  '[&_svg]:text-white focus-visible:ring-violet-500/40'
+                )}
+                data-tour="leads-create-button"
+                onClick={() => setCreateModalOpen(true)}
+              >
+                <Plus className="size-4" />
+                Create lead
+              </Button>
+            </>
+          }
         />
         {hasActiveCall && activeCallLeadUid != null ? (
           <div className="mb-4 flex shrink-0 flex-col gap-3 rounded-lg border-4 border-green-500 bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

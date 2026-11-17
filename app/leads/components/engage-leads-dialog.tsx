@@ -18,20 +18,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { EngageDraftControls } from '@/app/leads/components/engage-draft-controls';
+import {
+  ENGAGE_WHATSAPP_MAX_CHARS,
+  whatsAppOverCap,
+  type EngageIntent,
+  type EngageTone,
+} from '@/lib/engage-draft';
 
 const BULK_ENGAGE_MAX = 100;
 
 type EngageChannel = 'email' | 'sms' | 'whatsapp';
-type EngageTone = 'professional' | 'friendly' | 'formal';
-type EngageCasualness = 'casual' | 'neutral' | 'formal';
 
 type EngageLeadsDialogProps = {
   open: boolean;
@@ -86,8 +84,10 @@ export function EngageLeadsDialog({
   filters,
 }: EngageLeadsDialogProps) {
   const [channel, setChannel] = useState<EngageChannel | null>(null);
+  const [intent, setIntent] = useState<EngageIntent>('first_contact');
   const [tone, setTone] = useState<EngageTone>('professional');
-  const [casualness, setCasualness] = useState<EngageCasualness>('neutral');
+  const [industry, setIndustry] = useState('');
+  const [need, setNeed] = useState('');
   const [message, setMessage] = useState('');
   const [confirming, setConfirming] = useState(false);
 
@@ -97,19 +97,28 @@ export function EngageLeadsDialog({
   useEffect(() => {
     if (open) return;
     setChannel(null);
+    setIntent('first_contact');
     setTone('professional');
-    setCasualness('neutral');
+    setIndustry('');
+    setNeed('');
     setMessage('');
     setConfirming(false);
   }, [open]);
 
   const overCap = matchCount > BULK_ENGAGE_MAX;
-  const canSend = Boolean(channel && message.trim() && matchCount > 0 && !overCap);
+  const messageTooLong = whatsAppOverCap(channel, message);
+  const canSend = Boolean(channel && message.trim() && matchCount > 0 && !overCap && !messageTooLong);
 
   function handleWriteWithAi() {
     if (!channel) return;
     draftMutation.mutate(
-      { channel, tone, casualness },
+      {
+        channel,
+        intent,
+        tone,
+        ...(industry ? { industry } : {}),
+        need,
+      },
       {
         onSuccess: (data) => {
           setMessage(data.draft ?? '');
@@ -155,6 +164,12 @@ export function EngageLeadsDialog({
             <p className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 text-muted-foreground">
               {message.trim()}
             </p>
+            {channel === 'whatsapp' ? (
+              <p className="text-xs text-muted-foreground">
+                WhatsApp {message.trim().length}/{ENGAGE_WHATSAPP_MAX_CHARS}
+                {messageTooLong ? '. Shorten the message before sending.' : ''}
+              </p>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-3">
@@ -191,37 +206,17 @@ export function EngageLeadsDialog({
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Tone</Label>
-                <Select value={tone} onValueChange={(value) => setTone(value as EngageTone)}>
-                  <SelectTrigger className="mt-1 h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="friendly">Friendly</SelectItem>
-                    <SelectItem value="formal">Formal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Casualness</Label>
-                <Select
-                  value={casualness}
-                  onValueChange={(value) => setCasualness(value as EngageCasualness)}
-                >
-                  <SelectTrigger className="mt-1 h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="neutral">Neutral</SelectItem>
-                    <SelectItem value="formal">Formal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <EngageDraftControls
+              intent={intent}
+              tone={tone}
+              industry={industry}
+              need={need}
+              allowMixedIndustry
+              onIntentChange={setIntent}
+              onToneChange={setTone}
+              onIndustryChange={setIndustry}
+              onNeedChange={setNeed}
+            />
 
             <div className="space-y-1">
               <Label className="text-xs">Message</Label>
@@ -237,6 +232,10 @@ export function EngageLeadsDialog({
                 {channel === 'sms' && message.length > 160
                   ? ' This SMS is longer than 160 characters and may be split.'
                   : ''}
+                {channel === 'whatsapp'
+                  ? ` WhatsApp ${message.trim().length}/${ENGAGE_WHATSAPP_MAX_CHARS}.`
+                  : ''}
+                {messageTooLong ? ' Shorten the WhatsApp message before sending.' : ''}
               </p>
             </div>
           </div>

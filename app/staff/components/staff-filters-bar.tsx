@@ -3,12 +3,10 @@
 import * as React from 'react';
 import {
   Briefcase,
-  Building2,
   Check,
   ChevronsUpDown,
   Filter,
   LayoutGrid,
-  MapPinned,
   Users,
   Globe,
 } from 'lucide-react';
@@ -41,6 +39,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { XIcon } from '@/lib/icons';
+import type { BranchListItem } from '@/api/types/branch';
+import { getBranchDisplayLabel } from '@/api/types/branch';
+import {
+  getCountryFlag,
+  normalizeBranchCountryCodeForGrouping,
+} from '@/lib/utils/country-flags';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import {
   STAFF_STATUS_FILTER_OPTIONS,
   STAFF_DIMENSION_FILTER_ALL,
@@ -50,6 +55,38 @@ import type { StatusFilter } from '@/lib/types/staff-report-types';
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
+
+function flagForStaffBranchLabel(
+  label: string,
+  branches: BranchListItem[]
+): string | null {
+  const needle = label.trim().toLowerCase();
+  if (!needle || needle === 'all branches' || needle === 'unassigned') return null;
+  const match = branches.find((branch) => {
+    const display = getBranchDisplayLabel(branch).trim().toLowerCase();
+    const name = (branch.name ?? '').trim().toLowerCase();
+    const alias = (branch.alias ?? '').trim().toLowerCase();
+    return display === needle || name === needle || alias === needle;
+  });
+  if (!match) return null;
+  return getCountryFlag(normalizeBranchCountryCodeForGrouping(match)).flag;
+}
+
+function StaffBranchFlag({
+  label,
+  branches,
+}: {
+  label: string;
+  branches: BranchListItem[];
+}) {
+  const flag = flagForStaffBranchLabel(label, branches);
+  if (!flag) return null;
+  return (
+    <span className="shrink-0 text-base leading-none" aria-hidden>
+      {flag}
+    </span>
+  );
+}
 
 export interface StaffDimensionFilterItem {
   value: string;
@@ -69,6 +106,8 @@ export interface StaffFilterControlsProps {
   branchFilter: string;
   onBranchFilterChange: (v: string) => void;
   branchFilterItems: StaffDimensionFilterItem[];
+  /** Loaded branches, used to show a country flag beside each branch name. */
+  branches?: BranchListItem[];
   branchFilterTriggerLabel: string;
   branchPickerOpen: boolean;
   onBranchPickerOpenChange: (open: boolean) => void;
@@ -93,6 +132,7 @@ export function StaffFilterControls({
   branchFilter,
   onBranchFilterChange,
   branchFilterItems,
+  branches = [],
   branchFilterTriggerLabel,
   branchPickerOpen,
   onBranchPickerOpenChange,
@@ -127,7 +167,12 @@ export function StaffFilterControls({
         return {
           value: opt.value,
           label: opt.label,
-          icon: <Icon className="size-4 shrink-0" size={16} />,
+          icon: (
+            <Icon
+              className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))}
+              size={16}
+            />
+          ),
         };
       }),
     []
@@ -249,7 +294,7 @@ export function StaffFilterControls({
               )}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                <StaffBranchFlag label={branchFilterTriggerLabel} branches={branches} />
                 <span className="truncate">{branchFilterTriggerLabel}</span>
               </span>
               <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
@@ -283,7 +328,7 @@ export function StaffFilterControls({
                         )}
                       />
                       <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                        <MapPinned className="size-4 shrink-0" />
+                        <StaffBranchFlag label={opt.label} branches={branches} />
                         {opt.label}
                       </span>
                     </CommandItem>

@@ -67,6 +67,8 @@ export interface DeliverySummary {
   itemSummary: string;
   exception: DeliveryException | null;
   pdfUrl: string | null;
+  /** Customer score from 1 to 5. Null until the public link is rated. */
+  ratingScore: number | null;
 }
 
 export interface DeliveryDetail extends DeliverySummary {
@@ -84,7 +86,6 @@ export interface DeliveryDetail extends DeliverySummary {
   submitLat: number | null;
   submitLng: number | null;
   clientSubmissionId: string | null;
-  ratingScore: number | null;
   ratingComment: string | null;
   ratedAt: string | null;
 }

@@ -2,7 +2,6 @@
 
 import toast from 'react-hot-toast';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Clock } from 'lucide-react';
 import {
@@ -17,7 +16,6 @@ import {
 import { getAttStatus } from '@/api/endpoints/attendance';
 import type { AttCheckInContext } from '@/api/types/attendance';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { Skeleton } from '@/components/ui/skeleton';
 import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
@@ -33,16 +31,6 @@ import { ClientDashboardHome } from '@/app/client-portal/components/client-dashb
 import { PulseDialog } from '@/components/pulse-dialog';
 import { usePulseMe, useSubmitPulseMutation } from '@/api/hooks/use-pulse';
 import type { PulsePeriod, PulseSubmitBody } from '@/api/types/pulse';
-
-const DashboardVariableRemCard = dynamic(
-  () =>
-    import('@/components/dashboard-variable-rem-card').then(
-      (mod) => mod.DashboardVariableRemCard,
-    ),
-  {
-    loading: () => <Skeleton className="h-40 w-full" />,
-  },
-);
 
 export function DashboardContent() {
   const [mounted, setMounted] = useState(false);
@@ -443,9 +431,6 @@ export function DashboardContent() {
             <UserAttendanceRecordsModal
               user={attendanceModalUser}
               onClose={() => setAttendanceModalUser(null)}
-            />
-            <DashboardVariableRemCard
-              userRef={calendarUserRef != null ? String(calendarUserRef) : null}
             />
           </div>
         )}

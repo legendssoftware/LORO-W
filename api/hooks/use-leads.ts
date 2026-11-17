@@ -385,7 +385,7 @@ export function useReassignLeadsMutation() {
 }
 
 /**
- * Fetch AI-generated engage draft for a lead. Use as mutation so caller can trigger with channel/tone/casualness.
+ * Fetch an AI engage draft for one lead. The caller passes intent, tone, industry, and need.
  */
 export function useEngageDraftMutation() {
   const client = useApiClient();

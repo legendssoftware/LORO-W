@@ -23,6 +23,7 @@ import {
   type ClientStatusFilterValue,
 } from '@/lib/client-filter-utils';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
@@ -57,7 +58,9 @@ export function ClientsFilterControls({
         return {
           value: opt.value,
           label: opt.label,
-          icon: <Icon className="size-4 shrink-0" />,
+          icon: (
+            <Icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
+          ),
         };
       }),
     []
@@ -132,11 +135,13 @@ export interface ClientsFiltersBarProps
   extends Omit<ClientsFilterControlsProps, 'layout'> {
   searchInput: string;
   onSearchChange: (value: string) => void;
+  actions?: React.ReactNode;
 }
 
 export function ClientsFiltersBar({
   searchInput,
   onSearchChange,
+  actions,
   ...filterProps
 }: ClientsFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
@@ -191,7 +196,10 @@ export function ClientsFiltersBar({
           <Filter className="size-4 shrink-0" aria-hidden />
           Filter
         </Button>
-        {renderSearchField('w-full')}
+        <div className="flex w-full min-w-0 items-center gap-2">
+          {renderSearchField('w-full')}
+          {actions}
+        </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
@@ -214,6 +222,7 @@ export function ClientsFiltersBar({
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

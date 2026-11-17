@@ -63,6 +63,7 @@ import {
 } from '@/lib/lead-form-utils';
 import { LEAD_ENTRY_TYPE_FILTER_OPTIONS } from '@/lib/leads-scope';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import {
   Tooltip,
   TooltipContent,
@@ -200,7 +201,12 @@ export function LeadsFilterControls({
         return {
           value: opt.value,
           label: opt.label,
-          icon: <Icon className="size-4 shrink-0" size={16} />,
+          icon: (
+            <Icon
+              className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))}
+              size={16}
+            />
+          ),
         };
       }),
     []
@@ -528,6 +534,7 @@ export interface LeadsFiltersBarProps extends Omit<LeadsFilterControlsProps, 'la
   onImportClick: () => void;
   onImportApifyClick: () => void;
   onDedupeClick: () => void;
+  actions?: React.ReactNode;
 }
 
 export function LeadsFiltersBar({
@@ -538,6 +545,7 @@ export function LeadsFiltersBar({
   onImportClick,
   onImportApifyClick,
   onDedupeClick,
+  actions,
   ...filterProps
 }: LeadsFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
@@ -647,6 +655,7 @@ export function LeadsFiltersBar({
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
           {actionButtons}
+          {actions}
         </div>
       </div>
 
@@ -671,6 +680,7 @@ export function LeadsFiltersBar({
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
           {renderSearchField()}
           {actionButtons}
+          {actions}
         </div>
       </div>
     </div>

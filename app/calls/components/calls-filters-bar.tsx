@@ -37,7 +37,8 @@ import {
   utcToday,
 } from '@/lib/utils/overview-daily-summary';
 import { cn } from '@/lib/utils';
-import { TRANSCRIPT_STATUS_FILTER_OPTIONS } from '../call-display';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { TRANSCRIPT_STATUS_FILTER_OPTIONS, transcriptStatusIcon } from '../call-display';
 
 const selectTriggerClass = 'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
@@ -302,7 +303,16 @@ function CallsFilterControls({
     : 'flex w-full flex-col gap-4';
 
   const statusOptions = useMemo<SearchableOptionRow[]>(
-    () => TRANSCRIPT_STATUS_FILTER_OPTIONS.map((option) => ({ ...option })),
+    () =>
+      TRANSCRIPT_STATUS_FILTER_OPTIONS.map((option) => {
+        const Icon = transcriptStatusIcon(option.value);
+        return {
+          ...option,
+          icon: (
+            <Icon className={cn('size-4 shrink-0', statusFilterIconClass(option.value))} />
+          ),
+        };
+      }),
     [],
   );
 

@@ -51,6 +51,7 @@ import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-mod
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Link2 } from 'lucide-react';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
@@ -341,7 +342,7 @@ export function StaffContent() {
 
   if (profile && !isStaff) {
     return (
-      <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
+      <div className={appPageMainClass}>
         <p className="text-center text-muted-foreground py-12">
           Staff management is available to staff only.
         </p>
@@ -351,7 +352,7 @@ export function StaffContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6 flex flex-col flex-1 min-h-0">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div
           className="shrink-0 mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
           data-tour="staff-page-header"
@@ -392,6 +393,7 @@ export function StaffContent() {
           branchFilter={branchFilter}
           onBranchFilterChange={setBranchFilter}
           branchFilterItems={branchFilterItems}
+          branches={branchesQuery.data ?? []}
           branchFilterTriggerLabel={branchFilterTriggerLabel}
           branchPickerOpen={branchPickerOpen}
           onBranchPickerOpenChange={setBranchPickerOpen}

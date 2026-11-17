@@ -72,6 +72,7 @@ function delivery(
     itemSummary: '10 boards',
     exception: null,
     pdfUrl: null,
+    ratingScore: null,
   };
 }
 
@@ -102,6 +103,11 @@ describe('filterDeliveries', () => {
 
   it('matches a client name', () => {
     expect(filterDeliveries(deliveries, 'sandton').map((row) => row.uid)).toEqual([1]);
+  });
+
+  it('matches an ERP order number and a delivery number', () => {
+    expect(filterDeliveries(deliveries, 'so-2').map((row) => row.uid)).toEqual([2]);
+    expect(filterDeliveries(deliveries, 'del-3').map((row) => row.uid)).toEqual([3]);
   });
 
   it('returns nothing when nothing matches', () => {

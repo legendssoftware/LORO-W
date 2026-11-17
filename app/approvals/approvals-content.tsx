@@ -9,6 +9,8 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { canManageApprovals } from '@/lib/access';
+import { appPageMainClass } from '@/lib/page-shell';
+import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/store/session-store';
 import { useAuth } from '@clerk/nextjs';
 import { useApprovalsWebSocket } from '@/api/hooks/use-approvals-websocket';
@@ -90,7 +92,7 @@ export function ApprovalsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 shrink-0">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Approvals</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">

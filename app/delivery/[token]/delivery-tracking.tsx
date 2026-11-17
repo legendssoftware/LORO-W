@@ -148,16 +148,16 @@ export function DeliveryTracking({ token }: DeliveryTrackingProps) {
                 {delivery.status === 'assigned' || delivery.status === 'in_progress' ? (
                   <>
                     <p className="text-muted-foreground text-xs">
-                      The driver pin appears after arrival. Refresh to update this map.
+                      The arrival pin appears after the driver arrives. Refresh to update the status.
                     </p>
                     <Button
                       type="button"
                       variant="outline"
                       className="h-9 w-full"
-                      aria-label="Refresh delivery location"
+                      aria-label="Refresh delivery status"
                       onClick={() => void load()}
                     >
-                      Refresh location
+                      Refresh status
                     </Button>
                   </>
                 ) : null}

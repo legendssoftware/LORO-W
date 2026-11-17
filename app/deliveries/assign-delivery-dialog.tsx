@@ -76,7 +76,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     () =>
       orders.map((order) => ({
         value: orderOptionValue(order.store, order.docNumber),
-        label: `${order.orderNumber} · ${order.clientName || 'No client'} · ${order.itemCount} items`,
+        label: order.orderNumber,
         icon: <Package className="size-4 shrink-0" />,
         searchExtra: `${order.docNumber} ${order.store} ${order.clientName} ${order.status}`,
       })),
@@ -89,7 +89,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
         const name = `${driver.name} ${driver.surname}`.trim();
         return {
           value: String(driver.uid),
-          label: driver.phone ? `${name} · ${driver.phone}` : name,
+          label: name,
           icon: <Truck className="size-4 shrink-0" />,
           searchExtra: `${name} ${driver.phone ?? ''} ${driver.workforceType ?? ''} ${driver.role ?? ''}`,
         };

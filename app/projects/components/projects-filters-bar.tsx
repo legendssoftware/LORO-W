@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Filter, ListFilter } from 'lucide-react';
+import { Ban, CheckCircle2, Clock, Filter, ListFilter, PauseCircle } from 'lucide-react';
 import {
   SearchableOptionListPicker,
   type SearchableOptionRow,
@@ -17,16 +17,25 @@ import {
 import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
+function projectStatusIcon(status: string): React.ReactNode {
+  const tone = cn('size-4 shrink-0', statusFilterIconClass(status));
+  if (status === 'completed') return <CheckCircle2 className={tone} />;
+  if (status === 'cancelled') return <Ban className={tone} />;
+  if (status === 'on_hold') return <PauseCircle className={tone} />;
+  return <Clock className={tone} />;
+}
+
 export const PROJECT_STATUS_FILTER_OPTIONS: SearchableOptionRow[] = [
-  { value: 'planning', label: 'Planning', icon: null },
-  { value: 'in_progress', label: 'In progress', icon: null },
-  { value: 'on_hold', label: 'On hold', icon: null },
-  { value: 'completed', label: 'Completed', icon: null },
-  { value: 'cancelled', label: 'Cancelled', icon: null },
+  { value: 'planning', label: 'Planning', icon: projectStatusIcon('planning') },
+  { value: 'in_progress', label: 'In progress', icon: projectStatusIcon('in_progress') },
+  { value: 'on_hold', label: 'On hold', icon: projectStatusIcon('on_hold') },
+  { value: 'completed', label: 'Completed', icon: projectStatusIcon('completed') },
+  { value: 'cancelled', label: 'Cancelled', icon: projectStatusIcon('cancelled') },
 ];
 
 export interface ProjectsFilterControlsProps {

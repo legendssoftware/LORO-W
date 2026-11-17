@@ -11,6 +11,9 @@ import { ClientDetailDialog } from './components/client-detail-dialog';
 import { ClientFormDialog } from './components/client-form-dialog';
 import { ClientsFiltersBar } from './components/clients-filters-bar';
 import { Plus } from 'lucide-react';
+import { appPageMainClass } from '@/lib/page-shell';
+import { cn } from '@/lib/utils';
+
 const SEARCH_DEBOUNCE_MS = 350;
 
 export function ClientsContent() {
@@ -68,24 +71,12 @@ export function ClientsContent() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
-        <div
-          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-          data-tour="clients-page-header"
-        >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Clients</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Create, search, and manage organisation clients.
-            </p>
-          </div>
-          <Button
-            className="h-9 gap-2 shrink-0 self-start bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
-            onClick={openCreate}
-          >
-            <Plus className="size-4" />
-            Add client
-          </Button>
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
+        <div className="mb-6 shrink-0" data-tour="clients-page-header">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Clients</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Create, search, and manage organisation clients.
+          </p>
         </div>
 
         <ClientsFiltersBar
@@ -95,6 +86,15 @@ export function ClientsContent() {
           onCategoryFilterChange={setCategoryFilter}
           searchInput={searchInput}
           onSearchChange={setSearchInput}
+          actions={
+            <Button
+              className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
+              onClick={openCreate}
+            >
+              <Plus className="size-4" />
+              Add client
+            </Button>
+          }
         />
 
         <div className="flex-1 min-h-0 overflow-y-auto" data-tour="clients-grid">

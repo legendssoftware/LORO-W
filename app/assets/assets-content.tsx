@@ -27,6 +27,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { canManageOrgAssets } from '@/lib/access';
+import { appPageMainClass } from '@/lib/page-shell';
+import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { AssetCard, AssetCardSkeleton } from './components/asset-card';
 import { AssetDetailDialog } from './components/asset-detail-dialog';
@@ -176,27 +178,14 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
-        <div data-tour="assets-page-header" className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Assets</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              {canManage
-                ? 'Your linked assets, or the full organisation inventory. You can add, edit, and reassign assets.'
-                : 'Add and manage assets you own. You can also view equipment and vehicles linked to you.'}
-            </p>
-          </div>
-          {canAdd ? (
-            <Button
-              type="button"
-              data-tour="assets-add-button"
-              className="h-9 shrink-0 gap-2 self-start bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white"
-              onClick={openCreate}
-            >
-              <Plus className="size-4" />
-              Add asset
-            </Button>
-          ) : null}
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
+        <div data-tour="assets-page-header" className="mb-6 shrink-0">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Assets</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            {canManage
+              ? 'Your linked assets, or the full organisation inventory. You can add, edit, and reassign assets.'
+              : 'Add and manage assets you own. You can also view equipment and vehicles linked to you.'}
+          </p>
         </div>
 
         <div data-tour="assets-toolbar">
@@ -216,6 +205,19 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
             users={pickerUsers}
             selectedUserUid={userUidFilter}
             onUserUidChange={bindUidChange(setUserUidFilter)}
+            actions={
+              canAdd ? (
+                <Button
+                  type="button"
+                  data-tour="assets-add-button"
+                  className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white"
+                  onClick={openCreate}
+                >
+                  <Plus className="size-4" />
+                  Add asset
+                </Button>
+              ) : null
+            }
             userSearchQuery={userSearchQuery}
             onUserSearchQueryChange={setUserSearchQuery}
             isUserSearchLoading={isUserSearchLoading}

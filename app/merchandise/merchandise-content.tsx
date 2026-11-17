@@ -11,6 +11,8 @@ import { useSearchableUsersList } from '@/api/hooks/use-searchable-users-list';
 import { useJournals } from '@/api/hooks/use-journals';
 import { canAccessMerchandise } from '@/lib/access';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
+import { appPageMainClass } from '@/lib/page-shell';
+import { cn } from '@/lib/utils';
 import {
   createDefaultListDateRange,
   listDateRangeQuery,
@@ -99,29 +101,14 @@ export function MerchandiseContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
-        <div
-          data-tour="merchandise-page-header"
-          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-        >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Merchandise Management
-            </h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Track and manage merchandise inventories and transactions
-            </p>
-          </div>
-          {canCreate ? (
-            <Button
-              data-tour="merchandise-create-button"
-              className={primaryClass}
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="size-4" />
-              New merchandise
-            </Button>
-          ) : null}
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
+        <div data-tour="merchandise-page-header" className="mb-6 shrink-0">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+            Merchandise Management
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Track and manage merchandise inventories and transactions
+          </p>
         </div>
 
         <div data-tour="merchandise-toolbar">
@@ -141,6 +128,18 @@ export function MerchandiseContent() {
             userSearchQuery={userSearchQuery}
             onUserSearchQueryChange={setUserSearchQuery}
             isUserSearchLoading={isUserSearchLoading}
+            actions={
+              canCreate ? (
+                <Button
+                  data-tour="merchandise-create-button"
+                  className={primaryClass}
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="size-4" />
+                  New merchandise
+                </Button>
+              ) : null
+            }
           />
         </div>
 

@@ -88,6 +88,15 @@ import {
   LEAD_PRIORITY_OPTIONS,
 } from '@/lib/lead-form-utils';
 import { buildLeadMailtoUrl, buildLeadWhatsAppUrl } from '@/lib/lead-engage-utils';
+import { EngageDraftControls } from '@/app/leads/components/engage-draft-controls';
+import {
+  ENGAGE_WHATSAPP_MAX_CHARS,
+  prefillEngageNeed,
+  whatsAppOverCap,
+  type EngageIntent,
+  type EngageTone,
+} from '@/lib/engage-draft';
+import { INDUSTRY_OPTIONS } from '@/lib/lead-form-utils';
 import { Loader2Icon } from '@/lib/icons';
 import { CreateTaskModal } from '@/app/planning/components/create-task-modal';
 import type { CreateTaskPayload } from '@/api/types/tasks';
@@ -237,8 +246,10 @@ export function LeadDetailDialog({
   const [transferTargetUid, setTransferTargetUid] = useState<string | null>(null);
   const [engageChannel, setEngageChannel] = useState<'email' | 'sms' | 'whatsapp' | null>(null);
   const [engageDraft, setEngageDraft] = useState('');
-  const [engageTone, setEngageTone] = useState<'professional' | 'friendly' | 'formal'>('professional');
-  const [engageCasualness, setEngageCasualness] = useState<'casual' | 'neutral' | 'formal'>('neutral');
+  const [engageIntent, setEngageIntent] = useState<EngageIntent>('first_contact');
+  const [engageTone, setEngageTone] = useState<EngageTone>('professional');
+  const [engageIndustry, setEngageIndustry] = useState('');
+  const [engageNeed, setEngageNeed] = useState('');
   const [endCallOpen, setEndCallOpen] = useState(false);
 
   const leadUid = lead?.uid;
@@ -515,6 +526,13 @@ export function LeadDetailDialog({
       if (!prev) {
         setEngageChannel(null);
         setEngageDraft('');
+        setEngageIntent('first_contact');
+        setEngageTone('professional');
+        const storedIndustry = lead?.industry?.trim() ?? '';
+        setEngageIndustry(
+          INDUSTRY_OPTIONS.some((option) => option.value === storedIndustry) ? storedIndustry : ''
+        );
+        setEngageNeed(lead ? prefillEngageNeed(lead) : '');
       }
       return !prev;
     });
@@ -564,31 +582,41 @@ export function LeadDetailDialog({
     );
   };
 
-  /** Fallback draft when engage-draft API fails */
+  /** Local fallback when the engage-draft API fails. First contact does not mention a proposal. */
   const buildEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
     const name = lead?.name?.trim() || lead?.companyName?.trim() || 'there';
-    const company = lead?.companyName?.trim() || '';
-    const nextFollowUp = lead?.nextFollowUpDate
-      ? format(new Date(lead.nextFollowUpDate), 'MMM d, yyyy')
-      : '';
-    const notes = lead?.notes?.trim() ? ` (Re: ${lead.notes.slice(0, 80)}${lead.notes.length > 80 ? '…' : ''})` : '';
+    const industryLabel =
+      INDUSTRY_OPTIONS.find((option) => option.value === engageIndustry)?.label ?? '';
+    const industry = industryLabel ? ` in ${industryLabel}` : '';
+    const need = engageNeed.trim() ? ` about ${engageNeed.trim()}` : '';
+    if (engageIntent === 'first_contact') {
+      return channel === 'email'
+        ? `Hi ${name},\n\nI am getting in touch for the first time${industry}${need}. Would you be open to a short conversation?\n\nBest regards`
+        : `Hi ${name}, I am getting in touch for the first time${industry}${need}. Would a short conversation help?`;
+    }
     if (channel === 'email') {
-      return `Hi ${name},\n\nI wanted to follow up${company ? ` regarding ${company}` : ''}.${notes}\n${nextFollowUp ? `Our next follow-up is scheduled for ${nextFollowUp}.` : ''}\n\nBest regards`;
+      return `Hi ${name},\n\nI wanted to follow up${industry}${need}. Happy to continue when it suits you.\n\nBest regards`;
     }
-    if (channel === 'sms' || channel === 'whatsapp') {
-      return `Hi ${name}, following up${company ? ` re ${company}` : ''}.${notes} ${nextFollowUp ? `Next follow-up: ${nextFollowUp}.` : ''}`;
-    }
-    return `Hi ${name}, following up.`;
+    return `Hi ${name}, following up${industry}${need}. Is now a good time to continue?`;
   };
 
-  const fetchEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
+  const fetchEngageDraft = (
+    channel: 'email' | 'sms' | 'whatsapp',
+    overrides?: { intent?: EngageIntent; tone?: EngageTone; industry?: string; need?: string }
+  ) => {
     if (leadUid == null) return;
+    const nextIntent = overrides?.intent ?? engageIntent;
+    const nextTone = overrides?.tone ?? engageTone;
+    const nextIndustry = overrides?.industry ?? engageIndustry;
+    const nextNeed = overrides?.need ?? engageNeed;
     engageDraftMutation.mutate(
       {
         leadRef: leadUid,
         channel,
-        tone: engageTone,
-        casualness: engageCasualness,
+        intent: nextIntent,
+        tone: nextTone,
+        ...(nextIndustry ? { industry: nextIndustry } : {}),
+        need: nextNeed,
       },
       {
         onSuccess: (data) => setEngageDraft(data.draft ?? ''),
@@ -606,14 +634,19 @@ export function LeadDetailDialog({
     fetchEngageDraft(channel);
   };
 
-  const handleEngageToneChange = (tone: 'professional' | 'friendly' | 'formal') => {
-    setEngageTone(tone);
-    if (engageChannel) fetchEngageDraft(engageChannel);
+  const handleEngageIntentChange = (intent: EngageIntent) => {
+    setEngageIntent(intent);
+    if (engageChannel) fetchEngageDraft(engageChannel, { intent });
   };
 
-  const handleEngageCasualnessChange = (casualness: 'casual' | 'neutral' | 'formal') => {
-    setEngageCasualness(casualness);
-    if (engageChannel) fetchEngageDraft(engageChannel);
+  const handleEngageToneChange = (tone: EngageTone) => {
+    setEngageTone(tone);
+    if (engageChannel) fetchEngageDraft(engageChannel, { tone });
+  };
+
+  const handleEngageIndustryChange = (industry: string) => {
+    setEngageIndustry(industry);
+    if (engageChannel) fetchEngageDraft(engageChannel, { industry });
   };
 
   const handleRegenerateDraft = () => {
@@ -1070,40 +1103,17 @@ export function LeadDetailDialog({
               </div>
               {engageChannel && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Tone</Label>
-                      <Select
-                        value={engageTone}
-                        onValueChange={(v) => handleEngageToneChange(v as 'professional' | 'friendly' | 'formal')}
-                      >
-                        <SelectTrigger className="h-8 text-sm mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="professional">Professional</SelectItem>
-                          <SelectItem value="friendly">Friendly</SelectItem>
-                          <SelectItem value="formal">Formal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Casualness</Label>
-                      <Select
-                        value={engageCasualness}
-                        onValueChange={(v) => handleEngageCasualnessChange(v as 'casual' | 'neutral' | 'formal')}
-                      >
-                        <SelectTrigger className="h-8 text-sm mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="casual">Casual</SelectItem>
-                          <SelectItem value="neutral">Neutral</SelectItem>
-                          <SelectItem value="formal">Formal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <EngageDraftControls
+                    intent={engageIntent}
+                    tone={engageTone}
+                    industry={engageIndustry}
+                    need={engageNeed}
+                    allowMixedIndustry={false}
+                    onIntentChange={handleEngageIntentChange}
+                    onToneChange={handleEngageToneChange}
+                    onIndustryChange={handleEngageIndustryChange}
+                    onNeedChange={setEngageNeed}
+                  />
                   <Label className="text-xs">Draft</Label>
                   {engageDraftMutation.isPending ? (
                     <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-4 text-sm text-muted-foreground">
@@ -1119,6 +1129,14 @@ export function LeadDetailDialog({
                       placeholder="Edit outreach message before sending…"
                     />
                   )}
+                  {engageChannel === 'whatsapp' ? (
+                    <p className="text-xs text-muted-foreground">
+                      WhatsApp {engageDraft.trim().length}/{ENGAGE_WHATSAPP_MAX_CHARS}
+                      {whatsAppOverCap(engageChannel, engageDraft)
+                        ? '. Shorten the message before sending.'
+                        : ''}
+                    </p>
+                  ) : null}
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={handleCopyEngageDraft} disabled={!engageDraft.trim()}>
                       Copy to clipboard
@@ -1145,7 +1163,11 @@ export function LeadDetailDialog({
                             : 'bg-purple-600 text-white hover:bg-purple-700'
                       }
                       onClick={handleSendEngage}
-                      disabled={!engageDraft.trim() || sendEngageMutation.isPending}
+                      disabled={
+                        !engageDraft.trim() ||
+                        sendEngageMutation.isPending ||
+                        whatsAppOverCap(engageChannel, engageDraft)
+                      }
                     >
                       {sendEngageMutation.isPending ? (
                         <Loader2Icon className="size-4 animate-spin" />

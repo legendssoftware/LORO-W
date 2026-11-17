@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
@@ -92,7 +93,7 @@ export function DeliveriesListContent() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4 md:p-6">
+    <div className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
       <div className="mb-6 shrink-0">
         <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Deliveries</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
@@ -162,6 +163,7 @@ export function DeliveriesListContent() {
                   <TableHead>Client</TableHead>
                   <TableHead>Route</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Rating</TableHead>
                   <TableHead>Items</TableHead>
                 </TableRow>
               </TableHeader>
@@ -184,7 +186,7 @@ export function DeliveriesListContent() {
                       <span className="font-medium">{row.deliveryNumber}</span>
                       <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
                     </TableCell>
-                    <TableCell>{row.invoiceNumber || '—'}</TableCell>
+                    <TableCell>{row.invoiceNumber || row.orderNumber || '—'}</TableCell>
                     <TableCell>
                       {row.clientName || '—'}
                       {row.clientAddress ? (
@@ -197,6 +199,7 @@ export function DeliveriesListContent() {
                         {formatDeliveryStatus(row.status)}
                       </Badge>
                     </TableCell>
+                    <TableCell>{row.ratingScore == null ? '—' : `${row.ratingScore}/5`}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
                   </TableRow>
                 ))}
