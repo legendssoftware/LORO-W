@@ -18,7 +18,7 @@ import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { ATT_CHART_HSL } from '@/lib/chart-colors';
 import { FALLBACK_COUNTRY_NAMES } from './lib/constants';
-import { getDefaultPerformanceFilters, selectHasActiveFilters, selectHasCustomerCategoryFilters } from './lib/performance-filters';
+import { selectHasActiveFilters } from './lib/performance-filters';
 import { usePerformanceFilters } from './lib/use-performance-filters';
 import { mapSalespersonChartNames } from './lib/salesperson-names';
 import { PerformanceToolbar } from './components/performance-toolbar';
@@ -60,13 +60,12 @@ export function PerformanceContent() {
   const isRevisit = cachedOnOpen.current === true;
 
   const canAccess = canAccessPerformanceTracker(backendUserData);
-  const hasCustomerCategoryFilters = selectHasCustomerCategoryFilters(filters);
   const hasActiveFilters = selectHasActiveFilters(filters);
 
   const dashboardQuery = usePerformanceDashboard({
     filters,
     enabled: hydrated && !showConsolidatedView,
-    skipCache: skipCache || hasCustomerCategoryFilters,
+    skipCache,
   });
   const masterQuery = usePerformanceMasterData({
     filters,
