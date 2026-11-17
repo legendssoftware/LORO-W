@@ -21,6 +21,7 @@ import {
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { ClientFormDialog } from '../components/client-form-dialog';
@@ -73,7 +74,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
   const addr = client?.address;
 
   return (
-    <div className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
+    <div className={appPageMainClass}>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="outline" size="icon" className="shrink-0 bg-background border-border" asChild>

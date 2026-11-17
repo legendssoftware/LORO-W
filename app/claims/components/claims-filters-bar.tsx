@@ -53,6 +53,7 @@ import {
 import { XIcon } from '@/lib/icons';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import {
   CLAIM_STATUS_FILTER_OPTIONS,
   type ClaimGroup,
@@ -78,14 +79,15 @@ function formatRangeButtonLabel(start: Date, end: Date): string {
 }
 
 function statusIconFor(value: string): React.ReactNode {
+  const tone = statusFilterIconClass(value);
   const v = value.toLowerCase();
-  if (v === 'pending') return <CircleDot className="size-4 shrink-0" />;
-  if (v === 'approved') return <CheckCircle2 className="size-4 shrink-0" />;
-  if (v === 'paid') return <Banknote className="size-4 shrink-0" />;
-  if (v === 'cancelled') return <Ban className="size-4 shrink-0" />;
+  if (v === 'pending') return <CircleDot className={cn('size-4 shrink-0', tone)} />;
+  if (v === 'approved') return <CheckCircle2 className={cn('size-4 shrink-0', tone)} />;
+  if (v === 'paid') return <Banknote className={cn('size-4 shrink-0', tone)} />;
+  if (v === 'cancelled') return <Ban className={cn('size-4 shrink-0', tone)} />;
   if (v === 'declined' || v === 'rejected')
-    return <XCircle className="size-4 shrink-0" />;
-  return <CircleDot className="size-4 shrink-0" />;
+    return <XCircle className={cn('size-4 shrink-0', tone)} />;
+  return <CircleDot className={cn('size-4 shrink-0', tone)} />;
 }
 
 export interface ClaimsFilterControlsProps {
@@ -478,6 +480,7 @@ export function ClaimsFiltersBar({
   isUserSearchLoading,
   viewMode,
   onViewModeChange,
+  actions,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
@@ -502,6 +505,7 @@ export function ClaimsFiltersBar({
   isUserSearchLoading?: boolean;
   viewMode: ClaimsPageViewMode;
   onViewModeChange: (mode: ClaimsPageViewMode) => void;
+  actions?: React.ReactNode;
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -612,6 +616,7 @@ export function ClaimsFiltersBar({
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
+          {actions}
         </div>
       </div>
 
@@ -658,6 +663,7 @@ export function ClaimsFiltersBar({
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
           {renderViewToggle()}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

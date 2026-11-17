@@ -135,6 +135,12 @@ export function StoreCartSheet({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm line-clamp-2">{line.name}</p>
+                    {line.purchaseMode !== 'item' && (
+                      <p className="text-[10px] font-semibold uppercase text-primary">
+                        {line.purchaseMode === 'box' ? 'Box' : 'Pallet'}
+                        {line.itemsPerUnit > 1 ? ` · ${line.itemsPerUnit} units` : ''}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {formatZar(line.unitPrice)} × {line.quantity}
                     </p>

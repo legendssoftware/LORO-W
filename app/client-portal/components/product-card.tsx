@@ -1,48 +1,87 @@
 'use client';
 
 import { useState } from 'react';
-import { useClientCartStore, type StoreProduct } from '@/store/client-cart-store';
+import { useClientCartStore, type PurchaseMode, type StoreProduct } from '@/store/client-cart-store';
 import { CartQuantityControl } from '@/app/store/components/cart-quantity-control';
 import { formatZar } from '@/lib/client-portal-utils';
 import {
   DEFAULT_PRODUCT_IMAGE_URL,
+  canOrderByBox,
+  canOrderByPallet,
   getProductDisplayName,
   getProductImageUri,
 } from '@/lib/product-display';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-const PURCHASE_MODE = 'item' as const;
+interface BuyOption {
+  mode: PurchaseMode;
+  label: string;
+  detail: string;
+}
+
+/**
+ * Price and unit count for one way of buying the product.
+ * @param product Catalog product
+ * @param mode Selected purchase mode
+ */
+function modePrice(product: StoreProduct, mode: PurchaseMode): number {
+  if (mode === 'box') return product.packPrice ?? 0;
+  if (mode === 'palette') {
+    return product.palletOnPromotion && product.palletSalePrice != null
+      ? product.palletSalePrice
+      : product.palletPrice ?? 0;
+  }
+  return product.isOnPromotion && product.salePrice != null ? product.salePrice : product.price ?? 0;
+}
 
 export function ProductCard({ product }: { product: StoreProduct }) {
   const [imageError, setImageError] = useState(false);
+  const [mode, setMode] = useState<PurchaseMode>('item');
   const addItem = useClientCartStore((s) => s.addItem);
   const updateQuantity = useClientCartStore((s) => s.updateQuantity);
   const cartQuantity = useClientCartStore(
-    (s) =>
-      s.items.find(
-        (i) => i.uid === product.uid && i.purchaseMode === PURCHASE_MODE
-      )?.quantity ?? 0
+    (s) => s.items.find((i) => i.uid === product.uid && i.purchaseMode === mode)?.quantity ?? 0
   );
 
+  const boxEnabled = canOrderByBox(product);
+  const palletEnabled = canOrderByPallet(product);
+  const selectedMode: PurchaseMode =
+    mode === 'box' && boxEnabled ? 'box' : mode === 'palette' && palletEnabled ? 'palette' : 'item';
   const inCart = cartQuantity > 0;
-  const price =
-    product.isOnPromotion && product.salePrice != null
-      ? product.salePrice
-      : product.price ?? 0;
+  const price = modePrice(product, selectedMode);
   const displayName = getProductDisplayName(product.name);
   const imageSrc = imageError
     ? DEFAULT_PRODUCT_IMAGE_URL
     : getProductImageUri(product.imageUrl, product);
   const subtitle = product.category ?? product.brand;
+  const palletUnits = (product.itemsPerPack ?? 1) * (product.packsPerPallet ?? 1);
+
+  const options: BuyOption[] = [{ mode: 'item', label: 'Individual', detail: formatZar(modePrice(product, 'item')) }];
+  if (boxEnabled) {
+    options.push({
+      mode: 'box',
+      label: 'Box',
+      detail: `${formatZar(product.packPrice ?? 0)} · ${product.itemsPerPack} units`,
+    });
+  }
+  if (palletEnabled) {
+    options.push({
+      mode: 'palette',
+      label: 'Pallet',
+      detail: `${formatZar(product.palletPrice ?? 0)} · ${palletUnits} units`,
+    });
+  }
 
   function handleAdd() {
-    addItem(product);
+    addItem(product, 1, selectedMode);
   }
 
   function handleQuantityChange(quantity: number) {
-    updateQuantity(product.uid, PURCHASE_MODE, quantity);
+    updateQuantity(product.uid, selectedMode, quantity);
   }
 
   return (
@@ -54,7 +93,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           className="h-full w-full object-contain p-2"
           onError={() => setImageError(true)}
         />
-        {product.isOnPromotion && (
+        {product.isOnPromotion && selectedMode === 'item' && (
           <Badge className="absolute left-2 top-2 bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
             Sale
           </Badge>
@@ -70,7 +109,8 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           {product.name}
         </CardTitle>
         <p className="text-base font-semibold">{formatZar(price)}</p>
-        {product.isOnPromotion &&
+        {selectedMode === 'item' &&
+          product.isOnPromotion &&
           product.salePrice != null &&
           product.price != null &&
           product.price > product.salePrice && (
@@ -78,6 +118,30 @@ export function ProductCard({ product }: { product: StoreProduct }) {
               {formatZar(product.price)}
             </p>
           )}
+        {selectedMode === 'box' && product.itemsPerPack ? (
+          <p className="text-[10px] text-muted-foreground">{product.itemsPerPack} units per box</p>
+        ) : null}
+        {selectedMode === 'palette' && palletUnits > 1 ? (
+          <p className="text-[10px] text-muted-foreground">{palletUnits} units per pallet</p>
+        ) : null}
+        {options.length > 1 && (
+          <RadioGroup
+            value={selectedMode}
+            onValueChange={(value) => setMode(value as PurchaseMode)}
+            className="mt-2 gap-1.5"
+            aria-label="Buy as"
+          >
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">Buy as</p>
+            {options.map((option) => (
+              <div key={option.mode} className="flex items-center gap-2">
+                <RadioGroupItem value={option.mode} id={`${product.uid}-${option.mode}`} />
+                <Label htmlFor={`${product.uid}-${option.mode}`} className="text-xs font-normal">
+                  {option.label} · {option.detail}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        )}
         {product.sku && (
           <p className="text-[10px] text-muted-foreground line-clamp-1">
             SKU: {product.sku}

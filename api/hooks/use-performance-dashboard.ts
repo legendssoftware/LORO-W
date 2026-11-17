@@ -48,11 +48,14 @@ export function usePerformanceDashboard(options: {
         signal,
       }),
     enabled: (options.enabled ?? true) && isTokenReady,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     retry: defaultQueryRetry,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    // First visit has no cache, so the query still loads. Later visits keep that
+    // cache until the user presses Refresh.
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
@@ -70,8 +73,11 @@ export function usePerformanceMasterData(options: {
     queryFn: () =>
       getPerformanceFilterMasterData(client, options.filters, { organisationId }),
     enabled: (options.enabled ?? true) && isTokenReady,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     retry: defaultQueryRetry,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

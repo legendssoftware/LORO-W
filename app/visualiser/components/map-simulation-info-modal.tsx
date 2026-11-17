@@ -7,14 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DEFAULT_SITE_OPPORTUNITY_SETTINGS } from '@/api/types/site-opportunity';
 import { MARKET_CAPTURE_PHASES } from '@/lib/site-opportunity/compute/capture-phases';
-import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
 import { formatZarShort } from '@/lib/site-opportunity/format-potential';
-import {
-  BITDRYWALL_STORE_FORMATS,
-  formatStoreFormatSizeRange,
-  formatStoreFormatTurnoverRange,
-} from '@/lib/site-opportunity/bitdrywall-store-formats';
 
 interface MapSimulationInfoModalProps {
   open: boolean;
@@ -22,61 +17,70 @@ interface MapSimulationInfoModalProps {
 }
 
 /**
- * Explains BitDrywall feasibility / turnover simulation methodology.
+ * Short explanation of the catchment maths, using the live default settings.
  */
 export function MapSimulationInfoModal({
   open,
   onOpenChange,
 }: MapSimulationInfoModalProps) {
+  const defaults = DEFAULT_SITE_OPPORTUNITY_SETTINGS;
+  const radiusKm = defaults.radiusMeters / 1000;
+  const captureLow = Math.round(defaults.captureLowPct * 100);
+  const captureHigh = Math.round(defaults.captureHighPct * 100);
+  const revenuePerSqm = defaults.revenuePerSqmMonthlyZAR ?? 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] w-[80vw] max-w-[80vw] flex-col overflow-hidden sm:max-w-[80vw]">
         <DialogHeader>
           <DialogTitle>How simulation works</DialogTitle>
           <DialogDescription>
-            Feasibility model for BitDrywall branch catchments and opportunity
-            sites — ranking upside and ramp time, not a guaranteed forecast.
+            A ranking model. Change the numbers in Simulate. These are the
+            defaults.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm leading-relaxed">
-          <section className="space-y-2">
-            <h3 className="font-semibold">What it does</h3>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1 text-sm leading-relaxed">
+          <section className="space-y-1">
+            <h3 className="font-semibold">Pool</h3>
             <p className="text-muted-foreground">
-              Simulation uses your mapped BitDrywall branches, competitor
-              hardwares (BUCO, Cashbuild, Build it, Powerbuild, EST, …), and
-              clients. For each branch it draws a 5 km radius, counts hardwares
-              inside, multiplies by brand monthly turnover to get an addressable
-              pool, then takes 5% (low) and 20% (high) as BitDrywall potential.
-              ERP monthly store sales (when available) show actual vs modelled
-              monthly turnover — red when behind the model, green when at or
-              above. Adjust radius, capture %, and brand turnovers in the side
-              panel before you run.
+              Add the monthly brand turnover of every competitor store inside
+              the radius. Default radius is {radiusKm} km.
+            </p>
+          </section>
+
+          <section className="space-y-1">
+            <h3 className="font-semibold">Potential</h3>
+            <p className="text-muted-foreground">
+              Low = pool × capture low %. High = pool × capture high %.
+              Defaults are {captureLow}% and {captureHigh}%.
+            </p>
+          </section>
+
+          <section className="space-y-1">
+            <h3 className="font-semibold">Branch ceiling</h3>
+            <p className="text-muted-foreground">
+              When a branch has a floor size, ceiling = m² × revenue per m² per
+              month (default {formatZarShort(revenuePerSqm)}). Shown potential
+              is the lower of the market potential and that ceiling.
+            </p>
+          </section>
+
+          <section className="space-y-1">
+            <h3 className="font-semibold">New sites</h3>
+            <p className="text-muted-foreground">
+              A candidate must sit at least {defaults.minBranchSeparationKm} km
+              from an existing branch. Rank is the pool, lifted by nearby
+              clients, and lifted again when the site is farther from a branch.
+              Only the top {defaults.topN} are kept.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h3 className="font-semibold">Brand turnover assumptions (monthly)</h3>
-            <ul className="text-muted-foreground grid gap-1 sm:grid-cols-2">
-              {Object.entries(HARDWARE_TURNOVER_ZAR)
-                .filter(([b]) => b !== 'OTHER' && b !== 'P&L HARDWARE')
-                .map(([brand, zar]) => (
-                  <li key={brand} className="flex justify-between gap-2 border-b border-dashed py-1">
-                    <span>{brand}</span>
-                    <span className="text-foreground font-medium">
-                      {formatZarShort(zar)}
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="font-semibold">Maturity curve (~24 months)</h3>
+            <h3 className="font-semibold">Ramp</h3>
             <p className="text-muted-foreground">
-              Contractors rarely switch overnight. The ramp below is progress
-              toward your mature potential band (pool × 5–20%). Exceptional
-              sites may mature by 18 months; tougher markets 30–36.
+              Month revenue = potential × that phase’s share of mature
+              potential.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[28rem] text-left text-xs">
@@ -87,55 +91,16 @@ export function MapSimulationInfoModal({
                     <th className="py-1.5 font-medium">Of mature potential</th>
                   </tr>
                 </thead>
-                  <tbody className="text-muted-foreground">
-                  {MARKET_CAPTURE_PHASES.map((p) => (
-                    <tr key={p.phase} className="border-b border-dashed">
-                      <td className="py-1.5 pr-2">{p.phase}</td>
-                      <td className="py-1.5 pr-2">
-                        {p.monthStart}–{p.monthEnd - 1}
-                      </td>
-                      <td className="py-1.5">
-                        {Math.round(p.captureLowPct * 100)}–
-                        {Math.round(p.captureHighPct * 100)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              Year targets (of local market): Year 1 ≈ 8%, Year 2 ≈ 13%, Year 3 ≈
-              15% (up to 20% in exceptional locations).
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="font-semibold">Recommended store formats</h3>
-            <p className="text-muted-foreground">
-              When <span className="text-foreground font-medium">Suggest store size from turnover</span>{' '}
-              is on, modelled monthly turnover maps to a BitDrywall format and an
-              interpolated office size. This is a planning suggestion, not a
-              lease specification. Overlapping bands step up at the next
-              format&apos;s lower bound.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[28rem] text-left text-xs">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-1.5 pr-2 font-medium">Format</th>
-                    <th className="py-1.5 pr-2 font-medium">Office size</th>
-                    <th className="py-1.5 font-medium">Target monthly turnover</th>
-                  </tr>
-                </thead>
                 <tbody className="text-muted-foreground">
-                  {BITDRYWALL_STORE_FORMATS.map((format) => (
-                    <tr key={format.key} className="border-b border-dashed">
-                      <td className="py-1.5 pr-2">{format.label}</td>
+                  {MARKET_CAPTURE_PHASES.map((phase) => (
+                    <tr key={phase.phase} className="border-b border-dashed">
+                      <td className="py-1.5 pr-2">{phase.phase}</td>
                       <td className="py-1.5 pr-2">
-                        {formatStoreFormatSizeRange(format)}
+                        {phase.monthStart}–{phase.monthEnd - 1}
                       </td>
                       <td className="py-1.5">
-                        {formatStoreFormatTurnoverRange(format)}
+                        {Math.round(phase.captureLowPct * 100)}–
+                        {Math.round(phase.captureHighPct * 100)}%
                       </td>
                     </tr>
                   ))}
@@ -144,62 +109,11 @@ export function MapSimulationInfoModal({
             </div>
           </section>
 
-          <section className="space-y-2">
-            <h3 className="font-semibold">Steps</h3>
-            <ol className="text-muted-foreground list-decimal space-y-2 pl-5">
-              <li>
-                Open <span className="text-foreground font-medium">Simulate</span>{' '}
-                to open the side panel. Pick country and province (and
-                catchments / opportunities / both), review or adjust defaults,
-                then start a run. Toast progress shows while catchments are
-                scored.
-              </li>
-              <li>
-                Review ranked branch catchments and opportunity zones. Expand a
-                row for pool, brand mix, potential band, and maturity ramp.
-              </li>
-              <li>
-                5 km circles appear on the map. Click a circle to focus that
-                zone. Clear overlay when done — live map data is never written.
-              </li>
-              <li>
-                Sales-rep GPS stays read-only and is never relocated by
-                simulation.
-              </li>
-            </ol>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="font-semibold">Caveats</h3>
-            <ul className="text-muted-foreground list-disc space-y-1.5 pl-5">
-              <li>
-                This is a simulation only. Outputs are modelled estimates for
-                ranking and planning — not guaranteed revenue, site fitness, or
-                investment advice.
-              </li>
-              <li>
-                Do not rely on simulation alone. Visit candidate sites in
-                person, verify footfall, access, neighbours, and competition,
-                and complete independent due diligence before lease or capital
-                decisions. LORO is not liable for losses from acting solely on
-                these results.
-              </li>
-              <li>
-                Circles use crow-flies distance, not drive time.
-              </li>
-              <li>
-                Overlapping catchments can double-count the same hardware —
-                compare sites; do not sum all pools into a national total.
-              </li>
-              <li>
-                Brand turnovers are planning assumptions, not audited competitor
-                financials.
-              </li>
-              <li>
-                Import and geocode competitors before trusting pool totals.
-              </li>
-            </ul>
-          </section>
+          <p className="text-muted-foreground text-xs">
+            This is a modelled ranking only. Visit the site before a lease
+            decision. Overlapping circles can count the same store twice, so do
+            not add every pool into one total.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

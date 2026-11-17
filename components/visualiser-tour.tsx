@@ -16,8 +16,6 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 const SEL_HEADER = '[data-tour="visualiser-page-header"]';
 const SEL_ACTIONS = '[data-tour="visualiser-header-actions"]';
 const SEL_MAP = '[data-tour="visualiser-map"]';
-const SEL_PANEL = '[data-tour="visualiser-simulation-panel"]';
-
 const REQUIRED = [SEL_HEADER, SEL_ACTIONS, SEL_MAP] as const;
 
 function buildVisualiserSteps(): DriveStep[] {
@@ -36,7 +34,7 @@ function buildVisualiserSteps(): DriveStep[] {
       popover: {
         title: 'Map tools',
         description:
-          'Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. Simulate opens the catchment panel.',
+          'Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. The info icon explains the maths. Simulate opens the simulation dialog.',
         side: 'bottom',
         align: 'end',
       },
@@ -51,18 +49,6 @@ function buildVisualiserSteps(): DriveStep[] {
       },
     },
   ];
-
-  if (document.querySelector(SEL_PANEL)) {
-    steps.push({
-      element: SEL_PANEL,
-      popover: {
-        title: 'Simulation panel',
-        description: 'Set the catchment radius, run turnover, and see which stores fall inside it.',
-        side: 'left',
-        align: 'start',
-      },
-    });
-  }
 
   return steps;
 }

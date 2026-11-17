@@ -34,6 +34,7 @@ import { Download, Loader2, Plus } from 'lucide-react';
 import type { Claim } from '@/api/types/claims';
 import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
 import { canViewOrgClaimsList } from '@/lib/access';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/store/session-store';
 
@@ -206,47 +207,14 @@ export function ClaimsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
-        <div
-          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-          data-tour="claims-page-header"
-        >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Claims
-            </h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Submit expenses, attach receipts, and track approvals to payment.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 self-start">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 gap-2 px-4"
-              disabled={exporting}
-              onClick={() => setExportOpen(true)}
-            >
-              {exporting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              Export
-            </Button>
-            <Button
-              className={cn(
-                'h-9 shrink-0 gap-2 border-0 !rounded px-4',
-                'bg-violet-600 text-white hover:bg-violet-700',
-                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-                '[&_svg]:text-white focus-visible:ring-violet-500/40'
-              )}
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="size-4" />
-              New claim
-            </Button>
-          </div>
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
+        <div className="mb-6 shrink-0" data-tour="claims-page-header">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+            Claims
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Submit expenses, attach receipts, and track approvals to payment.
+          </p>
         </div>
 
         <ClaimsSummaryCards
@@ -282,6 +250,36 @@ export function ClaimsContent() {
           isUserSearchLoading={isUserSearchLoading}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 shrink-0 gap-2 px-4"
+                disabled={exporting}
+                onClick={() => setExportOpen(true)}
+              >
+                {exporting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                Export
+              </Button>
+              <Button
+                className={cn(
+                  'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+                  'bg-violet-600 text-white hover:bg-violet-700',
+                  'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+                  '[&_svg]:text-white focus-visible:ring-violet-500/40'
+                )}
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="size-4" />
+                New claim
+              </Button>
+            </>
+          }
         />
 
         <ClaimFoldersPanel

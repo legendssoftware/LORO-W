@@ -24,6 +24,8 @@ interface PerformanceToolbarProps {
   filters: PerformanceFilters;
   hasActiveFilters: boolean;
   showConsolidatedView: boolean;
+  /** Green refresh is for a later visit, when the page is showing cached data. */
+  emphasizeRefresh?: boolean;
   isRefetching: boolean;
   onToggleFilters: () => void;
   onToggleConsolidatedView: () => void;
@@ -36,6 +38,7 @@ export function PerformanceToolbar({
   filters,
   hasActiveFilters,
   showConsolidatedView,
+  emphasizeRefresh = false,
   isRefetching,
   onToggleFilters,
   onToggleConsolidatedView,
@@ -102,7 +105,7 @@ export function PerformanceToolbar({
         </Button>
         <Button
           type="button"
-          variant="success"
+          variant={emphasizeRefresh ? 'success' : 'outline'}
           className="h-9 w-full sm:w-auto"
           onClick={onRefresh}
           disabled={isRefetching}

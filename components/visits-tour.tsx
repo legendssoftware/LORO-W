@@ -22,7 +22,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Visits',
       description:
-        'Start or end a visit here, then review what you already logged. Scored recordings are under Call recordings.',
+        'Review visits you already logged. Scored recordings are under Call recordings.',
       side: 'bottom',
       align: 'start',
     },
@@ -42,7 +42,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: 'Filter history',
       description:
-        'The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Open the summary for the grid report.',
+        'The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Start or end a visit from this row.',
       side: 'bottom',
       align: 'center',
     },

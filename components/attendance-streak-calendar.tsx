@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { CheckIcon, XIcon } from '@/lib/icons';
-import { CalendarOff } from 'lucide-react';
+import { CalendarOff, Clock } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -378,13 +378,33 @@ export function AttendanceStreakCalendar({
     return 'bg-gray-200';
   };
 
-  const dayIconClass =
-    'size-3.5 shrink-0 text-white hidden md:block';
-
   const getDayIcon = (day: MonthlyAttendanceDay) => {
-    if (day.status === 'attended')
-      return <CheckIcon className={dayIconClass} aria-hidden />;
-    return <XIcon className={dayIconClass} aria-hidden />;
+    if (day.status === 'attended') {
+      return (
+        <CheckIcon
+          className="hidden size-3.5 shrink-0 text-white md:block"
+          aria-hidden
+        />
+      );
+    }
+    if (day.status === 'missed') {
+      return (
+        <XIcon
+          className="hidden size-3.5 shrink-0 text-red-600 md:block"
+          aria-hidden
+        />
+      );
+    }
+    if (day.status === 'future') {
+      return (
+        <Clock
+          className="hidden size-3.5 shrink-0 text-neutral-800 md:block"
+          aria-hidden
+        />
+      );
+    }
+    const _unhandled: never = day.status;
+    return _unhandled;
   };
 
   return (
@@ -492,7 +512,7 @@ export function AttendanceStreakCalendar({
                       >
                         <span
                           className={cn(
-                            'text-[13px] font-semibold leading-none drop-shadow-sm',
+                            'text-base font-bold leading-none drop-shadow-sm md:text-lg',
                             day.status === 'future' ? 'text-black' : 'text-white'
                           )}
                         >

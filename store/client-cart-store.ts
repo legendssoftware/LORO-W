@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type PurchaseMode = 'item' | 'palette';
+export type PurchaseMode = 'item' | 'box' | 'palette';
 
 export interface StoreProduct {
   uid: number;
@@ -21,6 +21,7 @@ export interface StoreProduct {
   palletOnPromotion?: boolean;
   itemsPerPack?: number;
   packsPerPallet?: number;
+  packPrice?: number;
 }
 
 export interface CartLine extends StoreProduct {
@@ -42,21 +43,36 @@ interface ClientCartState {
   itemCount: () => number;
 }
 
+function asAmount(value: unknown): number {
+  const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function calcPricing(product: StoreProduct, mode: PurchaseMode) {
+  if (mode === 'box') {
+    const itemsPerUnit = Math.round(asAmount(product.itemsPerPack));
+    const packPrice = asAmount(product.packPrice);
+    if (itemsPerUnit > 1 && packPrice > 0) {
+      return { unitPrice: packPrice, itemsPerUnit };
+    }
+  }
   if (mode === 'palette' && product.palletAvailable) {
     const unitPrice =
       product.palletOnPromotion && product.palletSalePrice != null
         ? product.palletSalePrice
         : product.palletPrice ?? product.price ?? 0;
-    const itemsPerUnit =
-      (product.itemsPerPack ?? 1) * (product.packsPerPallet ?? 1);
-    return { unitPrice, itemsPerUnit };
+    const itemsPerUnit = Math.max(
+      1,
+      Math.round(asAmount(product.itemsPerPack) || 1) *
+        Math.round(asAmount(product.packsPerPallet) || 1)
+    );
+    return { unitPrice: asAmount(unitPrice), itemsPerUnit };
   }
   const unitPrice =
     product.isOnPromotion && product.salePrice != null
       ? product.salePrice
       : product.price ?? 0;
-  return { unitPrice, itemsPerUnit: 1 };
+  return { unitPrice: asAmount(unitPrice), itemsPerUnit: 1 };
 }
 
 export const useClientCartStore = create<ClientCartState>()(

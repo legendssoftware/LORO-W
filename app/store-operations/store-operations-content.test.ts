@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { StoreOperationsStore } from '@/api/types/store-operations';
 import { getCountryFlag } from '@/lib/utils/country-flags';
 import {
+  groupStoresByCountry,
   kpiIndicatorClass,
   kpiPercentClass,
   nextCardFilter,
@@ -86,6 +87,21 @@ describe('kpi colors', () => {
     expect(kpiPercentClass(50)).toContain('text-emerald-600');
     expect(kpiIndicatorClass(null)).toContain('bg-muted-foreground/25');
     expect(kpiPercentClass(null)).toBeUndefined();
+  });
+});
+
+describe('groupStoresByCountry', () => {
+  it('groups branches by country and sorts branches inside each country', () => {
+    const grouped = groupStoresByCountry([
+      store({ branchUid: 1, name: 'BitGaborone', country: 'Botswana' }),
+      store({ branchUid: 2, name: 'BitLusaka', country: 'Zambia' }),
+      store({ branchUid: 3, name: 'BitDenver', country: 'South Africa' }),
+      store({ branchUid: 4, name: 'BitBethlehem', country: 'South Africa' }),
+    ]);
+
+    expect(grouped.map((group) => group.countryCode)).toEqual(['SA', 'BOT', 'ZAM']);
+    expect(grouped[0]?.stores.map((row) => row.name)).toEqual(['BitBethlehem', 'BitDenver']);
+    expect(grouped[1]?.stores.map((row) => row.name)).toEqual(['BitGaborone']);
   });
 });
 

@@ -13,6 +13,8 @@ import { PayslipsTable } from '@/components/payslips-table/payslips-table';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { appPageMainClass } from '@/lib/page-shell';
+import { cn } from '@/lib/utils';
 import {
   buildPayslipFileName,
   filterPayslipListItems,
@@ -155,7 +157,7 @@ export function PayslipsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">

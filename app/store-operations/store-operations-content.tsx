@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -64,7 +64,8 @@ import {
   parseFlexibleDate,
   toIsoDateString,
 } from '@/lib/user-form/date-input';
-import { getCountryFlag } from '@/lib/utils/country-flags';
+import { getCountryFlag, normalizeBranchCountryCodeForGrouping } from '@/lib/utils/country-flags';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 
 const FEATURES = [
@@ -86,6 +87,50 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const ALL_FILTER = 'all';
+const STORE_COUNTRY_ORDER = ['SA', 'BOT', 'ZAM', 'MOZ', 'ZW', 'ZWI', 'MAL', 'CON', 'TAN', 'NAM', 'LS', 'SZ'] as const;
+
+export interface StoreCountryGroup {
+  countryCode: string;
+  stores: StoreOperationsStore[];
+}
+
+export function storeCountryCode(store: StoreOperationsStore): string {
+  return normalizeBranchCountryCodeForGrouping({
+    uid: store.branchUid,
+    name: store.name,
+    alias: store.alias,
+    country: store.country,
+  });
+}
+
+/** Group branches under a country, in a stable country order, then by branch name. */
+export function groupStoresByCountry(stores: StoreOperationsStore[]): StoreCountryGroup[] {
+  const byCountry = new Map<string, StoreOperationsStore[]>();
+  for (const store of stores) {
+    const countryCode = storeCountryCode(store);
+    const list = byCountry.get(countryCode) ?? [];
+    list.push(store);
+    byCountry.set(countryCode, list);
+  }
+
+  for (const list of byCountry.values()) {
+    list.sort((a, b) => {
+      const aLabel = getBranchDisplayLabel({ name: a.name, alias: a.alias }) || a.name;
+      const bLabel = getBranchDisplayLabel({ name: b.name, alias: b.alias }) || b.name;
+      return aLabel.localeCompare(bLabel);
+    });
+  }
+
+  const known = STORE_COUNTRY_ORDER.filter((code) => byCountry.has(code));
+  const extra = Array.from(byCountry.keys())
+    .filter((code) => !STORE_COUNTRY_ORDER.includes(code as (typeof STORE_COUNTRY_ORDER)[number]))
+    .sort((a, b) => getCountryFlag(a).name.localeCompare(getCountryFlag(b).name));
+
+  return [...known, ...extra].map((countryCode) => ({
+    countryCode,
+    stores: byCountry.get(countryCode) ?? [],
+  }));
+}
 
 export type StoreCardFilter =
   | 'all'
@@ -160,7 +205,7 @@ export function StoreOperationsContent() {
 
   if (!allowed) {
     return (
-      <main className="container mx-auto max-w-8xl px-3 py-8 sm:px-6">
+      <main className={appPageMainClass}>
         <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Store operations</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
           You do not have access to the store operations dashboard.
@@ -171,10 +216,12 @@ export function StoreOperationsContent() {
 
   const data = query.data;
   const stores = (data?.stores ?? []).filter((store) => storeMatchesCard(store, cardFilter));
-  const total = stores.length;
+  const groupedStores = groupStoresByCountry(stores);
+  const orderedStores = groupedStores.flatMap((group) => group.stores);
+  const total = orderedStores.length;
   const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
   const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
-  const pagedStores = stores.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedStores = orderedStores.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   function selectCard(next: StoreCardFilter) {
     setCardFilter((current) => nextCardFilter(current, next));
@@ -183,7 +230,7 @@ export function StoreOperationsContent() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-y-auto px-3 py-5 sm:px-6 sm:py-8">
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-y-auto')}>
         <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
@@ -350,9 +397,32 @@ export function StoreOperationsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {pagedStores.map((store) => (
-                          <StoreRow key={store.branchUid} store={store} />
-                        ))}
+                        {pagedStores.map((store, index) => {
+                          const countryCode = storeCountryCode(store);
+                          const previous = index > 0 ? storeCountryCode(pagedStores[index - 1]) : null;
+                          const country = getCountryFlag(countryCode);
+                          const groupSize = groupedStores.find((group) => group.countryCode === countryCode)?.stores.length ?? 0;
+                          return (
+                            <Fragment key={store.branchUid}>
+                              {countryCode !== previous ? (
+                                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                  <TableCell colSpan={7} className="py-2">
+                                    <span className="inline-flex items-center gap-2 font-medium">
+                                      <span className="text-base leading-none" aria-hidden>
+                                        {country.flag}
+                                      </span>
+                                      {country.name}
+                                      <span className="text-xs font-normal text-muted-foreground">
+                                        {groupSize} {groupSize === 1 ? 'branch' : 'branches'}
+                                      </span>
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              ) : null}
+                              <StoreRow store={store} />
+                            </Fragment>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   )}

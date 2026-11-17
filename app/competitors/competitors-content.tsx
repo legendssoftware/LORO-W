@@ -16,6 +16,8 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input';
 import { XIcon } from '@/lib/icons';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { cn } from '@/lib/utils';
 import {
   COMPETITOR_STATUS_FILTER_OPTIONS,
   type CompetitorDirectFilterValue,
@@ -29,7 +31,7 @@ import { CompetitorCard, CompetitorCardSkeleton } from './components/competitor-
 import { CompetitorDetailDialog } from './components/competitor-detail-dialog';
 import { CompetitorFormDialog } from './components/competitor-form-dialog';
 import { ImportCompetitorsModal } from './components/import-competitors-modal';
-import { cn } from '@/lib/utils';
+import { appPageMainClass } from '@/lib/page-shell';
 import { Link2, ListFilter, Plus, ShieldAlert, Upload } from 'lucide-react';
 import {
   Tooltip,
@@ -99,7 +101,9 @@ export function CompetitorsContent() {
       COMPETITOR_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((o) => ({
         value: o.value,
         label: o.label,
-        icon: <ListFilter className="size-4 shrink-0" />,
+        icon: (
+          <ListFilter className={cn('size-4 shrink-0', statusFilterIconClass(o.value))} />
+        ),
       })),
     []
   );
@@ -152,44 +156,17 @@ export function CompetitorsContent() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col px-3 py-5 sm:px-6 sm:py-8">
-        <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Competitors</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Track rivals, threat levels and locations alongside your clients.
-            </p>
-          </div>
-          {canEdit ? (
-            <div className="flex shrink-0 items-center gap-2 self-start">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
-                    onClick={() => setImportModalOpen(true)}
-                    aria-label="Import competitors"
-                  >
-                    <Upload className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Import competitors</TooltipContent>
-              </Tooltip>
-              <Button
-                className="hidden h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40 md:inline-flex"
-                onClick={openCreate}
-              >
-                <Plus className="size-4" />
-                Add competitor
-              </Button>
-            </div>
-          ) : null}
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
+        <div className="mb-6 shrink-0">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Competitors</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Track rivals, threat levels and locations alongside your clients.
+          </p>
         </div>
 
-        <div className="mb-4 flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-nowrap items-center gap-2 md:flex-wrap">
+        <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
             <div className="flex min-w-0 items-center gap-1">
               <SearchableOptionListPicker
                 selectedValue={statusFilter}
@@ -259,27 +236,42 @@ export function CompetitorsContent() {
                 </button>
               ) : null}
             </div>
-            {canEdit ? (
-              <Button
-                type="button"
-                size="icon"
-                className="ml-auto size-9 shrink-0 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40 md:hidden"
-                onClick={openCreate}
-                aria-label="Add competitor"
-                title="Add competitor"
-              >
-                <Plus className="size-4" />
-              </Button>
-            ) : null}
           </div>
-          <div className="flex w-full min-w-0 items-center lg:w-auto">
+          </div>
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
             <Input
               placeholder="Search by name…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className={cn(filterToolbarSearchInputClassName, 'sm:max-w-[240px]')}
+              className={cn(filterToolbarSearchInputClassName, 'w-56 max-w-[16rem]')}
               aria-label="Search competitors by name"
             />
+            {canEdit ? (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
+                      onClick={() => setImportModalOpen(true)}
+                      aria-label="Import competitors"
+                    >
+                      <Upload className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Import competitors</TooltipContent>
+                </Tooltip>
+                <Button
+                  className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
+                  onClick={openCreate}
+                >
+                  <Plus className="size-4" />
+                  Add competitor
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
 

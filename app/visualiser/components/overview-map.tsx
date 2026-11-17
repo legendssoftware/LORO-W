@@ -18,6 +18,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { MapLayerToggles } from '@/app/visualiser/components/map-layer-toggles';
+import {
+  DEFAULT_BASEMAP_VISIBILITY,
+  MapBasemapLayers,
+  type BasemapLayerId,
+  type BasemapLayerVisibility,
+} from '@/app/visualiser/components/map-basemap-layers';
 import { MapFeaturePopupContent } from '@/app/visualiser/components/map-feature-popup';
 import {
   JourneyPointsLayer,
@@ -43,16 +49,6 @@ import {
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
 import type { OptimizedRoute } from '@/api/types/tasks';
-import { formatZarShort } from '@/lib/site-opportunity/format-potential';
-import {
-  formatStoreFormatSummary,
-  isStoreSizeSuggestionEnabled,
-  suggestBitDrywallStoreFormat,
-} from '@/lib/site-opportunity/bitdrywall-store-formats';
-import {
-  buildTurnoverSimulation,
-  branchSimulationTextClass,
-} from '@/lib/site-opportunity/turnover-simulation';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useBranches, useCheckIns, useSearchableUsersList } from '@/api/hooks';
 import {
@@ -370,7 +366,7 @@ function FlyToVisitAction({
 }
 
 /** Pitch / bearing controls — mapcn Advanced “Custom Controls” pattern. */
-function Map3DController() {
+function Map3DController({ shifted }: { shifted: boolean }) {
   const { map, isLoaded } = useMap();
   const [pitch, setPitch] = useState(0);
   const [bearing, setBearing] = useState(0);
@@ -409,7 +405,11 @@ function Map3DController() {
   if (!isLoaded) return null;
 
   return (
-    <div className="absolute top-3 right-3 z-10 hidden flex-col gap-2 md:flex">
+    <div
+      className={`absolute top-3 z-10 hidden flex-col gap-2 md:flex ${
+        shifted ? 'right-[calc(22rem+1.25rem)]' : 'right-3'
+      }`}
+    >
       <div className="flex gap-2">
         <Button size="sm" variant="secondary" onClick={handle3DView}>
           <Mountain className="mr-1.5 size-4" />
@@ -540,6 +540,9 @@ export function OverviewMap({
       ? DEFAULT_LAYER_VISIBILITY
       : { ...DEFAULT_LAYER_VISIBILITY, reps: false },
   );
+  const [basemap, setBasemap] = useState<BasemapLayerVisibility>(
+    DEFAULT_BASEMAP_VISIBILITY,
+  );
   const [selected, setSelected] = useState<VisualiserMapPoint | null>(null);
   const [journeyRoutes, setJourneyRoutes] = useState<JourneyRouteState[]>([]);
   const [isTracing, setIsTracing] = useState(false);
@@ -568,8 +571,7 @@ export function OverviewMap({
     clearSelection: clearRepSelection,
   } = useSearchableUsersList({ enabled, limit: 100 });
 
-  const { isActive, selectedZone, clearSimulation, panelOpen, allZones, ranAt, result } =
-    useVisualiserSimulation();
+  const { isActive, selectedZone, allZones, ranAt } = useVisualiserSimulation();
 
   const { data: branches = [] } = useBranches({ enabled });
 
@@ -596,28 +598,6 @@ export function OverviewMap({
       return next;
     });
   }, [visiblePoints]);
-
-  const zoneSim = useMemo(() => {
-    if (!selectedZone) return null;
-    return buildTurnoverSimulation(selectedZone, {
-      actualRevenueZAR:
-        selectedZone.kind === 'catchment'
-          ? selectedZone.actualRevenueZAR
-          : null,
-    });
-  }, [selectedZone]);
-
-  const storeFormatSuggestion = useMemo(() => {
-    if (!zoneSim) return null;
-    if (
-      !isStoreSizeSuggestionEnabled(
-        result?.settings.suggestStoreSizeFromTurnover,
-      )
-    ) {
-      return null;
-    }
-    return suggestBitDrywallStoreFormat(zoneSim.simulatedMonthlyZAR);
-  }, [result?.settings.suggestStoreSizeFromTurnover, zoneSim]);
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -709,6 +689,13 @@ export function OverviewMap({
       }
     },
     [clearRepSelection, setRepSearchInput, showRepTracking]
+  );
+
+  const handleBasemapChange = useCallback(
+    (layer: BasemapLayerId, visible: boolean) => {
+      setBasemap((prev) => ({ ...prev, [layer]: visible }));
+    },
+    [],
   );
 
   const handlePlottedRepClick = useCallback((point: VisualiserMapPoint) => {
@@ -1276,63 +1263,13 @@ export function OverviewMap({
         </div>
       ) : null}
 
-      {isActive && selectedZone && zoneSim && !panelOpen ? (
-        <div className="bg-background/95 absolute top-3 left-3 z-10 max-w-xs rounded-md border px-3 py-2 text-xs shadow-sm backdrop-blur">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className={`truncate font-medium ${branchSimulationTextClass(zoneSim)}`}>
-                {selectedZone.kind === 'catchment'
-                  ? selectedZone.branchName
-                  : selectedZone.label}
-              </p>
-              <p className="text-muted-foreground mt-0.5">
-                Pool {formatZarShort(selectedZone.addressablePoolZAR)} · Potential{' '}
-                {formatZarShort(selectedZone.potentialLowZAR)}–
-                {formatZarShort(selectedZone.potentialHighZAR)}
-              </p>
-              {selectedZone.kind === 'catchment' &&
-              selectedZone.floorSizeSqm != null ? (
-                <p className="text-muted-foreground">
-                  Floor {selectedZone.floorSizeSqm.toLocaleString()} sqm
-                  {selectedZone.capacityCeilingZAR != null
-                    ? ` · Cap ${formatZarShort(selectedZone.capacityCeilingZAR)}/mo`
-                    : ''}
-                </p>
-              ) : null}
-              {storeFormatSuggestion ? (
-                <p className="text-muted-foreground">
-                  {selectedZone.kind === 'catchment'
-                    ? `Recommended ${formatStoreFormatSummary(storeFormatSuggestion)}`
-                    : formatStoreFormatSummary(storeFormatSuggestion)}
-                </p>
-              ) : null}
-              <p className="text-muted-foreground">
-                Model {formatZarShort(zoneSim.simulatedMonthlyZAR)}
-                {zoneSim.actualMonthlyZAR != null
-                  ? ` · Actual ${formatZarShort(zoneSim.actualMonthlyZAR)}`
-                  : ''}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground shrink-0 text-[10px] underline"
-              onClick={() => clearSimulation()}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <div
-        className={`absolute left-3 z-10 flex max-h-[min(100%-1.5rem,42rem)] w-[min(100%-1.5rem,18rem)] flex-col gap-2 overflow-y-auto ${
-          isActive && selectedZone && !panelOpen ? 'top-28' : 'top-3'
-        }`}
-      >
+      <div className="absolute top-3 left-3 z-10 flex max-h-[min(100%-1.5rem,42rem)] w-[min(100%-1.5rem,18rem)] flex-col gap-2 overflow-y-auto">
         <MapLayerToggles
           visibility={visibility}
           counts={counts}
           onChange={handleLayerChange}
+          basemap={basemap}
+          onBasemapChange={handleBasemapChange}
           repPoints={repPoints}
           selectedRepUid={selected?.repUid ?? null}
           onRepClick={handlePlottedRepClick}
@@ -1432,15 +1369,17 @@ export function OverviewMap({
         </div>
       ) : null}
 
-      <Map center={center} zoom={DEFAULT_ZOOM}>
+      <Map center={center} zoom={DEFAULT_ZOOM} maxPitch={80}>
         <MapControls
           position="bottom-right"
           showZoom
           showCompass
           showLocate
           showFullscreen
+          className={isActive ? 'right-[calc(22rem+1.25rem)]' : undefined}
         />
-        <Map3DController />
+        <Map3DController shifted={isActive} />
+        <MapBasemapLayers visibility={basemap} />
         <FlyToPoint point={selected} />
         <FlyToCoords
           coords={

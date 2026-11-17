@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
-import { useOrgName } from '@/lib/org-id-context';
 import { orgRangeIsoFromUtcCalendarStoredRange, utcDateFromYmd } from '@/lib/utils/overview-daily-summary';
 import {
   useCheckIns,
@@ -27,10 +26,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   DetailDialogCloseButton,
   DETAIL_DIALOG_SMALL_CONTENT_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
-import { MapPin, Phone, MessageCircle, Mail, MoreHorizontal } from 'lucide-react';
+import { Download, MapPin, Phone, MessageCircle, Mail, MoreHorizontal } from 'lucide-react';
 import { Loader2Icon } from '@/lib/icons';
 import { VisitsTable } from '@/components/visits-table/visits-table';
 import { VisitHistoryToolbar } from '@/components/visits-table/visit-history-toolbar';
@@ -41,9 +46,9 @@ import {
 } from '@/lib/utils/visit-history-filters';
 import { METHOD_OPTIONS, TYPE_OF_BUSINESS_OPTIONS } from '@/lib/visit-form-utils';
 import { useVisitsStore } from '@/store/visits-store';
+import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import type { VisitsSummaryModalPayload } from '@/app/visits/visits-summary-modal';
 import {
   VisitsListPagination,
   readStoredVisitsPageSize,
@@ -62,11 +67,7 @@ function getVisitMethodIcon(method: string | null | undefined) {
   return MapPin;
 }
 
-export function VisitsContent({
-  onRequestVisitsSummary,
-}: {
-  onRequestVisitsSummary: (payload: VisitsSummaryModalPayload) => void;
-}) {
+export function VisitsContent() {
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   useSessionSync();
@@ -115,7 +116,6 @@ export function VisitsContent({
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredVisitsPageSize());
-  const orgName = useOrgName();
   const mounted = authLoaded && isTokenReady;
 
   const {
@@ -248,60 +248,49 @@ export function VisitsContent({
 
   const openEndVisit = () => setEndVisitOpen(true);
 
-  const handleOpenVisitsSummary = () => {
-    onRequestVisitsSummary({
-      checkIns: filteredCheckIns,
-      startDate,
-      endDate,
-      companyName: orgName ?? 'Organisation',
-      useAllTime,
-    });
-  };
+  const exportTitle = `Visits · ${activityChannelFilterLabel(activityChannel)}`;
+  const exportDisabled = filteredCheckIns.length === 0;
+
+  const visitActionButton = checkedIn ? (
+    <Button
+      className={cn(
+        'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+        'bg-red-600 text-white hover:bg-red-700',
+        '[&_svg]:text-white focus-visible:ring-red-500/40'
+      )}
+      data-tour="visits-visit-action"
+      onClick={openEndVisit}
+    >
+      {(() => {
+        const Icon = getVisitMethodIcon(activeVisit?.methodOfContact);
+        return <Icon className="size-4" />;
+      })()}
+      End visit
+    </Button>
+  ) : (
+    <Button
+      className={cn(
+        'h-9 shrink-0 gap-2 border-0 !rounded px-4',
+        'bg-violet-600 text-white hover:bg-violet-700',
+        'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
+        '[&_svg]:text-white focus-visible:ring-violet-500/40'
+      )}
+      data-tour="visits-visit-action"
+      onClick={openMethodModal}
+    >
+      <MapPin className="size-4" />
+      Start visit
+    </Button>
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <main className="container mx-auto flex min-h-0 max-w-8xl flex-1 flex-col overflow-hidden px-3 py-5 sm:px-6 sm:py-8">
-        <div
-          className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-          data-tour="visits-page-header"
-        >
-          <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.
-            </p>
-          </div>
-          {checkedIn ? (
-            <Button
-              className={cn(
-                'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-                'bg-red-600 text-white hover:bg-red-700',
-                '[&_svg]:text-white focus-visible:ring-red-500/40'
-              )}
-              data-tour="visits-visit-action"
-              onClick={openEndVisit}
-            >
-              {(() => {
-                const Icon = getVisitMethodIcon(activeVisit?.methodOfContact);
-                return <Icon className="size-4" />;
-              })()}
-              End visit
-            </Button>
-          ) : (
-            <Button
-              className={cn(
-                'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
-                'bg-violet-600 text-white hover:bg-violet-700',
-                'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
-                '[&_svg]:text-white focus-visible:ring-violet-500/40'
-              )}
-              data-tour="visits-visit-action"
-              onClick={openMethodModal}
-            >
-              <MapPin className="size-4" />
-              Start visit
-            </Button>
-          )}
+      <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
+        <div className="mb-6 shrink-0" data-tour="visits-page-header">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.
+          </p>
         </div>
 
         <Dialog open={methodModalOpen} onOpenChange={(open) => !open && closeMethodModal()}>
@@ -372,8 +361,6 @@ export function VisitsContent({
           businessTypeIconMap={businessTypeIconMap}
           usersList={pickerUsers}
           branches={branchesQuery.data ?? []}
-          visitsSummaryDisabled={checkInsQuery.isLoading || filteredCheckIns.length === 0}
-          onOpenVisitsSummary={handleOpenVisitsSummary}
           sectionHeading={null}
           userSearchQuery={userSearchQuery}
           onUserSearchQueryChange={setUserSearchQuery}
@@ -381,40 +368,39 @@ export function VisitsContent({
           onUserUidChange={handleSelectedUserUidChange}
           extraActions={
             <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9"
-                disabled={filteredCheckIns.length === 0}
-                onClick={() =>
-                  exportVisits(
-                    filteredCheckIns,
-                    'csv',
-                    'loro-visits',
-                    `Visits · ${activityChannelFilterLabel(activityChannel)}`
-                  )
-                }
-              >
-                Export CSV
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9"
-                disabled={filteredCheckIns.length === 0}
-                onClick={() =>
-                  exportVisits(
-                    filteredCheckIns,
-                    'pdf',
-                    'loro-visits',
-                    `Visits · ${activityChannelFilterLabel(activityChannel)}`
-                  )
-                }
-              >
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 gap-1.5"
+                    disabled={exportDisabled}
+                  >
+                    <Download className="size-4" aria-hidden />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={exportDisabled}
+                    onSelect={() =>
+                      exportVisits(filteredCheckIns, 'csv', 'loro-visits', exportTitle)
+                    }
+                  >
+                    Export CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={exportDisabled}
+                    onSelect={() =>
+                      exportVisits(filteredCheckIns, 'pdf', 'loro-visits', exportTitle)
+                    }
+                  >
+                    Export PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {visitActionButton}
             </>
           }
         />

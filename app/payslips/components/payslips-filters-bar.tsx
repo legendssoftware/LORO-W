@@ -38,6 +38,7 @@ import {
 import { XIcon } from '@/lib/icons';
 import { PAYSLIP_STATUS_FILTER_OPTIONS } from '@/lib/payslips-scope';
 import { cn } from '@/lib/utils';
+import { statusFilterIconClass } from '@/lib/status-filter-icon';
 
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
@@ -54,11 +55,12 @@ export function resetPayslipsDateRangeToDefault(
 }
 
 function statusIconFor(value: string): React.ReactNode {
+  const tone = statusFilterIconClass(value);
   const v = value.toLowerCase();
-  if (v === 'generated') return <CircleDot className="size-4 shrink-0" />;
-  if (v === 'sent') return <Send className="size-4 shrink-0" />;
-  if (v === 'viewed') return <Eye className="size-4 shrink-0" />;
-  return <LayoutGrid className="size-4 shrink-0" />;
+  if (v === 'generated') return <CircleDot className={cn('size-4 shrink-0', tone)} />;
+  if (v === 'sent') return <Send className={cn('size-4 shrink-0', tone)} />;
+  if (v === 'viewed') return <Eye className={cn('size-4 shrink-0', tone)} />;
+  return <LayoutGrid className={cn('size-4 shrink-0', tone)} />;
 }
 
 export interface PayslipsFiltersBarProps {

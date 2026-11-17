@@ -35,9 +35,11 @@ export function useConsolidatedIncomeStatement(options: {
     queryFn: () =>
       getConsolidatedIncomeStatement(client, options.filters, { organisationId }),
     enabled: (options.enabled ?? true) && isTokenReady && hasDateRange,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     retry: defaultQueryRetry,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

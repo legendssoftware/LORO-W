@@ -1,13 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Building2,
-  Check,
-  ChevronsUpDown,
-  MapPinned,
-  User,
-} from 'lucide-react';
+import { Check, ChevronsUpDown, User } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
 import { getBranchDisplayLabel } from '@/api/hooks';
@@ -29,6 +23,19 @@ import {
 import { cn } from '@/lib/utils';
 import { branchFlagAndLabel } from '@/lib/utils/branch-person-cell';
 import { groupBranchesByProvince } from '@/app/reports/lib/reports-branch-geo';
+import {
+  getCountryFlag,
+  normalizeBranchCountryCodeForGrouping,
+} from '@/lib/utils/country-flags';
+
+function BranchFlag({ branch }: { branch: BranchListItem }) {
+  const flag = getCountryFlag(normalizeBranchCountryCodeForGrouping(branch)).flag;
+  return (
+    <span className="shrink-0 text-base leading-none" aria-hidden>
+      {flag}
+    </span>
+  );
+}
 
 export const reportsFilterSelectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -128,7 +135,7 @@ function BranchPickerItems({
           )}
         />
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-          <MapPinned className="size-4 shrink-0 text-muted-foreground" />
+          <BranchFlag branch={b} />
           {label}
         </span>
       </CommandItem>
@@ -153,17 +160,16 @@ export function SearchableBranchPicker({
     [branches, groupByProvince]
   );
 
+  const selectedBranch = React.useMemo(
+    () => branches.find((x) => String(x.uid) === selectedBranchId),
+    [branches, selectedBranchId]
+  );
+
   const triggerLabel = React.useMemo(() => {
     if (withAllOption && selectedBranchId === 'all') return 'All branches';
-    const b = branches.find((x) => String(x.uid) === selectedBranchId);
-    if (b) return getBranchDisplayLabel(b);
+    if (selectedBranch) return getBranchDisplayLabel(selectedBranch);
     return withAllOption ? 'All branches' : emptySelectionLabel;
-  }, [
-    selectedBranchId,
-    branches,
-    withAllOption,
-    emptySelectionLabel,
-  ]);
+  }, [selectedBranchId, selectedBranch, withAllOption, emptySelectionLabel]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -180,7 +186,7 @@ export function SearchableBranchPicker({
           )}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
-            <Building2 className="size-4 shrink-0 text-muted-foreground" />
+            {selectedBranch ? <BranchFlag branch={selectedBranch} /> : null}
             <span className="truncate">{triggerLabel}</span>
           </span>
           <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
@@ -213,7 +219,6 @@ export function SearchableBranchPicker({
                     )}
                   />
                   <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                    <MapPinned className="size-4 shrink-0 text-muted-foreground" />
                     All branches
                   </span>
                 </CommandItem>
@@ -242,7 +247,7 @@ export function SearchableBranchPicker({
                           )}
                         />
                         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                          <MapPinned className="size-4 shrink-0 text-muted-foreground" />
+                          <BranchFlag branch={b} />
                           {label}
                         </span>
                       </CommandItem>
@@ -626,10 +631,15 @@ export function SearchableOptionListPicker({
           reportsFilterPortalHighZ
         )}
         align="start"
+        onWheel={(event) => event.stopPropagation()}
+        onTouchMove={(event) => event.stopPropagation()}
       >
-        <Command>
+        <Command className="h-auto">
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandList
+            className="max-h-[min(300px,50vh)] min-h-0 overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+          >
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
               {includeAllOption ? (

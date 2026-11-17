@@ -122,6 +122,7 @@ export function DeliveryDetailContent({
             <DetailRow label="Address" value={delivery.clientAddress || '—'} />
             <DetailRow label="Contact" value={delivery.contactName || '—'} />
             <DetailRow label="Phone" value={delivery.contactPhone || '—'} />
+            <DetailRow label="Invoice No." value={delivery.invoiceNumber || '—'} />
             <DetailRow label="Order" value={delivery.orderNumber || (delivery.orderUid != null ? `#${delivery.orderUid}` : '—')} />
             <DetailRow label="Client location" value={formatCoordinates(delivery.latitude, delivery.longitude)} />
           </CardContent>
@@ -144,6 +145,23 @@ export function DeliveryDetailContent({
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Rating</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {delivery.ratingScore == null ? (
+            <p className="text-muted-foreground text-sm">Not rated yet.</p>
+          ) : (
+            <>
+              <DetailRow label="Score" value={`${delivery.ratingScore} / 5`} />
+              <DetailRow label="Comment" value={delivery.ratingComment?.trim() || '—'} />
+              <DetailRow label="Rated" value={formatDeliveryTimestamp(delivery.ratedAt)} />
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
