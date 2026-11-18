@@ -26,6 +26,7 @@ import {
 import { MerchandiseCreateDialog } from './components/merchandise-create-dialog';
 import { MerchandiseFiltersBar } from './components/merchandise-filters-bar';
 import { MerchandiseGroupedList } from './components/merchandise-grouped-list';
+import { InspectionsPanel } from './components/inspections-panel';
 
 const primaryClass =
   'h-9 shrink-0 gap-2 border-0 bg-violet-600 px-4 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500 [&_svg]:text-white';
@@ -36,6 +37,7 @@ export function MerchandiseContent() {
   const { isTokenReady } = useTokenReady();
   const { backendUserData, isSyncing } = useSessionSync();
   const [createOpen, setCreateOpen] = useState(false);
+  const [section, setSection] = useState<'journals' | 'inspections'>('journals');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -111,6 +113,17 @@ export function MerchandiseContent() {
           </p>
         </div>
 
+        <div className="mb-4 flex gap-2">
+          <Button type="button" variant={section === 'journals' ? 'default' : 'outline'} onClick={() => setSection('journals')}>
+            Journals
+          </Button>
+          <Button type="button" variant={section === 'inspections' ? 'default' : 'outline'} onClick={() => setSection('inspections')}>
+            Inspections
+          </Button>
+        </div>
+
+        {section === 'inspections' ? <InspectionsPanel /> : (
+        <>
         <div data-tour="merchandise-toolbar">
           <MerchandiseFiltersBar
             status={statusFilter}
@@ -175,6 +188,8 @@ export function MerchandiseContent() {
           dataTour="merchandise-pagination"
           className="mt-4 rounded-lg border border-border"
         />
+        </>
+        )}
       </main>
 
       <MerchandiseCreateDialog open={createOpen} onOpenChange={setCreateOpen} />

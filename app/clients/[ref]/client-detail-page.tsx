@@ -25,6 +25,7 @@ import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { ClientFormDialog } from '../components/client-form-dialog';
+import { ClientActivityPanel } from '../components/client-activity-panel';
 import { useRouter } from 'next/navigation';
 
 function Row({
@@ -244,6 +245,8 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
           )}
         </div>
       )}
+
+      <ClientActivityPanel clientRef={refParam} />
 
       <ClientFormDialog
         open={formOpen}

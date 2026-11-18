@@ -235,6 +235,66 @@ export const PAGE_COPY = {
     description:
       'Listen to ingested Yeastar call recordings and read the speaker-labelled dialogue for coaching and follow-up.',
   },
+  leave: {
+    title: 'Leave — Request, review and approve time off',
+    description:
+      'Submit leave, filter by person and status, and approve, reject, or cancel requests from the same inbox.',
+  },
+  warnings: {
+    title: 'Warnings — Formal staff warnings',
+    description:
+      'Issue, update, and review formal warnings for the organisation. Profile warnings land in this inbox.',
+  },
+  documents: {
+    title: 'Documents — Files attached to people',
+    description:
+      'List, download, and attach documents to a person. Visit and claim uploads stay on those screens.',
+  },
+  feedback: {
+    title: 'Feedback — Inbox and response status',
+    description:
+      'Read customer and staff feedback, see the counts, and update status without leaving the inbox.',
+  },
+  geofences: {
+    title: 'Geofences — Areas and entry events',
+    description:
+      'Create and edit geofence areas, then review who entered them. The same areas draw on Competitor Overview.',
+  },
+  usage: {
+    title: 'Usage — Activity, summaries and licenses',
+    description:
+      'See how the organisation uses LORO, with summaries and license usage for the selected period.',
+  },
+  products: {
+    title: 'Products — Catalogue admin',
+    description:
+      'Create, edit, archive, and restore catalogue products. The client store keeps its own read-only view.',
+  },
+  news: {
+    title: 'News — Organisation announcements',
+    description:
+      'Publish and edit news posts for the organisation. The list and the editor live on this page.',
+  },
+  salesTips: {
+    title: 'Sales tips — Daily coaching notes',
+    description:
+      'Edit the sales tip catalogue. Everyone who opens Home still sees the tip of the day.',
+  },
+  resellers: {
+    title: 'Resellers — Partner directory',
+    description:
+      'Add, edit, archive, and restore reseller records used by the field team.',
+  },
+  rewards: {
+    title: 'Rewards — Leaderboard and XP',
+    description:
+      'See the rewards leaderboard, rankings, and one person’s XP for the organisation.',
+  },
+  loyalty: {
+    title: 'Loyalty — Profiles, rewards and analytics',
+    description:
+      'Manage the loyalty catalogue, member profiles, claim history, and programme analytics.',
+  },
   settings: {
     title: 'Settings - Brand, branches & defaults under your control',
     description:

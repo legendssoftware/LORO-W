@@ -231,7 +231,7 @@ export function StoreOperationsContent() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-y-auto')}>
-        <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" data-tour="store-operations-page-header">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
               Store Operations Dashboard – All Stores
@@ -247,7 +247,7 @@ export function StoreOperationsContent() {
           onValueChange={setTab}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <TabsList className={TAB_LIST_CLASS}>
+          <TabsList className={TAB_LIST_CLASS} data-tour="store-operations-tabs">
             <TabsTrigger value="overview" className={TAB_TRIGGER_CLASS}>
               <LayoutDashboard className="size-4" aria-hidden />
               Overview
@@ -258,7 +258,7 @@ export function StoreOperationsContent() {
             </TabsTrigger>
           </TabsList>
 
-        <div className="mb-4 flex shrink-0 flex-col gap-3">
+        <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="store-operations-filters">
           <div className="flex flex-col gap-2 md:hidden">
             <Button
               type="button"
@@ -318,6 +318,8 @@ export function StoreOperationsContent() {
 
         <FeaturesDialog open={featuresOpen} onOpenChange={setFeaturesOpen} />
 
+        {query.isError || data ? <span className="sr-only" data-tour="store-operations-settled" /> : null}
+
         {query.isError ? (
           <QueryErrorBanner
             className="mb-4 shrink-0"
@@ -331,7 +333,7 @@ export function StoreOperationsContent() {
         {data ? (
           <>
             <TabsContent value="overview" className="mt-0 flex min-h-0 flex-1 flex-col outline-none">
-              <section className="mb-4 grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+              <section className="mb-4 grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" data-tour="store-operations-summary">
                 <SummaryCard
                   label="Total Stores"
                   value={String(data.summary.totalStores)}
@@ -374,7 +376,7 @@ export function StoreOperationsContent() {
                 />
               </section>
 
-              <div className="flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+              <div className="flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card" data-tour="store-operations-stores">
                 <h2 className="shrink-0 border-b border-border px-4 py-3 text-sm font-semibold">
                   Store Status (Real-Time)
                 </h2>

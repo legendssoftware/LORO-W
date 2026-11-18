@@ -6,6 +6,7 @@ import type {
   PolicyAcknowledgement,
   PolicyAgreement,
   PolicyExceptionItem,
+  PolicyMyDashboard,
   PolicyReportFinaliseResponse,
   PolicyReportParams,
   PolicyReportResponse,
@@ -14,6 +15,14 @@ import type {
 } from '@/api/types/performance-policy';
 
 const REPORT_TIMEOUT_MS = 120_000;
+
+/** GET /performance-policy/me/dashboard: the signed-in employee's cost package and PRR forecast. */
+export async function getMyPolicyDashboard(client: AxiosInstance): Promise<PolicyMyDashboard> {
+  const { data } = await client.get<PolicyMyDashboard>('/performance-policy/me/dashboard', {
+    params: { range: 'month' },
+  });
+  return data;
+}
 
 /** GET /performance-policy/report: one flat scored row per user for a month or custom window. */
 export async function getPolicyReport(

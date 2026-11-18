@@ -21,6 +21,9 @@ import {
   createTaskFlag,
   updateTaskFlag,
   updateTaskFlagItem,
+  commentOnTaskFlag,
+  deleteTaskFlag,
+  getTaskFlagReports,
 } from '@/api/endpoints/tasks';
 import type {
   GetTasksParams,
@@ -334,5 +337,39 @@ export function useUpdateTaskFlagItemMutation() {
         queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId],
       });
     },
+  });
+}
+
+export function useCommentTaskFlagMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ flagId, taskId, content }: { flagId: number; taskId: number; content: string }) =>
+      commentOnTaskFlag(client, flagId, content),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId] });
+    },
+  });
+}
+
+export function useDeleteTaskFlagMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ flagId }: { flagId: number; taskId: number }) => deleteTaskFlag(client, flagId),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'flags', taskId] });
+      queryClient.invalidateQueries({ queryKey: [...TASKS_LIST_QUERY_KEY, 'flag-reports'] });
+    },
+  });
+}
+
+export function useTaskFlagReports(options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...TASKS_LIST_QUERY_KEY, 'flag-reports'],
+    queryFn: () => getTaskFlagReports(client, { limit: 20 }),
+    enabled: options?.enabled !== false,
+    staleTime: 60 * 1000,
   });
 }

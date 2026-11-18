@@ -15,6 +15,7 @@ import {
 } from '@/api/hooks';
 import type { MethodOfContact } from '@/api/types/visits';
 import { exportVisits, mapCheckInsFromApi } from '@/lib/utils/visits-export';
+import { VisitDispatchPanel } from '@/app/visits/components/visit-dispatch-panel';
 import { activityChannelFilterLabel } from '@/lib/activity-channel';
 import { Button } from '@/components/ui/button';
 import {
@@ -292,6 +293,11 @@ export function VisitsContent() {
             All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.
           </p>
         </div>
+
+        <VisitDispatchPanel
+          from={startDate ? startDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
+          to={endDate ? endDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
+        />
 
         <Dialog open={methodModalOpen} onOpenChange={(open) => !open && closeMethodModal()}>
           <DialogContent

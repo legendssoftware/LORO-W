@@ -258,3 +258,44 @@ export async function updateTaskFlagItem(
   );
   return data;
 }
+
+/** POST /tasks/flags/:flagId/comments */
+export async function commentOnTaskFlag(
+  client: AxiosInstance,
+  flagId: number,
+  content: string
+): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>(`/tasks/flags/${flagId}/comments`, {
+    content,
+  });
+  return data;
+}
+
+/** DELETE /tasks/flags/:flagId */
+export async function deleteTaskFlag(
+  client: AxiosInstance,
+  flagId: number
+): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(`/tasks/flags/${flagId}`);
+  return data;
+}
+
+export interface TaskFlagReportRow {
+  uid?: number;
+  title?: string;
+  status?: string;
+  taskId?: number;
+}
+
+/** GET /tasks/flags/reports */
+export async function getTaskFlagReports(
+  client: AxiosInstance,
+  params: { status?: string; page?: number; limit?: number } = {}
+): Promise<{ data: TaskFlagReportRow[] }> {
+  const { data } = await client.get<{ data?: TaskFlagReportRow[] } | TaskFlagReportRow[]>(
+    '/tasks/flags/reports',
+    { params }
+  );
+  if (Array.isArray(data)) return { data };
+  return { data: data.data ?? [] };
+}

@@ -273,6 +273,7 @@ export function IotFiltersBar({
               '[&_svg]:text-white'
             )}
             onClick={onAddDevice}
+            data-tour="iot-add-device"
           >
             <Plus className="size-4" aria-hidden />
             Add device

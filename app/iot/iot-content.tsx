@@ -105,7 +105,8 @@ export function IotContent() {
           </p>
         </div>
 
-        <IotFiltersBar
+        <div data-tour="iot-toolbar">
+          <IotFiltersBar
           search={search}
           onSearchChange={setSearch}
           statusFilter={statusFilter}
@@ -120,8 +121,9 @@ export function IotContent() {
             setDialogOpen(true);
           }}
         />
+        </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto" {...(isLoading ? {} : { 'data-tour': 'iot-grid' })}>
           {isLoading ? (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 12 }).map((_, i) => (

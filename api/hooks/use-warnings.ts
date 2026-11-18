@@ -4,9 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   createWarning,
+  deleteWarning,
   getUserWarnings,
+  getWarnings,
   normalizeWarningsList,
   updateWarning,
+  type GetWarningsParams,
 } from '@/api/endpoints/warnings';
 import type {
   CreateWarningPayload,
@@ -71,6 +74,7 @@ export function useCreateWarningMutation(userRef: string | number | null | undef
         queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
       }
       queryClient.invalidateQueries({ queryKey: USER_WARNINGS_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ['warnings', 'inbox'] });
       toast.success(res.message || 'Warning issued');
     },
     onError: (err) => {
@@ -95,6 +99,7 @@ export function useUpdateWarningMutation(userRef: string | number | null | undef
         queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
       }
       queryClient.invalidateQueries({ queryKey: USER_WARNINGS_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: ['warnings', 'inbox'] });
       toast.success(res.message || 'Warning updated');
     },
     onError: (err) => {
@@ -141,6 +146,30 @@ export function useRevokeWarningsMutation(userRef: string | number | null | unde
     },
     onError: (err) => {
       toast.error(getQueryErrorMessage(err, 'Failed to clear warnings'));
+    },
+  });
+}
+
+export const WARNINGS_INBOX_QUERY_KEY = ['warnings', 'inbox'] as const;
+
+/** Organisation warnings inbox. */
+export function useWarningsInbox(params: GetWarningsParams, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...WARNINGS_INBOX_QUERY_KEY, params],
+    queryFn: () => getWarnings(client, params),
+    enabled: options?.enabled !== false,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useDeleteWarningMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (warningUid: number) => deleteWarning(client, warningUid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warnings'] });
     },
   });
 }

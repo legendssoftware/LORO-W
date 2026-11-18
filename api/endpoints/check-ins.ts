@@ -69,6 +69,30 @@ export async function getCheckInsDispatchSummary(
   return data;
 }
 
+/** POST /check-ins/:checkInId/note-draft — not saved. */
+export async function draftCheckInNote(
+  client: AxiosInstance,
+  checkInId: number
+): Promise<{ note: string; suggestedFollowUpDate: string | null; source: string }> {
+  const { data } = await client.post<{
+    note: string;
+    suggestedFollowUpDate: string | null;
+    source: string;
+  }>(`/check-ins/${checkInId}/note-draft`);
+  return data;
+}
+
+/** POST /check-ins/:checkInId/convert-to-lead */
+export async function convertCheckInToLead(
+  client: AxiosInstance,
+  checkInId: number
+): Promise<{ message: string; lead?: { uid?: number; name?: string } }> {
+  const { data } = await client.post<{ message: string; lead?: { uid?: number; name?: string } }>(
+    `/check-ins/${checkInId}/convert-to-lead`
+  );
+  return data;
+}
+
 /**
  * PATCH /check-ins/visit-details - update visit details after check-out.
  */

@@ -159,6 +159,52 @@ export interface PolicyAcknowledgement {
   minimums: { callsPerDay: number; visitsPerDay: number | null } | null;
 }
 
+export interface PolicyCostPackage {
+  currency: string;
+  baseSalary: number;
+  carInstalment: number;
+  carInsurance: number;
+  fuel: number;
+  cellPhoneAllowance: number;
+  carMaintenance: number;
+  cgicCosts: number;
+  totalCost: number;
+}
+
+export interface PolicyRecovery {
+  calls: number;
+  newLeads: number;
+  quotations: number;
+  remainingWorkingDays: number;
+}
+
+export type PolicyPaceBand = 'red' | 'yellow' | 'green';
+
+export interface PolicyForecast {
+  prr: number;
+  amount: number;
+  payPct: number;
+  minExpected: number;
+  additionalEarnings: number;
+  paceBand: PolicyPaceBand;
+  activityPct: number;
+  recovery: PolicyRecovery | null;
+  caption: string;
+}
+
+export interface PolicyMyDashboard {
+  costPackage: PolicyCostPackage;
+  forecast: PolicyForecast | null;
+  forecastUnavailableReason:
+    | 'not_participating'
+    | 'not_signed'
+    | 'no_prr'
+    | 'no_activity_target'
+    | 'shadow_mode'
+    | null;
+  payHiddenByShadowMode: boolean;
+}
+
 export interface PolicyDashboardSummary {
   expectedDays: number;
   calls: { expected: number | null; qualifying: number; achievementPct: number | null };

@@ -59,6 +59,7 @@ export interface CreateIntakeInvitationResponse {
     intakeUrl: string;
     tokenExpiresAt: string;
     emailSent: boolean;
+    whatsappSent?: boolean;
   };
 }
 

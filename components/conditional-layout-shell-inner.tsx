@@ -40,7 +40,7 @@ export function ConditionalLayoutShellInner({ children }: { children: ReactNode 
           aria-hidden={blockChrome || undefined}
         >
           <ConditionalAppHeader />
-          {!isClient && <RouteTours />}
+          <RouteTours />
           <PostAuthRouteHandler />
           <ErrorBoundary>
             <AccessGuard>

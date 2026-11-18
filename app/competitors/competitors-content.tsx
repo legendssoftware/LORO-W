@@ -157,14 +157,14 @@ export function CompetitorsContent() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
-        <div className="mb-6 shrink-0">
+        <div className="mb-6 shrink-0" data-tour="competitors-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Competitors</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Track rivals, threat levels and locations alongside your clients.
           </p>
         </div>
 
-        <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
+        <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3" data-tour="competitors-toolbar">
           <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
             <div className="flex min-w-0 items-center gap-1">
@@ -266,6 +266,7 @@ export function CompetitorsContent() {
                 <Button
                   className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
                   onClick={openCreate}
+                  data-tour="competitors-add"
                 >
                   <Plus className="size-4" />
                   Add competitor
@@ -275,7 +276,7 @@ export function CompetitorsContent() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto" {...(isLoading ? {} : { 'data-tour': 'competitors-grid' })}>
           {isLoading ? (
             <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 12 }).map((_, i) => (

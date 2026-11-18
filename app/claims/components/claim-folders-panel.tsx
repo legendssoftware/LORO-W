@@ -21,16 +21,27 @@ export function ClaimFoldersPanel({
   isLoading,
   activeGroupUid,
   onSelectGroup,
+  hideHeaderButtons,
+  newFolderOpen,
+  onNewFolderOpenChange,
 }: {
   groups: ClaimGroup[];
   byGroup?: ClaimGroupTotal[];
   isLoading?: boolean;
   activeGroupUid?: string;
   onSelectGroup: (uid: string) => void;
+  hideHeaderButtons?: boolean;
+  newFolderOpen?: boolean;
+  onNewFolderOpenChange?: (open: boolean) => void;
 }) {
   const submitMutation = useSubmitClaimGroupMutation();
   const createMutation = useCreateClaimGroupMutation();
-  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const showNewFolder = newFolderOpen ?? localOpen;
+  function setShowNewFolder(open: boolean) {
+    if (onNewFolderOpenChange) onNewFolderOpenChange(open);
+    else setLocalOpen(open);
+  }
   const [newFolderTitle, setNewFolderTitle] = useState('');
 
   function handleCreateFolder() {
@@ -64,13 +75,14 @@ export function ClaimFoldersPanel({
     <div className="mb-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-medium text-foreground">Claim folders</h2>
+        {hideHeaderButtons ? null : (
         <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="h-8 gap-1 text-xs"
-            onClick={() => setShowNewFolder((open) => !open)}
+            onClick={() => setShowNewFolder(!showNewFolder)}
           >
             <Plus className="size-3.5" />
             New folder
@@ -85,6 +97,7 @@ export function ClaimFoldersPanel({
             Show all claims
           </Button>
         </div>
+        )}
       </div>
       {showNewFolder ? (
         <div className="mb-3 flex max-w-md gap-2">

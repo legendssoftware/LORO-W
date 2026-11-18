@@ -10,7 +10,7 @@ export function ClientOrdersContent({ client }: { client: ClientProfileData }) {
   const quotations = (client.quotations ?? []) as ClientQuotation[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="orders-board">
       <ClientOrdersKanban quotations={quotations} onSelect={setSelected} />
 
       <QuotationDetailDialog

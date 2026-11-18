@@ -49,3 +49,31 @@ export async function uploadInteractionAttachment(
   );
   return data;
 }
+
+/** GET /interactions/client/:ref */
+export async function getInteractionsByClient(
+  client: AxiosInstance,
+  clientRef: number
+): Promise<InteractionsByLeadResponse> {
+  const { data } = await client.get<InteractionsByLeadResponse>(`/interactions/client/${clientRef}`);
+  return data;
+}
+
+/** PATCH /interactions/:ref */
+export async function updateInteraction(
+  client: AxiosInstance,
+  ref: number,
+  message: string
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(`/interactions/${ref}`, { message });
+  return data;
+}
+
+/** DELETE /interactions/:ref */
+export async function deleteInteraction(
+  client: AxiosInstance,
+  ref: number
+): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(`/interactions/${ref}`);
+  return data;
+}

@@ -60,29 +60,33 @@ export function StoreContent({ client }: { client: ClientProfileData }) {
 
       {productsQuery.isLoading ? (
         <LoadingSpinner wrapperClassName="py-16" />
-      ) : products.length === 0 ? (
-        <p className="text-center text-muted-foreground py-16">No products found.</p>
       ) : (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {products.map((product) => (
-              <ProductCard key={product.uid} product={product} />
-            ))}
-          </div>
-          {productsQuery.hasNextPage ? (
-            <div className="flex justify-center py-6">
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-background border-border"
-                disabled={productsQuery.isFetchingNextPage}
-                onClick={() => productsQuery.fetchNextPage()}
-              >
-                {productsQuery.isFetchingNextPage ? 'Loading…' : 'Load more'}
-              </Button>
-            </div>
-          ) : null}
-        </>
+        <div data-tour="store-catalogue">
+          {products.length === 0 ? (
+            <p className="text-center text-muted-foreground py-16">No products found.</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {products.map((product) => (
+                  <ProductCard key={product.uid} product={product} />
+                ))}
+              </div>
+              {productsQuery.hasNextPage ? (
+                <div className="flex justify-center py-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-background border-border"
+                    disabled={productsQuery.isFetchingNextPage}
+                    onClick={() => productsQuery.fetchNextPage()}
+                  >
+                    {productsQuery.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                  </Button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       )}
     </div>
   );

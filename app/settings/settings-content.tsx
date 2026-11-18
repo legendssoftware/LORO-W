@@ -118,7 +118,8 @@ import { OrganisationBannersSection } from '@/components/settings/organisation-b
 import { CallQualitySettingsSection } from '@/components/settings/call-quality-settings-section';
 import { PerformancePolicySettingsSection } from '@/components/settings/performance-policy-settings-section';
 import { ApifyLeadJobsSection } from '@/components/settings/apify-lead-jobs-section';
-import { canAccessOrgSettings } from '@/lib/access';
+import { canAccessOrgSettings, canManageWebhooks } from '@/lib/access';
+import { WebhooksSection } from '@/components/settings/admin-integration-sections';
 import { FORM_PLACEHOLDERS, ADDRESS_FIELD_PLACEHOLDERS } from '@/lib/form-placeholders';
 
 const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
@@ -209,6 +210,8 @@ function regionalFormStateFromSettings(s: OrganisationSettingsRecord) {
     defaultView: p?.defaultView ?? '',
     itemsPerPage: p?.itemsPerPage ?? 25,
     menuCollapsed: p?.menuCollapsed ?? false,
+    chartLayout: p?.chartLayout ?? 'comfortable',
+    showCookieBanner: p?.showCookieBanner ?? false,
     sendTaskNotifications: s.sendTaskNotifications ?? false,
     createFollowUpTaskOnLeadCreate:
       s.taskReminders?.createFollowUpTaskOnLeadCreate !== false,
@@ -350,7 +353,7 @@ function Row({
   );
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'scrapping' | 'notices' | 'banners' | 'call-quality' | 'performance-policy';
+type SettingsTab = 'profile' | 'appearance' | 'regional' | 'hours' | 'branches' | 'calendar' | 'scrapping' | 'notices' | 'banners' | 'call-quality' | 'performance-policy' | 'webhooks';
 
 function addressPostalCode(addr: BranchListItem['address']): string {
   if (!addr) return '';
@@ -689,6 +692,8 @@ export function SettingsContent() {
     defaultView: '',
     itemsPerPage: 25,
     menuCollapsed: false,
+    chartLayout: 'comfortable' as 'compact' | 'comfortable',
+    showCookieBanner: false,
     sendTaskNotifications: false,
     createFollowUpTaskOnLeadCreate: true,
     reminderOffset24h: true,
@@ -767,6 +772,8 @@ export function SettingsContent() {
         defaultView: regionalForm.defaultView.trim() || undefined,
         itemsPerPage: regionalForm.itemsPerPage,
         menuCollapsed: regionalForm.menuCollapsed,
+        chartLayout: regionalForm.chartLayout,
+        showCookieBanner: regionalForm.showCookieBanner,
       }
     );
 
@@ -1427,6 +1434,9 @@ export function SettingsContent() {
               <PhoneCall className="mr-2 size-4" />
               Call quality
             </Button>
+            {canManageWebhooks(backendUserData?.accessLevel) ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setActiveTab('webhooks')} className={tabBtnClass('webhooks')}>Webhooks</Button>
+            ) : null}
           </div>
 
           {activeTab === 'profile' && (
@@ -1698,23 +1708,49 @@ export function SettingsContent() {
                 <Separator />
                 <Row
                   title="Public dashboard options"
-                  description="Chart layout and cookie banner (coming soon)."
+                  description="Chart layout and cookie banner are saved with organisation preferences."
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Card className="border-dashed p-4 opacity-60">
-                      <p className="text-sm font-medium">Dashboard charts</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Not configured in API yet. Store under settings preferences in a
-                        future release.
-                      </p>
-                    </Card>
-                    <Card className="border-dashed p-4 opacity-60">
-                      <p className="text-sm font-medium">Cookie banner</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Requires product spec and persisted fields.
-                      </p>
-                    </Card>
+                    <div className="space-y-2">
+                      <Label htmlFor="chart-layout">Dashboard charts</Label>
+                      <Select
+                        value={regionalForm.chartLayout}
+                        onValueChange={(value) =>
+                          setRegionalForm((current) => ({
+                            ...current,
+                            chartLayout: value as 'compact' | 'comfortable',
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="chart-layout"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="comfortable">Comfortable</SelectItem>
+                          <SelectItem value="compact">Compact</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cookie-banner">Cookie banner</Label>
+                      <Select
+                        value={regionalForm.showCookieBanner ? 'on' : 'off'}
+                        onValueChange={(value) =>
+                          setRegionalForm((current) => ({
+                            ...current,
+                            showCookieBanner: value === 'on',
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="cookie-banner"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="off">Hidden</SelectItem>
+                          <SelectItem value="on">Shown on Home</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  <Button type="button" className="mt-3" onClick={() => saveSettingsMut.mutate()} disabled={saveSettingsMut.isPending}>
+                    Save dashboard options
+                  </Button>
                 </Row>
               </div>
               <div
@@ -3317,6 +3353,7 @@ export function SettingsContent() {
           {activeTab === 'call-quality' && orgRef && (
             <CallQualitySettingsSection orgRef={orgRef} />
           )}
+          {activeTab === 'webhooks' && canManageWebhooks(backendUserData?.accessLevel) ? <WebhooksSection /> : null}
         </>
       )}
     </div>

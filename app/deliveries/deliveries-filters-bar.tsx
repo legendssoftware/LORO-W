@@ -315,7 +315,7 @@ export function DeliveriesFiltersBar({
   }
 
   return (
-    <div className="mb-4 flex shrink-0 flex-col gap-3">
+    <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="deliveries-toolbar">
       <div className="flex flex-col gap-2 md:hidden">
         <Button
           type="button"
