@@ -12,6 +12,7 @@ import {
   canAccessVisualiser,
   canManageApprovals,
   canManageStaffUsers,
+  canSendAttendanceReports,
   getAllowedRoutes,
 } from './access';
 
@@ -27,6 +28,14 @@ describe('canManageStaffUsers', () => {
   it('blocks standard users', () => {
     expect(canManageStaffUsers('user')).toBe(false);
     expect(canManageStaffUsers(undefined)).toBe(false);
+  });
+
+  it('matches the roles that edit staff attendance', () => {
+    expect(canSendAttendanceReports('admin')).toBe(true);
+    expect(canSendAttendanceReports('manager')).toBe(true);
+    expect(canSendAttendanceReports('owner')).toBe(true);
+    expect(canSendAttendanceReports('hr')).toBe(true);
+    expect(canSendAttendanceReports('user')).toBe(false);
   });
 });
 

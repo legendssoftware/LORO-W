@@ -34,7 +34,7 @@ import {
   staffHasNotClockedInMoreThan,
 } from '@/lib/staff-filter-utils';
 import { clockInModeKeyForFilter } from '@/lib/clock-in-options';
-import { canManageStaffUsers, getReportsDataScope, isStaffDashboardVisible } from '@/lib/access';
+import { canManageStaffUsers, canSendAttendanceReports, getReportsDataScope, isStaffDashboardVisible } from '@/lib/access';
 import { fromDailyOverviewMergeMonthly } from '@/lib/utils/from-daily-overview';
 import type { ReportCardUser, StatusFilter } from '@/lib/types/staff-report-types';
 import {
@@ -47,6 +47,7 @@ import {
 import { ReportUserCard, ReportUserCardSkeleton } from '@/app/staff/components/report-user-card';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import { AddUserModal } from '@/app/staff/components/add-user-modal';
+import { AttendanceReportsBar } from '@/app/staff/components/attendance-reports-bar';
 import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-modal';
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
 import { Button } from '@/components/ui/button';
@@ -91,6 +92,7 @@ export function StaffContent() {
   );
 
   const canAddUser = canManageStaffUsers(profile?.accessLevel);
+  const canSendReports = canSendAttendanceReports(profile?.accessLevel);
   const intakeQuery = useIntakeInvitations({
     enabled: mounted && isTokenReady && canAddUser,
   });
@@ -376,6 +378,17 @@ export function StaffContent() {
               <IntakeInvitationsPanel />
             </div>
           </section>
+        ) : null}
+
+        {canSendReports ? (
+          <AttendanceReportsBar
+            date={dailyQuery.data?.data?.date ?? singleDateStr}
+            totalEmployees={dailyQuery.data?.data?.totalEmployees ?? 0}
+            presentEmployees={dailyQuery.data?.data?.presentEmployees ?? 0}
+            absentEmployees={dailyQuery.data?.data?.absentEmployees ?? 0}
+            attendanceRate={dailyQuery.data?.data?.attendanceRate ?? 0}
+            isLoading={dailyQuery.isLoading}
+          />
         ) : null}
 
         <StaffFiltersBar

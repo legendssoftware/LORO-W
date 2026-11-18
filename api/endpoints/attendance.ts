@@ -225,6 +225,36 @@ export async function getDailyOverview(
     return data;
 }
 
+export type AttendanceReportSendKind = 'morning' | 'evening' | 'absence-daily';
+
+export interface AttendanceReportSendResult {
+    message: string;
+    timestamp?: string;
+    sent?: boolean;
+    reportDate?: string | null;
+    absentCount?: number;
+    missingHrIdCount?: number;
+    missingSalesCodeCount?: number;
+    unusedClerkCount?: number;
+    recipientCount?: number;
+}
+
+/**
+ * POST /att/reports/morning/send, evening/send, or absence-daily/send.
+ * The server returns 200 with an error message when sending fails.
+ */
+export async function sendAttendanceReport(
+    client: AxiosInstance,
+    kind: AttendanceReportSendKind
+): Promise<AttendanceReportSendResult> {
+    const { data } = await client.post<AttendanceReportSendResult>(
+        `/att/reports/${kind}/send`,
+        undefined,
+        { meta: { skipErrorToast: true } }
+    );
+    return data;
+}
+
 /** Response from GET /att/payroll-hours/all. */
 export interface PayrollHoursAllResponse {
     message: string;

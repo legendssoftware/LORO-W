@@ -680,6 +680,11 @@ export function canManageStaffUsers(accessLevel: string | undefined): boolean {
     return level === 'admin' || level === 'manager' || level === 'owner' || level === 'hr';
 }
 
+/** Send morning, evening, and absence attendance reports. Same roles that edit a day's times. */
+export function canSendAttendanceReports(accessLevel: string | undefined): boolean {
+    return canManageStaffUsers(accessLevel);
+}
+
 /**
  * True for admin, manager, owner and other non-restricted roles; false for user and empty.
  */

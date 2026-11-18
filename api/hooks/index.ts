@@ -134,6 +134,7 @@ export { useAttendanceByDateRange } from './use-attendance-range';
 export { usePayrollHoursAll } from './use-payroll-hours-all';
 export { useFuelBalances, useFuelBalance } from './use-fuel-allowance';
 export { useDailyOverview, DAILY_OVERVIEW_QUERY_KEY_PREFIX } from './use-daily-overview';
+export { useSendAttendanceReportMutation } from './use-send-attendance-report';
 export { useCheckIns, useCheckInsListReport, useCheckInStatus } from './use-check-ins';
 export {
   useCheckInsReport,
