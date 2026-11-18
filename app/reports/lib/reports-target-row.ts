@@ -249,6 +249,8 @@ export interface ReportsTargetTravelCell {
   fuelProjectedEndZar?: number | null;
   /** Allowance minus the forecast. */
   fuelProjectedBalanceZar?: number | null;
+  /** Extra rand after the full-period allowance. Null before a pace exists. */
+  fuelAdvanceZar?: number | null;
   /** Upfront pay outcome for the full allowance period. */
   fuelPayDecision?: FuelPayDecision | null;
   /** Rand that can be paid now. Null while the decision is hold. */
@@ -1368,6 +1370,7 @@ export function applyFuelForecastToRow(
         | 'rateZarPerDay'
         | 'projectedEndZar'
         | 'projectedBalanceZar'
+        | 'advanceZar'
         | 'payDecision'
         | 'upfrontPayZar'
       >
@@ -1383,6 +1386,7 @@ export function applyFuelForecastToRow(
       fuelRateZarPerDay: forecast.rateZarPerDay,
       fuelProjectedEndZar: forecast.projectedEndZar,
       fuelProjectedBalanceZar: forecast.projectedBalanceZar,
+      fuelAdvanceZar: forecast.advanceZar,
       fuelPayDecision: forecast.payDecision,
       fuelUpfrontPayZar: forecast.upfrontPayZar,
     },
