@@ -14,6 +14,7 @@ import {
   canAccessReports,
   canAccessUserSettings,
   canAccessWellbeingDashboard,
+  canAccessLeave,
   canAccessMerchandise,
   canAccessStoreOperations,
   canManageApprovals,
@@ -29,6 +30,7 @@ import {
   CheckSquareIcon,
   CpuIcon,
   HandshakeIcon,
+  CalendarIcon,
   KnowledgeIcon,
   LayoutDashboardIcon,
   MapPinIcon,
@@ -99,6 +101,7 @@ const ROUTE_ICONS: Record<
   "/assets": Boxes,
   "/approvals": FileCheck,
   "/payslips": FileText,
+  "/leave": CalendarIcon,
   "/reports": BarChart3,
   "/performance": TrendingUp,
   "/staff": UsersIcon,
@@ -131,6 +134,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
       if (r.path === "/wellbeing") return canAccessWellbeingDashboard(accessLevel);
       if (r.path === "/performance") return canAccessPerformanceTracker(profile);
       if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
+      if (r.path === "/leave") return canAccessLeave(accessLevel);
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
       }

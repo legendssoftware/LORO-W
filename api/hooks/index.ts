@@ -191,7 +191,18 @@ export {
   useUpdateTaskFlagMutation,
   useUpdateTaskFlagItemMutation,
 } from './use-tasks';
-export { useLeaves } from './use-leaves';
+export {
+  useLeaves,
+  useLeaveList,
+  useLeaveHistory,
+  useLeave,
+  useLeaveReport,
+  useCreateLeaveMutation,
+  useApproveLeaveMutation,
+  useRejectLeaveMutation,
+  useCancelLeaveMutation,
+  useDeleteLeaveMutation,
+} from './use-leaves';
 export {
   USER_WARNINGS_QUERY_KEY_PREFIX,
   useUserWarnings,

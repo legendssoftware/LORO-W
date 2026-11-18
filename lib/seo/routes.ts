@@ -204,6 +204,11 @@ export const PAGE_COPY = {
     description:
       'See pending counts, open approval details, and approve or reject employee intake, claims, and other requests from the web inbox.',
   },
+  leave: {
+    title: 'Leave — Request time off and review the inbox',
+    description:
+      'Request leave, filter by person, status, and dates, and approve, reject, or cancel from the same inbox your team already uses on the phone.',
+  },
   payslips: {
     title: 'Payslips — View and download your pay documents',
     description:

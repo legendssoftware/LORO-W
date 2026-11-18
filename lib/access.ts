@@ -310,6 +310,39 @@ export function canManageClaims(accessLevel: string | undefined): boolean {
     return CLAIMS_MANAGE_LEVELS.has(level);
 }
 
+/**
+ * Leave inbox (`/leave`). Matches LeaveController list/create/cancel roles, plus HR.
+ * The server still limits each caller to their own organisation scope.
+ */
+const LEAVE_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+    "hr",
+    "user",
+    "member",
+    "technician",
+    "support",
+    "developer",
+]);
+
+/** True when this access level may open `/leave`. */
+export function canAccessLeave(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level || level === "client") return false;
+    return LEAVE_ACCESS_LEVELS.has(level);
+}
+
+/** Approve, reject, and delete. Matches those routes, plus HR. */
+const LEAVE_DECIDE_LEVELS = new Set<string>(["admin", "owner", "manager", "hr"]);
+
+/** True when this access level may approve, reject, or delete a leave request. */
+export function canDecideLeave(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return LEAVE_DECIDE_LEVELS.has(level);
+}
+
 /** Roles allowed on JournalController (create, list, update). */
 const MERCHANDISE_ACCESS_LEVELS = new Set<string>([
     "admin",
@@ -496,6 +529,14 @@ export function canAccess(
         return canAccessMerchandise(accessLevel);
     }
 
+    // Leave is not a standard-user path. HR and the controller roles are allowed; other roles are not.
+    if (
+        pathNormalized === "/leave" ||
+        pathNormalized.startsWith("/leave/")
+    ) {
+        return canAccessLeave(accessLevel);
+    }
+
     if (pathNormalized === "/staff" || pathNormalized.startsWith("/staff/")) {
         if (hasReportsTeamAssignments(performanceUser)) return true;
     }
@@ -551,6 +592,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
+    { path: "/leave", label: "Leave" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
     { path: "/performance", label: "Performance" },
@@ -669,6 +711,9 @@ export function getAllowedRoutes(
             : []),
         { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
+        ...(canAccessLeave(accessLevel)
+            ? [{ path: "/leave", label: "Leave" }]
+            : []),
         { path: "/planning", label: "Planning" },
     ];
 
@@ -755,6 +800,15 @@ export function getAllowedRoutes(
             visitsIndex >= 0 ? visitsIndex + 1 : restrictedNav.length,
             0,
             { path: "/merchandise", label: "Merchandise" }
+        );
+    }
+
+    if (canAccessLeave(accessLevel) && !restrictedNav.some((r) => r.path === "/leave")) {
+        const payslipsIndex = restrictedNav.findIndex((r) => r.path === "/payslips");
+        restrictedNav.splice(
+            payslipsIndex >= 0 ? payslipsIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/leave", label: "Leave" }
         );
     }
 

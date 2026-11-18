@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   canAccess,
+  canAccessLeave,
+  canDecideLeave,
   canAccessCallRecordings,
   canAccessMerchandise,
   canManageMerchandise,
@@ -231,5 +233,37 @@ describe('canAccessMerchandise', () => {
     expect(canViewOrgMerchandiseList('admin')).toBe(true);
     expect(canViewOrgMerchandiseList('owner')).toBe(false);
     expect(canViewOrgMerchandiseList('manager')).toBe(false);
+  });
+});
+
+describe('leave access', () => {
+  it('lets HR, managers, and a standard user open leave', () => {
+    expect(canAccessLeave('hr')).toBe(true);
+    expect(canAccessLeave('admin')).toBe(true);
+    expect(canAccessLeave('manager')).toBe(true);
+    expect(canAccessLeave('owner')).toBe(true);
+    expect(canAccessLeave('user')).toBe(true);
+    expect(canAccess('/leave', 'user')).toBe(true);
+    expect(canAccess('/leave', 'hr')).toBe(true);
+  });
+
+  it('hides leave from roles the server does not allow', () => {
+    expect(canAccessLeave('cashier')).toBe(false);
+    expect(canAccessLeave('executive')).toBe(false);
+    expect(canAccessLeave('client')).toBe(false);
+    expect(canAccess('/leave', 'cashier')).toBe(false);
+    expect(canAccess('/leave', 'executive')).toBe(false);
+    expect(getAllowedRoutes('cashier').some((route) => route.path === '/leave')).toBe(false);
+  });
+
+  it('shows Leave in the nav and limits approve, reject, and delete', () => {
+    expect(getAllowedRoutes('user').some((route) => route.path === '/leave')).toBe(true);
+    expect(getAllowedRoutes('hr').some((route) => route.path === '/leave')).toBe(true);
+    expect(getAllowedRoutes('admin').some((route) => route.path === '/leave')).toBe(true);
+    expect(canDecideLeave('hr')).toBe(true);
+    expect(canDecideLeave('admin')).toBe(true);
+    expect(canDecideLeave('owner')).toBe(true);
+    expect(canDecideLeave('manager')).toBe(true);
+    expect(canDecideLeave('user')).toBe(false);
   });
 });
