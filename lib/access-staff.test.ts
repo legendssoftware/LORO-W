@@ -3,6 +3,7 @@ import {
   canAccess,
   canAccessLeave,
   canDecideLeave,
+  canAccessWarnings,
   canAccessCallRecordings,
   canAccessMerchandise,
   canManageMerchandise,
@@ -265,5 +266,25 @@ describe('leave access', () => {
     expect(canDecideLeave('owner')).toBe(true);
     expect(canDecideLeave('manager')).toBe(true);
     expect(canDecideLeave('user')).toBe(false);
+  });
+});
+
+describe('warnings access', () => {
+  it('lets HR, admin, manager, and owner open the warnings inbox', () => {
+    expect(canAccessWarnings('hr')).toBe(true);
+    expect(canAccessWarnings('admin')).toBe(true);
+    expect(canAccessWarnings('manager')).toBe(true);
+    expect(canAccessWarnings('owner')).toBe(true);
+    expect(canAccess('/warnings', 'hr')).toBe(true);
+    expect(getAllowedRoutes('hr').some((route) => route.path === '/warnings')).toBe(true);
+    expect(getAllowedRoutes('admin').some((route) => route.path === '/warnings')).toBe(true);
+  });
+
+  it('hides warnings from standard users and other roles', () => {
+    expect(canAccessWarnings('user')).toBe(false);
+    expect(canAccessWarnings('support')).toBe(false);
+    expect(canAccessWarnings('developer')).toBe(false);
+    expect(canAccess('/warnings', 'user')).toBe(false);
+    expect(getAllowedRoutes('user').some((route) => route.path === '/warnings')).toBe(false);
   });
 });

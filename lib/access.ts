@@ -343,6 +343,16 @@ export function canDecideLeave(accessLevel: string | undefined): boolean {
     return LEAVE_DECIDE_LEVELS.has(level);
 }
 
+/** Formal HR warnings inbox (`/warnings`). Matches the warnings page access rule. */
+const WARNINGS_ACCESS_LEVELS = new Set<string>(["admin", "owner", "manager", "hr"]);
+
+/** True when this access level may open `/warnings` and issue, edit, or delete warnings. */
+export function canAccessWarnings(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    if (!level || level === "client") return false;
+    return WARNINGS_ACCESS_LEVELS.has(level);
+}
+
 /** Roles allowed on JournalController (create, list, update). */
 const MERCHANDISE_ACCESS_LEVELS = new Set<string>([
     "admin",
@@ -537,6 +547,13 @@ export function canAccess(
         return canAccessLeave(accessLevel);
     }
 
+    if (
+        pathNormalized === "/warnings" ||
+        pathNormalized.startsWith("/warnings/")
+    ) {
+        return canAccessWarnings(accessLevel);
+    }
+
     if (pathNormalized === "/staff" || pathNormalized.startsWith("/staff/")) {
         if (hasReportsTeamAssignments(performanceUser)) return true;
     }
@@ -593,6 +610,7 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
     { path: "/leave", label: "Leave" },
+    { path: "/warnings", label: "Warnings" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
     { path: "/performance", label: "Performance" },
@@ -714,6 +732,9 @@ export function getAllowedRoutes(
         ...(canAccessLeave(accessLevel)
             ? [{ path: "/leave", label: "Leave" }]
             : []),
+        ...(canAccessWarnings(accessLevel)
+            ? [{ path: "/warnings", label: "Warnings" }]
+            : []),
         { path: "/planning", label: "Planning" },
     ];
 
@@ -809,6 +830,15 @@ export function getAllowedRoutes(
             payslipsIndex >= 0 ? payslipsIndex + 1 : restrictedNav.length,
             0,
             { path: "/leave", label: "Leave" }
+        );
+    }
+
+    if (canAccessWarnings(accessLevel) && !restrictedNav.some((r) => r.path === "/warnings")) {
+        const leaveIndex = restrictedNav.findIndex((r) => r.path === "/leave");
+        restrictedNav.splice(
+            leaveIndex >= 0 ? leaveIndex + 1 : restrictedNav.length,
+            0,
+            { path: "/warnings", label: "Warnings" }
         );
     }
 

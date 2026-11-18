@@ -209,6 +209,11 @@ export const PAGE_COPY = {
     description:
       'Request leave, filter by person, status, and dates, and approve, reject, or cancel from the same inbox your team already uses on the phone.',
   },
+  warnings: {
+    title: 'Warnings — Formal HR warnings for the organisation',
+    description:
+      'Review formal warnings, filter by status, and issue, edit, or delete a record. Warnings issued on a staff profile appear in this list.',
+  },
   payslips: {
     title: 'Payslips — View and download your pay documents',
     description:

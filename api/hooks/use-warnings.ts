@@ -4,9 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
   createWarning,
+  deleteWarning,
   getUserWarnings,
+  getWarning,
+  getWarnings,
   normalizeWarningsList,
   updateWarning,
+  type GetWarningsParams,
 } from '@/api/endpoints/warnings';
 import type {
   CreateWarningPayload,
@@ -17,9 +21,21 @@ import { getErrorStatus, getQueryErrorMessage } from '@/lib/api/query-error';
 import toast from 'react-hot-toast';
 
 export const USER_WARNINGS_QUERY_KEY_PREFIX = ['warnings', 'user'] as const;
+export const WARNINGS_QUERY_KEY = ['warnings'] as const;
 
 function userWarningsQueryKey(userRef: string | number) {
   return [...USER_WARNINGS_QUERY_KEY_PREFIX, String(userRef)] as const;
+}
+
+/** Staff-profile creates must refresh the organisation inbox as well as that profile. */
+function invalidateWarningQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userRef?: string | number | null
+) {
+  if (userRef != null) {
+    queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
+  }
+  queryClient.invalidateQueries({ queryKey: WARNINGS_QUERY_KEY });
 }
 
 function isFeatureAccessError(err: unknown): boolean {
@@ -67,10 +83,7 @@ export function useCreateWarningMutation(userRef: string | number | null | undef
   return useMutation({
     mutationFn: (payload: CreateWarningPayload) => createWarning(client, payload),
     onSuccess: (res) => {
-      if (userRef != null) {
-        queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
-      }
-      queryClient.invalidateQueries({ queryKey: USER_WARNINGS_QUERY_KEY_PREFIX });
+      invalidateWarningQueries(queryClient, userRef);
       toast.success(res.message || 'Warning issued');
     },
     onError: (err) => {
@@ -91,10 +104,7 @@ export function useUpdateWarningMutation(userRef: string | number | null | undef
       payload: UpdateWarningPayload;
     }) => updateWarning(client, warningUid, payload),
     onSuccess: (res) => {
-      if (userRef != null) {
-        queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
-      }
-      queryClient.invalidateQueries({ queryKey: USER_WARNINGS_QUERY_KEY_PREFIX });
+      invalidateWarningQueries(queryClient, userRef);
       toast.success(res.message || 'Warning updated');
     },
     onError: (err) => {
@@ -125,10 +135,7 @@ export function useRevokeWarningsMutation(userRef: string | number | null | unde
       return { succeeded, failed: failed.length };
     },
     onSuccess: (res) => {
-      if (userRef != null) {
-        queryClient.invalidateQueries({ queryKey: userWarningsQueryKey(userRef) });
-      }
-      queryClient.invalidateQueries({ queryKey: USER_WARNINGS_QUERY_KEY_PREFIX });
+      invalidateWarningQueries(queryClient, userRef);
       if (res.failed > 0) {
         toast.success(
           `Cleared ${res.succeeded} warning${res.succeeded === 1 ? '' : 's'}; ${res.failed} failed`
@@ -141,6 +148,44 @@ export function useRevokeWarningsMutation(userRef: string | number | null | unde
     },
     onError: (err) => {
       toast.error(getQueryErrorMessage(err, 'Failed to clear warnings'));
+    },
+  });
+}
+
+/** GET /warnings with status filter and pagination. */
+export function useWarningsList(params: GetWarningsParams, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...WARNINGS_QUERY_KEY, 'list', params],
+    queryFn: () => getWarnings(client, params),
+    enabled: options?.enabled !== false,
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** GET /warnings/:ref. */
+export function useWarning(uid: number | null, options?: { enabled?: boolean }) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: [...WARNINGS_QUERY_KEY, 'detail', uid],
+    queryFn: () => getWarning(client, uid!),
+    enabled: options?.enabled !== false && uid != null,
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useDeleteWarningMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (warningUid: number) => deleteWarning(client, warningUid),
+    onSuccess: (res) => {
+      invalidateWarningQueries(queryClient);
+      toast.success(res.message || 'Warning deleted');
+    },
+    onError: (err) => {
+      toast.error(getQueryErrorMessage(err, 'Failed to delete warning'));
     },
   });
 }

@@ -3,9 +3,44 @@ import type {
   CreateWarningPayload,
   UpdateWarningPayload,
   UserWarningsResponse,
+  WarningDetailResponse,
   WarningMutationResponse,
   WarningRecord,
+  WarningsListResponse,
 } from '@/api/types/warnings';
+
+const silent = { meta: { skipErrorToast: true } } as const;
+
+export interface GetWarningsParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  severity?: string;
+}
+
+/** GET /warnings — organisation list. Status and severity are applied on the server. */
+export async function getWarnings(
+  client: AxiosInstance,
+  params: GetWarningsParams = {}
+): Promise<WarningsListResponse> {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  if (params.status) search.set('status', params.status);
+  if (params.severity) search.set('severity', params.severity);
+  const qs = search.toString();
+  const { data } = await client.get<WarningsListResponse>(`/warnings${qs ? `?${qs}` : ''}`, silent);
+  return data;
+}
+
+/** GET /warnings/:ref — one warning. `ref` is the numeric uid. */
+export async function getWarning(
+  client: AxiosInstance,
+  warningUid: number
+): Promise<WarningDetailResponse> {
+  const { data } = await client.get<WarningDetailResponse>(`/warnings/${warningUid}`, silent);
+  return data;
+}
 
 /**
  * GET /warnings/user/:ref — warnings for a user (uid or clerkUserId).
@@ -15,9 +50,7 @@ export async function getUserWarnings(
   client: AxiosInstance,
   userRef: string | number
 ): Promise<UserWarningsResponse> {
-  const { data } = await client.get<UserWarningsResponse>(
-    `/warnings/user/${userRef}`
-  );
+  const { data } = await client.get<UserWarningsResponse>(`/warnings/user/${userRef}`, silent);
   return data;
 }
 
@@ -57,7 +90,7 @@ export async function updateWarning(
 }
 
 /**
- * DELETE /warnings/:ref — hard delete (ADMIN / OWNER only).
+ * DELETE /warnings/:ref — HR, admin, manager, and owner.
  */
 export async function deleteWarning(
   client: AxiosInstance,
@@ -69,12 +102,13 @@ export async function deleteWarning(
   return data;
 }
 
-/** Normalize list payloads whether nested or flat. */
+/** Rows from GET /warnings or GET /warnings/user/:ref, either shape. */
 export function normalizeWarningsList(
-  res: UserWarningsResponse | { data?: { warnings?: WarningRecord[] }; warnings?: WarningRecord[] }
+  res: UserWarningsResponse | WarningsListResponse | { data?: WarningRecord[] | { warnings?: WarningRecord[] }; warnings?: WarningRecord[] }
 ): WarningRecord[] {
   if (Array.isArray(res.warnings)) return res.warnings;
-  const nested = (res as { data?: { warnings?: WarningRecord[] } }).data?.warnings;
+  if (Array.isArray(res.data)) return res.data;
+  const nested = res.data?.warnings;
   if (Array.isArray(nested)) return nested;
   return [];
 }

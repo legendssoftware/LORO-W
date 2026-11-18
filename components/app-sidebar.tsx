@@ -15,6 +15,7 @@ import {
   canAccessUserSettings,
   canAccessWellbeingDashboard,
   canAccessLeave,
+  canAccessWarnings,
   canAccessMerchandise,
   canAccessStoreOperations,
   canManageApprovals,
@@ -59,6 +60,7 @@ import {
   Phone,
   HeartPulse,
   Notebook,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
@@ -102,6 +104,7 @@ const ROUTE_ICONS: Record<
   "/approvals": FileCheck,
   "/payslips": FileText,
   "/leave": CalendarIcon,
+  "/warnings": AlertTriangle,
   "/reports": BarChart3,
   "/performance": TrendingUp,
   "/staff": UsersIcon,
@@ -135,6 +138,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
       if (r.path === "/performance") return canAccessPerformanceTracker(profile);
       if (r.path === "/approvals") return canManageApprovals(accessLevel, approvableTypes);
       if (r.path === "/leave") return canAccessLeave(accessLevel);
+      if (r.path === "/warnings") return canAccessWarnings(accessLevel);
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
       }
