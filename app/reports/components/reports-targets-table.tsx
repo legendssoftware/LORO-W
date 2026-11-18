@@ -248,7 +248,12 @@ function FuelMetricCell({ row }: { row: ReportsTargetRow }) {
       ) : null}
       {cell.fuelPayDecision ? (
         <p className="text-[10px] tabular-nums text-muted-foreground">
-          {fuelUpfrontLabel(cell.fuelPayDecision, cell.fuelUpfrontPayZar ?? null, formatRand)}
+          {fuelUpfrontLabel(
+            cell.fuelPayDecision,
+            cell.fuelUpfrontPayZar ?? null,
+            cell.fuelAdvanceZar ?? null,
+            formatRand
+          )}
         </p>
       ) : null}
     </div>

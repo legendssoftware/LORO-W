@@ -21,25 +21,36 @@ function formatLitres(value: number): string {
 }
 
 /**
- * Sentence for the upfront amount.
+ * Sentence for the upfront amount and any advance after the allowance.
  * @param decision Pay outcome from the fuel balance.
  * @param upfrontPayZar Rand to pay now. Null while the decision is hold.
+ * @param advanceZar Extra rand after the allowance. Null before a pace exists.
  * @param formatAmount Existing rand formatter for the surface.
  */
 export function fuelUpfrontLabel(
   decision: FuelPayDecision,
   upfrontPayZar: number | null,
+  advanceZar: number | null,
   formatAmount: (value: number) => string
 ): string {
+  const advance = advanceZar != null && advanceZar > 0 ? advanceZar : 0;
   switch (decision) {
     case 'pay-projected':
-      return upfrontPayZar != null ? `Pay ${formatAmount(upfrontPayZar)} upfront` : 'Too early to pay';
+      return upfrontPayZar != null
+        ? `Pay ${formatAmount(upfrontPayZar)} upfront. No advance.`
+        : 'Too early to pay';
     case 'pay-full':
-      return 'Pay the full allowance';
+      return advance > 0
+        ? `Pay the full allowance. Needs ${formatAmount(advance)} after it runs out.`
+        : 'Pay the full allowance. No advance.';
     case 'hold':
-      return 'Too early to pay';
+      return advance > 0
+        ? `Needs ${formatAmount(advance)} after the allowance`
+        : 'Too early to pay';
     case 'overspent':
-      return 'Allowance already used';
+      return advance > 0
+        ? `Allowance used. Needs ${formatAmount(advance)} more.`
+        : 'Allowance used. No advance.';
     default: {
       const unreachable: never = decision;
       return unreachable;
@@ -119,6 +130,14 @@ export function FuelAllowanceMeter({
           On pace for {formatFuelZar(balance.projectedEndZar)}
         </p>
       ) : null}
+      <p className={cn('text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}>
+        {fuelUpfrontLabel(
+          balance.payDecision,
+          balance.upfrontPayZar,
+          balance.advanceZar,
+          formatFuelZar
+        )}
+      </p>
     </div>
   );
 }

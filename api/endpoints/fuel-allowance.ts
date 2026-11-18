@@ -35,6 +35,8 @@ export interface FuelAllowanceBalance {
   projectedEndZar: number | null;
   /** Allowance minus the projected end. Null when no allowance is set. */
   projectedBalanceZar: number | null;
+  /** Extra rand after the allowance. Null before a pace exists. 0 when the pace stays under it. */
+  advanceZar: number | null;
   payDecision: FuelPayDecision;
   /** Null while the decision is hold. */
   upfrontPayZar: number | null;
