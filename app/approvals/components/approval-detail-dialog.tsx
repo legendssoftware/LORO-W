@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import {
   Calendar,
@@ -15,7 +16,17 @@ import {
   X,
 } from 'lucide-react';
 import type { Approval, ApprovalSourceItem } from '@/api/types/approvals';
+import { useApiClient } from '@/api/hooks/use-api-client';
 import { useApproval, usePerformApprovalAction } from '@/api/hooks/use-approvals';
+import {
+  archiveApproval,
+  bulkApprovalAction,
+  getApprovalHistory,
+  getApprovalSignatures,
+  signApproval,
+  submitApproval,
+  withdrawApproval,
+} from '@/api/endpoints/approvals';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -382,6 +393,8 @@ export function ApprovalDetailDialog({
           </div>
         ) : null}
 
+        {record?.uid ? <ApprovalLifecycleActions approvalId={record.uid} /> : null}
+
         {isActionable ? (
           <DialogFooter className="gap-2 sm:justify-end">
             <Button
@@ -414,5 +427,28 @@ export function ApprovalDetailDialog({
         ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ApprovalLifecycleActions({ approvalId }: { approvalId: number }) {
+  const client = useApiClient();
+  async function run(label: string, task: () => Promise<unknown>) {
+    try {
+      const result = await task();
+      toast.success(typeof result === 'object' && result && 'message' in result ? String((result as { message?: string }).message) : label);
+    } catch {
+      toast.error(`Could not ${label.toLowerCase()}`);
+    }
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Submitted', () => submitApproval(client, approvalId))}>Submit</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Signed', () => signApproval(client, approvalId))}>Sign</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Withdrawn', () => withdrawApproval(client, approvalId))}>Withdraw</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Archived', () => archiveApproval(client, approvalId))}>Archive</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('History loaded', () => getApprovalHistory(client, approvalId))}>History</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Signatures loaded', () => getApprovalSignatures(client, approvalId))}>Signatures</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run('Bulk action sent', () => bulkApprovalAction(client, [approvalId], 'approve'))}>Bulk approve</Button>
+    </div>
   );
 }

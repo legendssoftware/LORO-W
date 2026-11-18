@@ -60,6 +60,7 @@ export function ClientProjectsContent({ client }: { client: ClientProfileData })
         </div>
         <Button
           type="button"
+          data-tour="projects-create"
           className={cn(
             'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
             'bg-violet-600 text-white hover:bg-violet-700',
@@ -73,13 +74,16 @@ export function ClientProjectsContent({ client }: { client: ClientProfileData })
         </Button>
       </div>
 
+      <div data-tour="projects-filters">
       <ProjectsFiltersBar
         searchInput={searchInput}
         onSearchChange={setSearchInput}
         statusFilter={statusFilter}
         onStatusChange={setStatusFilter}
       />
+      </div>
 
+      <div data-tour="projects-grid">
       {filteredProjects.length === 0 ? (
         <p className="text-center text-muted-foreground py-16 text-sm">
           {allProjects.length === 0
@@ -97,6 +101,7 @@ export function ClientProjectsContent({ client }: { client: ClientProfileData })
           ))}
         </div>
       )}
+      </div>
 
       <ProjectDetailDialog
         project={selected}

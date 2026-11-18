@@ -158,7 +158,7 @@ export function PayslipsContent() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
-        <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" data-tour="payslips-page-header">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
               Payslips
@@ -180,7 +180,7 @@ export function PayslipsContent() {
           />
         ) : null}
 
-        <div className="shrink-0">
+        <div className="shrink-0" data-tour="payslips-filters">
           <PayslipsFiltersBar
             startDate={startDate}
             endDate={endDate}
@@ -193,7 +193,7 @@ export function PayslipsContent() {
           />
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card" data-tour="payslips-table">
           <PayslipsTable
             payslips={payslips}
             isLoading={userPayslipsQuery.isLoading}

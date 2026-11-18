@@ -6,6 +6,9 @@ import {
   useTaskFlags,
   useCreateTaskFlagMutation,
   useUpdateTaskFlagItemMutation,
+  useCommentTaskFlagMutation,
+  useDeleteTaskFlagMutation,
+  useTaskFlagReports,
 } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +33,7 @@ interface TaskFlagsSectionProps {
 
 export function TaskFlagsSection({ taskId }: TaskFlagsSectionProps) {
   const flagsQuery = useTaskFlags(taskId);
+  const reportsQuery = useTaskFlagReports();
   const createMutation = useCreateTaskFlagMutation();
   const updateItemMutation = useUpdateTaskFlagItemMutation();
   const [createOpen, setCreateOpen] = useState(false);
@@ -165,6 +169,25 @@ export function TaskFlagsSection({ taskId }: TaskFlagsSectionProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="rounded-md border p-3">
+        <p className="text-xs font-medium">Flags report</p>
+        {reportsQuery.isLoading ? (
+          <p className="mt-1 text-xs text-muted-foreground">Loading report…</p>
+        ) : reportsQuery.isError ? (
+          <p className="mt-1 text-xs text-destructive">Could not load the flags report.</p>
+        ) : (reportsQuery.data?.data.length ?? 0) === 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">No flags in the report.</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-xs">
+            {reportsQuery.data?.data.map((row) => (
+              <li key={`${row.uid ?? row.title}-${row.status}`}>
+                {row.title ?? 'Flag'} · {row.status ?? '—'}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -182,9 +205,25 @@ function FlagCard({
     current: TaskFlagItemStatusValue
   ) => void;
 }) {
+  const [comment, setComment] = useState('');
+  const commentMutation = useCommentTaskFlagMutation();
+  const deleteMutation = useDeleteTaskFlagMutation();
+
   return (
     <div className="rounded-md border p-3">
-      <p className="text-sm font-medium">{flag.title}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium">{flag.title}</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-xs"
+          disabled={deleteMutation.isPending}
+          onClick={() => void deleteMutation.mutateAsync({ flagId: flag.uid, taskId })}
+        >
+          Delete
+        </Button>
+      </div>
       <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
         {flag.description}
       </p>
@@ -215,6 +254,28 @@ function FlagCard({
           ))}
         </ul>
       )}
+      <div className="mt-2 flex gap-2">
+        <Input
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder="Comment"
+          className="h-8"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={!comment.trim() || commentMutation.isPending}
+          onClick={() => {
+            void commentMutation.mutateAsync({ flagId: flag.uid, taskId, content: comment.trim() }).then(() => {
+              setComment('');
+              toast.success('Comment added');
+            });
+          }}
+        >
+          Comment
+        </Button>
+      </div>
     </div>
   );
 }

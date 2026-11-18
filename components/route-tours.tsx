@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import type { ComponentType } from 'react';
+import { hasRegistryPageTour } from '@/lib/page-tour-registry';
 
 const DashboardAttendanceTour = dynamic(() =>
   import('@/components/dashboard-attendance-tour').then((mod) => mod.DashboardAttendanceTour),
@@ -49,6 +50,9 @@ const AssetsTour = dynamic(() =>
 const MerchandiseTour = dynamic(() =>
   import('@/components/merchandise-tour').then((mod) => mod.MerchandiseTour),
 );
+const RegistryPageTour = dynamic(() =>
+  import('@/components/registry-page-tour').then((mod) => mod.RegistryPageTour),
+);
 
 const TOURS_BY_PATH: Record<string, ComponentType> = {
   '/dashboard': DashboardAttendanceTour,
@@ -74,6 +78,7 @@ const TOURS_BY_PATH: Record<string, ComponentType> = {
 export function RouteTours() {
   const pathname = usePathname() ?? '';
   const Tour = TOURS_BY_PATH[pathname];
-  if (!Tour) return null;
-  return <Tour />;
+  if (Tour) return <Tour />;
+  if (hasRegistryPageTour(pathname)) return <RegistryPageTour key={pathname} />;
+  return null;
 }

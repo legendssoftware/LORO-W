@@ -69,6 +69,33 @@ export async function deleteWarning(
   return data;
 }
 
+export interface GetWarningsParams {
+  status?: string;
+  severity?: string;
+  ownerId?: number;
+  page?: number;
+  limit?: number;
+}
+
+/** GET /warnings — organisation inbox. */
+export async function getWarnings(
+  client: AxiosInstance,
+  params: GetWarningsParams = {}
+): Promise<{ warnings: WarningRecord[]; message?: string }> {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  if (params.severity) search.set('severity', params.severity);
+  if (params.ownerId != null) search.set('ownerId', String(params.ownerId));
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  const qs = search.toString();
+  const { data } = await client.get<
+    | WarningRecord[]
+    | { warnings?: WarningRecord[]; data?: WarningRecord[] | { warnings?: WarningRecord[] } }
+  >(`/warnings${qs ? `?${qs}` : ''}`);
+  return { warnings: normalizeWarningsList(data as UserWarningsResponse) };
+}
+
 /** Normalize list payloads whether nested or flat. */
 export function normalizeWarningsList(
   res: UserWarningsResponse | { data?: { warnings?: WarningRecord[] }; warnings?: WarningRecord[] }

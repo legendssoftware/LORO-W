@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon, Filter, LayoutGrid, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
@@ -61,6 +61,7 @@ export interface CallsFiltersBarProps {
   onRangeChange: (range: { start: Date; end: Date }) => void;
   onUseAllTimeChange: (value: boolean) => void;
   onResetDateRange: () => void;
+  actions?: ReactNode;
 }
 
 const DIRECTION_FILTER_OPTIONS: SearchableOptionRow[] = [
@@ -392,6 +393,7 @@ export function CallsFiltersBar({
   onRangeChange,
   onUseAllTimeChange,
   onResetDateRange,
+  actions,
 }: CallsFiltersBarProps) {
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
@@ -467,7 +469,10 @@ export function CallsFiltersBar({
             Filter
           </Button>
         </div>
-        {renderSearchField('w-full')}
+        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto">
+          {actions}
+          {renderSearchField('w-full')}
+        </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
@@ -501,7 +506,10 @@ export function CallsFiltersBar({
             <CallsFilterControls {...filterProps} layout="row" />
           </div>
         </div>
-        <div className="flex shrink-0 flex-nowrap items-center gap-2">{renderSearchField()}</div>
+        <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {actions}
+          {renderSearchField()}
+        </div>
       </div>
     </div>
   );

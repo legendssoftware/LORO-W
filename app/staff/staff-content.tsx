@@ -48,6 +48,10 @@ import { ReportUserCard, ReportUserCardSkeleton } from '@/app/staff/components/r
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import { AddUserModal } from '@/app/staff/components/add-user-modal';
 import { SendIntakeLinkModal } from '@/app/staff/components/send-intake-link-modal';
+import {
+  AttendanceReportButtons,
+  AttendanceReportOverview,
+} from '@/app/staff/components/attendance-report-sends';
 import { IntakeInvitationsPanel } from '@/app/staff/components/intake-invitations-panel';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Link2 } from 'lucide-react';
@@ -367,6 +371,8 @@ export function StaffContent() {
           </div>
         </div>
 
+        <AttendanceReportOverview overview={dailyQuery.data?.data} />
+
         {canAddUser && hasPendingIntakeLinks ? (
           <section className="shrink-0 mb-6 rounded-lg border">
             <div className="px-4 py-3">
@@ -404,7 +410,9 @@ export function StaffContent() {
           countryPickerOpen={countryPickerOpen}
           onCountryPickerOpenChange={setCountryPickerOpen}
           actions={
-            canAddUser ? (
+            <>
+              <AttendanceReportButtons />
+              {canAddUser ? (
               <>
                 <Button
                   variant="success"
@@ -428,7 +436,8 @@ export function StaffContent() {
                   Add user
                 </Button>
               </>
-            ) : null
+              ) : null}
+            </>
           }
         />
 

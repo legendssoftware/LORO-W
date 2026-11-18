@@ -142,6 +142,7 @@ export function ApprovalsFiltersBar({
   onStatusChange,
   typeFilter,
   onTypeChange,
+  actions,
 }: {
   searchInput: string;
   onSearchChange: (value: string) => void;
@@ -149,6 +150,7 @@ export function ApprovalsFiltersBar({
   onStatusChange: (value: string) => void;
   typeFilter: string;
   onTypeChange: (value: string) => void;
+  actions?: React.ReactNode;
 }) {
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
@@ -207,6 +209,7 @@ export function ApprovalsFiltersBar({
           Filter
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {actions}
           {renderSearchField()}
         </div>
       </div>
@@ -230,6 +233,7 @@ export function ApprovalsFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
+          {actions}
           {renderSearchField()}
         </div>
       </div>

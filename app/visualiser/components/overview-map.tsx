@@ -29,6 +29,7 @@ import {
   JourneyPointsLayer,
   type JourneyPointClickPayload,
 } from '@/app/visualiser/components/journey-points-layer';
+import { GeofenceAreasLayer } from '@/app/visualiser/components/geofence-areas-layer';
 import { JourneyPointPopupContent } from '@/app/visualiser/components/journey-point-popup';
 import { JourneyLastKnownPopupContent } from '@/app/visualiser/components/journey-last-known-popup';
 import { LayeredLogoClusters } from '@/app/visualiser/components/logo-cluster-layer';
@@ -1448,6 +1449,7 @@ export function OverviewMap({
           );
         })}
 
+        <GeofenceAreasLayer />
         {journeyRoutes.map((route) =>
           route.points.length > 0 ? (
             <JourneyPointsLayer

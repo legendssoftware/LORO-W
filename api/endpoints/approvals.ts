@@ -62,3 +62,52 @@ export async function performApprovalAction(
   const { data } = await client.post(`/approvals/${uid}/action`, body);
   return data;
 }
+
+export async function createApproval(client: AxiosInstance, body: { title: string; type: string }): Promise<unknown> {
+  const { data } = await client.post('/approvals', body);
+  return data;
+}
+
+export async function submitApproval(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.post(`/approvals/${id}/submit`);
+  return data;
+}
+
+export async function signApproval(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.post(`/approvals/${id}/sign`, { signatureType: 'DRAWN', signatureUrl: 'web-sign' });
+  return data;
+}
+
+export async function withdrawApproval(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.post(`/approvals/${id}/withdraw`);
+  return data;
+}
+
+export async function archiveApproval(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.post(`/approvals/${id}/archive`);
+  return data;
+}
+
+export async function getApprovalHistory(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.get(`/approvals/${id}/history`);
+  return data;
+}
+
+export async function getApprovalSignatures(client: AxiosInstance, id: number): Promise<unknown> {
+  const { data } = await client.get(`/approvals/${id}/signatures`);
+  return data;
+}
+
+export async function bulkApprovalAction(
+  client: AxiosInstance,
+  approvalUids: number[],
+  action: string
+): Promise<unknown> {
+  const { data } = await client.post('/approvals/bulk-action', { approvalUids, action });
+  return data;
+}
+
+export async function getMyApprovalRequests(client: AxiosInstance): Promise<unknown> {
+  const { data } = await client.get('/approvals/my-requests');
+  return data;
+}

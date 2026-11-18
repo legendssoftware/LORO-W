@@ -59,11 +59,11 @@ const sendIntakeSchema = z
         path: ['prefillEmail'],
       });
     }
-    if (values.channel === 'whatsapp') {
+    if (values.channel === 'whatsapp' && !values.phone?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'WhatsApp delivery is coming soon',
-        path: ['channel'],
+        message: 'A phone number is required to send the intake link on WhatsApp',
+        path: ['phone'],
       });
     }
   });
@@ -123,6 +123,10 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
       setGeneratedUrl(result.invitation.intakeUrl);
       if (result.invitation.emailSent) {
         toast.success('Intake link created and email sent');
+      } else if (result.invitation.whatsappSent) {
+        toast.success('Intake link created and sent on WhatsApp');
+      } else if (values.channel === 'whatsapp') {
+        toast.success('Intake link created. WhatsApp was not sent — copy the link.');
       } else {
         toast.success('Intake link created — copy and share with the employee');
       }
@@ -174,9 +178,7 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
                     <SelectContent>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="link">Copy link only</SelectItem>
-                      <SelectItem value="whatsapp" disabled>
-                        WhatsApp (coming soon)
-                      </SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -213,7 +215,9 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cell number (optional)</FormLabel>
+                  <FormLabel>
+                    Cell number{form.watch('channel') === 'whatsapp' ? ' *' : ' (optional)'}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -223,7 +227,7 @@ export function SendIntakeLinkModal({ open, onOpenChange }: SendIntakeLinkModalP
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Saved for WhatsApp delivery later. Not sent today.
+                    Required for WhatsApp. The server sends an approved template when one is configured.
                   </p>
                 </FormItem>
               )}
