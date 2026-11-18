@@ -40,7 +40,12 @@ export function FuelAllowanceReadout({ userRef }: { userRef: string }) {
       {pace ? <p className="text-xs text-muted-foreground">{pace}</p> : null}
       {balance.payDecision ? (
         <p className="text-xs text-foreground">
-          {fuelUpfrontLabel(balance.payDecision, balance.upfrontPayZar, formatFuelZar)}
+          {fuelUpfrontLabel(
+            balance.payDecision,
+            balance.upfrontPayZar,
+            balance.advanceZar,
+            formatFuelZar
+          )}
         </p>
       ) : null}
       <p className="text-xs text-muted-foreground">
