@@ -14,9 +14,21 @@ import {
   canAccessReports,
   canAccessUserSettings,
   canAccessWellbeingDashboard,
+  canAccessDocuments,
+  canAccessFeedback,
+  canAccessGeofences,
+  canAccessLeave,
+  canAccessLoyalty,
   canAccessMerchandise,
+  canAccessNews,
+  canAccessProductsAdmin,
+  canAccessResellers,
+  canAccessRewards,
   canAccessStoreOperations,
+  canAccessUsage,
+  canAccessWarnings,
   canManageApprovals,
+  canManageSalesTips,
   getAllowedRoutes,
   getClientSidebarRoutes,
   isClientPortalUser,
@@ -57,6 +69,17 @@ import {
   Phone,
   HeartPulse,
   Notebook,
+  CalendarOff,
+  AlertTriangle,
+  Files,
+  MessageSquare,
+  MapPinned,
+  Gauge,
+  PackagePlus,
+  Newspaper,
+  Lightbulb,
+  Trophy,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaqModal } from "@/components/faq-modal";
@@ -99,6 +122,18 @@ const ROUTE_ICONS: Record<
   "/assets": Boxes,
   "/approvals": FileCheck,
   "/payslips": FileText,
+  "/leave": CalendarOff,
+  "/warnings": AlertTriangle,
+  "/documents": Files,
+  "/feedback": MessageSquare,
+  "/geofences": MapPinned,
+  "/usage": Gauge,
+  "/products": PackagePlus,
+  "/news": Newspaper,
+  "/sales-tips": Lightbulb,
+  "/resellers": Store,
+  "/rewards": Trophy,
+  "/loyalty": Gift,
   "/reports": BarChart3,
   "/performance": TrendingUp,
   "/staff": UsersIcon,
@@ -134,6 +169,18 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
       if (r.path === "/competitors" || r.path === "/visualiser") {
         return canAccessCompetitors(accessLevel);
       }
+      if (r.path === "/leave") return canAccessLeave(accessLevel);
+      if (r.path === "/warnings") return canAccessWarnings(accessLevel);
+      if (r.path === "/documents") return canAccessDocuments(accessLevel);
+      if (r.path === "/feedback") return canAccessFeedback(accessLevel);
+      if (r.path === "/geofences") return canAccessGeofences(accessLevel);
+      if (r.path === "/usage") return canAccessUsage(accessLevel);
+      if (r.path === "/products") return canAccessProductsAdmin(accessLevel);
+      if (r.path === "/news") return canAccessNews(accessLevel);
+      if (r.path === "/sales-tips") return canManageSalesTips(accessLevel);
+      if (r.path === "/resellers") return canAccessResellers(accessLevel);
+      if (r.path === "/rewards") return canAccessRewards(accessLevel);
+      if (r.path === "/loyalty") return canAccessLoyalty(accessLevel);
       return true;
     });
     return [

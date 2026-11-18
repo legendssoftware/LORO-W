@@ -25,7 +25,7 @@ export function TakeoffListContent() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3" data-tour="takeoff-page-header">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">System takeoff</h1>
           <p className="text-muted-foreground text-sm">
@@ -34,6 +34,7 @@ export function TakeoffListContent() {
         </div>
         <Button
           type="button"
+          data-tour="takeoff-create"
           className={cn(
             'border-0 bg-violet-600 text-white hover:bg-violet-700',
             'dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500',
@@ -47,6 +48,7 @@ export function TakeoffListContent() {
 
       <CreateTakeoffDialog open={createOpen} onOpenChange={setCreateOpen} />
 
+      <div {...(query.isLoading ? {} : { 'data-tour': 'takeoff-list' })}>
       {query.isLoading ? <LoadingSpinner /> : null}
       {query.isError ? (
         <p className="text-destructive text-sm">{getQueryErrorMessage(query.error)}</p>
@@ -84,6 +86,7 @@ export function TakeoffListContent() {
           </TableBody>
         </Table>
       ) : null}
+      </div>
     </div>
   );
 }

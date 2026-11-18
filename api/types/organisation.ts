@@ -97,6 +97,8 @@ export interface OrganisationSettingsRecord {
     itemsPerPage?: number;
     theme?: 'light' | 'dark' | 'system';
     menuCollapsed?: boolean;
+    chartLayout?: 'compact' | 'comfortable';
+    showCookieBanner?: boolean;
   } | null;
   sendTaskNotifications?: boolean;
   feedbackTokenExpiryDays?: number;

@@ -225,6 +225,39 @@ export async function getDailyOverview(
     return data;
 }
 
+/** POST /att/reports/morning/send */
+export async function sendMorningAttendanceReport(
+  client: AxiosInstance
+): Promise<{ message: string; timestamp?: string }> {
+  const { data } = await client.post<{ message: string; timestamp?: string }>(
+    '/att/reports/morning/send'
+  );
+  return data;
+}
+
+/** POST /att/reports/evening/send */
+export async function sendEveningAttendanceReport(
+  client: AxiosInstance
+): Promise<{ message: string; timestamp?: string }> {
+  const { data } = await client.post<{ message: string; timestamp?: string }>(
+    '/att/reports/evening/send'
+  );
+  return data;
+}
+
+/** POST /att/reports/absence-daily/send */
+export async function sendAbsenceAttendanceReport(
+  client: AxiosInstance
+): Promise<{ message: string; sent?: number; absentCount?: number; timestamp?: string }> {
+  const { data } = await client.post<{
+    message: string;
+    sent?: number;
+    absentCount?: number;
+    timestamp?: string;
+  }>('/att/reports/absence-daily/send');
+  return data;
+}
+
 /** Response from GET /att/payroll-hours/all. */
 export interface PayrollHoursAllResponse {
     message: string;

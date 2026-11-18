@@ -217,12 +217,14 @@ export function ClaimsContent() {
           </p>
         </div>
 
-        <ClaimsSummaryCards
-          summary={summaryQuery.data}
-          isLoading={summaryQuery.isLoading}
-          activeStatus={statusFilter}
-          onStatusChange={setStatusFilter}
-        />
+        <div className="mb-6" data-tour="claims-summary">
+          <ClaimsSummaryCards
+            summary={summaryQuery.data}
+            isLoading={summaryQuery.isLoading}
+            activeStatus={statusFilter}
+            onStatusChange={setStatusFilter}
+          />
+        </div>
 
         <ClaimsFiltersBar
           searchInput={searchInput}
@@ -282,13 +284,15 @@ export function ClaimsContent() {
           }
         />
 
-        <ClaimFoldersPanel
-          groups={groups}
-          byGroup={summaryQuery.data?.byGroup}
-          isLoading={groupsQuery.isLoading}
-          activeGroupUid={groupFilter}
-          onSelectGroup={handleSelectGroup}
-        />
+        <div data-tour="claims-folders">
+          <ClaimFoldersPanel
+            groups={groups}
+            byGroup={summaryQuery.data?.byGroup}
+            isLoading={groupsQuery.isLoading}
+            activeGroupUid={groupFilter}
+            onSelectGroup={handleSelectGroup}
+          />
+        </div>
 
         {statusCode === 403 ? (
           <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -299,7 +303,10 @@ export function ClaimsContent() {
         ) : null}
 
         {viewMode === 'list' ? (
-          <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div
+            className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto"
+            {...(isLoading ? {} : { 'data-tour': 'claims-list' })}
+          >
             {isLoading ? (
               <ClaimsGroupedListSkeleton />
             ) : (

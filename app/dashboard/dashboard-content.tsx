@@ -1,6 +1,7 @@
 'use client';
 
 import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Clock } from 'lucide-react';
@@ -14,6 +15,8 @@ import {
   useApiClient,
 } from '@/api/hooks';
 import { getAttStatus } from '@/api/endpoints/attendance';
+import { getTipOfTheDay } from '@/api/endpoints/sales-tips';
+import { getOrganisationSettings } from '@/api/endpoints/organisation';
 import type { AttCheckInContext } from '@/api/types/attendance';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
@@ -377,6 +380,7 @@ export function DashboardContent() {
           <ClientDashboardHome />
         ) : (
           <div className="space-y-4">
+            <HomeExtras />
             <AttendanceStatusButton
               checkedIn={checkedIn}
               onBreak={onBreak}
@@ -435,6 +439,49 @@ export function DashboardContent() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+const SALES_WORKFORCE = new Set(['internal_sales', 'external_sales']);
+
+function isSalesPerson(workforceType: string | null | undefined): boolean {
+  return SALES_WORKFORCE.has((workforceType ?? '').toLowerCase().trim());
+}
+
+function HomeExtras() {
+  const client = useApiClient();
+  const { backendUserData } = useSessionSync();
+  const showTip = isSalesPerson(backendUserData?.workforceType);
+  const tip = useQuery({
+    queryKey: ['sales-tips', 'today'],
+    queryFn: () => getTipOfTheDay(client),
+    enabled: showTip,
+  });
+  const orgRef = backendUserData?.organisationRef;
+  const settings = useQuery({
+    queryKey: ['org-settings', orgRef, 'home'],
+    queryFn: () => getOrganisationSettings(client, orgRef!),
+    enabled: Boolean(orgRef),
+  });
+  const layout = settings.data?.settings?.preferences?.chartLayout;
+  const showBanner = settings.data?.settings?.preferences?.showCookieBanner === true;
+  return (
+    <div className={layout === 'compact' ? 'space-y-2' : 'space-y-4'}>
+      {showTip ? (
+        <section className="rounded-lg border px-4 py-3">
+          <p className="text-xs font-medium text-muted-foreground">Tip of the day</p>
+          <p className="text-sm font-semibold text-foreground">
+            {tip.data?.title ?? (tip.isLoading ? 'Loading tip…' : 'No tip today.')}
+          </p>
+          {tip.data?.content ? <p className="text-xs text-muted-foreground">{tip.data.content}</p> : null}
+        </section>
+      ) : null}
+      {showBanner ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-950">
+          This site uses cookies to keep you signed in and remember your dashboard layout.
+        </p>
+      ) : null}
     </div>
   );
 }

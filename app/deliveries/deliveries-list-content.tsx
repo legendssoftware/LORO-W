@@ -94,7 +94,7 @@ export function DeliveriesListContent() {
 
   return (
     <div className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
-      <div className="mb-6 shrink-0">
+      <div className="mb-6 shrink-0" data-tour="deliveries-page-header">
         <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Deliveries</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
           Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records
@@ -133,6 +133,7 @@ export function DeliveriesListContent() {
                 '[&_svg]:text-white focus-visible:ring-violet-500/40',
               )}
               onClick={() => setAssignOpen(true)}
+              data-tour="deliveries-assign"
             >
               <PackagePlus className="size-4" />
               Assign delivery
@@ -141,7 +142,10 @@ export function DeliveriesListContent() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card"
+        {...(query.isLoading ? {} : { 'data-tour': 'deliveries-list' })}
+      >
         <div className="min-h-0 flex-1 overflow-y-auto">
           {query.isLoading ? <LoadingSpinner /> : null}
           {query.isError ? (

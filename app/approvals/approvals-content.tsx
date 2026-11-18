@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useApprovals } from '@/api/hooks/use-approvals';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import { createApproval, getMyApprovalRequests } from '@/api/endpoints/approvals';
+import { Button } from '@/components/ui/button';
+import { Inbox, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 import type { Approval } from '@/api/types/approvals';
@@ -36,6 +41,7 @@ function matchesSearch(approval: Approval, query: string): boolean {
 }
 
 export function ApprovalsContent() {
+  const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading } = useSessionSync();
   const { isSignedIn, getToken } = useAuth();
@@ -93,13 +99,14 @@ export function ApprovalsContent() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
-        <div className="mb-6 shrink-0">
+        <div className="mb-6 shrink-0" data-tour="approvals-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Approvals</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Review pending requests, inspect employee intake forms, and approve or reject from the web.
           </p>
         </div>
 
+        <div data-tour="approvals-toolbar">
         <ApprovalsFiltersBar
           searchInput={searchInput}
           onSearchChange={setSearchInput}
@@ -107,17 +114,39 @@ export function ApprovalsContent() {
           onStatusChange={setStatusFilter}
           typeFilter={typeFilter}
           onTypeChange={setTypeFilter}
+          actions={
+            <>
+              <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
+                void createApproval(client, { title: 'Web request', type: 'GENERAL' }).then(() => toast.success('Request created'), () => toast.error('Could not create a request'));
+              }}>
+                <Plus className="size-4" />
+                New request
+              </Button>
+              <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
+                void getMyApprovalRequests(client).then(() => toast.success('My requests loaded'), () => toast.error('Could not load my requests'));
+              }}>
+                <Inbox className="size-4" />
+                My requests
+              </Button>
+            </>
+          }
         />
+        </div>
 
         {listError ? (
+          <div data-tour="approvals-settled">
           <QueryErrorBanner
             className="mt-6"
             message={listError}
             onRetry={() => listQuery.refetch()}
           />
+          </div>
         ) : null}
 
-        <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div
+          className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto"
+          {...(listQuery.isLoading ? {} : { 'data-tour': 'approvals-list' })}
+        >
           {listQuery.isLoading ? (
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, index) => (

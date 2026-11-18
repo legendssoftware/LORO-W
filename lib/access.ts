@@ -349,6 +349,204 @@ export function canViewOrgMerchandiseList(accessLevel: string | undefined): bool
     return normalize(accessLevel) === "admin";
 }
 
+function hasAccessLevel(accessLevel: string | undefined, levels: Set<string>): boolean {
+    const level = normalize(accessLevel);
+    if (!level) return false;
+    return levels.has(level);
+}
+
+/** LeaveController staff set: list, create, and cancel. */
+const LEAVE_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "support",
+    "developer",
+    "user",
+    "member",
+    "owner",
+    "technician",
+]);
+
+const LEAVE_DECIDE_LEVELS = new Set<string>(["admin", "manager", "owner"]);
+
+/** WarningsController list roles. HR is not on the server. */
+const WARNINGS_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "support",
+    "developer",
+    "owner",
+]);
+
+const ATTENDANCE_REPORT_SEND_LEVELS = new Set<string>(["admin", "owner", "hr"]);
+
+/** DocsController read roles, including a person's own documents. */
+const DOCUMENTS_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "support",
+    "developer",
+    "user",
+    "member",
+    "owner",
+    "technician",
+]);
+
+const FEEDBACK_ACCESS_LEVELS = new Set<string>(["admin", "manager", "owner"]);
+
+const GEOFENCE_VIEW_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "support",
+    "developer",
+    "user",
+    "member",
+    "owner",
+    "technician",
+]);
+
+const GEOFENCE_EDIT_LEVELS = new Set<string>(["admin", "manager"]);
+
+const USAGE_ACCESS_LEVELS = new Set<string>(["admin", "owner", "developer", "manager"]);
+
+const CATALOGUE_ADMIN_LEVELS = new Set<string>(["admin", "manager", "owner"]);
+
+/** NewsController and RewardsController staff set. */
+const STAFF_MODULE_LEVELS = new Set<string>([
+    "admin",
+    "manager",
+    "support",
+    "developer",
+    "user",
+    "member",
+    "owner",
+    "technician",
+]);
+
+const ERP_ADMIN_LEVELS = new Set<string>(["admin", "owner", "developer"]);
+
+const ERP_HEALTH_READ_LEVELS = new Set<string>(["admin", "owner", "manager", "developer"]);
+
+const WEBHOOK_ACCESS_LEVELS = new Set<string>([
+    "admin",
+    "owner",
+    "manager",
+    "hr",
+    "developer",
+]);
+
+const PAYSLIP_IMPORT_LEVELS = new Set<string>(["admin", "owner", "developer"]);
+
+const QUOTATION_CONVERT_LEVELS = new Set<string>(["admin", "manager"]);
+
+/** True when the user may open `/leave`. Own-row filtering stays in the page. */
+export function canAccessLeave(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, LEAVE_ACCESS_LEVELS);
+}
+
+/** Approve, reject, or delete a leave request. */
+export function canDecideLeave(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, LEAVE_DECIDE_LEVELS);
+}
+
+/** True when the user only manages their own leave rows. */
+export function canOnlySeeOwnLeave(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    return level === "user" || level === "member";
+}
+
+export function canAccessWarnings(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, WARNINGS_ACCESS_LEVELS);
+}
+
+export function canDeleteWarnings(accessLevel: string | undefined): boolean {
+    const level = normalize(accessLevel);
+    return level === "admin" || level === "owner";
+}
+
+/** Morning, evening, and absence report send buttons. */
+export function canSendAttendanceReports(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, ATTENDANCE_REPORT_SEND_LEVELS);
+}
+
+export function canAccessDocuments(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, DOCUMENTS_ACCESS_LEVELS);
+}
+
+/** Org document library management. Other readers see their own files. */
+export function canManageDocuments(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, CATALOGUE_ADMIN_LEVELS);
+}
+
+export function canAccessFeedback(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, FEEDBACK_ACCESS_LEVELS);
+}
+
+export function canAccessGeofences(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, GEOFENCE_VIEW_LEVELS);
+}
+
+export function canEditGeofences(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, GEOFENCE_EDIT_LEVELS);
+}
+
+export function canAccessUsage(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, USAGE_ACCESS_LEVELS);
+}
+
+export function canAccessProductsAdmin(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, CATALOGUE_ADMIN_LEVELS);
+}
+
+export function canAccessNews(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, STAFF_MODULE_LEVELS);
+}
+
+/** Admin editor. Tip of the day on Home is separate and open to staff. */
+export function canManageSalesTips(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, CATALOGUE_ADMIN_LEVELS);
+}
+
+export function canAccessResellers(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, CATALOGUE_ADMIN_LEVELS);
+}
+
+export function canAccessRewards(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, STAFF_MODULE_LEVELS);
+}
+
+export function canAccessLoyalty(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, CATALOGUE_ADMIN_LEVELS);
+}
+
+export function canRunErpImport(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, ERP_ADMIN_LEVELS);
+}
+
+export function canReadErpHealth(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, ERP_HEALTH_READ_LEVELS);
+}
+
+export function canManageErpCache(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, ERP_ADMIN_LEVELS);
+}
+
+export function canManageWebhooks(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, WEBHOOK_ACCESS_LEVELS);
+}
+
+export function canImportPayslips(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, PAYSLIP_IMPORT_LEVELS);
+}
+
+export function canConvertQuotations(accessLevel: string | undefined): boolean {
+    return hasAccessLevel(accessLevel, QUOTATION_CONVERT_LEVELS);
+}
+
+export function canRollbackQuotations(accessLevel: string | undefined): boolean {
+    return normalize(accessLevel) === "admin";
+}
+
 const APPROVALS_MANAGE_LEVELS = new Set<string>([
     "admin",
     "manager",
@@ -508,6 +706,43 @@ export function canAccess(
         return canAccessStoreOperations(accessLevel);
     }
 
+    if (pathNormalized === "/leave" || pathNormalized.startsWith("/leave/")) {
+        return canAccessLeave(accessLevel);
+    }
+    if (pathNormalized === "/warnings" || pathNormalized.startsWith("/warnings/")) {
+        return canAccessWarnings(accessLevel);
+    }
+    if (pathNormalized === "/documents" || pathNormalized.startsWith("/documents/")) {
+        return canAccessDocuments(accessLevel);
+    }
+    if (pathNormalized === "/feedback" || pathNormalized.startsWith("/feedback/")) {
+        return canAccessFeedback(accessLevel);
+    }
+    if (pathNormalized === "/geofences" || pathNormalized.startsWith("/geofences/")) {
+        return canAccessGeofences(accessLevel);
+    }
+    if (pathNormalized === "/usage" || pathNormalized.startsWith("/usage/")) {
+        return canAccessUsage(accessLevel);
+    }
+    if (pathNormalized === "/products" || pathNormalized.startsWith("/products/")) {
+        return canAccessProductsAdmin(accessLevel);
+    }
+    if (pathNormalized === "/news" || pathNormalized.startsWith("/news/")) {
+        return canAccessNews(accessLevel);
+    }
+    if (pathNormalized === "/sales-tips" || pathNormalized.startsWith("/sales-tips/")) {
+        return canManageSalesTips(accessLevel);
+    }
+    if (pathNormalized === "/resellers" || pathNormalized.startsWith("/resellers/")) {
+        return canAccessResellers(accessLevel);
+    }
+    if (pathNormalized === "/rewards" || pathNormalized.startsWith("/rewards/")) {
+        return canAccessRewards(accessLevel);
+    }
+    if (pathNormalized === "/loyalty" || pathNormalized.startsWith("/loyalty/")) {
+        return canAccessLoyalty(accessLevel);
+    }
+
     if (isClientPortalUser(accessLevel)) {
         return isClientPortalPath(pathNormalized);
     }
@@ -552,6 +787,18 @@ export const STAFF_SIDEBAR_ROUTES: { path: string; label: string }[] = [
     { path: "/assets", label: "Assets" },
     { path: "/approvals", label: "Approvals" },
     { path: "/payslips", label: "Payslips" },
+    { path: "/leave", label: "Leave" },
+    { path: "/warnings", label: "Warnings" },
+    { path: "/documents", label: "Documents" },
+    { path: "/feedback", label: "Feedback" },
+    { path: "/geofences", label: "Geofences" },
+    { path: "/usage", label: "Usage" },
+    { path: "/products", label: "Products" },
+    { path: "/news", label: "News" },
+    { path: "/sales-tips", label: "Sales tips" },
+    { path: "/resellers", label: "Resellers" },
+    { path: "/rewards", label: "Rewards" },
+    { path: "/loyalty", label: "Loyalty" },
     { path: "/planning", label: "Planning" },
     { path: "/reports", label: "Reports" },
     { path: "/performance", label: "Performance" },
@@ -671,6 +918,18 @@ export function getAllowedRoutes(
         { path: "/assets", label: "Assets" },
         { path: "/payslips", label: "Payslips" },
         { path: "/planning", label: "Planning" },
+        ...(canAccessLeave(accessLevel) ? [{ path: "/leave", label: "Leave" }] : []),
+        ...(canAccessWarnings(accessLevel) ? [{ path: "/warnings", label: "Warnings" }] : []),
+        ...(canAccessDocuments(accessLevel) ? [{ path: "/documents", label: "Documents" }] : []),
+        ...(canAccessFeedback(accessLevel) ? [{ path: "/feedback", label: "Feedback" }] : []),
+        ...(canAccessGeofences(accessLevel) ? [{ path: "/geofences", label: "Geofences" }] : []),
+        ...(canAccessUsage(accessLevel) ? [{ path: "/usage", label: "Usage" }] : []),
+        ...(canAccessProductsAdmin(accessLevel) ? [{ path: "/products", label: "Products" }] : []),
+        ...(canAccessNews(accessLevel) ? [{ path: "/news", label: "News" }] : []),
+        ...(canManageSalesTips(accessLevel) ? [{ path: "/sales-tips", label: "Sales tips" }] : []),
+        ...(canAccessResellers(accessLevel) ? [{ path: "/resellers", label: "Resellers" }] : []),
+        ...(canAccessRewards(accessLevel) ? [{ path: "/rewards", label: "Rewards" }] : []),
+        ...(canAccessLoyalty(accessLevel) ? [{ path: "/loyalty", label: "Loyalty" }] : []),
     ];
 
     if (canAccessMerchandise(accessLevel)) {
@@ -719,8 +978,25 @@ export function getAllowedRoutes(
         return fullNav;
     }
 
+    const gapRouteAllowed = (path: string): boolean => {
+        if (path === "/leave") return canAccessLeave(accessLevel);
+        if (path === "/warnings") return canAccessWarnings(accessLevel);
+        if (path === "/documents") return canAccessDocuments(accessLevel);
+        if (path === "/feedback") return canAccessFeedback(accessLevel);
+        if (path === "/geofences") return canAccessGeofences(accessLevel);
+        if (path === "/usage") return canAccessUsage(accessLevel);
+        if (path === "/products") return canAccessProductsAdmin(accessLevel);
+        if (path === "/news") return canAccessNews(accessLevel);
+        if (path === "/sales-tips") return canManageSalesTips(accessLevel);
+        if (path === "/resellers") return canAccessResellers(accessLevel);
+        if (path === "/rewards") return canAccessRewards(accessLevel);
+        if (path === "/loyalty") return canAccessLoyalty(accessLevel);
+        return false;
+    };
+
     const restrictedNav = fullNav.filter((r) =>
-        STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p))
+        STANDARD_USER_PATHS.some((p) => p === r.path || r.path.startsWith(p)) ||
+        gapRouteAllowed(r.path)
     );
 
     if (

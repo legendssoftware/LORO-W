@@ -36,6 +36,7 @@ export function OrdersContent() {
           </div>
           <Button
             asChild
+            data-tour="orders-new"
             className={cn(
               'h-9 shrink-0 gap-2 self-start border-0 !rounded px-4',
               'bg-violet-600 text-white hover:bg-violet-700',

@@ -485,8 +485,8 @@ export function StaffFiltersBar({
           Filter
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {renderSearchField()}
           {actions}
+          {renderSearchField()}
         </div>
       </div>
 
@@ -509,8 +509,8 @@ export function StaffFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
-          {renderSearchField()}
           {actions}
+          {renderSearchField()}
         </div>
       </div>
     </div>

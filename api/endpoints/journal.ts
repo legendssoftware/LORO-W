@@ -136,3 +136,71 @@ export async function deleteJournal(
   assertJournalMessage(data.message, 'Could not delete merchandise');
   return data;
 }
+
+export interface InspectionTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  categories?: Array<{
+    id: string;
+    name: string;
+    items?: Array<{ id: string; name: string; required?: boolean }>;
+  }>;
+}
+
+export interface InspectionRow {
+  uid: number;
+  title?: string;
+  totalScore?: number;
+  percentage?: number;
+  overallRating?: string;
+  inspectionDate?: string;
+}
+
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === 'object' && Array.isArray((value as { data?: unknown }).data)) {
+    return (value as { data: T[] }).data;
+  }
+  return [];
+}
+
+/** GET /journal/templates */
+export async function getInspectionTemplates(client: AxiosInstance): Promise<InspectionTemplate[]> {
+  const { data } = await client.get<unknown>('/journal/templates');
+  return asArray<InspectionTemplate>(data);
+}
+
+/** GET /journal/inspections */
+export async function getInspections(client: AxiosInstance): Promise<InspectionRow[]> {
+  const { data } = await client.get<unknown>('/journal/inspections');
+  return asArray<InspectionRow>(data);
+}
+
+/** POST /journal/inspection */
+export async function createInspection(
+  client: AxiosInstance,
+  payload: {
+    title: string;
+    type: 'INSPECTION';
+    inspectionData: { categories: InspectionTemplate['categories'] };
+    comments?: string;
+  }
+): Promise<{ message?: string; data?: InspectionRow }> {
+  const { data } = await client.post<{ message?: string; data?: InspectionRow }>(
+    '/journal/inspection',
+    payload
+  );
+  return data;
+}
+
+/** POST /journal/calculate-score/:ref */
+export async function calculateInspectionScore(
+  client: AxiosInstance,
+  ref: number
+): Promise<{ message?: string; data?: InspectionRow }> {
+  const { data } = await client.post<{ message?: string; data?: InspectionRow }>(
+    `/journal/calculate-score/${ref}`
+  );
+  return data;
+}

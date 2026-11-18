@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { Loader2Icon, Phone, Timer } from 'lucide-react';
+import { Database, Link2, Loader2Icon, Phone, Timer } from 'lucide-react';
 import { useBranches, useCalls, useSessionSync, useTokenReady, useUsers } from '@/api/hooks';
 import type { CallRecordingListItem } from '@/api/types/calls';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { canAccessCallRecordings } from '@/lib/access';
+import { useApiClient } from '@/api/hooks/use-api-client';
+import toast from 'react-hot-toast';
 import { QueryErrorBanner } from '@/components/query-error-banner';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
@@ -227,6 +229,7 @@ export function CallsContent() {
           }}
           onUseAllTimeChange={setUseAllTime}
           onResetDateRange={handleResetDateRange}
+          actions={<CallAdminActions />}
         />
 
         <div
@@ -371,5 +374,31 @@ function CallTableRow({
         </Button>
       </TableCell>
     </TableRow>
+  );
+}
+
+function CallAdminActions() {
+  const client = useApiClient();
+  return (
+    <>
+      <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
+        void client.post('/calls/backfill').then(
+          (res) => toast.success(res.data?.message || 'Backfill queued'),
+          () => toast.error('Could not backfill calls')
+        );
+      }}>
+        <Database className="size-4" />
+        Backfill
+      </Button>
+      <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
+        void client.post('/calls/relink-leads').then(
+          (res) => toast.success(res.data?.message || 'Leads relinked'),
+          () => toast.error('Could not relink leads')
+        );
+      }}>
+        <Link2 className="size-4" />
+        Relink leads
+      </Button>
+    </>
   );
 }

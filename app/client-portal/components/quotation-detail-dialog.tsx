@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { Badge } from '@/components/ui/badge';
+import { QuotationConversionActions } from '@/components/quotation-conversion-actions';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 
 function formatDate(value?: string): string | null {
@@ -134,6 +135,10 @@ export function QuotationDetailDialog({
             {quotation.isConverted && (
               <Badge variant="outline">Converted to order</Badge>
             )}
+            <QuotationConversionActions
+              quotationRef={quotation.uid}
+              alreadyConverted={quotation.isConverted}
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

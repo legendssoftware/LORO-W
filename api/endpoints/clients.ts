@@ -146,3 +146,50 @@ export async function restoreClient(
   );
   return data;
 }
+
+export interface CommunicationSchedule {
+  uid?: number;
+  id?: number;
+  communicationType?: string;
+  frequency?: string;
+  preferredTime?: string;
+  isActive?: boolean;
+  clientId?: number;
+}
+
+/** GET /clients/my-communication-schedules */
+export async function getMyCommunicationSchedules(
+  client: AxiosInstance,
+  params: { clientId?: number; page?: number; limit?: number } = {}
+): Promise<{ data: CommunicationSchedule[] }> {
+  const { data } = await client.get<{ data?: CommunicationSchedule[] } | CommunicationSchedule[]>(
+    '/clients/my-communication-schedules',
+    { params }
+  );
+  if (Array.isArray(data)) return { data };
+  return { data: data.data ?? [] };
+}
+
+/** PATCH /clients/profile/communication-schedules/:scheduleId */
+export async function updateCommunicationSchedule(
+  client: AxiosInstance,
+  scheduleId: number,
+  payload: Partial<Pick<CommunicationSchedule, 'frequency' | 'preferredTime' | 'isActive' | 'communicationType'>>
+): Promise<{ message: string }> {
+  const { data } = await client.patch<{ message: string }>(
+    `/clients/profile/communication-schedules/${scheduleId}`,
+    payload
+  );
+  return data;
+}
+
+/** DELETE /clients/profile/communication-schedules/:scheduleId */
+export async function deleteCommunicationSchedule(
+  client: AxiosInstance,
+  scheduleId: number
+): Promise<{ message: string }> {
+  const { data } = await client.delete<{ message: string }>(
+    `/clients/profile/communication-schedules/${scheduleId}`
+  );
+  return data;
+}

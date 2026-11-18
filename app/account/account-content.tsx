@@ -25,21 +25,25 @@ export function AccountContent() {
   return (
     <div className={appPageScrollWrapClass}>
       <main className={appPageMainClass}>
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6" data-tour="account-page-header">
           <h1 className="text-2xl font-semibold">Account</h1>
-          <Button variant="outline" onClick={() => setEditing((e) => !e)}>
+          <Button variant="outline" data-tour="account-edit" onClick={() => setEditing((e) => !e)}>
             {editing ? 'View profile' : 'Edit profile'}
           </Button>
         </div>
         <ClientPortalLoading>
           {(client) => (
             <div className="space-y-6">
-              <ClientAccountInfoCard client={client} />
+              <div data-tour="account-profile">
+                <ClientAccountInfoCard client={client} />
+              </div>
+              <div data-tour="account-details">
               {editing ? (
                 <EditClientProfileForm client={client} onSaved={() => setEditing(false)} />
               ) : (
                 <ClientInfoSections client={client} />
               )}
+              </div>
             </div>
           )}
         </ClientPortalLoading>

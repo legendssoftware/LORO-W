@@ -13,6 +13,7 @@ import {
   getMarketIntelStock,
   getMyAcknowledgement,
   getMyAgreement,
+  getMyPolicyDashboard,
   getPolicyReport,
   getUserAgreement,
   getVerificationQueue,
@@ -32,6 +33,18 @@ export const PERFORMANCE_POLICY_REPORT_QUERY_KEY = ['performance-policy', 'repor
 /** Closed windows never change until re-finalised, so they can be cached for much longer than live ones. */
 const LIVE_STALE_MS = 60 * 1000;
 const CLOSED_STALE_MS = 10 * 60 * 1000;
+
+/** The signed-in employee's cost package and forecast. A 404 means the policy is off. */
+export function useMyPolicyDashboard(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ['performance-policy', 'me', 'dashboard'] as const,
+    queryFn: () => getMyPolicyDashboard(client),
+    enabled,
+    staleTime: LIVE_STALE_MS,
+    retry: false,
+  });
+}
 
 /**
  * GET /performance-policy/report. A 404 means the policy is not enabled for the organisation; callers treat

@@ -12,6 +12,7 @@ import {
   useUsers,
 } from '@/api/hooks';
 import type { VisitListItem } from '@/api/types/visits';
+import { QuotationConversionActions } from '@/components/quotation-conversion-actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -999,6 +1000,7 @@ export function PipelineContent() {
                         <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Conversion</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1021,6 +1023,9 @@ export function PipelineContent() {
                             </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {formatCurrency(Number.isFinite(amt) ? amt : 0, targetCurrency)}
+                            </TableCell>
+                            <TableCell>
+                              <QuotationConversionActions quotationRef={q.uid} />
                             </TableCell>
                           </TableRow>
                         );

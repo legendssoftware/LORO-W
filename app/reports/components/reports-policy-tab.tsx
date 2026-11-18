@@ -39,6 +39,7 @@ import {
   toPolicyWindow,
 } from '../lib/reports-policy-window';
 import { useReportsDateRange } from '../lib/use-reports-date-range';
+import { PolicyForecastCard } from './policy-forecast-card';
 import { ReportsChartCard } from './reports-chart-card';
 import { ReportsDashboardToolbar } from './reports-dashboard-toolbar';
 import { ReportsListPagination, type ReportsPageSize } from './reports-list-pagination';
@@ -184,6 +185,8 @@ export function ReportsPolicyTab() {
 
   return (
     <div className="space-y-4">
+      <PolicyForecastCard />
+
       <ReportsDashboardToolbar
         startDate={startDate}
         endDate={endDate}

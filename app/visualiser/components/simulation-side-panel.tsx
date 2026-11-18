@@ -64,7 +64,7 @@ import {
   type SiteOpportunityZone,
   type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
-import { computeSiteOpportunities } from '@/lib/site-opportunity/compute';
+import { getSiteOpportunities } from '@/api/endpoints/reports-site-opportunities';
 import { buildOpportunityMarkers } from '@/lib/site-opportunity/build-opportunity-markers';
 import { enrichCatchmentsWithDashboardRevenue } from '@/lib/site-opportunity/enrich-catchment-revenue';
 import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
@@ -960,12 +960,14 @@ export function SimulationSidePanel() {
         return;
       }
 
-      let computed = computeSiteOpportunities(filteredMarkers, {
+      toast.loading('Loading opportunity zones from the server…', { id: 'map-simulate' });
+      let computed = await getSiteOpportunities(client, {
         mode,
-        settings,
-        onProgress: (message) => {
-          toast.loading(message, { id: 'map-simulate' });
-        },
+        radiusMeters: settings.radiusMeters,
+        topN: settings.topN,
+        minBranchSeparationKm: settings.minBranchSeparationKm,
+        captureLowPct: settings.captureLowPct,
+        captureHighPct: settings.captureHighPct,
       });
 
       computed = {
