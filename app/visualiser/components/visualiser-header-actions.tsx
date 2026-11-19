@@ -11,6 +11,7 @@ import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import { useGeocodeMapBatchMutation } from '@/api/hooks';
 import type { VisualiserLayerId } from '@/lib/utils/visualiser-map-points';
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
+import { useTranslation } from 'react-i18next';
 
 type ModalId = 'summary' | 'info' | 'fuel' | null;
 
@@ -31,10 +32,16 @@ export function VisualiserHeaderActions({
   disabled = false,
   limited = false,
 }: VisualiserHeaderActionsProps) {
+  const { t } = useTranslation('screens');
   const [openModal, setOpenModal] = useState<ModalId>(null);
   const { openPanel, panelOpen, isActive } = useVisualiserSimulation();
   const geocodeMutation = useGeocodeMapBatchMutation();
   const isGeocoding = geocodeMutation.isPending;
+  const simulateLabel = panelOpen
+    ? isActive
+      ? t('chrome.visualiser.simulation')
+      : t('chrome.visualiser.simulate')
+    : t('chrome.visualiser.simulate');
 
   return (
     <>
@@ -46,11 +53,11 @@ export function VisualiserHeaderActions({
             size="sm"
             disabled={disabled}
             onClick={() => setOpenModal('summary')}
-            aria-label="Summary"
-            title="Summary"
+            aria-label={t('chrome.visualiser.summary')}
+            title={t('chrome.visualiser.summary')}
           >
             <BarChart3 className="size-4" />
-            <span className="hidden md:inline">Summary</span>
+            <span className="hidden md:inline">{t('chrome.visualiser.summary')}</span>
           </Button>
         )}
         {limited ? null : (
@@ -60,11 +67,11 @@ export function VisualiserHeaderActions({
             size="sm"
             disabled={disabled}
             onClick={() => setOpenModal('fuel')}
-            aria-label="Petrol prices"
-            title="View stored petrol prices"
+            aria-label={t('chrome.visualiser.petrolPrices')}
+            title={t('chrome.visualiser.viewPetrolPrices')}
           >
             <Fuel className="size-4" />
-            <span className="hidden md:inline">Petrol prices</span>
+            <span className="hidden md:inline">{t('chrome.visualiser.petrolPrices')}</span>
           </Button>
         )}
         <Button
@@ -75,11 +82,11 @@ export function VisualiserHeaderActions({
           onClick={() =>
             geocodeMutation.mutate({ resetExhausted: true, maxGeocodes: 500 })
           }
-          aria-label={isGeocoding ? 'Geocoding…' : 'Geocode'}
+          aria-label={isGeocoding ? t('chrome.visualiser.geocoding') : t('chrome.visualiser.geocode')}
           title={
             limited
-              ? 'Geocode is unavailable for your role'
-              : 'Clear exhausted coordinates and re-geocode missing map addresses'
+              ? t('chrome.visualiser.geocodeUnavailable')
+              : t('chrome.visualiser.geocodeHint')
           }
         >
           {isGeocoding ? (
@@ -88,7 +95,7 @@ export function VisualiserHeaderActions({
             <MapPin className="size-4" />
           )}
           <span className="hidden md:inline">
-            {isGeocoding ? 'Geocoding…' : 'Geocode'}
+            {isGeocoding ? t('chrome.visualiser.geocoding') : t('chrome.visualiser.geocode')}
           </span>
         </Button>
         {limited ? null : (
@@ -99,8 +106,8 @@ export function VisualiserHeaderActions({
               size="icon-sm"
               disabled={disabled}
               onClick={() => setOpenModal('info')}
-              aria-label="Simulation info"
-              title="How simulation works"
+              aria-label={t('chrome.visualiser.simulationInfo')}
+              title={t('chrome.visualiser.howSimulationWorks')}
             >
               <Info className="size-4" />
             </Button>
@@ -110,13 +117,11 @@ export function VisualiserHeaderActions({
               size="sm"
               disabled={disabled}
               onClick={() => openPanel('configure')}
-              aria-label={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
-              title={panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
+              aria-label={simulateLabel}
+              title={simulateLabel}
             >
               <Sparkles className="size-4" />
-              <span className="hidden md:inline">
-                {panelOpen ? (isActive ? 'Simulation' : 'Simulate') : 'Simulate'}
-              </span>
+              <span className="hidden md:inline">{simulateLabel}</span>
             </Button>
           </>
         )}

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO, startOfDay } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -110,6 +112,7 @@ export function PlanClientVisitsDialog({
   origin,
   onClientsAssigned,
 }: PlanClientVisitsDialogProps) {
+  const { t } = useTranslation('screens');
   const planMutation = usePlanClientVisitsMutation(userRef);
   const { data: activeSchedules, isLoading: activeSchedulesLoading } =
     useUserVisitPlanSchedules(userRef);
@@ -469,7 +472,7 @@ export function PlanClientVisitsDialog({
                     <SelectItem key={option.value} value={option.value}>
                       <span className="flex items-center gap-2">
                         <option.icon className="size-4 shrink-0" />
-                        {option.label}
+                        {t(option.labelKey)}
                       </span>
                     </SelectItem>
                   ))}

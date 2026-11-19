@@ -96,11 +96,11 @@ export function ClaimEditDialog({
     () =>
       CLAIM_CATEGORY_OPTIONS.map((c) => ({
         value: c.value,
-        label: c.label,
+        label: t(c.labelKey),
         icon: <Tag className="size-4 shrink-0" />,
-        searchExtra: `${c.label} ${c.value}`,
+        searchExtra: `${t(c.labelKey)} ${c.value}`,
       })),
-    []
+    [t]
   );
 
   const folderOptions = useMemo(

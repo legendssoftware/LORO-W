@@ -129,7 +129,7 @@ export function MerchandiseDetailContent() {
       <div className="flex flex-col items-start gap-2">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('chrome.merchandise.entry')}</p>
         <Badge variant={merchandiseStatusTone(journal.status)}>
-          {merchandiseStatusLabel(journal.status)}
+          {merchandiseStatusLabel(journal.status, t)}
         </Badge>
         <p className="text-sm text-muted-foreground">{merchandiseCreatedLabel(journal.createdAt)}</p>
       </div>

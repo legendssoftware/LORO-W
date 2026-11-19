@@ -40,6 +40,7 @@ import {
 } from '@/lib/user-form/date-input';
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { useTranslation } from 'react-i18next';
 
 function deliveryStatusIcon(status: string): React.ReactNode {
   const tone = statusFilterIconClass(status);
@@ -86,7 +87,8 @@ function DeliveryDayPicker({
   const defaultMonth = selected ?? range.defaultMonth;
   const row = layout === 'row';
   const triggerClass = row ? 'h-9 min-w-0 w-[160px] shrink-0' : 'h-9 w-full min-w-0';
-  const triggerLabel = formatIsoToDisplay(value) || 'All days';
+  const { t } = useTranslation('screens');
+  const triggerLabel = formatIsoToDisplay(value) || t('chrome.deliveries.allDays');
 
   React.useEffect(() => {
     setText(formatIsoToDisplay(value));
@@ -126,7 +128,7 @@ function DeliveryDayPicker({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            aria-label="Delivery day"
+            aria-label={t('chrome.deliveries.deliveryDay')}
             title={triggerLabel}
             className={cn(
               reportsFilterSelectTriggerClass,
@@ -153,7 +155,7 @@ function DeliveryDayPicker({
             placeholder="DD/MM/YYYY"
             inputMode="numeric"
             autoComplete="off"
-            aria-label="Delivery day"
+            aria-label={t('chrome.deliveries.deliveryDay')}
             className="h-9"
           />
           <Calendar
@@ -170,7 +172,7 @@ function DeliveryDayPicker({
           />
         </PopoverContent>
       </Popover>
-      {value ? <FilterClearButton label="Clear day" onClick={() => onChange(null)} /> : null}
+      {value ? <FilterClearButton label={t('chrome.deliveries.clearDay')} onClick={() => onChange(null)} /> : null}
     </div>
   );
 }
@@ -198,6 +200,7 @@ export function DeliveriesFilterControls({
   onDriverUidChange,
   drivers,
 }: DeliveriesFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const chipTrigger = row ? 'h-9 min-w-0 w-[160px] shrink-0' : 'h-9 w-full min-w-0';
   const driverTrigger = row ? 'h-9 min-w-0 w-[180px] shrink-0' : 'h-9 w-full min-w-0';
@@ -231,14 +234,14 @@ export function DeliveriesFilterControls({
           selectedValue={status}
           onValueChange={onStatusChange}
           options={statusOptions}
-          placeholderLabelWhenAll="All statuses"
-          searchPlaceholder="Search status…"
-          emptyMessage="No status found."
+          placeholderLabelWhenAll={t('actions.allStatuses')}
+          searchPlaceholder={t('chrome.deliveries.searchStatus')}
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
           triggerClassName={chipTrigger}
         />
         {status !== ANY_VALUE ? (
-          <FilterClearButton label="Clear status filter" onClick={() => onStatusChange(ANY_VALUE)} />
+          <FilterClearButton label={t('actions.clearStatusFilter')} onClick={() => onStatusChange(ANY_VALUE)} />
         ) : null}
       </div>
 
@@ -248,15 +251,15 @@ export function DeliveriesFilterControls({
             selectedValue={driverUid}
             onValueChange={onDriverUidChange}
             options={driverOptions}
-            placeholderLabelWhenAll="All drivers"
-            searchPlaceholder="Search drivers…"
-            emptyMessage="No driver found."
+            placeholderLabelWhenAll={t('chrome.deliveries.allDrivers')}
+            searchPlaceholder={t('chrome.deliveries.searchDrivers')}
+            emptyMessage={t('chrome.deliveries.noDriverFound')}
             triggerIcon={<Truck className="size-4 shrink-0" />}
             triggerClassName={driverTrigger}
           />
           {driverUid !== ANY_VALUE ? (
             <FilterClearButton
-              label="Clear driver filter"
+              label={t('chrome.deliveries.clearDriverFilter')}
               onClick={() => onDriverUidChange(ANY_VALUE)}
             />
           ) : null}
@@ -278,6 +281,7 @@ export function DeliveriesFiltersBar({
   actions,
   ...filterProps
 }: DeliveriesFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -294,10 +298,10 @@ export function DeliveriesFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
-          placeholder="Search deliveries"
+          placeholder={t('chrome.deliveries.searchPlaceholder')}
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          aria-label="Search by invoice, order, delivery, driver, truck, or client"
+          aria-label={t('chrome.deliveries.searchAria')}
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
         />
         {search ? (
@@ -305,7 +309,7 @@ export function DeliveriesFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -324,7 +328,7 @@ export function DeliveriesFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
@@ -335,8 +339,8 @@ export function DeliveriesFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-            <DialogDescription>Narrow deliveries by day, status, and driver.</DialogDescription>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
+            <DialogDescription>{t('chrome.deliveries.filtersDescription')}</DialogDescription>
           </DialogHeader>
           <DeliveriesFilterControls {...filterProps} layout="stack" />
         </DialogContent>

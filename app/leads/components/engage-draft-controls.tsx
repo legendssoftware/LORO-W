@@ -103,7 +103,7 @@ export function EngageDraftControls({
             )}
             {INDUSTRY_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>

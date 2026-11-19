@@ -36,11 +36,13 @@ function leadInitials(lead: LeadListItem, translate: TFunction<'screens'>): stri
 }
 
 function optionLabel(
-  options: { value: string; label: string }[],
-  value: string | undefined
+  options: { value: string; labelKey: string }[],
+  value: string | undefined,
+  translate: TFunction<'screens'>
 ): string | undefined {
   if (!value) return undefined;
-  return options.find((o) => o.value === value)?.label ?? value;
+  const match = options.find((o) => o.value === value);
+  return match ? translate(match.labelKey) : value;
 }
 
 function followUpBadge(lead: LeadListItem, followUpToday: string): ReactNode {
@@ -183,19 +185,19 @@ export function LeadsInboxView({
                       </p>
                     ) : null}
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                      {optionLabel(LEAD_STATUS_OPTIONS, lead.status) ? (
-                        <span>{optionLabel(LEAD_STATUS_OPTIONS, lead.status)}</span>
+                      {optionLabel(LEAD_STATUS_OPTIONS, lead.status, t) ? (
+                        <span>{optionLabel(LEAD_STATUS_OPTIONS, lead.status, t)}</span>
                       ) : null}
-                      {optionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature) ? (
+                      {optionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature, t) ? (
                         <>
                           <span aria-hidden>·</span>
-                          <span>{optionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature)}</span>
+                          <span>{optionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature, t)}</span>
                         </>
                       ) : null}
-                      {optionLabel(LEAD_PRIORITY_OPTIONS, lead.priority) ? (
+                      {optionLabel(LEAD_PRIORITY_OPTIONS, lead.priority, t) ? (
                         <>
                           <span aria-hidden>·</span>
-                          <span>{optionLabel(LEAD_PRIORITY_OPTIONS, lead.priority)}</span>
+                          <span>{optionLabel(LEAD_PRIORITY_OPTIONS, lead.priority, t)}</span>
                         </>
                       ) : null}
                     </div>

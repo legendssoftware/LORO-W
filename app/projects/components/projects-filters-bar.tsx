@@ -18,6 +18,7 @@ import { Input, filterToolbarSearchInputClassName } from '@/components/ui/input'
 import { XIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { useTranslation } from 'react-i18next';
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -30,13 +31,23 @@ function projectStatusIcon(status: string): React.ReactNode {
   return <Clock className={tone} />;
 }
 
-export const PROJECT_STATUS_FILTER_OPTIONS: SearchableOptionRow[] = [
-  { value: 'planning', label: 'Planning', icon: projectStatusIcon('planning') },
-  { value: 'in_progress', label: 'In progress', icon: projectStatusIcon('in_progress') },
-  { value: 'on_hold', label: 'On hold', icon: projectStatusIcon('on_hold') },
-  { value: 'completed', label: 'Completed', icon: projectStatusIcon('completed') },
-  { value: 'cancelled', label: 'Cancelled', icon: projectStatusIcon('cancelled') },
-];
+export const PROJECT_STATUS_LABEL_KEYS: Record<string, string> = {
+  planning: 'chrome.projects.status.planning',
+  in_progress: 'chrome.projects.status.in_progress',
+  on_hold: 'chrome.projects.status.on_hold',
+  completed: 'chrome.projects.status.completed',
+  cancelled: 'chrome.projects.status.cancelled',
+};
+
+export function buildProjectStatusFilterOptions(t: (key: string) => string): SearchableOptionRow[] {
+  return [
+    { value: 'planning', label: t('chrome.projects.status.planning'), icon: projectStatusIcon('planning') },
+    { value: 'in_progress', label: t('chrome.projects.status.in_progress'), icon: projectStatusIcon('in_progress') },
+    { value: 'on_hold', label: t('chrome.projects.status.on_hold'), icon: projectStatusIcon('on_hold') },
+    { value: 'completed', label: t('chrome.projects.status.completed'), icon: projectStatusIcon('completed') },
+    { value: 'cancelled', label: t('chrome.projects.status.cancelled'), icon: projectStatusIcon('cancelled') },
+  ];
+}
 
 export interface ProjectsFilterControlsProps {
   layout: 'row' | 'stack';
@@ -51,6 +62,7 @@ export function ProjectsFilterControls({
   onStatusChange,
   statusOptions,
 }: ProjectsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const statusTrigger = row
     ? 'h-9 min-w-0 w-[170px] shrink-0'
@@ -68,9 +80,9 @@ export function ProjectsFilterControls({
           onValueChange={onStatusChange}
           options={statusOptions}
           allOptionValue="all"
-          placeholderLabelWhenAll="All statuses"
-          searchPlaceholder="Search statuses…"
-          emptyMessage="No status found."
+          placeholderLabelWhenAll={t('actions.allStatuses')}
+          searchPlaceholder={t('chrome.projects.searchStatuses')}
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<ListFilter className="size-4 shrink-0" />}
           triggerClassName={statusTrigger}
         />
@@ -79,7 +91,7 @@ export function ProjectsFilterControls({
             type="button"
             onClick={() => onStatusChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear status filter"
+            aria-label={t('actions.clearStatusFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -94,7 +106,7 @@ export function ProjectsFiltersBar({
   onSearchChange,
   statusFilter,
   onStatusChange,
-  statusOptions = PROJECT_STATUS_FILTER_OPTIONS,
+  statusOptions,
 }: {
   searchInput: string;
   onSearchChange: (v: string) => void;
@@ -102,6 +114,8 @@ export function ProjectsFiltersBar({
   onStatusChange: (v: string) => void;
   statusOptions?: SearchableOptionRow[];
 }) {
+  const { t } = useTranslation('screens');
+  const resolvedOptions = statusOptions ?? buildProjectStatusFilterOptions(t);
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -123,7 +137,7 @@ export function ProjectsFiltersBar({
     return (
       <div className={cn('relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]', className)}>
         <Input
-          placeholder="Search projects…"
+          placeholder={t('chrome.projects.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
@@ -133,7 +147,7 @@ export function ProjectsFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -146,7 +160,7 @@ export function ProjectsFiltersBar({
     layout: 'row',
     statusFilter,
     onStatusChange,
-    statusOptions,
+    statusOptions: resolvedOptions,
   };
 
   return (
@@ -162,7 +176,7 @@ export function ProjectsFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         {renderSearchField('w-full')}
       </div>
@@ -170,9 +184,9 @@ export function ProjectsFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Narrow projects by status.
+              {t('chrome.projects.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <ProjectsFilterControls {...filterProps} layout="stack" />
@@ -186,7 +200,7 @@ export function ProjectsFiltersBar({
                 setFiltersDialogOpen(false);
               }}
             >
-              Reset filters
+              {t('actions.resetFilters')}
             </Button>
           </div>
         </DialogContent>
@@ -203,7 +217,7 @@ export function ProjectsFiltersBar({
               className="h-9 shrink-0"
               onClick={resetAll}
             >
-              Reset filters
+              {t('actions.resetFilters')}
             </Button>
           </div>
         </div>

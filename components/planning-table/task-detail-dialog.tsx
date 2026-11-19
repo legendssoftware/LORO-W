@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import type { Task } from '@/api/types/tasks';
 import type { UpdateTaskPayload, SubtaskPayload } from '@/api/types/tasks';
@@ -181,6 +182,7 @@ export function TaskDetailDialog({
   onOpenChange,
   onTaskUpdated,
 }: TaskDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<TaskEditForm>({});
   const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
@@ -638,7 +640,7 @@ export function TaskDetailDialog({
                           <SelectItem key={o.value} value={o.value}>
                             <span className="flex items-center gap-2">
                               <o.icon className="size-4 shrink-0" />
-                              {o.label}
+                              {t(o.labelKey)}
                             </span>
                           </SelectItem>
                         ))}
@@ -664,7 +666,7 @@ export function TaskDetailDialog({
                           <SelectItem key={o.value} value={o.value}>
                             <span className="flex items-center gap-2">
                               <o.icon className="size-4 shrink-0" />
-                              {o.label}
+                              {t(o.labelKey)}
                             </span>
                           </SelectItem>
                         ))}
@@ -690,7 +692,7 @@ export function TaskDetailDialog({
                           <SelectItem key={o.value} value={o.value}>
                             <span className="flex items-center gap-2">
                               <o.icon className="size-4 shrink-0" />
-                              {o.label}
+                              {t(o.labelKey)}
                             </span>
                           </SelectItem>
                         ))}
@@ -779,7 +781,7 @@ export function TaskDetailDialog({
                           <SelectItem key={o.value} value={o.value}>
                             <span className="flex items-center gap-2">
                               <o.icon className="size-4 shrink-0" />
-                              {o.label}
+                              {t(o.labelKey)}
                             </span>
                           </SelectItem>
                         ))}

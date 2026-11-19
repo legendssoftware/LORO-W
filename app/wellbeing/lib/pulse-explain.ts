@@ -4,79 +4,77 @@ import type { PulseTone } from './pulse-tone';
 type PulseRiskReason = NonNullable<PulseNamedPerson['riskReason']>;
 
 export interface MoodExplanation {
-  label: string;
+  labelKey: string;
   score: number;
-  plainText: string;
+  plainTextKey: string;
 }
 
 export interface RiskReasonExplanation {
-  label: string;
-  plainText: string;
-  suggestedAction: string;
+  labelKey: string;
+  plainTextKey: string;
+  suggestedActionKey: string;
 }
 
 /** Mirrors server `PULSE_MOOD_SCORE` so the UI explains the same numbers the dashboard averages. */
 export const MOOD_EXPLANATIONS: Record<PulseMood, MoodExplanation> = {
-  excellent: { label: 'Excellent', score: 10, plainText: 'Feeling great and full of energy.' },
-  good: { label: 'Good', score: 8, plainText: 'Feeling positive and ready for the day.' },
-  okay: { label: 'Okay', score: 6, plainText: 'Feeling neutral, neither good nor bad.' },
-  stressed: { label: 'Stressed', score: 4, plainText: 'Feeling under pressure or worried.' },
+  excellent: { labelKey: 'chrome.wellbeing.mood.excellent', score: 10, plainTextKey: 'chrome.wellbeing.mood.excellentDesc' },
+  good: { labelKey: 'chrome.wellbeing.mood.good', score: 8, plainTextKey: 'chrome.wellbeing.mood.goodDesc' },
+  okay: { labelKey: 'chrome.wellbeing.mood.okay', score: 6, plainTextKey: 'chrome.wellbeing.mood.okayDesc' },
+  stressed: { labelKey: 'chrome.wellbeing.mood.stressed', score: 4, plainTextKey: 'chrome.wellbeing.mood.stressedDesc' },
   not_feeling_well: {
-    label: 'Not feeling well',
+    labelKey: 'chrome.wellbeing.mood.notFeelingWell',
     score: 2,
-    plainText: 'Feeling unwell or very low. This is the lowest rating.',
+    plainTextKey: 'chrome.wellbeing.mood.notFeelingWellDesc',
   },
 };
 
 export const RISK_REASON_EXPLANATIONS: Record<PulseRiskReason, RiskReasonExplanation> = {
   support: {
-    label: 'Support',
-    plainText:
-      'They asked to speak to someone (their manager, HR, a regional manager or confidential support) or asked for a follow-up.',
-    suggestedAction: 'Reach out today, listen first, and agree on a next step together.',
+    labelKey: 'chrome.wellbeing.risk.support',
+    plainTextKey: 'chrome.wellbeing.risk.supportDesc',
+    suggestedActionKey: 'chrome.wellbeing.risk.supportAction',
   },
   day_drop: {
-    label: 'Sharp drop during the day',
-    plainText:
-      'They started the day feeling good or better in the morning, but ended it feeling "not feeling well" in the evening. Something may have happened during the day.',
-    suggestedAction: 'Check in gently to find out what changed and whether they need help.',
+    labelKey: 'chrome.wellbeing.risk.dayDrop',
+    plainTextKey: 'chrome.wellbeing.risk.dayDropDesc',
+    suggestedActionKey: 'chrome.wellbeing.risk.dayDropAction',
   },
   declining_streak: {
-    label: 'Declining streak',
-    plainText:
-      'Their evening mood has gotten lower every day for the last 4 days in a row. This is a trend, not a one-off bad day.',
-    suggestedAction: 'Have a private conversation soon, before the pattern turns into burnout.',
+    labelKey: 'chrome.wellbeing.risk.decliningStreak',
+    plainTextKey: 'chrome.wellbeing.risk.decliningStreakDesc',
+    suggestedActionKey: 'chrome.wellbeing.risk.decliningStreakAction',
   },
 };
 
-export const TALK_TO_LABELS: Record<PulseTalkTo, string> = {
-  none: "No, they're okay",
-  manager: 'their manager',
-  hr: 'HR',
-  regional_manager: 'their regional manager',
-  confidential: 'confidential support',
+/** i18n keys for the talk-to audience; resolved via t(key) in components. */
+export const TALK_TO_KEYS: Record<PulseTalkTo, string> = {
+  none: 'chrome.wellbeing.talkTo.none',
+  manager: 'chrome.wellbeing.talkTo.manager',
+  hr: 'chrome.wellbeing.talkTo.hr',
+  regional_manager: 'chrome.wellbeing.talkTo.regionalManager',
+  confidential: 'chrome.wellbeing.talkTo.confidential',
 };
 
-/** Mirrors `apk/modules/pulse/pulse-constants.ts` morning and evening contributor options. */
-export const CONTRIBUTOR_LABELS: Record<string, string> = {
-  feeling_tired: 'Feeling tired',
-  personal_or_family: 'Personal or family matters',
-  financial_concerns: 'Financial concerns',
-  health: 'Health',
-  work_related_issue: 'Work-related issue',
-  conflict_with_colleague: 'Conflict with colleague',
-  conflict_with_manager: 'Conflict with manager',
-  poor_sleep: 'Poor sleep',
-  customers: 'Customers',
-  teamwork: 'Teamwork',
-  my_manager: 'My manager',
-  personal_matters: 'Personal matters',
-  achieved_my_goals: 'Achieved my goals',
-  felt_appreciated: 'Felt appreciated',
-  equipment_system_issues: 'Equipment or system issues',
-  training_needed: 'Training needed',
-  nothing_in_particular: 'Nothing in particular',
-  other: 'Other',
+/** i18n keys for mood contributor tags; resolved via t(key) in components. */
+export const CONTRIBUTOR_KEYS: Record<string, string> = {
+  feeling_tired: 'chrome.wellbeing.contributor.feelingTired',
+  personal_or_family: 'chrome.wellbeing.contributor.personalOrFamily',
+  financial_concerns: 'chrome.wellbeing.contributor.financialConcerns',
+  health: 'chrome.wellbeing.contributor.health',
+  work_related_issue: 'chrome.wellbeing.contributor.workRelatedIssue',
+  conflict_with_colleague: 'chrome.wellbeing.contributor.conflictWithColleague',
+  conflict_with_manager: 'chrome.wellbeing.contributor.conflictWithManager',
+  poor_sleep: 'chrome.wellbeing.contributor.poorSleep',
+  customers: 'chrome.wellbeing.contributor.customers',
+  teamwork: 'chrome.wellbeing.contributor.teamwork',
+  my_manager: 'chrome.wellbeing.contributor.myManager',
+  personal_matters: 'chrome.wellbeing.contributor.personalMatters',
+  achieved_my_goals: 'chrome.wellbeing.contributor.achievedMyGoals',
+  felt_appreciated: 'chrome.wellbeing.contributor.feltAppreciated',
+  equipment_system_issues: 'chrome.wellbeing.contributor.equipmentSystemIssues',
+  training_needed: 'chrome.wellbeing.contributor.trainingNeeded',
+  nothing_in_particular: 'chrome.wellbeing.contributor.nothingInParticular',
+  other: 'chrome.wellbeing.contributor.other',
 };
 
 /** Raw mood to display text; a dash means the check-in has not been submitted. */
@@ -85,43 +83,66 @@ export function moodLabel(mood: PulseMood | string | null | undefined): string {
   return mood.replaceAll('_', ' ');
 }
 
-export function contributorLabel(tag: string): string {
-  return CONTRIBUTOR_LABELS[tag] ?? tag.replaceAll('_', ' ');
+/** Returns the i18n key for a contributor tag; falls back to the raw tag. */
+export function contributorKey(tag: string): string {
+  return CONTRIBUTOR_KEYS[tag] ?? tag;
 }
 
 function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] || 'This person';
 }
 
-function moodPhrase(mood: PulseMood): string {
-  return MOOD_EXPLANATIONS[mood].label.toLowerCase();
+/**
+ * Returns an array of i18n keys (with optional interpolation params) that describe
+ * a person's day. Components resolve each entry via t(key, params).
+ */
+export interface SummaryPart {
+  key: string;
+  params?: Record<string, string>;
 }
 
-/** Short plain-English description of one person's day based on today's check-ins. */
-export function buildPersonSummary(person: PulseNamedPerson): string {
+export function buildPersonSummaryKeys(person: PulseNamedPerson): SummaryPart[] {
   const name = firstName(person.name);
-  const parts: string[] = [];
+  const parts: SummaryPart[] = [];
 
-  if (person.morningMood) parts.push(`${name} checked in this morning feeling ${moodPhrase(person.morningMood)}.`);
-  else parts.push(`${name} has not done a morning check-in today.`);
-
-  if (person.eveningMood) parts.push(`In the evening they felt ${moodPhrase(person.eveningMood)}.`);
-  else parts.push('The evening check-in has not been done yet.');
-
-  if (person.talkTo !== 'none') {
-    parts.push(`They asked to speak to ${TALK_TO_LABELS[person.talkTo]}.`);
-  } else if (person.followUpRequested) {
-    parts.push('They asked for a follow-up.');
+  if (person.morningMood) {
+    parts.push({
+      key: 'chrome.wellbeing.summary.morningCheckIn',
+      params: { name, mood: MOOD_EXPLANATIONS[person.morningMood].labelKey },
+    });
+  } else {
+    parts.push({ key: 'chrome.wellbeing.summary.noMorningCheckIn', params: { name } });
   }
 
-  // The "support" reason is already covered by the talk-to / follow-up sentence above.
-  if (person.riskReason && person.riskReason !== 'support') parts.push(RISK_REASON_EXPLANATIONS[person.riskReason].plainText);
+  if (person.eveningMood) {
+    parts.push({
+      key: 'chrome.wellbeing.summary.eveningFelt',
+      params: { mood: MOOD_EXPLANATIONS[person.eveningMood].labelKey },
+    });
+  } else {
+    parts.push({ key: 'chrome.wellbeing.summary.noEveningCheckIn' });
+  }
 
-  return parts.join(' ');
+  if (person.talkTo !== 'none') {
+    parts.push({
+      key: 'chrome.wellbeing.summary.askedToSpeak',
+      params: { audience: TALK_TO_KEYS[person.talkTo] },
+    });
+  } else if (person.followUpRequested) {
+    parts.push({ key: 'chrome.wellbeing.summary.askedFollowUp' });
+  }
+
+  if (person.riskReason && person.riskReason !== 'support') {
+    parts.push({ key: RISK_REASON_EXPLANATIONS[person.riskReason].plainTextKey });
+  }
+
+  return parts;
 }
 
 export interface StatusDescription {
-  label: string;
+  /** i18n key resolved via t(labelKey) in components. */
+  labelKey: string;
+  /** Formatted detail string (may contain numbers/arrows). */
   detail: string;
   tone: PulseTone;
 }
@@ -150,27 +171,27 @@ export function describeTrend(
   strongChange: number = STRONG_CHANGE,
 ): StatusDescription {
   if (morning == null && evening == null) {
-    return { label: 'No check-ins yet', detail: 'Nobody has checked in for this period.', tone: 'neutral' };
+    return { labelKey: 'chrome.wellbeing.trend.noCheckIns', detail: '', tone: 'neutral' };
   }
   if (morning == null) {
-    return { label: 'No morning check-in', detail: `Evening score ${formatScore(evening as number)}.`, tone: 'neutral' };
+    return { labelKey: 'chrome.wellbeing.trend.noMorning', detail: `${formatScore(evening as number)}`, tone: 'neutral' };
   }
   if (evening == null) {
     return {
-      label: 'Awaiting evening check-in',
-      detail: `Morning score ${formatScore(morning)}; the evening check-in is not in yet.`,
+      labelKey: 'chrome.wellbeing.trend.awaitingEvening',
+      detail: `${formatScore(morning)}`,
       tone: 'neutral',
     };
   }
 
   // Round first so float noise (e.g. 6.3 - 6 = 0.2999...) cannot flip a boundary.
   const delta = Math.round((evening - morning) * 10) / 10;
-  const detail = `Morning ${formatScore(morning)} \u2192 Evening ${formatScore(evening)} (${formatDelta(delta)})`;
-  if (delta >= strongChange) return { label: 'Much better by evening', detail, tone: 'good' };
-  if (delta >= STEADY_BAND) return { label: 'Improving through the day', detail, tone: 'good' };
-  if (delta > -STEADY_BAND) return { label: 'Steady', detail, tone: 'warn' };
-  if (delta > -strongChange) return { label: 'Dipping through the day', detail, tone: 'bad' };
-  return { label: 'Sharp drop', detail, tone: 'bad' };
+  const detail = `${formatScore(morning)} \u2192 ${formatScore(evening)} (${formatDelta(delta)})`;
+  if (delta >= strongChange) return { labelKey: 'chrome.wellbeing.trend.muchBetter', detail, tone: 'good' };
+  if (delta >= STEADY_BAND) return { labelKey: 'chrome.wellbeing.trend.improving', detail, tone: 'good' };
+  if (delta > -STEADY_BAND) return { labelKey: 'chrome.wellbeing.trend.steady', detail, tone: 'warn' };
+  if (delta > -strongChange) return { labelKey: 'chrome.wellbeing.trend.dipping', detail, tone: 'bad' };
+  return { labelKey: 'chrome.wellbeing.trend.sharpDrop', detail, tone: 'bad' };
 }
 
 function moodScore(mood: PulseMood | null): number | null {
@@ -183,16 +204,16 @@ export function describePersonStatus(person: PulseNamedPerson): StatusDescriptio
   const evening = moodScore(person.eveningMood);
   const moods =
     person.morningMood && person.eveningMood
-      ? `${MOOD_EXPLANATIONS[person.morningMood].label} \u2192 ${MOOD_EXPLANATIONS[person.eveningMood].label}`
+      ? `${person.morningMood} \u2192 ${person.eveningMood}`
       : '';
 
   if (person.riskReason === 'day_drop') {
-    return { label: 'Mood dropped sharply during the day', detail: moods, tone: 'bad' };
+    return { labelKey: 'chrome.wellbeing.personStatus.moodDropped', detail: moods, tone: 'bad' };
   }
   if (person.riskReason === 'declining_streak') {
     return {
-      label: 'Mood declining 4 days in a row',
-      detail: 'Evening mood has been lower every day recently.',
+      labelKey: 'chrome.wellbeing.personStatus.declining4Days',
+      detail: '',
       tone: 'bad',
     };
   }
@@ -200,7 +221,7 @@ export function describePersonStatus(person: PulseNamedPerson): StatusDescriptio
   // Mood steps are 2 points apart, so a single step is a dip, not a sharp drop.
   const trend = describeTrend(morning, evening, STRONG_CHANGE + 1);
   if (person.riskReason === 'support' && trend.tone !== 'bad') {
-    return { label: 'Asked for support', detail: `${trend.label}. ${trend.detail}`, tone: 'warn' };
+    return { labelKey: 'chrome.wellbeing.personStatus.askedForSupport', detail: trend.detail, tone: 'warn' };
   }
   return { ...trend, detail: moods || trend.detail };
 }

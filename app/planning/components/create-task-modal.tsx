@@ -399,7 +399,7 @@ export function CreateTaskModal({
                       <SelectItem key={o.value} value={o.value}>
                         <span className="flex items-center gap-2">
                           <o.icon className="size-4 shrink-0" />
-                          {o.label}
+                          {t(o.labelKey)}
                         </span>
                       </SelectItem>
                     ))}
@@ -454,7 +454,7 @@ export function CreateTaskModal({
                       <SelectItem key={o.value} value={o.value}>
                         <span className="flex items-center gap-2">
                           <o.icon className="size-4 shrink-0" />
-                          {o.label}
+                          {t(o.labelKey)}
                         </span>
                       </SelectItem>
                     ))}
@@ -520,7 +520,7 @@ export function CreateTaskModal({
                       <SelectItem key={o.value} value={o.value}>
                         <span className="flex items-center gap-2">
                           <o.icon className="size-4 shrink-0" />
-                          {o.label}
+                          {t(o.labelKey)}
                         </span>
                       </SelectItem>
                     ))}

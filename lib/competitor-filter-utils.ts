@@ -14,12 +14,12 @@ export type CompetitorStatusFilterValue = 'all' | CompetitorStatusValue;
 
 export const COMPETITOR_STATUS_FILTER_OPTIONS: {
   value: CompetitorStatusFilterValue;
-  label: string;
+  labelKey: string;
 }[] = [
-  { value: 'all', label: 'All statuses' },
+  { value: 'all', labelKey: 'actions.allStatuses' },
   ...COMPETITOR_STATUS_VALUES.map((v) => ({
     value: v,
-    label: v.replace(/^\w/, (c) => c.toUpperCase()),
+    labelKey: `chrome.competitors.status.${v}`,
   })),
 ];
 

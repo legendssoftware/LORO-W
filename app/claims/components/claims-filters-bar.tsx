@@ -227,11 +227,11 @@ export function ClaimsFilterControls({
       CLAIM_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map(
         (opt) => ({
           value: opt.value,
-          label: opt.label,
+          label: t(opt.labelKey),
           icon: statusIconFor(opt.value),
         })
       ),
-    []
+    [t]
   );
 
   const folderPickerOptions = React.useMemo<SearchableOptionRow[]>(

@@ -102,12 +102,12 @@ export function CompetitorsContent() {
     () =>
       COMPETITOR_STATUS_FILTER_OPTIONS.filter((o) => o.value !== 'all').map((o) => ({
         value: o.value,
-        label: o.label,
+        label: t(o.labelKey),
         icon: (
           <ListFilter className={cn('size-4 shrink-0', statusFilterIconClass(o.value))} />
         ),
       })),
-    []
+    [t]
   );
 
   const directPickerOptions = useMemo<SearchableOptionRow[]>(
@@ -132,11 +132,11 @@ export function CompetitorsContent() {
         value: v,
         label:
           v === '5'
-            ? 'Threat 5 only'
-            : `Threat ≥ ${v}`,
+            ? t('chrome.competitors.threatOnly', { n: v })
+            : t('chrome.competitors.threatAtLeast', { n: v }),
         icon: <ShieldAlert className="size-4 shrink-0" />,
       })),
-    []
+    [t]
   );
 
   if (!isTokenReady) {
@@ -174,9 +174,9 @@ export function CompetitorsContent() {
                 selectedValue={statusFilter}
                 onValueChange={(v) => setStatusFilter(v as CompetitorStatusFilterValue)}
                 options={statusPickerOptions}
-                placeholderLabelWhenAll="All statuses"
-                searchPlaceholder="Search statuses…"
-                emptyMessage="No status found."
+                placeholderLabelWhenAll={t('actions.allStatuses')}
+                searchPlaceholder={t('chrome.competitors.searchStatuses')}
+                emptyMessage={t('actions.noStatusFound')}
                 triggerIcon={<ListFilter className="size-4 shrink-0" />}
                 compactTriggerOnMobile
                 triggerClassName="h-9 min-w-0 shrink-0 md:w-[170px]"
@@ -197,9 +197,9 @@ export function CompetitorsContent() {
                 selectedValue={directFilter}
                 onValueChange={(v) => setDirectFilter(v as CompetitorDirectFilterValue)}
                 options={directPickerOptions}
-                placeholderLabelWhenAll="All types"
-                searchPlaceholder="Search types…"
-                emptyMessage="No type found."
+                placeholderLabelWhenAll={t('approvals.allTypes')}
+                searchPlaceholder={t('chrome.competitors.searchTypes')}
+                emptyMessage={t('chrome.competitors.noTypeFound')}
                 triggerIcon={<Link2 className="size-4 shrink-0" />}
                 compactTriggerOnMobile
                 triggerClassName="h-9 min-w-0 shrink-0 md:w-[150px]"
@@ -220,9 +220,9 @@ export function CompetitorsContent() {
                 selectedValue={threatFilter}
                 onValueChange={(v) => setThreatFilter(v as CompetitorThreatFilterValue)}
                 options={threatPickerOptions}
-                placeholderLabelWhenAll="Any threat level"
-                searchPlaceholder="Search threat levels…"
-                emptyMessage="No option found."
+                placeholderLabelWhenAll={t('chrome.competitors.anyThreatLevel')}
+                searchPlaceholder={t('chrome.competitors.searchThreatLevels')}
+                emptyMessage={t('chrome.competitors.noOptionFound')}
                 triggerIcon={<ShieldAlert className="size-4 shrink-0" />}
                 compactTriggerOnMobile
                 triggerClassName="h-9 min-w-0 shrink-0 md:w-[160px]"
@@ -308,7 +308,7 @@ export function CompetitorsContent() {
                 disabled={isFetchingNext}
                 onClick={() => competitorsQuery.fetchNextPage()}
               >
-                {isFetchingNext ? 'Loading…' : 'Load more'}
+                {isFetchingNext ? t('actions.loading') : t('actions.loadMore')}
               </Button>
             </div>
           ) : null}

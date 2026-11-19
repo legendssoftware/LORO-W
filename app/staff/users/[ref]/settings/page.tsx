@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -268,6 +269,7 @@ function formatEnumLabel(value: string): string {
 }
 
 export default function UserSettingsPage() {
+  const { t } = useTranslation('screens');
   const params = useParams();
   const router = useRouter();
   const ref = typeof params.ref === 'string' ? params.ref : null;
@@ -502,17 +504,17 @@ export default function UserSettingsPage() {
     const hasTargetChanges = body.userTarget != null;
     const hasChanges = hasUserChanges || hasTargetChanges;
     if (!hasChanges) {
-      toast.success('No changes to save');
+      toast.success(t('chrome.staff.settings.toasts.noChanges'));
       return;
     }
     patchUser.mutate(body, {
       onSuccess: (result) => {
         if (hasUserChanges && hasTargetChanges) {
-          toast.success('User and targets updated');
+          toast.success(t('chrome.staff.settings.toasts.userAndTargetsUpdated'));
         } else if (hasTargetChanges) {
-          toast.success('Targets updated');
+          toast.success(t('chrome.staff.settings.toasts.targetsUpdated'));
         } else {
-          toast.success('User updated');
+          toast.success(t('chrome.staff.settings.toasts.userUpdated'));
         }
         if (result.user) {
           form.reset(formValuesFromUser(result.user));
@@ -528,7 +530,7 @@ export default function UserSettingsPage() {
         }
       },
       onError: (err: Error) => {
-        toast.error(err.message || 'Failed to update user');
+        toast.error(err.message || t('chrome.staff.settings.toasts.failedToUpdate'));
       },
     });
   };
@@ -536,9 +538,9 @@ export default function UserSettingsPage() {
   if (!ref) {
     return (
       <div className="h-full overflow-auto flex flex-col items-center justify-center px-4">
-        <p className="text-muted-foreground">Invalid user reference.</p>
+        <p className="text-muted-foreground">{t('chrome.staff.settings.invalidRef')}</p>
         <Link href="/staff" className="text-primary hover:underline mt-2 inline-block">
-          Back to Staff
+          {t('chrome.staff.settings.backToStaff')}
         </Link>
       </div>
     );
@@ -551,7 +553,7 @@ export default function UserSettingsPage() {
           <div>
             <p className="text-destructive">{userError.message}</p>
             <Link href="/staff" className="text-primary hover:underline mt-2 inline-block">
-              Back to Staff
+              {t('chrome.staff.settings.backToStaff')}
             </Link>
           </div>
         ) : (
@@ -583,10 +585,10 @@ export default function UserSettingsPage() {
         toast.success(res.message);
       } else {
         const res = await provisionUserMutation.mutateAsync(userUid);
-        toast.success(`Invite sent to ${res.user.email}`);
+        toast.success(t('chrome.staff.settings.toasts.inviteSentTo', { email: res.user.email }));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send invite');
+      toast.error(err instanceof Error ? err.message : t('chrome.staff.settings.toasts.failedToSendInvite'));
     }
   }
 
@@ -598,7 +600,7 @@ export default function UserSettingsPage() {
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4 sm:mb-6 sm:text-sm"
         >
           <ChevronLeftIcon className="size-4" />
-          Back to Staff
+          {t('chrome.staff.settings.backToStaff')}
         </Link>
 
         <Form {...form}>
@@ -613,7 +615,7 @@ export default function UserSettingsPage() {
                       : 'bg-red-600 hover:bg-red-600'
                   )}
                 >
-                  {hasClerkLink ? 'Clerk linked' : 'Pending sign-in'}
+                  {hasClerkLink ? t('chrome.staff.settings.clerkLinked') : t('chrome.staff.settings.pendingSignIn')}
                 </Badge>
                 <Button
                   type="button"
@@ -627,14 +629,14 @@ export default function UserSettingsPage() {
                   ) : (
                     <Mail className="size-4" />
                   )}
-                  {hasClerkLink ? 'Re-Invite User' : 'Invite User'}
+                  {hasClerkLink ? t('chrome.staff.settings.reInviteUser') : t('chrome.staff.settings.inviteUser')}
                 </Button>
               </div>
             )}
 
             <CollapsibleFormSection
-              title="Basic details"
-              description="Name, contact and email."
+              title={t('chrome.staff.settings.sections.basicDetails')}
+              description={t('chrome.staff.settings.sections.basicDetailsDesc')}
               contentClassName="space-y-3 sm:space-y-4"
             >
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -643,7 +645,7 @@ export default function UserSettingsPage() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First name</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.firstName')}</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder={savedFieldPlaceholder(field.value, 'Jane')} autoComplete="given-name" />
                         </FormControl>
@@ -656,7 +658,7 @@ export default function UserSettingsPage() {
                     name="surname"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Surname</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.surname')}</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder={savedFieldPlaceholder(field.value, 'Smith')} autoComplete="family-name" />
                         </FormControl>
@@ -670,7 +672,7 @@ export default function UserSettingsPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.email')}</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -688,7 +690,7 @@ export default function UserSettingsPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.phone')}</FormLabel>
                       <FormControl>
                         <Input
                           type="tel"
@@ -710,7 +712,7 @@ export default function UserSettingsPage() {
                   name="pbxExtension"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>PBX extension</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.pbxExtension')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -731,7 +733,7 @@ export default function UserSettingsPage() {
                   name="businesscardURL"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business card URL</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.businessCardUrl')}</FormLabel>
                       <FormControl>
                         <Input
                           type="url"
@@ -750,8 +752,8 @@ export default function UserSettingsPage() {
               </CollapsibleFormSection>
 
             <CollapsibleFormSection
-              title="Identity & access"
-              description="User reference, HR ID, role, access level, workforce type, status, what they can approve, and whether they can open performance tracking."
+              title={t('chrome.staff.settings.sections.identityAccess')}
+              description={t('chrome.staff.settings.sections.identityAccessDesc')}
               contentClassName="space-y-3 sm:space-y-4"
             >
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -760,7 +762,7 @@ export default function UserSettingsPage() {
                     name="userref"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>User ref</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.userRef')}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -780,7 +782,7 @@ export default function UserSettingsPage() {
                     name="hrID"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>HR ID</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.hrId')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -804,7 +806,7 @@ export default function UserSettingsPage() {
                     name="role"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Role</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.role')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value ?? ''}
@@ -837,7 +839,7 @@ export default function UserSettingsPage() {
                     name="accessLevel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Access level</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.accessLevel')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value ?? ''}
@@ -870,7 +872,7 @@ export default function UserSettingsPage() {
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('tables.status')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value ?? 'active'}
@@ -883,7 +885,7 @@ export default function UserSettingsPage() {
                           <SelectContent>
                             {(['active', 'inactive', 'suspended'] as const).map((statusValue) => {
                               const StatusIcon = USER_STATUS_ICONS[statusValue] ?? User;
-                              const label = statusValue === 'active' ? 'Active' : statusValue === 'inactive' ? 'Inactive' : 'Suspended';
+                              const label = t(`chrome.staff.settings.status${statusValue.charAt(0).toUpperCase() + statusValue.slice(1)}`);
                               return (
                                 <SelectItem key={statusValue} value={statusValue}>
                                   <span className="flex items-center gap-2">
@@ -904,7 +906,7 @@ export default function UserSettingsPage() {
                     name="workforceType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Workforce type</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.workforceType')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value ?? ''}
@@ -938,7 +940,7 @@ export default function UserSettingsPage() {
                   name="departmentId"
                   render={({ field }) => (
                     <FormItem className="max-w-xs">
-                      <FormLabel>Department ID</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.departmentId')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -971,9 +973,9 @@ export default function UserSettingsPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
                       <div className="space-y-1">
-                        <FormLabel>Performance tracking</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.performanceTracking')}</FormLabel>
                         <FormDescription>
-                          When on, this user can open sales performance tracking.
+                          {t('chrome.staff.settings.performanceTrackingDesc')}
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -988,8 +990,8 @@ export default function UserSettingsPage() {
               </CollapsibleFormSection>
 
             <CollapsibleFormSection
-              title="Primary branch"
-              description="The branch this user is assigned to."
+              title={t('chrome.staff.settings.sections.primaryBranch')}
+              description={t('chrome.staff.settings.sections.primaryBranchDesc')}
             >
                 <FormField
                   control={form.control}
@@ -1007,7 +1009,7 @@ export default function UserSettingsPage() {
                         : null;
                     return (
                       <FormItem>
-                        <FormLabel>Branch</FormLabel>
+                        <FormLabel>{t('chrome.staff.settings.branch')}</FormLabel>
                         <Popover
                           open={primaryBranchOpen}
                           onOpenChange={setPrimaryBranchOpen}
@@ -1031,7 +1033,7 @@ export default function UserSettingsPage() {
                                       {selectedLabel}
                                     </>
                                   ) : (
-                                    'Select branch'
+                                    t('chrome.staff.settings.selectBranch')
                                   )}
                                 </span>
                                 <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -1043,9 +1045,9 @@ export default function UserSettingsPage() {
                             align="start"
                           >
                             <Command>
-                              <CommandInput placeholder="Search branches…" />
+                              <CommandInput placeholder={t('chrome.staff.settings.searchBranches')} />
                               <CommandList>
-                                <CommandEmpty>No branch found.</CommandEmpty>
+                                <CommandEmpty>{t('actions.noBranchFound')}</CommandEmpty>
                                 <CommandGroup>
                                   <CommandItem
                                     value="none unassigned"
@@ -1060,7 +1062,7 @@ export default function UserSettingsPage() {
                                         normalizedBranch == null ? 'opacity-100' : 'opacity-0'
                                       )}
                                     />
-                                    <span>None</span>
+                                    <span>{t('chrome.staff.settings.none')}</span>
                                   </CommandItem>
                                   {branches.map((b) => {
                                     const label =
@@ -1106,15 +1108,15 @@ export default function UserSettingsPage() {
             <JobInformationCard control={form.control} />
 
             <CollapsibleFormSection
-              title="Assigned clients"
-              description="Clients linked to this user by sales code."
+              title={t('chrome.staff.settings.sections.assignedClients')}
+              description={t('chrome.staff.settings.sections.assignedClientsDesc')}
             >
                 <FormField
                   control={form.control}
                   name="assignedClientIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Assigned clients</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.assignedClients')}</FormLabel>
                       <Popover
                         open={clientsPickerOpen}
                         onOpenChange={(open) => {
@@ -1136,7 +1138,7 @@ export default function UserSettingsPage() {
                             >
                               {field.value?.length
                                 ? `${field.value.length} selected`
-                                : 'Select clients'}
+                                : t('chrome.staff.settings.selectClients')}
                               <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -1144,7 +1146,7 @@ export default function UserSettingsPage() {
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
                           <Command shouldFilter={false}>
                             <CommandInput
-                              placeholder="Search clients…"
+                              placeholder={t('chrome.staff.settings.searchClients')}
                               value={clientsSearch}
                               onValueChange={setClientsSearch}
                             />
@@ -1152,11 +1154,11 @@ export default function UserSettingsPage() {
                               <CommandGroup className="p-2">
                                 {clients.length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No clients available
+                                    {t('chrome.staff.settings.noClientsAvailable')}
                                   </p>
                                 ) : filteredClientsForPicker.length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No clients found.
+                                    {t('chrome.staff.settings.noClientsFound')}
                                   </p>
                                 ) : (
                                   filteredClientsForPicker.map((c) => {
@@ -1223,7 +1225,7 @@ export default function UserSettingsPage() {
                 />
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
                   <p className="text-xs text-muted-foreground flex-1 min-w-[200px]">
-                    Group assigned clients into nearby visit days and save a driving route for each day.
+                    {t('chrome.staff.settings.planVisitsHint')}
                   </p>
                   <Button
                     type="button"
@@ -1233,7 +1235,7 @@ export default function UserSettingsPage() {
                     onClick={() => setPlanVisitsOpen(true)}
                   >
                     <CalendarDays className="size-4" />
-                    Plan visit schedule
+                    {t('chrome.staff.settings.planVisitSchedule')}
                   </Button>
                 </div>
 
@@ -1272,8 +1274,8 @@ export default function UserSettingsPage() {
             ) : null}
 
             <CollapsibleFormSection
-              title="User targets"
-              description='Performance targets and cost breakdown. Use the "Save" button at the bottom of the page to persist these together with the rest of the user (creates targets if the user has none).'
+              title={t('chrome.staff.settings.sections.userTargets')}
+              description={t('chrome.staff.settings.sections.userTargetsDesc')}
             >
                 <Form {...targetForm}>
                   <div className="space-y-3 sm:space-y-4">
@@ -1282,7 +1284,7 @@ export default function UserSettingsPage() {
                       name="performanceWarningLevel"
                       render={({ field }) => (
                         <FormItem className="max-w-md">
-                          <FormLabel>Performance warning tier</FormLabel>
+                          <FormLabel>{t('chrome.staff.settings.performanceWarningTier')}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value ?? 'none'}
@@ -1293,14 +1295,14 @@ export default function UserSettingsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">None (cleared when saved)</SelectItem>
-                              <SelectItem value="1">Level 1 — first warning (green)</SelectItem>
-                              <SelectItem value="2">Level 2 — second warning (amber)</SelectItem>
-                              <SelectItem value="3">Level 3 — final warning (red)</SelectItem>
+                              <SelectItem value="none">{t('chrome.staff.settings.warningNone')}</SelectItem>
+                              <SelectItem value="1">{t('chrome.staff.settings.warningLevel1')}</SelectItem>
+                              <SelectItem value="2">{t('chrome.staff.settings.warningLevel2')}</SelectItem>
+                              <SelectItem value="3">{t('chrome.staff.settings.warningLevel3')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            Persisted with the bottom Save when changed. Employee must acknowledge in-app before the benchmarks dialog.
+                            {t('chrome.staff.settings.warningHint')}
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -1312,7 +1314,7 @@ export default function UserSettingsPage() {
                         name="targetSalesAmount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target sales (amount)</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetSales')}</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -1332,7 +1334,7 @@ export default function UserSettingsPage() {
                         name="targetQuotationsAmount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target quotations</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetQuotations')}</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -1352,7 +1354,7 @@ export default function UserSettingsPage() {
                         name="targetCurrency"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Currency</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.currency')}</FormLabel>
                             <Select
                               onValueChange={(v) =>
                                 field.onChange(v === '__none__' ? null : v)
@@ -1365,12 +1367,12 @@ export default function UserSettingsPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
-                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Select currency')} />
+                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, t('chrome.staff.settings.selectCurrency'))} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="__none__">
-                                  Select currency
+                                  {t('chrome.staff.settings.selectCurrency')}
                                 </SelectItem>
                                 {CURRENCY_OPTIONS.map((opt) => (
                                   <SelectItem
@@ -1391,7 +1393,7 @@ export default function UserSettingsPage() {
                         name="targetHoursWorked"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target hours</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetHours')}</FormLabel>
                             <FormControl>
                               <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
@@ -1404,7 +1406,7 @@ export default function UserSettingsPage() {
                         name="targetNewClients"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target new clients</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetNewClients')}</FormLabel>
                             <FormControl>
                               <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
@@ -1417,7 +1419,7 @@ export default function UserSettingsPage() {
                         name="targetNewLeads"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target new leads</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetNewLeads')}</FormLabel>
                             <FormControl>
                               <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
@@ -1430,7 +1432,7 @@ export default function UserSettingsPage() {
                         name="targetCheckIns"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target check-ins</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetCheckIns')}</FormLabel>
                             <FormControl>
                               <Input type="number" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                             </FormControl>
@@ -1448,7 +1450,7 @@ export default function UserSettingsPage() {
                         name="targetPeriod"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Target period</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.targetPeriod')}</FormLabel>
                             <Select
                               onValueChange={(v) =>
                                 field.onChange(v === '__none__' ? null : v)
@@ -1461,12 +1463,12 @@ export default function UserSettingsPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
-                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, 'Select period')} />
+                                  <SelectValue placeholder={savedFieldPlaceholder(field.value, t('chrome.staff.settings.selectPeriod'))} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="__none__">
-                                  Select period
+                                  {t('chrome.staff.settings.selectPeriod')}
                                 </SelectItem>
                                 {TARGET_PERIOD_OPTIONS.map((opt) => (
                                   <SelectItem
@@ -1487,7 +1489,7 @@ export default function UserSettingsPage() {
                         name="periodStartDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Period start</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.periodStart')}</FormLabel>
                             <FormControl>
                               <DatePickerField
                             value={field.value}
@@ -1504,7 +1506,7 @@ export default function UserSettingsPage() {
                         name="periodEndDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Period end</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.periodEnd')}</FormLabel>
                             <FormControl>
                               <DatePickerField
                             value={field.value}
@@ -1521,7 +1523,7 @@ export default function UserSettingsPage() {
                         name="recurringInterval"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Recurring interval</FormLabel>
+                            <FormLabel>{t('chrome.staff.settings.recurringInterval')}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value ?? ''}>
                               <FormControl>
                                 <SelectTrigger className="w-full min-w-0">
@@ -1529,9 +1531,9 @@ export default function UserSettingsPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="daily">{t('chrome.staff.settings.daily')}</SelectItem>
+                                <SelectItem value="weekly">{t('chrome.staff.settings.weekly')}</SelectItem>
+                                <SelectItem value="monthly">{t('chrome.staff.settings.monthly')}</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -1546,7 +1548,7 @@ export default function UserSettingsPage() {
                             <FormControl>
                               <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
                             </FormControl>
-                            <FormLabel className="font-normal">Recurring</FormLabel>
+                            <FormLabel className="font-normal">{t('chrome.staff.settings.recurring')}</FormLabel>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1559,14 +1561,14 @@ export default function UserSettingsPage() {
                             <FormControl>
                               <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
                             </FormControl>
-                            <FormLabel className="font-normal">Carry forward unfulfilled</FormLabel>
+                            <FormLabel className="font-normal">{t('chrome.staff.settings.carryForward')}</FormLabel>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
                     <div className="border-t pt-4">
-                      <p className="text-sm font-medium text-muted-foreground mb-3">Cost breakdown (ZAR)</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-3">{t('chrome.staff.settings.costBreakdown')}</p>
                       <PrimaryVehicleSection
                         control={targetForm.control}
                         userUid={user.uid}
@@ -1589,7 +1591,7 @@ export default function UserSettingsPage() {
                           name="baseSalary"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Base salary</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.baseSalary')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1602,7 +1604,7 @@ export default function UserSettingsPage() {
                           name="carInstalment"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Car instalment</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.carInstalment')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1615,7 +1617,7 @@ export default function UserSettingsPage() {
                           name="carInsurance"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Car insurance</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.carInsurance')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1628,7 +1630,7 @@ export default function UserSettingsPage() {
                           name="fuel"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Fuel</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.fuel')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1641,7 +1643,7 @@ export default function UserSettingsPage() {
                           name="fuelPricePerLitreZar"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Fuel price override (R/L)</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.fuelPriceOverride')}</FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -1657,7 +1659,7 @@ export default function UserSettingsPage() {
                                 />
                               </FormControl>
                               <FormDescription>
-                                Rand per litre for travel reports. Leave blank to use the national price for the country driven that day. The travel dialog can replace this for one download.
+                                {t('chrome.staff.settings.fuelPriceDesc')}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -1671,7 +1673,7 @@ export default function UserSettingsPage() {
                           name="cellPhoneAllowance"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Cell phone allowance</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.cellPhoneAllowance')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1684,7 +1686,7 @@ export default function UserSettingsPage() {
                           name="carMaintenance"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Car maintenance</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.carMaintenance')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1697,7 +1699,7 @@ export default function UserSettingsPage() {
                           name="cgicCosts"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>CGIC costs</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.cgicCosts')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1710,7 +1712,7 @@ export default function UserSettingsPage() {
                           name="totalCost"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Total cost</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.totalCost')}</FormLabel>
                               <FormControl>
                                 <Input type="number" step="any" placeholder={savedFieldPlaceholder(field.value, '0')} {...field} value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : Number(v)); }} />
                               </FormControl>
@@ -1723,7 +1725,7 @@ export default function UserSettingsPage() {
                           name="erpSalesRepCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>ERP sales rep code</FormLabel>
+                              <FormLabel>{t('chrome.staff.settings.erpSalesRepCode')}</FormLabel>
                               <FormControl>
                                 <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. REP001')} />
                               </FormControl>
@@ -1738,15 +1740,15 @@ export default function UserSettingsPage() {
               </CollapsibleFormSection>
 
             <CollapsibleFormSection
-              title="Managed branches"
-              description="Branches this user manages (managers/supervisors)."
+              title={t('chrome.staff.settings.sections.managedBranches')}
+              description={t('chrome.staff.settings.sections.managedBranchesDesc')}
             >
                 <FormField
                   control={form.control}
                   name="managedBranches"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Managed branches</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.managedBranches')}</FormLabel>
                       <Popover
                         open={managedBranchesPickerOpen}
                         onOpenChange={(open) => {
@@ -1768,7 +1770,7 @@ export default function UserSettingsPage() {
                             >
                               {field.value?.length
                                 ? `${field.value.length} selected`
-                                : 'Select branches'}
+                                : t('chrome.staff.settings.selectBranches')}
                               <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -1776,7 +1778,7 @@ export default function UserSettingsPage() {
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
                           <Command shouldFilter={false}>
                             <CommandInput
-                              placeholder="Search branches…"
+                              placeholder={t('chrome.staff.settings.searchBranches')}
                               value={managedBranchesSearch}
                               onValueChange={setManagedBranchesSearch}
                             />
@@ -1784,11 +1786,11 @@ export default function UserSettingsPage() {
                               <CommandGroup className="p-2">
                                 {branches.length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No branches available
+                                    {t('chrome.staff.settings.noBranchesAvailable')}
                                   </p>
                                 ) : filteredBranchesForManagedPicker.length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No branches found.
+                                    {t('chrome.staff.settings.noBranchesFound')}
                                   </p>
                                 ) : (
                                   filteredBranchesForManagedPicker.map((b) => {
@@ -1856,8 +1858,8 @@ export default function UserSettingsPage() {
               </CollapsibleFormSection>
 
             <CollapsibleFormSection
-              title="Managed staff"
-              description="Staff this user manages. Everyone in the managed branches above is included automatically."
+              title={t('chrome.staff.settings.sections.managedStaff')}
+              description={t('chrome.staff.settings.sections.managedStaffDesc')}
             >
                 <FormField
                   control={form.control}
@@ -1869,12 +1871,11 @@ export default function UserSettingsPage() {
                     );
                     return (
                     <FormItem>
-                      <FormLabel>Managed staff</FormLabel>
+                      <FormLabel>{t('chrome.staff.settings.managedStaff')}</FormLabel>
                       {inheritedStaff.length > 0 && (
                         <div className="rounded-md border border-dashed p-3 mb-2">
                           <p className="text-xs text-muted-foreground mb-2">
-                            {inheritedStaff.length} staff added automatically from managed branches
-                            (no need to assign them again):
+                            {t('chrome.staff.settings.inheritedStaffHint', { count: inheritedStaff.length })}
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {inheritedStaff.map((u) => (
@@ -1906,7 +1907,7 @@ export default function UserSettingsPage() {
                             >
                               {explicitStaffUids.length
                                 ? `${explicitStaffUids.length} selected`
-                                : 'Select additional staff'}
+                                : t('chrome.staff.settings.selectAdditionalStaff')}
                               <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -1914,7 +1915,7 @@ export default function UserSettingsPage() {
                         <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
                           <Command shouldFilter={false}>
                             <CommandInput
-                              placeholder="Search staff…"
+                              placeholder={t('chrome.staff.settings.searchStaff')}
                               value={managedStaffSearch}
                               onValueChange={setManagedStaffSearch}
                             />
@@ -1924,11 +1925,11 @@ export default function UserSettingsPage() {
                                   (u) => u.uid !== user?.uid && !inheritedStaffUids.has(u.uid)
                                 ).length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No users available
+                                    {t('chrome.staff.settings.noUsersAvailable')}
                                   </p>
                                 ) : filteredStaffForPicker.length === 0 ? (
                                   <p className="text-xs sm:text-sm text-muted-foreground py-3 text-center sm:py-4">
-                                    No staff found.
+                                    {t('chrome.staff.settings.noStaffFound')}
                                   </p>
                                 ) : (
                                   filteredStaffForPicker.map((u) => {
@@ -1996,8 +1997,8 @@ export default function UserSettingsPage() {
               </CollapsibleFormSection>
 
             <CollapsibleFormSection
-              title="Danger zone"
-              description="Remove user from the system or restore a removed user. Permanent delete cannot be undone."
+              title={t('chrome.staff.settings.sections.dangerZone')}
+              description={t('chrome.staff.settings.sections.dangerZoneDesc')}
               titleClassName="text-destructive"
               cardClassName="border-destructive/50"
               contentClassName="flex flex-col gap-3"
@@ -2014,7 +2015,7 @@ export default function UserSettingsPage() {
                         {restoreUserMutation.isPending ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          'Restore user'
+                          t('chrome.staff.settings.restoreUser')
                         )}
                       </Button>
                       <Button
@@ -2029,12 +2030,12 @@ export default function UserSettingsPage() {
                         {deletePermanentMutation.isPending ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          'Permanently delete'
+                          t('chrome.staff.settings.permanentlyDelete')
                         )}
                       </Button>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      This user is removed from the system. You can restore them or permanently delete their account.
+                      {t('chrome.staff.settings.deletedHint')}
                     </p>
                   </>
                 ) : (
@@ -2048,12 +2049,11 @@ export default function UserSettingsPage() {
                       {deleteUserMutation.isPending ? (
                         <Loader2Icon className="size-4 animate-spin" />
                       ) : (
-                        'Remove from system'
+                        t('chrome.staff.settings.removeFromSystem')
                       )}
                     </Button>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      Deactivate this user. They can be restored later. For permanent removal, remove first then use
-                      &quot;Permanently delete&quot; from this page.
+                      {t('chrome.staff.settings.activeHint')}
                     </p>
                   </>
                 )}
@@ -2066,7 +2066,7 @@ export default function UserSettingsPage() {
                 className="flex-1 sm:flex-none"
                 onClick={() => router.push('/staff')}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -2076,7 +2076,7 @@ export default function UserSettingsPage() {
                 {patchUser.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
-                  'Save'
+                  t('actions.save')
                 )}
               </Button>
             </div>
@@ -2087,31 +2087,30 @@ export default function UserSettingsPage() {
         <AlertDialog open={softDeleteOpen} onOpenChange={setSoftDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove user from system?</AlertDialogTitle>
+              <AlertDialogTitle>{t('chrome.staff.settings.removeUserTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This will deactivate the user. They will no longer be able to sign in. You can restore them later from
-                this page. Related records (leads, orders, etc.) will be kept and still linked to this user.
+                {t('chrome.staff.settings.removeUserDesc')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 onClick={(e) => {
                   e.preventDefault();
                   deleteUserMutation.mutate(undefined, {
                     onSuccess: () => {
-                      toast.success('User removed from system');
+                      toast.success(t('chrome.staff.settings.toasts.userRemoved'));
                       setSoftDeleteOpen(false);
                       router.push('/staff');
                     },
                     onError: (err: Error) => {
-                      toast.error(err.message || 'Failed to remove user');
+                      toast.error(err.message || t('chrome.staff.settings.toasts.failedToRemove'));
                     },
                   });
                 }}
               >
-                Remove from system
+                {t('chrome.staff.settings.removeFromSystem')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -2121,30 +2120,29 @@ export default function UserSettingsPage() {
         <AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Restore user?</AlertDialogTitle>
+              <AlertDialogTitle>{t('chrome.staff.settings.restoreUserTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This will restore the user so they can sign in again. Their status will be set to inactive until you
-                update it.
+                {t('chrome.staff.settings.restoreUserDesc')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 variant="success"
                 onClick={(e) => {
                   e.preventDefault();
                   restoreUserMutation.mutate(undefined, {
                     onSuccess: () => {
-                      toast.success('User restored');
+                      toast.success(t('chrome.staff.settings.toasts.userRestored'));
                       setRestoreOpen(false);
                     },
                     onError: (err: Error) => {
-                      toast.error(err.message || 'Failed to restore user');
+                      toast.error(err.message || t('chrome.staff.settings.toasts.failedToRestore'));
                     },
                   });
                 }}
               >
-                Restore
+                {t('chrome.staff.settings.restoreAction')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -2160,16 +2158,16 @@ export default function UserSettingsPage() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>
+              <AlertDialogTitle>{t('chrome.staff.settings.permanentDeleteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This cannot be undone. The user row will be removed from the database. Related records (leads,
-                quotations, etc.) will be kept but no longer linked to this user. Type <strong>PERMANENT</strong> below
-                to confirm.
+                {t('chrome.staff.settings.permanentDeleteDesc')}
+                {' '}
+                <span dangerouslySetInnerHTML={{ __html: t('chrome.staff.settings.permanentDeleteTypeHint') }} />
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-2">
               <Input
-                placeholder="Type PERMANENT to confirm"
+                placeholder={t('chrome.staff.settings.permanentDeleteConfirm')}
                 value={permanentConfirmText}
                 onChange={(e) => setPermanentConfirmText(e.target.value)}
                 className="font-mono"
@@ -2177,7 +2175,7 @@ export default function UserSettingsPage() {
               />
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 disabled={permanentConfirmText !== 'PERMANENT'}
@@ -2186,18 +2184,18 @@ export default function UserSettingsPage() {
                   if (permanentConfirmText !== 'PERMANENT') return;
                   deletePermanentMutation.mutate(undefined, {
                     onSuccess: () => {
-                      toast.success('User permanently deleted');
+                      toast.success(t('chrome.staff.settings.toasts.userPermanentlyDeleted'));
                       setPermanentOpen(false);
                       setPermanentConfirmText('');
                       router.push('/staff');
                     },
                     onError: (err: Error) => {
-                      toast.error(err.message || 'Failed to permanently delete user');
+                      toast.error(err.message || t('chrome.staff.settings.toasts.failedToPermanentlyDelete'));
                     },
                   });
                 }}
               >
-                Permanently delete
+                {t('chrome.staff.settings.permanentlyDelete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

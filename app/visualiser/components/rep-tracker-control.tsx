@@ -12,15 +12,16 @@ import { TripBreakdownPanel } from '@/app/visualiser/components/trip-breakdown-p
 import type { LastKnownLocationSummary } from '@/app/visualiser/lib/rep-tracker-types';
 import type { JourneyVisitAction } from '@/app/visualiser/lib/journey-visit-actions';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type { LastKnownLocationSummary };
 
-const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
-  { range: 'hour', label: 'Hour' },
-  { range: 'today', label: 'Today' },
-  { range: 'day', label: 'Day' },
-  { range: 'week', label: 'Week' },
-  { range: 'custom', label: 'Custom' },
+const TRACE_RANGES: { range: RepJourneyRange; labelKey: string }[] = [
+  { range: 'hour', labelKey: 'chrome.visualiser.range.hour' },
+  { range: 'today', labelKey: 'actions.today' },
+  { range: 'day', labelKey: 'chrome.visualiser.range.day' },
+  { range: 'week', labelKey: 'chrome.visualiser.range.week' },
+  { range: 'custom', labelKey: 'chrome.visualiser.range.custom' },
 ];
 
 export interface RepTrackerControlProps {
@@ -89,6 +90,7 @@ export function RepTrackerControl({
   onSearchQueryChange,
   isSearchLoading = false,
 }: RepTrackerControlProps) {
+  const { t } = useTranslation('screens');
   const isSingleRep = selectedUid !== 'all';
   const showSummary = isSingleRep && journeySummary != null;
   const showClear = isSingleRep || hasActiveTrail || activeRange != null;
@@ -102,7 +104,7 @@ export function RepTrackerControl({
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
-          Track sales rep
+          {t('chrome.visualiser.trackSalesRep')}
         </p>
         {showClear ? (
           <button
@@ -111,7 +113,7 @@ export function RepTrackerControl({
             disabled={isTracing}
             onClick={onClear}
           >
-            Clear
+            {t('actions.clear')}
           </button>
         ) : null}
       </div>
@@ -121,15 +123,15 @@ export function RepTrackerControl({
         selectedUid={selectedUid}
         onUidChange={onUidChange}
         triggerClassName="h-9 w-full sm:w-full"
-        searchPlaceholder="Search sales reps…"
-        allOptionLabel="All sales reps"
-        emptyMessage="No sales rep found."
+        searchPlaceholder={t('chrome.visualiser.searchSalesReps')}
+        allOptionLabel={t('chrome.visualiser.allSalesReps')}
+        emptyMessage={t('chrome.visualiser.noSalesRepFound')}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
         isSearchLoading={isSearchLoading}
       />
       <div className="flex flex-wrap gap-1.5">
-        {TRACE_RANGES.map(({ range, label }) => (
+        {TRACE_RANGES.map(({ range, labelKey }) => (
           <Button
             key={range}
             type="button"
@@ -138,7 +140,7 @@ export function RepTrackerControl({
             disabled={isTracing}
             onClick={() => onTraceRange(range)}
           >
-            {label}
+            {t(labelKey)}
           </Button>
         ))}
       </div>

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { canSendAttendanceReports } from '@/lib/access';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 type ApiClient = ReturnType<typeof useApiClient>;
 
@@ -30,11 +31,17 @@ export function AttendanceReportOverview({
 }: {
   overview?: DailyOverviewResponse['data'];
 }) {
+  const { t } = useTranslation('screens');
   return (
     <p className="mb-4 text-xs text-muted-foreground">
       {overview
-        ? `Daily overview ${overview.date}: ${overview.presentEmployees} present, ${overview.absentEmployees} absent, ${overview.attendanceRate}% attendance.`
-        : 'Daily overview loads with the staff list.'}
+        ? t('chrome.staff.attendance.dailyOverview', {
+            date: overview.date,
+            present: overview.presentEmployees,
+            absent: overview.absentEmployees,
+            rate: overview.attendanceRate,
+          })
+        : t('chrome.staff.attendance.dailyOverviewLoading')}
     </p>
   );
 }
@@ -57,25 +64,26 @@ function useReportSend(
 
 /** Morning, evening, and absence sends. Place this on the staff filter row. */
 export function AttendanceReportButtons() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { backendUserData } = useSessionSync();
   const morning = useReportSend(
     sendMorningAttendanceReport,
     client,
-    'Morning report sent',
-    'Could not send the morning report',
+    t('chrome.staff.attendance.morningSent'),
+    t('chrome.staff.attendance.morningError'),
   );
   const evening = useReportSend(
     sendEveningAttendanceReport,
     client,
-    'Evening report sent',
-    'Could not send the evening report',
+    t('chrome.staff.attendance.eveningSent'),
+    t('chrome.staff.attendance.eveningError'),
   );
   const absence = useReportSend(
     sendAbsenceAttendanceReport,
     client,
-    'Absence report sent',
-    'Could not send the absence report',
+    t('chrome.staff.attendance.absenceSent'),
+    t('chrome.staff.attendance.absenceError'),
   );
 
   if (!canSendAttendanceReports(backendUserData?.accessLevel)) return null;
@@ -89,7 +97,7 @@ export function AttendanceReportButtons() {
           variant="outline"
           className="h-9 shrink-0 gap-2"
         >
-          Reports
+          {t('chrome.staff.attendance.reports')}
           <ChevronDown className="size-4" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
@@ -99,21 +107,21 @@ export function AttendanceReportButtons() {
           onSelect={() => morning.mutate()}
         >
           <Sunrise className="size-4" aria-hidden />
-          Morning
+          {t('chrome.staff.attendance.morning')}
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={evening.isPending}
           onSelect={() => evening.mutate()}
         >
           <Sunset className="size-4" aria-hidden />
-          Evening
+          {t('chrome.staff.attendance.evening')}
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={absence.isPending}
           onSelect={() => absence.mutate()}
         >
           <UserX className="size-4" aria-hidden />
-          Absence
+          {t('chrome.staff.attendance.absence')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
