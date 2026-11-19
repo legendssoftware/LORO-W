@@ -1,0 +1,420 @@
+{
+  "about": {
+    "title": "Informazioni su LORO",
+    "lead": "LORO è un software per le vendite sul campo pensato per i team B2B sudafricani — visite, percorsi, pipeline, mappe e ordini integrati con l'ERP in un'unica piattaforma.",
+    "replaceSpreadsheets": "Aiutiamo produttori, grossisti e distributori a sostituire il caos dei fogli di calcolo con prove di visita, dashboard per i responsabili e flussi di lavoro mobile che gli agenti usano davvero in trasferta.",
+    "connectsPrefix": "Dal",
+    "visitTracking": "tracciamento visite",
+    "connectsMiddle": "alla",
+    "competitorMapping": "mappatura dei concorrenti",
+    "connectsSuffix": ", LORO collega l'attività sul campo al fatturato — non ad attività amministrative fini a sé stesse.",
+    "workforce": "Moduli opzionali per la gestione del personale (presenze, ferie) affiancano le vendite sul campo per i team che desiderano un unico accesso per operatività e risorse umane."
+  },
+  "pricing": {
+    "title": "Prezzi",
+    "lead": "Software flessibile per le vendite sul campo destinato ai team in Sudafrica — scala utenti e filiali man mano che cresci.",
+    "growing": {
+      "title": "Team in crescita",
+      "body": "Vendite sul campo di base: visite, pipeline, pianificazione, clienti e accesso all'app mobile.",
+      "perUser": "Licenza per utente",
+      "branchRoles": "Configurazione filiali e ruoli",
+      "support": "Supporto standard"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "body": "Implementazione multi-filiale, integrazione ERP, IoT e reportistica avanzata.",
+      "onboarding": "Onboarding dedicato",
+      "erpReview": "Revisione ERP e integrazioni",
+      "targets": "Obiettivi ed esportazioni personalizzate"
+    },
+    "footnote": "Contatti il Suo partner LORO o si registri per discutere l'implementazione per il Suo team sul campo. I prezzi pubblicati variano in base alla dimensione dell'organizzazione e ai moduli."
+  },
+  "customers": {
+    "title": "Clienti",
+    "lead": "Le aziende sudafricane usano LORO per gestire le vendite sul campo con meno burocrazia e maggiore trasparenza.",
+    "distributors": {
+      "title": "Distributori orientati al campo",
+      "body": "I team usano LORO per le prove di visita quotidiane, gli obiettivi della pipeline e le revisioni su mappa, invece di unire fogli di calcolo settimanali."
+    },
+    "dashboard": {
+      "title": "Responsabili con un'unica dashboard",
+      "body": "I dirigenti vedono visite, lead e progressi del periodo senza rincorrere gli agenti su WhatsApp per gli aggiornamenti."
+    },
+    "erp": {
+      "title": "Ordini allineati all'ERP",
+      "body": "Il negozio B2B e i flussi degli ordini rispettano i dati anagrafici di clienti e prodotti di cui l'amministrazione si fida già."
+    },
+    "footnote": "I casi studio con loghi nominativi vengono aggiunti man mano che i clienti approvano la pubblicazione. Richieda una demo guidata tramite la registrazione."
+  },
+  "blog": {
+    "titleLead": "Blog sulle vendite ",
+    "titleEmphasis": "sul campo",
+    "subtitle": "Guide per responsabili e agenti delle vendite sul campo in Sudafrica.",
+    "back": "← Blog"
+  },
+  "platform": {
+    "erp": "ERP interno integrato — prodotti, clienti, ordini e flussi del negozio B2B in un unico stack. Ponti opzionali verso Sage, Acumatica e SAP per stack finanziari misti.",
+    "saas": "SaaS in cloud con autenticazione Clerk e accesso con ambito organizzazione per agenti e responsabili."
+  },
+  "compare": {
+    "topic": "Argomento",
+    "capability": "Funzionalità",
+    "repsly": {
+      "title": "LORO vs Repsly",
+      "lead": "Confronto fattuale per i team che valutano piattaforme di esecuzione retail e vendite sul campo.",
+      "focus": "Focus principale",
+      "loroFocus": "Vendite sul campo B2B in SA, visite, pipeline, ordini ERP",
+      "repslyFocus": "Esecuzione retail CPG, programmi scaffale e promo",
+      "region": "Area geografica",
+      "loroRegion": "Priorità al Sudafrica",
+      "repslyRegion": "Brand CPG globali",
+      "differentiator": "Elemento differenziante",
+      "loroDiff": "Mappa intelligence concorrenti + moduli workforce opzionali",
+      "repslyDiff": "Riconoscimento immagini e profondità di esecuzione in negozio",
+      "erp": "ERP",
+      "repslyErp": "Focus esecuzione retail; ERP tramite integrazioni",
+      "platform": "Piattaforma",
+      "repslyPlatform": "SaaS in cloud; programmi CPG globali",
+      "footnote": "Scegli Repsly quando l'analisi degli scaffali e i programmi CPG dominano. Scegli LORO quando visite B2B, pipeline e vendite sul campo allineate all'ERP in SA sono la priorità."
+    },
+    "skynamo": {
+      "title": "LORO vs Skynamo",
+      "lead": "Entrambi servono le vendite sul campo in Sudafrica — confronta l'adattamento per il tuo ERP, dimensione del team e moduli.",
+      "positioning": "Posizionamento",
+      "loroPosition": "Vendite sul campo + pipeline + mappe concorrenti + HR opzionale",
+      "skynamoPosition": "Canali di vendita unificati, ordini mobili, RADAR AI",
+      "erp": "ERP",
+      "skynamoErp": "Forte marketing Sage/Acumatica/SAP",
+      "platform": "Piattaforma",
+      "skynamoPlatform": "SaaS in cloud; autenticazione gestita dal fornitore",
+      "bestFor": "Ideale per",
+      "loroBest": "Prove di visita, mappe concorrenti, workforce opzionale",
+      "skynamoBest": "Unificazione canali ampia + RADAR",
+      "footnote": "Esegui un progetto pilota parallelo su visite e pipeline prima di migrare le interfacce ERP."
+    },
+    "zoho": {
+      "title": "LORO vs Zoho CRM",
+      "lead": "Zoho CRM è una suite CRM AI ampia; LORO è costruito appositamente per l'esecuzione delle vendite esterne in Sudafrica.",
+      "visitProof": "Prove di visita ed evidenze sul campo",
+      "loroVisit": "Flusso di lavoro principale",
+      "zohoVisit": "Richiede configurazione / componenti aggiuntivi",
+      "routePlanning": "Pianificazione percorsi",
+      "loroRoutes": "Pianificazione nativa + mappe",
+      "zohoRoutes": "RouteIQ o mappe di terze parti",
+      "competitorMapping": "Mappatura concorrenti",
+      "loroCompetitor": "Integrata",
+      "zohoCompetitor": "Moduli personalizzati tipici",
+      "erp": "ERP",
+      "zohoErp": "Incentrato sul CRM; ERP tramite ecosistema Zoho",
+      "platform": "Piattaforma",
+      "zohoPlatform": "SaaS in cloud; modello account Zoho",
+      "ecosystem": "Ecosistema",
+      "loroEcosystem": "Vendite sul campo focalizzate + ERP integrato",
+      "zohoEcosystem": "Ampia suite di app Zoho",
+      "footnote": "Scegli Zoho quando hai bisogno di un CRM generale per tutta l'azienda. Scegli LORO quando visite sul campo, percorsi ed esecuzione B2B in SA sono il collo di bottiglia."
+    }
+  },
+  "integrations": {
+    "title": "Integrazioni ERP",
+    "lead": "Collega le vendite sul campo LORO ai sistemi che contengono clienti, prodotti e ordini — così gli agenti vendono con dati aggiornati in trasferta.",
+    "sageBlurb": "Popolare negli stack finanziari PMI e mid-market sudafricani.",
+    "acumaticaBlurb": "Contesto ERP cloud per preventivi e ordini sul campo.",
+    "sapBlurb": "Dati prodotto e account enterprise per grandi team sul campo.",
+    "sage": {
+      "title": "Sage + vendite sul campo LORO",
+      "lead": "Allinea i dati ERP o contabili di Sage con visite, pipeline e ordini B2B che gli agenti raccolgono sul campo.",
+      "finance": "I team sudafricani spesso usano Sage per la finanza mentre gli agenti citano ancora listini obsoleti. LORO porta il contesto di clienti e prodotti nei flussi di visita e ordine, così campo e finanza condividono la stessa storia.",
+      "hubPrefix": "Implementa prima visite e pipeline, poi connetti i flussi degli ordini con il tuo partner di integrazione. Vedi l'hub completo delle",
+      "hubLink": "integrazioni",
+      "hubSuffix": "."
+    },
+    "sap": {
+      "title": "SAP + operazioni sul campo LORO",
+      "lead": "Programmi sul campo enterprise con dati anagrafici SAP ed esecuzione visite, pipeline e mappe LORO.",
+      "governed": "I grandi team sul campo necessitano di dati prodotto e account governati con una UX mobile rapida. LORO aggiunge tracciamento visite, pianificazione percorsi e dashboard per i responsabili sopra i tuoi pattern di implementazione SAP.",
+      "engage": "Coinvolgi presto il team di integrazione per le interfacce clienti, materiali e ordini dimensionate sul tuo scenario."
+    },
+    "acumatica": {
+      "title": "Acumatica + LORO",
+      "lead": "Inventario e clienti dell'ERP cloud disponibili dove gli agenti pianificano percorsi e chiudono ordini.",
+      "proof": "I team Acumatica ottengono prove di visita sul campo e visibilità sulla pipeline senza costringere gli agenti a usare schermate ERP desktop a ogni tappa.",
+      "execution": "LORO si concentra sull'esecuzione — visite, mappe, contesto competitivo e ordini mobili — mentre il tuo ERP resta il sistema di riferimento."
+    }
+  },
+  "solutions": {
+    "competitor": {
+      "title": "Intelligence competitiva sulla mappa",
+      "lead": "Traccia gli account rivali accanto ai tuoi clienti — livelli di minaccia, posizioni e contesto per briefing sul campo più incisivi.",
+      "landscape": "Agenti e responsabili vedono il panorama competitivo geograficamente, non in fogli di calcolo sparsi.",
+      "afterSignIn": "Dopo l'accesso, usa il visualizzatore mappa per livelli sul campo dal vivo, filtri visite e viste di influenza accanto agli account clienti."
+    },
+    "visits": {
+      "title": "Software di tracciamento visite",
+      "lead": "Dimostra il lavoro sul campo con check-in, note, preventivi e risultati collegati a ciascun account cliente.",
+      "managers": "I responsabili vedono quali account sono stati visitati, cosa è stato discusso e cosa è successo dopo — senza contestazioni sui registri attività.",
+      "feeds": "Le visite alimentano pipeline e report, così il coaching usa gli stessi dati inseriti dagli agenti in loco."
+    },
+    "workforce": {
+      "title": "Personale e presenze",
+      "lead": "Moduli HR opzionali accanto alle vendite sul campo — presenze, ferie e segnali buste paga con lo stesso accesso LORO.",
+      "prefix": "Il posizionamento principale rimane",
+      "fieldSales": "vendite sul campo",
+      "suffix": "; gli strumenti workforce sono adatti ai team che desiderano dati operativi e del personale insieme.",
+      "localSupport": "I team sudafricani beneficiano del supporto locale sia per i flussi di lavoro sul campo che per quelli HR, dove abilitati."
+    },
+    "routes": {
+      "title": "Pianificazione percorsi per le vendite sul campo",
+      "lead": "Attività, percorsi giornalieri, promemoria e mappe — costruiti da visite, lead e priorità della pipeline.",
+      "driving": "Gli agenti spendono meno tempo alla guida tra tappe a basso valore e più tempo con gli account che generano fatturato.",
+      "prefix": "La pianificazione si connette al",
+      "visitTracking": "tracciamento visite",
+      "suffix": " così i percorsi pianificati e completati sono visibili ai responsabili."
+    },
+    "fieldSales": {
+      "title": "Software per le vendite sul campo",
+      "lead": "Un'unica piattaforma per i team B2B sul campo sudafricani: agenti mobili, responsabili in ufficio e ordini allineati all'ERP.",
+      "repsTitle": "Per gli agenti in trasferta",
+      "repsBody": "Pianifica la giornata, registra visite con evidenze, aggiorna i lead e inserisci ordini da un'esperienza mobile user-friendly con sincronizzazione resiliente.",
+      "managersTitle": "Per i responsabili vendite",
+      "managersBody": "Obiettivi pipeline, copertura visite e visualizzazione su mappa — scopri chi ha visitato quali account senza rincorrere email di fine settimana.",
+      "modulesTitle": "Moduli che si connettono",
+      "visitTracking": "Tracciamento visite",
+      "routePlanning": "Pianificazione percorsi",
+      "pipeline": "Pipeline",
+      "erp": "Integrazioni ERP"
+    },
+    "pipeline": {
+      "title": "Pipeline di vendita per team sul campo",
+      "lead": "Lead, obiettivi di periodo, vittorie convertite e risultati delle visite su un'unica schermata.",
+      "slides": "I responsabili sul campo smettono di ricostruire le slide del venerdì — il progresso sulle quote e le prossime azioni vivono in LORO accanto alle fasi lead in stile CRM.",
+      "prefix": "Abbina la pipeline con i moduli",
+      "fieldSales": "vendite sul campo",
+      "suffix": " per uno stack completo di vendite esterne."
+    }
+  },
+  "header": {
+    "product": "Prodotto",
+    "solutions": "Soluzioni",
+    "careers": "Carriere",
+    "research": "Ricerca",
+    "myAccount": "Il mio account",
+    "demoCall": "CHIAMATA DEMO",
+    "connecting": "CONNESSIONE...",
+    "endCall": "TERMINA CHIAMATA",
+    "retryCall": "RIPROVA CHIAMATA",
+    "getStarted": "Inizia ora",
+    "openMenu": "Apri menu",
+    "closeMenu": "Chiudi menu"
+  },
+  "footer": {
+    "tagline": "Software per le vendite sul campo in Sudafrica — visite, percorsi e pipeline.",
+    "taglineShort": "Software per le vendite sul campo in Sudafrica.",
+    "rights": "Tutti i diritti riservati.",
+    "company": "Azienda",
+    "about": "Chi siamo",
+    "customers": "Clienti",
+    "pricing": "Prezzi",
+    "blog": "Blog",
+    "privacyPolicy": "Informativa sulla privacy",
+    "privacy": "Privacy",
+    "solutions": "Soluzioni",
+    "fieldSales": "Vendite sul campo",
+    "visitTracking": "Tracciamento visite",
+    "routePlanning": "Pianificazione percorsi",
+    "pipeline": "Pipeline",
+    "competitorIntel": "Intelligence concorrenti",
+    "integrations": "Integrazioni",
+    "compare": "Confronta",
+    "vsSkynamo": "vs Skynamo",
+    "vsRepsly": "vs Repsly",
+    "vsZoho": "vs Zoho CRM",
+    "getStarted": "Inizia ora",
+    "signIn": "Accedi"
+  },
+  "shell": {
+    "navLabel": "Marketing",
+    "cta": {
+      "title": "Pronto per le vendite sul campo in un'unica piattaforma?",
+      "body": "Registrati o prova l'app Android — pensata per i team B2B sudafricani.",
+      "backHome": "Torna alla home"
+    }
+  },
+  "landing": {
+    "headline": "Vendite sul campo che scalano.",
+    "headlineItalic": "Visite, percorsi, pipeline.",
+    "subheadline": "Pianifica percorsi, dimostra visite e fai crescere la pipeline in un'unica piattaforma — pensata per i team B2B sudafricani con ordini integrati all'ERP e mappe in tempo reale.",
+    "community": "Entra nella community LORO con oltre 90 membri",
+    "tryAndroidApp": "Prova la nostra app Android",
+    "myAccount": "Il mio account",
+    "liveSync": "Sincronizzazione in tempo reale",
+    "statsTitle": "Costruito per scalare.",
+    "statsTitleItalic": "Scelto da team reali.",
+    "stats": {
+      "businesses": {
+        "label": "Aziende",
+        "sub": "sulla piattaforma"
+      },
+      "partners": {
+        "label": "Partner",
+        "sub": "che collaborano"
+      },
+      "fieldUsers": {
+        "label": "Utenti sul campo",
+        "sub": "attivi ogni giorno"
+      },
+      "spaces": {
+        "label": "Spazi",
+        "sub": "migliorati"
+      }
+    },
+    "techTitle": "Tecnologia che lavora in armonia",
+    "techBody": "Costruita per semplificare le operazioni quotidiane attraverso sistemi connessi intelligenti.",
+    "liveSalesDashboard": "Vendite in tempo reale | Dashboard",
+    "quotesOrders": "Preventivi e ordini",
+    "activeCount": "23 attivi",
+    "featuresTitle": "Funzionalità potenti,",
+    "featuresTitleItalic": "progettate con cura",
+    "featuresBody": "Tutto ciò che serve per comodità, chiarezza ed efficienza — in un unico posto.",
+    "features": {
+      "smartLead": {
+        "title": "Gestione lead intelligente",
+        "desc": "Cattura, qualifica e converti lead con scoring basato sull'IA. Dai priorità alle migliori opportunità e non lasciare mai raffreddare un lead caldo. La tua pipeline resta piena e il tuo team resta concentrato."
+      },
+      "pipelineByStage": {
+        "title": "Pipeline per fase",
+        "desc": "Una pipeline visiva con drag-and-drop e tracciamento completo delle trattative. Sposta le opportunità attraverso le fasi a colpo d'occhio e scopri esattamente dove si trova ogni trattativa. Perfetta per l'allineamento del team e le previsioni."
+      },
+      "taskProject": {
+        "title": "Gestione attività e progetti",
+        "desc": "Assegnazione intelligente, priorità chiare e avanzamento in tempo reale per tutto il team. Assegna lavoro, imposta scadenze e monitora il completamento affinché nulla sfugga."
+      },
+      "liveAnalytics": {
+        "title": "Analisi in tempo reale",
+        "desc": "Dashboard in tempo reale e metriche supportate dall'ERP in un unico luogo. Comprendi le performance, individua i trend e prendi decisioni con dati aggiornati — senza fogli di calcolo."
+      },
+      "erpIntegration": {
+        "title": "Integrazione ERP",
+        "desc": "Vendite e preventivi in tempo reale con piena visibilità a colpo d'occhio. Il tuo ERP esistente resta la fonte di verità mentre LORO mantiene campo e ufficio sincronizzati."
+      },
+      "workflowAutomation": {
+        "title": "Automazione dei flussi di lavoro",
+        "desc": "Pianifica attività e automatizza i follow-up su tutti i dispositivi. Imposta le regole una volta e lascia che il sistema gestisca promemoria, aggiornamenti di stato e passaggi di routine affinché il tuo team si concentri sulla chiusura."
+      }
+    },
+    "controlTitle": "Ogni dettaglio,",
+    "controlTitleItalic": "controllato con precisione",
+    "controlBody": "Un'unica piattaforma per routing, ERP, pianificazione e un'interfaccia minimale.",
+    "radial": {
+      "smartRouting": "Routing intelligente",
+      "liveErp": "ERP in tempo reale",
+      "unifiedControl": "Controllo unificato",
+      "smartScheduling": "Pianificazione intelligente",
+      "minimalInterface": "Interfaccia minimale",
+      "automation": "Automazione"
+    },
+    "opsTitle": "Un modo più intelligente, equo e trasparente per gestire le operazioni sul campo",
+    "opsBody": "Sincronizzazione in tempo reale, chiarezza istantanea e pieno controllo — non solo dati.",
+    "ops": {
+      "erpSync": {
+        "title": "Sincronizzazione ERP in tempo reale, veloce per design",
+        "body": "Flussi di dati massivi e aggiornamenti in tempo reale dai tuoi sistemi esistenti."
+      },
+      "statusClarity": {
+        "title": "Chiarezza istantanea sullo stato",
+        "body": "Vedi chi è dove e cosa è in scadenza — a colpo d'occhio."
+      },
+      "operationalControl": {
+        "title": "Controllo operativo, non solo dati",
+        "body": "Agisci su preventivi, ordini e pianificazioni direttamente dalla piattaforma."
+      }
+    },
+    "ring": {
+      "claims": "Rimborsi",
+      "leads": "Lead",
+      "visits": "Visite",
+      "gprTracking": "Tracciamento GPR"
+    },
+    "ctaTitle": "Visualizza i tuoi dati.",
+    "ctaTitleItalic": "Controlla le tue operazioni.",
+    "ctaBody": "Un'unica app per il campo e l'ufficio. Inizia in pochi minuti.",
+    "downloadApp": "Scarica l'app",
+    "imageAlt": {
+      "app": "App Loro",
+      "dashboard": "Dashboard Loro",
+      "analytics": "Analisi Loro",
+      "control": "Controllo Loro",
+      "office": "Ufficio moderno"
+    },
+    "faq": {
+      "title": "Software per le vendite sul campo —",
+      "titleItalic": "domande frequenti",
+      "lead": "Risposte per i team che confrontano LORO con altre piattaforme di vendita sul campo in Sudafrica.",
+      "blogLink": "Leggi il blog sulle vendite sul campo",
+      "or": "o",
+      "compareLink": "confronta LORO vs Skynamo",
+      "items": {
+        "whatIs": {
+          "question": "Cos'è il software per le vendite sul campo LORO?",
+          "answer": "LORO è una piattaforma sudafricana per le vendite sul campo per visite, pianificazione percorsi, gestione pipeline, account clienti e ordini collegati all'ERP — su web e mobile per agenti e responsabili."
+        },
+        "whoFor": {
+          "question": "Per chi è pensato LORO?",
+          "answer": "Produttori, grossisti, distributori e team sul campo che visitano regolarmente clienti B2B e necessitano di un unico sistema per visite, preventivi, attività e reportistica sulle performance."
+        },
+        "offline": {
+          "question": "LORO funziona offline per gli agenti sul campo?",
+          "answer": "L'app mobile LORO è pensata per gli agenti in trasferta. I flussi di lavoro principali sul campo sono progettati per la connettività instabile; accedi quando sei online per sincronizzare visite, ordini e aggiornamenti della pipeline."
+        },
+        "erp": {
+          "question": "LORO può integrarsi con il nostro ERP?",
+          "answer": "Sì. LORO include un ERP interno integrato con le vendite sul campo — contesto prodotti, clienti e ordini senza aggiungere un back office separato. Ponti opzionali verso Sage, Acumatica o SAP sono disponibili quando si opera con uno stack misto. Consulta il nostro hub integrazioni per i dettagli."
+        },
+        "difference": {
+          "question": "In cosa si differenzia LORO da Skynamo o Repsly?",
+          "answer": "LORO combina l'esecuzione delle vendite sul campo con ERP interno integrato, mappatura dei concorrenti e strumenti workforce opzionali — cloud-native con autenticazione Clerk. Le pagine di confronto illustrano l'adattamento per dimensione del team e stack finanziario."
+        },
+        "enterprise": {
+          "question": "LORO è solo per grandi imprese?",
+          "answer": "No. Dai distributori in crescita alle operazioni multi-filiale, tutti usano LORO. Inizia con la registrazione o la prova dell'app Android e scala gli utenti man mano che il tuo programma sul campo cresce."
+        },
+        "modules": {
+          "question": "Quali moduli sono inclusi?",
+          "answer": "Lead, pipeline, pianificazione e percorsi, visite con evidenze, aree di lavoro clienti e concorrenti, visualizzatore mappa, report, hardware IoT di filiale e presenze HR opzionali — con un unico accesso."
+        },
+        "getStarted": {
+          "question": "Come iniziamo?",
+          "answer": "Crea un account tramite la registrazione, oppure scarica l'app Android. I responsabili configurano filiali e obiettivi; gli agenti pianificano percorsi e registrano visite dal primo giorno."
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "getStarted": "Inizia ora",
+    "back": "Indietro",
+    "next": "Avanti",
+    "createAccount": "Crea account",
+    "skipToHome": "Vai alla home",
+    "slides": {
+      "platform": {
+        "title": "Un'unica piattaforma, tutto connesso",
+        "description": "Smetti di destreggiarti tra più sistemi. Loro combina gestione servizi sul campo, tracciamento inventario, sistema preventivi, gestione attività e analisi in tempo reale in un'unica potente piattaforma. Ordina direttamente da Loro — tutto connesso."
+      },
+      "owners": {
+        "title": "Titolari d'azienda: controllo completo",
+        "description": "Monitora le vendite in tempo reale, gestisci il tuo team e prendi decisioni all'istante. Dati in tempo reale e funzionalità offline — tutto dal tuo telefono, ovunque."
+      },
+      "clients": {
+        "title": "Clienti: ordina sempre e ovunque",
+        "description": "Sfoglia prodotti, crea preventivi e invia ordini all'istante. Il tuo negozio personalizzato sempre in tasca — i preventivi si convertono in ordini senza interruzioni."
+      },
+      "employees": {
+        "title": "Dipendenti: il lavoro reso semplice",
+        "description": "Invia rimborsi, richiedi ferie, visualizza buste paga e monitora le presenze. Meno burocrazia, più libertà — mobile-first con funzionalità offline."
+      },
+      "start": {
+        "title": "Inizia oggi",
+        "description": "Trasforma le operazioni della tua azienda con LORO. Funzionalità enterprise, prezzi PMI. Automatizza ciò che conta, controlla ciò che è importante."
+      }
+    }
+  }
+}

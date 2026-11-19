@@ -11,6 +11,12 @@ const BAND_CLASS: Record<PolicyPaceBand, string> = {
   green: 'text-emerald-700',
 };
 
+const BAND_LABEL: Record<PolicyPaceBand, string> = {
+  red: 'Action required',
+  yellow: 'Almost there',
+  green: 'On track',
+};
+
 const REASON: Record<string, string> = {
   not_participating: 'You are not on the performance agreement.',
   not_signed: 'Sign the agreement to see your performance forecast.',
@@ -58,7 +64,9 @@ function ForecastFigures({ forecast, currency }: { forecast: PolicyForecast; cur
   const { t } = useTranslation('screens');
   return (
     <div className="space-y-2">
-      <p className={`text-sm font-medium uppercase ${BAND_CLASS[forecast.paceBand]}`}>{forecast.paceBand}</p>
+      <p className={`text-sm font-medium uppercase ${BAND_CLASS[forecast.paceBand]}`}>
+        {BAND_LABEL[forecast.paceBand]}
+      </p>
       <dl className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <dt className="text-muted-foreground">{t('chrome.reports.forecast.minExpected')}</dt>

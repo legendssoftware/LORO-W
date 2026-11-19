@@ -30,12 +30,21 @@ import portalEs from '../../messages/es/portal.json';
 import staffEs from '../../messages/es/staff.json';
 import marketingEs from '../../messages/es/marketing.json';
 import screensEs from '../../messages/es/screens.json';
+import commonIt from '../../messages/it/common.json';
+import navIt from '../../messages/it/nav.json';
+import authIt from '../../messages/it/auth.json';
+import settingsIt from '../../messages/it/settings.json';
+import portalIt from '../../messages/it/portal.json';
+import staffIt from '../../messages/it/staff.json';
+import marketingIt from '../../messages/it/marketing.json';
+import screensIt from '../../messages/it/screens.json';
 
 export const resources = {
   en: { common: commonEn, nav: navEn, auth: authEn, settings: settingsEn, portal: portalEn, staff: staffEn, marketing: marketingEn, screens: screensEn },
   pt: { common: commonPt, nav: navPt, auth: authPt, settings: settingsPt, portal: portalPt, staff: staffPt, marketing: marketingPt, screens: screensPt },
   fr: { common: commonFr, nav: navFr, auth: authFr, settings: settingsFr, portal: portalFr, staff: staffFr, marketing: marketingFr, screens: screensFr },
   es: { common: commonEs, nav: navEs, auth: authEs, settings: settingsEs, portal: portalEs, staff: staffEs, marketing: marketingEs, screens: screensEs },
+  it: { common: commonIt, nav: navIt, auth: authIt, settings: settingsIt, portal: portalIt, staff: staffIt, marketing: marketingIt, screens: screensIt },
 } as const;
 
 export const I18N_NAMESPACES = Object.keys(resources.en);

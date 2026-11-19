@@ -18,7 +18,7 @@ export function LanguageSwitcher({ id }: { id?: string }) {
 
   return (
     <Select value={value} onValueChange={setPreference}>
-      <SelectTrigger id={id} aria-label={t('language')} size="sm" className="w-[4.75rem]">
+      <SelectTrigger id={id} aria-label={t('language')} size="sm" className="w-[6.25rem]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
