@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../../messages');
-const locales = ['en', 'pt', 'fr', 'es'] as const;
+const locales = ['en', 'pt', 'fr', 'es', 'it'] as const;
 
 function flatten(value: unknown, prefix = ''): string[] {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {

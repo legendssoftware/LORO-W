@@ -1,8 +1,48 @@
 import type { AxiosInstance } from 'axios';
-import type { OrganisationNoticeRecord } from '@/api/types/organisation-notice';
+import type { OrganisationNoticeContent } from '@/api/types/organisation-notice';
+
+export type PaceNoticeTheme = 'alert' | 'policy' | 'success';
+
+export type PerformanceInsightNextStep = 'calls' | 'leads' | 'quotations';
+
+export type PerformanceInsightRecovery = {
+  calls: number;
+  newLeads: number;
+  quotations: number;
+  remainingWorkingDays: number;
+};
+
+/** Flyer fields for the Performance Insight dialog. */
+export type PerformanceInsight = {
+  paceBand: 'red' | 'yellow' | 'green';
+  activityPct: number;
+  activityPctDisplay: number;
+  gapPointsToMinExpected: number;
+  rewardCapPctPoints: number;
+  banner: string;
+  headline: string;
+  nextSteps: PerformanceInsightNextStep[];
+  ctaLabel: string;
+  recovery: PerformanceInsightRecovery | null;
+};
+
+export type PaceNoticeRecord = {
+  uid: number;
+  title: string;
+  subtitle: string;
+  content: OrganisationNoticeContent;
+  insight: PerformanceInsight | null;
+  translations: null;
+  showFrom: string;
+  showUntil: null;
+  theme: PaceNoticeTheme;
+  isEnabled: true;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type PaceNoticeResponse = {
-  notice: OrganisationNoticeRecord | null;
+  notice: PaceNoticeRecord | null;
 };
 
 export type AcknowledgePaceNoticeResponse = {

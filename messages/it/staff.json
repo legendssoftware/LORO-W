@@ -1,0 +1,7 @@
+{
+  "title": "Personale",
+  "subtitle": "Visualizza e gestisci presenze e attività del personale.",
+  "pendingLinks": "Link di registrazione in sospeso",
+  "pendingLinksHint": "Personale a cui è stato inviato un link di registrazione self-service e che non ha ancora completato la procedura.",
+  "empty": "Nessun membro del personale da visualizzare. Verifichi di avere i permessi necessari."
+}

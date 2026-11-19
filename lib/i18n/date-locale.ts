@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { enGB, es, fr, pt } from 'date-fns/locale';
+import { enGB, es, fr, it, pt } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
 import { isUiLocale, type UiLocale } from './resolve-locale';
 
@@ -17,6 +17,8 @@ export function dateFnsLocale(locale: UiLocale): Locale {
       return fr;
     case 'es':
       return es;
+    case 'it':
+      return it;
     default: {
       const exhaustive: never = locale;
       return exhaustive;

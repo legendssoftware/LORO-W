@@ -1,0 +1,352 @@
+{
+  "pageTitle": "Impostazioni",
+  "pageDescription": "Gestisci profilo dell'organizzazione, aspetto, impostazioni regionali, orari, filiali, scarti, avvisi e banner dell'app.",
+  "pageDescriptionCalendarOnly": "Collega il Suo calendario Outlook o Google utilizzando l'email del Suo account LORO.",
+  "yourLanguage": "La Sua lingua",
+  "yourLanguageDescription": "Questa scelta è personale. Auto segue la lingua o il paese del dispositivo. Non modifica le impostazioni locali dell'organizzazione sottostanti.",
+  "saved": "Le Sue preferenze sono state salvate con successo!",
+  "saveFailed": "Impossibile salvare le preferenze. Riprovi.",
+  "unableToSave": "Impossibile salvare le preferenze. Provi ad accedere di nuovo.",
+  "unknownError": "Si è verificato un errore sconosciuto",
+  "language": {
+    "label": "Lingua",
+    "description": "Segue la lingua o il paese del dispositivo quando impostato su Auto."
+  },
+  "theme": {
+    "label": "Tema",
+    "description": "Schema colori dell'app",
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Sistema",
+    "toggle": "Cambia tema"
+  },
+  "timezone": {
+    "label": "Fuso orario",
+    "description": "Fuso orario IANA per date e orari"
+  },
+  "notifications": {
+    "label": "Consenti notifiche",
+    "description": "Ricevi notifiche push per aggiornamenti importanti"
+  },
+  "notificationFrequency": {
+    "label": "Frequenza notifiche",
+    "description": "Con quale frequenza recapitare i riepiloghi non-push",
+    "real_time": "Tempo reale",
+    "hourly": "Ogni ora",
+    "daily": "Giornaliero",
+    "weekly": "Settimanale",
+    "disabled": "Disabilitato"
+  },
+  "emailNotifications": {
+    "label": "Notifiche email",
+    "description": "Ricevi aggiornamenti via email quando abilitato dalla tua organizzazione"
+  },
+  "smsNotifications": {
+    "label": "Notifiche SMS",
+    "description": "Ricevi avvisi SMS quando abilitato dalla tua organizzazione"
+  },
+  "shiftAutoEnd": {
+    "label": "Uscita automatica dopo fine turno",
+    "description": "I turni vengono chiusi automaticamente dopo la fine del turno dell'organizzazione (ritardo impostato dall'organizzazione)",
+    "delay": "I turni si chiudono automaticamente {{minutes}} minuti dopo la fine del turno dell'organizzazione."
+  },
+  "dateFormat": {
+    "label": "Formato data",
+    "description": "Come vengono visualizzate le date nell'app"
+  },
+  "timeFormat": {
+    "label": "Formato orario",
+    "description": "Formato 12 ore o 24 ore",
+    "12h": "12 ore",
+    "24h": "24 ore"
+  },
+  "advancedFeatures": {
+    "label": "Funzionalità avanzate",
+    "description": "Mostra interfaccia sperimentale o avanzata dove disponibile"
+  },
+  "forms": {
+    "email": "Email",
+    "phone": "Telefono",
+    "website": "Sito web",
+    "logo": "Logo",
+    "street": "Via",
+    "suburb": "Quartiere",
+    "city": "Città",
+    "province": "Regione / provincia",
+    "state": "Stato",
+    "country": "Paese",
+    "postalCode": "CAP",
+    "postalCodeZa": "CAP (4 cifre, ZA)",
+    "altText": "Testo alternativo",
+    "primaryColour": "Colore primario",
+    "primaryColourHex": "Colore primario hex",
+    "secondaryColour": "Secondario",
+    "accentColour": "Accento",
+    "errorColour": "Errore",
+    "successColour": "Successo",
+    "dashboardCharts": "Grafici dashboard",
+    "cookieBanner": "Banner cookie",
+    "language": "Lingua",
+    "timezone": "Fuso orario",
+    "currency": "Valuta",
+    "dateFormat": "Formato data",
+    "timeFormat": "Formato orario",
+    "notifSms": "SMS",
+    "notifPush": "Push",
+    "notifWhatsapp": "WhatsApp",
+    "theme": "Tema",
+    "defaultView": "Vista predefinita",
+    "itemsPerPage": "Elementi per pagina",
+    "feedbackTokenExpiry": "Scadenza token feedback (giorni)",
+    "defaultRadius": "Raggio predefinito (m)",
+    "maxRadius": "Raggio massimo (m)",
+    "minRadius": "Raggio minimo (m)",
+    "defaultNotificationType": "Tipo di notifica predefinito",
+    "contactEmail": "Email di contatto",
+    "phoneCountryCode": "Prefisso telefonico internazionale",
+    "phoneNumber": "Numero di telefono",
+    "brandingLogoUrl": "URL logo",
+    "brandingLogoAlt": "Testo alternativo logo",
+    "brandingFavicon": "URL favicon",
+    "brandingPrimary": "Colore primario (hex)",
+    "brandingSecondary": "Colore secondario (hex)",
+    "brandingAccent": "Colore accento (hex)",
+    "socialFacebook": "URL Facebook",
+    "socialTwitter": "URL Twitter / X",
+    "socialInstagram": "URL Instagram",
+    "socialLinkedin": "URL LinkedIn",
+    "socialYoutube": "URL YouTube",
+    "socialWebsite": "URL sito web",
+    "legalName": "Ragione sociale",
+    "registrationNumber": "Numero di registrazione",
+    "taxVatId": "Codice fiscale / P.IVA",
+    "industry": "Settore",
+    "organisationSize": "Dimensione organizzazione",
+    "targetCalculation": "Calcolo obiettivi",
+    "historicalPeriod": "Periodo storico (giorni)",
+    "growthTarget": "Obiettivo di crescita (%)",
+    "perfDaily": "Obiettivo giornaliero",
+    "perfWeekly": "Obiettivo settimanale",
+    "perfMonthly": "Obiettivo mensile",
+    "perfYearly": "Obiettivo annuale",
+    "open": "Apertura",
+    "close": "Chiusura",
+    "until": "Fino a (locale)",
+    "date": "Data",
+    "reasonOptional": "Motivazione (facoltativa)",
+    "name": "Nome",
+    "alias": "Alias",
+    "aliasOptional": "Alias (facoltativo)",
+    "contactPerson": "Referente",
+    "primaryInternalSales": "Vendite interne principali",
+    "floorSizeSqm": "Superficie (mq)",
+    "floorSizeSqmOptional": "Superficie (mq, facoltativa)",
+    "status": "Stato",
+    "countryCode": "Codice paese",
+    "reference": "Riferimento (univoco)",
+    "weekdaysShort": {
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "sunday": "Dom"
+    }
+  },
+  "placeholders": {
+    "organisationName": "es. LORO Group S.r.l.",
+    "shortName": "Nome breve (facoltativo)",
+    "status": "Stato",
+    "phoneLocal": "es. 0712345678",
+    "websiteZa": "https://www.azienda.co.za",
+    "hexPrimary": "#444CE7",
+    "hexBlack": "#000000",
+    "altText": "Testo alternativo",
+    "locale": "it-IT",
+    "timezone": "Europe/Rome",
+    "currency": "ZAR",
+    "dateFormat": "es. dd/MM/yyyy",
+    "timeFormat": "es. HH:mm",
+    "defaultView": "es. dashboard",
+    "itemsPerPage": "25",
+    "feedbackDays": "30",
+    "radiusDefault": "es. 100",
+    "radiusMax": "es. 500",
+    "radiusMin": "es. 50",
+    "phoneCode": "+27",
+    "registrationNumber": "es. 2020/123456/07",
+    "taxVatId": "es. 4123456789",
+    "industry": "es. Materiali edili",
+    "notSet": "Non impostato",
+    "historicalDays": "es. 90",
+    "growthPct": "es. 10",
+    "openTime": "07:00",
+    "closeTime": "16:30",
+    "specialOpenTime": "09:00",
+    "specialCloseTime": "17:00",
+    "holidayReason": "es. Festività",
+    "branchName": "es. Filiale Sandton",
+    "branchEmail": "filiale@azienda.co.za",
+    "branchPhone": "0712345678",
+    "floorSize": "es. 2500",
+    "countryCode": "SA",
+    "none": "Nessuno",
+    "autoReference": "Generato automaticamente se invariato",
+    "searchBranches": "Cerca filiali…",
+    "branchStreet": "es. Via Principale 123",
+    "branchSuburb": "es. Sandton",
+    "branchCity": "es. Johannesburg",
+    "branchProvince": "es. Gauteng",
+    "branchCountry": "es. Sudafrica",
+    "branchPostalCode": "es. 2196"
+  },
+  "chrome": {
+    "tabs": {
+      "profile": "Profilo",
+      "appearance": "Aspetto",
+      "regional": "Regionali e preferenze",
+      "hours": "Orari",
+      "branches": "Filiali",
+      "calendar": "Calendario",
+      "scrapping": "Scarti",
+      "notices": "Avvisi",
+      "banners": "Banner",
+      "performancePolicy": "Politica performance",
+      "callQuality": "Qualità chiamate",
+      "webhooks": "Webhook"
+    },
+    "sections": {
+      "selectOrg": "Seleziona un'organizzazione in Clerk, quindi riapri le Impostazioni.",
+      "orgProfile": {
+        "title": "Profilo organizzazione",
+        "description": "Ragione sociale, contatti e indirizzo visualizzati in tutto il prodotto."
+      },
+      "contact": {
+        "title": "Contatto",
+        "description": "Email, telefono, sito web e logo dell'organizzazione."
+      },
+      "address": {
+        "title": "Indirizzo",
+        "description": "Sede principale."
+      },
+      "appearance": {
+        "title": "Aspetto",
+        "description": "Colori del brand e logo per il tema dell'organizzazione."
+      },
+      "brandColour": {
+        "title": "Colore del brand",
+        "description": "Colore primario per pulsanti ed evidenziazioni."
+      },
+      "additionalColours": {
+        "title": "Colori aggiuntivi",
+        "description": "Colori secondario, accento e di stato."
+      },
+      "logo": {
+        "title": "Logo",
+        "description": "Immagine del logo e etichetta accessibile."
+      },
+      "dashboardOptions": {
+        "title": "Opzioni dashboard pubblica",
+        "description": "Layout dei grafici e banner cookie vengono salvati con le preferenze dell'organizzazione.",
+        "comfortable": "Comodo",
+        "compact": "Compatto",
+        "hidden": "Nascosto",
+        "shownOnHome": "Mostrato nella Home",
+        "save": "Salva opzioni dashboard"
+      },
+      "regional": {
+        "title": "Regionali e preferenze",
+        "description": "Lingua, fuso orario, notifiche, impostazioni UI predefinite e geofence predefiniti.",
+        "localisation": "Regionali",
+        "localisationHint": "Localizzazione per date, orari e valuta."
+      },
+      "notifications": {
+        "title": "Notifiche",
+        "description": "Canali per avvisi a livello organizzazione."
+      },
+      "preferences": {
+        "title": "Preferenze",
+        "description": "Comportamento UI predefinito.",
+        "menuCollapsed": "Menu compresso per impostazione predefinita"
+      },
+      "tasksFeedback": {
+        "title": "Attività e feedback",
+        "description": "Opzioni operative.",
+        "sendTaskNotifications": "Invia notifiche attività",
+        "createFollowUp": "Crea attività di follow-up quando viene creato un lead",
+        "deadlineReminders": "Promemoria scadenze attività",
+        "reminder24h": "24 ore prima della scadenza",
+        "reminder1h": "1 ora prima della scadenza",
+        "reminder15m": "15 minuti prima della scadenza"
+      },
+      "geofence": {
+        "title": "Geofence predefiniti",
+        "description": "Comportamento raggio check-in.",
+        "enabledByDefault": "Geofence abilitato per impostazione predefinita per le nuove risorse"
+      },
+      "brandingJson": "Branding (JSON impostazioni, separato dalla scheda Aspetto)",
+      "businessProfile": "Profilo aziendale",
+      "revenueTargets": "Obiettivi di fatturato (numeri facoltativi)",
+      "hours": {
+        "title": "Orari operativi",
+        "description": "Pianificazione predefinita e modalità vacanza per l'organizzazione.",
+        "defaultTimes": "Orari predefiniti",
+        "defaultTimesHint": "Apertura/chiusura di fallback quando si usano i flag settimanali.",
+        "workingDays": "Giorni lavorativi",
+        "workingDaysHint": "Attiva/disattiva i giorni lavorativi standard.",
+        "holidayMode": "Modalità vacanza",
+        "holidayModeHint": "Segna temporaneamente l'organizzazione come chiusa.",
+        "holidayModeActive": "Modalità vacanza attiva",
+        "detailedWeekly": "Pianificazione settimanale dettagliata",
+        "detailedWeeklyHint": "Orari di apertura e chiusura per giorno (HH:mm). Usati quando servono orari diversi per giorno della settimana.",
+        "closed": "Chiuso",
+        "specialHours": "Orari speciali",
+        "specialHoursHint": "Eccezioni per festività o chiusure una tantum (data in AAAA-MM-GG).",
+        "removeRow": "Rimuovi riga",
+        "addSpecialRow": "Aggiungi riga orari speciali"
+      },
+      "branches": {
+        "title": "Filiali",
+        "description": "Seleziona una filiale per modificare i dettagli di contatto e l'indirizzo.",
+        "add": "Aggiungi filiale",
+        "branch": "Filiale",
+        "branchHint": "Cerca e scegli una sede da aggiornare.",
+        "noneFound": "Nessuna filiale trovata.",
+        "details": "Dettagli",
+        "detailsHint": "Nome e contatti per la filiale selezionata.",
+        "selectedUser": "Utente selezionato",
+        "none": "Nessuna filiale",
+        "select": "Seleziona filiale…",
+        "addressHint": "Posizione della filiale su mappe e documenti.",
+        "create": "Crea filiale",
+        "landlineNote": "Le chiamate aziendali in uscita da questa filiale vengono conteggiate come chiamate da rete fissa di questa persona."
+      },
+      "orgName": {
+        "title": "Nome",
+        "description": "Nome ufficiale dell'organizzazione."
+      },
+      "orgAlias": {
+        "title": "Alias",
+        "description": "Nome interno breve per la visualizzazione (facoltativo)."
+      },
+      "orgStatus": {
+        "title": "Stato",
+        "description": "Stato del ciclo di vita dell'organizzazione."
+      },
+      "contactJson": "Contatto e indirizzo (JSON impostazioni)",
+      "socialTargets": "Link social e obiettivi di performance",
+      "sizes": {
+        "small": "Piccola",
+        "medium": "Media",
+        "large": "Grande",
+        "enterprise": "Enterprise"
+      },
+      "targetCalc": {
+        "fixed": "Fisso",
+        "dynamic": "Dinamico",
+        "historical": "Storico"
+      }
+    }
+  }
+}
