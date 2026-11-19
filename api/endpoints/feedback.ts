@@ -21,7 +21,7 @@ export async function listFeedback(
 export async function getFeedbackStats(
   client: AxiosInstance,
   organisationId: number | string
-): Promise<{ total?: number; byStatus?: Array<{ name: string; value: number }> }> {
+): Promise<{ total?: number; byStatus?: Array<{ name: string; value: number }> | Record<string, number> }> {
   const { data } = await client.get('/feedback/stats', { params: { organisationId } });
   return data ?? {};
 }

@@ -17,8 +17,10 @@ import {
 import { formatTakeoffMoney } from '@/app/takeoff/format';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export function TakeoffListContent() {
+  const { t } = useTranslation('screens');
   const query = useTakeoffs();
   const rows = query.data ?? [];
   const [createOpen, setCreateOpen] = useState(false);
@@ -27,9 +29,9 @@ export function TakeoffListContent() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3" data-tour="takeoff-page-header">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">System takeoff</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('pages.takeoff.title')}</h1>
           <p className="text-muted-foreground text-sm">
-            Measure a ceiling or partition. Quantities are calculated on the server, then issued as a quotation.
+            {t('pages.takeoff.description')}
           </p>
         </div>
         <Button
@@ -62,11 +64,11 @@ export function TakeoffListContent() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Reference</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Quotation</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>{t('tables.reference')}</TableHead>
+              <TableHead>{t('tables.client')}</TableHead>
+              <TableHead>{t('tables.status')}</TableHead>
+              <TableHead>{t('tables.quotation')}</TableHead>
+              <TableHead className="text-right">{t('tables.total')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

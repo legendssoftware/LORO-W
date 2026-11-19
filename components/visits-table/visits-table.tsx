@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { ReactNode } from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
@@ -169,7 +171,7 @@ interface VisitsDisplayColumn {
   width?: VisitsColumnWidth;
 }
 
-function renderPhotoCell(url: string | null | undefined): ReactNode {
+function renderPhotoCell(url: string | null | undefined, translate: TFunction): ReactNode {
   if (!url?.trim()) return '-';
   return (
     <a
@@ -178,7 +180,7 @@ function renderPhotoCell(url: string | null | undefined): ReactNode {
       rel="noopener noreferrer"
       className={cn('inline-flex items-center gap-0.5', VISITS_TABLE_LINK_CLASS)}
       onClick={(e) => e.stopPropagation()}
-      title="Open in new tab"
+      title={translate('visitsTable.openInNewTab')}
     >
       <img
         src={url}
@@ -191,16 +193,17 @@ function renderPhotoCell(url: string | null | undefined): ReactNode {
         }}
       />
       <span className="text-xs whitespace-nowrap" style={{ display: 'none' }}>
-        View
+        {translate('visitsTable.view')}
       </span>
     </a>
   );
 }
 
-export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
+export function buildVisitsDisplayColumns(t: TFunction): VisitsDisplayColumn[] {
+  return [
   {
     key: 'salesPerson',
-    label: 'Sales Person',
+    label: t('visitsTable.columns.salesPerson'),
     render: (c) => {
       const o = c.owner;
       if (!o) return '-';
@@ -209,9 +212,9 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
       const branchName = getVisitBranchDisplayName(c);
       const roleLabel = formatRoleLabel(o.role);
       const metaTooltip = [
-        o.phone ? `Phone: ${o.phone}` : '',
-        branchName ? `Branch: ${branchName}` : '',
-        roleLabel ? `Role: ${roleLabel}` : '',
+        o.phone ? t('visitsTable.phoneLine', { value: o.phone }) : '',
+        branchName ? t('visitsTable.branchLine', { value: branchName }) : '',
+        roleLabel ? t('visitsTable.roleLine', { value: roleLabel }) : '',
       ]
         .filter(Boolean)
         .join(' · ');
@@ -247,7 +250,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'date',
-    label: 'Date and time',
+    label: t('visitsTable.columns.date'),
     render: (c) => {
       const dateLine = format(new Date(c.checkInTime), 'MMM d, yyyy,');
       const inTime = format(new Date(c.checkInTime), 'HH:mm');
@@ -265,7 +268,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'location',
-    label: 'Check-in / Check-out location',
+    label: t('visitsTable.columns.location'),
     render: (c) => {
       const inAddr = formatAddressForDisplay(c.fullAddress, c.checkInLocation || '-');
       const outAddr = formatAddressForDisplay(c.checkOutFullAddress, c.checkOutLocation || '-');
@@ -278,17 +281,17 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
         <span className="flex flex-col gap-1">
           {inUrl && inUrl !== '#' ? (
             <a href={inUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={inAddr} onClick={(e) => e.stopPropagation()}>
-              In: {inAddr}
+              {t('visitsTable.inAddress', { address: inAddr })}
             </a>
           ) : (
-            <span className="block truncate max-w-[12rem]" title={inAddr}>In: {inAddr}</span>
+            <span className="block truncate max-w-[12rem]" title={inAddr}>{t('visitsTable.inAddress', { address: inAddr })}</span>
           )}
           {outUrl && outUrl !== '#' ? (
             <a href={outUrl} target="_blank" rel="noopener noreferrer" className={locLinkClass} title={outAddr} onClick={(e) => e.stopPropagation()}>
-              Out: {outAddr}
+              {t('visitsTable.outAddress', { address: outAddr })}
             </a>
           ) : (
-            <span className="block truncate max-w-[12rem]" title={outAddr}>Out: {outAddr}</span>
+            <span className="block truncate max-w-[12rem]" title={outAddr}>{t('visitsTable.outAddress', { address: outAddr })}</span>
           )}
         </span>
       );
@@ -296,52 +299,57 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'method',
-    label: 'Method',
+    label: t('visitsTable.columns.method'),
     width: 'quarter',
     render: (c) => activityMethodLabel(c),
   },
   {
     key: 'buildingType',
-    label: 'Building type',
+    label: t('visitsTable.columns.buildingType'),
     width: 'quarter',
     render: (c) => (c.buildingType ? String(c.buildingType).replace(/_/g, ' ') : '-'),
   },
   {
     key: 'contactMade',
-    label: 'Contact made',
+    label: t('visitsTable.columns.contactMade'),
     width: 'quarter',
-    render: (c) => formatContactMade(c.contactMade),
+    render: (c) => {
+      const value = formatContactMade(c.contactMade);
+      if (value === 'Yes') return t('actions.yes');
+      if (value === 'No') return t('actions.no');
+      return value;
+    },
   },
   {
     key: 'companyName',
-    label: 'Company',
+    label: t('visitsTable.columns.companyName'),
     render: (c) => c.companyName?.trim() || '-',
   },
   {
     key: 'businessType',
-    label: 'Business type',
+    label: t('visitsTable.columns.businessType'),
     render: (c) => (c.businessType ? String(c.businessType).replace(/_/g, ' ') : '-'),
   },
   {
     key: 'personSeenPosition',
-    label: 'Person seen position',
+    label: t('visitsTable.columns.personSeenPosition'),
     render: (c) => c.personSeenPosition?.trim() || '-',
   },
   {
     key: 'contactFullName',
-    label: 'Contact name',
+    label: t('visitsTable.columns.contactFullName'),
     render: (c) => c.contactFullName?.trim() || '-',
   },
   {
     key: 'contactImage',
-    label: 'Contact image',
+    label: t('visitsTable.columns.contactImage'),
     render: (c) => {
-      if (c.contactImage?.trim()) return renderPhotoCell(c.contactImage);
+      if (c.contactImage?.trim()) return renderPhotoCell(c.contactImage, t);
       const firstImageUrl = c.media?.find((u) => u?.startsWith('http') && isImageUrl(u));
-      if (firstImageUrl) return renderPhotoCell(firstImageUrl);
+      if (firstImageUrl) return renderPhotoCell(firstImageUrl, t);
       const firstUrl = c.media?.find((u) => u?.startsWith('http'));
       if (c.media?.length && firstUrl) {
-        const label = c.media.length === 1 ? 'View file' : `${c.media.length} files`;
+        const label = c.media.length === 1 ? t('visitsTable.viewFile') : t('visitsTable.fileCount', { count: c.media.length });
         return (
           <a
             href={firstUrl}
@@ -354,13 +362,13 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
           </a>
         );
       }
-      if (c.media?.length) return <span className="text-muted-foreground text-xs">{c.media.length} file{c.media.length !== 1 ? 's' : ''}</span>;
+      if (c.media?.length) return <span className="text-muted-foreground text-xs">{c.media.length === 1 ? t('visitsTable.fileCountOne', { count: c.media.length }) : t('visitsTable.fileCount', { count: c.media.length })}</span>;
       return '-';
     },
   },
   {
     key: 'contactCellPhone',
-    label: 'Cell',
+    label: t('visitsTable.columns.contactCellPhone'),
     render: (c) =>
       c.contactCellPhone?.trim() ? (
         <a href={buildTelUrl(c.contactCellPhone)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>
@@ -370,7 +378,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'contactLandline',
-    label: 'Landline',
+    label: t('visitsTable.columns.contactLandline'),
     render: (c) =>
       c.contactLandline?.trim() ? (
         <a href={buildTelUrl(c.contactLandline)} className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>
@@ -380,7 +388,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'contactEmail',
-    label: 'Contact email',
+    label: t('visitsTable.columns.contactEmail'),
     render: (c) =>
       c.contactEmail?.trim() ? (
         <a href={`mailto:${c.contactEmail}`} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>
@@ -390,7 +398,7 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'contactAddress',
-    label: 'Contact address',
+    label: t('visitsTable.columns.contactAddress'),
     render: (c) => {
       const addr = formatContactAddress(c.contactAddress);
       if (!addr?.trim() || addr === '-') return '-';
@@ -410,44 +418,44 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'meetingLink',
-    label: 'Meeting link',
+    label: t('visitsTable.columns.meetingLink'),
     render: (c) =>
       c.meetingLink?.trim() ? (
         <a href={c.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>
-          Open link
+          {t('visitsTable.openLink')}
         </a>
       ) : '-',
   },
   {
     key: 'notes',
-    label: 'Notes',
+    label: t('visitsTable.columns.notes'),
     width: 'double',
     render: (c) => c.notes || '-',
   },
   {
     key: 'resolution',
-    label: 'Resolution',
+    label: t('visitsTable.columns.resolution'),
     width: 'double',
     render: (c) => c.resolution?.trim() || '-',
   },
   {
     key: 'followUp',
-    label: 'Follow Up',
+    label: t('visitsTable.columns.followUp'),
     render: (c) => (c.followUp?.trim() || '-'),
   },
   {
     key: 'quoteNumber',
-    label: 'Quote Number',
+    label: t('visitsTable.columns.quoteNumber'),
     render: (c) => c.quotationNumber || '-',
   },
   {
     key: 'quotationStatus',
-    label: 'Quotation status',
+    label: t('visitsTable.columns.quotationStatus'),
     render: (c) => (c.quotationStatus ? String(c.quotationStatus).replace(/_/g, ' ') : '-'),
   },
   {
     key: 'value',
-    label: 'Value - ex-VAT',
+    label: t('visitsTable.columns.value'),
     render: (c) =>
       c.salesValue != null
         ? formatSalesValue(c.salesValue, (c as { salesCurrency?: string }).salesCurrency)
@@ -455,25 +463,25 @@ export const VISITS_DISPLAY_COLUMNS: VisitsDisplayColumn[] = [
   },
   {
     key: 'lead',
-    label: 'Lead',
+    label: t('visitsTable.columns.lead'),
     render: (c) => c.lead?.name?.trim() || '-',
   },
   {
     key: 'client',
-    label: 'Client',
+    label: t('visitsTable.columns.client'),
     render: (c) => c.client?.name?.trim() || '-',
   },
   {
     key: 'branch',
-    label: 'Branch',
+    label: t('visitsTable.columns.branch'),
     render: (c) => getVisitBranchDisplayName(c) || '-',
   },
-];
+  ];
+}
 
-/** Columns for the nested visit table (all except Sales Person). */
-export const VISITS_TABLE_COLUMNS = VISITS_DISPLAY_COLUMNS.filter(
-  (col) => col.key !== 'salesPerson'
-);
+export function buildVisitsTableColumns(t: TFunction): VisitsDisplayColumn[] {
+  return buildVisitsDisplayColumns(t).filter((col) => col.key !== 'salesPerson');
+}
 
 export interface GroupedByOwner {
   ownerKey: string;
@@ -668,6 +676,7 @@ function VisitDetailDialog({
   onOpenChange: (open: boolean) => void;
   onVisitUpdated?: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UpdateVisitDetailsPayload>>({});
@@ -759,7 +768,7 @@ function VisitDetailDialog({
       !hasPendingMedia &&
       !hasProofPhotoChange
     ) {
-      toast.success('No changes to save');
+      toast.success(t('visitsTable.noChanges'));
       setIsEditing(false);
       resetMediaEditState();
       return;
@@ -794,13 +803,13 @@ function VisitDetailDialog({
         };
         await updateMutation.mutateAsync(payload);
       }
-      toast.success('Visit updated');
+      toast.success(t('visitsTable.visitUpdated'));
       setIsEditing(false);
       setFieldErrors({});
       resetMediaEditState();
       onVisitUpdated?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to update visit');
+      toast.error(e instanceof Error ? e.message : t('visitsTable.failedToUpdate'));
     } finally {
       setIsUploadingMedia(false);
     }
@@ -831,9 +840,7 @@ function VisitDetailDialog({
                       setCreateLeadModalOpen(true);
                     }}
                   >
-                    <UserPlus className="size-4" />
-                    Convert to Lead
-                  </Button>
+                    <UserPlus className="size-4" />{t('visitsTable.convertToLead')}</Button>
                 )}
                 <Button
                   size="sm"
@@ -843,30 +850,28 @@ function VisitDetailDialog({
                     setIsEditing(true);
                   }}
                 >
-                  <Pencil className="size-4" />
-                  Edit
-                </Button>
+                  <Pencil className="size-4" />{t('actions.edit')}</Button>
               </>
             )}
             <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
-            <DialogTitle>Visit Details – #{visit.uid}</DialogTitle>
+            <DialogTitle>{t('visitsTable.visitDetails', { uid: visit.uid })}</DialogTitle>
             <DialogDescription>
               {ownerFullName} · {format(new Date(visit.checkInTime), 'MMM d, yyyy')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <div>
-              <DetailSectionHeading title="Timing" icon={Clock} />
+              <DetailSectionHeading title={t('visitsTable.timing')} icon={Clock} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="Check-in"
+                  label={t('visitsTable.checkIn')}
                   icon={LogIn}
                   value={format(new Date(visit.checkInTime), 'MMM d, yyyy – h:mm a')}
                 />
                 <DetailFieldRow
-                  label="Check-out"
+                  label={t('visitsTable.checkOut')}
                   icon={LogOut}
                   value={
                     visit.checkOutTime
@@ -875,7 +880,7 @@ function VisitDetailDialog({
                   }
                 />
                 <DetailFieldRow
-                  label="Duration"
+                  label={t('visitsTable.duration')}
                   icon={Timer}
                   value={
                     visit.duration ? normalizeDurationDisplay(visit.duration) : '-'
@@ -885,10 +890,10 @@ function VisitDetailDialog({
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="Location" icon={MapPin} />
+              <DetailSectionHeading title={t('visitsTable.location')} icon={MapPin} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="In"
+                  label={t('visitsTable.in')}
                   icon={MapPin}
                   value={
                     inAddr !== '#' ? (
@@ -906,7 +911,7 @@ function VisitDetailDialog({
                   }
                 />
                 <DetailFieldRow
-                  label="Out"
+                  label={t('visitsTable.out')}
                   icon={MapPin}
                   value={
                     visit.checkOutLocation || outAddr !== '-'
@@ -982,7 +987,7 @@ function VisitDetailDialog({
             />
             <Separator />
             <div>
-              <DetailSectionHeading title="Details" icon={ClipboardList} />
+              <DetailSectionHeading title={t('visitsTable.details')} icon={ClipboardList} />
               {isEditing ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
@@ -1024,20 +1029,16 @@ function VisitDetailDialog({
                       <SelectTrigger className="w-full justify-between font-normal border-input h-9 rounded-xl border px-3 py-2 text-sm shadow-xs gap-2">
                         <span className="flex items-center gap-2 min-w-0 flex-1">
                           <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                          <SelectValue placeholder="No client" />
+                          <SelectValue placeholder={t('visitsTable.noClient')} />
                         </span>
                       </SelectTrigger>
                       <SelectContent className="z-[10001] max-h-[min(320px,50vh)]" position="popper">
-                        <SelectItem value="_none">No client</SelectItem>
+                        <SelectItem value="_none">{t('visitsTable.noClient')}</SelectItem>
                         {clientsInfinite.isLoading && (
-                          <SelectItem value="_loading" disabled className="pointer-events-none">
-                            Loading…
-                          </SelectItem>
+                          <SelectItem value="_loading" disabled className="pointer-events-none">{t('actions.loading')}</SelectItem>
                         )}
                         {clientsList.length === 0 && !clientsInfinite.isLoading && (
-                          <SelectItem value="_empty" disabled className="pointer-events-none">
-                            No clients found
-                          </SelectItem>
+                          <SelectItem value="_empty" disabled className="pointer-events-none">{t('visitsTable.noClientsFound')}</SelectItem>
                         )}
                         {clientsList.map((c) => {
                           const nameTrim = (c.name ?? '').trim();
@@ -1069,7 +1070,7 @@ function VisitDetailDialog({
                               {clientsInfinite.isFetchingNextPage ? (
                                 <Loader2Icon className="size-4 animate-spin" />
                               ) : (
-                                'Load more'
+                                t('actions.loadMore')
                               )}
                             </Button>
                           </div>
@@ -1078,51 +1079,51 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Notes</Label>
+                    <Label>{t('visitsTable.notes')}</Label>
                     <Textarea
                       value={editForm.notes ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                       maxLength={NOTES_MAX_LENGTH}
                       rows={4}
                       className="resize-y"
-                      placeholder="Add notes"
+                      placeholder={t('visitsTable.addNotes')}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {getWordCount(editForm.notes).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+                      {t('visitsTable.wordCount', { count: getWordCount(editForm.notes).toLocaleString(), max: NOTES_MAX_WORDS.toLocaleString() })}
                     </p>
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Resolution</Label>
+                    <Label>{t('visitsTable.resolution')}</Label>
                     <Textarea
                       value={editForm.resolution ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, resolution: e.target.value }))}
                       maxLength={NOTES_MAX_LENGTH}
                       rows={10}
                       className="min-h-[200px] resize-y"
-                      placeholder="What was the outcome of this call or visit?"
+                      placeholder={t('visitsTable.outcome')}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {getWordCount(editForm.resolution).toLocaleString()} / {NOTES_MAX_WORDS.toLocaleString()} words
+                      {t('visitsTable.wordCount', { count: getWordCount(editForm.resolution).toLocaleString(), max: NOTES_MAX_WORDS.toLocaleString() })}
                     </p>
                   </div>
                   <div>
-                    <Label>Contact name</Label>
+                    <Label>{t('visitsTable.contactName')}</Label>
                     <Input
                       value={editForm.contactFullName ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, contactFullName: e.target.value }))}
-                      placeholder="Person contacted"
+                      placeholder={t('visitsTable.personContacted')}
                     />
                   </div>
                   <div>
-                    <Label>Company</Label>
+                    <Label>{t('visitsTable.company')}</Label>
                     <Input
                       value={editForm.companyName ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
-                      placeholder="Company"
+                      placeholder={t('visitsTable.company')}
                     />
                   </div>
                   <div>
-                    <Label>Cell</Label>
+                    <Label>{t('visitsTable.cell')}</Label>
                     <Input
                       value={editForm.contactCellPhone ?? ''}
                       onChange={(e) => {
@@ -1138,7 +1139,7 @@ function VisitDetailDialog({
                     )}
                   </div>
                   <div>
-                    <Label>Landline</Label>
+                    <Label>{t('visitsTable.landline')}</Label>
                     <Input
                       value={editForm.contactLandline ?? ''}
                       onChange={(e) => {
@@ -1154,7 +1155,7 @@ function VisitDetailDialog({
                     )}
                   </div>
                   <div>
-                    <Label>Contact email</Label>
+                    <Label>{t('visitsTable.contactEmail')}</Label>
                     <Input
                       type="email"
                       value={editForm.contactEmail ?? ''}
@@ -1171,10 +1172,10 @@ function VisitDetailDialog({
                     )}
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Address</Label>
+                    <Label>{t('visitsTable.address')}</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                       <Input
-                        placeholder="Street"
+                        placeholder={t('visitsTable.street')}
                         value={editForm.contactAddress?.street ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1184,7 +1185,7 @@ function VisitDetailDialog({
                         }
                       />
                       <Input
-                        placeholder="Suburb"
+                        placeholder={t('visitsTable.suburb')}
                         value={editForm.contactAddress?.suburb ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1194,7 +1195,7 @@ function VisitDetailDialog({
                         }
                       />
                       <Input
-                        placeholder="City"
+                        placeholder={t('visitsTable.city')}
                         value={editForm.contactAddress?.city ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1204,7 +1205,7 @@ function VisitDetailDialog({
                         }
                       />
                       <Input
-                        placeholder="Province / State"
+                        placeholder={t('visitsTable.province')}
                         value={editForm.contactAddress?.state ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1214,7 +1215,7 @@ function VisitDetailDialog({
                         }
                       />
                       <Input
-                        placeholder="Country"
+                        placeholder={t('visitsTable.country')}
                         value={editForm.contactAddress?.country ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1224,7 +1225,7 @@ function VisitDetailDialog({
                         }
                       />
                       <Input
-                        placeholder="Postal code"
+                        placeholder={t('visitsTable.postalCode')}
                         value={editForm.contactAddress?.postalCode ?? ''}
                         onChange={(e) =>
                           setEditForm((f) => ({
@@ -1236,14 +1237,14 @@ function VisitDetailDialog({
                     </div>
                   </div>
                   <div>
-                    <Label>Person seen position</Label>
+                    <Label>{t('visitsTable.personSeenPosition')}</Label>
                     <Select
                       value={editForm.personSeenPosition ?? '_none'}
                       onValueChange={(v) => setEditForm((f) => ({ ...f, personSeenPosition: v === '_none' ? undefined : v }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('visitsTable.select')} /></SelectTrigger>
                       <SelectContent className="z-[10001]">
-                        <SelectItem value="_none">Select</SelectItem>
+                        <SelectItem value="_none">{t('visitsTable.select')}</SelectItem>
                         {PERSON_POSITION_OPTIONS.map((o) => {
                           const Icon = o.icon;
                           return (
@@ -1259,7 +1260,7 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div>
-                    <Label>Follow-up</Label>
+                    <Label>{t('visitsTable.followUp')}</Label>
                     <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -1295,20 +1296,20 @@ function VisitDetailDialog({
                     )}
                   </div>
                   <div>
-                    <Label>Quotation number</Label>
+                    <Label>{t('visitsTable.quotationNumber')}</Label>
                     <Input
                       value={editForm.quotationNumber ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, quotationNumber: e.target.value }))}
-                      placeholder="Optional"
+                      placeholder={t('visitsTable.optional')}
                     />
                   </div>
                   <div>
-                    <Label>Quotation status</Label>
+                    <Label>{t('visitsTable.quotationStatus')}</Label>
                     <Select
                       value={editForm.quotationStatus ?? '_none'}
                       onValueChange={(v) => setEditForm((f) => ({ ...f, quotationStatus: v === '_none' ? undefined : v }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('visitsTable.select')} /></SelectTrigger>
                       <SelectContent className="z-[10001]">
                         {QUOTATION_STATUS_OPTIONS.map((o) => {
                           const Icon = o.icon;
@@ -1325,7 +1326,7 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div>
-                    <Label>Sales value</Label>
+                    <Label>{t('visitsTable.salesValue')}</Label>
                     <div className="flex gap-2">
                       <Select
                         value={editForm.salesCurrency ?? 'ZAR'}
@@ -1356,14 +1357,14 @@ function VisitDetailDialog({
                     </div>
                   </div>
                   <div>
-                    <Label>Method of contact</Label>
+                    <Label>{t('visitsTable.methodOfContact')}</Label>
                     <Select
                       value={editForm.methodOfContact ?? '_none'}
                       onValueChange={(v) => setEditForm((f) => ({ ...f, methodOfContact: v === '_none' ? undefined : v }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('visitsTable.select')} /></SelectTrigger>
                       <SelectContent className="z-[10001]">
-                        <SelectItem value="_none">Select</SelectItem>
+                        <SelectItem value="_none">{t('visitsTable.select')}</SelectItem>
                         {METHOD_OPTIONS.map((o) => {
                           const Icon = o.icon;
                           return (
@@ -1379,7 +1380,7 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div>
-                    <Label>Meeting link</Label>
+                    <Label>{t('visitsTable.meetingLink')}</Label>
                     <Input
                       value={editForm.meetingLink ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
@@ -1387,14 +1388,14 @@ function VisitDetailDialog({
                     />
                   </div>
                   <div>
-                    <Label>Building type</Label>
+                    <Label>{t('visitsTable.buildingType')}</Label>
                     <Select
                       value={editForm.buildingType ?? '_none'}
                       onValueChange={(v) => setEditForm((f) => ({ ...f, buildingType: v === '_none' ? undefined : v }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('visitsTable.select')} /></SelectTrigger>
                       <SelectContent className="z-[10001]">
-                        <SelectItem value="_none">Select</SelectItem>
+                        <SelectItem value="_none">{t('visitsTable.select')}</SelectItem>
                         {SITE_TYPE_OPTIONS.map((o) => {
                           const Icon = o.icon;
                           return (
@@ -1410,14 +1411,14 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div>
-                    <Label>Business type</Label>
+                    <Label>{t('visitsTable.businessType')}</Label>
                     <Select
                       value={editForm.businessType ?? '_none'}
                       onValueChange={(v) => setEditForm((f) => ({ ...f, businessType: v === '_none' ? undefined : v }))}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('visitsTable.select')} /></SelectTrigger>
                       <SelectContent className="z-[10001]">
-                        <SelectItem value="_none">Select</SelectItem>
+                        <SelectItem value="_none">{t('visitsTable.select')}</SelectItem>
                         {TYPE_OF_BUSINESS_OPTIONS.map((o) => {
                           const Icon = o.icon;
                           return (
@@ -1433,7 +1434,7 @@ function VisitDetailDialog({
                     </Select>
                   </div>
                   <div className="sm:col-span-2 flex items-center justify-between rounded-lg border p-4">
-                    <Label>Contact made</Label>
+                    <Label>{t('visitsTable.contactMade')}</Label>
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="edit-contact-made"
@@ -1441,40 +1442,40 @@ function VisitDetailDialog({
                         onCheckedChange={(c) => setEditForm((f) => ({ ...f, contactMade: !!c }))}
                       />
                       <label htmlFor="edit-contact-made" className="text-sm cursor-pointer">
-                        {editForm.contactMade ?? true ? 'Yes' : 'No'}
+                        {editForm.contactMade ?? true ? t('actions.yes') : t('actions.no')}
                       </label>
                     </div>
                   </div>
                 </div>
               ) : (
                 <dl className={DETAIL_FIELD_GRID_CLASS}>
-                  <DetailFieldRow label="Notes" icon={StickyNote} value={visit.notes?.trim() || '-'} />
-                  <DetailFieldRow label="Resolution" icon={ClipboardList} value={visit.resolution?.trim() || '-'} />
-                  <DetailFieldRow label="Contact" icon={User} value={visit.contactFullName?.trim() || '-'} />
-                  <DetailFieldRow label="Company" icon={Building2} value={visit.companyName?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.notes')} icon={StickyNote} value={visit.notes?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.resolution')} icon={ClipboardList} value={visit.resolution?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.contact')} icon={User} value={visit.contactFullName?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.company')} icon={Building2} value={visit.companyName?.trim() || '-'} />
                   <DetailFieldRow
-                    label="Method"
+                    label={t('visitsTable.method')}
                     icon={MessageSquare}
                     value={activityMethodLabel(visit)}
                   />
                   <DetailFieldRow
-                    label="Building type"
+                    label={t('visitsTable.buildingType')}
                     icon={Landmark}
                     value={visit.buildingType ? String(visit.buildingType).replace(/_/g, ' ') : '-'}
                   />
-                  <DetailFieldRow label="Contact made" icon={UserCheck} value={formatContactMade(visit.contactMade)} />
+                  <DetailFieldRow label={t('visitsTable.contactMade')} icon={UserCheck} value={(() => { const value = formatContactMade(visit.contactMade); if (value === 'Yes') return t('actions.yes'); if (value === 'No') return t('actions.no'); return value; })()} />
                   <DetailFieldRow
-                    label="Business type"
+                    label={t('visitsTable.businessType')}
                     icon={Briefcase}
                     value={visit.businessType ? String(visit.businessType).replace(/_/g, ' ') : '-'}
                   />
                   <DetailFieldRow
-                    label="Person seen position"
+                    label={t('visitsTable.personSeenPosition')}
                     icon={UserCircle}
                     value={visit.personSeenPosition?.trim() || '-'}
                   />
                   <DetailFieldRow
-                    label="Cell"
+                    label={t('visitsTable.cell')}
                     icon={Smartphone}
                     value={
                       visit.contactCellPhone?.trim() ? (
@@ -1485,7 +1486,7 @@ function VisitDetailDialog({
                     }
                   />
                   <DetailFieldRow
-                    label="Landline"
+                    label={t('visitsTable.landline')}
                     icon={Phone}
                     value={
                       visit.contactLandline?.trim() ? (
@@ -1496,7 +1497,7 @@ function VisitDetailDialog({
                     }
                   />
                   <DetailFieldRow
-                    label="Contact email"
+                    label={t('visitsTable.contactEmail')}
                     icon={Mail}
                     value={
                       visit.contactEmail?.trim() ? (
@@ -1507,41 +1508,41 @@ function VisitDetailDialog({
                     }
                   />
                   <DetailFieldRow
-                    label="Contact address"
+                    label={t('visitsTable.contactAddress')}
                     icon={MapPin}
                     value={formatContactAddress(visit.contactAddress)}
                   />
                   <DetailFieldRow
-                    label="Meeting link"
+                    label={t('visitsTable.meetingLink')}
                     icon={Link2}
                     value={
                       visit.meetingLink?.trim() ? (
-                        <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>Open link</a>
+                        <a href={visit.meetingLink} target="_blank" rel="noopener noreferrer" className={VISITS_TABLE_LINK_CLASS} onClick={(e) => e.stopPropagation()}>{t('visitsTable.openLink')}</a>
                       ) : (
                         '-'
                       )
                     }
                   />
-                  <DetailFieldRow label="Follow-up" icon={CalendarClock} value={visit.followUp?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.followUp')} icon={CalendarClock} value={visit.followUp?.trim() || '-'} />
                   {visit.followUp?.trim() ? (
                     <p className="text-xs text-muted-foreground -mt-1">
-                      Check-out with this follow-up date creates a task for the visit owner (visible in Planning).
+                      {t('visitsTable.followUpHint')}
                     </p>
                   ) : null}
-                  <DetailFieldRow label="Quote number" icon={Hash} value={visit.quotationNumber?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.quoteNumber')} icon={Hash} value={visit.quotationNumber?.trim() || '-'} />
                   <DetailFieldRow
-                    label="Quotation status"
+                    label={t('visitsTable.quotationStatus')}
                     icon={ClipboardList}
                     value={visit.quotationStatus ? String(visit.quotationStatus).replace(/_/g, ' ') : '-'}
                   />
                   <DetailFieldRow
-                    label="Value (ex-VAT)"
+                    label={t('visitsTable.valueExVat')}
                     icon={Banknote}
                     value={formatSalesValue(visit.salesValue, (visit as { salesCurrency?: string }).salesCurrency)}
                   />
-                  <DetailFieldRow label="Lead" icon={Target} value={visit.lead?.name?.trim() || '-'} />
-                  <DetailFieldRow label="Client" icon={Users} value={visit.client?.name?.trim() || '-'} />
-                  <DetailFieldRow label="Branch" icon={GitBranch} value={getVisitBranchDisplayName(visit) || '-'} />
+                  <DetailFieldRow label={t('visitsTable.lead')} icon={Target} value={visit.lead?.name?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.client')} icon={Users} value={visit.client?.name?.trim() || '-'} />
+                  <DetailFieldRow label={t('visitsTable.branch')} icon={GitBranch} value={getVisitBranchDisplayName(visit) || '-'} />
                 </dl>
               )}
             </div>
@@ -1553,9 +1554,7 @@ function VisitDetailDialog({
                 className="rounded-full"
                 onClick={handleCancelEdit}
                 disabled={isSaving}
-              >
-                Cancel
-              </Button>
+              >{t('actions.cancel')}</Button>
               <Button
                 variant="success"
                 className="rounded-full"
@@ -1563,7 +1562,7 @@ function VisitDetailDialog({
                 disabled={isSaving}
               >
                 {isSaving && <Loader2Icon className="size-4 animate-spin mr-2" />}
-                Save
+                {t('actions.save')}
               </Button>
             </DialogFooter>
           )}
@@ -1574,7 +1573,7 @@ function VisitDetailDialog({
           <DialogContent className="max-w-4xl p-0 overflow-hidden">
             <img
               src={expandedImageUrl}
-              alt="Expanded"
+              alt={t('visitsTable.expanded')}
               className="w-full h-auto max-h-[90vh] object-contain"
             />
           </DialogContent>
@@ -1592,7 +1591,7 @@ function VisitDetailDialog({
                 onVisitUpdated?.();
               })
               .catch((e) => {
-                toast.error(e instanceof Error ? e.message : 'Failed to link lead to visit');
+                toast.error(e instanceof Error ? e.message : t('visitsTable.failedToLinkLead'));
               });
           } else {
             onVisitUpdated?.();
@@ -1610,11 +1609,17 @@ export interface VisitsTableProps {
   onVisitUpdated?: () => void;
 }
 
-export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet. Start a visit to see it here.', onVisitUpdated }: VisitsTableProps) {
+export function VisitsTable({ checkIns, isLoading, emptyMessage, onVisitUpdated }: VisitsTableProps) {
+  const { t } = useTranslation('screens');
   const [selectedVisit, setSelectedVisit] = useState<VisitExportItem | null>(null);
   const [visitDetailOpen, setVisitDetailOpen] = useState(false);
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
 
+  const displayColumns = useMemo(() => buildVisitsDisplayColumns(t), [t]);
+  const tableColumns = useMemo(
+    () => displayColumns.filter((col) => col.key !== 'salesPerson'),
+    [displayColumns],
+  );
   const groupedByOwner = useMemo(() => groupCheckInsByOwner(checkIns), [checkIns]);
 
   if (isLoading) {
@@ -1628,12 +1633,12 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
   if (checkIns.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-12">
-        {emptyMessage}
+        {emptyMessage ?? t('visitsTable.emptyDefault')}
       </p>
     );
   }
 
-  const salesPersonColumn = VISITS_DISPLAY_COLUMNS.find((col) => col.key === 'salesPerson')!;
+  const salesPersonColumn = displayColumns.find((col) => col.key === 'salesPerson')!;
 
   return (
     <>
@@ -1668,13 +1673,13 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                     >
                     <span className="flex items-start gap-2 whitespace-normal min-w-0 flex-1">
                       {group.ownerKey === '__unknown__' ? (
-                        <span className="text-muted-foreground font-medium">Unknown</span>
+                        <span className="text-muted-foreground font-medium">{t('visitsTable.unknown')}</span>
                       ) : (
                         salesPersonColumn.render(group.visits[0])
                       )}
                     </span>
                     <span className="text-sm text-muted-foreground shrink-0">
-                      {group.visits.length} visit{group.visits.length !== 1 ? 's' : ''}
+                      {group.visits.length === 1 ? t('visitsTable.visitCountOne', { count: group.visits.length }) : t('visitsTable.visitCount', { count: group.visits.length })}
                     </span>
                     <ChevronRight
                       className={cn('size-5 shrink-0 text-muted-foreground transition-transform', isExpanded && 'rotate-90')}
@@ -1687,7 +1692,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                     <Table className="min-w-max border-separate border-spacing-y-1">
                       <TableHeader>
                         <TableRow>
-                          {VISITS_TABLE_COLUMNS.map((col) => (
+                          {tableColumns.map((col) => (
                             <TableHead
                               key={col.key}
                               className={cn(
@@ -1710,7 +1715,7 @@ export function VisitsTable({ checkIns, isLoading, emptyMessage = 'No visits yet
                               setVisitDetailOpen(true);
                             }}
                           >
-                            {VISITS_TABLE_COLUMNS.map((col) => (
+                            {tableColumns.map((col) => (
                               <TableCell
                                 key={col.key}
                                 className={cn(

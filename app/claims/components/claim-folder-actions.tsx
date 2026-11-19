@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import {
   useDeleteClaimGroupMutation,
@@ -36,6 +37,7 @@ export function ClaimFolderActions({
   title: string;
   onDeleted?: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const updateMutation = useUpdateClaimGroupMutation();
   const deleteMutation = useDeleteClaimGroupMutation();
   const [renameOpen, setRenameOpen] = useState(false);
@@ -92,12 +94,12 @@ export function ClaimFolderActions({
           onClick={(event) => event.stopPropagation()}
         >
           <DialogHeader>
-            <DialogTitle>Rename folder</DialogTitle>
+            <DialogTitle>{t('claims.renameFolder')}</DialogTitle>
           </DialogHeader>
           <Input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Folder name"
+            placeholder={t('claims.folderName')}
             autoFocus
             onKeyDown={(event) => {
               if (event.key === 'Enter') handleRename();
@@ -105,7 +107,7 @@ export function ClaimFolderActions({
           />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button
               type="button"
@@ -113,7 +115,7 @@ export function ClaimFolderActions({
               disabled={updateMutation.isPending || !name.trim()}
               onClick={handleRename}
             >
-              Save
+              {t('actions.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -122,9 +124,9 @@ export function ClaimFolderActions({
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent onClick={(event) => event.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete folder?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.deleteFolder')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Claims in “{title}” stay in the list and move out of this folder.
+              {t('claims.deleteFolderDescription', { title })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -140,7 +142,7 @@ export function ClaimFolderActions({
                 })
               }
             >
-              Delete folder
+              {t('claims.deleteFolderAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

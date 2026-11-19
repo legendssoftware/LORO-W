@@ -1,0 +1,1698 @@
+{
+  "actions": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Fechar",
+    "submit": "Submeter",
+    "confirm": "Confirmar",
+    "export": "Exportar",
+    "exportCsv": "Exportar CSV",
+    "exportPdf": "Exportar PDF",
+    "filter": "Filtrar",
+    "filters": "Filtros",
+    "resetFilters": "Repor filtros",
+    "next": "Seguinte",
+    "prev": "Ant.",
+    "previousPage": "Página anterior",
+    "nextPage": "Página seguinte",
+    "rowsPerPage": "Linhas por página",
+    "pageOf": "Página {{page}} de {{totalPages}}",
+    "totalCount": " · {{count}} no total",
+    "pageNumber": "Página {{page}}",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Criar",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "decline": "Recusar",
+    "yes": "Sim",
+    "no": "Não",
+    "done": "Concluído",
+    "send": "Enviar",
+    "share": "Partilhar",
+    "back": "Voltar",
+    "loading": "A carregar…",
+    "loadMore": "Carregar mais",
+    "search": "Pesquisar",
+    "clearSearch": "Limpar pesquisa",
+    "remove": "Remover",
+    "tryAgain": "Tentar novamente",
+    "allTime": "Todo o período",
+    "todayUtc": "Hoje (UTC)",
+    "thisMonthUtc": "Este mês (UTC)",
+    "wholeMonthUtc": "Mês inteiro (UTC)",
+    "pickUtcRange": "ou escolha um intervalo UTC abaixo",
+    "resetDefaultRange": "Repor o intervalo predefinido",
+    "allDates": "Todas as datas",
+    "today": "Hoje",
+    "thisMonth": "Este mês",
+    "searchUsers": "Pesquisar utilizadores…",
+    "allStatuses": "Todos os estados",
+    "noStatusFound": "Nenhum estado encontrado.",
+    "clearStatusFilter": "Limpar filtro de estado"
+  },
+  "dashboard": {
+    "logs": "Registos",
+    "viewAttendanceLogs": "Ver registos de assiduidade",
+    "tipOfTheDay": "Dica do dia",
+    "loadingTip": "A carregar a dica…",
+    "noTipToday": "Sem dica hoje.",
+    "cookieBanner": "Este site utiliza cookies para o manter com sessão iniciada e recordar a disposição do painel.",
+    "me": "Eu",
+    "shiftStarted": "Turno iniciado",
+    "shiftEnded": "Turno terminado",
+    "breakStarted": "Pausa iniciada",
+    "breakEnded": "Pausa terminada",
+    "couldNotSavePulse": "Não foi possível guardar o pulso. Tente novamente."
+  },
+  "visits": {
+    "title": "Visitas",
+    "description": "Toda a atividade é listada por predefinição. Use o filtro de atividade para ver visitas presenciais, telefone, WhatsApp, e-mail ou telefone fixo.",
+    "startVisit": "Iniciar visita",
+    "endVisit": "Terminar visita",
+    "chooseMethod": "Escolha como está a realizar esta visita.",
+    "methodOfVisit": "Método da visita",
+    "selectMethod": "Selecione um método de visita",
+    "visitStarted": "Visita iniciada",
+    "failedToStart": "Não foi possível iniciar a visita",
+    "empty": "Ainda não há visitas. Inicie uma visita para a ver aqui.",
+    "noActivityMatch": "Nenhuma atividade corresponde aos filtros.",
+    "noChannelMatch": "Nenhum {{channel}} corresponde aos filtros.",
+    "exportTitle": "Visitas · {{channel}}",
+    "dispatch": "Despacho",
+    "draftedFallback": "Foi redigida uma nota de recurso",
+    "noteDrafted": "Nota da visita redigida",
+    "couldNotDraft": "Não foi possível redigir uma nota",
+    "leadCreatedNamed": "Lead criado: {{name}}",
+    "convertedToLead": "Check-in convertido num lead",
+    "couldNotConvert": "Não foi possível converter este check-in",
+    "couldNotLoadDispatch": "Não foi possível carregar o resumo do despacho",
+    "dispatchSummary": "{{range}}: {{planned}} planeadas, {{completed}} concluídas, {{inProgress}} em curso.",
+    "loadingDispatch": "A carregar visitas planeadas e concluídas…",
+    "checkInId": "ID do check-in",
+    "draftNote": "Redigir nota",
+    "convertToLead": "Converter em lead"
+  },
+  "visitsTable": {
+    "openInNewTab": "Abrir num novo separador",
+    "view": "Ver",
+    "viewFile": "Ver ficheiro",
+    "fileCount": "{{count}} ficheiros",
+    "fileCountOne": "{{count}} ficheiro",
+    "phoneLine": "Telefone: {{value}}",
+    "branchLine": "Filial: {{value}}",
+    "roleLine": "Função: {{value}}",
+    "inAddress": "Entrada: {{address}}",
+    "outAddress": "Saída: {{address}}",
+    "openLink": "Abrir ligação",
+    "unknown": "Desconhecido",
+    "visitCount": "{{count}} visitas",
+    "visitCountOne": "{{count}} visita",
+    "emptyDefault": "Ainda não há visitas. Inicie uma visita para a ver aqui.",
+    "noChanges": "Não há alterações para guardar",
+    "visitUpdated": "Visita atualizada",
+    "failedToUpdate": "Não foi possível atualizar a visita",
+    "failedToLinkLead": "Não foi possível associar o lead à visita",
+    "convertToLead": "Converter em lead",
+    "visitDetails": "Detalhes da visita – #{{uid}}",
+    "timing": "Horários",
+    "checkIn": "Entrada",
+    "checkOut": "Saída",
+    "duration": "Duração",
+    "location": "Localização",
+    "in": "Entrada",
+    "out": "Saída",
+    "details": "Detalhes",
+    "noClient": "Sem cliente",
+    "noClientsFound": "Nenhum cliente encontrado",
+    "notes": "Notas",
+    "addNotes": "Adicionar notas",
+    "resolution": "Resolução",
+    "outcome": "Qual foi o resultado desta chamada ou visita?",
+    "contactName": "Nome do contacto",
+    "personContacted": "Pessoa contactada",
+    "company": "Empresa",
+    "cell": "Telemóvel",
+    "landline": "Telefone fixo",
+    "contactEmail": "E-mail do contacto",
+    "address": "Morada",
+    "street": "Rua",
+    "suburb": "Bairro",
+    "city": "Cidade",
+    "province": "Província / estado",
+    "country": "País",
+    "postalCode": "Código postal",
+    "select": "Selecionar",
+    "optional": "Opcional",
+    "personSeenPosition": "Cargo da pessoa vista",
+    "followUp": "Seguimento",
+    "followUpHint": "Uma saída com esta data de seguimento cria uma tarefa para o responsável da visita (visível em Planeamento).",
+    "quotationNumber": "Número da cotação",
+    "quoteNumber": "Número da cotação",
+    "quotationStatus": "Estado da cotação",
+    "salesValue": "Valor de vendas",
+    "valueExVat": "Valor (sem IVA)",
+    "methodOfContact": "Método de contacto",
+    "method": "Método",
+    "meetingLink": "Ligação da reunião",
+    "buildingType": "Tipo de edifício",
+    "businessType": "Tipo de negócio",
+    "contactMade": "Contacto efetuado",
+    "contact": "Contacto",
+    "contactAddress": "Morada do contacto",
+    "lead": "Lead",
+    "client": "Cliente",
+    "branch": "Filial",
+    "expanded": "Ampliado",
+    "wordCount": "{{count}} / {{max}} palavras",
+    "dateFilterDescription": "Intervalo de datas, região, tipo de negócio e utilizador do histórico de visitas.",
+    "regionFilterDescription": "Região e tipo de negócio para o mapa.",
+    "mapFilterDescription": "País e província para o mapa e as áreas sugeridas.",
+    "allActivity": "Toda a atividade",
+    "noActivityType": "Nenhum tipo de atividade encontrado.",
+    "allRegions": "Todas as regiões",
+    "noRegion": "Nenhuma região encontrada.",
+    "allBusinessTypes": "Todos os tipos de negócio",
+    "noBusinessType": "Nenhum tipo de negócio encontrado.",
+    "searchVisits": "Pesquisar visitas…",
+    "columns": {
+      "salesPerson": "Comercial",
+      "date": "Data e hora",
+      "location": "Local de entrada / saída",
+      "method": "Método",
+      "buildingType": "Tipo de edifício",
+      "contactMade": "Contacto efetuado",
+      "companyName": "Empresa",
+      "businessType": "Tipo de negócio",
+      "personSeenPosition": "Cargo da pessoa vista",
+      "contactFullName": "Nome do contacto",
+      "contactImage": "Imagem do contacto",
+      "contactCellPhone": "Telemóvel",
+      "contactLandline": "Telefone fixo",
+      "contactEmail": "E-mail do contacto",
+      "contactAddress": "Morada do contacto",
+      "meetingLink": "Ligação da reunião",
+      "notes": "Notas",
+      "resolution": "Resolução",
+      "followUp": "Seguimento",
+      "quoteNumber": "Número da cotação",
+      "quotationStatus": "Estado da cotação",
+      "value": "Valor - sem IVA",
+      "lead": "Lead",
+      "client": "Cliente",
+      "branch": "Filial"
+    }
+  },
+  "leads": {
+    "title": "Leads",
+    "description": "Veja, acompanhe e gira os seus leads de vendas.",
+    "couldNotLoad": "Não foi possível carregar os leads. Tente novamente.",
+    "engageLeads": "Contactar leads",
+    "createLead": "Criar lead",
+    "creating": "A criar…",
+    "createDescription": "Adicione um novo lead de vendas. É necessário pelo menos um de nome, e-mail ou telefone.",
+    "leadCreated": "Lead criado com sucesso",
+    "needContact": "Indique pelo menos um de: nome, e-mail ou telefone.",
+    "selectBranch": "Selecione uma filial.",
+    "callInProgress": "Chamada em curso",
+    "callInProgressWith": "Chamada em curso com {{name}}",
+    "viewLead": "Ver lead",
+    "endCall": "Terminar chamada",
+    "startCall": "Iniciar chamada",
+    "endCallTitle": "Terminar chamada",
+    "endCallDescription": "Adicione notas e resultados da chamada.",
+    "callEnded": "Chamada terminada",
+    "dedupeTitle": "Eliminar leads duplicados?",
+    "dedupeDescription": "Isto elimina de forma permanente os leads duplicados da organização. Em cada grupo com o mesmo e-mail ou o mesmo nome e telefone, mantemos o lead mais antigo e transferimos as interações para ele. Esta ação não pode ser anulada.",
+    "running": "A executar…",
+    "runDedupe": "Eliminar duplicados",
+    "dedupeFailed": "Falha ao eliminar duplicados",
+    "empty": "Nenhum lead corresponde aos filtros.",
+    "followUpToday": "Seguimento hoje",
+    "unassigned": "Sem responsável",
+    "leadNumber": "Lead n.º {{uid}}",
+    "fallbackName": "Lead",
+    "filtersDescription": "Intervalo de datas, estado, origem, proveniência e responsável da lista de leads.",
+    "allSources": "Todas as origens",
+    "noSource": "Nenhuma origem encontrada.",
+    "allOrigins": "Todas as proveniências",
+    "noOrigin": "Nenhuma proveniência encontrada.",
+    "allTemperatures": "Todas as temperaturas",
+    "noTemperature": "Nenhuma temperatura encontrada.",
+    "allPriorities": "Todas as prioridades",
+    "noPriority": "Nenhuma prioridade encontrada.",
+    "searchLeads": "Pesquisar leads…",
+    "importLeads": "Importar leads",
+    "fromSpreadsheet": "De folha de cálculo",
+    "fromGoogleMaps": "Do Google Maps",
+    "dedupeLeads": "Eliminar leads duplicados",
+    "dedupeTooltip": "Remove leads duplicados desta organização (mantém o mais antigo de cada grupo)",
+    "unassignedFilter": "Sem atribuição",
+    "searchTeam": "Pesquisar membros da equipa…",
+    "searching": "A pesquisar…",
+    "noMatches": "Sem correspondências.",
+    "setStatusTo": "Definir estado para {{status}}",
+    "currentStatus": "Estado atual: {{status}}",
+    "reasonOptional": "Motivo (opcional)",
+    "descriptionOptional": "Descrição (opcional)",
+    "reasonPlaceholder": "p. ex. o cliente pediu retorno de chamada",
+    "notesPlaceholder": "Notas adicionais",
+    "closeAria": "Fechar",
+    "intent": "Intenção",
+    "tone": "Tom",
+    "industry": "Setor",
+    "useEachIndustry": "Usar o setor de cada lead",
+    "notSet": "Não definido",
+    "need": "Necessidade",
+    "needPlaceholder": "O que precisam, ou a oferta a mencionar",
+    "message": "Mensagem",
+    "messagePlaceholder": "Escreva a mensagem, ou deixe a IA redigir um rascunho que pode editar…",
+    "nameTokenHint": "Use {{token}} onde o nome do lead deve aparecer.",
+    "smsSplit": " Este SMS tem mais de 160 caracteres e pode ser dividido.",
+    "whatsAppCount": " WhatsApp {{count}}/{{max}}.",
+    "shortenWhatsApp": " Encurte a mensagem de WhatsApp antes de enviar.",
+    "shortenBeforeSend": ". Encurte a mensagem antes de enviar.",
+    "matchFilters": "{{count}} leads correspondem aos filtros atuais.",
+    "matchFiltersOne": "{{count}} lead corresponde aos filtros atuais.",
+    "matchSkipped": "{{count}} leads correspondem aos filtros atuais. Os leads sem {{contact}} são ignorados.",
+    "matchSkippedOne": "{{count}} lead corresponde aos filtros atuais. Os leads sem {{contact}} são ignorados.",
+    "narrowFilters": " Restrinja os filtros a {{max}} ou menos antes de enviar.",
+    "atMost": " No máximo, {{max}} leads podem ser enviados de cada vez.",
+    "confirmSend": "Enviar esta mensagem de {{channel}} a até {{count}} leads que correspondem aos filtros atuais?",
+    "back": "Voltar",
+    "writeWithAi": "Escrever com IA",
+    "noLeadsMatch": "Nenhum lead corresponde a estes filtros",
+    "engageResult": "Enviados {{sent}}. Ignorados {{skipped}}. Falhados {{failed}}.",
+    "email": "E-mail",
+    "sms": "SMS",
+    "whatsapp": "WhatsApp",
+    "missingEmail": "um endereço de e-mail",
+    "missingPhone": "um número de telefone",
+    "missingWhatsApp": "um WhatsApp ou número de telefone",
+    "chat": "Conversa",
+    "closeChat": "Fechar conversa",
+    "engageLead": "Contactar lead",
+    "scheduleFollowUp": "Agendar seguimento",
+    "transferLead": "Transferir lead",
+    "closeTransfer": "Fechar transferência",
+    "reactivate": "Reativar",
+    "changeStatus": "Alterar estado",
+    "leadActions": "Ações do lead",
+    "convertToClient": "Converter em cliente",
+    "setTo": "Definir como {{status}}",
+    "discardThisLead": "Descartar este lead",
+    "editLead": "Editar lead",
+    "deleteLead": "Eliminar lead?",
+    "deleteLeadDescription": "Isto elimina o lead de forma recuperável. Pode restaurá-lo mais tarde, se necessário.",
+    "discardTitle": "Descartar este lead?",
+    "discardDescription": "O lead será marcado como descartado. Pode reativá-lo mais tarde neste diálogo, tal como os leads recusados ou cancelados.",
+    "discardLead": "Descartar lead",
+    "transferHelp": "Selecione um membro da equipa para ser responsável por este lead. As interações e o histórico permanecem no lead.",
+    "draft": "Rascunho",
+    "editOutreach": "Edite a mensagem de contacto antes de enviar…",
+    "copy": "Copiar para a área de transferência",
+    "regenerate": "Gerar novamente",
+    "contact": "Contacto",
+    "name": "Nome",
+    "phone": "Telefone",
+    "secondaryPhone": "Telefone secundário",
+    "company": "Empresa",
+    "status": "Estado",
+    "source": "Origem",
+    "temperature": "Temperatura",
+    "priority": "Prioridade",
+    "stage": "Fase",
+    "form": {
+      "leadImage": "Imagem do lead",
+      "leadPreview": "Pré-visualização do lead",
+      "noImage": "Nenhuma imagem selecionada",
+      "changeImage": "Alterar imagem",
+      "fromGallery": "Da galeria",
+      "name": "Nome *",
+      "namePlaceholder": "p. ex. John Doe",
+      "company": "Empresa",
+      "companyPlaceholder": "p. ex. Acme Inc.",
+      "email": "E-mail",
+      "emailPlaceholder": "p. ex. joao@exemplo.pt",
+      "phone": "Telefone",
+      "phonePlaceholder": "p. ex. +351 21 000 0000",
+      "secondaryPhone": "Telefone secundário",
+      "optional": "Opcional",
+      "whatsapp": "WhatsApp",
+      "form": "Formulário",
+      "formPlaceholder": "p. ex. formulário de contacto",
+      "channel": "Canal",
+      "channelPlaceholder": "p. ex. e-mail",
+      "labels": "Etiquetas",
+      "labelsPlaceholder": "Separadas por vírgulas, p. ex. VIP, prioritário",
+      "notes": "Notas",
+      "notesPlaceholder": "Notas opcionais",
+      "lastContact": "Data do último contacto",
+      "nextFollowUp": "Data do próximo seguimento",
+      "companyDetails": "Dados da empresa",
+      "jobTitle": "Cargo",
+      "jobTitlePlaceholder": "p. ex. diretor de marketing",
+      "industry": "Setor",
+      "businessSize": "Dimensão da empresa",
+      "decisionMaker": "Papel do decisor",
+      "qualification": "Qualificação do lead",
+      "intent": "Intenção",
+      "temperature": "Temperatura",
+      "priority": "Prioridade",
+      "source": "Origem",
+      "lifecycle": "Fase do ciclo de vida",
+      "quality": "Classificação de qualidade (1-5)",
+      "status": "Estado",
+      "financial": "Informação financeira",
+      "budget": "Intervalo de orçamento",
+      "currency": "Moeda",
+      "estimatedValue": "Valor estimado",
+      "valuePlaceholder": "p. ex. 50000",
+      "timeline": "Prazo de compra",
+      "communication": "Preferências de comunicação",
+      "preferred": "Comunicação preferida",
+      "timezone": "Fuso horário",
+      "bestTime": "Melhor hora de contacto",
+      "additional": "Informação adicional",
+      "painPoints": "Pontos de dor",
+      "painPlaceholder": "Indique os principais pontos de dor...",
+      "referral": "Origem da referência",
+      "referralPlaceholder": "Quem referiu este lead?",
+      "competitor": "Informação sobre a concorrência",
+      "competitorPlaceholder": "Soluções que utilizam atualmente",
+      "marketing": "Informação de marketing",
+      "campaign": "Nome da campanha",
+      "campaignPlaceholder": "p. ex. Verao2024",
+      "landing": "Página de destino",
+      "landingPlaceholder": "https://...",
+      "utmSource": "Origem UTM",
+      "utmMedium": "Meio UTM",
+      "utmCampaign": "Campanha UTM",
+      "utmTerm": "Termo UTM",
+      "utmTermPlaceholder": "p. ex. materiais de construção",
+      "utmContent": "Conteúdo UTM",
+      "utmContentPlaceholder": "p. ex. anuncio-banner",
+      "attachments": "Anexos",
+      "attachmentError": "Os anexos devem ser documentos ou fotografias com menos de 5 MB.",
+      "addFiles": "Adicionar ficheiros (PDF, imagens, documentos)",
+      "branchRequired": "Filial (obrigatória)",
+      "selectBranch": "Selecionar filial",
+      "branchFallback": "Filial {{uid}}"
+    },
+    "channel": "Canal",
+    "labels": "Etiquetas",
+    "scoring": "Pontuação e valor",
+    "leadScore": "Pontuação do lead",
+    "estimatedValue": "Valor estimado",
+    "dates": "Datas",
+    "created": "Criado",
+    "updated": "Atualizado",
+    "lastContact": "Último contacto",
+    "nextFollowUp": "Próximo seguimento",
+    "commercialSnapshot": "Último resumo comercial",
+    "callScore": "Pontuação da chamada",
+    "qualityConversation": "Conversa de qualidade",
+    "boqAsked": "Mapa de quantidades pedido",
+    "followUpBooked": "Seguimento marcado",
+    "missedPursuit": "Oportunidade perdida",
+    "nextAction": "Próxima ação",
+    "loggedInteractions": "Interações registadas",
+    "companyCalls": "Chamadas da empresa",
+    "loadingCompanyCalls": "A carregar chamadas da empresa…",
+    "noCompanyCalls": "Ainda não há chamadas da linha da empresa que correspondam ao telefone deste lead.",
+    "history": "Histórico",
+    "loadingActivity": "A carregar atividade…",
+    "noActivity": "Ainda não há atividade registada.",
+    "people": "Pessoas",
+    "owner": "Responsável",
+    "assignees": "Atribuídos",
+    "notes": "Notas",
+    "attachments": "Anexos",
+    "missed": "Perdido:",
+    "systemName": "LORO",
+    "leadUpdated": "Lead atualizado",
+    "failedToUpdate": "Não foi possível atualizar o lead",
+    "leadDeleted": "Lead eliminado",
+    "failedToDelete": "Não foi possível eliminar o lead",
+    "leadReactivated": "Lead reativado",
+    "failedToReactivate": "Não foi possível reativar o lead",
+    "leadDiscarded": "Lead descartado",
+    "failedToDiscard": "Não foi possível descartar o lead",
+    "leadConverted": "Lead convertido em cliente",
+    "failedToConvert": "Não foi possível converter o lead",
+    "chooseDifferentOwner": "Escolha um utilizador diferente do responsável atual",
+    "leadTransferred": "Lead transferido",
+    "aiDraftFallback": "Rascunho de IA indisponível; a usar o modelo.",
+    "copied": "Copiado para a área de transferência",
+    "failedToCopy": "Não foi possível copiar",
+    "sentVia": "Enviado por {{channel}}",
+    "openedToSend": "{{channel}} aberto para concluir o envio",
+    "openedEmail": "A aplicação de e-mail foi aberta",
+    "openedWhatsApp": "WhatsApp aberto",
+    "smtpFallback": "SMTP indisponível — a aplicação de e-mail foi aberta",
+    "openedWhatsAppSend": "WhatsApp aberto para enviar a mensagem",
+    "failedToSend": "Não foi possível enviar por {{channel}}",
+    "statusUpdated": "Estado atualizado",
+    "failedToUpdateStatus": "Não foi possível atualizar o estado",
+    "callAlreadyInProgress": "Já existe uma chamada em curso — use Terminar chamada quando estiver pronto",
+    "endVisitFirst": "Termine a visita atual antes de iniciar uma chamada",
+    "noPhone": "Este lead não tem número de telefone",
+    "callStarted": "Chamada iniciada",
+    "failedToStartCall": "Não foi possível iniciar a chamada",
+    "teamChat": "Conversa da equipa",
+    "teamChatHint": "Visível para o responsável e os atribuídos do lead",
+    "couldNotLoadMessages": "Não foi possível carregar as mensagens.",
+    "noMessages": "Ainda não há mensagens.",
+    "readyFile": "Pronto: {{name}}",
+    "attachFile": "Anexar ficheiro",
+    "attachAudio": "Anexar áudio",
+    "typeMessage": "Escreva uma mensagem…",
+    "fileReady": "Ficheiro pronto a enviar",
+    "uploadFailed": "Falha no carregamento",
+    "typeOrAttach": "Escreva uma mensagem ou anexe um ficheiro",
+    "couldNotSend": "Não foi possível enviar a mensagem",
+    "importSpreadsheetTitle": "Importar leads de CSV ou Excel",
+    "importMapsTitle": "Importar leads do Google Maps",
+    "howThisWorks": "Como funciona",
+    "importComplete": "Importação concluída",
+    "imported": "Importados",
+    "failedRows": "Linhas com falha",
+    "remindersCreated": "Lembretes criados",
+    "skippedDuplicates": "Duplicados ignorados",
+    "leadsPerMember": "Leads por membro da equipa",
+    "nameColumn": "Nome",
+    "leadsColumn": "Leads",
+    "rowErrors": "Erros de linha",
+    "spreadsheetFile": "Ficheiro de folha de cálculo",
+    "uploadedFile": "Ficheiro carregado",
+    "assignment": "Atribuição",
+    "selectedMembers": "Membros da equipa selecionados",
+    "assignByBranch": "Atribuir por filial",
+    "branches": "Filiais",
+    "teamOptional": "Membros da equipa (opcional)",
+    "defaultSourceOptional": "Origem predefinida (opcional)",
+    "sourcePlaceholder": "Use a coluna Origem do ficheiro ou deixe em branco",
+    "uploadMore": "Carregar mais",
+    "import": "Importar",
+    "importing": "A importar…",
+    "location": "Localização",
+    "locationPlaceholder": "Joanesburgo, África do Sul",
+    "maxPlaces": "Máximo de locais por pesquisa",
+    "defaultSource": "Origem predefinida",
+    "leadSource": "Origem do lead",
+    "scrapeMore": "Recolher mais",
+    "importingPlaces": "A importar locais como leads…",
+    "scrapingMaps": "A recolher dados do Google Maps…",
+    "scrapeFailed": "A recolha ou a importação falhou.",
+    "couldNotStartScrape": "Não foi possível iniciar a recolha do Google Maps.",
+    "importFailed": "A importação falhou.",
+    "importedSummary": "{{imported}} leads importados.",
+    "importedSummaryFailed": "{{imported}} leads importados. {{failed}} falharam.",
+    "importedWithFailedInline": "{{imported}} leads importados, {{failed}} falharam.",
+    "selectFile": "Selecione um ficheiro CSV ou Excel (.xlsx).",
+    "fileTooLarge": "O ficheiro deve ter menos de 2 MB.",
+    "couldNotCountRows": "Não foi possível ler o número de linhas do ficheiro.",
+    "selectFileToUpload": "Selecione um ficheiro CSV ou Excel para carregar.",
+    "noBranches": "Não há filiais disponíveis para atribuir por filial.",
+    "selectBranchPool": "Selecione pelo menos uma filial para atribuir leads aos respetivos membros da equipa.",
+    "couldNotReadRows": "Não foi possível ler as linhas do ficheiro. Tente novamente ou volte a carregar.",
+    "enterSearchTerm": "Introduza pelo menos um termo de pesquisa do Google Maps.",
+    "enterLocation": "Introduza uma localização (p. ex. Joanesburgo, África do Sul).",
+    "starting": "A iniciar…",
+    "startScrape": "Iniciar recolha",
+    "sampleFiles": "Ficheiros de exemplo",
+    "downloadSampleCsv": "Descarregar CSV de exemplo",
+    "downloadSampleExcel": "Descarregar Excel de exemplo (.xlsx)"
+  },
+  "claims": {
+    "title": "Despesas",
+    "description": "Submeta despesas, anexe recibos e acompanhe as aprovações até ao pagamento.",
+    "couldNotLoad": "Não foi possível carregar as despesas",
+    "featureHint": "A sua organização pode precisar da funcionalidade de despesas ativada.",
+    "export": "Exportar",
+    "newClaim": "Nova despesa",
+    "loadMore": "Carregar mais",
+    "noClaimsExport": "Não há despesas para exportar",
+    "couldNotExport": "Não foi possível exportar as despesas",
+    "total": "Total",
+    "pending": "Pendente",
+    "approved": "Aprovada",
+    "declined": "Recusada",
+    "paid": "Paga",
+    "claimCount": "{{count}} despesas",
+    "claimCountOne": "{{count}} despesa",
+    "unconverted": "{{count}} despesas não puderam ser convertidas para ZAR (sem taxa de câmbio na data da despesa).",
+    "unconvertedOne": "{{count}} despesa não pôde ser convertida para ZAR (sem taxa de câmbio na data da despesa).",
+    "folders": "Pastas de despesas",
+    "newFolder": "Nova pasta",
+    "showAll": "Mostrar todas as despesas",
+    "folderName": "Nome da pasta",
+    "noFolders": "Ainda não há pastas de despesas. Crie uma pasta para agrupar recibos antes de os enviar para aprovação.",
+    "draft": "Rascunho",
+    "submitted": "Submetida",
+    "noFolder": "Sem pasta",
+    "unknownUser": "Utilizador desconhecido",
+    "empty": "Nenhuma despesa corresponde aos filtros.",
+    "submitFolder": "Submeter pasta",
+    "filtersDescription": "Filtre as despesas por estado, data de criação, pasta e utilizador.",
+    "allFolders": "Todas as pastas",
+    "noFolderFound": "Nenhuma pasta encontrada.",
+    "clearFolder": "Limpar filtro de pasta",
+    "noUser": "Nenhum utilizador encontrado.",
+    "clearUser": "Limpar filtro de utilizador",
+    "allUsers": "Todos os utilizadores",
+    "searchFolders": "Pesquisar pastas…",
+    "searchStatus": "Pesquisar estado…",
+    "amountCurrency": "Moeda do valor",
+    "original": "Original",
+    "zar": "ZAR",
+    "layout": "Disposição das despesas",
+    "folderGrid": "Grelha de pastas",
+    "userList": "Lista de utilizadores",
+    "search": "Ref., categoria, responsável…",
+    "resetDate": "Repor intervalo de datas",
+    "exportTitle": "Exportar despesas",
+    "exportDescription": "Escolha as datas a incluir. O estado, a pasta, a pessoa e a pesquisa mantêm-se como estão na página.",
+    "renameFolder": "Mudar o nome da pasta",
+    "deleteFolder": "Eliminar pasta?",
+    "deleteFolderDescription": "As despesas em “{{title}}” permanecem na lista e saem desta pasta.",
+    "deleteFolderAction": "Eliminar pasta",
+    "editClaim": "Editar despesa",
+    "amount": "Valor",
+    "amountPlaceholder": "0.00",
+    "currency": "Moeda",
+    "category": "Categoria",
+    "noCategory": "Nenhuma categoria encontrada.",
+    "folder": "Pasta",
+    "folderOptional": "Pasta (opcional)",
+    "noFolderOption": "Sem pasta",
+    "notes": "Notas",
+    "describe": "Descreva a despesa…",
+    "replaceReceipt": "Substituir recibo (opcional)",
+    "receiptOptional": "Recibo (opcional)",
+    "addToFolder": "Adicionar à pasta",
+    "submitClaim": "Submeter despesa",
+    "submitting": "A submeter…",
+    "folderDraftHint": "As despesas adicionadas a uma pasta ficam em rascunho até submeter a pasta na página Despesas. Não são enviados e-mails enquanto continua a adicionar recibos.",
+    "selectCurrency": "Selecionar moeda",
+    "searchCurrency": "Pesquisar por país ou moeda…",
+    "noCurrency": "Nenhuma moeda encontrada",
+    "back": "Voltar às despesas",
+    "shareCopied": "Ligação de partilha copiada",
+    "couldNotCopy": "Não foi possível copiar a ligação",
+    "noShareLink": "Não foi devolvida nenhuma ligação de partilha",
+    "couldNotShare": "Não foi possível partilhar",
+    "claimNumber": "Despesa n.º {{uid}}",
+    "removeFromFolder": "Remover da pasta",
+    "details": "Detalhes",
+    "noNotes": "Sem notas guardadas",
+    "attachment": "Anexo",
+    "receiptAlt": "Recibo",
+    "createdBy": "Criado por",
+    "approvedBy": "Aprovado por",
+    "fxConverted": "Convertido com a taxa {{code}} {{rate}} em {{date}} (1 ZAR = {{rate}} {{code}}).",
+    "claimDate": "data da despesa",
+    "noFx": "Não foi encontrada taxa de câmbio para {{currency}} na data da despesa.",
+    "createdOn": "Criado em {{date}}",
+    "updatedOn": " · Atualizado em {{date}}",
+    "approveTitle": "Aprovar despesa?",
+    "approveDescription": "Quem submeteu será notificado de que esta despesa foi aprovada.",
+    "declineTitle": "Recusar despesa?",
+    "declineDescription": "Isto define a despesa como recusada. Pode acrescentar seguimento nas aprovações, se necessário.",
+    "paidTitle": "Marcar como paga?",
+    "markPaid": "Marcar como paga",
+    "removeTitle": "Remover da pasta?",
+    "removeDescription": "A despesa permanece na lista e deixa de estar agrupada nesta pasta.",
+    "deleteTitle": "Eliminar despesa?",
+    "deleteDescription": "Isto elimina a despesa de forma recuperável. Pode restaurá-la no servidor se a sua função o permitir.",
+    "csvUser": "Utilizador",
+    "csvEmail": "E-mail",
+    "csvRef": "Ref. da despesa",
+    "csvCategory": "Categoria",
+    "csvStatus": "Estado",
+    "csvAmount": "Valor",
+    "csvCurrency": "Moeda",
+    "csvAmountZar": "Valor ZAR",
+    "csvCreated": "Criado",
+    "csvFolder": "Pasta",
+    "csvBranch": "Filial",
+    "paidDescription": "Confirme que o reembolso desta despesa foi concluído."
+  },
+  "leave": {
+    "title": "Licenças",
+    "description": "Peça licença, filtre a caixa de entrada e aprove, rejeite ou cancele um pedido.",
+    "request": "Pedir licença",
+    "allPeople": "Todas as pessoas",
+    "fromDate": "Data de início",
+    "toDate": "Data de fim",
+    "empty": "Nenhum pedido de licença corresponde a estes filtros.",
+    "requests": "Pedidos",
+    "person": "Pessoa",
+    "type": "Tipo",
+    "dates": "Datas",
+    "status": "Estado",
+    "chooseType": "Escolha um tipo de licença",
+    "start": "Início",
+    "end": "Fim",
+    "startDate": "Data de início da licença",
+    "endDate": "Data de fim da licença",
+    "motivation": "Fundamentação",
+    "motivationPlaceholder": "Porque precisa da licença",
+    "dialogTitle": "Pedido de licença",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Obrigatório quando rejeita",
+    "cancelRequest": "Cancelar pedido",
+    "datesRequired": "As datas de início e de fim são obrigatórias",
+    "requested": "Licença pedida",
+    "couldNotRequest": "Não foi possível pedir a licença",
+    "reasonRequired": "É necessário um motivo de rejeição",
+    "updated": "Licença atualizada",
+    "couldNotUpdate": "Não foi possível atualizar a licença",
+    "cancelled": "Cancelado"
+  },
+  "approvals": {
+    "title": "Aprovações",
+    "description": "Reveja pedidos pendentes, consulte os formulários de admissão e aprove ou rejeite na web.",
+    "couldNotLoad": "Não foi possível carregar as aprovações",
+    "newRequest": "Novo pedido",
+    "requestCreated": "Pedido criado",
+    "couldNotCreate": "Não foi possível criar um pedido",
+    "myRequests": "Os meus pedidos",
+    "myRequestsLoaded": "Os meus pedidos foram carregados",
+    "couldNotLoadMine": "Não foi possível carregar os meus pedidos",
+    "empty": "Nenhuma aprovação corresponde aos filtros.",
+    "filtersDescription": "Filtre as aprovações por estado e tipo.",
+    "allTypes": "Todos os tipos",
+    "noType": "Nenhum tipo encontrado.",
+    "clearType": "Limpar filtro de tipo",
+    "search": "Pesquisar título, referência ou contratação…",
+    "searchAria": "Pesquisar aprovações",
+    "type": "Tipo",
+    "amount": "Valor",
+    "overdue": "Em atraso",
+    "deadline": "Prazo",
+    "submittedOn": "Submetido: {{date}}",
+    "viewDetails": "Ver detalhes",
+    "openEmployee": "Abrir ficha do colaborador",
+    "openClaim": "Abrir despesa",
+    "openClient": "Abrir cliente",
+    "openSource": "Abrir registo de origem",
+    "details": "Detalhes da aprovação",
+    "request": "Pedido",
+    "fieldTitle": "Título",
+    "submittedBy": "Submetido por",
+    "submitted": "Submetida",
+    "approver": "Aprovador",
+    "requestSource": "Origem do pedido",
+    "documents": "Documentos submetidos",
+    "declineReason": "Motivo da recusa (opcional)",
+    "declinePlaceholder": "Introduza o motivo da recusa (opcional)…",
+    "sign": "Assinar",
+    "withdraw": "Retirar",
+    "archive": "Arquivar",
+    "history": "Histórico",
+    "signatures": "Assinaturas",
+    "bulkApprove": "Aprovar em lote",
+    "submittedDone": "Submetida",
+    "signedDone": "Assinado",
+    "withdrawnDone": "Retirado",
+    "archivedDone": "Arquivado",
+    "historyLoaded": "Histórico carregado",
+    "signaturesLoaded": "Assinaturas carregadas",
+    "bulkSent": "Ação em lote enviada",
+    "couldNotAction": "Não foi possível: {{action}}",
+    "sourceClaim": "Despesa",
+    "sourceLeave": "Licenças",
+    "sourceClient": "Cliente",
+    "sourceFallback": "Origem",
+    "employeePhoto": "Fotografia do colaborador"
+  },
+  "pages": {
+    "denied": "Não tem acesso a esta página.",
+    "products": {
+      "title": "Produtos",
+      "description": "Produtos do catálogo LORO e artigos ERP usados na loja."
+    },
+    "warnings": {
+      "title": "Advertências",
+      "description": "Advertências da organização. Uma advertência criada no perfil de um colaborador aparece aqui."
+    },
+    "documents": {
+      "title": "Documentos",
+      "description": "Ficheiros guardados na biblioteca e no arquivo da organização."
+    },
+    "feedback": {
+      "title": "Feedback",
+      "description": "Caixa de entrada, totais e atualizações de estado. A validade do token fica em Definições."
+    },
+    "geofences": {
+      "title": "Geocercas",
+      "description": "Crie áreas e reveja eventos de entrada. As mesmas áreas aparecem na Vista de concorrentes."
+    },
+    "usage": {
+      "title": "Utilização",
+      "description": "Pedidos por endpoint. O servidor regista os eventos."
+    },
+    "news": {
+      "title": "Notícias",
+      "description": "Anúncios da organização."
+    },
+    "salesTips": {
+      "title": "Dicas de vendas",
+      "description": "Edite o catálogo. O início continua a mostrar a dica do dia."
+    },
+    "resellers": {
+      "title": "Revendedores",
+      "description": "Adicione, edite, arquive e restaure fichas de revendedores."
+    },
+    "rewards": {
+      "title": "Recompensas",
+      "description": "Classificação e o XP de cada pessoa."
+    },
+    "loyalty": {
+      "title": "Fidelização",
+      "description": "Perfis, catálogo de recompensas e histórico de resgates."
+    },
+    "clients": {
+      "title": "Clientes",
+      "description": "Crie, pesquise e gira os clientes da organização."
+    },
+    "planning": {
+      "title": "Planeamento",
+      "description": "Planeie trabalho de campo, rotas e seguimentos num só sítio.",
+      "routeTitle": "Como funciona o planeamento de rotas",
+      "routeNote": "Todas as noites a importação ERP associa clientes ao comercial com o mesmo código de vendas e marca visitas de dias úteis para as quatro semanas seguintes. Cada dia fica numa zona próxima (cerca de 40 km), até 10 clientes, por ordem de condução. Uma zona mais cheia continua no dia seguinte antes de uma zona mais distante. Clientes que já têm visita de hoje até essa janela mantêm-se. Clientes sem morada no mapa são ignorados. Todas as tarefas inclui esses dias. Abra Rotas e escolha o dia em que as visitas foram planeadas.",
+      "routeEmpty": "Não há rotas para este dia. Escolha o dia em que as visitas foram planeadas. Cada comercial precisa de uma filial com coordenadas, e as paragens desse dia ficam numa rota."
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "subtitleOrg": "Pipeline da organização para o período selecionado.",
+      "subtitleTeam": "Objetivos, leads e visitas da sua equipa.",
+      "subtitleSelf": "Objetivos, leads e visitas do seu período, limitados a si.",
+      "targets": "Objetivos e progresso",
+      "quotations": "Cotações (ERP e LORO)",
+      "leads": "Pipeline de leads",
+      "visits": "Visitas"
+    },
+    "assets": {
+      "title": "Ativos",
+      "descriptionManage": "Os seus ativos associados, ou o inventário completo da organização. Pode adicionar, editar e reatribuir ativos.",
+      "descriptionOwn": "Adicione e gira os ativos que lhe pertencem. Também pode ver equipamento e veículos associados a si."
+    },
+    "calls": {
+      "title": "Gravações de chamadas",
+      "description": "Áudio do PBX da linha da empresa, transcrito num diálogo com oradores. As chamadas na aplicação começaram no LORO; as chamadas da empresa foram feitas no Linkus ou num telefone de secretária.",
+      "denied": "Não tem acesso às gravações de chamadas."
+    },
+    "merchandise": {
+      "title": "Gestão de merchandising",
+      "description": "Acompanhe e gira inventários e movimentos de merchandising"
+    },
+    "reports": {
+      "title": "Relatórios",
+      "subtitleOrg": "Objetivos de desempenho da organização, política, qualidade de chamadas, tarefas e planeamento, atividade de leads e inteligência de atividade.",
+      "subtitleTeam": "Objetivos de desempenho da sua equipa, política, qualidade de chamadas, tarefas e planeamento, atividade de leads e inteligência de atividade.",
+      "subtitleSelf": "Os seus objetivos de desempenho, política, tarefas e planeamento, atividade de leads e inteligência de atividade no período selecionado.",
+      "tabs": {
+        "targets": "Objetivos",
+        "policy": "Política",
+        "call-quality": "Qualidade de chamadas",
+        "insights": "Indicadores",
+        "tasks": "Tarefas e planeamento",
+        "leads-activity": "Atividade de leads"
+      }
+    },
+    "performance": {
+      "title": "Acompanhamento de desempenho",
+      "consolidated": "Demonstração consolidada",
+      "subtitle": "Painel de análise e indicadores",
+      "consolidatedSubtitle": "Dados de vendas de todos os países e filiais",
+      "denied": "Não tem acesso ao acompanhamento de desempenho de vendas.",
+      "salesByCategory": "Vendas por categoria",
+      "salesByCategoryHint": "Distribuição da receita por categorias de produto",
+      "topBranch": "Desempenho das principais filiais",
+      "topBranchHint": "Receita por filial",
+      "paymentMethods": "Métodos de pagamento",
+      "paymentMethodsHint": "Distribuição das vendas por tipo de pagamento",
+      "salesPerProduct": "Vendas por produto",
+      "salesPerProductHint": "Totais vendidos por produto",
+      "salesPerPerson": "Vendas por comercial",
+      "salesPerPersonHint": "Totais de vendas por comercial",
+      "hourly": "Padrão de vendas por hora",
+      "hourlyHint": "Vendas por hora (07:00 - 17:00)",
+      "gpTrend": "Tendência do lucro bruto",
+      "gpTrendHint": "Lucro bruto ao longo do tempo",
+      "dailySales": "Desempenho diário de vendas",
+      "unassignedInvoices": "Faturas sem atribuição",
+      "branchCategory": "Desempenho filial × categoria"
+    },
+    "competitors": {
+      "title": "Concorrentes",
+      "description": "Acompanhe rivais, níveis de ameaça e localizações junto dos seus clientes."
+    },
+    "visualiser": {
+      "title": "Vista de concorrentes",
+      "descriptionLimited": "Mapa de filiais, sede, concorrentes e clientes, mais a rota de visitas planeada para o dia escolhido.",
+      "descriptionFull": "Mapa de filiais, sede, concorrentes e clientes — pesquise e siga a rota de um comercial, ou abra Simular para modelar áreas de influência e faturação."
+    },
+    "wellbeing": {
+      "title": "Bem-estar",
+      "description": "Pulso diário dos colaboradores, seguimentos nominais da equipa e estimativas de humor face ao desempenho."
+    },
+    "iot": {
+      "title": "Dispositivos IoT",
+      "description": "Gira hardware ligado e dispositivos de acesso por filial.",
+      "staffOnly": "A gestão IoT está disponível apenas para colaboradores."
+    },
+    "deliveries": {
+      "title": "Entregas",
+      "description": "Atribua uma ordem de venda ERP em aberto a um motorista. A prova de entrega assinada aparece aqui quando o motorista regista a paragem."
+    },
+    "takeoff": {
+      "title": "Levantamento de sistema",
+      "description": "Meça um teto ou divisória. As quantidades são calculadas no servidor e depois emitidas como cotação."
+    },
+    "storeOperations": {
+      "title": "Painel de operações de loja – todas as lojas",
+      "description": "Aberturas de filial em direto, listas de verificação e contagens de stock.",
+      "denied": "Não tem acesso ao painel de operações de loja."
+    },
+    "payslips": {
+      "title": "Recibos de vencimento",
+      "description": "Veja e descarregue os seus recibos de vencimento."
+    },
+    "orders": {
+      "title": "Encomendas",
+      "description": "Acompanhe cotações e encomendas por estado"
+    },
+    "store": {
+      "title": "Loja",
+      "description": "Veja produtos, adicione ao carrinho e submeta uma cotação.",
+      "clientOnly": "A loja está disponível para utilizadores do portal de cliente."
+    },
+    "intake": {
+      "unable": "Não foi possível abrir o formulário",
+      "submitted": "Perfil submetido",
+      "submittedBody": "Guardámos o perfil de {{email}}. Um gestor irá revê-lo por telefone. Receberá um email quando puder iniciar sessão — aguarde essa aprovação.",
+      "profile": "Perfil do colaborador",
+      "goSignIn": "Ir para iniciar sessão",
+      "loading": "A carregar o formulário de admissão"
+    }
+  },
+  "tours": {
+    "leave": {
+      "header": {
+        "title": "Férias",
+        "description": "Peça tempo de folga, filtre a caixa de entrada e aprove, rejeite ou cancele um pedido."
+      },
+      "actions": {
+        "title": "Pedir férias",
+        "description": "Clique em Pedir férias. Escolha o tipo, as datas e envie para decisão."
+      },
+      "filters": {
+        "title": "Filtrar a caixa de entrada",
+        "description": "Restrinja por estado, pessoa e intervalo de datas. Os seus próprios pedidos continuam visíveis quando só vê as suas férias."
+      },
+      "content": {
+        "title": "Abrir um pedido",
+        "description": "O gráfico conta os pedidos por estado. Clique numa linha para aprovar, rejeitar ou cancelar."
+      }
+    },
+    "warnings": {
+      "header": {
+        "title": "Avisos",
+        "description": "Avisos da organização. Um aviso criado no perfil de um colaborador também aparece aqui."
+      },
+      "actions": {
+        "title": "Emitir aviso",
+        "description": "Clique em Emitir aviso. Registe a pessoa, o motivo e o estado."
+      },
+      "filters": {
+        "title": "Filtrar por estado",
+        "description": "Mostre todos os avisos, ou só um estado."
+      },
+      "content": {
+        "title": "Rever um aviso",
+        "description": "Clique numa linha para o ler ou o remover."
+      }
+    },
+    "documents": {
+      "header": {
+        "title": "Documentos",
+        "description": "Liste, descarregue e anexe documentos a uma pessoa."
+      },
+      "actions": {
+        "title": "Anexar documento",
+        "description": "Clique em Anexar documento. Carregue o ficheiro e associe-o a uma pessoa."
+      },
+      "filters": {
+        "title": "Filtrar por título",
+        "description": "Escreva parte de um título para encurtar a lista."
+      },
+      "content": {
+        "title": "Descarregar um ficheiro",
+        "description": "Cada linha é um documento. Descarregue-o a partir da linha."
+      }
+    },
+    "feedback": {
+      "header": {
+        "title": "Feedback",
+        "description": "A caixa de entrada, contagens por estado e atualizações de estado. A expiração do token fica em Definições."
+      },
+      "filters": {
+        "title": "Filtrar por estado",
+        "description": "Mostre todo o feedback, ou só Novo, Em revisão, Resolvido ou Fechado."
+      },
+      "content": {
+        "title": "Resolver feedback",
+        "description": "O gráfico conta cada estado. Clique em Resolver numa linha para o marcar como resolvido."
+      }
+    },
+    "geofences": {
+      "header": {
+        "title": "Geocercas",
+        "description": "Crie áreas e reveja eventos de entrada. As mesmas áreas aparecem em Visão geral de concorrentes."
+      },
+      "actions": {
+        "title": "Nova área",
+        "description": "Clique em Nova área. Defina o nome, a latitude, a longitude e o raio em metros."
+      },
+      "content": {
+        "title": "Abrir uma área",
+        "description": "Clique numa linha para editar a área ou ver quantos eventos de entrada registou."
+      }
+    },
+    "usage": {
+      "header": {
+        "title": "Utilização",
+        "description": "Análises, resumos e utilização de licenças. O servidor regista os eventos."
+      },
+      "content": {
+        "title": "Ler os últimos 30 dias",
+        "description": "O gráfico é o volume de pedidos. Por baixo, a linha da licença mostra erros e quota, e a lista são pedidos por endpoint."
+      }
+    },
+    "products": {
+      "header": {
+        "title": "Produtos",
+        "description": "Crie, edite, arquive, restaure e reveja os preços do catálogo."
+      },
+      "actions": {
+        "title": "Novo produto",
+        "description": "Clique em Novo produto. Introduza o nome e o preço e guarde-o no catálogo."
+      },
+      "content": {
+        "title": "Editar um produto",
+        "description": "Clique numa linha para alterar o nome ou o preço. Guardar preços atuais grava os preços no ecrã."
+      }
+    },
+    "news": {
+      "header": {
+        "title": "Notícias",
+        "description": "Comunicados da organização."
+      },
+      "actions": {
+        "title": "Novo artigo",
+        "description": "Clique em Novo artigo. Escreva o título e o anúncio e guarde."
+      },
+      "content": {
+        "title": "Editar um artigo",
+        "description": "Clique numa linha para alterar esse anúncio."
+      }
+    },
+    "sales-tips": {
+      "header": {
+        "title": "Dicas de vendas",
+        "description": "Edite o catálogo. O Início continua a mostrar a dica do dia."
+      },
+      "actions": {
+        "title": "Nova dica",
+        "description": "Clique em Nova dica. Adicione um título e o texto da dica."
+      },
+      "content": {
+        "title": "Editar uma dica",
+        "description": "Clique numa linha para atualizar essa dica."
+      }
+    },
+    "resellers": {
+      "header": {
+        "title": "Revendedores",
+        "description": "Adicione, edite, arquive e restaure registos de revendedores."
+      },
+      "actions": {
+        "title": "Novo revendedor",
+        "description": "Clique em Novo revendedor. Comece o registo com um nome e guarde os detalhes."
+      },
+      "content": {
+        "title": "Abrir um revendedor",
+        "description": "Clique numa linha para editar, arquivar ou restaurar esse revendedor."
+      }
+    },
+    "rewards": {
+      "header": {
+        "title": "Recompensas",
+        "description": "O ranking de XP e a posição de cada pessoa."
+      },
+      "content": {
+        "title": "Ler o ranking",
+        "description": "O gráfico é o topo do ranking. A lista por baixo é o XP de cada pessoa."
+      }
+    },
+    "loyalty": {
+      "header": {
+        "title": "Fidelização",
+        "description": "Perfis, o catálogo de recompensas e o histórico de pedidos."
+      },
+      "content": {
+        "title": "Adicionar e resgatar recompensas",
+        "description": "Escreva o nome de uma recompensa e clique em Adicionar recompensa. Resgatar usa uma recompensa do catálogo. A linha sob a lista é o histórico de transações e de difusão."
+      }
+    },
+    "claims": {
+      "header": {
+        "title": "Despesas",
+        "description": "Submeta despesas, anexe recibos e acompanhe cada pedido da aprovação ao pagamento."
+      },
+      "summary": {
+        "title": "Totais por etapa",
+        "description": "Clique em Total, Pendente, Aprovado, Recusado ou Pago. A lista abaixo segue essa etapa."
+      },
+      "toolbar": {
+        "title": "Pesquisar, exportar e criar",
+        "description": "Filtre por data, grupo, moeda ou pessoa. Exportar descarrega uma folha de cálculo. Nova despesa inicia uma submissão."
+      },
+      "folders": {
+        "title": "Pastas de despesas",
+        "description": "Clique numa pasta para mostrar só as despesas desse grupo."
+      },
+      "list": {
+        "title": "Abrir uma despesa",
+        "description": "As despesas estão agrupadas. Clique numa para seguir o recibo, a decisão e o pagamento."
+      }
+    },
+    "iot": {
+      "header": {
+        "title": "Dispositivos IoT",
+        "description": "Hardware ligado e dispositivos de acesso, organizados por filial."
+      },
+      "toolbar": {
+        "title": "Filtrar dispositivos",
+        "description": "Filtre por estado, tipo ou filial e pesquise por id, etiqueta ou localização."
+      },
+      "add": {
+        "title": "Adicionar dispositivo",
+        "description": "Clique em Adicionar dispositivo. Registe o hardware e a filial a que pertence."
+      },
+      "grid": {
+        "title": "Abrir um dispositivo",
+        "description": "Clique num cartão para inspecionar ou editar esse dispositivo."
+      }
+    },
+    "approvals": {
+      "header": {
+        "title": "Aprovações",
+        "description": "Reveja pedidos pendentes, inspecione formulários de admissão e aprove ou rejeite na web."
+      },
+      "toolbar": {
+        "title": "Filtrar e registar um pedido",
+        "description": "Pesquise por título ou referência e filtre por estado ou tipo. Novo pedido cria um pedido geral. Os meus pedidos carrega os que submeteu."
+      },
+      "list": {
+        "title": "Abrir um pedido",
+        "description": "Clique num cartão para o aprovar ou rejeitar. Os formulários de admissão abrem no mesmo cartão."
+      }
+    },
+    "payslips": {
+      "header": {
+        "title": "Recibos de vencimento",
+        "description": "Veja e descarregue os seus documentos de recibo."
+      },
+      "import": {
+        "title": "Importar do armazenamento",
+        "description": "Pré-visualize a importação do armazenamento e confirme-a. Só quem pode importar recibos vê isto."
+      },
+      "filters": {
+        "title": "Filtrar recibos",
+        "description": "A lista começa em todo o tempo. Mude para um intervalo de datas ou um estado para a restringir."
+      },
+      "table": {
+        "title": "Ver ou descarregar",
+        "description": "Ver abre o recibo. Descarregar guarda o ficheiro. O tamanho da página sob a tabela define quantas linhas carregam."
+      }
+    },
+    "competitors": {
+      "header": {
+        "title": "Concorrentes",
+        "description": "Acompanhe rivais, níveis de ameaça e localizações junto dos seus clientes."
+      },
+      "toolbar": {
+        "title": "Filtrar e pesquisar",
+        "description": "Filtre por estado, direto ou indireto e nível de ameaça. Pesquise por nome."
+      },
+      "add": {
+        "title": "Adicionar concorrente",
+        "description": "Clique em Adicionar concorrente, ou em Importar para trazer uma folha de cálculo. Ambos entram nesta grelha."
+      },
+      "grid": {
+        "title": "Abrir um concorrente",
+        "description": "Clique num cartão para a ameaça, a localização e editar ou eliminar quando gere a lista."
+      }
+    },
+    "takeoff": {
+      "header": {
+        "title": "Medição do sistema",
+        "description": "Meça um teto ou uma divisória. As quantidades são calculadas no servidor e emitidas como cotação."
+      },
+      "create": {
+        "title": "Nova medição",
+        "description": "Clique em Nova medição. Nomeie o trabalho e o cliente e abra-o para medir."
+      },
+      "list": {
+        "title": "Abrir uma medição",
+        "description": "Clique numa referência para continuar a medir e emitir a cotação. O estado e o total ficam nesta linha."
+      }
+    },
+    "deliveries": {
+      "header": {
+        "title": "Entregas",
+        "description": "Atribua uma encomenda de vendas ERP aberta a um motorista. A prova de entrega assinada aparece aqui quando o motorista regista a paragem."
+      },
+      "toolbar": {
+        "title": "Filtrar entregas",
+        "description": "Filtre por dia, estado, motorista ou pesquisa. O tamanho da página sob a tabela define quantas linhas carregam."
+      },
+      "assign": {
+        "title": "Atribuir entrega",
+        "description": "Clique em Atribuir entrega. Escolha uma encomenda de vendas aberta e o motorista que fará a paragem."
+      },
+      "list": {
+        "title": "Abrir uma entrega",
+        "description": "Clique numa linha para a rota, a avaliação e a prova de entrega assinada."
+      }
+    },
+    "store-operations": {
+      "header": {
+        "title": "Operações de loja",
+        "description": "Aberturas de filiais em direto, listas de verificação e contagens de stock em todas as lojas."
+      },
+      "tabs": {
+        "title": "Visão geral e detalhes",
+        "description": "Visão geral é o quadro em direto. Detalhes é a lista mais longa loja a loja."
+      },
+      "filters": {
+        "title": "Restringir as lojas",
+        "description": "Filtre por país, região e período. Funcionalidades abre as ferramentas extra de operações de loja."
+      },
+      "summary": {
+        "title": "Clique num total",
+        "description": "Cada cartão é uma fatia do dia: todas as lojas, abertas a tempo, atrasadas, em falta, fechadas a tempo ou listas concluídas. Clique num para manter só essas lojas."
+      },
+      "stores": {
+        "title": "Estado da loja",
+        "description": "Cada linha é a abertura e a lista de verificação de uma filial neste momento. Abra-a para a sessão dessa loja."
+      }
+    },
+    "store": {
+      "header": {
+        "title": "Loja",
+        "description": "Navegue nos produtos, adicione-os ao carrinho e submeta uma cotação."
+      },
+      "toolbar": {
+        "title": "Pesquisar e carrinho",
+        "description": "Pesquise ou filtre por categoria. O carrinho guarda as linhas que enviará como cotação."
+      },
+      "catalogue": {
+        "title": "Adicionar um produto",
+        "description": "Clique num produto para o adicionar ao carrinho. Carregar mais traz a página seguinte do catálogo."
+      }
+    },
+    "orders": {
+      "header": {
+        "title": "Encomendas",
+        "description": "Acompanhe cotações e encomendas por estado."
+      },
+      "create": {
+        "title": "Nova encomenda",
+        "description": "Clique em Nova encomenda. Isso abre a loja para construir a próxima cotação."
+      },
+      "board": {
+        "title": "Abrir uma encomenda",
+        "description": "As colunas são os estados de cotação e encomenda. Clique num cartão para o detalhe."
+      }
+    },
+    "projects": {
+      "header": {
+        "title": "Projetos",
+        "description": "Gira os seus projetos, crie novos e acompanhe o progresso."
+      },
+      "create": {
+        "title": "Criar projeto",
+        "description": "Clique em Criar projeto. Dê-lhe um nome e aparece nesta grelha."
+      },
+      "filters": {
+        "title": "Filtrar projetos",
+        "description": "Pesquise por nome ou descrição, ou mantenha um estado."
+      },
+      "grid": {
+        "title": "Abrir um projeto",
+        "description": "Clique num cartão para o progresso e o detalhe do projeto."
+      }
+    },
+    "account": {
+      "header": {
+        "title": "Conta",
+        "description": "O perfil da sua empresa, crédito e dados de contacto."
+      },
+      "edit": {
+        "title": "Editar perfil",
+        "description": "Clique em Editar perfil para alterar os dados da empresa. Ver perfil volta aos cartões só de leitura."
+      },
+      "profile": {
+        "title": "Resumo da empresa",
+        "description": "Nome, contacto, morada, limite de crédito e o comercial que lhe está atribuído."
+      },
+      "details": {
+        "title": "Dados da empresa",
+        "description": "Campos da empresa, contacto e comerciais. Editar perfil transforma isto no formulário."
+      }
+    },
+    "visits": {
+      "header": {
+        "title": "Visitas",
+        "description": "Reveja as visitas que já registou. As gravações com pontuação estão em Gravações de chamadas."
+      },
+      "visit-action": {
+        "title": "Iniciar ou terminar uma visita",
+        "description": "Clique em Iniciar visita e escolha presencial ou telefone. Enquanto uma visita corre, clique no Terminar visita a vermelho para adicionar notas e o resultado."
+      },
+      "toolbar": {
+        "title": "Filtrar histórico",
+        "description": "O intervalo vai do dia 1 deste mês até hoje. Altere datas, região, tipo de negócio, colega ou pesquisa. Inicie ou termine uma visita nesta linha."
+      },
+      "history-content": {
+        "title": "Lista ou mapa",
+        "description": "Clique numa linha para atualizar essa visita. Mude para o mapa para ver onde ocorreram as visitas."
+      }
+    },
+    "clients": {
+      "header": {
+        "title": "Clientes",
+        "description": "Clique em Adicionar cliente para registar um cliente da organização."
+      },
+      "toolbar": {
+        "title": "Filtrar e pesquisar",
+        "description": "Filtre por estado e categoria. Pesquise por nome, e-mail ou telefone. Clique em X num filtro para o limpar."
+      },
+      "grid": {
+        "title": "Cartões de cliente",
+        "description": "Clique num cartão para o registo completo. Clique em Carregar mais para a página seguinte."
+      }
+    },
+    "settings": {
+      "header": {
+        "title": "Definições",
+        "description": "Perfil da organização, aparência, horários, filiais, calendário, recolha, avisos, banners e qualidade das chamadas."
+      },
+      "tab-nav": {
+        "title": "Secções",
+        "description": "Clique num separador para editar essa secção. Este tour fica no separador que já tem aberto."
+      },
+      "active-panel": {
+        "title": "Esta secção",
+        "description": "Edite os campos do separador aberto. Nada é guardado até clicar em Guardar alterações."
+      },
+      "panel-actions": {
+        "title": "Guardar ou cancelar",
+        "description": "Guardar alterações mantém esta secção. Cancelar descarta as edições não guardadas."
+      }
+    },
+    "leads": {
+      "header": {
+        "title": "Leads",
+        "description": "Crie um lead, pesquise a lista e abra uma pessoa para fazer seguimento."
+      },
+      "create": {
+        "title": "Criar lead",
+        "description": "Clique em Criar lead, preencha o formulário e o novo lead aparece na lista."
+      },
+      "toolbar": {
+        "title": "Filtrar e pesquisar",
+        "description": "O intervalo de datas começa neste mês. Altere datas, filtros ou pesquisa para mostrar outro conjunto de leads."
+      },
+      "import": {
+        "title": "Importar leads",
+        "description": "Clique em Importar para adicionar leads a partir de uma folha de cálculo ou do Google Maps. No Maps, reveja os locais e atribua responsáveis antes de aparecerem nesta lista."
+      },
+      "list": {
+        "title": "Lista de leads",
+        "description": "Os leads estão agrupados por responsável, ou Não atribuídos. Clique numa pessoa para a expandir. Clique num lead para o abrir."
+      },
+      "expand": {
+        "title": "Expandir um grupo",
+        "description": "Clique nesta linha. Todos os leads desse grupo abrem por baixo."
+      },
+      "open": {
+        "title": "Abrir um lead",
+        "description": "Clique nesta linha. O detalhe do lead abre."
+      },
+      "detail": {
+        "title": "Detalhe do lead",
+        "description": "Inicie ou termine uma chamada, envie mensagem por WhatsApp, e-mail ou SMS e leia a pontuação da chamada. Feche o diálogo para voltar à lista."
+      }
+    },
+    "staff": {
+      "header": {
+        "title": "Equipas",
+        "description": "Veja quem está presente ou ausente hoje."
+      },
+      "add": {
+        "title": "Adicionar um colega",
+        "description": "Adicionar utilizador cria uma conta de colaborador. Enviar link de admissão permite que terminem o onboarding sozinhos."
+      },
+      "toolbar": {
+        "title": "Filtrar e pesquisar",
+        "description": "Filtre por estado, função, força de trabalho, filial ou país. Pesquise por nome, e-mail ou ID de RH."
+      },
+      "grid": {
+        "title": "Cartões de colegas",
+        "description": "Clique num cartão para o detalhe dessa pessoa. Clique no relógio, quando aparece, para o histórico de assiduidade."
+      },
+      "travel": {
+        "title": "Relatório de deslocações",
+        "description": "Descarregue o livro Excel dessa pessoa ou um PDF dia a dia para as datas que escolher."
+      }
+    },
+    "planning": {
+      "header": {
+        "title": "Planeamento",
+        "description": "Tarefas, o trabalho de hoje e as rotas do dia."
+      },
+      "create": {
+        "title": "Criar uma tarefa",
+        "description": "Clique em Criar tarefa, preencha e atribua. Aparece em Todas as tarefas."
+      },
+      "tabs": {
+        "title": "Todas as tarefas, O meu dia, Rotas",
+        "description": "Todas as tarefas é a lista completa. O meu dia é o que vence hoje. Rotas é o dia de campo planeado."
+      },
+      "reminders": {
+        "title": "Lembretes",
+        "description": "Em Todas as tarefas, isto é o que vence hoje, em atraso e a seguir. Abra um item para trabalhar."
+      },
+      "filters": {
+        "title": "Filtrar tarefas",
+        "description": "Defina data, estado, prioridade, responsável, cliente, filial, só em atraso ou pesquisa. A lista abaixo atualiza-se."
+      },
+      "list": {
+        "title": "Lista de tarefas",
+        "description": "Clique numa tarefa para a abrir e atualizar o estado ou os detalhes."
+      },
+      "pagination": {
+        "title": "Páginas",
+        "description": "Altere as linhas por página ou avance para a página seguinte."
+      },
+      "routes": {
+        "title": "Rotas",
+        "description": "Escolha o dia, clique em Recalcular para reconstruir as rotas ou abra Visão geral de concorrentes para o mapa."
+      }
+    },
+    "pipeline": {
+      "header": {
+        "title": "Pipeline",
+        "description": "Metas, cotações, leads e resultados de visitas para o período que pode ver."
+      },
+      "targets": {
+        "title": "Metas",
+        "description": "Progresso em vendas, leads, check-ins e chamadas no período de meta atual."
+      },
+      "quotations": {
+        "title": "Cotações",
+        "description": "Altere a janela de datas do ERP para carregar linhas de cotação. Compare-as com as cotações LORO no mesmo período."
+      },
+      "leads": {
+        "title": "Leads",
+        "description": "Contagens, valor do pipeline e valor de cotação a partir de visitas. Abra um estado para ver a discriminação neste intervalo."
+      },
+      "visits": {
+        "title": "Visitas",
+        "description": "Totais de check-out neste intervalo: visitas, vendas, cotações e valores."
+      }
+    },
+    "dashboard-attendance": {
+      "clock": {
+        "title": "Registar entrada e saída",
+        "description": "Clique aqui para iniciar o turno, fazer uma pausa ou terminá-lo. A entrada pergunta escritório ou trabalho a partir de casa. O pulso pode pedir um check-in curto após entrar ou sair."
+      },
+      "variablePay": {
+        "title": "Remuneração variável",
+        "description": "Pagamento extra além da comissão deste mês. Mostra que portões estão abertos, quão perto está do máximo e o que ainda falta."
+      },
+      "bonus": {
+        "title": "Bónus de fim de ano",
+        "description": "O estado do seu bónus de fim de ano no ciclo atual."
+      },
+      "month": {
+        "title": "Mudar o mês",
+        "description": "Abra este menu para alternar entre os últimos três meses."
+      },
+      "logs": {
+        "title": "Ver registos",
+        "description": "Clique em Ver registos para o registo de assiduidade dia a dia."
+      },
+      "list": {
+        "title": "Este mês",
+        "description": "Cada dia está marcado como assistido, em falta ou ainda por vir."
+      }
+    },
+    "calls": {
+      "header": {
+        "title": "Gravações de chamadas",
+        "description": "As chamadas PBX (Linkus ou telefone de secretária) e as chamadas LORO na aplicação aparecem aqui com pontuação e estado da transcrição. As visitas ficam na página Visitas."
+      },
+      "filters": {
+        "title": "Filtrar gravações",
+        "description": "O intervalo vai deste mês até hoje. Altere data, estado, direção, filial ou pesquisa para restringir a lista."
+      },
+      "list": {
+        "title": "Abrir uma gravação",
+        "description": "Clique numa linha para a transcrição, a pontuação e o áudio."
+      }
+    },
+    "reports": {
+      "header": {
+        "title": "Relatórios",
+        "description": "Metas, política, qualidade de chamadas, tarefas, atividade de leads e atividade no período que o seu acesso permite."
+      },
+      "tabs": {
+        "title": "Separadores de relatório",
+        "description": "Metas são objetivos. Política é conformidade. Qualidade de chamadas são chamadas pontuadas. Insights são agrupamentos de atividade. Tarefas e planeamento compara visitas planeadas com o feito. Atividade de leads são leads importados por estado para cada pessoa."
+      },
+      "callQuality": {
+        "title": "Qualidade de chamadas",
+        "description": "Ranking, funil e notas de coaching para chamadas pontuadas neste intervalo."
+      },
+      "insights": {
+        "title": "Insights",
+        "description": "Agrupamentos de trabalho, sinalizações e onde foi o tempo no mesmo intervalo."
+      }
+    },
+    "merchandise": {
+      "header": {
+        "title": "Merchandising",
+        "description": "Fotos e notas de campo, com estado de revisão em cada registo."
+      },
+      "create": {
+        "title": "Novo merchandising",
+        "description": "Clique em Novo merchandising. Anexe uma foto, indique o cliente e adicione comentários. O registo fica em revisão até ser publicado."
+      },
+      "filters": {
+        "title": "Filtrar registos",
+        "description": "Filtre por data, tamanho de página, filial, colega, estado ou pesquisa."
+      },
+      "list": {
+        "title": "Abrir um registo",
+        "description": "Clique numa linha para a foto completa e as ações de revisão."
+      }
+    },
+    "assets": {
+      "header": {
+        "title": "Ativos",
+        "description": "O seu equipamento e veículos associados, ou o inventário completo da organização se o gerir. Os gestores mudam esse âmbito nos filtros."
+      },
+      "add": {
+        "title": "Adicionar um ativo",
+        "description": "Clique em Adicionar ativo. Registe o item, quem o possui e a que filial pertence."
+      },
+      "filters": {
+        "title": "Filtrar o inventário",
+        "description": "Filtre por data, filial, proprietário, categoria ou pesquisa. O tamanho da página sob a grelha define quantos cartões carregam."
+      },
+      "list": {
+        "title": "Abrir um ativo",
+        "description": "Clique num cartão para detalhes de compra e seguro, ou para editar e eliminar."
+      }
+    },
+    "performance": {
+      "header": {
+        "title": "Desempenho",
+        "description": "Vendas dos países, filiais e datas que pode ver. O título muda para Demonstração consolidada quando essa vista está ativa."
+      },
+      "filters": {
+        "title": "Datas e filtros",
+        "description": "Defina o intervalo de datas. Abra os filtros para país, filial e categoria. Clique em atualizar para obter os números mais recentes."
+      },
+      "consolidated": {
+        "title": "Demonstração consolidada",
+        "description": "Ative isto para a demonstração de resultados entre países e filiais. Desative para voltar ao relatório de desempenho."
+      },
+      "target": {
+        "title": "Meta e lucro bruto",
+        "description": "Receita face à meta e lucro bruto neste intervalo."
+      },
+      "charts": {
+        "title": "Gráficos",
+        "description": "Categoria, filial, mix de pagamentos, produtos, vendedores e vendas por hora para os filtros que definiu."
+      }
+    },
+    "wellbeing": {
+      "header": {
+        "title": "Bem-estar",
+        "description": "Check-ins de humor, seguimentos e como o humor se alinha com o desempenho."
+      },
+      "filters": {
+        "title": "Data e filial",
+        "description": "Insights, Executivo e Correlações usam este intervalo de datas e filial. Hoje ignora o intervalo."
+      },
+      "tabs": {
+        "title": "Hoje, Insights, Executivo, Correlações",
+        "description": "Hoje são check-ins em direto. Insights resume o intervalo. Executivo são os gráficos de índice. Correlações compara humor com desempenho. São estimativas, não causas."
+      },
+      "today": {
+        "title": "Hoje",
+        "description": "KPIs, comparação de filiais e listas nominais de pessoas que precisam de apoio ou seguimento."
+      },
+      "executive": {
+        "title": "Índice executivo",
+        "description": "Cada gráfico é um índice agregado para o intervalo e a filial que definiu."
+      }
+    },
+    "visualiser": {
+      "header": {
+        "title": "Visão geral de concorrentes",
+        "description": "Pesquise no mapa ou siga a rota de um representante. Abra Simular para modelar uma área de influência."
+      },
+      "tools": {
+        "title": "Ferramentas do mapa",
+        "description": "O resumo conta lojas concorrentes e o volume de negócios mensal modelado. Preços de combustível carrega os preços mais recentes e mantém os guardados quando nada mudou. Geocodificar preenche moradas em falta. Exportar descarrega a simulação. O ícone de informação explica a matemática. Simular abre o diálogo de simulação."
+      },
+      "map": {
+        "title": "O mapa",
+        "description": "Os pinos são filiais, sede, concorrentes e clientes."
+      }
+    }
+  },
+  "tables": {
+    "name": "Nome",
+    "sku": "SKU",
+    "category": "Categoria",
+    "source": "Origem",
+    "price": "Preço",
+    "person": "Pessoa",
+    "severity": "Gravidade",
+    "status": "Estado",
+    "reason": "Motivo",
+    "radius": "Raio",
+    "location": "Localização",
+    "title": "Título",
+    "type": "Tipo",
+    "email": "E-mail",
+    "period": "Período",
+    "issueDate": "Data de emissão",
+    "payslipNumber": "Recibo #",
+    "gross": "Bruto",
+    "net": "Líquido",
+    "employee": "Colaborador",
+    "actions": "Ações",
+    "store": "Loja",
+    "scheduledOpen": "Abertura prevista",
+    "actualOpen": "Abertura real",
+    "scheduledClose": "Fecho previsto",
+    "actualClose": "Fecho real",
+    "checklist": "Lista de verificação",
+    "when": "Quando",
+    "origin": "Origem",
+    "direction": "Direção",
+    "agent": "Agente",
+    "client": "Cliente",
+    "numbers": "Números",
+    "duration": "Duração",
+    "score": "Pontuação",
+    "transcript": "Transcrição",
+    "delivery": "Entrega",
+    "invoice": "Fatura",
+    "route": "Rota",
+    "rating": "Avaliação",
+    "items": "Itens",
+    "reference": "Referência",
+    "quotation": "Cotação",
+    "code": "Código",
+    "description": "Descrição",
+    "document": "Documento",
+    "date": "Data",
+    "number": "Número",
+    "clientTitle": "Cliente / título",
+    "created": "Criado",
+    "conversion": "Conversão",
+    "user": "Utilizador",
+    "whatsapp": "WhatsApp",
+    "leads": "Leads",
+    "visits": "Visitas",
+    "hours": "Horas",
+    "travel": "Deslocações",
+    "achievement": "Realização",
+    "product": "Produto",
+    "branch": "Filial",
+    "day": "Dia",
+    "doc": "Doc",
+    "country": "País",
+    "uploader": "Carregado por",
+    "total": "Total",
+    "touched": "Contactados",
+    "untouched": "Não contactados",
+    "pending": "Pendente",
+    "review": "Revisão",
+    "approved": "Aprovado",
+    "converted": "Convertido",
+    "declined": "Recusado",
+    "cancelled": "Cancelado",
+    "discarded": "Descartado",
+    "deleted": "Eliminado",
+    "quotes": "Cotações",
+    "signed": "Assinado",
+    "place": "Local",
+    "calls": "Chamadas",
+    "window": "Janela",
+    "avg": "Méd.",
+    "flags": "Sinalizações",
+    "layer": "Camada",
+    "start": "Início",
+    "end": "Fim",
+    "contact": "Contacto",
+    "outcome": "Resultado",
+    "followUp": "Seguimento",
+    "lead": "Lead",
+    "stage": "Etapa",
+    "action": "Ação",
+    "item": "Item",
+    "checkIn": "Entrada",
+    "checkOut": "Saída",
+    "shiftDuration": "Duração do turno",
+    "shift": "Turno",
+    "totalVisits": "Total de visitas",
+    "breakdown": "Discriminação",
+    "sales": "Vendas",
+    "claims": "Despesas",
+    "distance": "Distância",
+    "avgVisitTime": "Tempo médio de visita"
+  }
+}

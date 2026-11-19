@@ -34,11 +34,13 @@ import {
   readStoredPageSize,
   type VisitsPageSize,
 } from '@/app/visits/components/visits-list-pagination';
+import { useTranslation } from 'react-i18next';
 
 const ANY_VALUE = 'all';
 const DELIVERIES_PAGE_SIZE_KEY = 'loro:deliveries-page-size';
 
 export function DeliveriesListContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const canDispatch = canDispatchDeliveries(backendUserData);
@@ -95,10 +97,9 @@ export function DeliveriesListContent() {
   return (
     <div className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
       <div className="mb-6 shrink-0" data-tour="deliveries-page-header">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Deliveries</h1>
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.deliveries.title')}</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-          Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records
-          the stop.
+          {t('pages.deliveries.description')}
         </p>
       </div>
 
@@ -162,13 +163,13 @@ export function DeliveriesListContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Delivery</TableHead>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Items</TableHead>
+                  <TableHead>{t('tables.delivery')}</TableHead>
+                  <TableHead>{t('tables.invoice')}</TableHead>
+                  <TableHead>{t('tables.client')}</TableHead>
+                  <TableHead>{t('tables.route')}</TableHead>
+                  <TableHead>{t('tables.status')}</TableHead>
+                  <TableHead>{t('tables.rating')}</TableHead>
+                  <TableHead>{t('tables.items')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { useLinkedClientProfile } from '@/api/hooks/use-linked-client-profile';
 import type { ClientProfileData } from '@/api/types/client-portal';
@@ -9,6 +11,7 @@ export function ClientPortalLoading({
 }: {
   children: (client: ClientProfileData) => React.ReactNode;
 }) {
+  const { t } = useTranslation('portal');
   const { data, isLoading, isError, refetch } = useLinkedClientProfile();
 
   if (isLoading) {
@@ -18,7 +21,7 @@ export function ClientPortalLoading({
   if (isError || !data) {
     return (
       <div className="py-16 text-center text-muted-foreground">
-        <p className="mb-4">Could not load your account profile.</p>
+        <p className="mb-4">{t('loadAccountError')}</p>
         <button
           type="button"
           className="text-primary underline"

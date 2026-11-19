@@ -63,6 +63,7 @@ import {
   formatUtcYmd,
   utcMonthStartThroughToday,
 } from '@/lib/utils/overview-daily-summary';
+import { useTranslation } from 'react-i18next';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object' && !Array.isArray(v);
@@ -297,6 +298,7 @@ interface ErpQuotationGroupView {
 }
 
 export function PipelineContent() {
+  const { t } = useTranslation('screens');
   const { backendUserData: profile, isSyncing } = useSessionSync();
   const userRef = profile?.uid != null ? String(profile.uid) : null;
   const accessLevel =
@@ -552,7 +554,7 @@ export function PipelineContent() {
     <div className="flex flex-col gap-8">
       {personalTargets && (
         <section className="space-y-3" data-tour="pipeline-targets-section">
-          <h2 className="text-base font-semibold text-foreground sm:text-lg">Targets &amp; progress</h2>
+          <h2 className="text-base font-semibold text-foreground sm:text-lg">{t('pages.pipeline.targets')}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {TARGET_ROW_KEYS.map((key) => {
               const m = parseMetric(personalTargets, key);
@@ -593,7 +595,7 @@ export function PipelineContent() {
       )}
 
       <section className="space-y-3" data-tour="pipeline-quotations-section">
-        <h2 className="text-base font-semibold text-foreground sm:text-lg">Quotations (ERP &amp; LORO)</h2>
+        <h2 className="text-base font-semibold text-foreground sm:text-lg">{t('pages.pipeline.quotations')}</h2>
         <p className="text-xs text-muted-foreground -mt-1">
           ERP: quotation documents for your profile period. LORO: app quotations with{' '}
           <span className="font-medium tabular-nums">
@@ -922,10 +924,10 @@ export function PipelineContent() {
                                       <Table className="min-w-max border-separate border-spacing-y-1">
                                         <TableHeader>
                                           <TableRow>
-                                            <TableHead>Document</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Store</TableHead>
-                                            <TableHead className="text-right">Total (incl.)</TableHead>
+                                            <TableHead>{t('tables.document')}</TableHead>
+                                            <TableHead>{t('tables.date')}</TableHead>
+                                            <TableHead>{t('tables.store')}</TableHead>
+                                            <TableHead className="text-right">{t('tables.total')}</TableHead>
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -995,12 +997,12 @@ export function PipelineContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Number</TableHead>
-                        <TableHead>Client / title</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
+                        <TableHead>{t('tables.number')}</TableHead>
+                        <TableHead>{t('tables.clientTitle')}</TableHead>
+                        <TableHead>{t('tables.status')}</TableHead>
+                        <TableHead>{t('tables.created')}</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Conversion</TableHead>
+                        <TableHead>{t('tables.conversion')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1040,7 +1042,7 @@ export function PipelineContent() {
       </section>
 
       <section className="space-y-3" data-tour="pipeline-lead-pipeline-section">
-            <h2 className="text-lg font-semibold text-foreground">Lead pipeline</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('pages.pipeline.leads')}</h2>
             {leadsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">
                 Organisation rollup for this date range. Totals follow server rules (e.g. owners with
@@ -1110,7 +1112,7 @@ export function PipelineContent() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Status</TableHead>
+                          <TableHead>{t('tables.status')}</TableHead>
                           <TableHead className="text-right">Count</TableHead>
                           <TableHead className="text-right">Est. value</TableHead>
                         </TableRow>
@@ -1144,7 +1146,7 @@ export function PipelineContent() {
       </section>
 
       <section className="space-y-3" data-tour="pipeline-visits-section">
-            <h2 className="text-lg font-semibold text-foreground">Visits</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('pages.pipeline.visits')}</h2>
             {visitsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">
                 All organisation check-outs in this date range.

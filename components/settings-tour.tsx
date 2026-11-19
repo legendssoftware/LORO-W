@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
@@ -18,55 +20,56 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    element: '[data-tour="settings-page-header"]',
-    popover: {
-      title: 'Settings',
-      description:
-        'Organisation profile, appearance, hours, branches, calendar, scraping, notices, banners, and call quality.',
-      side: 'bottom',
-      align: 'start',
+function buildTourSteps(t: TFunction): DriveStep[] {
+  return [
+    {
+      element: '[data-tour="settings-page-header"]',
+      popover: {
+        title: t('tours.settings.header.title'),
+        description: t('tours.settings.header.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="settings-tab-nav"]',
-    popover: {
-      title: 'Sections',
-      description:
-        'Click a tab to edit that section. This tour stays on the tab you already have open.',
-      side: 'bottom',
-      align: 'start',
+    {
+      element: '[data-tour="settings-tab-nav"]',
+      popover: {
+        title: t('tours.settings.tab-nav.title'),
+        description: t('tours.settings.tab-nav.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="settings-active-panel"]',
-    popover: {
-      title: 'This section',
-      description: 'Edit the fields for the open tab. Nothing is saved until you click Save changes.',
-      side: 'top',
-      align: 'center',
+    {
+      element: '[data-tour="settings-active-panel"]',
+      popover: {
+        title: t('tours.settings.active-panel.title'),
+        description: t('tours.settings.active-panel.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="settings-panel-actions"]',
-    popover: {
-      title: 'Save or cancel',
-      description: 'Save changes keeps this section. Cancel drops unsaved edits.',
-      side: 'top',
-      align: 'end',
+    {
+      element: '[data-tour="settings-panel-actions"]',
+      popover: {
+        title: t('tours.settings.panel-actions.title'),
+        description: t('tours.settings.panel-actions.description'),
+        side: 'top',
+        align: 'end',
+      },
     },
-  },
-];
+  ];
+}
 
-function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
+function areTourTargetsReady(steps: DriveStep[]): boolean {
+  return steps.every((step) => {
     if (typeof step.element !== 'string') return true;
     return document.querySelector(step.element) !== null;
   });
 }
 
 export function SettingsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -133,11 +136,12 @@ export function SettingsTour() {
     if (currentState.completedThisMonth) return;
 
     const cancelSchedule = scheduleTourWhenReady({
-      areTargetsReady: areTourTargetsReady,
+      areTargetsReady: () => areTourTargetsReady(buildTourSteps(t)),
       onReady: () => {
+        const steps = buildTourSteps(t);
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writeSettingsTourState(userId, {
@@ -154,7 +158,7 @@ export function SettingsTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writeSettingsTourState(userId, {
@@ -205,7 +209,7 @@ export function SettingsTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

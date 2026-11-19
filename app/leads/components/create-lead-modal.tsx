@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -46,6 +47,7 @@ export function CreateLeadModal({
   onSuccess,
   initialValues,
 }: CreateLeadModalProps) {
+  const { t } = useTranslation('screens');
   const { backendUserData } = useSessionSync();
   const sessionBranchUid = backendUserData?.branch?.uid ?? null;
 
@@ -108,11 +110,11 @@ export function CreateLeadModal({
     const hasEmail = (form.email ?? '').trim() !== '';
     const hasPhone = (form.phone ?? '').trim() !== '';
     if (!hasName && !hasEmail && !hasPhone) {
-      setValidationError('Please provide at least one of: name, email, or phone.');
+      setValidationError(t('leads.needContact'));
       return false;
     }
     if (effectiveBranchUid == null) {
-      setValidationError('Please select a branch.');
+      setValidationError(t('leads.selectBranch'));
       return false;
     }
     setValidationError(null);
@@ -152,7 +154,7 @@ export function CreateLeadModal({
       });
 
       const result = await createMutation.mutateAsync(payload);
-      toast.success('Lead created successfully');
+      toast.success(t('leads.leadCreated'));
       onOpenChange(false);
       const createdLead = result?.data?.uid != null ? { uid: result.data.uid } : undefined;
       onSuccess?.(createdLead);
@@ -191,10 +193,8 @@ export function CreateLeadModal({
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle>Create lead</DialogTitle>
-          <DialogDescription>
-            Add a new sales lead. At least one of name, email, or phone is required.
-          </DialogDescription>
+          <DialogTitle>{t('leads.createLead')}</DialogTitle>
+          <DialogDescription>{t('leads.createDescription')}</DialogDescription>
         </DialogHeader>
 
         <LeadFormBody
@@ -231,20 +231,14 @@ export function CreateLeadModal({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={createMutation.isPending}
-          >
-            Cancel
-          </Button>
+          >{t('actions.cancel')}</Button>
           <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="gap-2">
             {createMutation.isPending ? (
               <>
-                <Loader2Icon className="size-4 shrink-0 animate-spin" />
-                Creating…
-              </>
+                <Loader2Icon className="size-4 shrink-0 animate-spin" />{t('leads.creating')}</>
             ) : (
               <>
-                <HandshakeIcon className="size-4 shrink-0" />
-                Create lead
-              </>
+                <HandshakeIcon className="size-4 shrink-0" />{t('leads.createLead')}</>
             )}
           </Button>
         </DialogFooter>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
@@ -97,6 +98,7 @@ interface VisitDateRangePickerProps {
 }
 
 function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
+  const { t } = useTranslation('screens');
   const {
     startDate,
     endDate,
@@ -215,9 +217,9 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
                 size="sm"
                 onClick={() => setUseAllTime(true)}
               >
-                All time
+                {t('actions.allTime')}
               </Button>
-              <span className="text-xs text-muted-foreground">or pick a UTC range below</span>
+              <span className="text-xs text-muted-foreground">{t('actions.pickUtcRange')}</span>
             </div>
           </div>
           <Calendar
@@ -249,7 +251,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
                 disabled={useAllTime}
                 onClick={shortcutToday}
               >
-                Today (UTC)
+                {t('actions.todayUtc')}
               </Button>
               <Button
                 type="button"
@@ -258,7 +260,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
                 disabled={useAllTime}
                 onClick={shortcutThisMonth}
               >
-                This month (UTC)
+                {t('actions.thisMonthUtc')}
               </Button>
               <Button
                 type="button"
@@ -267,7 +269,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
                 disabled={useAllTime}
                 onClick={shortcutWholeMonth}
               >
-                Whole month (UTC)
+                {t('actions.wholeMonthUtc')}
               </Button>
             </div>
             <Button
@@ -282,7 +284,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
               )}
               onClick={() => handleDatePopoverOpenChange(false)}
             >
-              Done
+              {t('actions.done')}
             </Button>
           </div>
         </PopoverContent>
@@ -295,7 +297,7 @@ function VisitDateRangePicker({ layout }: VisitDateRangePickerProps) {
             resetDateRangeToDefault();
           }}
           className="ml-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Reset to default range"
+          aria-label={t('actions.resetDefaultRange')}
         >
           <XIcon className="size-4 text-muted-foreground" />
         </button>
@@ -340,6 +342,7 @@ function VisitFilterControls({
   isUserSearchLoading = false,
   onUserUidChange,
 }: VisitFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const {
     selectedRegion,
     selectedBusinessType,
@@ -397,9 +400,9 @@ function VisitFilterControls({
           value: channel,
           label: activityChannelFilterLabel(channel),
         }))}
-        placeholderLabelWhenAll="All activity"
+        placeholderLabelWhenAll={t('visitsTable.allActivity')}
         searchPlaceholder="Search activity…"
-        emptyMessage="No activity type found."
+        emptyMessage={t('visitsTable.noActivityType')}
         triggerIcon={<Phone className="size-4 shrink-0" />}
         triggerClassName={pickerTriggerClass}
         includeAllOption={false}
@@ -410,9 +413,9 @@ function VisitFilterControls({
           selectedValue={selectedRegion || 'all'}
           onValueChange={(v) => setSelectedRegion(v === 'all' ? '' : v)}
           options={regionPickerOptions}
-          placeholderLabelWhenAll="All regions"
+          placeholderLabelWhenAll={t('visitsTable.allRegions')}
           searchPlaceholder="Search regions…"
-          emptyMessage="No region found."
+          emptyMessage={t('visitsTable.noRegion')}
           triggerIcon={<MapPinIcon className="size-4 shrink-0" />}
           triggerClassName={pickerTriggerClass}
         />
@@ -422,9 +425,9 @@ function VisitFilterControls({
           selectedValue={selectedBusinessType || 'all'}
           onValueChange={(v) => setSelectedBusinessType(v === 'all' ? '' : v)}
           options={businessPickerOptions}
-          placeholderLabelWhenAll="All business types"
+          placeholderLabelWhenAll={t('visitsTable.allBusinessTypes')}
           searchPlaceholder="Search business types…"
-          emptyMessage="No business type found."
+          emptyMessage={t('visitsTable.noBusinessType')}
           triggerIcon={<BriefcaseIcon className="size-4 shrink-0" />}
           triggerClassName={pickerTriggerClass}
         />
@@ -439,7 +442,7 @@ function VisitFilterControls({
             ((v) => setSelectedUserUid(v === 'all' ? '' : v))
           }
           triggerClassName={cn(pickerTriggerClass, 'justify-between gap-2')}
-          searchPlaceholder="Search users…"
+          searchPlaceholder={t('actions.searchUsers')}
           searchQuery={userSearchQuery}
           onSearchQueryChange={onUserSearchQueryChange}
           isSearchLoading={isUserSearchLoading}
@@ -472,6 +475,7 @@ export function VisitHistoryToolbar({
   extraFilters = null,
   extraActions = null,
 }: VisitHistoryToolbarProps) {
+  const { t } = useTranslation('screens');
   const {
     searchQuery,
     setSearchQuery,
@@ -507,7 +511,7 @@ export function VisitHistoryToolbar({
     return (
       <div className={cn('relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]', className)}>
         <Input
-          placeholder="Search visits…"
+          placeholder={t('visitsTable.searchVisits')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchQuery && 'pr-8')}
@@ -517,7 +521,7 @@ export function VisitHistoryToolbar({
             type="button"
             onClick={() => setSearchQuery('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -547,10 +551,10 @@ export function VisitHistoryToolbar({
   };
 
   const mobileFilterDescription = showDateRange
-    ? 'Date range, region, business type, and user for visit history.'
+    ? t('visitsTable.dateFilterDescription')
     : showRegionFilter
-      ? 'Region and business type for the map.'
-      : 'Country and province for the map and suggested areas.';
+      ? t('visitsTable.regionFilterDescription')
+      : t('visitsTable.mapFilterDescription');
 
   return (
     <>
@@ -565,7 +569,7 @@ export function VisitHistoryToolbar({
               onClick={() => setFiltersDialogOpen(true)}
             >
               <Filter className="size-4 shrink-0" aria-hidden />
-              Filter
+              {t('actions.filter')}
             </Button>
             <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
           </div>
@@ -575,7 +579,7 @@ export function VisitHistoryToolbar({
         <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
           <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Filters</DialogTitle>
+              <DialogTitle>{t('actions.filters')}</DialogTitle>
               <DialogDescription>{mobileFilterDescription}</DialogDescription>
             </DialogHeader>
             <VisitFilterControls {...filterProps} layout="stack" />
@@ -590,7 +594,7 @@ export function VisitHistoryToolbar({
                   setFiltersDialogOpen(false);
                 }}
               >
-                Reset filters
+                {t('actions.resetFilters')}
               </Button>
             </div>
           </DialogContent>

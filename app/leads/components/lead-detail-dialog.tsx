@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { ReactNode, MouseEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
@@ -221,6 +222,7 @@ export function LeadDetailDialog({
   lead,
   onActionSuccess,
 }: LeadDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const [editOpen, setEditOpen] = useState(false);
   const [scheduleTaskOpen, setScheduleTaskOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -392,7 +394,7 @@ export function LeadDetailDialog({
     const hasEmail = (leadEditForm.email ?? '').trim() !== '';
     const hasPhone = (leadEditForm.phone ?? '').trim() !== '';
     if (!hasName && !hasEmail && !hasPhone) {
-      toast.error('Please provide at least one of: name, email, or phone.');
+      toast.error(t('leads.needContact'));
       return;
     }
 
@@ -428,13 +430,13 @@ export function LeadDetailDialog({
         { ref: leadUid, payload },
         {
           onSuccess: () => {
-            toast.success('Lead updated');
+            toast.success(t('leads.leadUpdated'));
             setEditOpen(false);
             editHydrateKeyRef.current = '';
             onActionSuccess?.();
           },
           onError: (err: { message?: string }) => {
-            toast.error(err?.message ?? 'Failed to update lead');
+            toast.error(err?.message ?? t('leads.failedToUpdate'));
           },
         }
       );
@@ -449,13 +451,13 @@ export function LeadDetailDialog({
     if (leadUid == null) return;
     deleteMutation.mutate(leadUid, {
       onSuccess: () => {
-        toast.success('Lead deleted');
+        toast.success(t('leads.leadDeleted'));
         setDeleteConfirmOpen(false);
         onOpenChange(false);
         onActionSuccess?.();
       },
       onError: (err: { message?: string }) => {
-        toast.error(err?.message ?? 'Failed to delete lead');
+        toast.error(err?.message ?? t('leads.failedToDelete'));
       },
     });
   };
@@ -464,12 +466,12 @@ export function LeadDetailDialog({
     if (leadUid == null) return;
     reactivateMutation.mutate(leadUid, {
       onSuccess: () => {
-        toast.success('Lead reactivated');
+        toast.success(t('leads.leadReactivated'));
         onOpenChange(false);
         onActionSuccess?.();
       },
       onError: (err: { message?: string }) => {
-        toast.error(err?.message ?? 'Failed to reactivate lead');
+        toast.error(err?.message ?? t('leads.failedToReactivate'));
       },
     });
   };
@@ -480,12 +482,12 @@ export function LeadDetailDialog({
       { ref: leadUid, payload: { status: 'DISCARDED' } },
       {
         onSuccess: () => {
-          toast.success('Lead discarded');
+          toast.success(t('leads.leadDiscarded'));
           setDiscardConfirmOpen(false);
           onActionSuccess?.();
         },
         onError: (err: { message?: string }) => {
-          toast.error(err?.message ?? 'Failed to discard lead');
+          toast.error(err?.message ?? t('leads.failedToDiscard'));
         },
       }
     );
@@ -500,12 +502,12 @@ export function LeadDetailDialog({
       },
       {
         onSuccess: () => {
-          toast.success('Lead converted to client');
+          toast.success(t('leads.leadConverted'));
           onOpenChange(false);
           onActionSuccess?.();
         },
         onError: (err: { message?: string }) => {
-          toast.error(err?.message ?? 'Failed to convert lead');
+          toast.error(err?.message ?? t('leads.failedToConvert'));
         },
       }
     );
@@ -555,7 +557,7 @@ export function LeadDetailDialog({
     const targetUid = Number(transferTargetUid);
     if (Number.isNaN(targetUid)) return;
     if (lead.owner?.uid != null && targetUid === lead.owner.uid) {
-      toast.error('Choose a different user than the current owner');
+      toast.error(t('leads.chooseDifferentOwner'));
       return;
     }
     reassignMutation.mutate(
@@ -566,7 +568,7 @@ export function LeadDetailDialog({
       },
       {
         onSuccess: () => {
-          toast.success('Lead transferred');
+          toast.success(t('leads.leadTransferred'));
           setTransferOpen(false);
           setTransferTargetUid(null);
           onOpenChange(false);
@@ -622,7 +624,7 @@ export function LeadDetailDialog({
         onSuccess: (data) => setEngageDraft(data.draft ?? ''),
         onError: () => {
           setEngageDraft(buildEngageDraft(channel));
-          toast.error('AI draft unavailable; using template.');
+          toast.error(t('leads.aiDraftFallback'));
         },
       }
     );
@@ -656,9 +658,9 @@ export function LeadDetailDialog({
   const handleCopyEngageDraft = async () => {
     try {
       await navigator.clipboard.writeText(engageDraft);
-      toast.success('Copied to clipboard');
+      toast.success(t('leads.copied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('leads.failedToCopy'));
     }
   };
 
@@ -681,12 +683,12 @@ export function LeadDetailDialog({
               buildLeadMailtoUrl(lead.email, `Following up — ${name}`, draft),
               '_self'
             );
-            toast.success('Opened your email app');
+            toast.success(t('leads.openedEmail'));
           } else if (engageChannel === 'whatsapp') {
             const phone = lead?.whatsAppNumber?.trim() || lead?.phone?.trim();
             if (phone) {
               window.open(buildLeadWhatsAppUrl(phone, draft), '_blank', 'noopener,noreferrer');
-              toast.success('Opened WhatsApp');
+              toast.success(t('leads.openedWhatsApp'));
             }
           } else {
             toast.success(data.message || `Prepared ${channelLabel} message`);
@@ -700,14 +702,14 @@ export function LeadDetailDialog({
               buildLeadMailtoUrl(lead.email, `Following up — ${name}`, draft),
               '_self'
             );
-            toast.success('SMTP unavailable — opened your email app instead');
+            toast.success(t('leads.smtpFallback'));
             return;
           }
           if (engageChannel === 'whatsapp') {
             const phone = lead?.whatsAppNumber?.trim() || lead?.phone?.trim();
             if (phone) {
               window.open(buildLeadWhatsAppUrl(phone, draft), '_blank', 'noopener,noreferrer');
-              toast.success('Opened WhatsApp to send the message');
+              toast.success(t('leads.openedWhatsAppSend'));
               return;
             }
           }
@@ -735,13 +737,13 @@ export function LeadDetailDialog({
       { ref: leadUid, payload },
       {
         onSuccess: () => {
-          toast.success('Status updated');
+          toast.success(t('leads.statusUpdated'));
           setStatusChangeOpen(false);
           setStatusChangeTarget(null);
           onActionSuccess?.();
         },
         onError: (err: { message?: string }) => {
-          toast.error(err?.message ?? 'Failed to update status');
+          toast.error(err?.message ?? t('leads.failedToUpdateStatus'));
         },
       }
     );
@@ -792,25 +794,25 @@ export function LeadDetailDialog({
     e.stopPropagation();
     if (checkedIn) {
       if (hasActiveCallForLead) {
-        toast.error('Call already in progress — use End call when you are ready');
+        toast.error(t('leads.callAlreadyInProgress'));
         return;
       }
-      toast.error('End your current visit before starting a call');
+      toast.error(t('leads.endVisitFirst'));
       return;
     }
     if (!lead?.phone?.trim()) {
-      toast.error('This lead has no phone number');
+      toast.error(t('leads.noPhone'));
       return;
     }
     const phone = lead.phone.trim();
     try {
       const payload = await buildLeadCallCheckInPayload(lead);
       await checkInMutation.mutateAsync(payload);
-      toast.success('Call started');
+      toast.success(t('leads.callStarted'));
       void checkInStatusQuery.refetch();
       window.location.href = buildTelUrl(phone);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start call');
+      toast.error(err instanceof Error ? err.message : t('leads.failedToStartCall'));
     }
   };
 
@@ -848,18 +850,14 @@ export function LeadDetailDialog({
               }}
               disabled={!leadUid}
             >
-              <Pencil className="size-4" />
-              Edit
-            </Button>
+              <Pencil className="size-4" />{t('actions.edit')}</Button>
             {hasActiveCallForLead ? (
               <Button
                 size="sm"
                 className="gap-1.5 bg-red-600 text-white hover:bg-red-700"
                 onClick={handleOpenEndCall}
               >
-                <Phone className="size-4" />
-                End call
-              </Button>
+                <Phone className="size-4" />{t('leads.endCall')}</Button>
             ) : (
               <Button
                 size="sm"
@@ -877,7 +875,7 @@ export function LeadDetailDialog({
                 ) : (
                   <Phone className="size-4" />
                 )}
-                Start Call
+                {t('leads.startCall')}
               </Button>
             )}
             <Button
@@ -891,7 +889,7 @@ export function LeadDetailDialog({
               disabled={!leadUid}
             >
               <MessageCircle className="size-4" />
-              {chatOpen ? 'Close chat' : 'Chat'}
+              {chatOpen ? t('leads.closeChat') : t('leads.chat')}
             </Button>
             <Button
               size="sm"
@@ -903,9 +901,7 @@ export function LeadDetailDialog({
               }}
               disabled={!leadUid}
             >
-              <Send className="size-4" />
-              Engage lead
-            </Button>
+              <Send className="size-4" />{t('leads.engageLead')}</Button>
             <Button
               size="sm"
               variant="outline"
@@ -916,9 +912,7 @@ export function LeadDetailDialog({
               }}
               disabled={!leadUid}
             >
-              <CalendarClock className="size-4" />
-              Schedule follow-up
-            </Button>
+              <CalendarClock className="size-4" />{t('leads.scheduleFollowUp')}</Button>
             <Button
               size="sm"
               variant={transferOpen ? 'destructive' : 'outline'}
@@ -934,7 +928,7 @@ export function LeadDetailDialog({
               disabled={!leadUid || reassignMutation.isPending}
             >
               <ArrowRightLeft className="size-4" />
-              {transferOpen ? 'Close transfer' : 'Transfer lead'}
+              {transferOpen ? t('leads.closeTransfer') : t('leads.transferLead')}
             </Button>
             {canReactivate && (
               <Button
@@ -947,7 +941,7 @@ export function LeadDetailDialog({
                 {reactivateMutation.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
-                  'Reactivate'
+                  t('leads.reactivate')
                 )}
               </Button>
             )}
@@ -973,13 +967,13 @@ export function LeadDetailDialog({
 
           {transferOpen && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
-              <h4 className="font-semibold text-sm">Transfer lead</h4>
+              <h4 className="font-semibold text-sm">{t('leads.transferLead')}</h4>
               <p className="text-xs text-muted-foreground">
-                Select a team member to own this lead. Interactions and history stay on the lead.
+                {t('leads.transferHelp')}
               </p>
               <Input
                 type="search"
-                placeholder="Search team members…"
+                placeholder={t('leads.searchTeam')}
                 value={transferSearch}
                 onChange={(e) => setTransferSearch(e.target.value)}
                 className="h-9"
@@ -991,9 +985,9 @@ export function LeadDetailDialog({
               ) : (
                 <div className="max-h-52 overflow-y-auto space-y-1 rounded-md border bg-background p-2">
                   {isTransferSearchLoading && transferUsers.length === 0 ? (
-                    <p className="text-muted-foreground px-2 py-3 text-sm">Searching…</p>
+                    <p className="text-muted-foreground px-2 py-3 text-sm">{t('leads.searching')}</p>
                   ) : transferUsers.filter((u) => u.uid !== lead.owner?.uid).length === 0 ? (
-                    <p className="text-muted-foreground px-2 py-3 text-sm">No matches.</p>
+                    <p className="text-muted-foreground px-2 py-3 text-sm">{t('leads.noMatches')}</p>
                   ) : (
                     transferUsers
                     .filter((u) => u.uid !== lead.owner?.uid)
@@ -1066,7 +1060,7 @@ export function LeadDetailDialog({
 
           {engageOpen && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
-              <h4 className="font-semibold text-sm">Engage lead</h4>
+              <h4 className="font-semibold text-sm">{t('leads.engageLead')}</h4>
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -1114,7 +1108,7 @@ export function LeadDetailDialog({
                     onIndustryChange={handleEngageIndustryChange}
                     onNeedChange={setEngageNeed}
                   />
-                  <Label className="text-xs">Draft</Label>
+                  <Label className="text-xs">{t('leads.draft')}</Label>
                   {engageDraftMutation.isPending ? (
                     <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-4 text-sm text-muted-foreground">
                       <Loader2Icon className="size-4 animate-spin" />
@@ -1126,7 +1120,7 @@ export function LeadDetailDialog({
                       onChange={(e) => setEngageDraft(e.target.value)}
                       rows={10}
                       className="resize-y text-sm"
-                      placeholder="Edit outreach message before sending…"
+                      placeholder={t('leads.editOutreach')}
                     />
                   )}
                   {engageChannel === 'whatsapp' ? (
@@ -1138,9 +1132,7 @@ export function LeadDetailDialog({
                     </p>
                   ) : null}
                   <div className="flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={handleCopyEngageDraft} disabled={!engageDraft.trim()}>
-                      Copy to clipboard
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCopyEngageDraft} disabled={!engageDraft.trim()}>{t('leads.copy')}</Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1150,7 +1142,7 @@ export function LeadDetailDialog({
                       {engageDraftMutation.isPending ? (
                         <Loader2Icon className="size-4 animate-spin" />
                       ) : (
-                        'Regenerate'
+                        t('leads.regenerate')
                       )}
                     </Button>
                     <Button
@@ -1183,23 +1175,23 @@ export function LeadDetailDialog({
 
           <div className="space-y-4 text-sm">
             <div>
-              <DetailSectionHeading title="Contact" icon={Contact} />
+              <DetailSectionHeading title={t('leads.contact')} icon={Contact} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
-                <DetailFieldRow label="Name" value={lead.name?.trim() || '-'} icon={User} />
-                <DetailFieldRow label="Email" value={lead.email?.trim() || '-'} icon={Mail} />
-                <DetailFieldRow label="Phone" value={lead.phone?.trim() || '-'} icon={Phone} />
+                <DetailFieldRow label={t('leads.name')} value={lead.name?.trim() || '-'} icon={User} />
+                <DetailFieldRow label={t('leads.email')} value={lead.email?.trim() || '-'} icon={Mail} />
+                <DetailFieldRow label={t('leads.phone')} value={lead.phone?.trim() || '-'} icon={Phone} />
                 <DetailFieldRow
-                  label="Secondary phone"
+                  label={t('leads.secondaryPhone')}
                   value={lead.secondaryPhoneNumber?.trim() || '-'}
                   icon={PhoneForwarded}
                 />
                 <DetailFieldRow
-                  label="WhatsApp"
+                  label={t('leads.whatsapp')}
                   value={lead.whatsAppNumber?.trim() || '-'}
                   icon={Smartphone}
                 />
                 <DetailFieldRow
-                  label="Company"
+                  label={t('leads.company')}
                   value={lead.companyName?.trim() || '-'}
                   icon={Building2}
                 />
@@ -1207,57 +1199,57 @@ export function LeadDetailDialog({
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="Status" icon={BadgeCheck} />
+              <DetailSectionHeading title={t('leads.status')} icon={BadgeCheck} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="Status"
+                  label={t('leads.status')}
                   value={getOptionLabel(LEAD_STATUS_OPTIONS, lead.status)}
                   icon={BadgeCheck}
                 />
                 <DetailFieldRow
-                  label="Source"
+                  label={t('leads.source')}
                   value={getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source)}
                   icon={Share2}
                 />
                 <DetailFieldRow
-                  label="Temperature"
+                  label={t('leads.temperature')}
                   value={getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature)}
                   icon={Thermometer}
                 />
                 <DetailFieldRow
-                  label="Priority"
+                  label={t('leads.priority')}
                   value={getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority)}
                   icon={ListOrdered}
                 />
                 <DetailFieldRow
-                  label="Stage"
+                  label={t('leads.stage')}
                   value={formatLifecycleStage(lead.lifecycleStage)}
                   icon={Layers}
                 />
                 <DetailFieldRow
-                  label="Form"
+                  label={t('leads.form')}
                   value={lead.form?.trim() || '-'}
                   icon={ClipboardList}
                 />
                 <DetailFieldRow
-                  label="Channel"
+                  label={t('leads.channel')}
                   value={lead.channel?.trim() || '-'}
                   icon={Hash}
                 />
-                <DetailFieldRow label="Labels" value={formatLabels(lead.labels)} icon={Tag} />
+                <DetailFieldRow label={t('leads.labels')} value={formatLabels(lead.labels)} icon={Tag} />
               </dl>
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="Scoring & value" icon={TrendingUp} />
+              <DetailSectionHeading title={t('leads.scoring')} icon={TrendingUp} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="Lead score"
+                  label={t('leads.leadScore')}
                   value={lead.leadScore != null ? `${lead.leadScore}` : '-'}
                   icon={Target}
                 />
                 <DetailFieldRow
-                  label="Estimated value"
+                  label={t('leads.estimatedValue')}
                   value={formatCurrency(lead.estimatedValue)}
                   icon={Banknote}
                 />
@@ -1265,25 +1257,25 @@ export function LeadDetailDialog({
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="Dates" icon={CalendarClock} />
+              <DetailSectionHeading title={t('leads.dates')} icon={CalendarClock} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="Created"
+                  label={t('leads.created')}
                   value={formatDateTime(lead.createdAt)}
                   icon={CalendarPlus}
                 />
                 <DetailFieldRow
-                  label="Updated"
+                  label={t('leads.updated')}
                   value={formatDateTime(lead.updatedAt)}
                   icon={RefreshCw}
                 />
                 <DetailFieldRow
-                  label="Last contact"
+                  label={t('leads.lastContact')}
                   value={formatDate(lead.lastContactDate)}
                   icon={Clock}
                 />
                 <DetailFieldRow
-                  label="Next follow-up"
+                  label={t('leads.nextFollowUp')}
                   value={formatDate(lead.nextFollowUpDate)}
                   icon={CalendarCheck2}
                 />
@@ -1293,7 +1285,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Last commercial snapshot" icon={TrendingUp} />
+                  <DetailSectionHeading title={t('leads.commercialSnapshot')} icon={TrendingUp} />
                   <p className="mb-3 text-sm text-foreground">
                     {commercialSnapshotHeadline(commercialSnapshot)}
                   </p>
@@ -1302,7 +1294,7 @@ export function LeadDetailDialog({
                   ) : null}
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
                     <DetailFieldRow
-                      label="Call score"
+                      label={t('leads.callScore')}
                       value={
                         commercialSnapshot.scoreOverall != null
                           ? String(commercialSnapshot.scoreOverall)
@@ -1311,17 +1303,17 @@ export function LeadDetailDialog({
                       icon={Target}
                     />
                     <DetailFieldRow
-                      label="Quality conversation"
+                      label={t('leads.qualityConversation')}
                       value={commercialSnapshot.qualityConversation ? 'Yes' : 'No'}
                       icon={Phone}
                     />
                     <DetailFieldRow
-                      label="BOQ asked"
+                      label={t('leads.boqAsked')}
                       value={commercialSnapshot.boqRequested ? 'Yes' : 'No'}
                       icon={ClipboardList}
                     />
                     <DetailFieldRow
-                      label="Follow-up booked"
+                      label={t('leads.followUpBooked')}
                       value={commercialSnapshot.followUpBooked ? 'Yes' : 'No'}
                       icon={CalendarCheck2}
                     />
@@ -1329,7 +1321,7 @@ export function LeadDetailDialog({
                   {commercialSnapshot.missedOpportunity &&
                   commercialSnapshot.missedOpportunities?.[0] ? (
                     <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                      <p className="font-medium">Missed pursuit</p>
+                      <p className="font-medium">{t('leads.missedPursuit')}</p>
                       <p className="mt-1">
                         Customer: {commercialSnapshot.missedOpportunities[0].customerQuote}
                       </p>
@@ -1356,16 +1348,16 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Next action" icon={Activity} />
+                  <DetailSectionHeading title={t('leads.nextAction')} icon={Activity} />
                   <dl className={DETAIL_FIELD_GRID_CLASS}>
                     <DetailFieldRow
-                      label="Next follow-up"
+                      label={t('leads.nextFollowUp')}
                       value={formatDate(lead.nextFollowUpDate)}
                       icon={CalendarCheck2}
                     />
                     {lead.totalInteractions != null && (
                       <DetailFieldRow
-                        label="Logged interactions"
+                        label={t('leads.loggedInteractions')}
                         value={lead.totalInteractions}
                         icon={MessageSquare}
                       />
@@ -1376,12 +1368,12 @@ export function LeadDetailDialog({
             )}
             <Separator />
             <div>
-              <DetailSectionHeading title="Company calls" icon={Phone} />
+              <DetailSectionHeading title={t('leads.companyCalls')} icon={Phone} />
               {leadCallsQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading company calls…</p>
+                <p className="text-sm text-muted-foreground">{t('leads.loadingCompanyCalls')}</p>
               ) : (leadCallsQuery.data?.data ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No company-line calls matched this lead's phone yet.
+                  {t('leads.noCompanyCalls')}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -1430,11 +1422,11 @@ export function LeadDetailDialog({
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="History" icon={History} />
+              <DetailSectionHeading title={t('leads.history')} icon={History} />
               {loadingAudit ? (
-                <p className="text-sm text-muted-foreground">Loading activity…</p>
+                <p className="text-sm text-muted-foreground">{t('leads.loadingActivity')}</p>
               ) : leadAuditLogEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
+                <p className="text-sm text-muted-foreground">{t('leads.noActivity')}</p>
               ) : (
                 <div className="max-h-[min(280px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden pr-1 scroll-py-1">
                   <ul className="flex flex-col gap-3">
@@ -1451,10 +1443,10 @@ export function LeadDetailDialog({
             </div>
             <Separator />
             <div>
-              <DetailSectionHeading title="People" icon={Users} />
+              <DetailSectionHeading title={t('leads.people')} icon={Users} />
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
-                  label="Owner"
+                  label={t('leads.owner')}
                   icon={UserCircle}
                   value={
                     lead.owner ? (
@@ -1488,7 +1480,7 @@ export function LeadDetailDialog({
                 />
                 {lead.assignees && lead.assignees.length > 0 ? (
                   <DetailFieldRow
-                    label="Assignees"
+                    label={t('leads.assignees')}
                     icon={Users}
                     value={
                       <ul className="list-inside list-disc font-medium">
@@ -1501,7 +1493,7 @@ export function LeadDetailDialog({
                     }
                   />
                 ) : (
-                  <DetailFieldRow label="Assignees" value="-" icon={Users} />
+                  <DetailFieldRow label={t('leads.assignees')} value="-" icon={Users} />
                 )}
               </dl>
             </div>
@@ -1509,7 +1501,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Notes" icon={StickyNote} />
+                  <DetailSectionHeading title={t('leads.notes')} icon={StickyNote} />
                   <p className="whitespace-pre-wrap text-muted-foreground">
                     {lead.notes.trim()}
                   </p>
@@ -1520,7 +1512,7 @@ export function LeadDetailDialog({
               <>
                 <Separator />
                 <div>
-                  <DetailSectionHeading title="Attachments" icon={Paperclip} />
+                  <DetailSectionHeading title={t('leads.attachments')} icon={Paperclip} />
                   <ul className="space-y-1">
                     {lead.attachments.map((url, i) => (
                       <li key={i}>
@@ -1542,11 +1534,11 @@ export function LeadDetailDialog({
           </div>
 
           <div className="shrink-0 border-t bg-background pt-3 mt-4 -mx-6 px-6 pb-1">
-            <p className="font-semibold text-sm mb-2">Change status</p>
+            <p className="font-semibold text-sm mb-2">{t('leads.changeStatus')}</p>
             <div
               className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2"
               role="toolbar"
-              aria-label="Lead actions"
+              aria-label={t('leads.leadActions')}
             >
               <Button
                 variant="outline"
@@ -1554,9 +1546,7 @@ export function LeadDetailDialog({
                 className="rounded-full shrink-0 border-destructive/60 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => setDeleteConfirmOpen(true)}
                 disabled={!leadUid}
-              >
-                Delete
-              </Button>
+              >{t('actions.delete')}</Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1567,7 +1557,7 @@ export function LeadDetailDialog({
                 {updateMutation.isPending && !isConverted ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : (
-                  'Convert to client'
+                  t('leads.convertToClient')
                 )}
               </Button>
               {LEAD_STATUS_OPTIONS_FOR_DIALOG.map((opt) => (
@@ -1598,9 +1588,7 @@ export function LeadDetailDialog({
                   isConverted ||
                   updateMutation.isPending
                 }
-              >
-                Discard this lead
-              </Button>
+              >{t('leads.discardThisLead')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -1628,7 +1616,7 @@ export function LeadDetailDialog({
             <DetailDialogCloseButton />
           </div>
           <DialogHeader className="pr-24">
-            <DialogTitle>Edit lead</DialogTitle>
+            <DialogTitle>{t('leads.editLead')}</DialogTitle>
             <DialogDescription>
               Update lead details. At least one of name, email, or phone is required.
             </DialogDescription>
@@ -1672,9 +1660,7 @@ export function LeadDetailDialog({
               className="rounded-full"
               onClick={() => setEditOpen(false)}
               disabled={leadDetailQuery.isPending}
-            >
-              Cancel
-            </Button>
+            >{t('actions.cancel')}</Button>
             <Button
               variant="success"
               className="rounded-full"
@@ -1688,7 +1674,7 @@ export function LeadDetailDialog({
               {updateMutation.isPending ? (
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
-                'Save'
+                t('actions.save')
               )}
             </Button>
           </DialogFooter>
@@ -1699,16 +1685,13 @@ export function LeadDetailDialog({
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete lead?</AlertDialogTitle>
+            <AlertDialogTitle>{t('leads.deleteLead')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will soft-delete the lead. You can restore it later if
-              needed.
+              {t('leads.deleteLeadDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={handleDelete}
@@ -1727,16 +1710,13 @@ export function LeadDetailDialog({
       <AlertDialog open={discardConfirmOpen} onOpenChange={setDiscardConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard this lead?</AlertDialogTitle>
+            <AlertDialogTitle>{t('leads.discardTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              The lead will be marked as discarded. You can reactivate it later from
-              this dialog, like declined or cancelled leads.
+              {t('leads.discardDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={updateMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={updateMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <Button
               variant="destructive"
               className="rounded-full"
@@ -1746,7 +1726,7 @@ export function LeadDetailDialog({
               {updateMutation.isPending ? (
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
-                'Discard lead'
+                t('leads.discardLead')
               )}
             </Button>
           </AlertDialogFooter>
@@ -1773,21 +1753,21 @@ export function LeadDetailDialog({
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
-              <Label htmlFor="status-reason">Reason (optional)</Label>
+              <Label htmlFor="status-reason">{t('leads.reasonOptional')}</Label>
               <Input
                 id="status-reason"
                 value={statusChangeReason}
                 onChange={(e) => setStatusChangeReason(e.target.value)}
-                placeholder="e.g. Customer requested callback"
+                placeholder={t('leads.reasonPlaceholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="status-description">Description (optional)</Label>
+              <Label htmlFor="status-description">{t('leads.descriptionOptional')}</Label>
               <Textarea
                 id="status-description"
                 value={statusChangeDescription}
                 onChange={(e) => setStatusChangeDescription(e.target.value)}
-                placeholder="Additional notes"
+                placeholder={t('leads.notesPlaceholder')}
                 rows={6}
                 className="min-h-[120px] resize-y rounded-md"
               />
@@ -1798,9 +1778,7 @@ export function LeadDetailDialog({
               variant="cancel"
               className="rounded-full"
               onClick={() => setStatusChangeOpen(false)}
-            >
-              Cancel
-            </Button>
+            >{t('actions.cancel')}</Button>
             <Button
               variant="success"
               className="rounded-full"
@@ -1822,8 +1800,8 @@ export function LeadDetailDialog({
         onOpenChange={setEndCallOpen}
         activeVisit={endCallActiveVisit}
         initialFormValues={endCallInitialForm}
-        title="End call"
-        description="Add call notes and outcomes."
+        title={t('leads.endCallTitle')}
+        description={t('leads.endCallDescription')}
         submitLabel="End call"
         successMessage="Call ended"
         onSuccess={() => {

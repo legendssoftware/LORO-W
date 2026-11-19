@@ -31,12 +31,15 @@ import {
   PerformancePieChartCard,
 } from './components/performance-charts';
 import { PerformanceStoreYtdChart } from './components/performance-store-ytd-chart';
+import { PerformanceSalesPaceChart } from './components/performance-sales-pace-chart';
 import { PerformanceSalesPerStoreTable } from './components/performance-sales-per-store-table';
 import { PerformanceDailySalesTable } from './components/performance-daily-sales-table';
 import { PerformanceBranchCategoryTable } from './components/performance-branch-category-table';
 import { PerformanceConsolidatedStatement } from './components/performance-consolidated-statement';
+import { useTranslation } from 'react-i18next';
 
 export function PerformanceContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData, isSyncing } = useSessionSync();
   const queryClient = useQueryClient();
@@ -51,6 +54,7 @@ export function PerformanceContent() {
   } = usePerformanceFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showConsolidatedView, setShowConsolidatedView] = useState(false);
+  const paceSkipCacheRef = useRef(false);
   const cachedOnOpen = useRef<boolean | null>(null);
   if (hydrated && cachedOnOpen.current === null) {
     cachedOnOpen.current = Boolean(
@@ -84,6 +88,7 @@ export function PerformanceContent() {
 
   useEffect(() => {
     if (skipCache && dashboardQuery.isSuccess && dashboardQuery.data) {
+      paceSkipCacheRef.current = false;
       queryClient.setQueryData(
         performanceQueryKeys.dashboard(filters, false),
         dashboardQuery.data
@@ -106,9 +111,9 @@ export function PerformanceContent() {
     return (
       <div className={appPageScrollWrapClass}>
         <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
-          <h1 className="text-xl font-semibold">Performance Tracker</h1>
+          <h1 className="text-xl font-semibold">{t('pages.performance.title')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You do not have access to sales performance tracking.
+            {t('pages.performance.denied')}
           </p>
         </main>
       </div>
@@ -126,12 +131,12 @@ export function PerformanceContent() {
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col gap-4')}>
         <div className="mb-1 flex shrink-0 flex-col gap-1" data-tour="performance-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            {showConsolidatedView ? 'Consolidated Statement' : 'Performance Tracker'}
+            {showConsolidatedView ? t('pages.performance.consolidated') : t('pages.performance.title')}
           </h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
             {showConsolidatedView
-              ? 'Sales data across all countries and branches'
-              : 'Analytics and insights dashboard'}
+              ? t('pages.performance.consolidatedSubtitle')
+              : t('pages.performance.subtitle')}
           </p>
         </div>
 
@@ -144,6 +149,7 @@ export function PerformanceContent() {
           onToggleFilters={() => setFiltersOpen(true)}
           onToggleConsolidatedView={() => setShowConsolidatedView((v) => !v)}
           onRefresh={() => {
+            paceSkipCacheRef.current = true;
             setSkipCache(true);
             void queryClient.invalidateQueries({ queryKey: performanceQueryKeys.all });
             void queryClient.invalidateQueries({
@@ -214,11 +220,13 @@ export function PerformanceContent() {
             ) : null}
             </div>
 
+            <PerformanceSalesPaceChart filters={filters} skipCacheRef={paceSkipCacheRef} />
+
             <div className="grid min-w-0 gap-4 lg:grid-cols-2" data-tour="performance-charts">
               {charts?.salesByCategory?.data?.length ? (
                 <PerformancePieChartCard
-                  title="Sales by Category"
-                  description="Revenue distribution across product categories"
+                  title={t('pages.performance.salesByCategory')}
+                  description={t('pages.performance.salesByCategoryHint')}
                   data={charts.salesByCategory.data}
                   currency={currency}
                 />
@@ -226,16 +234,16 @@ export function PerformanceContent() {
 
               {charts?.branchPerformance?.data?.length ? (
                 <PerformanceBarChartCard
-                  title="Top Branch Performance"
-                  description="Revenue by branch"
+                  title={t('pages.performance.topBranch')}
+                  description={t('pages.performance.topBranchHint')}
                   data={charts.branchPerformance.data}
                 />
               ) : null}
 
               {charts?.customerComposition?.data?.length ? (
                 <PerformancePieChartCard
-                  title="Payment Methods"
-                  description="Sales distribution by payment type"
+                  title={t('pages.performance.paymentMethods')}
+                  description={t('pages.performance.paymentMethodsHint')}
                   data={charts.customerComposition.data}
                   currency={currency}
                 />
@@ -243,8 +251,8 @@ export function PerformanceContent() {
 
               {charts?.topProducts?.data?.length ? (
                 <PerformanceBarChartCard
-                  title="Sales Per Product"
-                  description="Total amounts sold by product"
+                  title={t('pages.performance.salesPerProduct')}
+                  description={t('pages.performance.salesPerProductHint')}
                   data={charts.topProducts.data}
                   fill={ATT_CHART_HSL.c1}
                 />
@@ -252,8 +260,8 @@ export function PerformanceContent() {
 
               {salespersonBars.length > 0 ? (
                 <PerformanceBarChartCard
-                  title="Sales Per Salesperson"
-                  description="Total sales amounts by salesperson"
+                  title={t('pages.performance.salesPerPerson')}
+                  description={t('pages.performance.salesPerPersonHint')}
                   data={salespersonBars}
                   fill={ATT_CHART_HSL.c3}
                 />
@@ -261,16 +269,16 @@ export function PerformanceContent() {
 
               {charts?.hourlySales?.data?.length ? (
                 <PerformanceAreaChartCard
-                  title="Hourly Sales Pattern"
-                  description="Sales figures per hour (07:00 - 17:00)"
+                  title={t('pages.performance.hourly')}
+                  description={t('pages.performance.hourlyHint')}
                   data={charts.hourlySales.data}
                 />
               ) : null}
 
               {charts?.gpTrend?.data?.length ? (
                 <PerformanceAreaChartCard
-                  title="Gross Profit Trend"
-                  description="Gross profit over time"
+                  title={t('pages.performance.gpTrend')}
+                  description={t('pages.performance.gpTrendHint')}
                   data={charts.gpTrend.data}
                 />
               ) : null}

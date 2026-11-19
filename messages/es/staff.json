@@ -1,0 +1,7 @@
+{
+  "title": "Equipo",
+  "subtitle": "Consulta y gestiona la asistencia y la actividad del equipo.",
+  "pendingLinks": "Enlaces de alta pendientes",
+  "pendingLinksHint": "Personas a las que se envió un enlace de alta y que aún no lo han terminado.",
+  "empty": "No hay equipo para mostrar. Comprueba que tienes acceso."
+}

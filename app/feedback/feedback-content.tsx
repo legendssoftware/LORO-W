@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { CircleDot, MessageSquare } from 'lucide-react';
 import { useSessionSync, useTokenReady } from '@/api/hooks';
 import { useFeedbackInbox, useFeedbackStats, useUpdateFeedbackMutation } from '@/api/hooks/use-feedback';
 import { FeatureDenied, FeatureShell } from '@/components/feature-page';
@@ -12,10 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { canAccessFeedback } from '@/lib/access';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const chartConfig = { value: { label: 'Items', color: 'var(--chart-2)' } } satisfies ChartConfig;
 
 export function FeedbackContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: isLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !isLoading;
@@ -24,21 +27,30 @@ export function FeedbackContent() {
   const stats = useFeedbackStats(backendUserData?.organisation?.ref ?? backendUserData?.uid, { enabled: ready });
   const update = useUpdateFeedbackMutation();
   const rows = list.data ?? [];
-  const chart = (stats.data?.byStatus ?? []).map((item) => ({ name: item.name, value: item.value }));
+  const byStatus = stats.data?.byStatus;
+  const chart = Array.isArray(byStatus)
+    ? byStatus.map((item) => ({ name: item.name, value: item.value }))
+    : Object.entries(byStatus ?? {}).map(([name, value]) => ({ name, value: Number(value) || 0 }));
 
-  if (ready && !canAccessFeedback(backendUserData?.accessLevel)) return <FeatureDenied title="Feedback" />;
+  if (ready && !canAccessFeedback(backendUserData?.accessLevel)) return <FeatureDenied title={t('pages.feedback.title')} />;
 
   return (
     <FeatureShell
       tourId="feedback"
-      title="Feedback"
-      description="Inbox, counts, and status updates. Token expiry stays on Settings."
+      title={t('pages.feedback.title')}
+      description={t('pages.feedback.description')}
       filters={
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[180px]">
+            <CircleDot className="size-4 text-muted-foreground" aria-hidden />
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
           <SelectContent>
             {['all', 'NEW', 'IN_REVIEW', 'RESOLVED', 'CLOSED'].map((item) => (
-              <SelectItem key={item} value={item}>{item === 'all' ? 'All statuses' : item}</SelectItem>
+              <SelectItem key={item} value={item}>
+                <CircleDot className="size-4" aria-hidden />
+                {item === 'all' ? 'All statuses' : item}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -62,13 +74,18 @@ export function FeedbackContent() {
         </ChartContainer>
       ) : null}
       <Table>
-        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Status</TableHead><TableHead /></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t('tables.title')}</TableHead><TableHead>{t('tables.status')}</TableHead><TableHead /></TableRow></TableHeader>
         <TableBody>
           {rows.map((row) => {
             const id = row.uid ?? row.id ?? 0;
             return (
               <TableRow key={id}>
-                <TableCell>{row.title ?? row.comments ?? 'Feedback'}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="size-4 text-muted-foreground" aria-hidden />
+                    {row.title ?? row.comments ?? 'Feedback'}
+                  </span>
+                </TableCell>
                 <TableCell>{row.status ?? '—'}</TableCell>
                 <TableCell>
                   <Button type="button" size="sm" variant="outline" onClick={() => {

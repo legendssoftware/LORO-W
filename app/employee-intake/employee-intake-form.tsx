@@ -33,6 +33,7 @@ import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
 import { EmployeeIntakeSteps } from './employee-intake-steps';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const TOTAL_STEPS = EMPLOYEE_INTAKE_STEP_LABELS.length;
 const DRAFT_SAVE_DEBOUNCE_MS = 400;
@@ -64,6 +65,7 @@ function firstErrorMessage(errors: FieldErrors): string | null {
 }
 
 export function EmployeeIntakeForm() {
+  const { t } = useTranslation('screens');
   const searchParams = useSearchParams();
   const token = searchParams.get('token')?.trim() ?? '';
 
@@ -265,7 +267,7 @@ export function EmployeeIntakeForm() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center" aria-busy="true" aria-live="polite">
         <LoadingSpinner />
-        <span className="sr-only">Loading intake form</span>
+        <span className="sr-only">{t('pages.intake.loading')}</span>
       </div>
     );
   }
@@ -273,10 +275,10 @@ export function EmployeeIntakeForm() {
   if (loadError) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center" role="status">
-        <h1 className="text-xl font-semibold text-foreground">Unable to open form</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t('pages.intake.unable')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
         <Button asChild className="mt-6" variant="outline">
-          <Link href="/sign-in">Go to sign in</Link>
+          <Link href="/sign-in">{t('pages.intake.goSignIn')}</Link>
         </Button>
       </div>
     );
@@ -285,11 +287,9 @@ export function EmployeeIntakeForm() {
   if (completed) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center" role="status">
-        <h1 className="text-xl font-semibold text-foreground">Profile submitted</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t('pages.intake.submitted')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          We saved the profile for <strong>{completed.email}</strong>. A manager will review it
-          on the phone. You will get an email when you can sign in — please wait for that
-          approval.
+          {t('pages.intake.submittedBody', { email: completed.email })}
         </p>
       </div>
     );
@@ -301,7 +301,7 @@ export function EmployeeIntakeForm() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Employee profile</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('pages.intake.profile')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {metadata?.organisationName} · {metadata?.branchName}
         </p>

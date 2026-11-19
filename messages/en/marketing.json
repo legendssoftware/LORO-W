@@ -1,0 +1,195 @@
+{
+  "about": {
+    "title": "About LORO",
+    "lead": "LORO is field sales software built for South African B2B teams—visits, routes, pipeline, maps, and ERP-ready ordering in one platform.",
+    "replaceSpreadsheets": "We help manufacturers, wholesalers, and distributors replace spreadsheet chaos with visit proof, manager dashboards, and mobile workflows reps actually use on the road.",
+    "connectsPrefix": "From",
+    "visitTracking": "visit tracking",
+    "connectsMiddle": "to",
+    "competitorMapping": "competitor mapping",
+    "connectsSuffix": ", LORO connects field activity to revenue—not admin for its own sake.",
+    "workforce": "Optional workforce modules (attendance, leave) sit alongside field sales for teams that want one login for ops and people."
+  },
+  "pricing": {
+    "title": "Pricing",
+    "lead": "Flexible field sales software for teams in South Africa—scale users and branches as you grow.",
+    "growing": {
+      "title": "Growing teams",
+      "body": "Core field sales: visits, pipeline, planning, clients, and mobile app access.",
+      "perUser": "Per-user licensing",
+      "branchRoles": "Branch and role setup",
+      "support": "Standard support"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "body": "Multi-branch rollout, ERP integration, IoT, and advanced reporting.",
+      "onboarding": "Dedicated onboarding",
+      "erpReview": "ERP and integration review",
+      "targets": "Custom targets and exports"
+    },
+    "footnote": "Contact your LORO partner or sign up to discuss rollout for your field team. Published pricing varies by organisation size and modules."
+  },
+  "customers": {
+    "title": "Customers",
+    "lead": "South African businesses use LORO to run field sales with less admin and clearer accountability.",
+    "distributors": {
+      "title": "Field-first distributors",
+      "body": "Teams use LORO for daily visit proof, pipeline targets, and map-based reviews instead of weekly spreadsheet merges."
+    },
+    "dashboard": {
+      "title": "Managers with one dashboard",
+      "body": "Leaders see visits, leads, and period progress without chasing reps on WhatsApp for updates."
+    },
+    "erp": {
+      "title": "ERP-aligned ordering",
+      "body": "B2B store and order flows respect customer and product master data finance already trusts."
+    },
+    "footnote": "Case studies with named logos are added as customers approve publication. Request a reference walkthrough via sign-up."
+  },
+  "blog": {
+    "titleLead": "Field sales ",
+    "titleEmphasis": "blog",
+    "subtitle": "Guides for South African field sales managers and reps.",
+    "back": "← Blog"
+  },
+  "platform": {
+    "erp": "In-house ERP built in and integrated—products, customers, orders, and B2B store flows in one stack. Optional Sage, Acumatica, and SAP bridges for mixed finance stacks.",
+    "saas": "Cloud-based SaaS with Clerk authentication and organisation-scoped access for reps and managers."
+  },
+  "compare": {
+    "topic": "Topic",
+    "capability": "Capability",
+    "repsly": {
+      "title": "LORO vs Repsly",
+      "lead": "Factual comparison for teams evaluating retail execution and field sales platforms.",
+      "focus": "Primary focus",
+      "loroFocus": "SA B2B field sales, visits, pipeline, ERP orders",
+      "repslyFocus": "CPG retail execution, shelf & promo programmes",
+      "region": "Region",
+      "loroRegion": "South Africa-first",
+      "repslyRegion": "Global CPG brands",
+      "differentiator": "Differentiator",
+      "loroDiff": "Competitor map intel + optional workforce modules",
+      "repslyDiff": "Image recognition & in-store execution depth",
+      "erp": "ERP",
+      "repslyErp": "Retail execution focus; ERP via integrations",
+      "platform": "Platform",
+      "repslyPlatform": "Cloud SaaS; global CPG programmes",
+      "footnote": "Choose Repsly when shelf analytics and CPG programmes dominate. Choose LORO when B2B visits, pipeline, and SA ERP-aligned field sales are the priority."
+    },
+    "skynamo": {
+      "title": "LORO vs Skynamo",
+      "lead": "Both serve South African field sales—compare fit for your ERP, team size, and modules.",
+      "positioning": "Positioning",
+      "loroPosition": "Field sales + pipeline + competitor maps + optional HR",
+      "skynamoPosition": "Unified sales channels, mobile ordering, RADAR AI",
+      "erp": "ERP",
+      "skynamoErp": "Strong Sage/Acumatica/SAP marketing",
+      "platform": "Platform",
+      "skynamoPlatform": "Cloud SaaS; vendor-managed auth",
+      "bestFor": "Best for",
+      "loroBest": "Visit proof, competitor maps, optional workforce",
+      "skynamoBest": "Broad channel unification + RADAR",
+      "footnote": "Run a parallel pilot on visits and pipeline before migrating ERP interfaces."
+    },
+    "zoho": {
+      "title": "LORO vs Zoho CRM",
+      "lead": "Zoho CRM is a broad AI CRM suite; LORO is purpose-built for outside sales execution in South Africa.",
+      "visitProof": "Visit proof & field evidence",
+      "loroVisit": "Core workflow",
+      "zohoVisit": "Requires configuration / add-ons",
+      "routePlanning": "Route planning",
+      "loroRoutes": "Native planning + maps",
+      "zohoRoutes": "RouteIQ or third-party maps",
+      "competitorMapping": "Competitor mapping",
+      "loroCompetitor": "Built-in",
+      "zohoCompetitor": "Custom modules typical",
+      "erp": "ERP",
+      "zohoErp": "CRM-centric; ERP via Zoho ecosystem",
+      "platform": "Platform",
+      "zohoPlatform": "Cloud SaaS; Zoho account model",
+      "ecosystem": "Ecosystem",
+      "loroEcosystem": "Focused field sales + integrated ERP",
+      "zohoEcosystem": "Large Zoho app suite",
+      "footnote": "Choose Zoho when you need a general CRM across the whole business. Choose LORO when field visits, routes, and SA B2B execution are the bottleneck."
+    }
+  },
+  "integrations": {
+    "title": "ERP integrations",
+    "lead": "Connect LORO field sales to the systems that hold customers, products, and orders—so reps sell with live data on the road.",
+    "sageBlurb": "Popular in South African SMB and mid-market finance stacks.",
+    "acumaticaBlurb": "Cloud ERP context for field quotes and orders.",
+    "sapBlurb": "Enterprise product and account data for large field teams.",
+    "sage": {
+      "title": "Sage + LORO field sales",
+      "lead": "Align Sage ERP or accounting data with visits, pipeline, and B2B orders your reps capture in the field.",
+      "finance": "South African teams often run Sage for finance while reps still quote from outdated lists. LORO brings customer and product context into visit and order workflows so field and finance share one story.",
+      "hubPrefix": "Roll out visits and pipeline first, then connect ordering flows with your integration partner. See the full",
+      "hubLink": "integrations hub",
+      "hubSuffix": "."
+    },
+    "sap": {
+      "title": "SAP + LORO field operations",
+      "lead": "Enterprise field programmes with SAP-backed master data and LORO visit, pipeline, and map execution.",
+      "governed": "Large field teams need governed product and account data with fast mobile UX. LORO layers visit tracking, route planning, and manager dashboards on top of your SAP rollout patterns.",
+      "engage": "Engage your integration team early for customer, material, and order interfaces scoped to your landscape."
+    },
+    "acumatica": {
+      "title": "Acumatica + LORO",
+      "lead": "Cloud ERP inventory and customers available where reps plan routes and close orders.",
+      "proof": "Acumatica teams gain field visit proof and pipeline visibility without forcing reps into desktop ERP screens at every stop.",
+      "execution": "LORO focuses on execution—visits, maps, competitor context, and mobile ordering—while your ERP remains the system of record."
+    }
+  },
+  "solutions": {
+    "competitor": {
+      "title": "Competitor intelligence on a map",
+      "lead": "Track rival accounts beside your clients—threat levels, locations, and context for sharper field debriefs.",
+      "landscape": "Reps and managers see competitive landscape geographically, not in scattered spreadsheets.",
+      "afterSignIn": "After sign-in, use the map visualiser for live field layers, visit filters, and influence views alongside client accounts."
+    },
+    "visits": {
+      "title": "Visit tracking software",
+      "lead": "Prove field work with check-ins, notes, quotes, and outcomes tied to each customer account.",
+      "managers": "Managers see which accounts were visited, what was discussed, and what happened next—without disputed activity logs.",
+      "feeds": "Visits feed pipeline and reports so coaching uses the same data reps entered on site."
+    },
+    "workforce": {
+      "title": "Workforce & attendance",
+      "lead": "Optional HR modules alongside field sales—attendance, leave, and payroll signals under the same LORO login.",
+      "prefix": "Primary positioning remains",
+      "fieldSales": "field sales",
+      "suffix": "; workforce tools suit teams that want ops and people data together.",
+      "localSupport": "South African teams benefit from local support across both field and HR workflows where enabled."
+    },
+    "routes": {
+      "title": "Route planning for field sales",
+      "lead": "Tasks, daily routes, reminders, and maps—built from visits, leads, and pipeline priorities.",
+      "driving": "Reps spend less time driving between low-value stops and more time with accounts that move revenue.",
+      "prefix": "Planning connects to",
+      "visitTracking": "visit tracking",
+      "suffix": " so planned vs completed routes are visible to leaders."
+    },
+    "fieldSales": {
+      "title": "Field sales software",
+      "lead": "One platform for South African B2B field teams: mobile reps, office managers, and ERP-aligned orders.",
+      "repsTitle": "For reps on the road",
+      "repsBody": "Plan the day, log visits with evidence, update leads, and place orders from a fat-finger-friendly mobile experience with resilient sync.",
+      "managersTitle": "For sales managers",
+      "managersBody": "Pipeline targets, visit coverage, and map visualisation—know who hit which accounts without end-of-week email chases.",
+      "modulesTitle": "Modules that connect",
+      "visitTracking": "Visit tracking",
+      "routePlanning": "Route planning",
+      "pipeline": "Pipeline",
+      "erp": "ERP integrations"
+    },
+    "pipeline": {
+      "title": "Sales pipeline for field teams",
+      "lead": "Leads, period targets, converted wins, and visit outcomes on one screen.",
+      "slides": "Field managers stop rebuilding Friday slides—quota progress and next actions live in LORO alongside CRM-style lead stages.",
+      "prefix": "Pair pipeline with",
+      "fieldSales": "field sales",
+      "suffix": " modules for a complete outside-sales stack."
+    }
+  }
+}

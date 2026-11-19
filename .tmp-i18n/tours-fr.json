@@ -1,0 +1,692 @@
+{
+  "leave": {
+    "header": {
+      "title": "Congés",
+      "description": "Demandez du temps libre, filtrez la boîte de réception, et approuvez, refusez ou annulez une demande."
+    },
+    "actions": {
+      "title": "Demander un congé",
+      "description": "Cliquez sur Demander un congé. Choisissez le type, les dates, puis envoyez pour décision."
+    },
+    "filters": {
+      "title": "Filtrer la boîte de réception",
+      "description": "Restreignez par statut, personne et période. Vos propres demandes restent visibles lorsque vous ne voyez que vos congés."
+    },
+    "content": {
+      "title": "Ouvrir une demande",
+      "description": "Le graphique compte les demandes par statut. Cliquez sur une ligne pour l’approuver, la refuser ou l’annuler."
+    }
+  },
+  "warnings": {
+    "header": {
+      "title": "Avertissements",
+      "description": "Avertissements de l’organisation. Un avertissement créé sur un profil collaborateur apparaît aussi ici."
+    },
+    "actions": {
+      "title": "Émettre un avertissement",
+      "description": "Cliquez sur Émettre un avertissement. Enregistrez la personne, le motif et le statut."
+    },
+    "filters": {
+      "title": "Filtrer par statut",
+      "description": "Affichez tous les avertissements, ou un seul statut."
+    },
+    "content": {
+      "title": "Examiner un avertissement",
+      "description": "Cliquez sur une ligne pour le lire ou le supprimer."
+    }
+  },
+  "documents": {
+    "header": {
+      "title": "Documents",
+      "description": "Listez, téléchargez et joignez des documents à une personne."
+    },
+    "actions": {
+      "title": "Joindre un document",
+      "description": "Cliquez sur Joindre un document. Téléversez le fichier et associez-le à une personne."
+    },
+    "filters": {
+      "title": "Filtrer par titre",
+      "description": "Saisissez une partie d’un titre pour raccourcir la liste."
+    },
+    "content": {
+      "title": "Télécharger un fichier",
+      "description": "Chaque ligne est un document. Téléchargez-le depuis la ligne."
+    }
+  },
+  "feedback": {
+    "header": {
+      "title": "Retours",
+      "description": "La boîte de réception, les compteurs par statut et les mises à jour. L’expiration du jeton reste dans Paramètres."
+    },
+    "filters": {
+      "title": "Filtrer par statut",
+      "description": "Affichez tous les retours, ou seulement Nouveau, En revue, Résolu ou Fermé."
+    },
+    "content": {
+      "title": "Résoudre un retour",
+      "description": "Le graphique compte chaque statut. Cliquez sur Résoudre sur une ligne pour le marquer comme résolu."
+    }
+  },
+  "geofences": {
+    "header": {
+      "title": "Géorepérages",
+      "description": "Créez des zones et examinez les événements d’entrée. Les mêmes zones s’affichent dans Vue de la concurrence."
+    },
+    "actions": {
+      "title": "Nouvelle zone",
+      "description": "Cliquez sur Nouvelle zone. Définissez le nom, la latitude, la longitude et le rayon en mètres."
+    },
+    "content": {
+      "title": "Ouvrir une zone",
+      "description": "Cliquez sur une ligne pour modifier la zone ou voir combien d’événements d’entrée elle a enregistrés."
+    }
+  },
+  "usage": {
+    "header": {
+      "title": "Utilisation",
+      "description": "Analyses, synthèses et utilisation des licences. Le serveur enregistre les événements lui-même."
+    },
+    "content": {
+      "title": "Consulter les 30 derniers jours",
+      "description": "Le graphique est le volume de requêtes. En dessous, la ligne de licence montre erreurs et quota, et la liste regroupe les requêtes par endpoint."
+    }
+  },
+  "products": {
+    "header": {
+      "title": "Produits",
+      "description": "Créez, modifiez, archivez, restaurez et examinez les prix du catalogue."
+    },
+    "actions": {
+      "title": "Nouveau produit",
+      "description": "Cliquez sur Nouveau produit. Saisissez le nom et le prix, puis enregistrez-le dans le catalogue."
+    },
+    "content": {
+      "title": "Modifier un produit",
+      "description": "Cliquez sur une ligne pour changer le nom ou le prix. Enregistrer les prix actuels écrit les prix affichés."
+    }
+  },
+  "news": {
+    "header": {
+      "title": "Actualités",
+      "description": "Annonces de l’organisation."
+    },
+    "actions": {
+      "title": "Nouvelle publication",
+      "description": "Cliquez sur Nouvelle publication. Rédigez le titre et l’annonce, puis enregistrez."
+    },
+    "content": {
+      "title": "Modifier une publication",
+      "description": "Cliquez sur une ligne pour modifier cette annonce."
+    }
+  },
+  "sales-tips": {
+    "header": {
+      "title": "Conseils de vente",
+      "description": "Modifiez le catalogue. L’accueil affiche toujours le conseil du jour."
+    },
+    "actions": {
+      "title": "Nouveau conseil",
+      "description": "Cliquez sur Nouveau conseil. Ajoutez un titre et le texte du conseil."
+    },
+    "content": {
+      "title": "Modifier un conseil",
+      "description": "Cliquez sur une ligne pour mettre à jour ce conseil."
+    }
+  },
+  "resellers": {
+    "header": {
+      "title": "Revendeurs",
+      "description": "Ajoutez, modifiez, archivez et restaurez des fiches revendeurs."
+    },
+    "actions": {
+      "title": "Nouveau revendeur",
+      "description": "Cliquez sur Nouveau revendeur. Commencez la fiche avec un nom, puis enregistrez les détails."
+    },
+    "content": {
+      "title": "Ouvrir un revendeur",
+      "description": "Cliquez sur une ligne pour modifier, archiver ou restaurer ce revendeur."
+    }
+  },
+  "rewards": {
+    "header": {
+      "title": "Récompenses",
+      "description": "Le classement XP et la position d’une personne."
+    },
+    "content": {
+      "title": "Lire le classement",
+      "description": "Le graphique est le haut du classement. La liste en dessous est l’XP de chaque personne."
+    }
+  },
+  "loyalty": {
+    "header": {
+      "title": "Fidélité",
+      "description": "Profils, catalogue de récompenses et historique des demandes."
+    },
+    "content": {
+      "title": "Ajouter et réclamer des récompenses",
+      "description": "Saisissez un nom de récompense et cliquez sur Ajouter une récompense. Réclamer utilise une récompense du catalogue. La ligne sous la liste est l’historique des transactions et des broadcasts."
+    }
+  },
+  "claims": {
+    "header": {
+      "title": "Notes de frais",
+      "description": "Soumettez des frais, joignez des reçus et suivez chaque note de l’approbation au paiement."
+    },
+    "summary": {
+      "title": "Totaux par étape",
+      "description": "Cliquez sur Total, En attente, Approuvé, Refusé ou Payé. La liste ci-dessous suit cette étape."
+    },
+    "toolbar": {
+      "title": "Rechercher, exporter et créer",
+      "description": "Filtrez par date, groupe, devise ou personne. Exporter télécharge un tableur. Nouvelle note démarre une soumission."
+    },
+    "folders": {
+      "title": "Dossiers de notes",
+      "description": "Cliquez sur un dossier pour n’afficher que les notes de ce groupe."
+    },
+    "list": {
+      "title": "Ouvrir une note",
+      "description": "Les notes sont regroupées. Cliquez-en une pour suivre le reçu, la décision et le paiement."
+    }
+  },
+  "iot": {
+    "header": {
+      "title": "Appareils IoT",
+      "description": "Matériel connecté et dispositifs d’accès, organisés par agence."
+    },
+    "toolbar": {
+      "title": "Filtrer les appareils",
+      "description": "Filtrez par statut, type ou agence, puis recherchez par id, étiquette ou emplacement."
+    },
+    "add": {
+      "title": "Ajouter un appareil",
+      "description": "Cliquez sur Ajouter un appareil. Enregistrez le matériel et l’agence à laquelle il appartient."
+    },
+    "grid": {
+      "title": "Ouvrir un appareil",
+      "description": "Cliquez sur une carte pour inspecter ou modifier cet appareil."
+    }
+  },
+  "approvals": {
+    "header": {
+      "title": "Approbations",
+      "description": "Examinez les demandes en attente, inspectez les formulaires d’intégration et approuvez ou refusez depuis le web."
+    },
+    "toolbar": {
+      "title": "Filtrer et déposer une demande",
+      "description": "Recherchez par titre ou référence, puis filtrez par statut ou type. Nouvelle demande dépose une demande générale. Mes demandes charge celles que vous avez soumises."
+    },
+    "list": {
+      "title": "Ouvrir une demande",
+      "description": "Cliquez sur une carte pour l’approuver ou la refuser. Les formulaires d’intégration s’ouvrent depuis la même carte."
+    }
+  },
+  "payslips": {
+    "header": {
+      "title": "Bulletins de paie",
+      "description": "Consultez et téléchargez vos bulletins de paie."
+    },
+    "import": {
+      "title": "Importer depuis le stockage",
+      "description": "Prévisualisez l’import du stockage, puis confirmez. Seules les personnes autorisées à importer des bulletins voient ceci."
+    },
+    "filters": {
+      "title": "Filtrer les bulletins",
+      "description": "La liste commence sur toute la période. Passez à une plage de dates ou un statut pour la restreindre."
+    },
+    "table": {
+      "title": "Voir ou télécharger",
+      "description": "Voir ouvre le bulletin. Télécharger enregistre le fichier. La taille de page sous le tableau définit combien de lignes se chargent."
+    }
+  },
+  "competitors": {
+    "header": {
+      "title": "Concurrents",
+      "description": "Suivez les rivaux, les niveaux de menace et les emplacements aux côtés de vos clients."
+    },
+    "toolbar": {
+      "title": "Filtrer et rechercher",
+      "description": "Filtrez par statut, direct ou indirect, et niveau de menace. Recherchez par nom."
+    },
+    "add": {
+      "title": "Ajouter un concurrent",
+      "description": "Cliquez sur Ajouter un concurrent, ou Importer pour apporter un tableur. Les deux aboutissent dans cette grille."
+    },
+    "grid": {
+      "title": "Ouvrir un concurrent",
+      "description": "Cliquez sur une carte pour la menace, l’emplacement, et modifier ou supprimer lorsque vous gérez la liste."
+    }
+  },
+  "takeoff": {
+    "header": {
+      "title": "Métré système",
+      "description": "Mesurez un plafond ou une cloison. Les quantités sont calculées sur le serveur, puis émises comme devis."
+    },
+    "create": {
+      "title": "Nouveau métré",
+      "description": "Cliquez sur Nouveau métré. Nommez le chantier et le client, puis ouvrez-le pour mesurer."
+    },
+    "list": {
+      "title": "Ouvrir un métré",
+      "description": "Cliquez sur une référence pour continuer à mesurer et émettre le devis. Le statut et le total restent sur cette ligne."
+    }
+  },
+  "deliveries": {
+    "header": {
+      "title": "Livraisons",
+      "description": "Assignez une commande de vente ERP ouverte à un chauffeur. La preuve de livraison signée apparaît ici une fois l’arrêt enregistré."
+    },
+    "toolbar": {
+      "title": "Filtrer les livraisons",
+      "description": "Filtrez par jour, statut, chauffeur ou recherche. La taille de page sous le tableau définit combien de lignes se chargent."
+    },
+    "assign": {
+      "title": "Assigner une livraison",
+      "description": "Cliquez sur Assigner une livraison. Choisissez une commande de vente ouverte et le chauffeur qui fera l’arrêt."
+    },
+    "list": {
+      "title": "Ouvrir une livraison",
+      "description": "Cliquez sur une ligne pour l’itinéraire, la note et la preuve de livraison signée."
+    }
+  },
+  "store-operations": {
+    "header": {
+      "title": "Opérations magasin",
+      "description": "Ouvertures d’agences en direct, listes de contrôle et inventaires dans tous les magasins."
+    },
+    "tabs": {
+      "title": "Vue d’ensemble et détails",
+      "description": "Vue d’ensemble est le tableau en direct. Détails est la liste plus longue magasin par magasin."
+    },
+    "filters": {
+      "title": "Restreindre les magasins",
+      "description": "Filtrez par pays, région et période. Fonctionnalités ouvre les outils supplémentaires d’opérations magasin."
+    },
+    "summary": {
+      "title": "Cliquez sur un total",
+      "description": "Chaque carte est une part de la journée : tous les magasins, ouverts à l’heure, en retard, manqués, fermés à l’heure, ou listes terminées. Cliquez-en une pour ne garder que ces magasins."
+    },
+    "stores": {
+      "title": "Statut du magasin",
+      "description": "Chaque ligne est l’ouverture et la liste de contrôle d’une agence en ce moment. Ouvrez-la pour la session de ce magasin."
+    }
+  },
+  "store": {
+    "header": {
+      "title": "Boutique",
+      "description": "Parcourez les produits, ajoutez-les au panier et soumettez un devis."
+    },
+    "toolbar": {
+      "title": "Recherche et panier",
+      "description": "Recherchez ou filtrez par catégorie. Le panier contient les lignes que vous enverrez comme devis."
+    },
+    "catalogue": {
+      "title": "Ajouter un produit",
+      "description": "Cliquez sur un produit pour l’ajouter au panier. Charger plus apporte la page suivante du catalogue."
+    }
+  },
+  "orders": {
+    "header": {
+      "title": "Commandes",
+      "description": "Suivez devis et commandes par statut."
+    },
+    "create": {
+      "title": "Nouvelle commande",
+      "description": "Cliquez sur Nouvelle commande. Cela ouvre la boutique pour préparer le prochain devis."
+    },
+    "board": {
+      "title": "Ouvrir une commande",
+      "description": "Les colonnes sont les statuts de devis et de commande. Cliquez sur une carte pour le détail."
+    }
+  },
+  "projects": {
+    "header": {
+      "title": "Projets",
+      "description": "Gérez vos projets, créez-en de nouveaux et suivez leur avancement."
+    },
+    "create": {
+      "title": "Créer un projet",
+      "description": "Cliquez sur Créer un projet. Nommez-le, puis il apparaît dans cette grille."
+    },
+    "filters": {
+      "title": "Filtrer les projets",
+      "description": "Recherchez par nom ou description, ou conservez un seul statut."
+    },
+    "grid": {
+      "title": "Ouvrir un projet",
+      "description": "Cliquez sur une carte pour l’avancement et le détail du projet."
+    }
+  },
+  "account": {
+    "header": {
+      "title": "Compte",
+      "description": "Le profil de votre entreprise, le crédit et les coordonnées."
+    },
+    "edit": {
+      "title": "Modifier le profil",
+      "description": "Cliquez sur Modifier le profil pour changer les détails de l’entreprise. Voir le profil revient aux cartes en lecture seule."
+    },
+    "profile": {
+      "title": "Aperçu de l’entreprise",
+      "description": "Nom, contact, adresse, limite de crédit et le commercial qui vous est assigné."
+    },
+    "details": {
+      "title": "Détails de l’entreprise",
+      "description": "Champs entreprise, contact et commerciaux. Modifier le profil transforme ceci en formulaire."
+    }
+  },
+  "visits": {
+    "header": {
+      "title": "Visites",
+      "description": "Examinez les visites déjà enregistrées. Les enregistrements notés sont sous Enregistrements d’appels."
+    },
+    "visit-action": {
+      "title": "Démarrer ou terminer une visite",
+      "description": "Cliquez sur Démarrer une visite et choisissez en personne ou téléphone. Pendant une visite, cliquez sur le Terminer la visite rouge pour ajouter des notes et le résultat."
+    },
+    "toolbar": {
+      "title": "Filtrer l’historique",
+      "description": "La période va du 1er de ce mois à aujourd’hui. Changez dates, région, type d’activité, collègue ou recherche. Démarrez ou terminez une visite depuis cette ligne."
+    },
+    "history-content": {
+      "title": "Liste ou carte",
+      "description": "Cliquez sur une ligne pour mettre à jour cette visite. Passez à la carte pour voir où les visites ont eu lieu."
+    }
+  },
+  "clients": {
+    "header": {
+      "title": "Clients",
+      "description": "Cliquez sur Ajouter un client pour enregistrer un client de l’organisation."
+    },
+    "toolbar": {
+      "title": "Filtrer et rechercher",
+      "description": "Filtrez par statut et catégorie. Recherchez par nom, e-mail ou téléphone. Cliquez sur X sur un filtre pour l’effacer."
+    },
+    "grid": {
+      "title": "Cartes clients",
+      "description": "Cliquez sur une carte pour la fiche complète. Cliquez sur Charger plus pour la page suivante."
+    }
+  },
+  "settings": {
+    "header": {
+      "title": "Paramètres",
+      "description": "Profil de l’organisation, apparence, horaires, agences, calendrier, scraping, avis, bannières et qualité d’appel."
+    },
+    "tab-nav": {
+      "title": "Sections",
+      "description": "Cliquez sur un onglet pour modifier cette section. Ce parcours reste sur l’onglet déjà ouvert."
+    },
+    "active-panel": {
+      "title": "Cette section",
+      "description": "Modifiez les champs de l’onglet ouvert. Rien n’est enregistré tant que vous n’avez pas cliqué sur Enregistrer les modifications."
+    },
+    "panel-actions": {
+      "title": "Enregistrer ou annuler",
+      "description": "Enregistrer les modifications conserve cette section. Annuler abandonne les modifications non enregistrées."
+    }
+  },
+  "leads": {
+    "header": {
+      "title": "Pistes",
+      "description": "Créez une piste, recherchez dans la liste et ouvrez une personne pour le suivi."
+    },
+    "create": {
+      "title": "Créer une piste",
+      "description": "Cliquez sur Créer une piste, remplissez le formulaire, et la nouvelle piste apparaît dans la liste."
+    },
+    "toolbar": {
+      "title": "Filtrer et rechercher",
+      "description": "La période commence sur ce mois. Changez dates, filtres ou recherche pour afficher un autre ensemble de pistes."
+    },
+    "import": {
+      "title": "Importer des pistes",
+      "description": "Cliquez sur Importer pour ajouter des pistes depuis un tableur ou Google Maps. Pour Maps, examinez les lieux et assignez des responsables avant qu’ils n’apparaissent dans cette liste."
+    },
+    "list": {
+      "title": "Liste des pistes",
+      "description": "Les pistes sont regroupées par responsable, ou Non assignées. Cliquez sur une personne pour la développer. Cliquez sur une piste pour l’ouvrir."
+    },
+    "expand": {
+      "title": "Développer un groupe",
+      "description": "Cliquez sur cette ligne. Toutes les pistes de ce groupe s’ouvrent en dessous."
+    },
+    "open": {
+      "title": "Ouvrir une piste",
+      "description": "Cliquez sur cette ligne. Le détail de la piste s’ouvre."
+    },
+    "detail": {
+      "title": "Détail de la piste",
+      "description": "Démarrez ou terminez un appel, écrivez sur WhatsApp, e-mail ou SMS, et lisez le score d’appel. Fermez la boîte de dialogue pour revenir à la liste."
+    }
+  },
+  "staff": {
+    "header": {
+      "title": "Équipe",
+      "description": "Voyez qui est présent ou absent aujourd’hui."
+    },
+    "add": {
+      "title": "Ajouter un collègue",
+      "description": "Ajouter un utilisateur crée un compte collaborateur. Envoyer le lien d’intégration leur permet de terminer l’onboarding eux-mêmes."
+    },
+    "toolbar": {
+      "title": "Filtrer et rechercher",
+      "description": "Filtrez par statut, rôle, effectif, agence ou pays. Recherchez par nom, e-mail ou ID RH."
+    },
+    "grid": {
+      "title": "Cartes collègues",
+      "description": "Cliquez sur une carte pour le détail de cette personne. Cliquez sur l’horloge, lorsqu’elle est affichée, pour l’historique de présence."
+    },
+    "travel": {
+      "title": "Rapport de déplacement",
+      "description": "Téléchargez le classeur Excel de cette personne ou un PDF jour par jour pour les dates choisies."
+    }
+  },
+  "planning": {
+    "header": {
+      "title": "Planification",
+      "description": "Tâches, travail du jour et itinéraires de la journée."
+    },
+    "create": {
+      "title": "Créer une tâche",
+      "description": "Cliquez sur Créer une tâche, remplissez et assignez. Elle apparaît dans Toutes les tâches."
+    },
+    "tabs": {
+      "title": "Toutes les tâches, Ma journée, Itinéraires",
+      "description": "Toutes les tâches est la liste complète. Ma journée est l’échéance du jour. Itinéraires est la journée terrain planifiée."
+    },
+    "reminders": {
+      "title": "Rappels",
+      "description": "Sur Toutes les tâches, voici l’échéance du jour, en retard et à venir. Ouvrez un élément pour le traiter."
+    },
+    "filters": {
+      "title": "Filtrer les tâches",
+      "description": "Définissez date, statut, priorité, assigné, client, agence, en retard uniquement ou recherche. La liste ci-dessous se met à jour."
+    },
+    "list": {
+      "title": "Liste des tâches",
+      "description": "Cliquez sur une tâche pour l’ouvrir et mettre à jour le statut ou les détails."
+    },
+    "pagination": {
+      "title": "Pages",
+      "description": "Changez le nombre de lignes par page, ou passez à la page suivante."
+    },
+    "routes": {
+      "title": "Itinéraires",
+      "description": "Choisissez le jour, cliquez sur Recalculer pour reconstruire les itinéraires, ou ouvrez Vue de la concurrence pour la carte."
+    }
+  },
+  "pipeline": {
+    "header": {
+      "title": "Pipeline",
+      "description": "Objectifs, devis, pistes et résultats de visites pour la période que vous pouvez voir."
+    },
+    "targets": {
+      "title": "Objectifs",
+      "description": "Progression sur ventes, pistes, pointages et appels pour la période d’objectifs en cours."
+    },
+    "quotations": {
+      "title": "Devis",
+      "description": "Changez la fenêtre de dates ERP pour charger les lignes de devis. Comparez-les aux devis LORO sur la même période."
+    },
+    "leads": {
+      "title": "Pistes",
+      "description": "Compteurs, valeur du pipeline et valeur des devis issus des visites. Ouvrez un statut pour voir la répartition de cette période."
+    },
+    "visits": {
+      "title": "Visites",
+      "description": "Totaux de départ pour cette période : visites, ventes, devis et valeurs."
+    }
+  },
+  "dashboard-attendance": {
+    "clock": {
+      "title": "Pointer à l’arrivée et au départ",
+      "description": "Cliquez ici pour démarrer votre quart, faire une pause ou le terminer. Le pointage demande bureau ou télétravail. Pulse peut demander un court check-in après l’arrivée ou le départ."
+    },
+    "variablePay": {
+      "title": "Rémunération variable",
+      "description": "Rémunération supplémentaire en plus de la commission ce mois-ci. Elle montre quels seuils sont ouverts, votre proximité du maximum, et ce qu’il reste."
+    },
+    "bonus": {
+      "title": "Prime de fin d’année",
+      "description": "Le statut de votre prime de fin d’année pour le cycle en cours."
+    },
+    "month": {
+      "title": "Changer de mois",
+      "description": "Ouvrez ce menu pour basculer parmi les trois derniers mois."
+    },
+    "logs": {
+      "title": "Voir les journaux",
+      "description": "Cliquez sur Voir les journaux pour le registre de présence jour par jour."
+    },
+    "list": {
+      "title": "Ce mois-ci",
+      "description": "Chaque jour est marqué présent, manqué ou encore à venir."
+    }
+  },
+  "calls": {
+    "header": {
+      "title": "Enregistrements d’appels",
+      "description": "Les appels PBX (Linkus ou téléphone de bureau) et les appels LORO in-app sont listés ici avec score et statut de transcription. Les visites restent sur la page Visites."
+    },
+    "filters": {
+      "title": "Filtrer les enregistrements",
+      "description": "La période va de ce mois à aujourd’hui. Changez date, statut, direction, agence ou recherche pour restreindre la liste."
+    },
+    "list": {
+      "title": "Ouvrir un enregistrement",
+      "description": "Cliquez sur une ligne pour la transcription, le score et l’audio."
+    }
+  },
+  "reports": {
+    "header": {
+      "title": "Rapports",
+      "description": "Objectifs, politique, qualité d’appel, tâches, activité des pistes et activité pour la période autorisée par votre accès."
+    },
+    "tabs": {
+      "title": "Onglets de rapports",
+      "description": "Objectifs sont les buts. Politique est la conformité. Qualité d’appel sont les appels notés. Insights sont les clusters d’activité. Tâches et planification comparent visites prévues et réalisées. Activité des pistes sont les pistes importées par statut pour chaque personne."
+    },
+    "callQuality": {
+      "title": "Qualité d’appel",
+      "description": "Classement, tunnel et notes de coaching pour les appels notés sur cette période."
+    },
+    "insights": {
+      "title": "Insights",
+      "description": "Clusters de travail, indicateurs et où est passé le temps sur la même période."
+    }
+  },
+  "merchandise": {
+    "header": {
+      "title": "Merchandising",
+      "description": "Photos et notes terrain, avec statut de revue sur chaque journal."
+    },
+    "create": {
+      "title": "Nouveau merchandising",
+      "description": "Cliquez sur Nouveau merchandising. Joignez une photo, nommez le client et ajoutez des commentaires. Le journal reste en revue jusqu’à publication."
+    },
+    "filters": {
+      "title": "Filtrer les journaux",
+      "description": "Filtrez par date, taille de page, agence, collègue, statut ou recherche."
+    },
+    "list": {
+      "title": "Ouvrir un journal",
+      "description": "Cliquez sur une ligne pour la photo complète et les actions de revue."
+    }
+  },
+  "assets": {
+    "header": {
+      "title": "Actifs",
+      "description": "Votre équipement et véhicules liés, ou l’inventaire de toute l’organisation si vous le gérez. Les managers changent ce périmètre dans les filtres."
+    },
+    "add": {
+      "title": "Ajouter un actif",
+      "description": "Cliquez sur Ajouter un actif. Enregistrez l’élément, qui le possède et à quelle agence il appartient."
+    },
+    "filters": {
+      "title": "Filtrer l’inventaire",
+      "description": "Filtrez par date, agence, propriétaire, catégorie ou recherche. La taille de page sous la grille définit combien de cartes se chargent."
+    },
+    "list": {
+      "title": "Ouvrir un actif",
+      "description": "Cliquez sur une carte pour les détails d’achat et d’assurance, ou pour le modifier et le supprimer."
+    }
+  },
+  "performance": {
+    "header": {
+      "title": "Performance",
+      "description": "Ventes pour les pays, agences et dates que vous pouvez voir. Le titre passe à État consolidé lorsque cette vue est active."
+    },
+    "filters": {
+      "title": "Dates et filtres",
+      "description": "Définissez la période. Ouvrez les filtres pour pays, agence et catégorie. Cliquez sur actualiser pour récupérer les derniers chiffres."
+    },
+    "consolidated": {
+      "title": "État consolidé",
+      "description": "Activez ceci pour le compte de résultat entre pays et agences. Désactivez pour revenir au rapport de performance."
+    },
+    "target": {
+      "title": "Objectif et marge brute",
+      "description": "Chiffre d’affaires face à l’objectif, et marge brute, pour cette période."
+    },
+    "charts": {
+      "title": "Graphiques",
+      "description": "Catégorie, agence, mix de paiements, produits, commerciaux et ventes horaires pour les filtres définis."
+    }
+  },
+  "wellbeing": {
+    "header": {
+      "title": "Bien-être",
+      "description": "Check-ins d’humeur, suivis, et comment l’humeur s’aligne avec la performance."
+    },
+    "filters": {
+      "title": "Date et agence",
+      "description": "Insights, Exécutif et Corrélations utilisent cette période et cette agence. Aujourd’hui ignore la période."
+    },
+    "tabs": {
+      "title": "Aujourd’hui, Insights, Exécutif, Corrélations",
+      "description": "Aujourd’hui sont les check-ins en direct. Insights résume la période. Exécutif sont les graphiques d’indice. Corrélations compare humeur et performance. Ce sont des estimations, pas des causes."
+    },
+    "today": {
+      "title": "Aujourd’hui",
+      "description": "KPI, comparaison d’agences et listes nominatives de personnes qui ont besoin de soutien ou d’un suivi."
+    },
+    "executive": {
+      "title": "Indice exécutif",
+      "description": "Chaque graphique est un indice consolidé pour la période et l’agence définies."
+    }
+  },
+  "visualiser": {
+    "header": {
+      "title": "Vue de la concurrence",
+      "description": "Recherchez sur la carte ou suivez l’itinéraire d’un commercial. Ouvrez Simuler pour modéliser une zone de chalandise."
+    },
+    "tools": {
+      "title": "Outils de la carte",
+      "description": "Résumé compte les magasins concurrents et le chiffre d’affaires mensuel modélisé. Prix carburant charge les derniers prix et conserve les prix stockés si rien n’a changé. Geocode complète les adresses manquantes. Exporter télécharge la simulation. L’icône d’info explique le calcul. Simuler ouvre la boîte de dialogue de simulation."
+    },
+    "map": {
+      "title": "La carte",
+      "description": "Les épingles sont des agences, le HQ, des concurrents et des clients."
+    }
+  }
+}

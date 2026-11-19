@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState } from 'react';
 import { useSessionSync } from '@/api/hooks';
 import { isClientMode } from '@/lib/user-mode';
@@ -11,13 +13,14 @@ import { EditClientProfileForm } from '@/app/client-portal/components/edit-clien
 import { Button } from '@/components/ui/button';
 
 export function AccountContent() {
+  const { t } = useTranslation('portal');
   const { backendUserData: profile } = useSessionSync();
   const [editing, setEditing] = useState(false);
 
   if (!isClientMode(profile)) {
     return (
       <main className={appPageMainClass}>
-        <p className="text-muted-foreground">Account settings are for client portal users.</p>
+        <p className="text-muted-foreground">{t('accountStaffOnly')}</p>
       </main>
     );
   }
@@ -26,9 +29,9 @@ export function AccountContent() {
     <div className={appPageScrollWrapClass}>
       <main className={appPageMainClass}>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6" data-tour="account-page-header">
-          <h1 className="text-2xl font-semibold">Account</h1>
+          <h1 className="text-2xl font-semibold">{t('account')}</h1>
           <Button variant="outline" data-tour="account-edit" onClick={() => setEditing((e) => !e)}>
-            {editing ? 'View profile' : 'Edit profile'}
+            {editing ? t('viewProfile') : t('editProfile')}
           </Button>
         </div>
         <ClientPortalLoading>

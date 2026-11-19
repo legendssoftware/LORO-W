@@ -21,6 +21,7 @@ import {
   payslipStatusLabel,
 } from '@/lib/utils/payslips-format';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 function formatIssueDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -83,6 +84,7 @@ export function PayslipsTable({
   onView,
   onDownload,
 }: PayslipsTableProps) {
+  const { t } = useTranslation('screens');
   const colCount = showEmployeeColumn ? 8 : 7;
 
   return (
@@ -90,16 +92,16 @@ export function PayslipsTable({
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-card">
           <TableRow>
-            <TableHead>Period</TableHead>
-            <TableHead>Issue date</TableHead>
-            <TableHead>Payslip #</TableHead>
-            <TableHead className="hidden sm:table-cell">Gross</TableHead>
-            <TableHead className="hidden md:table-cell">Net</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{t('tables.period')}</TableHead>
+            <TableHead>{t('tables.issueDate')}</TableHead>
+            <TableHead>{t('tables.payslipNumber')}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t('tables.gross')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('tables.net')}</TableHead>
+            <TableHead>{t('tables.status')}</TableHead>
             {showEmployeeColumn ? (
-              <TableHead className="hidden lg:table-cell">Employee</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('tables.employee')}</TableHead>
             ) : null}
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-right">{t('tables.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -128,7 +130,10 @@ export function PayslipsTable({
                   }}
                 >
                   <TableCell className="font-medium">
-                    {formatPayslipPeriod(payslip.period)}
+                    <span className="flex items-center gap-2">
+                      <FileText className="size-4 text-muted-foreground" aria-hidden />
+                      {formatPayslipPeriod(payslip.period)}
+                    </span>
                   </TableCell>
                   <TableCell>{formatIssueDate(payslip.issueDate)}</TableCell>
                   <TableCell>{payslip.payslipNumber?.trim() || '—'}</TableCell>

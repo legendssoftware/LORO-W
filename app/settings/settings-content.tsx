@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useSessionSync, getSessionSyncQueryKey } from '@/api/hooks/use-session-sync';
@@ -430,6 +432,7 @@ const CREATE_BRANCH_INPUT_CLASS =
   'border-border bg-background text-sm md:text-sm placeholder:text-xs placeholder:italic placeholder:text-muted-foreground';
 
 export function SettingsContent() {
+  const { t } = useTranslation('settings');
   const client = useApiClient();
   const queryClient = useQueryClient();
   const { backendUserData } = useSessionSync();
@@ -1282,9 +1285,9 @@ export function SettingsContent() {
     return (
       <div className={cn(appPageMainClass, 'flex w-full flex-col gap-6')}>
         <div data-tour="settings-page-header">
-          <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('pageTitle')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Connect your Outlook or Google Calendar using your LORO account email.
+            {t('pageDescriptionCalendarOnly')}
           </p>
         </div>
         <CalendarIntegrationsSection />
@@ -1313,9 +1316,9 @@ export function SettingsContent() {
   return (
     <div className={cn(appPageMainClass, 'flex w-full flex-col gap-6')}>
       <div data-tour="settings-page-header">
-        <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('pageTitle')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage organisation profile, appearance, regional defaults, hours, branches, scrapping, notices, and app banners.
+          {t('pageDescription')}
         </p>
       </div>
 
@@ -1779,6 +1782,11 @@ export function SettingsContent() {
                 <p className="text-sm text-muted-foreground">
                   Language, timezone, notifications, UI defaults, and geofence defaults.
                 </p>
+              </div>
+              <div className="space-y-2 px-6 pt-4">
+                <Label htmlFor="user-language">{t('yourLanguage')}</Label>
+                <p className="text-sm text-muted-foreground">{t('yourLanguageDescription')}</p>
+                <LanguageSwitcher id="user-language" />
               </div>
               <Separator className="mt-4" />
               <div className="px-6">

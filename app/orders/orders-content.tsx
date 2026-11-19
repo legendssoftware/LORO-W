@@ -9,8 +9,10 @@ import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
 import { ClientOrdersContent } from '@/app/client-portal/components/client-orders-content';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 export function OrdersContent() {
+  const { t } = useTranslation('screens');
   const { backendUserData: profile } = useSessionSync();
 
   if (!isClientMode(profile)) {
@@ -29,9 +31,9 @@ export function OrdersContent() {
           data-tour="orders-page-header"
         >
           <div>
-            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Orders</h1>
+            <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.orders.title')}</h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Track quotations and orders by status
+              {t('pages.orders.description')}
             </p>
           </div>
           <Button

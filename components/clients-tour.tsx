@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
@@ -16,45 +18,47 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    element: '[data-tour="clients-page-header"]',
-    popover: {
-      title: 'Clients',
-      description: 'Click Add client to register a client for the organisation.',
-      side: 'bottom',
-      align: 'start',
+function buildTourSteps(t: TFunction): DriveStep[] {
+  return [
+    {
+      element: '[data-tour="clients-page-header"]',
+      popover: {
+        title: t('tours.clients.header.title'),
+        description: t('tours.clients.header.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="clients-toolbar"]',
-    popover: {
-      title: 'Filter and search',
-      description:
-        'Filter by status and category. Search by name, email, or phone. Click X on a filter to clear it.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: '[data-tour="clients-toolbar"]',
+      popover: {
+        title: t('tours.clients.toolbar.title'),
+        description: t('tours.clients.toolbar.description'),
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="clients-grid"]',
-    popover: {
-      title: 'Client cards',
-      description: 'Click a card for the full record. Click Load more to fetch the next page.',
-      side: 'top',
-      align: 'center',
+    {
+      element: '[data-tour="clients-grid"]',
+      popover: {
+        title: t('tours.clients.grid.title'),
+        description: t('tours.clients.grid.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-];
+  ];
+}
 
-function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
+function areTourTargetsReady(steps: DriveStep[]): boolean {
+  return steps.every((step) => {
     if (typeof step.element !== 'string') return true;
     return document.querySelector(step.element) !== null;
   });
 }
 
 export function ClientsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -112,11 +116,12 @@ export function ClientsTour() {
     if (currentState.completedThisMonth) return;
 
     const cancelSchedule = scheduleTourWhenReady({
-      areTargetsReady: areTourTargetsReady,
+      areTargetsReady: () => areTourTargetsReady(buildTourSteps(t)),
       onReady: () => {
+        const steps = buildTourSteps(t);
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writeClientsTourState(userId, {
@@ -133,7 +138,7 @@ export function ClientsTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writeClientsTourState(userId, {
@@ -184,7 +189,7 @@ export function ClientsTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

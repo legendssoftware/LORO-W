@@ -61,6 +61,7 @@ import {
 import { getScoreColorClasses } from './lib/score-colors';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /** Month-to-date UTC range, matching Visits/Leads default. */
 function defaultCallsDateRange() {
@@ -68,6 +69,7 @@ function defaultCallsDateRange() {
 }
 
 export function CallsContent() {
+  const { t } = useTranslation('screens');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<CallsPageSize>(() => readStoredCallsPageSize());
   const [searchInput, setSearchInput] = useState('');
@@ -182,9 +184,9 @@ export function CallsContent() {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
-          <h1 className="text-xl font-semibold">Call recordings</h1>
+          <h1 className="text-xl font-semibold">{t('pages.calls.title')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You do not have access to call recordings.
+            {t('pages.calls.denied')}
           </p>
         </main>
       </div>
@@ -195,10 +197,9 @@ export function CallsContent() {
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div className="mb-6 flex shrink-0 flex-col gap-1" data-tour="calls-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Call recordings</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.calls.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Company-line PBX audio, transcribed into a speaker-labelled dialogue. In-app calls were
-            started from LORO; company phone calls were dialled from Linkus or a desk handset.
+            {t('pages.calls.description')}
           </p>
         </div>
 
@@ -255,15 +256,15 @@ export function CallsContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>When</TableHead>
-                    <TableHead>Origin</TableHead>
-                    <TableHead>Direction</TableHead>
-                    <TableHead>Agent</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Numbers</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Transcript</TableHead>
+                    <TableHead>{t('tables.when')}</TableHead>
+                    <TableHead>{t('tables.origin')}</TableHead>
+                    <TableHead>{t('tables.direction')}</TableHead>
+                    <TableHead>{t('tables.agent')}</TableHead>
+                    <TableHead>{t('tables.client')}</TableHead>
+                    <TableHead>{t('tables.numbers')}</TableHead>
+                    <TableHead>{t('tables.duration')}</TableHead>
+                    <TableHead>{t('tables.score')}</TableHead>
+                    <TableHead>{t('tables.transcript')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

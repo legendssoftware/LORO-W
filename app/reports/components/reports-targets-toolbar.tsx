@@ -6,7 +6,6 @@ import {
   Coins,
   Download,
   Filter,
-  Globe2,
   Loader2,
   MapPinned,
   Tags,
@@ -298,7 +297,6 @@ function ReportsTargetsFilterControls({
             onValueChange={(v) => onCountryChange?.(v)}
             placeholderLabelWhenAll="All countries"
             searchPlaceholder="Search countries…"
-            triggerIcon={<Globe2 className="size-4 shrink-0 text-muted-foreground" />}
             triggerClassName={pickerTriggerClass}
           />
           {selectedCountry !== 'all' ? (
@@ -475,8 +473,8 @@ export function ReportsTargetsToolbar({
         </Button>
         {hasMobileActions ? (
           <div className="flex min-w-0 items-center gap-2">
-            {renderExportButton()}
             {renderSearchField('min-w-0 flex-1')}
+            {renderExportButton()}
           </div>
         ) : null}
       </div>
@@ -501,8 +499,8 @@ export function ReportsTargetsToolbar({
         </div>
         {showSearch || hasExport ? (
           <div className="flex shrink-0 flex-nowrap items-center gap-2">
-            {renderExportButton()}
             {showSearch ? renderSearchField() : null}
+            {renderExportButton()}
           </div>
         ) : null}
       </div>

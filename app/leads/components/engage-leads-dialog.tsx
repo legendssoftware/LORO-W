@@ -1,5 +1,7 @@
 'use client';
 
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { Loader2, Mail, MessageSquare, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -39,14 +41,14 @@ type EngageLeadsDialogProps = {
   filters: BulkEngageFilters;
 };
 
-function channelLabel(channel: EngageChannel): string {
+function channelLabel(channel: EngageChannel, translate: TFunction): string {
   switch (channel) {
     case 'email':
-      return 'Email';
+      return translate('leads.email');
     case 'sms':
-      return 'SMS';
+      return translate('leads.sms');
     case 'whatsapp':
-      return 'WhatsApp';
+      return translate('leads.whatsapp');
     default: {
       const unreachable: never = channel;
       return unreachable;
@@ -54,14 +56,14 @@ function channelLabel(channel: EngageChannel): string {
   }
 }
 
-function skippedContactLabel(channel: EngageChannel): string {
+function skippedContactLabel(channel: EngageChannel, translate: TFunction): string {
   switch (channel) {
     case 'email':
-      return 'an email address';
+      return translate('leads.missingEmail');
     case 'sms':
-      return 'a phone number';
+      return translate('leads.missingPhone');
     case 'whatsapp':
-      return 'a WhatsApp or phone number';
+      return translate('leads.missingWhatsApp');
     default: {
       const unreachable: never = channel;
       return unreachable;
@@ -69,9 +71,12 @@ function skippedContactLabel(channel: EngageChannel): string {
   }
 }
 
-function resultToast(data: BulkEngageResponse): string {
-  if (data.matched === 0) return data.message || 'No leads match these filters';
-  return `Sent ${data.sent}. Skipped ${data.skipped}. Failed ${data.failed}.`;
+function resultToast(
+  data: BulkEngageResponse,
+  translate: TFunction<'screens'>,
+): string {
+  if (data.matched === 0) return data.message || translate('leads.noLeadsMatch');
+  return translate('leads.engageResult', { sent: data.sent, skipped: data.skipped, failed: data.failed });
 }
 
 /**
@@ -83,6 +88,7 @@ export function EngageLeadsDialog({
   matchCount,
   filters,
 }: EngageLeadsDialogProps) {
+  const { t } = useTranslation('screens');
   const [channel, setChannel] = useState<EngageChannel | null>(null);
   const [intent, setIntent] = useState<EngageIntent>('first_contact');
   const [tone, setTone] = useState<EngageTone>('professional');
@@ -133,7 +139,7 @@ export function EngageLeadsDialog({
       { ...filters, channel, message: message.trim() },
       {
         onSuccess: (data) => {
-          toast.success(resultToast(data));
+          toast.success(resultToast(data, t));
           onOpenChange(false);
         },
       }
@@ -144,30 +150,33 @@ export function EngageLeadsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Engage leads</DialogTitle>
+          <DialogTitle>{t('leads.engageLeads')}</DialogTitle>
           <DialogDescription>
             {channel
-              ? `${matchCount} lead${matchCount === 1 ? '' : 's'} match the current filters. Leads without ${skippedContactLabel(channel)} are skipped.`
-              : `${matchCount} lead${matchCount === 1 ? '' : 's'} match the current filters.`}
+              ? (matchCount === 1
+                ? t('leads.matchSkippedOne', { count: matchCount, contact: skippedContactLabel(channel, t) })
+                : t('leads.matchSkipped', { count: matchCount, contact: skippedContactLabel(channel, t) }))
+              : (matchCount === 1
+                ? t('leads.matchFiltersOne', { count: matchCount })
+                : t('leads.matchFilters', { count: matchCount }))}
             {overCap
-              ? ` Narrow the filters to ${BULK_ENGAGE_MAX} or fewer before sending.`
-              : ` At most ${BULK_ENGAGE_MAX} leads can be sent at once.`}
+              ? t('leads.narrowFilters', { max: BULK_ENGAGE_MAX })
+              : t('leads.atMost', { max: BULK_ENGAGE_MAX })}
           </DialogDescription>
         </DialogHeader>
 
         {confirming && channel ? (
           <div className="space-y-3 text-sm">
             <p>
-              Send this {channelLabel(channel)} message to up to {matchCount} leads matching your
-              current filters?
+              {t('leads.confirmSend', { channel: channelLabel(channel, t), count: matchCount })}
             </p>
             <p className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 text-muted-foreground">
               {message.trim()}
             </p>
             {channel === 'whatsapp' ? (
               <p className="text-xs text-muted-foreground">
-                WhatsApp {message.trim().length}/{ENGAGE_WHATSAPP_MAX_CHARS}
-                {messageTooLong ? '. Shorten the message before sending.' : ''}
+                {t('leads.whatsAppCount', { count: message.trim().length, max: ENGAGE_WHATSAPP_MAX_CHARS })}
+                {messageTooLong ? t('leads.shortenBeforeSend') : ''}
               </p>
             ) : null}
           </div>
@@ -182,7 +191,7 @@ export function EngageLeadsDialog({
                 onClick={() => setChannel('email')}
               >
                 <Mail className="size-4" />
-                Email
+                {t('leads.email')}
               </Button>
               <Button
                 type="button"
@@ -192,7 +201,7 @@ export function EngageLeadsDialog({
                 onClick={() => setChannel('sms')}
               >
                 <MessageSquare className="size-4" />
-                SMS
+                {t('leads.sms')}
               </Button>
               <Button
                 type="button"
@@ -202,7 +211,7 @@ export function EngageLeadsDialog({
                 onClick={() => setChannel('whatsapp')}
               >
                 <MessageSquare className="size-4" />
-                WhatsApp
+                {t('leads.whatsapp')}
               </Button>
             </div>
 
@@ -219,23 +228,23 @@ export function EngageLeadsDialog({
             />
 
             <div className="space-y-1">
-              <Label className="text-xs">Message</Label>
+              <Label className="text-xs">{t('leads.message')}</Label>
               <Textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={8}
                 className="resize-y text-sm"
-                placeholder="Type the message, or let AI write a draft you can edit…"
+                placeholder={t('leads.messagePlaceholder')}
               />
               <p className="text-xs text-muted-foreground">
-                Use {'{{name}}'} where the lead’s name should appear.
+                {t('leads.nameTokenHint', { token: '{{name}}' })}
                 {channel === 'sms' && message.length > 160
-                  ? ' This SMS is longer than 160 characters and may be split.'
+                  ? t('leads.smsSplit')
                   : ''}
                 {channel === 'whatsapp'
-                  ? ` WhatsApp ${message.trim().length}/${ENGAGE_WHATSAPP_MAX_CHARS}.`
+                  ? t('leads.whatsAppCount', { count: message.trim().length, max: ENGAGE_WHATSAPP_MAX_CHARS })
                   : ''}
-                {messageTooLong ? ' Shorten the WhatsApp message before sending.' : ''}
+                {messageTooLong ? t('leads.shortenWhatsApp') : ''}
               </p>
             </div>
           </div>
@@ -250,7 +259,7 @@ export function EngageLeadsDialog({
                 onClick={() => setConfirming(false)}
                 disabled={sendMutation.isPending}
               >
-                Back
+                {t('actions.back')}
               </Button>
               <Button
                 type="button"
@@ -258,7 +267,7 @@ export function EngageLeadsDialog({
                 onClick={handleSend}
                 disabled={!canSend || sendMutation.isPending}
               >
-                {sendMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Send'}
+                {sendMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : t('actions.send')}
               </Button>
             </>
           ) : (
@@ -275,7 +284,7 @@ export function EngageLeadsDialog({
                 ) : (
                   <Sparkles className="size-4" />
                 )}
-                Write with AI
+                {t('leads.writeWithAi')}
               </Button>
               <Button
                 type="button"

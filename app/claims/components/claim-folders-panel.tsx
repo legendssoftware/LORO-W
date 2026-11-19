@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import type { ClaimGroup, ClaimGroupTotal } from '@/api/types/claims';
 import {
@@ -34,6 +35,7 @@ export function ClaimFoldersPanel({
   newFolderOpen?: boolean;
   onNewFolderOpenChange?: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
   const submitMutation = useSubmitClaimGroupMutation();
   const createMutation = useCreateClaimGroupMutation();
   const [localOpen, setLocalOpen] = useState(false);
@@ -74,7 +76,7 @@ export function ClaimFoldersPanel({
   return (
     <div className="mb-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-medium text-foreground">Claim folders</h2>
+        <h2 className="text-sm font-medium text-foreground">{t('claims.folders')}</h2>
         {hideHeaderButtons ? null : (
         <div className="flex items-center gap-1">
           <Button
@@ -85,7 +87,7 @@ export function ClaimFoldersPanel({
             onClick={() => setShowNewFolder(!showNewFolder)}
           >
             <Plus className="size-3.5" />
-            New folder
+            {t('claims.newFolder')}
           </Button>
           <Button
             type="button"
@@ -94,7 +96,7 @@ export function ClaimFoldersPanel({
             className="h-8 text-xs"
             onClick={() => onSelectGroup('all')}
           >
-            Show all claims
+            {t('claims.showAll')}
           </Button>
         </div>
         )}
@@ -104,7 +106,7 @@ export function ClaimFoldersPanel({
           <Input
             value={newFolderTitle}
             onChange={(event) => setNewFolderTitle(event.target.value)}
-            placeholder="Folder name"
+            placeholder={t('claims.folderName')}
             onKeyDown={(event) => {
               if (event.key === 'Enter') handleCreateFolder();
             }}
@@ -116,13 +118,13 @@ export function ClaimFoldersPanel({
             disabled={createMutation.isPending || !newFolderTitle.trim()}
             onClick={handleCreateFolder}
           >
-            {createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Create'}
+            {createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : t('actions.create')}
           </Button>
         </div>
       ) : null}
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No claim folders yet. Create a folder to group receipts before sending them for approval.
+          {t('claims.noFolders')}
         </p>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1">
@@ -147,18 +149,19 @@ export function ClaimFoldersPanel({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{g.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {totals?.count ?? g.claimCount ?? 0} claim
-                        {(totals?.count ?? g.claimCount ?? 0) === 1 ? '' : 's'}
+                        {((totals?.count ?? g.claimCount ?? 0) === 1
+                          ? t('claims.claimCountOne', { count: totals?.count ?? g.claimCount ?? 0 })
+                          : t('claims.claimCount', { count: totals?.count ?? g.claimCount ?? 0 }))}
                         {totals ? ` · ${formatZarAmount(totals.totalZar)}` : ''}
                       </p>
                     </div>
                     {isDraft ? (
                       <Badge variant="secondary" className="shrink-0 text-[10px]">
-                        Draft
+                        {t('claims.draft')}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="shrink-0 text-[10px]">
-                        Submitted
+                        {t('claims.submitted')}
                       </Badge>
                     )}
                   </div>

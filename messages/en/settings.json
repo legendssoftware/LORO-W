@@ -1,0 +1,66 @@
+{
+  "pageTitle": "Settings",
+  "pageDescription": "Manage organisation profile, appearance, regional defaults, hours, branches, scrapping, notices, and app banners.",
+  "pageDescriptionCalendarOnly": "Connect your Outlook or Google Calendar using your LORO account email.",
+  "yourLanguage": "Your language",
+  "yourLanguageDescription": "This choice is yours. Auto follows your device language or country. It does not change the organisation locale below.",
+  "saved": "Your preferences have been saved successfully!",
+  "saveFailed": "Failed to save your preferences. Please try again.",
+  "unableToSave": "Unable to save preferences. Please try logging in again.",
+  "unknownError": "Unknown error occurred",
+  "language": {
+    "label": "Language",
+    "description": "Follows your device language or country when set to Auto."
+  },
+  "theme": {
+    "label": "Theme",
+    "description": "Color scheme for the app",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "timezone": {
+    "label": "Timezone",
+    "description": "IANA timezone for dates and times"
+  },
+  "notifications": {
+    "label": "Allow Notifications",
+    "description": "Receive push notifications for important updates"
+  },
+  "notificationFrequency": {
+    "label": "Notification frequency",
+    "description": "How often to deliver non-push summaries",
+    "real_time": "Real time",
+    "hourly": "Hourly",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "disabled": "Disabled"
+  },
+  "emailNotifications": {
+    "label": "Email notifications",
+    "description": "Receive updates by email when enabled by your organization"
+  },
+  "smsNotifications": {
+    "label": "SMS notifications",
+    "description": "Receive SMS alerts when enabled by your organization"
+  },
+  "shiftAutoEnd": {
+    "label": "Auto clock-out after shift end",
+    "description": "Shifts are automatically closed after your organization's shift end (delay set by your org)",
+    "delay": "Shifts auto-close {{minutes}} minutes after your organization's shift end."
+  },
+  "dateFormat": {
+    "label": "Date format",
+    "description": "How dates are shown in the app"
+  },
+  "timeFormat": {
+    "label": "Time format",
+    "description": "12-hour or 24-hour clock",
+    "12h": "12-hour",
+    "24h": "24-hour"
+  },
+  "advancedFeatures": {
+    "label": "Advanced features",
+    "description": "Show experimental or advanced UI where available"
+  }
+}

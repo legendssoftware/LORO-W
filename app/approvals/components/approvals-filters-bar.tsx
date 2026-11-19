@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { CheckCircle2, Clock, Filter, LayoutGrid, Tags, XCircle } from 'lucide-react';
 import {
@@ -48,6 +49,7 @@ export function ApprovalsFilterControls({
   typeFilter,
   onTypeChange,
 }: ApprovalsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const statusTrigger = row
     ? 'h-9 min-w-0 w-[160px] shrink-0'
@@ -91,9 +93,9 @@ export function ApprovalsFilterControls({
           selectedValue={statusFilter}
           onValueChange={onStatusChange}
           options={statusOptions}
-          placeholderLabelWhenAll="All statuses"
+          placeholderLabelWhenAll={t('actions.allStatuses')}
           searchPlaceholder="Search status…"
-          emptyMessage="No status found."
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
           triggerClassName={statusTrigger}
         />
@@ -102,7 +104,7 @@ export function ApprovalsFilterControls({
             type="button"
             onClick={() => onStatusChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear status filter"
+            aria-label={t('actions.clearStatusFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -114,9 +116,9 @@ export function ApprovalsFilterControls({
           selectedValue={typeFilter}
           onValueChange={onTypeChange}
           options={typeOptions}
-          placeholderLabelWhenAll="All types"
+          placeholderLabelWhenAll={t('approvals.allTypes')}
           searchPlaceholder="Search types…"
-          emptyMessage="No type found."
+          emptyMessage={t('approvals.noType')}
           triggerIcon={<Tags className="size-4 shrink-0" />}
           triggerClassName={typeTrigger}
         />
@@ -125,7 +127,7 @@ export function ApprovalsFilterControls({
             type="button"
             onClick={() => onTypeChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear type filter"
+            aria-label={t('approvals.clearType')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -152,6 +154,7 @@ export function ApprovalsFiltersBar({
   onTypeChange: (value: string) => void;
   actions?: React.ReactNode;
 }) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -170,16 +173,16 @@ export function ApprovalsFiltersBar({
         <Input
           value={searchInput}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search title, reference, or hire…"
+          placeholder={t('approvals.search')}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
-          aria-label="Search approvals"
+          aria-label={t('approvals.searchAria')}
         />
         {searchInput ? (
           <button
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -206,21 +209,19 @@ export function ApprovalsFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {actions}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-            <DialogDescription>
-              Narrow approvals by status and type.
-            </DialogDescription>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
+            <DialogDescription>{t('approvals.filtersDescription')}</DialogDescription>
           </DialogHeader>
           <ApprovalsFilterControls {...filterProps} layout="stack" />
         </DialogContent>
@@ -233,8 +234,8 @@ export function ApprovalsFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
-          {actions}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState } from 'react';
 import { AlertCircle, CreditCard, DollarSign, TrendingUp } from 'lucide-react';
 import type { ClientProfileData } from '@/api/types/client-portal';
@@ -9,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { CreditLimitExtensionDialog } from './credit-limit-extension-dialog';
 
 export function ClientReportsCreditTab({ client }: { client: ClientProfileData }) {
+  const { t } = useTranslation('portal');
   const [extensionOpen, setExtensionOpen] = useState(false);
   const creditLimit = client.creditLimit ?? 0;
   const outstanding = client.outstandingBalance ?? 0;
@@ -27,13 +30,13 @@ export function ClientReportsCreditTab({ client }: { client: ClientProfileData }
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatBox label="Credit limit" value={formatZar(creditLimit)} icon={CreditCard} />
-            <StatBox label="Outstanding" value={formatZar(outstanding)} icon={DollarSign} />
-            <StatBox label="Available" value={formatZar(available)} icon={TrendingUp} />
+            <StatBox label={t('creditLimit')} value={formatZar(creditLimit)} icon={CreditCard} />
+            <StatBox label={t('outstanding')} value={formatZar(outstanding)} icon={DollarSign} />
+            <StatBox label={t('available')} value={formatZar(available)} icon={TrendingUp} />
           </div>
           <div className="mt-6">
             <div className="flex justify-between text-sm mb-1">
-              <span>Utilization</span>
+              <span>{t('utilization')}</span>
               <span>{utilization.toFixed(1)}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">

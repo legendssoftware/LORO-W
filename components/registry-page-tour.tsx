@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
 import {
   arePageTourTargetsReady,
@@ -22,6 +23,7 @@ function writeUnused(_userId: string, _state: TourMonthState): void {}
  * Monthly driver.js tour for signed-in pages that share the page-tour registry.
  */
 export function RegistryPageTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname() ?? '';
   const config = getPageTour(pathname);
   const { isLoaded, isSignedIn, userId } = useAuth();
@@ -38,7 +40,7 @@ export function RegistryPageTour() {
     read: config?.read ?? readUnused,
     write: config?.write ?? writeUnused,
     areTargetsReady: () => (config ? arePageTourTargetsReady(config) : false),
-    getSteps: () => (config ? buildPageTourSteps(config) : []),
+    getSteps: () => (config ? buildPageTourSteps(config, t) : []),
   });
 
   return null;

@@ -1,0 +1,195 @@
+{
+  "about": {
+    "title": "À propos de LORO",
+    "lead": "LORO est un logiciel de vente terrain conçu pour les équipes B2B d'Afrique du Sud : visites, tournées, pipeline, cartes et commandes prêtes pour l'ERP, sur une seule plateforme.",
+    "replaceSpreadsheets": "Nous aidons les fabricants, les grossistes et les distributeurs à remplacer le chaos des tableurs par des preuves de visite, des tableaux de bord pour les managers et des parcours mobiles que les commerciaux utilisent vraiment sur la route.",
+    "connectsPrefix": "Du",
+    "visitTracking": "suivi des visites",
+    "connectsMiddle": "à la",
+    "competitorMapping": "cartographie de la concurrence",
+    "connectsSuffix": ", LORO relie l'activité terrain au chiffre d'affaires, et non à de l'administratif pour lui-même.",
+    "workforce": "Des modules RH optionnels (présence, congés) complètent la vente terrain pour les équipes qui veulent une seule connexion pour les opérations et les personnes."
+  },
+  "pricing": {
+    "title": "Tarifs",
+    "lead": "Un logiciel de vente terrain flexible pour les équipes en Afrique du Sud : faites évoluer les utilisateurs et les agences à mesure que vous grandissez.",
+    "growing": {
+      "title": "Équipes en croissance",
+      "body": "Vente terrain essentielle : visites, pipeline, planification, clients et accès à l'application mobile.",
+      "perUser": "Licence par utilisateur",
+      "branchRoles": "Configuration des agences et des rôles",
+      "support": "Assistance standard"
+    },
+    "enterprise": {
+      "title": "Entreprise",
+      "body": "Déploiement multi-agences, intégration ERP, IoT et rapports avancés.",
+      "onboarding": "Accompagnement au démarrage dédié",
+      "erpReview": "Revue de l'ERP et des intégrations",
+      "targets": "Objectifs et exports sur mesure"
+    },
+    "footnote": "Contactez votre partenaire LORO ou créez un compte pour parler du déploiement de votre équipe terrain. Les tarifs publiés varient selon la taille de l'organisation et les modules."
+  },
+  "customers": {
+    "title": "Clients",
+    "lead": "Des entreprises sud-africaines utilisent LORO pour piloter la vente terrain avec moins d'administratif et une responsabilité plus claire.",
+    "distributors": {
+      "title": "Distributeurs d'abord sur le terrain",
+      "body": "Les équipes utilisent LORO pour la preuve de visite quotidienne, les objectifs de pipeline et les revues sur carte, au lieu de fusionner des tableurs chaque semaine."
+    },
+    "dashboard": {
+      "title": "Des managers, un seul tableau de bord",
+      "body": "Les responsables voient les visites, les pistes et l'avancement de la période sans relancer les commerciaux sur WhatsApp."
+    },
+    "erp": {
+      "title": "Commandes alignées sur l'ERP",
+      "body": "La boutique B2B et les flux de commande respectent les données de référence clients et produits auxquelles la finance fait déjà confiance."
+    },
+    "footnote": "Les études de cas avec logos nominatifs sont ajoutées lorsque les clients autorisent la publication. Demandez une présentation de référence en créant un compte."
+  },
+  "blog": {
+    "titleLead": "Blog de la ",
+    "titleEmphasis": "vente terrain",
+    "subtitle": "Guides pour les managers et les commerciaux de vente terrain en Afrique du Sud.",
+    "back": "← Blog"
+  },
+  "platform": {
+    "erp": "ERP interne, conçu et intégré : produits, clients, commandes et flux de boutique B2B dans la même plateforme. Passerelles optionnelles vers Sage, Acumatica et SAP pour les environnements financiers mixtes.",
+    "saas": "SaaS dans le cloud, avec authentification Clerk et accès limité à l'organisation pour les commerciaux et les managers."
+  },
+  "compare": {
+    "topic": "Sujet",
+    "capability": "Capacité",
+    "repsly": {
+      "title": "LORO face à Repsly",
+      "lead": "Comparaison factuelle pour les équipes qui évaluent des plateformes d'exécution retail et de vente terrain.",
+      "focus": "Cible principale",
+      "loroFocus": "Vente terrain B2B en Afrique du Sud, visites, pipeline, commandes ERP",
+      "repslyFocus": "Exécution retail CPG, programmes de linéaire et de promotions",
+      "region": "Région",
+      "loroRegion": "Afrique du Sud d'abord",
+      "repslyRegion": "Marques CPG mondiales",
+      "differentiator": "Différenciateur",
+      "loroDiff": "Veille concurrentielle sur carte + modules RH optionnels",
+      "repslyDiff": "Reconnaissance d'image et profondeur d'exécution en magasin",
+      "erp": "ERP",
+      "repslyErp": "Accent sur l'exécution retail ; ERP via des intégrations",
+      "platform": "Plateforme",
+      "repslyPlatform": "SaaS cloud ; programmes CPG mondiaux",
+      "footnote": "Choisissez Repsly lorsque l'analyse de linéaire et les programmes CPG dominent. Choisissez LORO lorsque les visites B2B, le pipeline et la vente terrain alignée sur l'ERP en Afrique du Sud sont la priorité."
+    },
+    "skynamo": {
+      "title": "LORO face à Skynamo",
+      "lead": "Les deux servent la vente terrain en Afrique du Sud : comparez l'adéquation à votre ERP, à la taille de l'équipe et aux modules.",
+      "positioning": "Positionnement",
+      "loroPosition": "Vente terrain + pipeline + cartes concurrentielles + RH optionnels",
+      "skynamoPosition": "Canaux de vente unifiés, commande mobile, RADAR AI",
+      "erp": "ERP",
+      "skynamoErp": "Communication forte autour de Sage, Acumatica et SAP",
+      "platform": "Plateforme",
+      "skynamoPlatform": "SaaS cloud ; authentification gérée par l'éditeur",
+      "bestFor": "Idéal pour",
+      "loroBest": "Preuve de visite, cartes concurrentielles, RH optionnels",
+      "skynamoBest": "Unification large des canaux + RADAR",
+      "footnote": "Menez un pilote en parallèle sur les visites et le pipeline avant de migrer les interfaces ERP."
+    },
+    "zoho": {
+      "title": "LORO face à Zoho CRM",
+      "lead": "Zoho CRM est une suite CRM large, avec de l'IA ; LORO est conçu pour l'exécution de la vente itinérante en Afrique du Sud.",
+      "visitProof": "Preuve de visite et éléments de terrain",
+      "loroVisit": "Parcours central",
+      "zohoVisit": "Nécessite une configuration ou des modules",
+      "routePlanning": "Planification des tournées",
+      "loroRoutes": "Planification et cartes natives",
+      "zohoRoutes": "RouteIQ ou cartes tierces",
+      "competitorMapping": "Cartographie de la concurrence",
+      "loroCompetitor": "Intégré",
+      "zohoCompetitor": "Modules personnalisés, en général",
+      "erp": "ERP",
+      "zohoErp": "Centré sur le CRM ; ERP via l'écosystème Zoho",
+      "platform": "Plateforme",
+      "zohoPlatform": "SaaS cloud ; modèle de compte Zoho",
+      "ecosystem": "Écosystème",
+      "loroEcosystem": "Vente terrain ciblée + ERP intégré",
+      "zohoEcosystem": "Large suite d'applications Zoho",
+      "footnote": "Choisissez Zoho lorsque vous avez besoin d'un CRM général pour toute l'entreprise. Choisissez LORO lorsque les visites terrain, les tournées et l'exécution B2B en Afrique du Sud sont le goulot."
+    }
+  },
+  "integrations": {
+    "title": "Intégrations ERP",
+    "lead": "Reliez la vente terrain LORO aux systèmes qui portent les clients, les produits et les commandes, pour que les commerciaux vendent avec des données à jour sur la route.",
+    "sageBlurb": "Courant dans les environnements financiers des PME et ETI sud-africaines.",
+    "acumaticaBlurb": "Contexte ERP cloud pour les devis et les commandes terrain.",
+    "sapBlurb": "Données produits et comptes d'entreprise pour les grandes équipes terrain.",
+    "sage": {
+      "title": "Sage + vente terrain LORO",
+      "lead": "Alignez les données Sage (ERP ou comptabilité) avec les visites, le pipeline et les commandes B2B que vos commerciaux saisissent sur le terrain.",
+      "finance": "Les équipes sud-africaines font souvent tourner Sage pour la finance pendant que les commerciaux chiffrent encore à partir de listes périmées. LORO apporte le contexte clients et produits dans les parcours de visite et de commande, pour que le terrain et la finance partagent la même histoire.",
+      "hubPrefix": "Déployez d'abord les visites et le pipeline, puis reliez les flux de commande avec votre partenaire d'intégration. Consultez l'ensemble du",
+      "hubLink": "centre des intégrations",
+      "hubSuffix": "."
+    },
+    "sap": {
+      "title": "SAP + opérations terrain LORO",
+      "lead": "Des programmes terrain d'entreprise, avec des données de référence portées par SAP et l'exécution LORO des visites, du pipeline et des cartes.",
+      "governed": "Les grandes équipes terrain ont besoin de données produits et comptes gouvernées, avec une expérience mobile rapide. LORO ajoute le suivi des visites, la planification des tournées et les tableaux de bord managers au-dessus de vos schémas de déploiement SAP.",
+      "engage": "Impliquez tôt votre équipe d'intégration pour les interfaces clients, articles et commandes, cadrées sur votre paysage."
+    },
+    "acumatica": {
+      "title": "Acumatica + LORO",
+      "lead": "Stock et clients de l'ERP cloud, disponibles là où les commerciaux planifient les tournées et concluent les commandes.",
+      "proof": "Les équipes Acumatica obtiennent la preuve de visite terrain et la visibilité du pipeline sans forcer les commerciaux à ouvrir l'ERP sur ordinateur à chaque arrêt.",
+      "execution": "LORO se concentre sur l'exécution — visites, cartes, contexte concurrentiel et commande mobile — tandis que votre ERP reste le système de référence."
+    }
+  },
+  "solutions": {
+    "competitor": {
+      "title": "Veille concurrentielle sur une carte",
+      "lead": "Suivez les comptes concurrents à côté de vos clients : niveaux de menace, emplacements et contexte pour des débriefings terrain plus justes.",
+      "landscape": "Commerciaux et managers voient le paysage concurrentiel sur la carte, et non dans des tableurs épars.",
+      "afterSignIn": "Après la connexion, utilisez le visualiseur de carte pour les couches terrain en direct, les filtres de visites et les vues d'influence, aux côtés des comptes clients."
+    },
+    "visits": {
+      "title": "Logiciel de suivi des visites",
+      "lead": "Prouvez le travail terrain avec des pointages, des notes, des devis et des résultats rattachés à chaque compte client.",
+      "managers": "Les managers voient quels comptes ont été visités, ce qui a été discuté et ce qui a suivi, sans journaux d'activité contestés.",
+      "feeds": "Les visites alimentent le pipeline et les rapports, pour que le coaching s'appuie sur les mêmes données saisies sur place par les commerciaux."
+    },
+    "workforce": {
+      "title": "Équipe et présence",
+      "lead": "Des modules RH optionnels aux côtés de la vente terrain : présence, congés et signaux de paie sous la même connexion LORO.",
+      "prefix": "Le positionnement principal reste la",
+      "fieldSales": "vente terrain",
+      "suffix": " ; les outils d'équipe conviennent aux équipes qui veulent réunir les données d'exploitation et de personnel.",
+      "localSupport": "Les équipes sud-africaines bénéficient d'un accompagnement local sur les parcours terrain et RH, lorsqu'ils sont activés."
+    },
+    "routes": {
+      "title": "Planification des tournées pour la vente terrain",
+      "lead": "Tâches, tournées du jour, rappels et cartes, construits à partir des visites, des pistes et des priorités du pipeline.",
+      "driving": "Les commerciaux passent moins de temps au volant entre des arrêts peu rentables et plus de temps chez les comptes qui font le chiffre.",
+      "prefix": "La planification se relie au",
+      "visitTracking": "suivi des visites",
+      "suffix": ", afin que les tournées prévues et réalisées soient visibles pour les responsables."
+    },
+    "fieldSales": {
+      "title": "Logiciel de vente terrain",
+      "lead": "Une plateforme pour les équipes B2B terrain d'Afrique du Sud : commerciaux mobiles, managers au bureau et commandes alignées sur l'ERP.",
+      "repsTitle": "Pour les commerciaux sur la route",
+      "repsBody": "Planifiez la journée, enregistrez les visites avec des preuves, mettez à jour les pistes et passez des commandes dans une expérience mobile pensée pour les doigts, avec une synchro robuste.",
+      "managersTitle": "Pour les managers commerciaux",
+      "managersBody": "Objectifs de pipeline, couverture des visites et visualisation sur carte : sachez qui a vu quels comptes, sans relances e-mail en fin de semaine.",
+      "modulesTitle": "Des modules qui se relient",
+      "visitTracking": "Suivi des visites",
+      "routePlanning": "Planification des tournées",
+      "pipeline": "Pipeline",
+      "erp": "Intégrations ERP"
+    },
+    "pipeline": {
+      "title": "Pipeline commercial pour les équipes terrain",
+      "lead": "Pistes, objectifs de période, affaires gagnées et résultats de visite sur un seul écran.",
+      "slides": "Les managers terrain arrêtent de reconstruire les slides du vendredi : l'avancement du quota et les prochaines actions vivent dans LORO, à côté d'étapes de piste proches d'un CRM.",
+      "prefix": "Associez le pipeline aux modules de",
+      "fieldSales": "vente terrain",
+      "suffix": " pour une suite complète de vente itinérante."
+    }
+  }
+}

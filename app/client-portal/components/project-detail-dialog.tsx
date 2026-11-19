@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -99,6 +101,7 @@ export function ProjectDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('portal');
   const apiClient = useApiClient();
   const [selectedQuotation, setSelectedQuotation] =
     useState<ClientQuotation | null>(null);
@@ -167,47 +170,47 @@ export function ProjectDetailDialog({
               )}
 
               <section>
-                <h3 className="font-medium mb-3">Overview</h3>
+                <h3 className="font-medium mb-3">{t('overview')}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <MetadataRow label="Project #" value={String(detail?.uid ?? project.uid)} />
+                  <MetadataRow label={t('projectNumber')} value={String(detail?.uid ?? project.uid)} />
                   <MetadataRow
-                    label="Status"
+                    label={t('status')}
                     value={formatProjectLabel(detail?.status)}
                   />
                   <MetadataRow
-                    label="Type"
+                    label={t('type')}
                     value={formatProjectLabel(detail?.type)}
                   />
                   <MetadataRow
-                    label="Priority"
+                    label={t('priority')}
                     value={formatProjectLabel(detail?.priority)}
                   />
-                  <MetadataRow label="Assigned to" value={assignedName} />
+                  <MetadataRow label={t('assignedTo')} value={assignedName} />
                   <MetadataRow
-                    label="Progress"
+                    label={t('progress')}
                     value={
                       detail?.progressPercentage != null
                         ? `${detail.progressPercentage}%`
                         : null
                     }
                   />
-                  <MetadataRow label="Currency" value={detail?.currency ?? 'ZAR'} />
-                  <MetadataRow label="Created" value={formatDate(detail?.createdAt)} />
-                  <MetadataRow label="Updated" value={formatDate(detail?.updatedAt)} />
+                  <MetadataRow label={t('currency')} value={detail?.currency ?? 'ZAR'} />
+                  <MetadataRow label={t('created')} value={formatDate(detail?.createdAt)} />
+                  <MetadataRow label={t('updated')} value={formatDate(detail?.updatedAt)} />
                 </div>
               </section>
 
               <section>
-                <h3 className="font-medium mb-3">Financials</h3>
+                <h3 className="font-medium mb-3">{t('financials')}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <MetadataRow
-                    label="Budget"
+                    label={t('budget')}
                     value={
                       detail?.budget != null ? formatZar(detail.budget) : null
                     }
                   />
                   <MetadataRow
-                    label="Spent"
+                    label={t('spent')}
                     value={
                       detail?.currentSpent != null
                         ? formatZar(detail.currentSpent)
@@ -215,11 +218,11 @@ export function ProjectDetailDialog({
                     }
                   />
                   <MetadataRow
-                    label="Value"
+                    label={t('value')}
                     value={detail?.value != null ? formatZar(detail.value) : null}
                   />
                   <MetadataRow
-                    label="Total cost"
+                    label={t('totalCost')}
                     value={
                       detail?.totalCost != null ? formatZar(detail.totalCost) : null
                     }
@@ -228,23 +231,23 @@ export function ProjectDetailDialog({
               </section>
 
               <section>
-                <h3 className="font-medium mb-3">Timeline</h3>
+                <h3 className="font-medium mb-3">{t('timeline')}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <MetadataRow label="Start date" value={formatDate(detail?.startDate)} />
-                  <MetadataRow label="End date" value={formatDate(detail?.endDate)} />
+                  <MetadataRow label={t('startDate')} value={formatDate(detail?.startDate)} />
+                  <MetadataRow label={t('endDate')} value={formatDate(detail?.endDate)} />
                   <MetadataRow
-                    label="Expected completion"
+                    label={t('expectedCompletion')}
                     value={formatDate(detail?.expectedCompletionDate)}
                   />
                 </div>
               </section>
 
               <section>
-                <h3 className="font-medium mb-3">Contact</h3>
+                <h3 className="font-medium mb-3">{t('contact')}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <MetadataRow label="Contact person" value={detail?.contactPerson} />
-                  <MetadataRow label="Email" value={detail?.contactEmail} />
-                  <MetadataRow label="Phone" value={detail?.contactPhone} />
+                  <MetadataRow label={t('contactPerson')} value={detail?.contactPerson} />
+                  <MetadataRow label={t('email')} value={detail?.contactEmail} />
+                  <MetadataRow label={t('phone')} value={detail?.contactPhone} />
                 </div>
               </section>
 
@@ -252,15 +255,15 @@ export function ProjectDetailDialog({
                 detail?.latitude != null ||
                 detail?.longitude != null) && (
                 <section>
-                  <h3 className="font-medium mb-3">Location</h3>
+                  <h3 className="font-medium mb-3">{t('location')}</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <MetadataRow
-                      label="Address"
+                      label={t('address')}
                       value={formatProjectAddress(detail?.address)}
                     />
                     {detail?.latitude != null && detail?.longitude != null && (
                       <MetadataRow
-                        label="Coordinates"
+                        label={t('coordinates')}
                         value={`${detail.latitude}, ${detail.longitude}`}
                       />
                     )}
@@ -270,7 +273,7 @@ export function ProjectDetailDialog({
 
               {detail?.requirements && detail.requirements.length > 0 && (
                 <section>
-                  <h3 className="font-medium mb-2">Requirements</h3>
+                  <h3 className="font-medium mb-2">{t('requirements')}</h3>
                   <ul className="list-disc pl-5 space-y-1 text-sm">
                     {detail.requirements.map((req, i) => (
                       <li key={i}>{req}</li>
@@ -281,7 +284,7 @@ export function ProjectDetailDialog({
 
               {detail?.tags && detail.tags.length > 0 && (
                 <section>
-                  <h3 className="font-medium mb-2">Tags</h3>
+                  <h3 className="font-medium mb-2">{t('tags')}</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {detail.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
@@ -294,7 +297,7 @@ export function ProjectDetailDialog({
 
               {detail?.notes && (
                 <section>
-                  <h3 className="font-medium mb-2">Notes</h3>
+                  <h3 className="font-medium mb-2">{t('notes')}</h3>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                     {detail.notes}
                   </p>
@@ -303,7 +306,7 @@ export function ProjectDetailDialog({
 
               {detail?.linkedInvoices && detail.linkedInvoices.length > 0 && (
                 <section>
-                  <h3 className="font-medium mb-2">Linked invoices</h3>
+                  <h3 className="font-medium mb-2">{t('linkedInvoices')}</h3>
                   <ul className="space-y-1 text-sm">
                     {detail.linkedInvoices.map((inv) => (
                       <li key={inv} className="font-mono text-xs">
@@ -316,7 +319,7 @@ export function ProjectDetailDialog({
 
               {detail?.linkedMedia && detail.linkedMedia.length > 0 && (
                 <section>
-                  <h3 className="font-medium mb-2">Linked media</h3>
+                  <h3 className="font-medium mb-2">{t('linkedMedia')}</h3>
                   <ul className="space-y-2">
                     {detail.linkedMedia.map((media, i) => (
                       <li key={i}>

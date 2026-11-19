@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { format, formatDistanceToNow } from 'date-fns';
 import type { LeadActivityLogItem } from '@/api/types/leads';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,6 +19,7 @@ export function LeadHistoryEntry({
   entry: LeadActivityLogItem;
   activityTimelineUsers: ActivityActorLookupUser[];
 }) {
+  const { t } = useTranslation('screens');
   const pres = leadActivityActionPresentation(entry.action);
   const summary = formatLeadActivitySummaryForRow(entry);
   const actor = resolveActivityUserProfile(entry, activityTimelineUsers);
@@ -59,7 +61,7 @@ export function LeadHistoryEntry({
         {actor ? (
           <p className="text-xs font-medium text-foreground">{actor.name}</p>
         ) : (
-          <p className="text-xs font-medium text-violet-900">LORO</p>
+          <p className="text-xs font-medium text-violet-900">{t('leads.systemName')}</p>
         )}
         <p className="break-words whitespace-pre-wrap text-muted-foreground">{summary}</p>
         {typeof entry.meta?.commercialSnapshot === 'object' &&
@@ -71,7 +73,7 @@ export function LeadHistoryEntry({
         (entry.meta.commercialSnapshot as { missedOpportunities: { customerQuote?: string }[] })
           .missedOpportunities[0]?.customerQuote ? (
           <p className="text-xs text-amber-900">
-            Missed:{' '}
+            {t('leads.missed')}{' '}
             {
               (
                 entry.meta.commercialSnapshot as {

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
@@ -16,57 +18,56 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    element: '[data-tour="visits-page-header"]',
-    popover: {
-      title: 'Visits',
-      description:
-        'Review visits you already logged. Scored recordings are under Call recordings.',
-      side: 'bottom',
-      align: 'start',
+function buildTourSteps(t: TFunction): DriveStep[] {
+  return [
+    {
+      element: '[data-tour="visits-page-header"]',
+      popover: {
+        title: t('tours.visits.header.title'),
+        description: t('tours.visits.header.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: '[data-tour="visits-visit-action"]',
-    popover: {
-      title: 'Start or end a visit',
-      description:
-        'Click Start visit and choose in person or phone. While a visit is running, click the red End visit to add notes and the outcome.',
-      side: 'bottom',
-      align: 'end',
+    {
+      element: '[data-tour="visits-visit-action"]',
+      popover: {
+        title: t('tours.visits.visit-action.title'),
+        description: t('tours.visits.visit-action.description'),
+        side: 'bottom',
+        align: 'end',
+      },
     },
-  },
-  {
-    element: '[data-tour="visits-toolbar"]',
-    popover: {
-      title: 'Filter history',
-      description:
-        'The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Start or end a visit from this row.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: '[data-tour="visits-toolbar"]',
+      popover: {
+        title: t('tours.visits.toolbar.title'),
+        description: t('tours.visits.toolbar.description'),
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: '[data-tour="visits-history-content"]',
-    popover: {
-      title: 'List or map',
-      description:
-        'Click a row to update that visit. Switch to the map to see where visits happened.',
-      side: 'top',
-      align: 'center',
+    {
+      element: '[data-tour="visits-history-content"]',
+      popover: {
+        title: t('tours.visits.history-content.title'),
+        description: t('tours.visits.history-content.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-];
+  ];
+}
 
-function areTourTargetsReady(): boolean {
-  return TOUR_STEPS.every((step) => {
+function areTourTargetsReady(steps: DriveStep[]): boolean {
+  return steps.every((step) => {
     if (typeof step.element !== 'string') return true;
     return document.querySelector(step.element) !== null;
   });
 }
 
 export function VisitsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -124,11 +125,12 @@ export function VisitsTour() {
     if (currentState.completedThisMonth) return;
 
     const cancelSchedule = scheduleTourWhenReady({
-      areTargetsReady: areTourTargetsReady,
+      areTargetsReady: () => areTourTargetsReady(buildTourSteps(t)),
       onReady: () => {
+        const steps = buildTourSteps(t);
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writeVisitsTourState(userId, {
@@ -145,7 +147,7 @@ export function VisitsTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;
             writeVisitsTourState(userId, {
@@ -196,7 +198,7 @@ export function VisitsTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

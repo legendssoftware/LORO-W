@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
@@ -64,6 +65,7 @@ function parseOwnerUid(userFilter: string): number | undefined {
 const EXPORT_PAGE_SIZE = 100;
 
 export function ClaimsContent() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading, backendUserData } = useSessionSync();
@@ -153,7 +155,7 @@ export function ClaimsContent() {
 
   const err = claimsQuery.error;
   const statusCode = err ? getErrorStatus(err) : undefined;
-  const errMsg = err ? getQueryErrorMessage(err, 'Could not load claims') : '';
+  const errMsg = err ? getQueryErrorMessage(err, t('claims.couldNotLoad')) : '';
 
   async function handleExport(range: { from: string; to: string }) {
     if (exporting) return;
@@ -181,13 +183,28 @@ export function ClaimsContent() {
         matchesSearch(claim, debouncedSearch)
       );
       if (claims.length === 0) {
-        toast.error('No claims to export');
+        toast.error(t('claims.noClaimsExport'));
         return;
       }
-      exportClaimsPerUserCsv(claims, groups);
+      exportClaimsPerUserCsv(claims, groups, {
+        unknownUser: t('claims.unknownUser'),
+        headers: [
+          t('claims.csvUser'),
+          t('claims.csvEmail'),
+          t('claims.csvRef'),
+          t('claims.csvCategory'),
+          t('claims.csvStatus'),
+          t('claims.csvAmount'),
+          t('claims.csvCurrency'),
+          t('claims.csvAmountZar'),
+          t('claims.csvCreated'),
+          t('claims.csvFolder'),
+          t('claims.csvBranch'),
+        ],
+      });
       setExportOpen(false);
     } catch (error) {
-      toast.error(getQueryErrorMessage(error, 'Could not export claims'));
+      toast.error(getQueryErrorMessage(error, t('claims.couldNotExport')));
     } finally {
       setExporting(false);
     }
@@ -210,10 +227,10 @@ export function ClaimsContent() {
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 shrink-0" data-tour="claims-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Claims
+            {t('claims.title')}
           </h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Submit expenses, attach receipts, and track approvals to payment.
+            {t('claims.description')}
           </p>
         </div>
 
@@ -266,7 +283,7 @@ export function ClaimsContent() {
                 ) : (
                   <Download className="size-4" />
                 )}
-                Export
+                {t('actions.export')}
               </Button>
               <Button
                 className={cn(
@@ -278,7 +295,7 @@ export function ClaimsContent() {
                 onClick={() => setCreateOpen(true)}
               >
                 <Plus className="size-4" />
-                New claim
+                {t('claims.newClaim')}
               </Button>
             </>
           }
@@ -296,7 +313,7 @@ export function ClaimsContent() {
 
         {statusCode === 403 ? (
           <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {errMsg} Your organisation may need the claims feature enabled.
+            {errMsg} {t('claims.featureHint')}
           </p>
         ) : err && statusCode !== 403 ? (
           <p className="mt-6 text-center text-sm text-destructive">{errMsg}</p>
@@ -330,7 +347,7 @@ export function ClaimsContent() {
                   disabled={isFetchingNext}
                   onClick={() => claimsQuery.fetchNextPage()}
                 >
-                  {isFetchingNext ? 'Loading…' : 'Load more'}
+                  {isFetchingNext ? t('actions.loading') : t('actions.loadMore')}
                 </Button>
               </div>
             ) : null}

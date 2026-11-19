@@ -1,0 +1,195 @@
+{
+  "about": {
+    "title": "Sobre a LORO",
+    "lead": "A LORO é software de vendas no terreno feito para equipas B2B da África do Sul — visitas, rotas, funil, mapas e encomendas prontas para ERP numa só plataforma.",
+    "replaceSpreadsheets": "Ajudamos fabricantes, grossistas e distribuidores a substituir o caos das folhas de cálculo por prova de visita, painéis para gestores e fluxos móveis que os comerciais usam mesmo na estrada.",
+    "connectsPrefix": "Do",
+    "visitTracking": "acompanhamento de visitas",
+    "connectsMiddle": "ao",
+    "competitorMapping": "mapeamento da concorrência",
+    "connectsSuffix": ", a LORO liga a atividade no terreno à receita — e não à administração por si só.",
+    "workforce": "Módulos opcionais de equipa (assiduidade, ausências) ficam ao lado das vendas no terreno para quem quer um só início de sessão para operações e pessoas."
+  },
+  "pricing": {
+    "title": "Preços",
+    "lead": "Software flexível de vendas no terreno para equipas na África do Sul — aumente utilizadores e filiais à medida que cresce.",
+    "growing": {
+      "title": "Equipas em crescimento",
+      "body": "Vendas no terreno essenciais: visitas, funil, planeamento, clientes e acesso à aplicação móvel.",
+      "perUser": "Licenciamento por utilizador",
+      "branchRoles": "Configuração de filiais e funções",
+      "support": "Apoio padrão"
+    },
+    "enterprise": {
+      "title": "Empresas",
+      "body": "Implementação em várias filiais, integração ERP, IoT e relatórios avançados.",
+      "onboarding": "Acolhimento dedicado",
+      "erpReview": "Revisão de ERP e integrações",
+      "targets": "Objetivos e exportações à medida"
+    },
+    "footnote": "Contacte o seu parceiro LORO ou crie uma conta para falar da implementação da sua equipa no terreno. Os preços publicados variam com a dimensão da organização e os módulos."
+  },
+  "customers": {
+    "title": "Clientes",
+    "lead": "Empresas sul-africanas usam a LORO para gerir vendas no terreno com menos administração e mais responsabilização.",
+    "distributors": {
+      "title": "Distribuidores centrados no terreno",
+      "body": "As equipas usam a LORO para prova diária de visitas, objetivos de funil e revisões no mapa, em vez de juntar folhas de cálculo todas as semanas."
+    },
+    "dashboard": {
+      "title": "Gestores com um só painel",
+      "body": "As chefias veem visitas, leads e o progresso do período sem perseguir comerciais no WhatsApp por atualizações."
+    },
+    "erp": {
+      "title": "Encomendas alinhadas com o ERP",
+      "body": "A loja B2B e os fluxos de encomendas respeitam os dados mestre de clientes e produtos em que as finanças já confiam."
+    },
+    "footnote": "Os casos de estudo com logótipos identificados são acrescentados quando os clientes autorizam a publicação. Peça uma apresentação de referência ao criar conta."
+  },
+  "blog": {
+    "titleLead": "Blogue de ",
+    "titleEmphasis": "vendas no terreno",
+    "subtitle": "Guias para gestores e comerciais de vendas no terreno na África do Sul.",
+    "back": "← Blogue"
+  },
+  "platform": {
+    "erp": "ERP próprio, integrado de origem — produtos, clientes, encomendas e fluxos da loja B2B na mesma plataforma. Ligações opcionais ao Sage, à Acumatica e ao SAP para ambientes financeiros mistos.",
+    "saas": "SaaS na nuvem com autenticação Clerk e acesso por organização para comerciais e gestores."
+  },
+  "compare": {
+    "topic": "Tema",
+    "capability": "Capacidade",
+    "repsly": {
+      "title": "LORO vs Repsly",
+      "lead": "Comparação factual para equipas que avaliam plataformas de execução no retalho e de vendas no terreno.",
+      "focus": "Foco principal",
+      "loroFocus": "Vendas B2B no terreno na África do Sul, visitas, funil, encomendas ERP",
+      "repslyFocus": "Execução no retalho CPG, programas de prateleira e promoções",
+      "region": "Região",
+      "loroRegion": "África do Sul em primeiro lugar",
+      "repslyRegion": "Marcas CPG globais",
+      "differentiator": "Diferenciador",
+      "loroDiff": "Informação da concorrência no mapa + módulos opcionais de equipa",
+      "repslyDiff": "Reconhecimento de imagem e profundidade de execução em loja",
+      "erp": "ERP",
+      "repslyErp": "Foco na execução no retalho; ERP através de integrações",
+      "platform": "Plataforma",
+      "repslyPlatform": "SaaS na nuvem; programas CPG globais",
+      "footnote": "Escolha a Repsly quando a análise de prateleira e os programas CPG dominam. Escolha a LORO quando visitas B2B, funil e vendas no terreno alinhadas com ERP na África do Sul são a prioridade."
+    },
+    "skynamo": {
+      "title": "LORO vs Skynamo",
+      "lead": "Ambas servem as vendas no terreno na África do Sul — compare o ajuste ao seu ERP, à dimensão da equipa e aos módulos.",
+      "positioning": "Posicionamento",
+      "loroPosition": "Vendas no terreno + funil + mapas da concorrência + RH opcional",
+      "skynamoPosition": "Canais de venda unificados, encomendas móveis, RADAR AI",
+      "erp": "ERP",
+      "skynamoErp": "Marketing forte em Sage, Acumatica e SAP",
+      "platform": "Plataforma",
+      "skynamoPlatform": "SaaS na nuvem; autenticação gerida pelo fornecedor",
+      "bestFor": "Ideal para",
+      "loroBest": "Prova de visita, mapas da concorrência, equipa opcional",
+      "skynamoBest": "Unificação ampla de canais + RADAR",
+      "footnote": "Faça um piloto em paralelo em visitas e funil antes de migrar as interfaces ERP."
+    },
+    "zoho": {
+      "title": "LORO vs Zoho CRM",
+      "lead": "O Zoho CRM é um conjunto amplo de CRM com IA; a LORO foi feita para a execução de vendas externas na África do Sul.",
+      "visitProof": "Prova de visita e evidência no terreno",
+      "loroVisit": "Fluxo principal",
+      "zohoVisit": "Exige configuração / extras",
+      "routePlanning": "Planeamento de rotas",
+      "loroRoutes": "Planeamento e mapas nativos",
+      "zohoRoutes": "RouteIQ ou mapas de terceiros",
+      "competitorMapping": "Mapeamento da concorrência",
+      "loroCompetitor": "Incluído",
+      "zohoCompetitor": "Módulos personalizados, em regra",
+      "erp": "ERP",
+      "zohoErp": "Centrado no CRM; ERP através do ecossistema Zoho",
+      "platform": "Plataforma",
+      "zohoPlatform": "SaaS na nuvem; modelo de conta Zoho",
+      "ecosystem": "Ecossistema",
+      "loroEcosystem": "Vendas no terreno focadas + ERP integrado",
+      "zohoEcosystem": "Amplo conjunto de aplicações Zoho",
+      "footnote": "Escolha o Zoho quando precisa de um CRM geral para todo o negócio. Escolha a LORO quando visitas no terreno, rotas e execução B2B na África do Sul são o estrangulamento."
+    }
+  },
+  "integrations": {
+    "title": "Integrações ERP",
+    "lead": "Ligue as vendas no terreno da LORO aos sistemas que guardam clientes, produtos e encomendas — para os comerciais venderem com dados atualizados na estrada.",
+    "sageBlurb": "Comum nos ambientes financeiros de PME e médias empresas na África do Sul.",
+    "acumaticaBlurb": "Contexto de ERP na nuvem para cotações e encomendas no terreno.",
+    "sapBlurb": "Dados empresariais de produtos e contas para grandes equipas no terreno.",
+    "sage": {
+      "title": "Sage + vendas no terreno LORO",
+      "lead": "Alinhe os dados do ERP ou da contabilidade Sage com visitas, funil e encomendas B2B que os comerciais registam no terreno.",
+      "finance": "As equipas sul-africanas usam muitas vezes o Sage nas finanças enquanto os comerciais ainda fazem cotações a partir de listas desatualizadas. A LORO traz o contexto de clientes e produtos para os fluxos de visita e encomenda, para o terreno e as finanças partilharem a mesma história.",
+      "hubPrefix": "Implemente primeiro as visitas e o funil e, depois, ligue os fluxos de encomendas com o seu parceiro de integração. Veja o",
+      "hubLink": "centro de integrações",
+      "hubSuffix": " completo."
+    },
+    "sap": {
+      "title": "SAP + operações no terreno LORO",
+      "lead": "Programas empresariais no terreno com dados mestre suportados pelo SAP e execução LORO de visitas, funil e mapas.",
+      "governed": "As grandes equipas no terreno precisam de dados governados de produtos e contas com uma experiência móvel rápida. A LORO acrescenta acompanhamento de visitas, planeamento de rotas e painéis de gestores por cima dos padrões de implementação SAP.",
+      "engage": "Envolva cedo a sua equipa de integração para as interfaces de clientes, materiais e encomendas, no âmbito do seu ambiente."
+    },
+    "acumatica": {
+      "title": "Acumatica + LORO",
+      "lead": "Inventário e clientes do ERP na nuvem disponíveis onde os comerciais planeiam rotas e fecham encomendas.",
+      "proof": "As equipas Acumatica ganham prova de visita no terreno e visibilidade do funil sem obrigar os comerciais a ecrãs de ERP no computador em cada paragem.",
+      "execution": "A LORO foca-se na execução — visitas, mapas, contexto da concorrência e encomendas móveis — enquanto o ERP continua a ser o sistema de registo."
+    }
+  },
+  "solutions": {
+    "competitor": {
+      "title": "Informação da concorrência num mapa",
+      "lead": "Acompanhe contas rivais ao lado dos seus clientes — níveis de ameaça, localizações e contexto para reuniões de terreno mais precisas.",
+      "landscape": "Comerciais e gestores veem o panorama competitivo no mapa, e não em folhas de cálculo dispersas.",
+      "afterSignIn": "Depois de iniciar sessão, use o visualizador de mapas para camadas ao vivo no terreno, filtros de visitas e vistas de influência junto das contas de clientes."
+    },
+    "visits": {
+      "title": "Software de acompanhamento de visitas",
+      "lead": "Prove o trabalho no terreno com registos, notas, cotações e resultados ligados a cada conta de cliente.",
+      "managers": "Os gestores veem que contas foram visitadas, o que se discutiu e o que aconteceu a seguir — sem registos de atividade contestados.",
+      "feeds": "As visitas alimentam o funil e os relatórios, para o acompanhamento usar os mesmos dados que os comerciais introduziram no local."
+    },
+    "workforce": {
+      "title": "Equipa e assiduidade",
+      "lead": "Módulos opcionais de RH ao lado das vendas no terreno — assiduidade, ausências e sinais de processamento salarial no mesmo início de sessão LORO.",
+      "prefix": "O posicionamento principal continua a ser as",
+      "fieldSales": "vendas no terreno",
+      "suffix": "; as ferramentas de equipa servem quem quer dados de operações e de pessoas em conjunto.",
+      "localSupport": "As equipas sul-africanas beneficiam de apoio local nos fluxos de terreno e de RH, quando estão ativos."
+    },
+    "routes": {
+      "title": "Planeamento de rotas para vendas no terreno",
+      "lead": "Tarefas, rotas diárias, lembretes e mapas — construídos a partir de visitas, leads e prioridades do funil.",
+      "driving": "Os comerciais passam menos tempo a conduzir entre paragens de pouco valor e mais tempo com contas que movem receita.",
+      "prefix": "O planeamento liga-se ao",
+      "visitTracking": "acompanhamento de visitas",
+      "suffix": ", para que as rotas planeadas e as concluídas fiquem visíveis para as chefias."
+    },
+    "fieldSales": {
+      "title": "Software de vendas no terreno",
+      "lead": "Uma plataforma para equipas B2B no terreno na África do Sul: comerciais móveis, gestores de escritório e encomendas alinhadas com o ERP.",
+      "repsTitle": "Para comerciais na estrada",
+      "repsBody": "Planeie o dia, registe visitas com evidência, atualize leads e faça encomendas numa experiência móvel pensada para os dedos, com sincronização resiliente.",
+      "managersTitle": "Para gestores de vendas",
+      "managersBody": "Objetivos de funil, cobertura de visitas e visualização no mapa — saiba quem visitou que contas sem perseguições por e-mail no fim da semana.",
+      "modulesTitle": "Módulos que se ligam",
+      "visitTracking": "Acompanhamento de visitas",
+      "routePlanning": "Planeamento de rotas",
+      "pipeline": "Funil",
+      "erp": "Integrações ERP"
+    },
+    "pipeline": {
+      "title": "Funil de vendas para equipas no terreno",
+      "lead": "Leads, objetivos do período, ganhos convertidos e resultados de visitas num só ecrã.",
+      "slides": "Os gestores no terreno deixam de reconstruir apresentações de sexta-feira — o progresso da quota e as próximas ações vivem na LORO, ao lado de fases de lead ao estilo CRM.",
+      "prefix": "Junte o funil aos módulos de",
+      "fieldSales": "vendas no terreno",
+      "suffix": " para um conjunto completo de vendas externas."
+    }
+  }
+}

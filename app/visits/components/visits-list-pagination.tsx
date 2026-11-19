@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,6 +65,7 @@ export function VisitsListPagination({
   className,
   dataTour = 'visits-pagination',
 }: VisitsListPaginationProps) {
+  const { t } = useTranslation('screens');
   const safeTotalPages = Math.max(totalPages, total > 0 ? 1 : 0);
   const canPrev = page > 1;
   const canNext = page < safeTotalPages;
@@ -78,7 +80,7 @@ export function VisitsListPagination({
       data-tour={dataTour}
     >
       <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
-        <span className="hidden sm:inline">Rows per page</span>
+        <span className="hidden sm:inline">{t('actions.rowsPerPage')}</span>
         <Select
           value={String(pageSize)}
           onValueChange={(v) => {
@@ -88,7 +90,7 @@ export function VisitsListPagination({
             }
           }}
         >
-          <SelectTrigger size="sm" className="h-8 w-[4.5rem]" aria-label="Rows per page">
+          <SelectTrigger size="sm" className="h-8 w-[4.5rem]" aria-label={t('actions.rowsPerPage')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -100,8 +102,8 @@ export function VisitsListPagination({
           </SelectContent>
         </Select>
         <span className="tabular-nums">
-          Page {total > 0 ? page : 0} of {safeTotalPages}
-          <span className="hidden sm:inline"> · {total.toLocaleString()} total</span>
+          {t('actions.pageOf', { page: total > 0 ? page : 0, totalPages: safeTotalPages })}
+          <span className="hidden sm:inline">{t('actions.totalCount', { count: total.toLocaleString() })}</span>
         </span>
       </div>
 
@@ -116,10 +118,10 @@ export function VisitsListPagination({
           className="h-8 px-2 sm:px-3"
           disabled={!canPrev || isFetching}
           onClick={() => onPageChange(page - 1)}
-          aria-label="Previous page"
+          aria-label={t('actions.previousPage')}
         >
           <ChevronLeft className="size-4" />
-          <span className="hidden sm:inline">Prev</span>
+          <span className="hidden sm:inline">{t('actions.prev')}</span>
         </Button>
 
         <div className="hidden items-center gap-0.5 sm:flex">
@@ -135,7 +137,7 @@ export function VisitsListPagination({
               )}
               disabled={isFetching}
               onClick={() => onPageChange(p)}
-              aria-label={`Page ${p}`}
+              aria-label={t('actions.pageNumber', { page: p })}
               aria-current={p === page ? 'page' : undefined}
             >
               {p}
@@ -150,9 +152,9 @@ export function VisitsListPagination({
           className="h-8 px-2 sm:px-3"
           disabled={!canNext || isFetching}
           onClick={() => onPageChange(page + 1)}
-          aria-label="Next page"
+          aria-label={t('actions.nextPage')}
         >
-          <span className="hidden sm:inline">Next</span>
+          <span className="hidden sm:inline">{t('actions.next')}</span>
           <ChevronRight className="size-4" />
         </Button>
       </div>

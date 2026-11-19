@@ -112,6 +112,7 @@ import {
 import { formatWarningDateTime } from '@/lib/format-warning-datetime';
 import { humanizeReportLabel } from '@/lib/utils/report-labels';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const WARNING_BADGE: Record<1 | 2 | 3, string> = {
   1: 'bg-green-100 text-green-800 border-green-200/80',
@@ -171,6 +172,7 @@ function toYmd(value: string | null | undefined): string | null {
 }
 
 function ImportBookSection({ row }: { row: ReportsTargetRow }) {
+  const { t } = useTranslation('screens');
   const book = row.importBook;
   if (row.importBookLoading) {
     return (
@@ -201,18 +203,18 @@ function ImportBookSection({ row }: { row: ReportsTargetRow }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Uploader</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Touched</TableHead>
-              <TableHead>Untouched</TableHead>
-              <TableHead>Pending</TableHead>
-              <TableHead>Review</TableHead>
-              <TableHead>Approved</TableHead>
-              <TableHead>Converted</TableHead>
-              <TableHead>Declined</TableHead>
-              <TableHead>Cancelled</TableHead>
-              <TableHead>Discarded</TableHead>
-              <TableHead>Deleted</TableHead>
+              <TableHead>{t('tables.uploader')}</TableHead>
+              <TableHead>{t('tables.total')}</TableHead>
+              <TableHead>{t('tables.touched')}</TableHead>
+              <TableHead>{t('tables.untouched')}</TableHead>
+              <TableHead>{t('tables.pending')}</TableHead>
+              <TableHead>{t('tables.review')}</TableHead>
+              <TableHead>{t('tables.approved')}</TableHead>
+              <TableHead>{t('tables.converted')}</TableHead>
+              <TableHead>{t('tables.declined')}</TableHead>
+              <TableHead>{t('tables.cancelled')}</TableHead>
+              <TableHead>{t('tables.discarded')}</TableHead>
+              <TableHead>{t('tables.deleted')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -378,6 +380,7 @@ export function ReportsTargetDetailDialog({
   currencyView = 'set',
   exchangeRateMap,
 }: ReportsTargetDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const [leadsPage, setLeadsPage] = useState(1);
   const [leadsPageSize, setLeadsPageSize] = useState<ReportsPageSize>(
@@ -1038,9 +1041,9 @@ export function ReportsTargetDetailDialog({
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Product</TableHead>
+                              <TableHead>{t('tables.product')}</TableHead>
                               <TableHead className="text-right">Units</TableHead>
-                              <TableHead className="text-right">Sales</TableHead>
+                              <TableHead className="text-right">{t('tables.sales')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1075,9 +1078,9 @@ export function ReportsTargetDetailDialog({
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Product</TableHead>
+                              <TableHead>{t('tables.product')}</TableHead>
                               <TableHead className="text-right">Units</TableHead>
-                              <TableHead className="text-right">Sales</TableHead>
+                              <TableHead className="text-right">{t('tables.sales')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>

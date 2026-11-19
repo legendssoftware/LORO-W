@@ -1,6 +1,8 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
+import { CalendarDays, CircleDot, MessageSquare, Plus, UserRound } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { useSessionSync, useTokenReady, useUsers } from '@/api/hooks';
 import {
@@ -29,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { IconField, IconInput } from '@/components/icon-field';
 import {
   Select,
   SelectContent,
@@ -69,9 +71,9 @@ const STATUSES = [
   'PARTIALLY_TAKEN',
 ] as const;
 
-const chartConfig = {
-  count: { label: 'Requests', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
+function leaveChartConfig(label: string): ChartConfig {
+  return { count: { label, color: 'var(--chart-1)' } };
+}
 
 function personName(row: LeaveRecord): string {
   const owner = row.owner;
@@ -88,6 +90,7 @@ function dayCount(start: string, end: string): number {
 }
 
 export function LeaveContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !sessionLoading;
@@ -138,12 +141,12 @@ export function LeaveContent() {
   }, [backendUserData?.uid, listQuery.data?.data, ownOnly]);
 
   if (ready && !canAccessLeave(accessLevel)) {
-    return <FeatureDenied title="Leave" />;
+    return <FeatureDenied title={t('leave.title')} />;
   }
 
   async function submitCreate() {
     if (!form.startDate || !form.endDate) {
-      toast.error('Start and end dates are required');
+      toast.error(t('leave.datesRequired'));
       return;
     }
     try {
@@ -157,10 +160,10 @@ export function LeaveContent() {
         isPublicHoliday: false,
         isPaid: form.leaveType !== 'UNPAID',
       });
-      toast.success('Leave requested');
+      toast.success(t('leave.requested'));
       setCreateOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not request leave');
+      toast.error(error instanceof Error ? error.message : t('leave.couldNotRequest'));
     }
   }
 
@@ -170,7 +173,7 @@ export function LeaveContent() {
       if (action === 'approve') await approveMutation.mutateAsync(selected.uid);
       if (action === 'reject') {
         if (!reason.trim()) {
-          toast.error('A rejection reason is required');
+          toast.error(t('leave.reasonRequired'));
           return;
         }
         await rejectMutation.mutateAsync({ ref: selected.uid, rejectionReason: reason.trim() });
@@ -182,11 +185,11 @@ export function LeaveContent() {
         });
       }
       if (action === 'delete') await deleteMutation.mutateAsync(selected.uid);
-      toast.success('Leave updated');
+      toast.success(t('leave.updated'));
       setSelected(null);
       setReason('');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not update leave');
+      toast.error(error instanceof Error ? error.message : t('leave.couldNotUpdate'));
     }
   }
 
@@ -199,19 +202,22 @@ export function LeaveContent() {
     <>
       <FeatureShell
         tourId="leave"
-        title="Leave"
-        description="Request leave, filter the inbox, and approve, reject, or cancel a request."
+        title={t('leave.title')}
+        description={t('leave.description')}
         actions={
           <Button type="button" onClick={() => setCreateOpen(true)}>
-            Request leave
-          </Button>
+            <Plus className="size-4" aria-hidden />{t('leave.request')}</Button>
         }
         filters={
           <div className="flex flex-wrap gap-2">
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-[180px]">
+                <CircleDot className="size-4 text-muted-foreground" aria-hidden />
+                <SelectValue placeholder={t('actions.allStatuses')} />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">
+                  <CircleDot className="size-4" aria-hidden />{t('actions.allStatuses')}</SelectItem>
                 {STATUSES.map((item) => (
                   <SelectItem key={item} value={item}>{item}</SelectItem>
                 ))}
@@ -219,9 +225,13 @@ export function LeaveContent() {
             </Select>
             {!ownOnly ? (
               <Select value={ownerUid} onValueChange={setOwnerUid}>
-                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Person" /></SelectTrigger>
+                <SelectTrigger className="w-[200px]">
+                  <UserRound className="size-4 text-muted-foreground" aria-hidden />
+                  <SelectValue placeholder={t('leave.allPeople')} />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All people</SelectItem>
+                  <SelectItem value="all">
+                    <UserRound className="size-4" aria-hidden />{t('leave.allPeople')}</SelectItem>
                   {(usersQuery.data ?? []).map((user) => (
                     <SelectItem key={user.uid} value={String(user.uid)}>
                       {[user.name, user.surname].filter(Boolean).join(' ') || user.email || String(user.uid)}
@@ -230,8 +240,8 @@ export function LeaveContent() {
                 </SelectContent>
               </Select>
             ) : null}
-            <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="w-[160px]" />
-            <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="w-[160px]" />
+            <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="w-[160px]" aria-label={t('leave.fromDate')} />
+            <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="w-[160px]" aria-label={t('leave.toDate')} />
           </div>
         }
         isLoading={!ready || listQuery.isLoading}
@@ -239,10 +249,10 @@ export function LeaveContent() {
         error={listQuery.error}
         onRetry={() => void listQuery.refetch()}
         isEmpty={rows.length === 0}
-        emptyMessage="No leave requests match these filters."
+        emptyMessage={t('leave.empty')}
       >
         {!ownOnly && chartData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-48 w-full">
+          <ChartContainer config={leaveChartConfig(t('leave.requests'))} className="h-48 w-full">
             <BarChart data={chartData}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="name" tickLine={false} axisLine={false} />
@@ -255,16 +265,21 @@ export function LeaveContent() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Person</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Dates</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('leave.person')}</TableHead>
+              <TableHead>{t('leave.type')}</TableHead>
+              <TableHead>{t('leave.dates')}</TableHead>
+              <TableHead>{t('leave.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.uid} className="cursor-pointer" onClick={() => setSelected(row)}>
-                <TableCell>{personName(row)}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2">
+                    <UserRound className="size-4 text-muted-foreground" aria-hidden />
+                    {personName(row)}
+                  </span>
+                </TableCell>
                 <TableCell>{row.leaveType}</TableCell>
                 <TableCell>{String(row.startDate).slice(0, 10)} – {String(row.endDate).slice(0, 10)}</TableCell>
                 <TableCell>{row.status}</TableCell>
@@ -276,57 +291,60 @@ export function LeaveContent() {
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Request leave</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('leave.request')}</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <div className="space-y-1">
-              <Label>Type</Label>
+            <IconField icon={CalendarDays} label={t('leave.type')}>
               <Select value={form.leaveType} onValueChange={(value) => setForm((current) => ({ ...current, leaveType: value }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <CalendarDays className="size-4 text-muted-foreground" aria-hidden />
+                  <SelectValue placeholder={t('leave.chooseType')} />
+                </SelectTrigger>
                 <SelectContent>
                   {LEAVE_TYPES.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                    <SelectItem key={item} value={item}>
+                      <CalendarDays className="size-4" aria-hidden />
+                      {item}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="leave-start">Start</Label>
-              <Input id="leave-start" type="date" value={form.startDate} onChange={(event) => setForm((current) => ({ ...current, startDate: event.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="leave-end">End</Label>
-              <Input id="leave-end" type="date" value={form.endDate} onChange={(event) => setForm((current) => ({ ...current, endDate: event.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="leave-reason">Motivation</Label>
-              <Input id="leave-reason" value={form.motivation} onChange={(event) => setForm((current) => ({ ...current, motivation: event.target.value }))} />
-            </div>
+            </IconField>
+            <IconField icon={CalendarDays} label={t('leave.start')}>
+              <IconInput icon={CalendarDays} type="date" value={form.startDate} onChange={(event) => setForm((current) => ({ ...current, startDate: event.target.value }))} aria-label={t('leave.startDate')} />
+            </IconField>
+            <IconField icon={CalendarDays} label={t('leave.end')}>
+              <IconInput icon={CalendarDays} type="date" value={form.endDate} onChange={(event) => setForm((current) => ({ ...current, endDate: event.target.value }))} aria-label={t('leave.endDate')} />
+            </IconField>
+            <IconField icon={MessageSquare} label={t('leave.motivation')}>
+              <IconInput icon={MessageSquare} value={form.motivation} placeholder={t('leave.motivationPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, motivation: event.target.value }))} />
+            </IconField>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={() => void submitCreate()} disabled={createMutation.isPending}>Submit</Button>
+            <Button type="button" onClick={() => void submitCreate()} disabled={createMutation.isPending}>{t('actions.submit')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={selected != null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Leave request</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('leave.dialogTitle')}</DialogTitle></DialogHeader>
           {selected ? (
             <div className="space-y-2 text-sm">
               <p>{personName(selected)} · {selected.leaveType}</p>
               <p>{String(selected.startDate).slice(0, 10)} – {String(selected.endDate).slice(0, 10)} · {selected.status}</p>
               {selected.motivation ? <p>{selected.motivation}</p> : null}
-              <Label htmlFor="leave-action-reason">Reason</Label>
-              <Input id="leave-action-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
+              <IconField icon={MessageSquare} label={t('leave.reason')}>
+                <IconInput icon={MessageSquare} value={reason} placeholder={t('leave.reasonPlaceholder')} onChange={(event) => setReason(event.target.value)} />
+              </IconField>
             </div>
           ) : null}
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => void runAction('cancel')}>Cancel request</Button>
+            <Button type="button" variant="outline" onClick={() => void runAction('cancel')}>{t('leave.cancelRequest')}</Button>
             {canDecide ? (
               <>
-                <Button type="button" onClick={() => void runAction('approve')}>Approve</Button>
-                <Button type="button" variant="destructive" onClick={() => void runAction('reject')}>Reject</Button>
-                <Button type="button" variant="destructive" onClick={() => void runAction('delete')}>Delete</Button>
+                <Button type="button" onClick={() => void runAction('approve')}>{t('actions.approve')}</Button>
+                <Button type="button" variant="destructive" onClick={() => void runAction('reject')}>{t('actions.reject')}</Button>
+                <Button type="button" variant="destructive" onClick={() => void runAction('delete')}>{t('actions.delete')}</Button>
               </>
             ) : null}
           </DialogFooter>

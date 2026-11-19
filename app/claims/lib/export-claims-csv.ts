@@ -1,11 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import type { Claim, ClaimGroup } from '@/api/types/claims';
 import { exportToCsv } from '@/lib/utils/csv-export';
 
-function ownerName(claim: Claim): string {
+function ownerName(claim: Claim, unknownUser: string): string {
   const person = claim.owner;
-  if (!person) return 'Unknown user';
+  if (!person) return unknownUser;
   const name = `${person.name ?? ''} ${person.surname ?? ''}`.trim();
-  return name || person.email || 'Unknown user';
+  return name || person.email || unknownUser;
 }
 
 function claimCreatedTime(claim: Claim): number {
@@ -30,11 +31,13 @@ function amountLabel(claim: Claim): string {
  */
 export function exportClaimsPerUserCsv(
   claims: Claim[],
-  groups: ClaimGroup[]
+  groups: ClaimGroup[],
+  labels?: { unknownUser: string; headers: string[] }
 ): void {
+  const unknownUser = labels?.unknownUser ?? 'Unknown user';
   const folderByUid = new Map(groups.map((group) => [group.uid, group.title]));
   const sorted = [...claims].sort((a, b) => {
-    const byOwner = ownerName(a).localeCompare(ownerName(b));
+    const byOwner = ownerName(a, unknownUser).localeCompare(ownerName(b, unknownUser));
     if (byOwner !== 0) return byOwner;
     return claimCreatedTime(b) - claimCreatedTime(a);
   });
@@ -52,7 +55,7 @@ export function exportClaimsPerUserCsv(
         ? String(claim.amountZar)
         : '';
     return [
-      ownerName(claim),
+      ownerName(claim, unknownUser),
       claim.owner?.email ?? '',
       claim.claimRef || String(claim.uid),
       claim.category ?? '',
@@ -68,7 +71,7 @@ export function exportClaimsPerUserCsv(
 
   const stamp = new Date().toISOString().slice(0, 10);
   exportToCsv(
-    [
+    labels?.headers ?? [
       'User',
       'Email',
       'Claim ref',

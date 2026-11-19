@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessMerchandise } from '@/lib/access';
@@ -17,13 +19,13 @@ const SEL_LIST = '[data-tour="merchandise-list"]';
 
 const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_LIST] as const;
 
-function buildMerchandiseSteps(): DriveStep[] {
+function buildMerchandiseSteps(t: TFunction): DriveStep[] {
   const steps: DriveStep[] = [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Merchandise',
-        description: 'Field photos and notes, with review status on each log.',
+        title: t('tours.merchandise.header.title'),
+        description: t('tours.merchandise.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -34,9 +36,8 @@ function buildMerchandiseSteps(): DriveStep[] {
     steps.push({
       element: SEL_CREATE,
       popover: {
-        title: 'New merchandise',
-        description:
-          'Click New merchandise. Attach a photo, name the client, and add comments. The log stays in review until it is published.',
+        title: t('tours.merchandise.create.title'),
+        description: t('tours.merchandise.create.description'),
         side: 'bottom',
         align: 'end',
       },
@@ -47,8 +48,8 @@ function buildMerchandiseSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Filter logs',
-        description: 'Filter by date, page size, branch, teammate, status, or search.',
+        title: t('tours.merchandise.filters.title'),
+        description: t('tours.merchandise.filters.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -56,8 +57,8 @@ function buildMerchandiseSteps(): DriveStep[] {
     {
       element: SEL_LIST,
       popover: {
-        title: 'Open a log',
-        description: 'Click a row for the full photo and review actions.',
+        title: t('tours.merchandise.list.title'),
+        description: t('tours.merchandise.list.description'),
         side: 'top',
         align: 'center',
       },
@@ -72,6 +73,7 @@ function areMerchandiseTargetsReady(): boolean {
 }
 
 export function MerchandiseTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -92,7 +94,7 @@ export function MerchandiseTour() {
     read: readMerchandiseTourState,
     write: writeMerchandiseTourState,
     areTargetsReady: areMerchandiseTargetsReady,
-    getSteps: buildMerchandiseSteps,
+    getSteps: () => buildMerchandiseSteps(t),
   });
 
   return null;

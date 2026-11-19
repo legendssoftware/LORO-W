@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useMemo } from 'react';
 import { DollarSign, FileText, Package, TrendingUp, User } from 'lucide-react';
 import type { ClientProfileData, ClientQuotation } from '@/api/types/client-portal';
@@ -20,6 +22,7 @@ const CHART_COLORS = [
 ];
 
 export function ClientReportsSalesTab({ client }: { client: ClientProfileData }) {
+  const { t } = useTranslation('portal');
   const quotations = (client.quotations ?? []) as ClientQuotation[];
   const orders = quotations.filter(
     (q) =>
@@ -62,16 +65,16 @@ export function ClientReportsSalesTab({ client }: { client: ClientProfileData })
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={TrendingUp} label="Total sales" value={formatZar(totalSales)} />
-        <MetricCard icon={Package} label="Orders" value={String(orders.length)} />
-        <MetricCard icon={FileText} label="Quotations" value={String(quotations.length)} />
-        <MetricCard icon={DollarSign} label="Avg order" value={formatZar(avgOrder)} />
+        <MetricCard icon={TrendingUp} label={t('totalSales')} value={formatZar(totalSales)} />
+        <MetricCard icon={Package} label={t('orders')} value={String(orders.length)} />
+        <MetricCard icon={FileText} label={t('quotations')} value={String(quotations.length)} />
+        <MetricCard icon={DollarSign} label={t('avgOrder')} value={formatZar(avgOrder)} />
       </div>
 
       {statusDonut.slices.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Order status</CardTitle>
+            <CardTitle className="text-base">{t('orderStatus')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ReportDonutChart
@@ -100,11 +103,11 @@ export function ClientReportsSalesTab({ client }: { client: ClientProfileData })
             <p className="text-muted-foreground">{client.assignedSalesRep.phone}</p>
           )}
           <p className="pt-2">
-            <span className="text-muted-foreground">Payment terms: </span>
+            <span className="text-muted-foreground">{t('paymentTermsColon')} </span>
             {client.paymentTerms ?? '—'}
           </p>
           <p>
-            <span className="text-muted-foreground">Credit limit: </span>
+            <span className="text-muted-foreground">{t('creditLimitColon')} </span>
             {formatZar(client.creditLimit)}
           </p>
         </CardContent>

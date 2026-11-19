@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -373,14 +374,15 @@ export function LeadFormBody({
   getBranchDisplayLabel,
   validationError,
 }: LeadFormBodyProps) {
+  const { t } = useTranslation('screens');
   return (
     <div className="grid gap-4 py-2">
       <div className="grid w-full gap-2">
-        <Label>Lead image</Label>
+        <Label>{t('leads.form.leadImage')}</Label>
         <div className="flex w-full flex-col gap-2">
           {displayImageSrc ? (
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border bg-muted">
-              <img src={displayImageSrc} alt="Lead preview" className="h-full w-full object-cover" />
+              <img src={displayImageSrc} alt={t('leads.form.leadPreview')} className="h-full w-full object-cover" />
               <Button
                 type="button"
                 variant="destructive"
@@ -392,9 +394,7 @@ export function LeadFormBody({
               </Button>
             </div>
           ) : (
-            <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed bg-muted/50 text-muted-foreground text-sm">
-              No image selected
-            </div>
+            <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed bg-muted/50 text-muted-foreground text-sm">{t('leads.form.noImage')}</div>
           )}
           <input
             ref={imageInputRef}
@@ -411,26 +411,26 @@ export function LeadFormBody({
             onClick={() => imageInputRef.current?.click()}
           >
             <ImageIcon className="size-4" />
-            {displayImageSrc ? 'Change image' : 'From gallery'}
+            {displayImageSrc ? t('leads.form.changeImage') : t('leads.form.fromGallery')}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-name`}>Name *</Label>
+          <Label htmlFor={`${idPrefix}-name`}>{t('leads.form.name')}</Label>
           <Input
             id={`${idPrefix}-name`}
-            placeholder="e.g. John Doe"
+            placeholder={t('leads.form.namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-company`}>Company</Label>
+          <Label htmlFor={`${idPrefix}-company`}>{t('leads.form.company')}</Label>
           <Input
             id={`${idPrefix}-company`}
-            placeholder="e.g. Acme Inc."
+            placeholder={t('leads.form.companyPlaceholder')}
             value={form.companyName}
             onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
           />
@@ -438,20 +438,20 @@ export function LeadFormBody({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-email`}>Email</Label>
+          <Label htmlFor={`${idPrefix}-email`}>{t('leads.form.email')}</Label>
           <Input
             id={`${idPrefix}-email`}
             type="email"
-            placeholder="e.g. john@example.com"
+            placeholder={t('leads.form.emailPlaceholder')}
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
+          <Label htmlFor={`${idPrefix}-phone`}>{t('leads.form.phone')}</Label>
           <Input
             id={`${idPrefix}-phone`}
-            placeholder="e.g. +27 12 345 6789"
+            placeholder={t('leads.form.phonePlaceholder')}
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
@@ -459,19 +459,19 @@ export function LeadFormBody({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-secondary-phone`}>Secondary phone</Label>
+          <Label htmlFor={`${idPrefix}-secondary-phone`}>{t('leads.form.secondaryPhone')}</Label>
           <Input
             id={`${idPrefix}-secondary-phone`}
-            placeholder="Optional"
+            placeholder={t('leads.form.optional')}
             value={form.secondaryPhoneNumber}
             onChange={(e) => setForm((f) => ({ ...f, secondaryPhoneNumber: e.target.value }))}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-whatsapp`}>WhatsApp</Label>
+          <Label htmlFor={`${idPrefix}-whatsapp`}>{t('leads.form.whatsapp')}</Label>
           <Input
             id={`${idPrefix}-whatsapp`}
-            placeholder="Optional"
+            placeholder={t('leads.form.optional')}
             value={form.whatsAppNumber}
             onChange={(e) => setForm((f) => ({ ...f, whatsAppNumber: e.target.value }))}
           />
@@ -479,38 +479,38 @@ export function LeadFormBody({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-form`}>Form</Label>
+          <Label htmlFor={`${idPrefix}-form`}>{t('leads.form.form')}</Label>
           <Input
             id={`${idPrefix}-form`}
-            placeholder="e.g. Contact form"
+            placeholder={t('leads.form.formPlaceholder')}
             value={form.form}
             onChange={(e) => setForm((f) => ({ ...f, form: e.target.value }))}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-channel`}>Channel</Label>
+          <Label htmlFor={`${idPrefix}-channel`}>{t('leads.form.channel')}</Label>
           <Input
             id={`${idPrefix}-channel`}
-            placeholder="e.g. email"
+            placeholder={t('leads.form.channelPlaceholder')}
             value={form.channel}
             onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
           />
         </div>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor={`${idPrefix}-labels`}>Labels</Label>
+        <Label htmlFor={`${idPrefix}-labels`}>{t('leads.form.labels')}</Label>
         <Input
           id={`${idPrefix}-labels`}
-          placeholder="Comma-separated, e.g. VIP, Hot"
+          placeholder={t('leads.form.labelsPlaceholder')}
           value={form.labelsComma}
           onChange={(e) => setForm((f) => ({ ...f, labelsComma: e.target.value }))}
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor={`${idPrefix}-notes`}>Notes</Label>
+        <Label htmlFor={`${idPrefix}-notes`}>{t('leads.form.notes')}</Label>
         <Textarea
           id={`${idPrefix}-notes`}
-          placeholder="Optional notes"
+          placeholder={t('leads.form.notesPlaceholder')}
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           rows={3}
@@ -519,7 +519,7 @@ export function LeadFormBody({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-last-contact`}>Last contact date</Label>
+          <Label htmlFor={`${idPrefix}-last-contact`}>{t('leads.form.lastContact')}</Label>
           <Input
             id={`${idPrefix}-last-contact`}
             type="date"
@@ -533,7 +533,7 @@ export function LeadFormBody({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-next-followup`}>Next follow-up date</Label>
+          <Label htmlFor={`${idPrefix}-next-followup`}>{t('leads.form.nextFollowUp')}</Label>
           <Input
             id={`${idPrefix}-next-followup`}
             type="date"
@@ -550,22 +550,22 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Company details"
+          title={t('leads.form.companyDetails')}
           collapsed={collapsed.companyDetails}
           onToggle={() => toggleSection('companyDetails')}
         />
         {!collapsed.companyDetails && (
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid gap-2">
-              <Label>Job title</Label>
+              <Label>{t('leads.form.jobTitle')}</Label>
               <Input
-                placeholder="e.g. Marketing Manager"
+                placeholder={t('leads.form.jobTitlePlaceholder')}
                 value={form.jobTitle}
                 onChange={(e) => setForm((f) => ({ ...f, jobTitle: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
-              <Label>Industry</Label>
+              <Label>{t('leads.form.industry')}</Label>
               <Select
                 value={form.industry}
                 onValueChange={(v) => setForm((f) => ({ ...f, industry: v }))}
@@ -586,7 +586,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Business size</Label>
+              <Label>{t('leads.form.businessSize')}</Label>
               <Select
                 value={form.businessSize}
                 onValueChange={(v) => setForm((f) => ({ ...f, businessSize: v }))}
@@ -607,7 +607,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Decision maker role</Label>
+              <Label>{t('leads.form.decisionMaker')}</Label>
               <Select
                 value={form.decisionMakerRole}
                 onValueChange={(v) => setForm((f) => ({ ...f, decisionMakerRole: v }))}
@@ -633,14 +633,14 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Lead qualification"
+          title={t('leads.form.qualification')}
           collapsed={collapsed.leadQualification}
           onToggle={() => toggleSection('leadQualification')}
         />
         {!collapsed.leadQualification && (
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid gap-2">
-              <Label>Intent</Label>
+              <Label>{t('leads.form.intent')}</Label>
               <Select
                 value={form.intent}
                 onValueChange={(v) => setForm((f) => ({ ...f, intent: v }))}
@@ -662,7 +662,7 @@ export function LeadFormBody({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Temperature</Label>
+                <Label>{t('leads.form.temperature')}</Label>
                 <Select
                   value={form.temperature}
                   onValueChange={(v) => setForm((f) => ({ ...f, temperature: v }))}
@@ -683,7 +683,7 @@ export function LeadFormBody({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Priority</Label>
+                <Label>{t('leads.form.priority')}</Label>
                 <Select
                   value={form.priority}
                   onValueChange={(v) => setForm((f) => ({ ...f, priority: v }))}
@@ -705,7 +705,7 @@ export function LeadFormBody({
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Source</Label>
+              <Label>{t('leads.form.source')}</Label>
               <Select
                 value={form.source}
                 onValueChange={(v) => setForm((f) => ({ ...f, source: v }))}
@@ -726,7 +726,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Lifecycle stage</Label>
+              <Label>{t('leads.form.lifecycle')}</Label>
               <Select
                 value={form.lifecycleStage}
                 onValueChange={(v) => setForm((f) => ({ ...f, lifecycleStage: v }))}
@@ -747,7 +747,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Quality rating (1-5)</Label>
+              <Label>{t('leads.form.quality')}</Label>
               <Select
                 value={String(form.userQualityRating)}
                 onValueChange={(v) =>
@@ -771,7 +771,7 @@ export function LeadFormBody({
       </div>
 
       <div className="grid gap-2">
-        <Label>Status</Label>
+        <Label>{t('leads.form.status')}</Label>
         <Select
           value={form.status}
           onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
@@ -794,7 +794,7 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Financial information"
+          title={t('leads.form.financial')}
           collapsed={collapsed.financial}
           onToggle={() => toggleSection('financial')}
         />
@@ -802,7 +802,7 @@ export function LeadFormBody({
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label>Budget range</Label>
+                <Label>{t('leads.form.budget')}</Label>
                 <Select
                   value={form.budgetRange}
                   onValueChange={(v) => setForm((f) => ({ ...f, budgetRange: v }))}
@@ -823,7 +823,7 @@ export function LeadFormBody({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Currency</Label>
+                <Label>{t('leads.form.currency')}</Label>
                 <Select
                   value={form.currency}
                   onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}
@@ -846,11 +846,11 @@ export function LeadFormBody({
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label>Estimated value</Label>
+                <Label>{t('leads.form.estimatedValue')}</Label>
                 <Input
                   type="number"
                   min={0}
-                  placeholder="e.g. 50000"
+                  placeholder={t('leads.form.valuePlaceholder')}
                   value={form.estimatedValue ?? ''}
                   onChange={(e) => {
                     const v = e.target.value ? Number(e.target.value) : undefined;
@@ -859,7 +859,7 @@ export function LeadFormBody({
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Purchase timeline</Label>
+                <Label>{t('leads.form.timeline')}</Label>
                 <Select
                   value={form.purchaseTimeline}
                   onValueChange={(v) => setForm((f) => ({ ...f, purchaseTimeline: v }))}
@@ -886,14 +886,14 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Communication preferences"
+          title={t('leads.form.communication')}
           collapsed={collapsed.communication}
           onToggle={() => toggleSection('communication')}
         />
         {!collapsed.communication && (
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid gap-2">
-              <Label>Preferred communication</Label>
+              <Label>{t('leads.form.preferred')}</Label>
               <Select
                 value={form.preferredCommunication}
                 onValueChange={(v) =>
@@ -916,7 +916,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Timezone</Label>
+              <Label>{t('leads.form.timezone')}</Label>
               <Select
                 value={form.timezone}
                 onValueChange={(v) => setForm((f) => ({ ...f, timezone: v }))}
@@ -937,7 +937,7 @@ export function LeadFormBody({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Best contact time</Label>
+              <Label>{t('leads.form.bestTime')}</Label>
               <Select
                 value={form.bestContactTime}
                 onValueChange={(v) => setForm((f) => ({ ...f, bestContactTime: v }))}
@@ -963,16 +963,16 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Additional information"
+          title={t('leads.form.additional')}
           collapsed={collapsed.additional}
           onToggle={() => toggleSection('additional')}
         />
         {!collapsed.additional && (
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid gap-2">
-              <Label>Pain points</Label>
+              <Label>{t('leads.form.painPoints')}</Label>
               <Textarea
-                placeholder="List main pain points..."
+                placeholder={t('leads.form.painPlaceholder')}
                 value={form.painPoints}
                 onChange={(e) => setForm((f) => ({ ...f, painPoints: e.target.value }))}
                 rows={2}
@@ -980,9 +980,9 @@ export function LeadFormBody({
               />
             </div>
             <div className="grid gap-2">
-              <Label>Referral source</Label>
+              <Label>{t('leads.form.referral')}</Label>
               <Input
-                placeholder="Who referred this lead?"
+                placeholder={t('leads.form.referralPlaceholder')}
                 value={form.referralSource}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, referralSource: e.target.value }))
@@ -990,9 +990,9 @@ export function LeadFormBody({
               />
             </div>
             <div className="grid gap-2">
-              <Label>Competitor info</Label>
+              <Label>{t('leads.form.competitor')}</Label>
               <Input
-                placeholder="Current solutions they use"
+                placeholder={t('leads.form.competitorPlaceholder')}
                 value={form.competitorInfo}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, competitorInfo: e.target.value }))
@@ -1005,16 +1005,16 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="Marketing information"
+          title={t('leads.form.marketing')}
           collapsed={collapsed.marketing}
           onToggle={() => toggleSection('marketing')}
         />
         {!collapsed.marketing && (
           <div className="grid gap-4 rounded-lg border p-3">
             <div className="grid gap-2">
-              <Label>Campaign name</Label>
+              <Label>{t('leads.form.campaign')}</Label>
               <Input
-                placeholder="e.g. Summer2024"
+                placeholder={t('leads.form.campaignPlaceholder')}
                 value={form.campaignName}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, campaignName: e.target.value }))
@@ -1022,9 +1022,9 @@ export function LeadFormBody({
               />
             </div>
             <div className="grid gap-2">
-              <Label>Landing page</Label>
+              <Label>{t('leads.form.landing')}</Label>
               <Input
-                placeholder="https://..."
+                placeholder={t('leads.form.landingPlaceholder')}
                 value={form.landingPage}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, landingPage: e.target.value }))
@@ -1033,7 +1033,7 @@ export function LeadFormBody({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>UTM source</Label>
+                <Label>{t('leads.form.utmSource')}</Label>
                 <Input
                   placeholder="google"
                   value={form.utmSource}
@@ -1041,7 +1041,7 @@ export function LeadFormBody({
                 />
               </div>
               <div className="grid gap-2">
-                <Label>UTM medium</Label>
+                <Label>{t('leads.form.utmMedium')}</Label>
                 <Input
                   placeholder="cpc"
                   value={form.utmMedium}
@@ -1050,7 +1050,7 @@ export function LeadFormBody({
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>UTM campaign</Label>
+              <Label>{t('leads.form.utmCampaign')}</Label>
               <Input
                 placeholder="summer-2024"
                 value={form.utmCampaign}
@@ -1061,19 +1061,19 @@ export function LeadFormBody({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>UTM term</Label>
+                <Label>{t('leads.form.utmTerm')}</Label>
                 <Input
                   value={form.utmTerm}
                   onChange={(e) => setForm((f) => ({ ...f, utmTerm: e.target.value }))}
-                  placeholder="e.g. drywall supplies"
+                  placeholder={t('leads.form.utmTermPlaceholder')}
                 />
               </div>
               <div className="grid gap-2">
-                <Label>UTM content</Label>
+                <Label>{t('leads.form.utmContent')}</Label>
                 <Input
                   value={form.utmContent}
                   onChange={(e) => setForm((f) => ({ ...f, utmContent: e.target.value }))}
-                  placeholder="e.g. banner-ad"
+                  placeholder={t('leads.form.utmContentPlaceholder')}
                 />
               </div>
             </div>
@@ -1083,7 +1083,7 @@ export function LeadFormBody({
 
       <div className="grid gap-2">
         <LeadFormSectionTrigger
-          title="File attachments"
+          title={t('leads.form.attachments')}
           collapsed={collapsed.fileAttachments}
           onToggle={() => toggleSection('fileAttachments')}
         />
@@ -1099,7 +1099,7 @@ export function LeadFormBody({
                 const files = Array.from(e.target.files ?? []);
                 const allowed = files.filter(isAllowedLeadAttachment);
                 if (allowed.length !== files.length) {
-                  toast.error('Attachments must be documents or photos under 5 MB.');
+                  toast.error(t('leads.form.attachmentError'));
                 }
                 if (allowed.length > 0) onAttachmentFilesAdded(allowed);
                 e.target.value = '';
@@ -1112,9 +1112,7 @@ export function LeadFormBody({
               className="w-fit gap-2"
               onClick={() => attachmentInputRef.current?.click()}
             >
-              <PaperclipIcon className="size-4" />
-              Add files (PDF, images, documents)
-            </Button>
+              <PaperclipIcon className="size-4" />{t('leads.form.addFiles')}</Button>
             {existingAttachmentUrls.length > 0 && (
               <ul className="flex flex-col gap-1 text-sm">
                 {existingAttachmentUrls.map((url) => {
@@ -1180,7 +1178,7 @@ export function LeadFormBody({
 
       {showBranchPicker && getBranchDisplayLabel ? (
         <div className="grid gap-2">
-          <Label>Branch (required)</Label>
+          <Label>{t('leads.form.branchRequired')}</Label>
           <Select
             value={effectiveBranchUid != null ? String(effectiveBranchUid) : ''}
             onValueChange={(v) =>
@@ -1188,14 +1186,14 @@ export function LeadFormBody({
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select branch" />
+              <SelectValue placeholder={t('leads.form.selectBranch')} />
             </SelectTrigger>
             <SelectContent>
               {branches.map((b) => (
                 <SelectItem key={b.uid} value={String(b.uid)}>
                   <span className="flex items-center gap-2">
                     <MapPinIcon className="size-4 shrink-0" />
-                    {getBranchDisplayLabel(b) || `Branch ${b.uid}`}
+                    {getBranchDisplayLabel(b) || t('leads.form.branchFallback', { uid: b.uid })}
                   </span>
                 </SelectItem>
               ))}

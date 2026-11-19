@@ -1,0 +1,195 @@
+{
+  "about": {
+    "title": "Sobre LORO",
+    "lead": "LORO es un software de ventas en campo pensado para equipos B2B de Sudáfrica: visitas, rutas, embudo, mapas y pedidos listos para el ERP, en una sola plataforma.",
+    "replaceSpreadsheets": "Ayudamos a fabricantes, mayoristas y distribuidores a sustituir el caos de las hojas de cálculo por pruebas de visita, paneles para los responsables y flujos móviles que los comerciales sí usan en la ruta.",
+    "connectsPrefix": "Del",
+    "visitTracking": "seguimiento de visitas",
+    "connectsMiddle": "al",
+    "competitorMapping": "mapeo de la competencia",
+    "connectsSuffix": ", LORO conecta la actividad en campo con los ingresos, y no con la administración por sí misma.",
+    "workforce": "Los módulos opcionales de personal (asistencia, ausencias) conviven con las ventas en campo para los equipos que quieren un solo inicio de sesión para operaciones y personas."
+  },
+  "pricing": {
+    "title": "Precios",
+    "lead": "Software flexible de ventas en campo para equipos en Sudáfrica: amplíe usuarios y sucursales a medida que crece.",
+    "growing": {
+      "title": "Equipos en crecimiento",
+      "body": "Ventas en campo esenciales: visitas, embudo, planificación, clientes y acceso a la app móvil.",
+      "perUser": "Licencia por usuario",
+      "branchRoles": "Configuración de sucursales y roles",
+      "support": "Soporte estándar"
+    },
+    "enterprise": {
+      "title": "Empresa",
+      "body": "Despliegue en varias sucursales, integración con el ERP, IoT e informes avanzados.",
+      "onboarding": "Puesta en marcha dedicada",
+      "erpReview": "Revisión del ERP y de las integraciones",
+      "targets": "Objetivos y exportaciones a medida"
+    },
+    "footnote": "Hable con su socio de LORO o cree una cuenta para comentar el despliegue de su equipo de campo. Los precios publicados varían según el tamaño de la organización y los módulos."
+  },
+  "customers": {
+    "title": "Clientes",
+    "lead": "Empresas sudafricanas usan LORO para llevar las ventas en campo con menos administración y una responsabilidad más clara.",
+    "distributors": {
+      "title": "Distribuidores centrados en el campo",
+      "body": "Los equipos usan LORO para la prueba diaria de visitas, los objetivos del embudo y las revisiones en el mapa, en lugar de unir hojas de cálculo cada semana."
+    },
+    "dashboard": {
+      "title": "Responsables con un solo panel",
+      "body": "Los líderes ven visitas, prospectos y el avance del periodo sin perseguir a los comerciales por WhatsApp para pedir novedades."
+    },
+    "erp": {
+      "title": "Pedidos alineados con el ERP",
+      "body": "La tienda B2B y los flujos de pedido respetan los datos maestros de clientes y productos en los que finanzas ya confía."
+    },
+    "footnote": "Los casos de estudio con logotipos con nombre se añaden cuando los clientes autorizan la publicación. Pida una presentación de referencia al crear la cuenta."
+  },
+  "blog": {
+    "titleLead": "Blog de ",
+    "titleEmphasis": "ventas en campo",
+    "subtitle": "Guías para responsables y comerciales de ventas en campo en Sudáfrica.",
+    "back": "← Blog"
+  },
+  "platform": {
+    "erp": "ERP propio, integrado de origen: productos, clientes, pedidos y flujos de la tienda B2B en la misma plataforma. Puentes opcionales con Sage, Acumatica y SAP para entornos financieros mixtos.",
+    "saas": "SaaS en la nube con autenticación de Clerk y acceso por organización para comerciales y responsables."
+  },
+  "compare": {
+    "topic": "Tema",
+    "capability": "Capacidad",
+    "repsly": {
+      "title": "LORO frente a Repsly",
+      "lead": "Comparación factual para equipos que evalúan plataformas de ejecución en retail y de ventas en campo.",
+      "focus": "Enfoque principal",
+      "loroFocus": "Ventas B2B en campo en Sudáfrica, visitas, embudo, pedidos ERP",
+      "repslyFocus": "Ejecución retail de CPG, programas de lineal y promociones",
+      "region": "Región",
+      "loroRegion": "Sudáfrica primero",
+      "repslyRegion": "Marcas CPG globales",
+      "differentiator": "Diferenciador",
+      "loroDiff": "Información de la competencia en el mapa + módulos opcionales de personal",
+      "repslyDiff": "Reconocimiento de imagen y profundidad de ejecución en tienda",
+      "erp": "ERP",
+      "repslyErp": "Enfoque en la ejecución retail; ERP mediante integraciones",
+      "platform": "Plataforma",
+      "repslyPlatform": "SaaS en la nube; programas CPG globales",
+      "footnote": "Elija Repsly cuando dominan el análisis de lineal y los programas CPG. Elija LORO cuando las visitas B2B, el embudo y las ventas en campo alineadas con el ERP en Sudáfrica son la prioridad."
+    },
+    "skynamo": {
+      "title": "LORO frente a Skynamo",
+      "lead": "Ambos cubren las ventas en campo en Sudáfrica: compare el encaje con su ERP, el tamaño del equipo y los módulos.",
+      "positioning": "Posicionamiento",
+      "loroPosition": "Ventas en campo + embudo + mapas de la competencia + RR. HH. opcionales",
+      "skynamoPosition": "Canales de venta unificados, pedidos móviles, RADAR AI",
+      "erp": "ERP",
+      "skynamoErp": "Comunicación sólida de Sage, Acumatica y SAP",
+      "platform": "Plataforma",
+      "skynamoPlatform": "SaaS en la nube; autenticación gestionada por el proveedor",
+      "bestFor": "Ideal para",
+      "loroBest": "Prueba de visita, mapas de la competencia, personal opcional",
+      "skynamoBest": "Unificación amplia de canales + RADAR",
+      "footnote": "Haga un piloto en paralelo de visitas y embudo antes de migrar las interfaces del ERP."
+    },
+    "zoho": {
+      "title": "LORO frente a Zoho CRM",
+      "lead": "Zoho CRM es una suite amplia de CRM con IA; LORO está hecho para la ejecución de la venta externa en Sudáfrica.",
+      "visitProof": "Prueba de visita y evidencia en campo",
+      "loroVisit": "Flujo principal",
+      "zohoVisit": "Requiere configuración o complementos",
+      "routePlanning": "Planificación de rutas",
+      "loroRoutes": "Planificación y mapas nativos",
+      "zohoRoutes": "RouteIQ o mapas de terceros",
+      "competitorMapping": "Mapeo de la competencia",
+      "loroCompetitor": "Incluido",
+      "zohoCompetitor": "Módulos a medida, por lo general",
+      "erp": "ERP",
+      "zohoErp": "Centrado en el CRM; ERP a través del ecosistema de Zoho",
+      "platform": "Plataforma",
+      "zohoPlatform": "SaaS en la nube; modelo de cuenta de Zoho",
+      "ecosystem": "Ecosistema",
+      "loroEcosystem": "Ventas en campo enfocadas + ERP integrado",
+      "zohoEcosystem": "Amplia suite de aplicaciones de Zoho",
+      "footnote": "Elija Zoho cuando necesita un CRM general para todo el negocio. Elija LORO cuando las visitas de campo, las rutas y la ejecución B2B en Sudáfrica son el cuello de botella."
+    }
+  },
+  "integrations": {
+    "title": "Integraciones ERP",
+    "lead": "Conecte las ventas en campo de LORO con los sistemas que guardan clientes, productos y pedidos, para que los comerciales vendan con datos al día en la ruta.",
+    "sageBlurb": "Habitual en los entornos financieros de pymes y mercado medio en Sudáfrica.",
+    "acumaticaBlurb": "Contexto de ERP en la nube para cotizaciones y pedidos en campo.",
+    "sapBlurb": "Datos empresariales de productos y cuentas para equipos de campo grandes.",
+    "sage": {
+      "title": "Sage + ventas en campo de LORO",
+      "lead": "Alinee los datos de ERP o contabilidad de Sage con las visitas, el embudo y los pedidos B2B que sus comerciales registran en campo.",
+      "finance": "Los equipos sudafricanos suelen llevar las finanzas en Sage mientras los comerciales siguen cotizando con listas desactualizadas. LORO lleva el contexto de clientes y productos a los flujos de visita y pedido, para que campo y finanzas compartan la misma historia.",
+      "hubPrefix": "Implante primero las visitas y el embudo y, después, conecte los flujos de pedido con su socio de integración. Consulte el",
+      "hubLink": "centro de integraciones",
+      "hubSuffix": " completo."
+    },
+    "sap": {
+      "title": "SAP + operaciones de campo de LORO",
+      "lead": "Programas de campo empresariales con datos maestros respaldados por SAP y la ejecución de LORO en visitas, embudo y mapas.",
+      "governed": "Los equipos de campo grandes necesitan datos gobernados de productos y cuentas, con una experiencia móvil rápida. LORO añade seguimiento de visitas, planificación de rutas y paneles para responsables sobre sus patrones de despliegue de SAP.",
+      "engage": "Involucre pronto a su equipo de integración en las interfaces de clientes, materiales y pedidos, acotadas a su entorno."
+    },
+    "acumatica": {
+      "title": "Acumatica + LORO",
+      "lead": "Inventario y clientes del ERP en la nube, disponibles donde los comerciales planifican rutas y cierran pedidos.",
+      "proof": "Los equipos de Acumatica ganan prueba de visita en campo y visibilidad del embudo sin obligar a los comerciales a pantallas de ERP de escritorio en cada parada.",
+      "execution": "LORO se centra en la ejecución —visitas, mapas, contexto de la competencia y pedidos móviles— mientras su ERP sigue siendo el sistema de registro."
+    }
+  },
+  "solutions": {
+    "competitor": {
+      "title": "Información de la competencia en un mapa",
+      "lead": "Siga las cuentas rivales junto a sus clientes: niveles de amenaza, ubicaciones y contexto para reuniones de campo más precisas.",
+      "landscape": "Comerciales y responsables ven el panorama competitivo en el mapa, y no en hojas de cálculo dispersas.",
+      "afterSignIn": "Tras iniciar sesión, use el visualizador de mapas para capas de campo en vivo, filtros de visitas y vistas de influencia, junto a las cuentas de clientes."
+    },
+    "visits": {
+      "title": "Software de seguimiento de visitas",
+      "lead": "Demuestre el trabajo de campo con registros, notas, cotizaciones y resultados ligados a cada cuenta de cliente.",
+      "managers": "Los responsables ven qué cuentas se visitaron, qué se habló y qué pasó después, sin registros de actividad discutidos.",
+      "feeds": "Las visitas alimentan el embudo y los informes, para que el acompañamiento use los mismos datos que los comerciales introdujeron en el sitio."
+    },
+    "workforce": {
+      "title": "Personal y asistencia",
+      "lead": "Módulos opcionales de RR. HH. junto a las ventas en campo: asistencia, ausencias y señales de nómina con el mismo inicio de sesión de LORO.",
+      "prefix": "El posicionamiento principal sigue siendo las",
+      "fieldSales": "ventas en campo",
+      "suffix": "; las herramientas de personal sirven a los equipos que quieren reunir los datos de operaciones y de personas.",
+      "localSupport": "Los equipos sudafricanos se benefician de soporte local en los flujos de campo y de RR. HH., cuando están activos."
+    },
+    "routes": {
+      "title": "Planificación de rutas para ventas en campo",
+      "lead": "Tareas, rutas del día, recordatorios y mapas, construidos a partir de visitas, prospectos y prioridades del embudo.",
+      "driving": "Los comerciales pasan menos tiempo al volante entre paradas de poco valor y más tiempo con las cuentas que mueven ingresos.",
+      "prefix": "La planificación se conecta con el",
+      "visitTracking": "seguimiento de visitas",
+      "suffix": ", para que las rutas previstas y las completadas queden visibles para los responsables."
+    },
+    "fieldSales": {
+      "title": "Software de ventas en campo",
+      "lead": "Una plataforma para equipos B2B de campo en Sudáfrica: comerciales móviles, responsables de oficina y pedidos alineados con el ERP.",
+      "repsTitle": "Para comerciales en ruta",
+      "repsBody": "Planifique el día, registre visitas con evidencia, actualice prospectos y haga pedidos en una experiencia móvil pensada para los dedos, con sincronización resistente.",
+      "managersTitle": "Para responsables de ventas",
+      "managersBody": "Objetivos del embudo, cobertura de visitas y visualización en el mapa: sepa quién visitó qué cuentas sin persecuciones por correo al final de la semana.",
+      "modulesTitle": "Módulos que se conectan",
+      "visitTracking": "Seguimiento de visitas",
+      "routePlanning": "Planificación de rutas",
+      "pipeline": "Embudo",
+      "erp": "Integraciones ERP"
+    },
+    "pipeline": {
+      "title": "Embudo de ventas para equipos de campo",
+      "lead": "Prospectos, objetivos del periodo, cierres ganados y resultados de visita en una sola pantalla.",
+      "slides": "Los responsables de campo dejan de rehacer las diapositivas del viernes: el avance de la cuota y las siguientes acciones viven en LORO, junto a etapas de prospecto al estilo CRM.",
+      "prefix": "Una el embudo con los módulos de",
+      "fieldSales": "ventas en campo",
+      "suffix": " para un conjunto completo de venta externa."
+    }
+  }
+}

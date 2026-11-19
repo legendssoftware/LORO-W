@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import {
   Building2,
   Globe,
@@ -17,6 +19,7 @@ import { formatAddress, formatZar } from '@/lib/client-portal-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function ClientInfoSections({ client }: { client: ClientProfileData }) {
+  const { t } = useTranslation('portal');
   const social = client.socialMedia;
 
   return (
@@ -25,15 +28,15 @@ export function ClientInfoSections({ client }: { client: ClientProfileData }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Building2 className="size-5 text-violet-600" />
-            Company
+            {t('company')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-          <Info label="Company name" value={client.name} />
-          <Info label="Contact person" value={client.contactPerson} icon={User} />
-          <Info label="Industry" value={client.industry} />
-          <Info label="Category" value={client.category} />
-          <Info label="Description" value={client.description} className="sm:col-span-2" />
+          <Info label={t('companyName')} value={client.name} />
+          <Info label={t('contactPerson')} value={client.contactPerson} icon={User} />
+          <Info label={t('industry')} value={client.industry} />
+          <Info label={t('category')} value={client.category} />
+          <Info label={t('description')} value={client.description} className="sm:col-span-2" />
         </CardContent>
       </Card>
 
@@ -41,14 +44,14 @@ export function ClientInfoSections({ client }: { client: ClientProfileData }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Phone className="size-5 text-violet-600" />
-            Contact
+            {t('contact')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-          <Info label="Email" value={client.email} icon={Mail} href={client.email ? `mailto:${client.email}` : undefined} />
-          <Info label="Phone" value={client.phone} icon={Phone} href={client.phone ? `tel:${client.phone}` : undefined} />
-          <Info label="Alt phone" value={client.alternativePhone} />
-          <Info label="Website" value={client.website} icon={Globe} href={client.website} />
+          <Info label={t('email')} value={client.email} icon={Mail} href={client.email ? `mailto:${client.email}` : undefined} />
+          <Info label={t('phone')} value={client.phone} icon={Phone} href={client.phone ? `tel:${client.phone}` : undefined} />
+          <Info label={t('altPhone')} value={client.alternativePhone} />
+          <Info label={t('website')} value={client.website} icon={Globe} href={client.website} />
         </CardContent>
       </Card>
 
@@ -56,7 +59,7 @@ export function ClientInfoSections({ client }: { client: ClientProfileData }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <MapPin className="size-5 text-violet-600" />
-            Location
+            {t('location')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -68,27 +71,27 @@ export function ClientInfoSections({ client }: { client: ClientProfileData }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Tag className="size-5 text-violet-600" />
-            Financial
+            {t('financial')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-          <Info label="Price tier" value={client.priceTier} icon={Tag} />
-          <Info label="Discount" value={client.discountPercentage != null ? `${client.discountPercentage}%` : undefined} icon={Percent} />
-          <Info label="Lifetime value" value={client.lifetimeValue != null ? formatZar(client.lifetimeValue) : undefined} icon={TrendingUp} />
-          <Info label="Payment terms" value={client.paymentTerms} />
+          <Info label={t('priceTier')} value={client.priceTier} icon={Tag} />
+          <Info label={t('discount')} value={client.discountPercentage != null ? `${client.discountPercentage}%` : undefined} icon={Percent} />
+          <Info label={t('lifetimeValue')} value={client.lifetimeValue != null ? formatZar(client.lifetimeValue) : undefined} icon={TrendingUp} />
+          <Info label={t('paymentTerms')} value={client.paymentTerms} />
         </CardContent>
       </Card>
 
       {(social?.linkedin || social?.twitter || social?.facebook || social?.instagram) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Social</CardTitle>
+            <CardTitle className="text-base">{t('social')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {social.linkedin && <SocialLink icon={Linkedin} label="LinkedIn" href={social.linkedin} />}
-            {social.twitter && <SocialLink label="Twitter" href={social.twitter} />}
-            {social.facebook && <SocialLink label="Facebook" href={social.facebook} />}
-            {social.instagram && <SocialLink label="Instagram" href={social.instagram} />}
+            {social.linkedin && <SocialLink icon={Linkedin} label={t('linkedIn')} href={social.linkedin} />}
+            {social.twitter && <SocialLink label={t('twitter')} href={social.twitter} />}
+            {social.facebook && <SocialLink label={t('facebook')} href={social.facebook} />}
+            {social.instagram && <SocialLink label={t('instagram')} href={social.instagram} />}
           </CardContent>
         </Card>
       )}

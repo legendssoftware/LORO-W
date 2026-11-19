@@ -33,8 +33,10 @@ import {
   type PayslipsPageSize,
 } from './components/payslips-list-pagination';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export function PayslipsContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading } = useSessionSync();
   const client = useApiClient();
@@ -161,10 +163,10 @@ export function PayslipsContent() {
         <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" data-tour="payslips-page-header">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Payslips
+              {t('pages.payslips.title')}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              View and download your payslip documents.
+              {t('pages.payslips.description')}
             </p>
           </div>
         </div>

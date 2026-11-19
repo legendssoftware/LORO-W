@@ -22,10 +22,12 @@ import { canAccessCompetitors } from '@/lib/access';
 import { formatUtcYmd, utcTomorrow } from '@/lib/utils/overview-daily-summary';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const UTC_YMD = /^\d{4}-\d{2}-\d{2}$/;
 
 function VisualiserBody() {
+  const { t } = useTranslation('screens');
   const { isSignedIn } = useAuth();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
@@ -100,12 +102,12 @@ function VisualiserBody() {
         >
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-foreground">
-              Competitor Overview
+              {t('pages.visualiser.title')}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {limited
-                ? 'Map branches, HQ, competitors, and clients, plus your planned visit route for the selected day.'
-                : 'Map branches, HQ, competitors, and clients — search and track a sales rep’s route on the map, or open Simulate to model catchments and turnover.'}
+                ? t('pages.visualiser.descriptionLimited')
+                : t('pages.visualiser.descriptionFull')}
             </p>
           </div>
           <VisualiserHeaderActions

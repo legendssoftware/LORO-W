@@ -5,14 +5,16 @@ import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientPortalLoading } from '@/app/client-portal/components/client-portal-loading';
 import { StoreContent } from '@/app/client-portal/components/store-content';
+import { useTranslation } from 'react-i18next';
 
 export function StorePageContent() {
+  const { t } = useTranslation('screens');
   const { backendUserData: profile } = useSessionSync();
 
   if (!isClientMode(profile)) {
     return (
       <main className={appPageMainClass}>
-        <p className="text-muted-foreground">Store is available for client portal users.</p>
+        <p className="text-muted-foreground">{t('pages.store.clientOnly')}</p>
       </main>
     );
   }
@@ -26,10 +28,10 @@ export function StorePageContent() {
         >
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Store
+              {t('pages.store.title')}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Browse products, add to your cart, and submit a quotation.
+              {t('pages.store.description')}
             </p>
           </div>
         </div>

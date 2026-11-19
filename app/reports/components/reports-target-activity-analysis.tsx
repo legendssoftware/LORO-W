@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { humanizeReportLabel } from '@/lib/utils/report-labels';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 function SummaryStat({
   label,
@@ -60,6 +61,7 @@ export function ReportsTargetActivityAnalysis({
   planSlotsInRange,
   isLoading,
 }: ReportsTargetActivityAnalysisProps) {
+  const { t } = useTranslation('screens');
   const summary = useMemo(
     () => aggregateActivitySummary(checkIns, planSlotsInRange),
     [checkIns, planSlotsInRange]
@@ -156,14 +158,14 @@ export function ReportsTargetActivityAnalysis({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Outcome</TableHead>
-                <TableHead className="min-w-[10rem]">Location</TableHead>
-                <TableHead>Follow-up</TableHead>
+                <TableHead>{t('tables.start')}</TableHead>
+                <TableHead>{t('tables.end')}</TableHead>
+                <TableHead>{t('tables.type')}</TableHead>
+                <TableHead>{t('tables.contact')}</TableHead>
+                <TableHead>{t('tables.duration')}</TableHead>
+                <TableHead>{t('tables.outcome')}</TableHead>
+                <TableHead className="min-w-[10rem]">{t('tables.location')}</TableHead>
+                <TableHead>{t('tables.followUp')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -45,12 +45,14 @@ import {
   VisitsListPagination,
   type VisitsPageSize,
 } from '@/app/visits/components/visits-list-pagination';
+import { useTranslation } from 'react-i18next';
 
 type AssetScope = 'mine' | 'org';
 const SEARCH_DEBOUNCE_MS = 350;
 const ASSETS_PAGE_SIZE_KEY = 'loro:assets-page-size';
 
 export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number }) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
@@ -180,11 +182,11 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
     <div className="flex h-full min-h-0 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div data-tour="assets-page-header" className="mb-6 shrink-0">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Assets</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.assets.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             {canManage
-              ? 'Your linked assets, or the full organisation inventory. You can add, edit, and reassign assets.'
-              : 'Add and manage assets you own. You can also view equipment and vehicles linked to you.'}
+              ? t('pages.assets.descriptionManage')
+              : t('pages.assets.descriptionOwn')}
           </p>
         </div>
 

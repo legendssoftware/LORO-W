@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
@@ -28,14 +30,13 @@ function areRequiredDomTargetsReady(): boolean {
   return REQUIRED_SELECTORS.every((sel) => document.querySelector(sel) !== null);
 }
 
-function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
+function buildPipelineSteps(includeTargets: boolean, t: TFunction): DriveStep[] {
   const steps: DriveStep[] = [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Pipeline',
-        description:
-          'Targets, quotations, leads, and visit outcomes for the period you can see.',
+        title: t('tours.pipeline.header.title'),
+        description: t('tours.pipeline.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -45,9 +46,8 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     steps.push({
       element: SEL_TARGETS,
       popover: {
-        title: 'Targets',
-        description:
-          'Progress on sales, leads, check-ins, and calls for the current target period.',
+        title: t('tours.pipeline.targets.title'),
+        description: t('tours.pipeline.targets.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -57,9 +57,8 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     {
       element: SEL_QUOTATIONS,
       popover: {
-        title: 'Quotations',
-        description:
-          'Change the ERP date window to load quotation lines. Compare them with LORO quotations in the same period.',
+        title: t('tours.pipeline.quotations.title'),
+        description: t('tours.pipeline.quotations.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -67,9 +66,8 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     {
       element: SEL_LEAD,
       popover: {
-        title: 'Leads',
-        description:
-          'Counts, pipeline value, and quote value from visits. Open a status to see the breakdown for this range.',
+        title: t('tours.pipeline.leads.title'),
+        description: t('tours.pipeline.leads.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -77,8 +75,8 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
     {
       element: SEL_VISITS,
       popover: {
-        title: 'Visits',
-        description: 'Check-out totals for this range: visits, sales, quotes, and values.',
+        title: t('tours.pipeline.visits.title'),
+        description: t('tours.pipeline.visits.description'),
         side: 'top',
         align: 'center',
       },
@@ -88,6 +86,7 @@ function buildPipelineSteps(includeTargets: boolean): DriveStep[] {
 }
 
 export function PipelineTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -148,7 +147,7 @@ export function PipelineTour() {
       areTargetsReady: areRequiredDomTargetsReady,
       onReady: () => {
         const includeTargets = document.querySelector(SEL_TARGETS) !== null;
-        const steps = buildPipelineSteps(includeTargets);
+        const steps = buildPipelineSteps(includeTargets, t);
         const stepCount = steps.length;
 
         const boundedStartIndex = Math.min(
@@ -221,7 +220,7 @@ export function PipelineTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

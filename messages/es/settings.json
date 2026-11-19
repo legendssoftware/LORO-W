@@ -1,0 +1,66 @@
+{
+  "pageTitle": "Ajustes",
+  "pageDescription": "Gestione el perfil de la organización, la apariencia, los valores regionales, los horarios, las sucursales, el scrapping, los avisos y los banners de la aplicación.",
+  "pageDescriptionCalendarOnly": "Conecte Outlook o Google Calendar con el correo de su cuenta LORO.",
+  "yourLanguage": "Tu idioma",
+  "yourLanguageDescription": "Esta elección es tuya. Auto sigue el idioma o el país del dispositivo. No cambia la configuración regional de la organización.",
+  "saved": "Tus preferencias se guardaron.",
+  "saveFailed": "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
+  "unableToSave": "No se pudieron guardar las preferencias. Vuelve a iniciar sesión.",
+  "unknownError": "Ocurrió un error desconocido",
+  "language": {
+    "label": "Idioma",
+    "description": "Sigue el idioma o el país del dispositivo cuando está en Auto."
+  },
+  "theme": {
+    "label": "Tema",
+    "description": "Esquema de color de la aplicación",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "timezone": {
+    "label": "Zona horaria",
+    "description": "Zona IANA para fechas y horas"
+  },
+  "notifications": {
+    "label": "Permitir notificaciones",
+    "description": "Recibir notificaciones push de actualizaciones importantes"
+  },
+  "notificationFrequency": {
+    "label": "Frecuencia de notificaciones",
+    "description": "Cada cuánto enviar resúmenes que no son push",
+    "real_time": "En tiempo real",
+    "hourly": "Cada hora",
+    "daily": "Cada día",
+    "weekly": "Cada semana",
+    "disabled": "Desactivado"
+  },
+  "emailNotifications": {
+    "label": "Notificaciones por correo",
+    "description": "Recibir actualizaciones por correo cuando la organización lo permita"
+  },
+  "smsNotifications": {
+    "label": "Notificaciones por SMS",
+    "description": "Recibir alertas por SMS cuando la organización lo permita"
+  },
+  "shiftAutoEnd": {
+    "label": "Salida automática al fin del turno",
+    "description": "Los turnos se cierran automáticamente después del fin definido por la organización",
+    "delay": "Los turnos se cierran automáticamente {{minutes}} minutos después del fin del turno de la organización."
+  },
+  "dateFormat": {
+    "label": "Formato de fecha",
+    "description": "Cómo se muestran las fechas en la aplicación"
+  },
+  "timeFormat": {
+    "label": "Formato de hora",
+    "description": "Reloj de 12 o de 24 horas",
+    "12h": "12 horas",
+    "24h": "24 horas"
+  },
+  "advancedFeatures": {
+    "label": "Funciones avanzadas",
+    "description": "Mostrar la interfaz experimental o avanzada cuando exista"
+  }
+}

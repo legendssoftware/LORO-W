@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { readLeadsTourState, writeLeadsTourState, getCurrentYearMonth } from '@/lib/leads-tour-storage';
@@ -24,13 +26,13 @@ const SEL_LEAD_DIALOG = '[data-tour="lead-detail-dialog"]';
 /** Selectors that only exist after expand / open — do not block tour start. */
 const DYNAMIC_STEP_SELECTORS = new Set<string>([SEL_FIRST_LEAD, SEL_LEAD_DIALOG]);
 
-function buildEmptyTourSteps(): DriveStep[] {
+function buildEmptyTourSteps(t: TFunction): DriveStep[] {
   return [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Leads',
-        description: 'Create a lead, search the list, and open a person to follow up.',
+        title: t('tours.leads.header.title'),
+        description: t('tours.leads.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -38,8 +40,8 @@ function buildEmptyTourSteps(): DriveStep[] {
     {
       element: SEL_CREATE,
       popover: {
-        title: 'Create lead',
-        description: 'Click Create lead, fill the form, and the new lead appears in the list.',
+        title: t('tours.leads.create.title'),
+        description: t('tours.leads.create.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -47,9 +49,8 @@ function buildEmptyTourSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Filter and search',
-        description:
-          'The date range starts as this month. Change dates, filters, or search to show a different set of leads.',
+        title: t('tours.leads.toolbar.title'),
+        description: t('tours.leads.toolbar.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -57,9 +58,8 @@ function buildEmptyTourSteps(): DriveStep[] {
     {
       element: () => visibleImportButton() ?? document.body,
       popover: {
-        title: 'Import leads',
-        description:
-          'Click Import to add leads from a spreadsheet or Google Maps. For Maps, review the places and assign owners before they show in this list.',
+        title: t('tours.leads.import.title'),
+        description: t('tours.leads.import.description'),
         side: 'bottom',
         align: 'end',
       },
@@ -67,9 +67,8 @@ function buildEmptyTourSteps(): DriveStep[] {
     {
       element: SEL_TABLE,
       popover: {
-        title: 'Lead list',
-        description:
-          'Leads are grouped by owner, or Unassigned. Click a person to expand them. Click a lead to open it.',
+        title: t('tours.leads.list.title'),
+        description: t('tours.leads.list.description'),
         side: 'top',
         align: 'center',
       },
@@ -77,14 +76,14 @@ function buildEmptyTourSteps(): DriveStep[] {
   ];
 }
 
-function buildDataTourSteps(): DriveStep[] {
+function buildDataTourSteps(t: TFunction): DriveStep[] {
   return [
-    ...buildEmptyTourSteps(),
+    ...buildEmptyTourSteps(t),
     {
       element: SEL_FIRST_GROUP,
       popover: {
-        title: 'Expand a group',
-        description: 'Click this row. Every lead in that group opens underneath.',
+        title: t('tours.leads.expand.title'),
+        description: t('tours.leads.expand.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -92,8 +91,8 @@ function buildDataTourSteps(): DriveStep[] {
     {
       element: SEL_FIRST_LEAD,
       popover: {
-        title: 'Open a lead',
-        description: 'Click this row. The lead detail opens.',
+        title: t('tours.leads.open.title'),
+        description: t('tours.leads.open.description'),
         side: 'top',
         align: 'center',
       },
@@ -101,9 +100,8 @@ function buildDataTourSteps(): DriveStep[] {
     {
       element: SEL_LEAD_DIALOG,
       popover: {
-        title: 'Lead detail',
-        description:
-          'Start or end a call, message them on WhatsApp, email, or SMS, and read the call score. Close the dialog to return to the list.',
+        title: t('tours.leads.detail.title'),
+        description: t('tours.leads.detail.description'),
         side: 'left',
         align: 'start',
       },
@@ -137,6 +135,7 @@ function getActiveStepElement(driverInstance: Driver): string {
 }
 
 export function LeadsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -200,12 +199,12 @@ export function LeadsTour() {
     const cancelSchedule = scheduleTourWhenReady({
       areTargetsReady: () => {
         const extended = hasNonEmptyLeadList();
-        const steps = extended ? buildDataTourSteps() : buildEmptyTourSteps();
+        const steps = extended ? buildDataTourSteps(t) : buildEmptyTourSteps(t);
         return areBaseTargetsReady(steps);
       },
       onReady: () => {
         const extended = hasNonEmptyLeadList();
-        const steps = extended ? buildDataTourSteps() : buildEmptyTourSteps();
+        const steps = extended ? buildDataTourSteps(t) : buildEmptyTourSteps(t);
 
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
@@ -326,7 +325,7 @@ export function LeadsTour() {
       wasCompletedRef.current = false;
       didAutoOpenFirstLeadRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

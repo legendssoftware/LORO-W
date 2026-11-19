@@ -10,6 +10,11 @@ import { InactivityGuard } from '@/components/inactivity-guard';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ConditionalLayoutShell } from '@/components/conditional-layout-shell';
 import { ThemeProvider } from '@/components/theme-provider';
+import { I18nProvider } from '@/components/i18n-provider';
+import { clerkLocalization } from '@/lib/i18n/clerk-locale';
+import { LOCALE_COOKIE } from '@/lib/i18n/cookie';
+import { isUiLocale, type UiLocale } from '@/lib/i18n/resolve-locale';
+import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { defaultMetadata } from '@/lib/seo';
 import { buildSiteVerificationMetadata } from '@/lib/seo/site-verification';
@@ -75,13 +80,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialOrgId = await resolveInitialOrgId();
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const lang: UiLocale = isUiLocale(cookieLocale) ? cookieLocale : 'en';
 
   return (
     <ClerkProvider
       afterSignOutUrl="/sign-in"
       dynamic
+      localization={clerkLocalization(lang)}
     >
-      <html lang="en" suppressHydrationWarning>
+      <html lang={lang} suppressHydrationWarning>
         <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
           <ThemeProvider
             attribute="class"
@@ -91,6 +100,7 @@ export default async function RootLayout({
           >
             <OrgIdProvider initialOrgId={initialOrgId}>
             <QueryProvider>
+            <I18nProvider initialLocale={lang}>
             <TooltipProvider>
               <SidebarProvider defaultOpen={false}>
                 <InactivityGuard />
@@ -118,6 +128,7 @@ export default async function RootLayout({
               }}
             />
             </TooltipProvider>
+            </I18nProvider>
             </QueryProvider>
             </OrgIdProvider>
           </ThemeProvider>
