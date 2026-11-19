@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 export interface ReportsChartCardProps {
   title: string;
@@ -30,6 +31,7 @@ export function ReportsChartCard({
   onRetry,
   contentClassName,
 }: ReportsChartCardProps) {
+  const { t } = useTranslation('screens');
   return (
     <Card className="min-w-0 shadow-sm">
       <CardHeader className="pb-2">
@@ -46,11 +48,11 @@ export function ReportsChartCard({
         ) : isError ? (
           <div className="flex h-[224px] flex-col items-center justify-center gap-2 text-center">
             <AlertCircle className="size-5 text-destructive" />
-            <p className="text-xs text-muted-foreground">Failed to load</p>
+            <p className="text-xs text-muted-foreground">{t('chrome.common.failedToLoad')}</p>
             {onRetry ? (
               <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                 <RefreshCw className="mr-1.5 size-3.5" />
-                Retry
+                {t('actions.retry')}
               </Button>
             ) : null}
           </div>

@@ -191,5 +191,230 @@
       "fieldSales": "vendas no terreno",
       "suffix": " para um conjunto completo de vendas externas."
     }
+  },
+  "header": {
+    "product": "Produto",
+    "solutions": "Soluções",
+    "careers": "Carreiras",
+    "research": "Investigação",
+    "myAccount": "A minha conta",
+    "demoCall": "CHAMADA DE DEMONSTRAÇÃO",
+    "connecting": "A LIGAR...",
+    "endCall": "TERMINAR CHAMADA",
+    "retryCall": "TENTAR NOVAMENTE",
+    "getStarted": "Começar",
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu"
+  },
+  "footer": {
+    "tagline": "Software de vendas em campo para a África do Sul — visitas, rotas e pipeline.",
+    "taglineShort": "Software de vendas em campo para a África do Sul.",
+    "rights": "Todos os direitos reservados.",
+    "company": "Empresa",
+    "about": "Sobre",
+    "customers": "Clientes",
+    "pricing": "Preços",
+    "blog": "Blogue",
+    "privacyPolicy": "Política de privacidade",
+    "privacy": "Privacidade",
+    "solutions": "Soluções",
+    "fieldSales": "Vendas em campo",
+    "visitTracking": "Acompanhamento de visitas",
+    "routePlanning": "Planeamento de rotas",
+    "pipeline": "Pipeline",
+    "competitorIntel": "Informação da concorrência",
+    "integrations": "Integrações",
+    "compare": "Comparar",
+    "vsSkynamo": "vs Skynamo",
+    "vsRepsly": "vs Repsly",
+    "vsZoho": "vs Zoho CRM",
+    "getStarted": "Começar",
+    "signIn": "Iniciar sessão"
+  },
+  "shell": {
+    "navLabel": "Marketing",
+    "cta": {
+      "title": "Pronto para vendas em campo numa só plataforma?",
+      "body": "Registe-se ou experimente a aplicação Android — criada para equipas B2B sul-africanas.",
+      "backHome": "Voltar ao início"
+    }
+  },
+  "landing": {
+    "headline": "Vendas em campo que escalam.",
+    "headlineItalic": "Visitas, rotas, pipeline.",
+    "subheadline": "Planeie rotas, comprove visitas e faça crescer o pipeline numa única plataforma—concebida para equipas B2B sul-africanas, com encomendas prontas para ERP e mapas em tempo real.",
+    "community": "Junte-se à Comunidade LORO com mais de 90 membros",
+    "tryAndroidApp": "Experimente a nossa app Android",
+    "myAccount": "A minha conta",
+    "liveSync": "Sincronização em direto",
+    "statsTitle": "Feito para escalar.",
+    "statsTitleItalic": "Com a confiança de equipas reais.",
+    "stats": {
+      "businesses": {
+        "label": "Empresas",
+        "sub": "na plataforma"
+      },
+      "partners": {
+        "label": "Parceiros",
+        "sub": "a colaborar"
+      },
+      "fieldUsers": {
+        "label": "Utilizadores em campo",
+        "sub": "ativos diariamente"
+      },
+      "spaces": {
+        "label": "Espaços",
+        "sub": "melhorados"
+      }
+    },
+    "techTitle": "Tecnologia que funciona em harmonia",
+    "techBody": "Criada para simplificar as operações diárias através de sistemas inteligentes e ligados.",
+    "liveSalesDashboard": "Vendas em direto | Painel",
+    "quotesOrders": "Orçamentos e encomendas",
+    "activeCount": "23 ativas",
+    "featuresTitle": "Funcionalidades poderosas,",
+    "featuresTitleItalic": "pensadas ao detalhe",
+    "featuresBody": "Tudo o que precisa para conforto, clareza e eficiência—num só lugar.",
+    "features": {
+      "smartLead": {
+        "title": "Gestão inteligente de leads",
+        "desc": "Capte, qualifique e converta leads com pontuação baseada em IA. Dê prioridade às melhores oportunidades e nunca deixe arrefecer um lead quente. O seu pipeline mantém-se cheio e a sua equipa focada."
+      },
+      "pipelineByStage": {
+        "title": "Pipeline por fase",
+        "desc": "Um pipeline visual com arrastar e largar e acompanhamento completo de negócios. Mova oportunidades entre fases num relance e veja exatamente em que ponto está cada negócio. Ideal para alinhamento da equipa e previsões."
+      },
+      "taskProject": {
+        "title": "Gestão de tarefas e projetos",
+        "desc": "Atribuição inteligente, prioridades claras e progresso em tempo real em toda a equipa. Atribua trabalho, defina prazos e acompanhe a conclusão para que nada fique esquecido."
+      },
+      "liveAnalytics": {
+        "title": "Análises em direto",
+        "desc": "Painéis em tempo real e métricas suportadas pelo ERP num só lugar. Compreenda o desempenho, identifique tendências e decida com dados atualizados—sem folhas de cálculo."
+      },
+      "erpIntegration": {
+        "title": "Integração com ERP",
+        "desc": "Vendas e orçamentos em direto com visibilidade total num relance. O seu ERP atual continua a ser a fonte de verdade, enquanto a LORO mantém o campo e o escritório sincronizados."
+      },
+      "workflowAutomation": {
+        "title": "Automatização de fluxos de trabalho",
+        "desc": "Agende tarefas e automatize acompanhamentos em vários dispositivos. Defina regras uma vez e deixe o sistema tratar de lembretes, atualizações de estado e passos rotineiros para que a sua equipa se concentre em fechar negócios."
+      }
+    },
+    "controlTitle": "Cada detalhe,",
+    "controlTitleItalic": "com controlo preciso",
+    "controlBody": "Uma plataforma para rotas, ERP, agendamento e uma interface minimalista.",
+    "radial": {
+      "smartRouting": "Rotas inteligentes",
+      "liveErp": "ERP em direto",
+      "unifiedControl": "Controlo unificado",
+      "smartScheduling": "Agendamento inteligente",
+      "minimalInterface": "Interface minimalista",
+      "automation": "Automatização"
+    },
+    "opsTitle": "Uma forma mais inteligente, justa e transparente de gerir operações em campo",
+    "opsBody": "Sincronização em direto, clareza imediata e controlo total—não apenas dados.",
+    "ops": {
+      "erpSync": {
+        "title": "Sincronização ERP em direto, rápida por conceção",
+        "body": "Fluxos de dados em massa e atualizações em tempo real a partir dos seus sistemas existentes."
+      },
+      "statusClarity": {
+        "title": "Clareza imediata do estado",
+        "body": "Veja quem está onde e o que está pendente—num relance."
+      },
+      "operationalControl": {
+        "title": "Controlo operacional, não apenas dados",
+        "body": "Atue sobre orçamentos, encomendas e agendas diretamente na plataforma."
+      }
+    },
+    "ring": {
+      "claims": "Despesas",
+      "leads": "Leads",
+      "visits": "Visitas",
+      "gprTracking": "Localização GPS"
+    },
+    "ctaTitle": "Veja os seus dados.",
+    "ctaTitleItalic": "Controle as suas operações.",
+    "ctaBody": "Uma app para o campo e para o escritório. Comece em minutos.",
+    "downloadApp": "Descarregar app",
+    "imageAlt": {
+      "app": "App Loro",
+      "dashboard": "Painel Loro",
+      "analytics": "Análises Loro",
+      "control": "Controlo Loro",
+      "office": "Escritório moderno"
+    },
+    "faq": {
+      "title": "Software de vendas em campo —",
+      "titleItalic": "perguntas frequentes",
+      "lead": "Respostas para equipas que comparam a LORO com outras plataformas de vendas em campo na África do Sul.",
+      "blogLink": "Ler o blogue de vendas em campo",
+      "or": "ou",
+      "compareLink": "comparar a LORO com a Skynamo",
+      "items": {
+        "whatIs": {
+          "question": "O que é o software de vendas em campo LORO?",
+          "answer": "A LORO é uma plataforma sul-africana de vendas em campo para visitas, planeamento de rotas, gestão de pipeline, contas de clientes e encomendas ligadas ao ERP—na web e em dispositivos móveis para comerciais e gestores."
+        },
+        "whoFor": {
+          "question": "Para quem foi concebida a LORO?",
+          "answer": "Fabricantes, grossistas, distribuidores e equipas de campo que visitam regularmente clientes B2B e precisam de um único sistema para visitas, orçamentos, tarefas e relatórios de desempenho."
+        },
+        "offline": {
+          "question": "A LORO funciona offline para comerciais em campo?",
+          "answer": "A app móvel LORO foi criada para comerciais em deslocação. Os fluxos de trabalho principais em campo foram pensados para ligações instáveis; inicie sessão quando estiver online para sincronizar visitas, encomendas e atualizações do pipeline."
+        },
+        "erp": {
+          "question": "A LORO integra-se com o nosso ERP?",
+          "answer": "Sim. A LORO inclui um ERP próprio integrado com as vendas em campo—contexto de produtos, clientes e encomendas sem acrescentar um back office separado. Existem pontes opcionais para Sage, Acumatica ou SAP quando utiliza uma stack mista. Consulte o nosso centro de integrações para mais detalhes."
+        },
+        "difference": {
+          "question": "Em que é que a LORO difere da Skynamo ou da Repsly?",
+          "answer": "A LORO combina execução de vendas em campo com ERP próprio integrado, mapeamento de concorrentes e ferramentas opcionais de gestão de pessoas—nativa na cloud, com autenticação Clerk. As páginas de comparação descrevem a adequação ao tamanho da equipa e à stack financeira."
+        },
+        "enterprise": {
+          "question": "A LORO é apenas para grandes empresas?",
+          "answer": "Não. Equipas desde distribuidores em crescimento a operações com várias filiais utilizam a LORO. Comece com o registo ou o teste da app Android e aumente os utilizadores à medida que o seu programa de campo cresce."
+        },
+        "modules": {
+          "question": "Que módulos estão incluídos?",
+          "answer": "Leads, pipeline, planeamento e rotas, visitas com provas, espaços de trabalho de clientes e concorrentes, visualizador de mapas, relatórios, hardware IoT para filiais e assiduidade de RH opcional—com um único início de sessão."
+        },
+        "getStarted": {
+          "question": "Como começamos?",
+          "answer": "Crie uma conta em sign-up ou descarregue a app Android. Os gestores configuram filiais e objetivos; os comerciais planeiam rotas e registam visitas desde o primeiro dia."
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "getStarted": "Começar",
+    "back": "Voltar",
+    "next": "Seguinte",
+    "createAccount": "Criar conta",
+    "skipToHome": "Ir para o início",
+    "slides": {
+      "platform": {
+        "title": "Uma plataforma, tudo ligado",
+        "description": "Deixe de gerir vários sistemas em simultâneo. A Loro reúne gestão de serviços em campo, controlo de inventário, sistema de orçamentos, gestão de tarefas e análises em tempo real numa única plataforma poderosa. Encomende diretamente na Loro — tudo ligado."
+      },
+      "owners": {
+        "title": "Proprietários: controlo total",
+        "description": "Acompanhe as vendas em direto, gira a sua equipa e decida de imediato. Informação em tempo real e pronta para funcionar offline — tudo a partir do telemóvel, em qualquer lugar."
+      },
+      "clients": {
+        "title": "Clientes: encomende a qualquer hora, em qualquer lugar",
+        "description": "Explore produtos, crie orçamentos e faça encomendas de imediato. A sua loja personalizada no bolso — os orçamentos convertem-se em encomendas sem esforço."
+      },
+      "employees": {
+        "title": "Colaboradores: trabalho simplificado",
+        "description": "Submeta despesas, peça férias, consulte recibos de vencimento e registe a assiduidade. Menos burocracia, mais liberdade — mobile-first com capacidades offline."
+      },
+      "start": {
+        "title": "Comece hoje",
+        "description": "Transforme as operações do seu negócio com a LORO. Funcionalidades empresariais, preços para PME. Automatize o que importa, controle o que conta."
+      }
+    }
   }
 }

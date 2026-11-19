@@ -5,6 +5,7 @@ import {
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ReportsHoursTargetCardProps {
   workedHours: number;
@@ -22,6 +23,7 @@ export function ReportsHoursTargetCard({
   progress,
   className,
 }: ReportsHoursTargetCardProps) {
+  const { t } = useTranslation('screens');
   const pctClass = getProgressColorClasses(progress);
   const worked = Math.round(workedHours * 10) / 10;
   const target = Math.round(targetHours);
@@ -41,7 +43,7 @@ export function ReportsHoursTargetCard({
           </span>
         </p>
         <p className="text-xs text-muted-foreground">
-          Hours worked vs expected for range
+          {t('chrome.reports.hoursTarget.title')}
         </p>
       </div>
       <div className="flex items-center gap-2">

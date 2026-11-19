@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CircleDot, Filter, Layers } from 'lucide-react';
 import {
   SearchableOptionListPicker,
@@ -43,6 +44,7 @@ export function ClientsFilterControls({
   categoryFilter,
   onCategoryFilterChange,
 }: ClientsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const statusTrigger = row
     ? 'h-9 min-w-0 w-[160px] shrink-0'
@@ -57,23 +59,23 @@ export function ClientsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(`chrome.clients.status.${opt.value}`),
           icon: (
             <Icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
           ),
         };
       }),
-    []
+    [t]
   );
 
   const categoryPickerOptions = React.useMemo<SearchableOptionRow[]>(
     () =>
       CLIENT_CATEGORY_PRESETS.filter((o) => o.value !== 'all').map((opt) => ({
         value: opt.value,
-        label: opt.label,
+        label: t(`chrome.clients.category.${opt.value}`),
         icon: <Layers className="size-4 shrink-0" />,
       })),
-    []
+    [t]
   );
 
   const wrapClass = row
@@ -87,9 +89,9 @@ export function ClientsFilterControls({
           selectedValue={statusFilter}
           onValueChange={(v) => onStatusFilterChange(v as ClientStatusFilterValue)}
           options={statusPickerOptions}
-          placeholderLabelWhenAll="All statuses"
-          searchPlaceholder="Search statuses…"
-          emptyMessage="No status found."
+          placeholderLabelWhenAll={t('actions.allStatuses')}
+          searchPlaceholder={t('chrome.planning.searchStatuses')}
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<CircleDot className="size-4 shrink-0" />}
           triggerClassName={statusTrigger}
         />
@@ -98,7 +100,7 @@ export function ClientsFilterControls({
             type="button"
             onClick={() => onStatusFilterChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear status filter"
+            aria-label={t('actions.clearStatusFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -110,9 +112,9 @@ export function ClientsFilterControls({
           selectedValue={categoryFilter}
           onValueChange={(v) => onCategoryFilterChange(v as ClientCategoryFilterValue)}
           options={categoryPickerOptions}
-          placeholderLabelWhenAll="All categories"
-          searchPlaceholder="Search categories…"
-          emptyMessage="No category found."
+          placeholderLabelWhenAll={t('chrome.clients.allCategories')}
+          searchPlaceholder={t('chrome.clients.searchCategories')}
+          emptyMessage={t('chrome.clients.noCategoryFound')}
           triggerIcon={<Layers className="size-4 shrink-0" />}
           triggerClassName={categoryTrigger}
         />
@@ -121,7 +123,7 @@ export function ClientsFilterControls({
             type="button"
             onClick={() => onCategoryFilterChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear category filter"
+            aria-label={t('chrome.lists.clearCategoryFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -144,6 +146,7 @@ export function ClientsFiltersBar({
   actions,
   ...filterProps
 }: ClientsFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -165,7 +168,7 @@ export function ClientsFiltersBar({
         )}
       >
         <Input
-          placeholder="Search name, email, or phone"
+          placeholder={t('forms.clients.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
@@ -175,7 +178,7 @@ export function ClientsFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -194,7 +197,7 @@ export function ClientsFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2">
           {renderSearchField('w-full')}
@@ -205,9 +208,9 @@ export function ClientsFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Filter clients by status and category.
+              {t('chrome.clients.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <ClientsFilterControls {...filterProps} layout="stack" />

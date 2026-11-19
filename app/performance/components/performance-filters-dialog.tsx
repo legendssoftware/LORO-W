@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { ArrowLeftRight, Banknote, CreditCard, Package, Wallet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type {
   PerformanceFilterOption,
   PerformanceFilters,
@@ -152,6 +153,7 @@ export function PerformanceFiltersDialog({
   masterData,
   onApply,
 }: PerformanceFiltersDialogProps) {
+  const { t } = useTranslation('screens');
   const [draft, setDraft] = useState<PerformanceFilters>(currentFilters);
   const [checkedCustomerCategories, setCheckedCustomerCategories] = useState<Set<string>>(
     new Set()
@@ -213,24 +215,24 @@ export function PerformanceFiltersDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto p-4 sm:max-w-2xl sm:p-6">
         <DialogHeader>
-          <DialogTitle>Performance filters</DialogTitle>
+          <DialogTitle>{t('chrome.performance.filters.title')}</DialogTitle>
           <DialogDescription>
-            Narrow ERP sales by date, country, branch, salesperson, and category.
+            {t('chrome.performance.filters.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-5">
           <div className="space-y-2">
-            <Label>Date range</Label>
+            <Label>{t('chrome.performance.filters.dateRange')}</Label>
             <p className="text-xs text-muted-foreground">
               {draft.dateRange
                 ? formatDateRangeLabel(draft.dateRange.startDate, draft.dateRange.endDate)
-                : 'Select dates'}
+                : t('actions.selectDates')}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {presets.map((preset) => (
                 <Button
-                  key={preset.label}
+                  key={preset.id}
                   type="button"
                   size="sm"
                   variant={
@@ -246,7 +248,7 @@ export function PerformanceFiltersDialog({
                     }))
                   }
                 >
-                  {preset.label}
+                  {t(`chrome.performance.presets.${preset.id}`)}
                 </Button>
               ))}
             </div>
@@ -271,7 +273,7 @@ export function PerformanceFiltersDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Countries</Label>
+            <Label>{t('chrome.performance.filters.countries')}</Label>
             <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
               {PERFORMANCE_FILTER_COUNTRIES.map((country) => {
                 const checked = draft.countries?.includes(country.id) ?? false;
@@ -301,13 +303,13 @@ export function PerformanceFiltersDialog({
           </div>
 
           <OptionChecklist
-            title="Branches"
+            title={t('chrome.performance.filters.branches')}
             options={masterData?.branches ?? []}
             selected={draft.branchIds}
             onToggle={(id) =>
               setDraft((prev) => ({ ...prev, branchIds: toggleId(prev.branchIds, id) }))
             }
-            searchPlaceholder="Search branches"
+            searchPlaceholder={t('chrome.performance.filters.searchBranches')}
             renderLeading={(option) => (
               <span aria-hidden className="text-base leading-none">
                 {getCountryFlag(option.countryCode ?? 'SA').flag}
@@ -315,7 +317,7 @@ export function PerformanceFiltersDialog({
             )}
           />
           <OptionChecklist
-            title="Salespeople"
+            title={t('chrome.performance.filters.salespeople')}
             options={masterData?.salespeople ?? []}
             selected={draft.salesPersonIds}
             onToggle={(id) =>
@@ -324,7 +326,7 @@ export function PerformanceFiltersDialog({
                 salesPersonIds: toggleId(prev.salesPersonIds, id),
               }))
             }
-            searchPlaceholder="Search salespeople"
+            searchPlaceholder={t('chrome.performance.filters.searchSalespeople')}
             renderLeading={(option) => {
               const photo = photoForSalesperson(option.name, photoByName);
               const initials = salespersonInitials(option.name);
@@ -337,7 +339,7 @@ export function PerformanceFiltersDialog({
             }}
           />
           <OptionChecklist
-            title="Payment methods"
+            title={t('chrome.performance.filters.paymentMethods')}
             options={masterData?.paymentMethods ?? []}
             selected={draft.paymentMethodIds}
             onToggle={(id) =>
@@ -346,14 +348,14 @@ export function PerformanceFiltersDialog({
                 paymentMethodIds: toggleId(prev.paymentMethodIds, id),
               }))
             }
-            searchPlaceholder="Search payment methods"
+            searchPlaceholder={t('chrome.performance.filters.searchPaymentMethods')}
             renderLeading={(option) => {
               const Icon = paymentMethodIcon(option.name);
               return <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
             }}
           />
           <OptionChecklist
-            title="Products"
+            title={t('chrome.performance.filters.products')}
             options={masterData?.products ?? []}
             selected={draft.product?.productIds}
             onToggle={(id) =>
@@ -365,7 +367,7 @@ export function PerformanceFiltersDialog({
                 },
               }))
             }
-            searchPlaceholder="Search products"
+            searchPlaceholder={t('chrome.performance.filters.searchProducts')}
             renderLeading={() => (
               <Package className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             )}
@@ -373,9 +375,9 @@ export function PerformanceFiltersDialog({
 
           {(masterData?.customerCategories ?? []).length > 0 ? (
             <div className="space-y-2">
-              <Label>Customer categories</Label>
+              <Label>{t('chrome.performance.filters.customerCategories')}</Label>
               <p className="text-xs text-muted-foreground">
-                Uncheck a category to exclude it from the report.
+                {t('chrome.performance.filters.customerCategoriesHint')}
               </p>
               <ScrollArea className="h-36 rounded-md border">
                 <div className="space-y-1 p-2">
@@ -413,10 +415,10 @@ export function PerformanceFiltersDialog({
               setCheckedCustomerCategories(new Set(categoryIds));
             }}
           >
-            Reset
+            {t('actions.reset')}
           </Button>
           <Button type="button" variant="success" onClick={applyDraft}>
-            Apply filters
+            {t('actions.applyFilters')}
           </Button>
         </DialogFooter>
       </DialogContent>

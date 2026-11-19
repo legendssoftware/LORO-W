@@ -222,28 +222,28 @@ export function ReportsInsightsTab() {
     () =>
       data
         ? [
-            { name: 'Blank notes (all logs)', value: data.completeness.blankNotesPct },
-            { name: 'No contact (connected)', value: data.completeness.missingContactPct },
-            { name: 'No follow-up (connected)', value: data.completeness.missingFollowUpPct },
-            { name: 'Zero GPS', value: data.completeness.zeroGpsPct },
+            { name: t('chrome.reports.ins.blankNotes'), value: data.completeness.blankNotesPct },
+            { name: t('chrome.reports.ins.noContact'), value: data.completeness.missingContactPct },
+            { name: t('chrome.reports.ins.noFollowUp'), value: data.completeness.missingFollowUpPct },
+            { name: t('chrome.reports.ins.zeroGps'), value: data.completeness.zeroGpsPct },
           ]
         : [],
-    [data]
+    [data, t]
   );
 
   const opportunityFunnel = useMemo(
     () =>
       data
         ? [
-            { label: 'Connected calls (CRM)', value: data.funnel.connectedTelephone },
-            { label: 'Quality conversations (PBX)', value: data.funnel.qualityConversations },
-            { label: 'Commercial facts', value: data.funnel.commercialFact },
-            { label: 'Next steps', value: data.funnel.nextStep },
-            { label: 'Quotes', value: data.funnel.withQuote },
-            { label: 'Missed pursuits', value: data.funnel.missedOpportunities },
+            { label: t('chrome.reports.ins.connectedCalls'), value: data.funnel.connectedTelephone },
+            { label: t('chrome.reports.cq.funnel.qualityConversations'), value: data.funnel.qualityConversations },
+            { label: t('chrome.reports.ins.commercialFacts'), value: data.funnel.commercialFact },
+            { label: t('chrome.reports.ins.nextSteps'), value: data.funnel.nextStep },
+            { label: t('chrome.reports.ins.quotes'), value: data.funnel.withQuote },
+            { label: t('chrome.reports.cq.missedPursuits'), value: data.funnel.missedOpportunities },
           ]
         : [],
-    [data]
+    [data, t]
   );
 
   if (!isTokenReady || isLoading) {
@@ -258,7 +258,7 @@ export function ReportsInsightsTab() {
 
   if (isError || !data) {
     return (
-      <p className="text-sm text-destructive">Could not load activity intelligence.</p>
+      <p className="text-sm text-destructive">{t('chrome.reports.ins.loadError')}</p>
     );
   }
 
@@ -282,32 +282,32 @@ export function ReportsInsightsTab() {
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SummaryStat
-          label="Reliability"
+          label={t('chrome.reports.ins.reliability')}
           value={`${data.reliability.score}/100`}
           sub={data.reliability.verdict}
         />
         <SummaryStat
-          label="Connected calls (CRM)"
+          label={t('chrome.reports.ins.connectedCalls')}
           value={String(data.funnel.connectedTelephone)}
           sub={`${data.funnel.deadAir} voicemail / no-answer`}
         />
         <SummaryStat
-          label="Commercial facts"
+          label={t('chrome.reports.ins.commercialFacts')}
           value={String(data.funnel.commercialFact)}
           sub={`${data.funnel.commercialFactPct}% of connected work`}
         />
         <SummaryStat
-          label="Next steps"
+          label={t('chrome.reports.ins.nextSteps')}
           value={String(data.funnel.nextStep)}
           sub={`${data.funnel.nextStepPct}% of connected work`}
         />
         <SummaryStat
-          label="Quality conversations (PBX)"
+          label={t('chrome.reports.cq.funnel.qualityConversations')}
           value={String(data.funnel.qualityConversations)}
           sub={pbxLabel(data.pbxMatchRate, data.telephoneCount)}
         />
         <SummaryStat
-          label="Missed pursuits (PBX)"
+          label={t('chrome.reports.ins.missedPursuitsPbx')}
           value={String(data.funnel.missedOpportunities)}
           sub={
             data.pbxMatchedCount > 0
@@ -321,14 +321,14 @@ export function ReportsInsightsTab() {
 
       {empty ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          No CRM activities in this period.
+          {t('chrome.reports.ins.noCrm')}
         </p>
       ) : (
         <>
           <div className="grid gap-4 lg:grid-cols-2">
             <ReportsChartCard
-              title="Reliability score"
-              description="How complete and corroborable these records are — not proof of work."
+              title={t('chrome.reports.ins.reliabilityScore')}
+              description={t('chrome.reports.ins.reliabilityHint')}
             >
               <div className="flex flex-col items-center gap-3 py-2">
                 <CallScoreRadialChart score={data.reliability.score} />
@@ -341,7 +341,7 @@ export function ReportsInsightsTab() {
               </div>
             </ReportsChartCard>
             <ReportsChartCard
-              title="Completeness gaps"
+              title={t('chrome.reports.ins.completenessGaps')}
               description="Blank notes and GPS are all CRM logs. Contact and follow-up are connected work only. Voicemail is not a missing quote."
             >
               <ReportsNamedBarChart
@@ -355,8 +355,8 @@ export function ReportsInsightsTab() {
 
           {data.brief ? (
             <ReportsSection
-              title="Summary"
-              description="Which conversations created commercial value — volume without a next step is context, not the headline."
+              title={t('chrome.reports.ins.summary')}
+              description={t('chrome.reports.ins.summaryHint')}
             >
               <div className="rounded-lg border border-border/60 bg-card p-4 text-sm leading-relaxed text-foreground">
                 {data.brief.summary}
@@ -383,7 +383,7 @@ export function ReportsInsightsTab() {
           ) : null}
 
           <ReportsSection
-            title="Opportunity funnel"
+            title={t('chrome.reports.cq.funnelTitle')}
             description="CRM connected work except quality conversations and missed pursuits, which come from PBX recordings linked to those check-ins."
           >
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -404,12 +404,12 @@ export function ReportsInsightsTab() {
           </ReportsSection>
 
           <ReportsSection
-            title="Burst clusters"
+            title={t('chrome.reports.ins.burstClusters')}
             description="Packed telephone logs at one place — the Maputo / Klipspruit pattern."
           >
             {data.clusters.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No rapid-fire telephone clusters in this period.
+                {t('chrome.reports.ins.noBursts')}
               </p>
             ) : (
               <Table>
@@ -438,14 +438,14 @@ export function ReportsInsightsTab() {
           </ReportsSection>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <ReportsSection title="What this does not prove">
+            <ReportsSection title={t('chrome.reports.ins.whatItDoesNotProve')}>
               <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
                 {(data.brief?.dataGaps ?? []).map((gap) => (
                   <li key={gap}>{gap}</li>
                 ))}
               </ul>
             </ReportsSection>
-            <ReportsSection title="Recommended actions">
+            <ReportsSection title={t('chrome.reports.ins.recommendedActions')}>
               <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
                 {(data.brief?.recommendedActions ?? []).map((action) => (
                   <li key={action}>{action}</li>

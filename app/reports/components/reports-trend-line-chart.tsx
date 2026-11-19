@@ -29,6 +29,7 @@ import {
   type ReportsChartValueKind,
 } from '@/app/reports/lib/reports-chart-format';
 import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-tooltip';
+import { useTranslation } from 'react-i18next';
 
 const AREA_PALETTE = [
   ATT_CHART_HSL.c2,
@@ -39,9 +40,9 @@ const AREA_PALETTE = [
 ] as const;
 
 const RANGE_OPTIONS = [
-  { value: '6m', label: 'Last 6 months', months: 6 },
-  { value: '3m', label: 'Last 3 months', months: 3 },
-  { value: '1m', label: 'Last month', months: 1 },
+  { value: '6m', labelKey: 'chrome.reports.range.last6', months: 6 },
+  { value: '3m', labelKey: 'chrome.reports.range.last3', months: 3 },
+  { value: '1m', labelKey: 'chrome.reports.range.last1', months: 1 },
 ] as const;
 
 type TimeRange = (typeof RANGE_OPTIONS)[number]['value'];
@@ -71,12 +72,13 @@ export function ReportsTrendLineChart({
   valueKind = 'money',
   yAxisLabel,
 }: ReportsTrendLineChartProps) {
+  const { t } = useTranslation('screens');
   const gradientId = React.useId().replace(/:/g, '');
   const [timeRange, setTimeRange] = React.useState<TimeRange>('6m');
 
   if (data.length === 0 || series.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>
     );
   }
 
@@ -94,7 +96,7 @@ export function ReportsTrendLineChart({
   }
 
   const rangeLabel =
-    RANGE_OPTIONS.find((o) => o.value === timeRange)?.label ?? 'Last 6 months';
+    t(RANGE_OPTIONS.find((o) => o.value === timeRange)?.labelKey ?? 'chrome.reports.range.last6');
   const axisLabel = reportsYAxisLabel(valueKind, yAxisLabel);
   const xLayout = getReportsCategoryAxisLayout(
     filteredData.map((row) => String(row[xKey] ?? ''))
@@ -109,7 +111,7 @@ export function ReportsTrendLineChart({
         >
           <SelectTrigger
             className="w-[160px] rounded-lg"
-            aria-label="Select time range"
+            aria-label={t('chrome.reports.range.select')}
             size="sm"
           >
             <SelectValue placeholder={rangeLabel} />
@@ -121,7 +123,7 @@ export function ReportsTrendLineChart({
                 value={option.value}
                 className="rounded-lg"
               >
-                {option.label}
+                {t(option.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>

@@ -177,8 +177,8 @@ export function DeliveryDetailContent({
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('tables.item')}</TableHead>
-                  <TableHead className="text-right">Ordered</TableHead>
-                  <TableHead className="text-right">Delivered</TableHead>
+                  <TableHead className="text-right">{t('tables.ordered')}</TableHead>
+                  <TableHead className="text-right">{t('tables.delivered')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

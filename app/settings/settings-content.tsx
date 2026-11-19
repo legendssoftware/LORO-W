@@ -122,16 +122,16 @@ import { PerformancePolicySettingsSection } from '@/components/settings/performa
 import { ApifyLeadJobsSection } from '@/components/settings/apify-lead-jobs-section';
 import { canAccessOrgSettings, canManageWebhooks } from '@/lib/access';
 import { WebhooksSection } from '@/components/settings/admin-integration-sections';
-import { FORM_PLACEHOLDERS, ADDRESS_FIELD_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { addressFieldPlaceholder, formPlaceholder } from '@/lib/form-placeholders';
 
-const WEEKDAYS: { key: WeekdayKey; label: string }[] = [
-  { key: 'monday', label: 'Mon' },
-  { key: 'tuesday', label: 'Tue' },
-  { key: 'wednesday', label: 'Wed' },
-  { key: 'thursday', label: 'Thu' },
-  { key: 'friday', label: 'Fri' },
-  { key: 'saturday', label: 'Sat' },
-  { key: 'sunday', label: 'Sun' },
+const WEEKDAYS: { key: WeekdayKey }[] = [
+  { key: 'monday' },
+  { key: 'tuesday' },
+  { key: 'wednesday' },
+  { key: 'thursday' },
+  { key: 'friday' },
+  { key: 'saturday' },
+  { key: 'sunday' },
 ];
 
 const defaultWeekly: OrganisationHoursWeeklySchedule = {
@@ -433,6 +433,7 @@ const CREATE_BRANCH_INPUT_CLASS =
 
 export function SettingsContent() {
   const { t } = useTranslation('settings');
+  const { t: tCommon } = useTranslation('common');
   const client = useApiClient();
   const queryClient = useQueryClient();
   const { backendUserData } = useSessionSync();
@@ -1299,7 +1300,7 @@ export function SettingsContent() {
     return (
       <div className="p-6">
         <p className="text-sm text-muted-foreground">
-          Select an organisation in Clerk, then open Settings again.
+          {t('chrome.sections.selectOrg')}
         </p>
       </div>
     );
@@ -1323,7 +1324,7 @@ export function SettingsContent() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{tCommon('loading')}…</p>
       ) : (
         <>
           <div className="flex flex-wrap gap-2" data-tour="settings-tab-nav">
@@ -1335,7 +1336,7 @@ export function SettingsContent() {
               className={tabBtnClass('profile')}
             >
               <User className="mr-2 size-4" />
-              Profile
+              {t('chrome.tabs.profile')}
             </Button>
             <Button
               type="button"
@@ -1345,7 +1346,7 @@ export function SettingsContent() {
               className={tabBtnClass('appearance')}
             >
               <Palette className="mr-2 size-4" />
-              Appearance
+              {t('chrome.tabs.appearance')}
             </Button>
             <Button
               type="button"
@@ -1355,7 +1356,7 @@ export function SettingsContent() {
               className={tabBtnClass('regional')}
             >
               <Globe className="mr-2 size-4" />
-              Regional &amp; preferences
+              {t('chrome.tabs.regional')}
             </Button>
             <Button
               type="button"
@@ -1365,7 +1366,7 @@ export function SettingsContent() {
               className={tabBtnClass('hours')}
             >
               <Clock className="mr-2 size-4" />
-              Hours
+              {t('chrome.tabs.hours')}
             </Button>
             <Button
               type="button"
@@ -1375,7 +1376,7 @@ export function SettingsContent() {
               className={tabBtnClass('branches')}
             >
               <Building2 className="mr-2 size-4" />
-              Branches
+              {t('chrome.tabs.branches')}
             </Button>
             <Button
               type="button"
@@ -1385,7 +1386,7 @@ export function SettingsContent() {
               className={tabBtnClass('calendar')}
             >
               <CalendarDays className="mr-2 size-4" />
-              Calendar
+              {t('chrome.tabs.calendar')}
             </Button>
             <Button
               type="button"
@@ -1395,7 +1396,7 @@ export function SettingsContent() {
               className={tabBtnClass('scrapping')}
             >
               <MapPin className="mr-2 size-4" />
-              Scrapping
+              {t('chrome.tabs.scrapping')}
             </Button>
             <Button
               type="button"
@@ -1405,7 +1406,7 @@ export function SettingsContent() {
               className={tabBtnClass('notices')}
             >
               <Megaphone className="mr-2 size-4" />
-              Notices
+              {t('chrome.tabs.notices')}
             </Button>
             <Button
               type="button"
@@ -1415,7 +1416,7 @@ export function SettingsContent() {
               className={tabBtnClass('banners')}
             >
               <ImageIcon className="mr-2 size-4" />
-              Banners
+              {t('chrome.tabs.banners')}
             </Button>
             <Button
               type="button"
@@ -1425,7 +1426,7 @@ export function SettingsContent() {
               className={tabBtnClass('performance-policy')}
             >
               <ShieldCheck className="mr-2 size-4" />
-              Performance policy
+              {t('chrome.tabs.performancePolicy')}
             </Button>
             <Button
               type="button"
@@ -1435,47 +1436,47 @@ export function SettingsContent() {
               className={tabBtnClass('call-quality')}
             >
               <PhoneCall className="mr-2 size-4" />
-              Call quality
+              {t('chrome.tabs.callQuality')}
             </Button>
             {canManageWebhooks(backendUserData?.accessLevel) ? (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setActiveTab('webhooks')} className={tabBtnClass('webhooks')}>Webhooks</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setActiveTab('webhooks')} className={tabBtnClass('webhooks')}>{t('chrome.tabs.webhooks')}</Button>
             ) : null}
           </div>
 
           {activeTab === 'profile' && (
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
-                <h2 className="text-lg font-medium">Organisation profile</h2>
+                <h2 className="text-lg font-medium">{t('chrome.sections.orgProfile.title')}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Legal name, contact, and address shown across the product.
+                  {t('chrome.sections.orgProfile.description')}
                 </p>
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
-                <Row title="Name" description="Official organisation name.">
+                <Row title={t('chrome.sections.orgName.title')} description={t('chrome.sections.orgName.description')}>
                   <Input
                     id="org-name"
                     value={profileForm.name}
                     onChange={(e) =>
                       setProfileForm((s) => ({ ...s, name: e.target.value }))
                     }
-                    placeholder="e.g. LORO Group (Pty) Ltd"
+                    placeholder={t('placeholders.organisationName')}
                     aria-required
                   />
                 </Row>
                 <Separator />
-                <Row title="Alias" description="Short internal display name (optional).">
+                <Row title={t('chrome.sections.orgAlias.title')} description={t('chrome.sections.orgAlias.description')}>
                   <Input
                     id="org-alias"
                     value={profileForm.alias}
                     onChange={(e) =>
                       setProfileForm((s) => ({ ...s, alias: e.target.value }))
                     }
-                    placeholder="Short name (optional)"
+                    placeholder={t('placeholders.shortName')}
                   />
                 </Row>
                 <Separator />
-                <Row title="Status" description="Organisation lifecycle state.">
+                <Row title={t('chrome.sections.orgStatus.title')} description={t('chrome.sections.orgStatus.description')}>
                   <Select
                     value={profileForm.status}
                     onValueChange={(v) =>
@@ -1488,7 +1489,7 @@ export function SettingsContent() {
                         Our SelectItems include an icon + label, so rendering an icon here
                         duplicates the selected icon (the bug shown in screenshots).
                       */}
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={t('placeholders.status')} />
                     </SelectTrigger>
                     <SelectContent>
                       {!optionByValue(ORG_STATUS_SELECT_OPTIONS, profileForm.status) ? (
@@ -1511,10 +1512,10 @@ export function SettingsContent() {
                   </Select>
                 </Row>
                 <Separator />
-                <Row title="Contact" description="Email, phone, website, and organisation logo.">
+                <Row title={t('chrome.sections.contact.title')} description={t('chrome.sections.contact.description')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="org-email">Email</Label>
+                      <Label htmlFor="org-email">{t('forms.email')}</Label>
                       <Input
                         id="org-email"
                         type="email"
@@ -1522,36 +1523,36 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, email: e.target.value }))
                         }
-                        placeholder={FORM_PLACEHOLDERS.email}
+                        placeholder={formPlaceholder(tCommon, 'email')}
                         className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="org-phone">Phone</Label>
+                      <Label htmlFor="org-phone">{t('forms.phone')}</Label>
                       <Input
                         id="org-phone"
                         value={profileForm.phone}
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, phone: e.target.value }))
                         }
-                        placeholder="e.g. 0712345678"
+                        placeholder={t('placeholders.phoneLocal')}
                         className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="org-website">Website</Label>
+                      <Label htmlFor="org-website">{t('forms.website')}</Label>
                       <Input
                         id="org-website"
                         value={profileForm.website}
                         onChange={(e) =>
                           setProfileForm((s) => ({ ...s, website: e.target.value }))
                         }
-                        placeholder="https://www.company.co.za"
+                        placeholder={t('placeholders.websiteZa')}
                         className="bg-background border-border"
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-foreground">Logo</Label>
+                      <Label className="text-foreground">{t('forms.logo')}</Label>
                       <LogoField
                         client={client}
                         value={profileForm.logo}
@@ -1562,15 +1563,15 @@ export function SettingsContent() {
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Address" description="Head office location.">
+                <Row title={t('chrome.sections.address.title')} description={t('chrome.sections.address.description')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
-                      ['street', 'Street', profileForm.street],
-                      ['suburb', 'Suburb', profileForm.suburb],
-                      ['city', 'City', profileForm.city],
-                      ['state', 'State / province', profileForm.state],
-                      ['country', 'Country', profileForm.country],
-                      ['postalCode', 'Postal code', profileForm.postalCode],
+                      ['street', t('forms.street'), profileForm.street],
+                      ['suburb', t('forms.suburb'), profileForm.suburb],
+                      ['city', t('forms.city'), profileForm.city],
+                      ['state', t('forms.province'), profileForm.state],
+                      ['country', t('forms.country'), profileForm.country],
+                      ['postalCode', t('forms.postalCode'), profileForm.postalCode],
                     ].map(([key, label, val]) => (
                       <div key={key as string} className="space-y-2">
                         <Label htmlFor={`addr-${key}`}>{label}</Label>
@@ -1583,7 +1584,7 @@ export function SettingsContent() {
                               [key as string]: e.target.value,
                             }))
                           }
-                          placeholder={ADDRESS_FIELD_PLACEHOLDERS[key] ?? ''}
+                          placeholder={addressFieldPlaceholder(tCommon, key)}
                         />
                       </div>
                     ))}
@@ -1595,7 +1596,7 @@ export function SettingsContent() {
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetProfile}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -1603,7 +1604,7 @@ export function SettingsContent() {
                   onClick={() => patchProfileMut.mutate()}
                   disabled={!profileOrg || patchProfileMut.isPending}
                 >
-                  Save changes
+                  {tCommon('saveChanges')}
                 </Button>
               </div>
             </div>
@@ -1612,21 +1613,21 @@ export function SettingsContent() {
           {activeTab === 'appearance' && (
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
-                <h2 className="text-lg font-medium">Appearance</h2>
+                <h2 className="text-lg font-medium">{t('chrome.sections.appearance.title')}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Brand colours and logo for your organisation theme.
+                  {t('chrome.sections.appearance.description')}
                 </p>
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
                 <Row
-                  title="Brand colour"
-                  description="Primary colour for buttons and highlights."
+                  title={t('chrome.sections.brandColour.title')}
+                  description={t('chrome.sections.brandColour.description')}
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <input
                       type="color"
-                      aria-label="Primary colour"
+                      aria-label={t('forms.primaryColour')}
                       value={
                         appearanceForm.primaryColor?.startsWith('#')
                           ? appearanceForm.primaryColor
@@ -1649,20 +1650,20 @@ export function SettingsContent() {
                           primaryColor: e.target.value,
                         }))
                       }
-                      placeholder="#444CE7"
-                      aria-label="Primary colour hex"
+                      placeholder={t('placeholders.hexPrimary')}
+                      aria-label={t('forms.primaryColourHex')}
                     />
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Additional colours" description="Secondary, accent, status colours.">
+                <Row title={t('chrome.sections.additionalColours.title')} description={t('chrome.sections.additionalColours.description')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {(
                       [
-                        ['secondaryColor', 'Secondary'],
-                        ['accentColor', 'Accent'],
-                        ['errorColor', 'Error'],
-                        ['successColor', 'Success'],
+                        ['secondaryColor', t('forms.secondaryColour')],
+                        ['accentColor', t('forms.accentColour')],
+                        ['errorColor', t('forms.errorColour')],
+                        ['successColor', t('forms.successColour')],
                       ] as const
                     ).map(([key, label]) => (
                       <div key={key} className="space-y-2">
@@ -1673,7 +1674,7 @@ export function SettingsContent() {
                           onChange={(e) =>
                             setAppearanceForm((s) => ({ ...s, [key]: e.target.value }))
                           }
-                          placeholder="#000000"
+                          placeholder={t('placeholders.hexBlack')}
                           className="font-mono text-sm"
                         />
                       </div>
@@ -1681,7 +1682,7 @@ export function SettingsContent() {
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Logo" description="Logo image and accessible label.">
+                <Row title={t('chrome.sections.logo.title')} description={t('chrome.sections.logo.description')}>
                   <div className="space-y-3">
                     <LogoField
                       client={client}
@@ -1692,7 +1693,7 @@ export function SettingsContent() {
                       urlInputId="appearance-logo"
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="appearance-logo-alt">Alt text</Label>
+                      <Label htmlFor="appearance-logo-alt">{t('forms.altText')}</Label>
                       <Input
                         id="appearance-logo-alt"
                         value={appearanceForm.logoAltText}
@@ -1702,7 +1703,7 @@ export function SettingsContent() {
                             logoAltText: e.target.value,
                           }))
                         }
-                        placeholder="Alt text"
+                        placeholder={t('placeholders.altText')}
                         className="bg-background border-border"
                       />
                     </div>
@@ -1710,12 +1711,12 @@ export function SettingsContent() {
                 </Row>
                 <Separator />
                 <Row
-                  title="Public dashboard options"
-                  description="Chart layout and cookie banner are saved with organisation preferences."
+                  title={t('chrome.sections.dashboardOptions.title')}
+                  description={t('chrome.sections.dashboardOptions.description')}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="chart-layout">Dashboard charts</Label>
+                      <Label htmlFor="chart-layout">{t('forms.dashboardCharts')}</Label>
                       <Select
                         value={regionalForm.chartLayout}
                         onValueChange={(value) =>
@@ -1727,13 +1728,13 @@ export function SettingsContent() {
                       >
                         <SelectTrigger id="chart-layout"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="comfortable">Comfortable</SelectItem>
-                          <SelectItem value="compact">Compact</SelectItem>
+                          <SelectItem value="comfortable">{t('chrome.sections.dashboardOptions.comfortable')}</SelectItem>
+                          <SelectItem value="compact">{t('chrome.sections.dashboardOptions.compact')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cookie-banner">Cookie banner</Label>
+                      <Label htmlFor="cookie-banner">{t('forms.cookieBanner')}</Label>
                       <Select
                         value={regionalForm.showCookieBanner ? 'on' : 'off'}
                         onValueChange={(value) =>
@@ -1745,14 +1746,14 @@ export function SettingsContent() {
                       >
                         <SelectTrigger id="cookie-banner"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="off">Hidden</SelectItem>
-                          <SelectItem value="on">Shown on Home</SelectItem>
+                          <SelectItem value="off">{t('chrome.sections.dashboardOptions.hidden')}</SelectItem>
+                          <SelectItem value="on">{t('chrome.sections.dashboardOptions.shownOnHome')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <Button type="button" className="mt-3" onClick={() => saveSettingsMut.mutate()} disabled={saveSettingsMut.isPending}>
-                    Save dashboard options
+                    {t('chrome.sections.dashboardOptions.save')}
                   </Button>
                 </Row>
               </div>
@@ -1761,7 +1762,7 @@ export function SettingsContent() {
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetAppearance}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -1769,7 +1770,7 @@ export function SettingsContent() {
                   onClick={() => saveAppearanceMut.mutate()}
                   disabled={saveAppearanceMut.isPending}
                 >
-                  Save changes
+                  {tCommon('saveChanges')}
                 </Button>
               </div>
             </div>
@@ -1778,9 +1779,9 @@ export function SettingsContent() {
           {activeTab === 'regional' && (
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
-                <h2 className="text-lg font-medium">Regional &amp; preferences</h2>
+                <h2 className="text-lg font-medium">{t('chrome.sections.regional.title')}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Language, timezone, notifications, UI defaults, and geofence defaults.
+                  {t('chrome.sections.regional.description')}
                 </p>
               </div>
               <div className="space-y-2 px-6 pt-4">
@@ -1790,74 +1791,74 @@ export function SettingsContent() {
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
-                <Row title="Regional" description="Localisation for dates, time, and currency.">
+                <Row title={t('chrome.sections.regional.localisation')} description={t('chrome.sections.regional.localisationHint')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="lang">Language</Label>
+                      <Label htmlFor="lang">{t('forms.language')}</Label>
                       <Input
                         id="lang"
                         value={regionalForm.language}
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, language: e.target.value }))
                         }
-                        placeholder="en-ZA"
+                        placeholder={t('placeholders.locale')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tz">Timezone</Label>
+                      <Label htmlFor="tz">{t('forms.timezone')}</Label>
                       <Input
                         id="tz"
                         value={regionalForm.timezone}
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, timezone: e.target.value }))
                         }
-                        placeholder="Africa/Johannesburg"
+                        placeholder={t('placeholders.timezone')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cur">Currency</Label>
+                      <Label htmlFor="cur">{t('forms.currency')}</Label>
                       <Input
                         id="cur"
                         value={regionalForm.currency}
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, currency: e.target.value }))
                         }
-                        placeholder="ZAR"
+                        placeholder={t('placeholders.currency')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="df">Date format</Label>
+                      <Label htmlFor="df">{t('forms.dateFormat')}</Label>
                       <Input
                         id="df"
                         value={regionalForm.dateFormat}
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, dateFormat: e.target.value }))
                         }
-                        placeholder="e.g. dd/MM/yyyy"
+                        placeholder={t('placeholders.dateFormat')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tf">Time format</Label>
+                      <Label htmlFor="tf">{t('forms.timeFormat')}</Label>
                       <Input
                         id="tf"
                         value={regionalForm.timeFormat}
                         onChange={(e) =>
                           setRegionalForm((s) => ({ ...s, timeFormat: e.target.value }))
                         }
-                        placeholder="e.g. HH:mm"
+                        placeholder={t('placeholders.timeFormat')}
                       />
                     </div>
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Notifications" description="Channels for org-wide alerts.">
+                <Row title={t('chrome.sections.notifications.title')} description={t('chrome.sections.notifications.description')}>
                   <div className="flex flex-wrap gap-4">
                     {(
                       [
-                        ['notifEmail', 'Email'],
-                        ['notifSms', 'SMS'],
-                        ['notifPush', 'Push'],
-                        ['notifWhatsapp', 'WhatsApp'],
+                        ['notifEmail', t('forms.email')],
+                        ['notifSms', t('forms.notifSms')],
+                        ['notifPush', t('forms.notifPush')],
+                        ['notifWhatsapp', t('forms.notifWhatsapp')],
                       ] as const
                     ).map(([key, label]) => (
                       <label key={key} className="flex items-center gap-2 text-sm">
@@ -1877,10 +1878,10 @@ export function SettingsContent() {
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Preferences" description="Default UI behaviour.">
+                <Row title={t('chrome.sections.preferences.title')} description={t('chrome.sections.preferences.description')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Theme</Label>
+                      <Label>{t('forms.theme')}</Label>
                       <Select
                         value={regionalForm.theme}
                         onValueChange={(v: 'light' | 'dark' | 'system') =>
@@ -1896,11 +1897,11 @@ export function SettingsContent() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {THEME_SELECT_OPTIONS.map(({ value, label, Icon }) => (
+                          {THEME_SELECT_OPTIONS.map(({ value, labelKey, Icon }) => (
                             <SelectItem key={value} value={value}>
                               <div className="flex items-center gap-2">
                                 <Icon className="size-4 shrink-0" />
-                                {label}
+                                {t(labelKey)}
                               </div>
                             </SelectItem>
                           ))}
@@ -1908,7 +1909,7 @@ export function SettingsContent() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="dv">Default view</Label>
+                      <Label htmlFor="dv">{t('forms.defaultView')}</Label>
                       <Input
                         id="dv"
                         value={regionalForm.defaultView}
@@ -1918,11 +1919,11 @@ export function SettingsContent() {
                             defaultView: e.target.value,
                           }))
                         }
-                        placeholder="e.g. dashboard"
+                        placeholder={t('placeholders.defaultView')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ipp">Items per page</Label>
+                      <Label htmlFor="ipp">{t('forms.itemsPerPage')}</Label>
                       <Input
                         id="ipp"
                         type="number"
@@ -1934,7 +1935,7 @@ export function SettingsContent() {
                             itemsPerPage: Number(e.target.value) || 25,
                           }))
                         }
-                        placeholder="25"
+                        placeholder={t('placeholders.itemsPerPage')}
                       />
                     </div>
                     <label className="flex items-center gap-2 text-sm">
@@ -1948,12 +1949,12 @@ export function SettingsContent() {
                           }))
                         }
                       />
-                      Menu collapsed by default
+                      {t('chrome.sections.preferences.menuCollapsed')}
                     </label>
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Tasks &amp; feedback" description="Operational toggles.">
+                <Row title={t('chrome.sections.tasksFeedback.title')} description={t('chrome.sections.tasksFeedback.description')}>
                   <div className="flex flex-col gap-3">
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -1966,7 +1967,7 @@ export function SettingsContent() {
                           }))
                         }
                       />
-                      Send task notifications
+                      {t('chrome.sections.tasksFeedback.sendTaskNotifications')}
                     </label>
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -1979,10 +1980,10 @@ export function SettingsContent() {
                           }))
                         }
                       />
-                      Create follow-up task when a lead is created
+                      {t('chrome.sections.tasksFeedback.createFollowUp')}
                     </label>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Task deadline reminders</p>
+                      <p className="text-sm font-medium">{t('chrome.sections.tasksFeedback.deadlineReminders')}</p>
                       <label className="flex items-center gap-2 text-sm">
                         <input
                           type="checkbox"
@@ -1994,7 +1995,7 @@ export function SettingsContent() {
                             }))
                           }
                         />
-                        24 hours before deadline
+                        {t('chrome.sections.tasksFeedback.reminder24h')}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -2007,7 +2008,7 @@ export function SettingsContent() {
                             }))
                           }
                         />
-                        1 hour before deadline
+                        {t('chrome.sections.tasksFeedback.reminder1h')}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -2020,11 +2021,11 @@ export function SettingsContent() {
                             }))
                           }
                         />
-                        15 minutes before deadline
+                        {t('chrome.sections.tasksFeedback.reminder15m')}
                       </label>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ft">Feedback token expiry (days)</Label>
+                      <Label htmlFor="ft">{t('forms.feedbackTokenExpiry')}</Label>
                       <Input
                         id="ft"
                         type="number"
@@ -2036,16 +2037,16 @@ export function SettingsContent() {
                             feedbackTokenExpiryDays: Number(e.target.value) || 30,
                           }))
                         }
-                        placeholder="30"
+                        placeholder={t('placeholders.feedbackDays')}
                       />
                     </div>
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Geofence defaults" description="Check-in radius behaviour.">
+                <Row title={t('chrome.sections.geofence.title')} description={t('chrome.sections.geofence.description')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="gdef">Default radius (m)</Label>
+                      <Label htmlFor="gdef">{t('forms.defaultRadius')}</Label>
                       <Input
                         id="gdef"
                         type="number"
@@ -2056,11 +2057,11 @@ export function SettingsContent() {
                             geofenceDefaultRadius: Number(e.target.value),
                           }))
                         }
-                        placeholder="e.g. 100"
+                        placeholder={t('placeholders.radiusDefault')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gmax">Max radius (m)</Label>
+                      <Label htmlFor="gmax">{t('forms.maxRadius')}</Label>
                       <Input
                         id="gmax"
                         type="number"
@@ -2071,11 +2072,11 @@ export function SettingsContent() {
                             geofenceMaxRadius: Number(e.target.value),
                           }))
                         }
-                        placeholder="e.g. 500"
+                        placeholder={t('placeholders.radiusMax')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gmin">Min radius (m)</Label>
+                      <Label htmlFor="gmin">{t('forms.minRadius')}</Label>
                       <Input
                         id="gmin"
                         type="number"
@@ -2086,11 +2087,11 @@ export function SettingsContent() {
                             geofenceMinRadius: Number(e.target.value),
                           }))
                         }
-                        placeholder="e.g. 50"
+                        placeholder={t('placeholders.radiusMin')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gtype">Default notification type</Label>
+                      <Label htmlFor="gtype">{t('forms.defaultNotificationType')}</Label>
                       <Select
                         value={regionalForm.geofenceDefaultNotificationType}
                         onValueChange={(v) =>
@@ -2144,20 +2145,20 @@ export function SettingsContent() {
                           }))
                         }
                       />
-                      Geofence enabled by default for new resources
+                      {t('chrome.sections.geofence.enabledByDefault')}
                     </label>
                   </div>
                 </Row>
                 <Separator />
                 <Collapsible className="rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
-                    <span>Contact &amp; address (settings JSON)</span>
+                    <span>{t('chrome.sections.contactJson')}</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="s-contact-email">Contact email</Label>
+                        <Label htmlFor="s-contact-email">{t('forms.contactEmail')}</Label>
                         <Input
                           id="s-contact-email"
                           type="email"
@@ -2168,12 +2169,12 @@ export function SettingsContent() {
                               contactEmail: e.target.value,
                             }))
                           }
-                          placeholder={FORM_PLACEHOLDERS.email}
+                          placeholder={formPlaceholder(tCommon, 'email')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-phone-code">Phone country code</Label>
+                        <Label htmlFor="s-phone-code">{t('forms.phoneCountryCode')}</Label>
                         <Input
                           id="s-phone-code"
                           value={regionalForm.contactPhoneCode}
@@ -2183,12 +2184,12 @@ export function SettingsContent() {
                               contactPhoneCode: e.target.value,
                             }))
                           }
-                          placeholder="+27"
+                          placeholder={t('placeholders.phoneCode')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-phone-num">Phone number</Label>
+                        <Label htmlFor="s-phone-num">{t('forms.phoneNumber')}</Label>
                         <Input
                           id="s-phone-num"
                           value={regionalForm.contactPhoneNumber}
@@ -2198,12 +2199,12 @@ export function SettingsContent() {
                               contactPhoneNumber: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 0712345678"
+                          placeholder={t('placeholders.phoneLocal')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="s-contact-web">Website</Label>
+                        <Label htmlFor="s-contact-web">{t('forms.website')}</Label>
                         <Input
                           id="s-contact-web"
                           value={regionalForm.contactWebsite}
@@ -2213,18 +2214,18 @@ export function SettingsContent() {
                               contactWebsite: e.target.value,
                             }))
                           }
-                          placeholder={FORM_PLACEHOLDERS.website}
+                          placeholder={formPlaceholder(tCommon, 'website')}
                           className="border-border bg-background"
                         />
                       </div>
                       {(
                         [
-                          ['contactAddrStreet', 'Street', 'street'],
-                          ['contactAddrSuburb', 'Suburb', 'suburb'],
-                          ['contactAddrCity', 'City', 'city'],
-                          ['contactAddrState', 'State', 'state'],
-                          ['contactAddrCountry', 'Country', 'country'],
-                          ['contactAddrPostal', 'Postal code', 'postalCode'],
+                          ['contactAddrStreet', t('forms.street'), 'street'],
+                          ['contactAddrSuburb', t('forms.suburb'), 'suburb'],
+                          ['contactAddrCity', t('forms.city'), 'city'],
+                          ['contactAddrState', t('forms.state'), 'state'],
+                          ['contactAddrCountry', t('forms.country'), 'country'],
+                          ['contactAddrPostal', t('forms.postalCode'), 'postalCode'],
                         ] as const
                       ).map(([key, label, addrKey]) => (
                         <div key={key} className="space-y-2">
@@ -2238,7 +2239,7 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            placeholder={ADDRESS_FIELD_PLACEHOLDERS[addrKey] ?? ''}
+                            placeholder={addressFieldPlaceholder(tCommon, addrKey)}
                             className="border-border bg-background"
                           />
                         </div>
@@ -2249,7 +2250,7 @@ export function SettingsContent() {
 
                 <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
-                    <span>Branding (settings JSON, separate from Appearance tab)</span>
+                    <span>{t('chrome.sections.brandingJson')}</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-4">
@@ -2260,12 +2261,12 @@ export function SettingsContent() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       {(
                         [
-                          ['brandingLogo', 'Logo URL'],
-                          ['brandingLogoAlt', 'Logo alt text'],
-                          ['brandingFavicon', 'Favicon URL'],
-                          ['brandingPrimary', 'Primary colour (hex)'],
-                          ['brandingSecondary', 'Secondary colour (hex)'],
-                          ['brandingAccent', 'Accent colour (hex)'],
+                          ['brandingLogo', t('forms.brandingLogoUrl')],
+                          ['brandingLogoAlt', t('forms.brandingLogoAlt')],
+                          ['brandingFavicon', t('forms.brandingFavicon')],
+                          ['brandingPrimary', t('forms.brandingPrimary')],
+                          ['brandingSecondary', t('forms.brandingSecondary')],
+                          ['brandingAccent', t('forms.brandingAccent')],
                         ] as const
                       ).map(([key, label]) => (
                         <div key={key} className="space-y-2 sm:col-span-2">
@@ -2281,12 +2282,12 @@ export function SettingsContent() {
                             }
                             placeholder={
                               key === 'brandingPrimary'
-                                ? '#444CE7'
+                                ? t('placeholders.hexPrimary')
                                 : key === 'brandingSecondary' || key === 'brandingAccent'
-                                  ? '#000000'
+                                  ? t('placeholders.hexBlack')
                                   : key === 'brandingLogoAlt'
-                                    ? 'Alt text'
-                                    : FORM_PLACEHOLDERS.website
+                                    ? t('placeholders.altText')
+                                    : formPlaceholder(tCommon, 'website')
                             }
                             className="border-border bg-background"
                           />
@@ -2298,13 +2299,13 @@ export function SettingsContent() {
 
                 <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
-                    <span>Business profile</span>
+                    <span>{t('chrome.sections.businessProfile')}</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="s-bus-name">Legal name</Label>
+                        <Label htmlFor="s-bus-name">{t('forms.legalName')}</Label>
                         <Input
                           id="s-bus-name"
                           value={regionalForm.businessName}
@@ -2314,12 +2315,12 @@ export function SettingsContent() {
                               businessName: e.target.value,
                             }))
                           }
-                          placeholder="e.g. LORO Group (Pty) Ltd"
+                          placeholder={t('placeholders.organisationName')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-bus-reg">Registration number</Label>
+                        <Label htmlFor="s-bus-reg">{t('forms.registrationNumber')}</Label>
                         <Input
                           id="s-bus-reg"
                           value={regionalForm.businessReg}
@@ -2329,12 +2330,12 @@ export function SettingsContent() {
                               businessReg: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 2020/123456/07"
+                          placeholder={t('placeholders.registrationNumber')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-bus-tax">Tax / VAT ID</Label>
+                        <Label htmlFor="s-bus-tax">{t('forms.taxVatId')}</Label>
                         <Input
                           id="s-bus-tax"
                           value={regionalForm.businessTaxId}
@@ -2344,12 +2345,12 @@ export function SettingsContent() {
                               businessTaxId: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 4123456789"
+                          placeholder={t('placeholders.taxVatId')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="s-bus-ind">Industry</Label>
+                        <Label htmlFor="s-bus-ind">{t('forms.industry')}</Label>
                         <Input
                           id="s-bus-ind"
                           value={regionalForm.businessIndustry}
@@ -2359,12 +2360,12 @@ export function SettingsContent() {
                               businessIndustry: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Building supplies"
+                          placeholder={t('placeholders.industry')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label>Organisation size</Label>
+                        <Label>{t('forms.organisationSize')}</Label>
                         <Select
                           value={regionalForm.businessSize || '__none__'}
                           onValueChange={(v) =>
@@ -2378,14 +2379,14 @@ export function SettingsContent() {
                           }
                         >
                           <SelectTrigger className="w-full border-border bg-background">
-                            <SelectValue placeholder="Not set" />
+                            <SelectValue placeholder={t('placeholders.notSet')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__none__">Not set</SelectItem>
-                            <SelectItem value="small">Small</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="large">Large</SelectItem>
-                            <SelectItem value="enterprise">Enterprise</SelectItem>
+                            <SelectItem value="__none__">{t('placeholders.notSet')}</SelectItem>
+                            <SelectItem value="small">{t('chrome.sections.sizes.small')}</SelectItem>
+                            <SelectItem value="medium">{t('chrome.sections.sizes.medium')}</SelectItem>
+                            <SelectItem value="large">{t('chrome.sections.sizes.large')}</SelectItem>
+                            <SelectItem value="enterprise">{t('chrome.sections.sizes.enterprise')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -2395,19 +2396,19 @@ export function SettingsContent() {
 
                 <Collapsible className="mt-3 rounded-md border border-border bg-gray-50/50 px-3 py-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground outline-none">
-                    <span>Social links &amp; performance targets</span>
+                    <span>{t('chrome.sections.socialTargets')}</span>
                     <ChevronDown className="size-4 shrink-0 opacity-70" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       {(
                         [
-                          ['socialFacebook', 'Facebook URL'],
-                          ['socialTwitter', 'Twitter / X URL'],
-                          ['socialInstagram', 'Instagram URL'],
-                          ['socialLinkedin', 'LinkedIn URL'],
-                          ['socialYoutube', 'YouTube URL'],
-                          ['socialWebsite', 'Website URL'],
+                          ['socialFacebook', t('forms.socialFacebook')],
+                          ['socialTwitter', t('forms.socialTwitter')],
+                          ['socialInstagram', t('forms.socialInstagram')],
+                          ['socialLinkedin', t('forms.socialLinkedin')],
+                          ['socialYoutube', t('forms.socialYoutube')],
+                          ['socialWebsite', t('forms.socialWebsite')],
                         ] as const
                       ).map(([key, label]) => (
                         <div key={key} className="space-y-2 sm:col-span-2">
@@ -2421,22 +2422,22 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            placeholder={FORM_PLACEHOLDERS.website}
+                            placeholder={formPlaceholder(tCommon, 'website')}
                             className="border-border bg-background"
                           />
                         </div>
                       ))}
                       <div className="space-y-2 sm:col-span-2 border-t border-border pt-3">
                         <p className="text-xs font-medium text-muted-foreground">
-                          Revenue targets (optional numbers)
+                          {t('chrome.sections.revenueTargets')}
                         </p>
                       </div>
                       {(
                         [
-                          ['perfDaily', 'Daily target'],
-                          ['perfWeekly', 'Weekly target'],
-                          ['perfMonthly', 'Monthly target'],
-                          ['perfYearly', 'Yearly target'],
+                          ['perfDaily', t('forms.perfDaily')],
+                          ['perfWeekly', t('forms.perfWeekly')],
+                          ['perfMonthly', t('forms.perfMonthly')],
+                          ['perfYearly', t('forms.perfYearly')],
                         ] as const
                       ).map(([key, label]) => (
                         <div key={key} className="space-y-2">
@@ -2451,13 +2452,13 @@ export function SettingsContent() {
                                 [key]: e.target.value,
                               }))
                             }
-                            placeholder={FORM_PLACEHOLDERS.zero}
+                            placeholder={formPlaceholder(tCommon, 'zero')}
                             className="border-border bg-background"
                           />
                         </div>
                       ))}
                       <div className="space-y-2 sm:col-span-2">
-                        <Label>Target calculation</Label>
+                        <Label>{t('forms.targetCalculation')}</Label>
                         <Select
                           value={regionalForm.perfCalcMethod || '__none__'}
                           onValueChange={(v) =>
@@ -2471,18 +2472,18 @@ export function SettingsContent() {
                           }
                         >
                           <SelectTrigger className="w-full border-border bg-background">
-                            <SelectValue placeholder="Not set" />
+                            <SelectValue placeholder={t('placeholders.notSet')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__none__">Not set</SelectItem>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                            <SelectItem value="dynamic">Dynamic</SelectItem>
-                            <SelectItem value="historical">Historical</SelectItem>
+                            <SelectItem value="__none__">{t('placeholders.notSet')}</SelectItem>
+                            <SelectItem value="fixed">{t('chrome.sections.targetCalc.fixed')}</SelectItem>
+                            <SelectItem value="dynamic">{t('chrome.sections.targetCalc.dynamic')}</SelectItem>
+                            <SelectItem value="historical">{t('chrome.sections.targetCalc.historical')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-perf-hist">Historical period (days)</Label>
+                        <Label htmlFor="s-perf-hist">{t('forms.historicalPeriod')}</Label>
                         <Input
                           id="s-perf-hist"
                           type="number"
@@ -2493,12 +2494,12 @@ export function SettingsContent() {
                               perfHistDays: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 90"
+                          placeholder={t('placeholders.historicalDays')}
                           className="border-border bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="s-perf-gr">Growth target (%)</Label>
+                        <Label htmlFor="s-perf-gr">{t('forms.growthTarget')}</Label>
                         <Input
                           id="s-perf-gr"
                           type="number"
@@ -2509,7 +2510,7 @@ export function SettingsContent() {
                               perfGrowthPct: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 10"
+                          placeholder={t('placeholders.growthPct')}
                           className="border-border bg-background"
                         />
                       </div>
@@ -2522,7 +2523,7 @@ export function SettingsContent() {
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetRegional}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -2530,7 +2531,7 @@ export function SettingsContent() {
                   onClick={() => saveSettingsMut.mutate()}
                   disabled={saveSettingsMut.isPending}
                 >
-                  Save changes
+                  {tCommon('saveChanges')}
                 </Button>
               </div>
             </div>
@@ -2539,54 +2540,54 @@ export function SettingsContent() {
           {activeTab === 'hours' && (
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="px-6 pt-6">
-                <h2 className="text-lg font-medium">Operating hours</h2>
+                <h2 className="text-lg font-medium">{t('chrome.sections.hours.title')}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Default schedule and holiday mode for the organisation.
+                  {t('chrome.sections.hours.description')}
                 </p>
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
-                <Row title="Default times" description="Fallback open/close when using weekly flags.">
+                <Row title={t('chrome.sections.hours.defaultTimes')} description={t('chrome.sections.hours.defaultTimesHint')}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="ot">Open</Label>
+                      <Label htmlFor="ot">{t('forms.open')}</Label>
                       <Input
                         id="ot"
                         value={hoursForm.openTime}
                         onChange={(e) =>
                           setHoursForm((s) => ({ ...s, openTime: e.target.value }))
                         }
-                        placeholder="07:00"
+                        placeholder={t('placeholders.openTime')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ct">Close</Label>
+                      <Label htmlFor="ct">{t('forms.close')}</Label>
                       <Input
                         id="ct"
                         value={hoursForm.closeTime}
                         onChange={(e) =>
                           setHoursForm((s) => ({ ...s, closeTime: e.target.value }))
                         }
-                        placeholder="16:30"
+                        placeholder={t('placeholders.closeTime')}
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="htz">Timezone</Label>
+                      <Label htmlFor="htz">{t('forms.timezone')}</Label>
                       <Input
                         id="htz"
                         value={hoursForm.timezone}
                         onChange={(e) =>
                           setHoursForm((s) => ({ ...s, timezone: e.target.value }))
                         }
-                        placeholder="Africa/Johannesburg"
+                        placeholder={t('placeholders.timezone')}
                       />
                     </div>
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Working days" description="Toggle standard working days.">
+                <Row title={t('chrome.sections.hours.workingDays')} description={t('chrome.sections.hours.workingDaysHint')}>
                   <div className="flex flex-wrap gap-3">
-                    {WEEKDAYS.map(({ key, label }) => (
+                    {WEEKDAYS.map(({ key }) => (
                       <label
                         key={key}
                         className={cn(
@@ -2606,13 +2607,13 @@ export function SettingsContent() {
                             }))
                           }
                         />
-                        {label}
+                        {t(`forms.weekdaysShort.${key}`)}
                       </label>
                     ))}
                   </div>
                 </Row>
                 <Separator />
-                <Row title="Holiday mode" description="Temporarily mark the org as closed.">
+                <Row title={t('chrome.sections.hours.holidayMode')} description={t('chrome.sections.hours.holidayModeHint')}>
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -2622,10 +2623,10 @@ export function SettingsContent() {
                           setHoursForm((s) => ({ ...s, holidayMode: e.target.checked }))
                         }
                       />
-                      Holiday mode active
+                      {t('chrome.sections.hours.holidayModeActive')}
                     </label>
                     <div className="space-y-2">
-                      <Label htmlFor="hu">Until (local)</Label>
+                      <Label htmlFor="hu">{t('forms.until')}</Label>
                       <Input
                         id="hu"
                         type="datetime-local"
@@ -2640,22 +2641,22 @@ export function SettingsContent() {
                 <Separator />
                 <Collapsible defaultOpen className="mt-6 space-y-3">
                   <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-border bg-muted/30 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
-                    <span>Detailed weekly schedule</span>
+                    <span>{t('chrome.sections.hours.detailedWeekly')}</span>
                     <ChevronDown className="size-4 shrink-0 transition-transform" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-4 pt-2">
                     <p className="text-sm text-muted-foreground">
-                      Per-day open and close times (HH:mm). Used when you need different hours per weekday.
+                      {t('chrome.sections.hours.detailedWeeklyHint')}
                     </p>
                     <div className="space-y-3">
-                      {WEEKDAYS.map(({ key, label }) => (
+                      {WEEKDAYS.map(({ key }) => (
                         <div
                           key={key}
                           className="grid gap-3 rounded-md border border-gray-100 p-3 sm:grid-cols-[auto_1fr_1fr_auto] sm:items-end"
                         >
-                          <div className="text-sm font-medium text-foreground">{label}</div>
+                          <div className="text-sm font-medium text-foreground">{t(`forms.weekdaysShort.${key}`)}</div>
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Open</Label>
+                            <Label className="text-xs text-muted-foreground">{t('forms.open')}</Label>
                             <Input
                               value={hoursForm.schedule[key].start}
                               onChange={(e) =>
@@ -2667,12 +2668,12 @@ export function SettingsContent() {
                                   },
                                 }))
                               }
-                              placeholder="07:00"
+                              placeholder={t('placeholders.openTime')}
                               className="font-mono text-sm"
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Close</Label>
+                            <Label className="text-xs text-muted-foreground">{t('forms.close')}</Label>
                             <Input
                               value={hoursForm.schedule[key].end}
                               onChange={(e) =>
@@ -2684,7 +2685,7 @@ export function SettingsContent() {
                                   },
                                 }))
                               }
-                              placeholder="16:30"
+                              placeholder={t('placeholders.closeTime')}
                               className="font-mono text-sm"
                             />
                           </div>
@@ -2702,7 +2703,7 @@ export function SettingsContent() {
                                 }))
                               }
                             />
-                            Closed
+                            {t('chrome.sections.hours.closed')}
                           </label>
                         </div>
                       ))}
@@ -2711,8 +2712,8 @@ export function SettingsContent() {
                 </Collapsible>
                 <Separator />
                 <Row
-                  title="Special hours"
-                  description="Exceptions for public holidays or one-off closures (date in YYYY-MM-DD)."
+                  title={t('chrome.sections.hours.specialHours')}
+                  description={t('chrome.sections.hours.specialHoursHint')}
                 >
                   <div className="space-y-3">
                     {hoursForm.specialHours.map((row, idx) => (
@@ -2721,7 +2722,7 @@ export function SettingsContent() {
                         className="grid gap-3 rounded-md border border-gray-100 p-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]"
                       >
                         <div className="space-y-1">
-                          <Label className="text-xs">Date</Label>
+                          <Label className="text-xs">{t('forms.date')}</Label>
                           <Input
                             type="date"
                             value={row.date}
@@ -2735,7 +2736,7 @@ export function SettingsContent() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Open</Label>
+                          <Label className="text-xs">{t('forms.open')}</Label>
                           <Input
                             value={row.openTime}
                             onChange={(e) =>
@@ -2745,12 +2746,12 @@ export function SettingsContent() {
                                 return { ...s, specialHours: next };
                               })
                             }
-                            placeholder="09:00"
+                            placeholder={t('placeholders.specialOpenTime')}
                             className="font-mono text-sm"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Close</Label>
+                          <Label className="text-xs">{t('forms.close')}</Label>
                           <Input
                             value={row.closeTime}
                             onChange={(e) =>
@@ -2760,12 +2761,12 @@ export function SettingsContent() {
                                 return { ...s, specialHours: next };
                               })
                             }
-                            placeholder="17:00"
+                            placeholder={t('placeholders.specialCloseTime')}
                             className="font-mono text-sm"
                           />
                         </div>
                         <div className="space-y-1 md:col-span-1">
-                          <Label className="text-xs">Reason (optional)</Label>
+                          <Label className="text-xs">{t('forms.reasonOptional')}</Label>
                           <Input
                             value={row.reason}
                             onChange={(e) =>
@@ -2775,7 +2776,7 @@ export function SettingsContent() {
                                 return { ...s, specialHours: next };
                               })
                             }
-                            placeholder="e.g. Public holiday"
+                            placeholder={t('placeholders.holidayReason')}
                           />
                         </div>
                         <div className="flex items-end justify-end">
@@ -2784,7 +2785,7 @@ export function SettingsContent() {
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive"
-                            aria-label="Remove row"
+                            aria-label={t('chrome.sections.hours.removeRow')}
                             onClick={() =>
                               setHoursForm((s) => ({
                                 ...s,
@@ -2818,7 +2819,7 @@ export function SettingsContent() {
                       }
                     >
                       <Plus className="size-4" />
-                      Add special hours row
+                      {t('chrome.sections.hours.addSpecialRow')}
                     </Button>
                   </div>
                 </Row>
@@ -2828,7 +2829,7 @@ export function SettingsContent() {
                 data-tour="settings-panel-actions"
               >
                 <Button type="button" variant="cancel" onClick={resetHours}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -2836,7 +2837,7 @@ export function SettingsContent() {
                   onClick={() => saveHoursMut.mutate()}
                   disabled={saveHoursMut.isPending}
                 >
-                  Save changes
+                  {tCommon('saveChanges')}
                 </Button>
               </div>
             </div>
@@ -2847,9 +2848,9 @@ export function SettingsContent() {
             <div className={PANEL_CLASS} data-tour="settings-active-panel">
               <div className="flex flex-col gap-3 px-6 pt-6 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-medium">Branches</h2>
+                  <h2 className="text-lg font-medium">{t('chrome.sections.branches.title')}</h2>
                   <p className="text-sm text-muted-foreground">
-                    Select a branch to edit contact details and address.
+                    {t('chrome.sections.branches.description')}
                   </p>
                 </div>
                 <Button
@@ -2859,12 +2860,12 @@ export function SettingsContent() {
                   onClick={openAddBranchDialog}
                 >
                   <Plus className="size-4" />
-                  Add branch
+                  {t('chrome.sections.branches.add')}
                 </Button>
               </div>
               <Separator className="mt-4" />
               <div className="px-6">
-                <Row title="Branch" description="Search and choose a location to update.">
+                <Row title={t('chrome.sections.branches.branch')} description={t('chrome.sections.branches.branchHint')}>
                   <Popover open={branchPickerOpen} onOpenChange={setBranchPickerOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -2878,16 +2879,16 @@ export function SettingsContent() {
                         {selectedBranch
                           ? getBranchDisplayLabel(selectedBranch) || selectedBranch.ref
                           : branchTabs.length === 0
-                            ? 'No branches'
-                            : 'Select branch…'}
+                            ? t('chrome.sections.branches.none')
+                            : t('chrome.sections.branches.select')}
                         <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[min(100vw-2rem,36rem)] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search branches…" />
+                        <CommandInput placeholder={t('placeholders.searchBranches')} />
                         <CommandList>
-                          <CommandEmpty>No branch found.</CommandEmpty>
+                          <CommandEmpty>{t('chrome.sections.branches.noneFound')}</CommandEmpty>
                           <CommandGroup>
                             {branchTabs.map((b) => (
                               <CommandItem
@@ -2923,35 +2924,35 @@ export function SettingsContent() {
                 </Row>
                 <Separator />
                 <section className="py-2">
-                  <h3 className="text-lg font-medium text-foreground mb-4">Details</h3>
+                  <h3 className="text-lg font-medium text-foreground mb-4">{t('chrome.sections.branches.details')}</h3>
                   <p className="text-sm text-muted-foreground mb-4 -mt-2">
-                    Naming and contacts for the selected branch.
+                    {t('chrome.sections.branches.detailsHint')}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="br-name">Name</Label>
+                      <Label htmlFor="br-name">{t('forms.name')}</Label>
                       <Input
                         id="br-name"
                         value={branchForm.name}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, name: e.target.value }))
                         }
-                        placeholder="e.g. Sandton Branch"
+                        placeholder={t('placeholders.branchName')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-alias">Alias</Label>
+                      <Label htmlFor="br-alias">{t('forms.alias')}</Label>
                       <Input
                         id="br-alias"
                         value={branchForm.alias}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, alias: e.target.value }))
                         }
-                        placeholder="Short name (optional)"
+                        placeholder={t('placeholders.shortName')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-email">Email</Label>
+                      <Label htmlFor="br-email">{t('forms.email')}</Label>
                       <Input
                         id="br-email"
                         type="email"
@@ -2959,22 +2960,22 @@ export function SettingsContent() {
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, email: e.target.value }))
                         }
-                        placeholder="branch@company.co.za"
+                        placeholder={t('placeholders.branchEmail')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-phone">Phone</Label>
+                      <Label htmlFor="br-phone">{t('forms.phone')}</Label>
                       <Input
                         id="br-phone"
                         value={branchForm.phone}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, phone: e.target.value }))
                         }
-                        placeholder="0712345678"
+                        placeholder={t('placeholders.branchPhone')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-cp">Contact person</Label>
+                      <Label htmlFor="br-cp">{t('forms.contactPerson')}</Label>
                       <Input
                         id="br-cp"
                         value={branchForm.contactPerson}
@@ -2984,11 +2985,11 @@ export function SettingsContent() {
                             contactPerson: e.target.value,
                           }))
                         }
-                        placeholder={FORM_PLACEHOLDERS.fullName}
+                        placeholder={formPlaceholder(tCommon, 'fullName')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-primary-sales">Primary internal sales</Label>
+                      <Label htmlFor="br-primary-sales">{t('forms.primaryInternalSales')}</Label>
                       <Select
                         value={branchForm.primaryInternalSalesUserUid || 'none'}
                         onValueChange={(value) =>
@@ -2999,16 +3000,16 @@ export function SettingsContent() {
                         }
                       >
                         <SelectTrigger id="br-primary-sales">
-                          <SelectValue placeholder="None" />
+                          <SelectValue placeholder={t('placeholders.none')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="none">{t('placeholders.none')}</SelectItem>
                           {branchForm.primaryInternalSalesUserUid &&
                           !internalSalesAtBranch.some(
                             (user) => String(user.uid) === branchForm.primaryInternalSalesUserUid,
                           ) ? (
                             <SelectItem value={branchForm.primaryInternalSalesUserUid}>
-                              Selected user
+                              {t('chrome.sections.branches.selectedUser')}
                             </SelectItem>
                           ) : null}
                           {internalSalesAtBranch.map((user) => (
@@ -3019,28 +3020,28 @@ export function SettingsContent() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Outbound company-phone calls from this branch count as this person&apos;s landline calls.
+                        {t('chrome.sections.branches.landlineNote')}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-web">Website</Label>
+                      <Label htmlFor="br-web">{t('forms.website')}</Label>
                       <Input
                         id="br-web"
                         value={branchForm.website}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, website: e.target.value }))
                         }
-                        placeholder="https://www.company.co.za"
+                        placeholder={t('placeholders.websiteZa')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-floor">Floor size (sqm)</Label>
+                      <Label htmlFor="br-floor">{t('forms.floorSizeSqm')}</Label>
                       <Input
                         id="br-floor"
                         type="number"
                         min={0}
                         step="any"
-                        placeholder="e.g. 2500"
+                        placeholder={t('placeholders.floorSize')}
                         value={branchForm.floorSizeSqm}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({
@@ -3051,7 +3052,7 @@ export function SettingsContent() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Status</Label>
+                      <Label>{t('forms.status')}</Label>
                       <Select
                         value={branchForm.status}
                         onValueChange={(v) =>
@@ -3090,33 +3091,33 @@ export function SettingsContent() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="br-country">Country code</Label>
+                      <Label htmlFor="br-country">{t('forms.countryCode')}</Label>
                       <Input
                         id="br-country"
                         value={branchForm.country}
                         onChange={(e) =>
                           setBranchFormUser((s) => ({ ...s, country: e.target.value }))
                         }
-                        placeholder="SA"
+                        placeholder={t('placeholders.countryCode')}
                       />
                     </div>
                   </div>
                 </section>
                 <Separator />
                 <section className="py-2">
-                  <h3 className="text-lg font-medium text-foreground mb-4">Address</h3>
+                  <h3 className="text-lg font-medium text-foreground mb-4">{t('chrome.sections.address.title')}</h3>
                   <p className="text-sm text-muted-foreground mb-4 -mt-2">
-                    Branch location on maps and documents.
+                    {t('chrome.sections.branches.addressHint')}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {(
                       [
-                        ['street', 'Street', branchForm.street],
-                        ['suburb', 'Suburb', branchForm.suburb],
-                        ['city', 'City', branchForm.city],
-                        ['state', 'State', branchForm.state],
-                        ['addrCountry', 'Country', branchForm.addrCountry],
-                        ['postalCode', 'Postal code', branchForm.postalCode],
+                        ['street', t('forms.street'), branchForm.street],
+                        ['suburb', t('forms.suburb'), branchForm.suburb],
+                        ['city', t('forms.city'), branchForm.city],
+                        ['state', t('forms.state'), branchForm.state],
+                        ['addrCountry', t('forms.country'), branchForm.addrCountry],
+                        ['postalCode', t('forms.postalCode'), branchForm.postalCode],
                       ] as const
                     ).map(([key, label, val]) => (
                       <div key={key} className="space-y-2">
@@ -3130,11 +3131,10 @@ export function SettingsContent() {
                               [key]: e.target.value,
                             }))
                           }
-                          placeholder={
-                            ADDRESS_FIELD_PLACEHOLDERS[
-                              key === 'addrCountry' ? 'country' : key
-                            ] ?? ''
-                          }
+                          placeholder={addressFieldPlaceholder(
+                            tCommon,
+                            key === 'addrCountry' ? 'country' : key,
+                          )}
                           autoCapitalize="off"
                           autoCorrect="off"
                           className="bg-background border-border normal-case"
@@ -3154,7 +3154,7 @@ export function SettingsContent() {
                   onClick={() => void resetBranchForm()}
                   disabled={!branchRef}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -3162,7 +3162,7 @@ export function SettingsContent() {
                   onClick={() => saveBranchMut.mutate()}
                   disabled={!branchRef || saveBranchMut.isPending}
                 >
-                  Save changes
+                  {tCommon('saveChanges')}
                 </Button>
               </div>
             </div>
@@ -3170,47 +3170,47 @@ export function SettingsContent() {
             <Dialog open={addBranchOpen} onOpenChange={setAddBranchOpen}>
               <DialogContent className="max-h-[min(90vh,640px)] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Add branch</DialogTitle>
+                  <DialogTitle>{t('chrome.sections.branches.add')}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-3 py-2 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="new-br-ref">Reference (unique)</Label>
+                    <Label htmlFor="new-br-ref">{t('forms.reference')}</Label>
                     <Input
                       id="new-br-ref"
                       value={createBranchForm.ref}
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, ref: e.target.value }))
                       }
-                      placeholder="Auto-generated if unchanged"
+                      placeholder={t('placeholders.autoReference')}
                       className={cn(CREATE_BRANCH_INPUT_CLASS, 'font-mono')}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="new-br-name">Name</Label>
+                    <Label htmlFor="new-br-name">{t('forms.name')}</Label>
                     <Input
                       id="new-br-name"
                       value={createBranchForm.name}
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, name: e.target.value }))
                       }
-                      placeholder="e.g. Sandton Branch"
+                      placeholder={t('placeholders.branchName')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new-br-alias">Alias (optional)</Label>
+                    <Label htmlFor="new-br-alias">{t('forms.aliasOptional')}</Label>
                     <Input
                       id="new-br-alias"
                       value={createBranchForm.alias}
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, alias: e.target.value }))
                       }
-                      placeholder="Short name (optional)"
+                      placeholder={t('placeholders.shortName')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new-br-email">Email</Label>
+                    <Label htmlFor="new-br-email">{t('forms.email')}</Label>
                     <Input
                       id="new-br-email"
                       type="email"
@@ -3218,24 +3218,24 @@ export function SettingsContent() {
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, email: e.target.value }))
                       }
-                      placeholder="branch@company.co.za"
+                      placeholder={t('placeholders.branchEmail')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new-br-phone">Phone</Label>
+                    <Label htmlFor="new-br-phone">{t('forms.phone')}</Label>
                     <Input
                       id="new-br-phone"
                       value={createBranchForm.phone}
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, phone: e.target.value }))
                       }
-                      placeholder="0712345678"
+                      placeholder={t('placeholders.branchPhone')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new-br-floor">Floor size (sqm, optional)</Label>
+                    <Label htmlFor="new-br-floor">{t('forms.floorSizeSqmOptional')}</Label>
                     <Input
                       id="new-br-floor"
                       type="number"
@@ -3248,12 +3248,12 @@ export function SettingsContent() {
                           floorSizeSqm: e.target.value,
                         }))
                       }
-                      placeholder="e.g. 2500"
+                      placeholder={t('placeholders.floorSize')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="new-br-cp">Contact person</Label>
+                    <Label htmlFor="new-br-cp">{t('forms.contactPerson')}</Label>
                     <Input
                       id="new-br-cp"
                       value={createBranchForm.contactPerson}
@@ -3263,34 +3263,34 @@ export function SettingsContent() {
                           contactPerson: e.target.value,
                         }))
                       }
-                      placeholder="Full name"
+                      placeholder={formPlaceholder(tCommon, 'fullName')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="new-br-web">Website</Label>
+                    <Label htmlFor="new-br-web">{t('forms.website')}</Label>
                     <Input
                       id="new-br-web"
                       value={createBranchForm.website}
                       onChange={(e) =>
                         setCreateBranchForm((s) => ({ ...s, website: e.target.value }))
                       }
-                      placeholder="https://www.company.co.za"
+                      placeholder={t('placeholders.websiteZa')}
                       className={CREATE_BRANCH_INPUT_CLASS}
                     />
                   </div>
                   {(
                     [
-                      ['street', 'Street', createBranchForm.street, 'e.g. 123 Main Street'],
-                      ['suburb', 'Suburb', createBranchForm.suburb, 'e.g. Sandton'],
-                      ['city', 'City', createBranchForm.city, 'e.g. Johannesburg'],
-                      ['state', 'State', createBranchForm.state, 'e.g. Gauteng'],
-                      ['country', 'Country', createBranchForm.country, 'e.g. South Africa'],
+                      ['street', t('forms.street'), createBranchForm.street, t('placeholders.branchStreet')],
+                      ['suburb', t('forms.suburb'), createBranchForm.suburb, t('placeholders.branchSuburb')],
+                      ['city', t('forms.city'), createBranchForm.city, t('placeholders.branchCity')],
+                      ['state', t('forms.state'), createBranchForm.state, t('placeholders.branchProvince')],
+                      ['country', t('forms.country'), createBranchForm.country, t('placeholders.branchCountry')],
                       [
                         'postalCode',
-                        'Postal code (4 digits, ZA)',
+                        t('forms.postalCodeZa'),
                         createBranchForm.postalCode,
-                        'e.g. 2196',
+                        t('placeholders.branchPostalCode'),
                       ],
                     ] as const
                   ).map(([key, label, val, placeholder]) => (
@@ -3317,7 +3317,7 @@ export function SettingsContent() {
                     variant="cancel"
                     onClick={() => setAddBranchOpen(false)}
                   >
-                    Cancel
+                    {tCommon('cancel')}
                   </Button>
                   <Button
                     type="button"
@@ -3325,7 +3325,7 @@ export function SettingsContent() {
                     onClick={() => createBranchMut.mutate()}
                     disabled={createBranchMut.isPending}
                   >
-                    Create branch
+                    {t('chrome.sections.branches.create')}
                   </Button>
                 </DialogFooter>
               </DialogContent>

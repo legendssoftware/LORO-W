@@ -117,10 +117,10 @@ export function MerchandiseContent() {
 
         <div className="mb-4 flex gap-2">
           <Button type="button" variant={section === 'journals' ? 'default' : 'outline'} onClick={() => setSection('journals')}>
-            Journals
+            {t('chrome.merchandise.journals')}
           </Button>
           <Button type="button" variant={section === 'inspections' ? 'default' : 'outline'} onClick={() => setSection('inspections')}>
-            Inspections
+            {t('chrome.merchandise.inspections')}
           </Button>
         </div>
 
@@ -151,7 +151,7 @@ export function MerchandiseContent() {
                   onClick={() => setCreateOpen(true)}
                 >
                   <Plus className="size-4" />
-                  New merchandise
+                  {t('chrome.merchandise.new')}
                 </Button>
               ) : null
             }

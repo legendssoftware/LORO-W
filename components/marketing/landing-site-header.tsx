@@ -8,8 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MenuIcon, PhoneCallIcon, XIcon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/brand-mark';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { showSuccessToast, showErrorToast } from '@/lib/utils/toast-helpers';
 import { handleVapiError, retryVapiOperation } from '@/lib/utils/vapi-error-handler';
+import { useTranslation } from 'react-i18next';
 
 const CALL_MAX_DURATION_MS =
   parseInt(process.env.NEXT_PUBLIC_MAX_CALL_DURATION_MINUTES ?? '5', 10) * 60 * 1000;
@@ -25,6 +27,7 @@ export function LandingSiteHeader({
   productHref = '#features',
   solutionsHref = '#solutions',
 }: LandingSiteHeaderProps) {
+  const { t } = useTranslation('marketing');
   const [isCallActive, setIsCallActive] = useState(false);
   const [isCallInitializing, setIsCallInitializing] = useState(false);
   const [demoVapi, setDemoVapi] = useState<Vapi | null>(null);
@@ -207,7 +210,7 @@ export function LandingSiteHeader({
       onClick={endDemoCall}
       className="font-body text-xs font-normal text-red-400 border-0 bg-transparent hover:bg-red-500/20 hover:text-red-300"
     >
-      END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}
+      {t('header.endCall')} {formattedTimeRemaining && `(${formattedTimeRemaining})`}
     </Button>
   ) : connectionError ? (
     <Button
@@ -216,7 +219,7 @@ export function LandingSiteHeader({
       onClick={retryDemoCall}
       className="font-body text-xs font-normal text-amber-400 border-0 bg-transparent hover:bg-amber-500/20"
     >
-      RETRY CALL
+      {t('header.retryCall')}
     </Button>
   ) : (
     <Button
@@ -226,7 +229,7 @@ export function LandingSiteHeader({
       disabled={isCallInitializing}
       className="font-body text-xs font-normal text-white border-0 bg-purple-600 hover:bg-purple-700 transition-colors"
     >
-      {isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}
+      {isCallInitializing ? t('header.connecting') : t('header.demoCall')}
     </Button>
   );
 
@@ -252,39 +255,41 @@ export function LandingSiteHeader({
             href={productHref}
             className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors"
           >
-            Product
+            {t('header.product')}
           </Link>
           <Link
             href={solutionsHref}
             className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors"
           >
-            Solutions
+            {t('header.solutions')}
           </Link>
           <Link
             href="#"
             className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors"
           >
-            Careers
+            {t('header.careers')}
           </Link>
           <Link
             href="#"
             className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors"
           >
-            Research
+            {t('header.research')}
           </Link>
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          <LanguageSwitcher id="landing-language" />
           <Link
             href="/sign-in"
             className="font-body text-sm font-normal text-zinc-300 hover:text-white transition-colors"
           >
-            My Account
+            {t('header.myAccount')}
           </Link>
           {demoCallButton}
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher id="landing-language-mobile" />
           <motion.button
             onClick={(e) => {
               e.stopPropagation();
@@ -293,7 +298,7 @@ export function LandingSiteHeader({
             className="rounded-lg p-2 hover:bg-white/10 text-zinc-300"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            aria-label="Open menu"
+            aria-label={t('header.openMenu')}
           >
             <MenuIcon size={24} className="size-6" />
           </motion.button>
@@ -323,7 +328,7 @@ export function LandingSiteHeader({
                 <motion.button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="rounded-full p-2 border border-white/20 bg-white/5 text-zinc-300 hover:bg-white/10"
-                  aria-label="Close menu"
+                  aria-label={t('header.closeMenu')}
                 >
                   <XIcon size={24} className="size-6" />
                 </motion.button>
@@ -334,28 +339,28 @@ export function LandingSiteHeader({
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white"
                 >
-                  Product
+                  {t('header.product')}
                 </Link>
                 <Link
                   href={solutionsHref}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white"
                 >
-                  Solutions
+                  {t('header.solutions')}
                 </Link>
                 <Link
                   href="#"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white"
                 >
-                  Careers
+                  {t('header.careers')}
                 </Link>
                 <Link
                   href="#"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="font-body w-full rounded-lg p-3 text-center text-sm text-zinc-300 hover:bg-white/10 hover:text-white"
                 >
-                  Research
+                  {t('header.research')}
                 </Link>
                 <div className="flex w-full flex-col items-center border-t border-white/10 pt-4 space-y-2">
                   <Link
@@ -363,7 +368,7 @@ export function LandingSiteHeader({
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="font-body block w-full rounded-lg p-3 text-center text-sm text-zinc-400 hover:bg-white/10 hover:text-white"
                   >
-                    My Account
+                    {t('header.myAccount')}
                   </Link>
                   {isCallActive ? (
                     <Button
@@ -371,7 +376,7 @@ export function LandingSiteHeader({
                       onClick={endDemoCall}
                       className="font-body w-full text-xs text-red-400 border-0 hover:bg-red-500/20"
                     >
-                      END CALL {formattedTimeRemaining && `(${formattedTimeRemaining})`}
+                      {t('header.endCall')} {formattedTimeRemaining && `(${formattedTimeRemaining})`}
                     </Button>
                   ) : connectionError ? (
                     <Button
@@ -380,7 +385,7 @@ export function LandingSiteHeader({
                       className="font-body w-full text-xs text-amber-400 border-0 hover:bg-amber-500/20"
                     >
                       <PhoneCallIcon size={16} className="mr-2 inline" />
-                      RETRY CALL
+                      {t('header.retryCall')}
                     </Button>
                   ) : (
                     <Button
@@ -389,7 +394,7 @@ export function LandingSiteHeader({
                       className="font-body w-full text-xs text-white border-0 bg-purple-600 hover:bg-purple-700 transition-colors"
                     >
                       <PhoneCallIcon size={16} className="mr-2 inline" />
-                      {isCallInitializing ? 'CONNECTING...' : 'DEMO CALL'}
+                      {isCallInitializing ? t('header.connecting') : t('header.demoCall')}
                     </Button>
                   )}
                   <Button
@@ -397,7 +402,7 @@ export function LandingSiteHeader({
                     className="font-body w-full text-xs bg-white text-zinc-900 hover:bg-zinc-200 border-0 hover:bg-purple-600 hover:text-white"
                   >
                     <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)}>
-                      Get Started
+                      {t('header.getStarted')}
                     </Link>
                   </Button>
                 </div>

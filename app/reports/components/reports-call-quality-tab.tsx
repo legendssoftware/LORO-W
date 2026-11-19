@@ -65,6 +65,8 @@ import {
   type CallQualityLeaderboardSortKey,
   type CallQualitySortDir,
 } from './reports-call-quality-leaderboard';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 const TOP_N = 5;
 
@@ -133,6 +135,7 @@ function reviewToParty(
 }
 
 function scoreDistributionFromResponse(
+  t: TFunction,
   distribution:
     | { excellent: number; good: number; needsImprovement: number; poor: number }
     | undefined,
@@ -140,10 +143,10 @@ function scoreDistributionFromResponse(
   if (!distribution) return null;
   return toDonutSlices(
     [
-      { name: 'Excellent (85+)', value: distribution.excellent },
-      { name: 'Good (70–84)', value: distribution.good },
-      { name: 'Needs improvement (55–69)', value: distribution.needsImprovement },
-      { name: 'Poor (<55)', value: distribution.poor },
+      { name: t('chrome.reports.cq.excellent'), value: distribution.excellent },
+      { name: t('chrome.reports.cq.good'), value: distribution.good },
+      { name: t('chrome.reports.cq.needsImprovement'), value: distribution.needsImprovement },
+      { name: t('chrome.reports.cq.poor'), value: distribution.poor },
     ],
     [REPORTS_CHART_GREEN, REPORTS_CHART_BLUE, REPORTS_CHART_AMBER, REPORTS_CHART_RED],
   );
@@ -188,6 +191,7 @@ function CoachingRepRecommendations({
 }
 
 export function ReportsCallQualityTab() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
@@ -303,8 +307,8 @@ export function ReportsCallQualityTab() {
   }, [data?.reps, sortKey, sortDir, labels]);
 
   const scoreDistribution = useMemo(
-    () => scoreDistributionFromResponse(data?.scoreDistribution),
-    [data?.scoreDistribution],
+    () => scoreDistributionFromResponse(t, data?.scoreDistribution),
+    [data?.scoreDistribution, t],
   );
 
   const durationBars = useMemo(
@@ -341,7 +345,7 @@ export function ReportsCallQualityTab() {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-destructive">Could not load call quality report.</p>;
+    return <p className="text-sm text-destructive">{t('chrome.reports.cq.loadError')}</p>;
   }
 
   const topReviews = data.callsNeedingReview.slice(0, TOP_N);
@@ -370,7 +374,7 @@ export function ReportsCallQualityTab() {
           <CardContent className="flex items-center justify-center px-2 py-3">
             <ReportsCallQualityRateRadial
               rate={data.qualityConversationRate}
-              label="Quality conversation rate (PBX recordings)"
+              label={t('chrome.reports.cq.rateTitle')}
             />
           </CardContent>
         </Card>
@@ -386,13 +390,13 @@ export function ReportsCallQualityTab() {
           <CardContent className="flex items-center justify-center px-2 py-3">
             <ReportsCallQualityRateRadial
               rate={greetingBehaviour?.passRate ?? data.greetingPassRate}
-              label="Greeting pass"
+              label={t('chrome.reports.cq.greetingPass')}
             />
           </CardContent>
         </Card>
         <div className="grid gap-2">
           <SummaryStat
-            label="Median duration"
+            label={t('chrome.reports.cq.medianDuration')}
             value={formatCallSecondsPhrase(data.medianDurationSeconds)}
             sub={
               data.duration.qualityConversationMedianSeconds != null
@@ -401,13 +405,13 @@ export function ReportsCallQualityTab() {
             }
           />
           <SummaryStat
-            label="Opportunities"
+            label={t('chrome.reports.cq.opportunities')}
             value={String(data.funnel.immediateOpportunitiesFound)}
             sub={`${data.funnel.projectsIdentified} projects identified`}
             tone="good"
           />
           <SummaryStat
-            label="Missed pursuits"
+            label={t('chrome.reports.cq.missedPursuits')}
             value={String(data.missedOpportunitiesCount)}
             sub="Customer volunteered, rep did not pursue"
             tone="bad"
@@ -417,7 +421,7 @@ export function ReportsCallQualityTab() {
 
       <Card className="shadow-sm">
         <CardHeader className="px-4 pb-2 pt-4">
-          <CardTitle className="text-base">Typical call</CardTitle>
+          <CardTitle className="text-base">{t('chrome.reports.cq.typicalCall')}</CardTitle>
           <p className="text-sm text-muted-foreground">
             What happens on most recordings in this period, from the org scorecard — not check-in
             counts.
@@ -431,10 +435,10 @@ export function ReportsCallQualityTab() {
       {data.funnel ? (
         <Card className="shadow-sm">
           <CardHeader className="px-4 pb-2 pt-4">
-            <CardTitle className="text-base">Opportunity funnel</CardTitle>
+            <CardTitle className="text-base">{t('chrome.reports.cq.funnelTitle')}</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Pipeline from decision-makers reached. Red drop-off is the share lost between steps.
-              Quotes count only when the quotation client matches a call in this period.
+              {t('chrome.reports.cq.funnelHint')}
+              {t('chrome.reports.cq.funnelNote')}
             </p>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
@@ -445,15 +449,15 @@ export function ReportsCallQualityTab() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ReportsChartCard
-          title="What happens on calls"
-          description="Mutually exclusive archetypes"
+          title={t('chrome.reports.cq.whatHappens')}
+          description={t('chrome.reports.cq.exclusiveArchetypes')}
           contentClassName="px-2 pb-3 pt-1"
         >
           <ReportsCallArchetypeChart archetypes={data.archetypes} />
         </ReportsChartCard>
 
         <ReportsChartCard
-          title="Call duration"
+          title={t('chrome.reports.cq.callDuration')}
           description={
             data.duration.qualityConversationMedianSeconds != null
               ? `Median ${formatCallSecondsPhrase(data.medianDurationSeconds)} · quality conversations ${formatCallSecondsPhrase(data.duration.qualityConversationMedianSeconds)}`
@@ -462,7 +466,7 @@ export function ReportsCallQualityTab() {
           contentClassName="px-2 pb-3 pt-1"
         >
           {durationBars.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No durations recorded</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t('chrome.reports.cq.noDurations')}</p>
           ) : (
             <ReportsNamedBarChart data={durationBars} yAxisLabel="Calls" heightClassName="h-[200px]" />
           )}
@@ -471,8 +475,8 @@ export function ReportsCallQualityTab() {
 
       {data.behaviour.length > 0 ? (
         <ReportsChartCard
-          title="Greeting and etiquette"
-          description="Org scorecard behaviour metrics (coaching-only — not in overall quality)"
+          title={t('chrome.reports.cq.greetingEtiquette')}
+          description={t('chrome.reports.cq.greetingHint')}
           contentClassName="px-3 pb-3 pt-1"
         >
           <ReportsCallBehaviourPanel behaviour={data.behaviour} />
@@ -481,7 +485,7 @@ export function ReportsCallQualityTab() {
 
       {data.daily.length > 1 ? (
         <ReportsChartCard
-          title="Daily recordings vs quality conversations"
+          title={t('chrome.reports.cq.dailyRecordings')}
           description={`PBX recordings ${data.sources.from} – ${data.sources.to} — not CRM check-ins`}
           contentClassName="px-2 pb-3 pt-1"
         >
@@ -491,16 +495,16 @@ export function ReportsCallQualityTab() {
 
       {branchBars.length > 1 ? (
         <ReportsChartCard
-          title="Branch comparison"
-          description="Quality conversations vs missed pursuits"
+          title={t('chrome.reports.cq.branchComparison')}
+          description={t('chrome.reports.cq.branchComparisonHint')}
           contentClassName="px-2 pb-3 pt-1"
         >
           <ReportsGroupedBarChart
             data={branchBars}
             categoryKey="name"
             series={[
-              { key: 'quality', label: 'Quality conversations', color: REPORTS_CHART_GREEN },
-              { key: 'missed', label: 'Missed pursuits', color: REPORTS_CHART_RED },
+              { key: 'quality', label: t('chrome.reports.cq.qualityConversations'), color: REPORTS_CHART_GREEN },
+              { key: 'missed', label: t('chrome.reports.cq.missedPursuits'), color: REPORTS_CHART_RED },
             ]}
             yAxisLabel="Calls"
             heightClassName="h-[220px]"
@@ -510,7 +514,7 @@ export function ReportsCallQualityTab() {
 
       <Card className="shadow-sm">
         <CardHeader className="px-4 pb-2 pt-4">
-          <CardTitle className="text-base">Salesperson leaderboard</CardTitle>
+          <CardTitle className="text-base">{t('chrome.reports.cq.leaderboard')}</CardTitle>
           <p className="text-sm text-muted-foreground">
             Sorted by quality conversation rate, then average quality. High call volume alone does
             not rank first.
@@ -531,7 +535,7 @@ export function ReportsCallQualityTab() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ReportsChartCard
-          title="Most missed questions"
+          title={t('chrome.reports.cq.mostMissedQuestions')}
           description={`Top ${TOP_N} missed scorecard items`}
           contentClassName="px-2 pb-3 pt-1"
         >
@@ -539,13 +543,13 @@ export function ReportsCallQualityTab() {
         </ReportsChartCard>
 
         <ReportsChartCard
-          title="Script area scores"
-          description="Team average by scorecard area (0–10), with pass / fail"
+          title={t('chrome.reports.cq.scriptAreaScores')}
+          description={t('chrome.reports.cq.scriptAreaHint')}
           contentClassName="px-3 pb-3 pt-1"
         >
           {data.scoreByDimension.length === 0 ? (
             <p className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
-              No dimension scores yet
+              {t('chrome.reports.cq.noDimensionScores')}
             </p>
           ) : (
             <ul className="space-y-2.5 py-1">
@@ -581,13 +585,13 @@ export function ReportsCallQualityTab() {
         </ReportsChartCard>
 
         <ReportsChartCard
-          title="Score distribution"
-          description="Scored calls grouped by individual call score"
+          title={t('chrome.reports.cq.scoreDistribution')}
+          description={t('chrome.reports.cq.scoreDistributionHint')}
           contentClassName="px-2 pb-3 pt-1"
         >
           {!scoreDistribution || scoreDistribution.total <= 0 ? (
             <p className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
-              No scored calls
+              {t('chrome.reports.cq.noScoredCalls')}
             </p>
           ) : (
             <ReportDonutChart
@@ -600,12 +604,12 @@ export function ReportsCallQualityTab() {
         </ReportsChartCard>
 
         <ReportsChartCard
-          title="Calls requiring manager review"
+          title={t('chrome.reports.cq.callsForReview')}
           description={`Top ${TOP_N} flagged calls`}
           contentClassName="px-3 pb-3 pt-1"
         >
           {data.callsNeedingReview.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No calls flagged for review in this period.</p>
+            <p className="text-sm text-muted-foreground">{t('chrome.reports.cq.noCallsForReview')}</p>
           ) : (
             <div className="space-y-2">
               {topReviews.map((call) => (
@@ -622,7 +626,7 @@ export function ReportsCallQualityTab() {
 
         {coachingReps.length > 0 ? (
           <ReportsChartCard
-            title="Coaching recommendations"
+            title={t('chrome.reports.cq.coachingRecommendations')}
             description={`Top ${TOP_N} agents with coaching notes`}
             contentClassName="px-3 pb-3 pt-1"
           >

@@ -34,6 +34,7 @@ import {
   formatAxisTickThousands,
   takeTopNWithOther,
 } from '@/lib/utils/chart-series';
+import { useTranslation } from 'react-i18next';
 
 const CHART_TOP_N = 10;
 
@@ -89,6 +90,7 @@ export function PipelineCharts({
   visitStats,
   targetCurrency,
 }: PipelineChartsProps) {
+  const { t } = useTranslation('screens');
   const convertedRow = useMemo(
     () => statusRows.find((r) => r.name === 'CONVERTED'),
     [statusRows]
@@ -139,16 +141,17 @@ export function PipelineCharts({
   const salesBarRows = useMemo(() => {
     const rows: { metric: string; amount: number }[] = [];
     if (hasSalesTargetBlock) {
-      rows.push({ metric: 'Achieved sales', amount: achievedSales ?? 0 });
+      rows.push({ metric: t('chrome.pipeline.charts.achievedSales'), amount: achievedSales ?? 0 });
     }
-    rows.push({ metric: 'Pipeline (est.)', amount: totalEstimatedValue });
-    rows.push({ metric: 'Won (est.)', amount: convertedValue });
+    rows.push({ metric: t('chrome.pipeline.charts.pipelineEst'), amount: totalEstimatedValue });
+    rows.push({ metric: t('chrome.pipeline.charts.wonEst'), amount: convertedValue });
     return rows;
   }, [
     hasSalesTargetBlock,
     achievedSales,
     totalEstimatedValue,
     convertedValue,
+    t,
   ]);
 
   const salesBarAxis = useMemo(() => {
@@ -160,7 +163,7 @@ export function PipelineCharts({
   }, [salesBarRows]);
 
   const salesBarConfig = {
-    amount: { label: `Amount (${targetCurrency})`, color: ATT_CHART_HSL.c4 },
+    amount: { label: t('chrome.pipeline.charts.amountCurrency', { currency: targetCurrency }), color: ATT_CHART_HSL.c4 },
   } satisfies ChartConfig;
 
   const saleVisitPct =
@@ -175,18 +178,18 @@ export function PipelineCharts({
 
   const visitPctBarData = useMemo(
     () => [
-      { id: 'sale', outcome: 'Sale recorded', pct: Math.round(saleVisitPct * 10) / 10 },
-      { id: 'quote', outcome: 'Quotation', pct: Math.round(quoteVisitPct * 10) / 10 },
-      { id: 'lead', outcome: 'Linked to lead', pct: Math.round(leadVisitPct * 10) / 10 },
+      { id: 'sale', outcome: t('chrome.pipeline.charts.saleRecorded'), pct: Math.round(saleVisitPct * 10) / 10 },
+      { id: 'quote', outcome: t('tables.quotation'), pct: Math.round(quoteVisitPct * 10) / 10 },
+      { id: 'lead', outcome: t('chrome.pipeline.charts.linkedToLead'), pct: Math.round(leadVisitPct * 10) / 10 },
     ],
-    [saleVisitPct, quoteVisitPct, leadVisitPct]
+    [saleVisitPct, quoteVisitPct, leadVisitPct, t]
   );
 
   const visitPctConfig = {
-    pct: { label: 'Share of visits', color: ATT_CHART_HSL.c4 },
-    sale: { label: 'Sale recorded', color: ATT_CHART_HSL.c1 },
-    quote: { label: 'Quotation', color: ATT_CHART_HSL.c2 },
-    lead: { label: 'Linked to lead', color: ATT_CHART_HSL.c3 },
+    pct: { label: t('chrome.pipeline.charts.shareOfVisits'), color: ATT_CHART_HSL.c4 },
+    sale: { label: t('chrome.pipeline.charts.saleRecorded'), color: ATT_CHART_HSL.c1 },
+    quote: { label: t('tables.quotation'), color: ATT_CHART_HSL.c2 },
+    lead: { label: t('chrome.pipeline.charts.linkedToLead'), color: ATT_CHART_HSL.c3 },
   } satisfies ChartConfig;
 
   const visitBarFills = [ATT_CHART_HSL.c1, ATT_CHART_HSL.c2, ATT_CHART_HSL.c3] as const;
@@ -194,28 +197,29 @@ export function PipelineCharts({
   if (!hasLeadData && !hasVisitData) {
     return (
       <p className="text-sm text-muted-foreground py-4 text-center">
-        No leads or visits in this period — nothing to chart yet.
+        {t('chrome.pipeline.charts.nothingToChart')}
       </p>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">Charts</h3>
+      <h3 className="text-sm font-semibold text-foreground">{t('chrome.pipeline.charts.heading')}</h3>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Lead mix by status</CardTitle>
+            <CardTitle className="text-sm">{t('chrome.pipeline.charts.leadMix')}</CardTitle>
             <CardDescription>
-              By count · win rate{' '}
-              {hasLeadData && leadWinRatePct != null ? `${leadWinRatePct.toFixed(1)}%` : '—'}
+              {t('chrome.pipeline.charts.leadMixHint', {
+                rate: hasLeadData && leadWinRatePct != null ? `${leadWinRatePct.toFixed(1)}%` : '—',
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {!hasLeadData ? (
-              <p className="text-sm text-muted-foreground text-center py-10">No leads in range.</p>
+              <p className="text-sm text-muted-foreground text-center py-10">{t('chrome.pipeline.charts.noLeads')}</p>
             ) : statusDonut.slices.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No data</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t('chrome.common.noData')}</p>
             ) : (
               <ReportDonutChart
                 config={statusDonut.config}
@@ -223,8 +227,8 @@ export function PipelineCharts({
                 centerPrimary={totalLeads.toLocaleString('en-ZA')}
                 centerSecondary={
                   leadWinRatePct != null
-                    ? `${leadWinRatePct.toFixed(1)}% converted`
-                    : 'Conversion'
+                    ? t('chrome.pipeline.charts.converted', { rate: `${leadWinRatePct.toFixed(1)}%` })
+                    : t('tables.conversion')
                 }
                 legendNameKey="name"
               />
@@ -234,18 +238,18 @@ export function PipelineCharts({
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Sales vs pipeline value</CardTitle>
+            <CardTitle className="text-sm">{t('chrome.pipeline.charts.salesVsPipeline')}</CardTitle>
             <CardDescription>
-              Tracker sales vs pipeline est. vs won est.
+              {t('chrome.pipeline.charts.salesVsPipelineHint')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {!hasLeadData ? (
-              <p className="text-sm text-muted-foreground text-center py-10">No leads in range.</p>
+              <p className="text-sm text-muted-foreground text-center py-10">{t('chrome.pipeline.charts.noLeads')}</p>
             ) : (
               <>
                 {!hasSalesTargetBlock && (
-                  <p className="text-xs text-muted-foreground mb-2">Sales target not set on profile.</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t('chrome.pipeline.charts.noSalesTarget')}</p>
                 )}
                 <ChartContainer config={salesBarConfig} className="aspect-auto h-[280px] w-full">
                   <BarChart
@@ -301,8 +305,8 @@ export function PipelineCharts({
       {hasVisitData && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Visit outcome rates</CardTitle>
-            <CardDescription>% of visits by outcome</CardDescription>
+            <CardTitle className="text-sm">{t('chrome.pipeline.charts.visitOutcomeRates')}</CardTitle>
+            <CardDescription>{t('chrome.pipeline.charts.visitOutcomeHint')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 text-sm">
             <ChartContainer config={visitPctConfig} className="aspect-auto h-[200px] w-full">
@@ -347,10 +351,10 @@ export function PipelineCharts({
             </ChartContainer>
 
             <div className="space-y-4 border-t border-border pt-4">
-              <p className="text-xs font-medium text-muted-foreground">Counts</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('chrome.pipeline.charts.counts')}</p>
               <div className="space-y-2">
                 <div className="flex justify-between gap-2 text-muted-foreground">
-                  <span>Sale recorded</span>
+                  <span>{t('chrome.pipeline.charts.saleRecorded')}</span>
                   <span className="tabular-nums text-foreground font-medium">
                     {visitStats.withSale} / {visitStats.total} ({saleVisitPct.toFixed(0)}%)
                   </span>
@@ -359,7 +363,7 @@ export function PipelineCharts({
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between gap-2 text-muted-foreground">
-                  <span>Quotation</span>
+                  <span>{t('tables.quotation')}</span>
                   <span className="tabular-nums text-foreground font-medium">
                     {visitStats.withQuote} / {visitStats.total} ({quoteVisitPct.toFixed(0)}%)
                   </span>
@@ -368,7 +372,7 @@ export function PipelineCharts({
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between gap-2 text-muted-foreground">
-                  <span>Linked to lead</span>
+                  <span>{t('chrome.pipeline.charts.linkedToLead')}</span>
                   <span className="tabular-nums text-foreground font-medium">
                     {visitStats.withLead} / {visitStats.total} ({leadVisitPct.toFixed(0)}%)
                   </span>

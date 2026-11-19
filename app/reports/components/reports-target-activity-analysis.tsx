@@ -80,7 +80,7 @@ export function ReportsTargetActivityAnalysis({
 
   if (checkIns.length === 0 && summary.plannedVisitCount === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No activity recorded in this range.</p>
+      <p className="text-sm text-muted-foreground">{t('chrome.reports.activity.empty')}</p>
     );
   }
 
@@ -106,7 +106,7 @@ export function ReportsTargetActivityAnalysis({
           }
         />
         <SummaryStat
-          label="Planned visits"
+          label={t('chrome.reports.activity.plannedVisits')}
           value={String(summary.plannedVisitCount)}
           sub={
             planSlotsInRange.length > 0
@@ -115,7 +115,7 @@ export function ReportsTargetActivityAnalysis({
           }
         />
         <SummaryStat
-          label="Avg duration"
+          label={t('chrome.reports.activity.avgDuration')}
           value={
             summary.avgDurationMinutes > 0
               ? formatVisitDurationTotal(summary.avgDurationMinutes)
@@ -123,7 +123,7 @@ export function ReportsTargetActivityAnalysis({
           }
         />
         <SummaryStat
-          label="Top outcome"
+          label={t('chrome.reports.activity.topOutcome')}
           value={
             summary.byOutcome[0]
               ? `${humanizeReportLabel(summary.byOutcome[0].name)} (${summary.byOutcome[0].value})`
@@ -135,7 +135,7 @@ export function ReportsTargetActivityAnalysis({
       {outcomeChart.slices.length > 0 ? (
         <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Outcomes
+            {t('chrome.reports.activity.outcomes')}
           </p>
           <ReportDonutChart
             config={outcomeChart.config}
@@ -151,7 +151,7 @@ export function ReportsTargetActivityAnalysis({
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No check-ins or calls logged in this range.
+          {t('chrome.reports.activity.noCheckIns')}
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border">

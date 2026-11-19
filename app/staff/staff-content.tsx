@@ -61,6 +61,7 @@ import { cn } from '@/lib/utils';
 
 export function StaffContent() {
   const { t } = useTranslation('staff');
+  const { t: tScreens } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
   const [mounted, setMounted] = useState(false);
@@ -350,7 +351,7 @@ export function StaffContent() {
     return (
       <div className={appPageMainClass}>
         <p className="text-center text-muted-foreground py-12">
-          Staff management is available to staff only.
+          {tScreens('chrome.staff.onlyStaff')}
         </p>
       </div>
     );
@@ -422,7 +423,7 @@ export function StaffContent() {
                   onClick={() => setSendIntakeOpen(true)}
                 >
                   <Link2 className="size-4" />
-                  Send intake link
+                  {tScreens('chrome.staff.sendIntakeLink')}
                 </Button>
                 <Button
                   className={cn(
@@ -435,7 +436,7 @@ export function StaffContent() {
                   onClick={() => setAddUserOpen(true)}
                 >
                   <UserPlus className="size-4" />
-                  Add user
+                  {tScreens('chrome.staff.addUser')}
                 </Button>
               </>
               ) : null}

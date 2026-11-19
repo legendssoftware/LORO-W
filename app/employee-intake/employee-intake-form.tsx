@@ -29,9 +29,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import { EmployeeIntakeSteps } from './employee-intake-steps';
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -66,6 +67,7 @@ function firstErrorMessage(errors: FieldErrors): string | null {
 
 export function EmployeeIntakeForm() {
   const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const searchParams = useSearchParams();
   const token = searchParams.get('token')?.trim() ?? '';
 
@@ -299,7 +301,10 @@ export function EmployeeIntakeForm() {
   const documents = values.documents ?? [];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
+    <div className="relative mx-auto max-w-2xl px-4 py-8 sm:py-12">
+      <div className="absolute right-4 top-4 sm:right-0 sm:top-8">
+        <LanguageSwitcher id="intake-language" />
+      </div>
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{t('pages.intake.profile')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -367,7 +372,7 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>First name *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.firstName} autoComplete="given-name" />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'firstName')} autoComplete="given-name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -380,7 +385,7 @@ export function EmployeeIntakeForm() {
                     <FormItem>
                       <FormLabel>Surname *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.surname} autoComplete="family-name" />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'surname')} autoComplete="family-name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -401,7 +406,7 @@ export function EmployeeIntakeForm() {
                         aria-describedby={emailLocked ? 'intake-email-locked' : undefined}
                         className={emailLocked ? 'bg-muted' : undefined}
                         autoComplete="email"
-                        placeholder={FORM_PLACEHOLDERS.email}
+                        placeholder={formPlaceholder(tCommon, 'email')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -420,7 +425,7 @@ export function EmployeeIntakeForm() {
                   <FormItem>
                     <FormLabel>Personal phone *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" autoComplete="tel" placeholder={FORM_PLACEHOLDERS.phone} />
+                      <Input {...field} type="tel" autoComplete="tel" placeholder={formPlaceholder(tCommon, 'phone')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

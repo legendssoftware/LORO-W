@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PerformanceFilters, SalesPaceGrain } from '@/api/types/reports-performance';
 import { usePerformanceSalesPace } from '@/api/hooks/use-performance-sales-pace';
 import { Button } from '@/components/ui/button';
@@ -22,10 +23,10 @@ import {
 import { reportsTooltipRow } from '@/app/reports/lib/reports-chart-tooltip';
 import { formatPerformanceMoney } from '../lib/format';
 
-const chartConfig = {
-  actual: { label: 'Sales', color: 'hsl(142 76% 36%)' },
-  projected: { label: 'Projected', color: 'hsl(38 92% 50%)' },
-} satisfies ChartConfig;
+const CHART_COLORS = {
+  actual: 'hsl(142 76% 36%)',
+  projected: 'hsl(38 92% 50%)',
+} as const;
 
 function formatPaceDate(value: string): string {
   const [year, month, day] = value.split('-').map(Number);
@@ -79,7 +80,16 @@ export function PerformanceSalesPaceChart({
   filters: PerformanceFilters;
   skipCacheRef: MutableRefObject<boolean>;
 }) {
+  const { t } = useTranslation('screens');
   const [grain, setGrain] = useState<SalesPaceGrain>('month');
+  const chartConfig = useMemo(
+    () =>
+      ({
+        actual: { label: t('chrome.performance.pace.sales'), color: CHART_COLORS.actual },
+        projected: { label: t('chrome.performance.pace.projected'), color: CHART_COLORS.projected },
+      }) satisfies ChartConfig,
+    [t],
+  );
   const [isChartVisible, setIsChartVisible] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -120,13 +130,14 @@ export function PerformanceSalesPaceChart({
   const description = pace
     ? `${formatPaceDate(pace.periodStart)} – ${formatPaceDate(pace.asOf)}`
     : grain === 'month'
-      ? 'Sales so far this month, and where this pace can finish the month'
-      : 'Sales so far this year, and where this pace can finish the year';
+      ? t('chrome.performance.pace.descMonth')
+      : t('chrome.performance.pace.descYear');
 
   const varianceHint = summary
-    ? `${formatPerformanceMoney(Math.abs(summary.variance), symbol)} ${
-        summary.variance >= 0 ? 'above target' : 'short of target'
-      }`
+    ? t(
+        summary.variance >= 0 ? 'chrome.performance.pace.aboveTarget' : 'chrome.performance.pace.shortOfTarget',
+        { amount: formatPerformanceMoney(Math.abs(summary.variance), symbol) },
+      )
     : undefined;
 
   const showLoading = !isChartVisible || query.isLoading || (query.isPending && !query.isError);
@@ -136,10 +147,10 @@ export function PerformanceSalesPaceChart({
     <Card className="min-w-0 shadow-sm" data-tour="performance-sales-pace">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-2">
         <div className="min-w-0 space-y-1">
-          <CardTitle className="text-sm font-medium">Sales pace</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('chrome.performance.pace.title')}</CardTitle>
           <CardDescription className="text-xs">
             {description}
-            {summary?.earlyPace ? ' · Early pace from one day of sales' : ''}
+            {summary?.earlyPace ? ` · ${t('chrome.performance.pace.earlyPace')}` : ''}
           </CardDescription>
         </div>
         <ToggleGroup
@@ -150,10 +161,10 @@ export function PerformanceSalesPaceChart({
           onValueChange={(value) => {
             if (value === 'month' || value === 'year') setGrain(value);
           }}
-          aria-label="Sales pace period"
+          aria-label={t('chrome.performance.pace.periodAria')}
         >
-          <ToggleGroupItem value="month">Month</ToggleGroupItem>
-          <ToggleGroupItem value="year">Year</ToggleGroupItem>
+          <ToggleGroupItem value="month">{t('chrome.performance.pace.month')}</ToggleGroupItem>
+          <ToggleGroupItem value="year">{t('chrome.performance.pace.year')}</ToggleGroupItem>
         </ToggleGroup>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
@@ -164,25 +175,25 @@ export function PerformanceSalesPaceChart({
         ) : query.isError ? (
           <div className="flex h-[224px] flex-col items-center justify-center gap-2 text-center">
             <AlertCircle className="size-5 text-destructive" />
-            <p className="text-xs text-muted-foreground">Failed to load sales pace</p>
+            <p className="text-xs text-muted-foreground">{t('chrome.performance.pace.loadFailed')}</p>
             <Button type="button" variant="outline" size="sm" onClick={() => void query.refetch()}>
               <RefreshCw className="mr-1.5 size-3.5" />
-              Retry
+              {t('actions.retry')}
             </Button>
           </div>
         ) : summary ? (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <PaceStat
-                label="Sales so far"
+                label={t('chrome.performance.pace.salesSoFar')}
                 value={formatPerformanceMoney(summary.salesToDate, symbol)}
               />
               <PaceStat
-                label="Average per day"
+                label={t('chrome.performance.pace.avgPerDay')}
                 value={formatPerformanceMoney(summary.dailyRate, symbol)}
               />
               <PaceStat
-                label={grain === 'month' ? 'Projected month end' : 'Projected year end'}
+                label={grain === 'month' ? t('chrome.performance.pace.projectedMonthEnd') : t('chrome.performance.pace.projectedYearEnd')}
                 value={formatPerformanceMoney(summary.projectedClose, symbol)}
               />
               <PaceStat
@@ -208,7 +219,7 @@ export function PerformanceSalesPaceChart({
                   width={reportsYAxisWidth('money')}
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value: number) => compactMoney(value, symbol)}
-                  label={reportsYAxisLabelProps('Sales')}
+                  label={reportsYAxisLabelProps(t('chrome.performance.pace.sales'))}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -250,7 +261,7 @@ export function PerformanceSalesPaceChart({
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-0.5 w-4 bg-[hsl(142_76%_36%)]" />
-                Sales
+                {t('chrome.performance.pace.sales')}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span
@@ -260,12 +271,12 @@ export function PerformanceSalesPaceChart({
                       'repeating-linear-gradient(90deg, hsl(38 92% 50%) 0 4px, transparent 4px 7px)',
                   }}
                 />
-                Projected close
+                {t('chrome.performance.pace.projectedClose')}
               </span>
             </div>
           </>
         ) : (
-          <p className="py-8 text-center text-sm text-muted-foreground">No sales pace yet</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.performance.pace.none')}</p>
         )}
       </CardContent>
     </Card>

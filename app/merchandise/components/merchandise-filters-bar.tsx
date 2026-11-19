@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import { Archive, CheckCircle2, Clock, FilePen, ListFilter, XCircle } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
@@ -24,6 +25,18 @@ import {
 import { MERCHANDISE_STATUS_OPTIONS } from '@/app/merchandise/lib/merchandise-display';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import { cn } from '@/lib/utils';
+
+const MERCHANDISE_STATUS_LABEL_KEYS: Record<
+  (typeof MERCHANDISE_STATUS_OPTIONS)[number]['value'],
+  string
+> = {
+  all: 'actions.allStatuses',
+  PENDING_REVIEW: 'chrome.merchandise.status.pendingReview',
+  PUBLISHED: 'chrome.merchandise.status.published',
+  REJECTED: 'chrome.merchandise.status.rejected',
+  DRAFT: 'chrome.merchandise.status.draft',
+  ARCHIVED: 'chrome.merchandise.status.archived',
+};
 
 function merchandiseStatusIcon(status: string): LucideIcon {
   switch (status) {
@@ -79,6 +92,7 @@ export function MerchandiseFiltersBar({
   isUserSearchLoading: boolean;
   actions?: ReactNode;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
       <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -99,14 +113,13 @@ export function MerchandiseFiltersBar({
             searchQuery={userSearchQuery}
             onSearchQueryChange={onUserSearchQueryChange}
             isSearchLoading={isUserSearchLoading}
-            allOptionLabel="All users"
           />
           <Select value={status} onValueChange={onStatusChange}>
             <SelectTrigger
               className="h-9 w-[160px] shrink-0 border-border bg-background"
-              aria-label="Filter by status"
+              aria-label={t('chrome.merchandise.filterByStatus')}
             >
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t('tables.status')} />
             </SelectTrigger>
             <SelectContent>
               {MERCHANDISE_STATUS_OPTIONS.map((option) => {
@@ -114,7 +127,7 @@ export function MerchandiseFiltersBar({
                 return (
                   <SelectItem key={option.value} value={option.value}>
                     <Icon className={cn('size-4', statusFilterIconClass(option.value))} />
-                    {option.label}
+                    {t(MERCHANDISE_STATUS_LABEL_KEYS[option.value])}
                   </SelectItem>
                 );
               })}
@@ -126,9 +139,9 @@ export function MerchandiseFiltersBar({
         <Input
           value={searchInput}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search client, comments, or owner"
+          placeholder={t('chrome.merchandise.searchPlaceholder')}
           className={cn(filterToolbarSearchInputClassName, 'w-56 max-w-[16rem]')}
-          aria-label="Search merchandise"
+          aria-label={t('chrome.merchandise.searchAria')}
         />
         {actions}
       </div>

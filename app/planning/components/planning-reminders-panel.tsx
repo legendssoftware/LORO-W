@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/api/types/tasks';
+import { useTranslation } from 'react-i18next';
 
 function addUtcDays(d: Date, days: number): Date {
   const next = new Date(d);
@@ -28,6 +29,7 @@ export function PlanningRemindersPanel({
   onOpenTask,
   className,
 }: PlanningRemindersPanelProps) {
+  const { t } = useTranslation('screens');
   const today = utcToday();
   const todayYmd = formatUtcYmd(today);
   const weekEndYmd = formatUtcYmd(addUtcDays(today, 7));
@@ -141,7 +143,7 @@ export function PlanningRemindersPanel({
     >
       <div className="mb-3 flex shrink-0 items-center gap-2">
         <Bell className="size-4 text-violet-600" />
-        <h2 className="text-sm font-semibold">Reminders</h2>
+        <h2 className="text-sm font-semibold">{t('chrome.planning.reminders')}</h2>
       </div>
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>

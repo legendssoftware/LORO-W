@@ -1,6 +1,7 @@
 'use client';
 
 import type { Control, FieldPath, FieldValues } from 'react-hook-form';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import {
   FormControl,
@@ -31,12 +32,12 @@ const FORM_PLACEHOLDER_BY_VALUE = new Map<string, FormPlaceholderKey>(
 );
 
 function resolvePersonnelPlaceholder(
-  t: (key: string, options?: { defaultValue?: string }) => string,
+  t: TFunction,
   raw: string | undefined,
 ): string {
   if (!raw) return '';
   const key = FORM_PLACEHOLDER_BY_VALUE.get(raw);
-  if (key) return formPlaceholder(t as never, key);
+  if (key) return formPlaceholder(t, key);
   return raw;
 }
 

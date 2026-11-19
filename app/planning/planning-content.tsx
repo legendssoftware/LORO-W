@@ -282,11 +282,11 @@ export function PlanningContent() {
         <Tabs value={planningTab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
           <TabsList className="mb-4 w-full justify-start sm:w-auto" data-tour="planning-tabs">
             <TabsTrigger value="all" data-tour="planning-tab-all">
-              All tasks
+              {t('chrome.planning.allTasks')}
             </TabsTrigger>
-            <TabsTrigger value="my-day">My day</TabsTrigger>
+            <TabsTrigger value="my-day">{t('chrome.planning.myDay')}</TabsTrigger>
             <TabsTrigger value="routes" data-tour="planning-tab-routes">
-              Routes
+              {t('chrome.planning.routes')}
             </TabsTrigger>
           </TabsList>
 
@@ -330,7 +330,7 @@ export function PlanningContent() {
                       onClick={() => setCreateModalOpen(true)}
                     >
                       <Plus className="size-4" />
-                      Create task
+                      {t('chrome.planning.createTask')}
                     </Button>
                   }
                 />
@@ -366,7 +366,7 @@ export function PlanningContent() {
 
           <TabsContent value="my-day" className="mt-0 flex min-h-0 flex-1 flex-col gap-4">
             <p className="text-xs text-muted-foreground">
-              Tasks due today
+              {t('chrome.planning.tasksDueToday')}
               {backendUserData?.uid ? ' for your account' : ''}.
             </p>
             <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">

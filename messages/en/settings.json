@@ -17,7 +17,8 @@
     "description": "Color scheme for the app",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "toggle": "Toggle theme"
   },
   "timezone": {
     "label": "Timezone",
@@ -62,5 +63,290 @@
   "advancedFeatures": {
     "label": "Advanced features",
     "description": "Show experimental or advanced UI where available"
+  },
+  "forms": {
+    "email": "Email",
+    "phone": "Phone",
+    "website": "Website",
+    "logo": "Logo",
+    "street": "Street",
+    "suburb": "Suburb",
+    "city": "City",
+    "province": "State / province",
+    "state": "State",
+    "country": "Country",
+    "postalCode": "Postal code",
+    "postalCodeZa": "Postal code (4 digits, ZA)",
+    "altText": "Alt text",
+    "primaryColour": "Primary colour",
+    "primaryColourHex": "Primary colour hex",
+    "secondaryColour": "Secondary",
+    "accentColour": "Accent",
+    "errorColour": "Error",
+    "successColour": "Success",
+    "dashboardCharts": "Dashboard charts",
+    "cookieBanner": "Cookie banner",
+    "language": "Language",
+    "timezone": "Timezone",
+    "currency": "Currency",
+    "dateFormat": "Date format",
+    "timeFormat": "Time format",
+    "notifSms": "SMS",
+    "notifPush": "Push",
+    "notifWhatsapp": "WhatsApp",
+    "theme": "Theme",
+    "defaultView": "Default view",
+    "itemsPerPage": "Items per page",
+    "feedbackTokenExpiry": "Feedback token expiry (days)",
+    "defaultRadius": "Default radius (m)",
+    "maxRadius": "Max radius (m)",
+    "minRadius": "Min radius (m)",
+    "defaultNotificationType": "Default notification type",
+    "contactEmail": "Contact email",
+    "phoneCountryCode": "Phone country code",
+    "phoneNumber": "Phone number",
+    "brandingLogoUrl": "Logo URL",
+    "brandingLogoAlt": "Logo alt text",
+    "brandingFavicon": "Favicon URL",
+    "brandingPrimary": "Primary colour (hex)",
+    "brandingSecondary": "Secondary colour (hex)",
+    "brandingAccent": "Accent colour (hex)",
+    "socialFacebook": "Facebook URL",
+    "socialTwitter": "Twitter / X URL",
+    "socialInstagram": "Instagram URL",
+    "socialLinkedin": "LinkedIn URL",
+    "socialYoutube": "YouTube URL",
+    "socialWebsite": "Website URL",
+    "legalName": "Legal name",
+    "registrationNumber": "Registration number",
+    "taxVatId": "Tax / VAT ID",
+    "industry": "Industry",
+    "organisationSize": "Organisation size",
+    "targetCalculation": "Target calculation",
+    "historicalPeriod": "Historical period (days)",
+    "growthTarget": "Growth target (%)",
+    "perfDaily": "Daily target",
+    "perfWeekly": "Weekly target",
+    "perfMonthly": "Monthly target",
+    "perfYearly": "Yearly target",
+    "open": "Open",
+    "close": "Close",
+    "until": "Until (local)",
+    "date": "Date",
+    "reasonOptional": "Reason (optional)",
+    "name": "Name",
+    "alias": "Alias",
+    "aliasOptional": "Alias (optional)",
+    "contactPerson": "Contact person",
+    "primaryInternalSales": "Primary internal sales",
+    "floorSizeSqm": "Floor size (sqm)",
+    "floorSizeSqmOptional": "Floor size (sqm, optional)",
+    "status": "Status",
+    "countryCode": "Country code",
+    "reference": "Reference (unique)",
+    "weekdaysShort": {
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    }
+  },
+  "placeholders": {
+    "organisationName": "e.g. LORO Group (Pty) Ltd",
+    "shortName": "Short name (optional)",
+    "status": "Status",
+    "phoneLocal": "e.g. 0712345678",
+    "websiteZa": "https://www.company.co.za",
+    "hexPrimary": "#444CE7",
+    "hexBlack": "#000000",
+    "altText": "Alt text",
+    "locale": "en-ZA",
+    "timezone": "Africa/Johannesburg",
+    "currency": "ZAR",
+    "dateFormat": "e.g. dd/MM/yyyy",
+    "timeFormat": "e.g. HH:mm",
+    "defaultView": "e.g. dashboard",
+    "itemsPerPage": "25",
+    "feedbackDays": "30",
+    "radiusDefault": "e.g. 100",
+    "radiusMax": "e.g. 500",
+    "radiusMin": "e.g. 50",
+    "phoneCode": "+27",
+    "registrationNumber": "e.g. 2020/123456/07",
+    "taxVatId": "e.g. 4123456789",
+    "industry": "e.g. Building supplies",
+    "notSet": "Not set",
+    "historicalDays": "e.g. 90",
+    "growthPct": "e.g. 10",
+    "openTime": "07:00",
+    "closeTime": "16:30",
+    "specialOpenTime": "09:00",
+    "specialCloseTime": "17:00",
+    "holidayReason": "e.g. Public holiday",
+    "branchName": "e.g. Sandton Branch",
+    "branchEmail": "branch@company.co.za",
+    "branchPhone": "0712345678",
+    "floorSize": "e.g. 2500",
+    "countryCode": "SA",
+    "none": "None",
+    "autoReference": "Auto-generated if unchanged",
+    "searchBranches": "Search branches…",
+    "branchStreet": "e.g. 123 Main Street",
+    "branchSuburb": "e.g. Sandton",
+    "branchCity": "e.g. Johannesburg",
+    "branchProvince": "e.g. Gauteng",
+    "branchCountry": "e.g. South Africa",
+    "branchPostalCode": "e.g. 2196"
+  },
+  "chrome": {
+    "tabs": {
+      "profile": "Profile",
+      "appearance": "Appearance",
+      "regional": "Regional & preferences",
+      "hours": "Hours",
+      "branches": "Branches",
+      "calendar": "Calendar",
+      "scrapping": "Scrapping",
+      "notices": "Notices",
+      "banners": "Banners",
+      "performancePolicy": "Performance policy",
+      "callQuality": "Call quality",
+      "webhooks": "Webhooks"
+    },
+    "sections": {
+      "selectOrg": "Select an organisation in Clerk, then open Settings again.",
+      "orgProfile": {
+        "title": "Organisation profile",
+        "description": "Legal name, contact, and address shown across the product."
+      },
+      "contact": {
+        "title": "Contact",
+        "description": "Email, phone, website, and organisation logo."
+      },
+      "address": {
+        "title": "Address",
+        "description": "Head office location."
+      },
+      "appearance": {
+        "title": "Appearance",
+        "description": "Brand colours and logo for your organisation theme."
+      },
+      "brandColour": {
+        "title": "Brand colour",
+        "description": "Primary colour for buttons and highlights."
+      },
+      "additionalColours": {
+        "title": "Additional colours",
+        "description": "Secondary, accent, status colours."
+      },
+      "logo": {
+        "title": "Logo",
+        "description": "Logo image and accessible label."
+      },
+      "dashboardOptions": {
+        "title": "Public dashboard options",
+        "description": "Chart layout and cookie banner are saved with organisation preferences.",
+        "comfortable": "Comfortable",
+        "compact": "Compact",
+        "hidden": "Hidden",
+        "shownOnHome": "Shown on Home",
+        "save": "Save dashboard options"
+      },
+      "regional": {
+        "title": "Regional & preferences",
+        "description": "Language, timezone, notifications, UI defaults, and geofence defaults.",
+        "localisation": "Regional",
+        "localisationHint": "Localisation for dates, time, and currency."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Channels for org-wide alerts."
+      },
+      "preferences": {
+        "title": "Preferences",
+        "description": "Default UI behaviour.",
+        "menuCollapsed": "Menu collapsed by default"
+      },
+      "tasksFeedback": {
+        "title": "Tasks & feedback",
+        "description": "Operational toggles.",
+        "sendTaskNotifications": "Send task notifications",
+        "createFollowUp": "Create follow-up task when a lead is created",
+        "deadlineReminders": "Task deadline reminders",
+        "reminder24h": "24 hours before deadline",
+        "reminder1h": "1 hour before deadline",
+        "reminder15m": "15 minutes before deadline"
+      },
+      "geofence": {
+        "title": "Geofence defaults",
+        "description": "Check-in radius behaviour.",
+        "enabledByDefault": "Geofence enabled by default for new resources"
+      },
+      "brandingJson": "Branding (settings JSON, separate from Appearance tab)",
+      "businessProfile": "Business profile",
+      "revenueTargets": "Revenue targets (optional numbers)",
+      "hours": {
+        "title": "Operating hours",
+        "description": "Default schedule and holiday mode for the organisation.",
+        "defaultTimes": "Default times",
+        "defaultTimesHint": "Fallback open/close when using weekly flags.",
+        "workingDays": "Working days",
+        "workingDaysHint": "Toggle standard working days.",
+        "holidayMode": "Holiday mode",
+        "holidayModeHint": "Temporarily mark the org as closed.",
+        "holidayModeActive": "Holiday mode active",
+        "detailedWeekly": "Detailed weekly schedule",
+        "detailedWeeklyHint": "Per-day open and close times (HH:mm). Used when you need different hours per weekday.",
+        "closed": "Closed",
+        "specialHours": "Special hours",
+        "specialHoursHint": "Exceptions for public holidays or one-off closures (date in YYYY-MM-DD).",
+        "removeRow": "Remove row",
+        "addSpecialRow": "Add special hours row"
+      },
+      "branches": {
+        "title": "Branches",
+        "description": "Select a branch to edit contact details and address.",
+        "add": "Add branch",
+        "branch": "Branch",
+        "branchHint": "Search and choose a location to update.",
+        "noneFound": "No branch found.",
+        "details": "Details",
+        "detailsHint": "Naming and contacts for the selected branch.",
+        "selectedUser": "Selected user",
+        "none": "No branches",
+        "select": "Select branch…",
+        "addressHint": "Branch location on maps and documents.",
+        "create": "Create branch",
+        "landlineNote": "Outbound company-phone calls from this branch count as this person's landline calls."
+      },
+      "orgName": {
+        "title": "Name",
+        "description": "Official organisation name."
+      },
+      "orgAlias": {
+        "title": "Alias",
+        "description": "Short internal display name (optional)."
+      },
+      "orgStatus": {
+        "title": "Status",
+        "description": "Organisation lifecycle state."
+      },
+      "contactJson": "Contact & address (settings JSON)",
+      "socialTargets": "Social links & performance targets",
+      "sizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "enterprise": "Enterprise"
+      },
+      "targetCalc": {
+        "fixed": "Fixed",
+        "dynamic": "Dynamic",
+        "historical": "Historical"
+      }
+    }
   }
 }

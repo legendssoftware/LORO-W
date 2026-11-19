@@ -728,11 +728,11 @@ export function MapSummaryModal({
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('tables.layer')}</TableHead>
-                    <TableHead className="text-right">Count</TableHead>
-                    <TableHead className="text-right">Share</TableHead>
-                    <TableHead className="text-right">With revenue</TableHead>
-                    <TableHead className="text-right">Revenue total</TableHead>
-                    <TableHead className="text-right">With address</TableHead>
+                    <TableHead className="text-right">{t('tables.count')}</TableHead>
+                    <TableHead className="text-right">{t('tables.share')}</TableHead>
+                    <TableHead className="text-right">{t('tables.withRevenue')}</TableHead>
+                    <TableHead className="text-right">{t('tables.revenueTotal')}</TableHead>
+                    <TableHead className="text-right">{t('tables.withAddress')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

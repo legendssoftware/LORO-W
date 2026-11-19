@@ -41,6 +41,7 @@ import { StepTargets } from './add-user-wizard/step-targets';
 import { StepAssignments } from './add-user-wizard/step-assignments';
 import { WizardFooter } from './add-user-wizard/wizard-footer';
 import { WizardStepIndicator } from './add-user-wizard/wizard-step-indicator';
+import { useTranslation } from 'react-i18next';
 
 const TOTAL_STEPS = WIZARD_STEP_LABELS.length;
 
@@ -50,6 +51,7 @@ export interface AddUserModalProps {
 }
 
 export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const apiClient = useApiClient();
   const inviteMutation = useInviteUserMutation();
@@ -171,7 +173,7 @@ export function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="size-5" />
-            Add user
+            {t('chrome.staff.addUser')}
           </DialogTitle>
           <DialogDescription>
             Step {step + 1} of {TOTAL_STEPS}: {WIZARD_STEP_LABELS[step]}. Creates

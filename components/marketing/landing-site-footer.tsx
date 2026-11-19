@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { BrandMark } from '@/components/brand-mark';
 import {
   InstagramIcon,
@@ -8,6 +11,9 @@ import {
 } from '@/lib/icons';
 
 export function LandingSiteFooter() {
+  const { t } = useTranslation('marketing');
+  const year = new Date().getFullYear();
+
   return (
     <footer className="border-t border-white/10 bg-black py-12 md:py-16">
       <div className="container mx-auto px-4 md:px-6">
@@ -17,9 +23,9 @@ export function LandingSiteFooter() {
               <BrandMark wordmarkClassName="text-xl font-normal tracking-tight text-white" />
             </div>
             <p className="font-body max-w-xs text-sm text-zinc-400">
-              Field sales software for South Africa—visits, routes, and pipeline.
+              {t('footer.tagline')}
             </p>
-            <p className="font-body text-xs text-zinc-400">© 2026 LORO. All rights reserved.</p>
+            <p className="font-body text-xs text-zinc-400">© {year} LORO. {t('footer.rights')}</p>
             <div className="flex gap-4 justify-center md:justify-start">
               <Link
                 href="#"
@@ -53,14 +59,14 @@ export function LandingSiteFooter() {
           </div>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 w-full sm:w-auto justify-items-center md:justify-items-start">
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Company</h3>
+              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">{t('footer.company')}</h3>
               <ul className="space-y-3">
                 <li>
                   <Link
                     href="/about"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    About
+                    {t('footer.about')}
                   </Link>
                 </li>
                 <li>
@@ -68,7 +74,7 @@ export function LandingSiteFooter() {
                     href="/customers"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Customers
+                    {t('footer.customers')}
                   </Link>
                 </li>
                 <li>
@@ -76,7 +82,7 @@ export function LandingSiteFooter() {
                     href="/pricing"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Pricing
+                    {t('footer.pricing')}
                   </Link>
                 </li>
                 <li>
@@ -84,7 +90,7 @@ export function LandingSiteFooter() {
                     href="/blog"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Blog
+                    {t('footer.blog')}
                   </Link>
                 </li>
                 <li>
@@ -92,20 +98,20 @@ export function LandingSiteFooter() {
                     href="/privacy-policy"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Privacy Policy
+                    {t('footer.privacyPolicy')}
                   </Link>
                 </li>
               </ul>
             </div>
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Solutions</h3>
+              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">{t('footer.solutions')}</h3>
               <ul className="space-y-3">
                 <li>
                   <Link
                     href="/solutions/field-sales"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Field sales
+                    {t('footer.fieldSales')}
                   </Link>
                 </li>
                 <li>
@@ -113,7 +119,7 @@ export function LandingSiteFooter() {
                     href="/solutions/visit-tracking"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Visit tracking
+                    {t('footer.visitTracking')}
                   </Link>
                 </li>
                 <li>
@@ -121,7 +127,7 @@ export function LandingSiteFooter() {
                     href="/solutions/route-planning"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Route planning
+                    {t('footer.routePlanning')}
                   </Link>
                 </li>
                 <li>
@@ -129,20 +135,20 @@ export function LandingSiteFooter() {
                     href="/integrations"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Integrations
+                    {t('footer.integrations')}
                   </Link>
                 </li>
               </ul>
             </div>
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">Compare</h3>
+              <h3 className="font-body mb-4 text-sm font-medium text-zinc-300">{t('footer.compare')}</h3>
               <ul className="space-y-3">
                 <li>
                   <Link
                     href="/compare/skynamo"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    vs Skynamo
+                    {t('footer.vsSkynamo')}
                   </Link>
                 </li>
                 <li>
@@ -150,7 +156,7 @@ export function LandingSiteFooter() {
                     href="/compare/repsly"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    vs Repsly
+                    {t('footer.vsRepsly')}
                   </Link>
                 </li>
                 <li>
@@ -158,7 +164,7 @@ export function LandingSiteFooter() {
                     href="/compare/zoho-crm"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    vs Zoho CRM
+                    {t('footer.vsZoho')}
                   </Link>
                 </li>
                 <li>
@@ -166,7 +172,7 @@ export function LandingSiteFooter() {
                     href="/sign-up"
                     className="font-body text-sm text-zinc-400 hover:text-white transition-colors"
                   >
-                    Get started
+                    {t('footer.getStarted')}
                   </Link>
                 </li>
               </ul>

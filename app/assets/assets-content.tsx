@@ -216,7 +216,7 @@ export function AssetsContent({ initialAssetUid }: { initialAssetUid?: number })
                   onClick={openCreate}
                 >
                   <Plus className="size-4" />
-                  Add asset
+                  {t('pages.assets.addAsset')}
                 </Button>
               ) : null
             }

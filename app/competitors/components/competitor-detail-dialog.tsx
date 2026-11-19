@@ -26,6 +26,7 @@ import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function ModalRow({
   label,
@@ -66,6 +67,7 @@ export function CompetitorDetailDialog({
   canEdit: boolean;
   canDelete: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const open = !!listItem;
   const id = listItem?.uid ?? null;
   const { data: competitor, isLoading, isError } = useCompetitor(id, { enabled: open && id != null });
@@ -97,7 +99,7 @@ export function CompetitorDetailDialog({
               </DialogTitle>
               {id != null ? (
                 <Button variant="ghost" size="icon" className="-mt-1 shrink-0" asChild>
-                  <Link href={`/competitors/${id}`} title="Open full page">
+                  <Link href={`/competitors/${id}`} title={t('chrome.common.openFullPage')}>
                     <ExternalLink className="size-4" />
                   </Link>
                 </Button>
@@ -118,7 +120,7 @@ export function CompetitorDetailDialog({
                 </div>
               )}
               {isError && (
-                <p className="text-sm text-destructive">Could not load competitor details.</p>
+                <p className="text-sm text-destructive">{t('chrome.competitors.loadDetailsError')}</p>
               )}
               {!isLoading && competitor && (
                 <>
@@ -132,9 +134,9 @@ export function CompetitorDetailDialog({
                       <Badge variant="outline">Threat {competitor.threatLevel}/5</Badge>
                     ) : null}
                     {competitor.isDirect === true ? (
-                      <Badge variant="outline">Direct</Badge>
+                      <Badge variant="outline">{t('chrome.competitors.direct')}</Badge>
                     ) : competitor.isDirect === false ? (
-                      <Badge variant="outline">Indirect</Badge>
+                      <Badge variant="outline">{t('chrome.competitors.indirect')}</Badge>
                     ) : null}
                     {competitor.industry ? (
                       <Badge variant="outline">{competitor.industry}</Badge>
@@ -181,7 +183,7 @@ export function CompetitorDetailDialog({
                       />
                     ) : null}
                     <ModalRow
-                      label="Map status"
+                      label={t('chrome.competitors.mapStatus')}
                       value={
                         hasStoredCoordinates(competitor.latitude, competitor.longitude)
                           ? 'On map'
@@ -193,7 +195,7 @@ export function CompetitorDetailDialog({
                         <Button variant="outline" size="sm" className="gap-1.5" asChild>
                           <Link href="/visualiser">
                             <ExternalLink className="size-4" />
-                            View on map
+                            {t('chrome.competitors.viewOnMap')}
                           </Link>
                         </Button>
                       </div>
@@ -230,18 +232,18 @@ export function CompetitorDetailDialog({
           <Separator className="shrink-0" />
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-6 py-3">
             <Button variant="outline" onClick={onClose}>
-              Close
+              {t('actions.close')}
             </Button>
             {id != null && canEdit ? (
               <Button variant="outline" className="gap-1" onClick={() => onEdit(id)}>
                 <Pencil className="size-4" />
-                Edit
+                {t('actions.edit')}
               </Button>
             ) : null}
             {id != null && canDelete ? (
               <Button variant="destructive" className="gap-1" onClick={() => setDeleteConfirmOpen(true)}>
                 <Trash2 className="size-4" />
-                Delete
+                {t('actions.delete')}
               </Button>
             ) : null}
           </div>
@@ -257,7 +259,7 @@ export function CompetitorDetailDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();

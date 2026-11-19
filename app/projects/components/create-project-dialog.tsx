@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -36,7 +37,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import {
   Select,
   SelectContent,
@@ -262,6 +263,8 @@ export function CreateProjectDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const apiClient = useApiClient();
   const queryClient = useQueryClient();
 
@@ -295,7 +298,7 @@ export function CreateProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create project</DialogTitle>
+          <DialogTitle>{t('chrome.projects.create')}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -305,9 +308,9 @@ export function CreateProjectDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t('forms.projects.name')}</FormLabel>
                     <FormControl>
-                      <Input {...field} required placeholder="e.g. Sandton Office Fit-out" />
+                      <Input {...field} required placeholder={t('forms.projects.namePlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -318,9 +321,9 @@ export function CreateProjectDialog({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t('forms.projects.description')}</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} placeholder="Brief project summary" />
+                      <Textarea {...field} rows={3} placeholder={t('forms.projects.descriptionPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -332,7 +335,7 @@ export function CreateProjectDialog({
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>{t('forms.projects.status')}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -356,7 +359,7 @@ export function CreateProjectDialog({
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type</FormLabel>
+                      <FormLabel>{t('forms.projects.type')}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -380,7 +383,7 @@ export function CreateProjectDialog({
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority</FormLabel>
+                      <FormLabel>{t('forms.projects.priority')}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -404,13 +407,13 @@ export function CreateProjectDialog({
                   name="progressPercentage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Progress (%)</FormLabel>
+                      <FormLabel>{t('forms.projects.progress')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
                           max={100}
-                          placeholder={FORM_PLACEHOLDERS.zero}
+                          placeholder={formPlaceholder(tCommon, 'zero')}
                           {...field}
                         />
                       </FormControl>
@@ -428,12 +431,12 @@ export function CreateProjectDialog({
                   name="budget"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Budget (ZAR)</FormLabel>
+                      <FormLabel>{t('forms.projects.budget')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
-                          placeholder={FORM_PLACEHOLDERS.zero}
+                          placeholder={formPlaceholder(tCommon, 'zero')}
                           {...field}
                         />
                       </FormControl>
@@ -446,12 +449,12 @@ export function CreateProjectDialog({
                   name="currentSpent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Spent (ZAR)</FormLabel>
+                      <FormLabel>{t('forms.projects.spent')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
-                          placeholder={FORM_PLACEHOLDERS.zero}
+                          placeholder={formPlaceholder(tCommon, 'zero')}
                           {...field}
                         />
                       </FormControl>
@@ -464,12 +467,12 @@ export function CreateProjectDialog({
                   name="value"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Value (ZAR)</FormLabel>
+                      <FormLabel>{t('forms.projects.value')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
-                          placeholder={FORM_PLACEHOLDERS.zero}
+                          placeholder={formPlaceholder(tCommon, 'zero')}
                           {...field}
                         />
                       </FormControl>
@@ -482,12 +485,12 @@ export function CreateProjectDialog({
                   name="totalCost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total cost (ZAR)</FormLabel>
+                      <FormLabel>{t('forms.projects.totalCost')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
-                          placeholder={FORM_PLACEHOLDERS.zero}
+                          placeholder={formPlaceholder(tCommon, 'zero')}
                           {...field}
                         />
                       </FormControl>
@@ -500,9 +503,9 @@ export function CreateProjectDialog({
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <FormLabel>{t('forms.projects.currency')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="ZAR" />
+                        <Input {...field} placeholder={t('forms.projects.currencyPlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -518,7 +521,7 @@ export function CreateProjectDialog({
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start date</FormLabel>
+                      <FormLabel>{t('forms.projects.startDate')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -531,7 +534,7 @@ export function CreateProjectDialog({
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>End date</FormLabel>
+                      <FormLabel>{t('forms.projects.endDate')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -544,7 +547,7 @@ export function CreateProjectDialog({
                   name="expectedCompletionDate"
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
-                      <FormLabel>Expected completion</FormLabel>
+                      <FormLabel>{t('forms.projects.expectedCompletion')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -562,9 +565,9 @@ export function CreateProjectDialog({
                   name="contactEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact email</FormLabel>
+                      <FormLabel>{t('forms.projects.contactEmail')}</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} placeholder={FORM_PLACEHOLDERS.email} />
+                        <Input type="email" {...field} placeholder={formPlaceholder(tCommon, 'email')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -575,9 +578,9 @@ export function CreateProjectDialog({
                   name="contactPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact phone</FormLabel>
+                      <FormLabel>{t('forms.projects.contactPhone')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'landline')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -593,9 +596,9 @@ export function CreateProjectDialog({
                   name="address.street"
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
-                      <FormLabel>Street</FormLabel>
+                      <FormLabel>{t('forms.projects.street')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.street} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'street')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -606,9 +609,9 @@ export function CreateProjectDialog({
                   name="address.suburb"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Suburb</FormLabel>
+                      <FormLabel>{t('forms.projects.suburb')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'suburb')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -619,9 +622,9 @@ export function CreateProjectDialog({
                   name="address.city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>{t('forms.projects.city')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.city} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'city')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -632,9 +635,9 @@ export function CreateProjectDialog({
                   name="address.state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>State / province</FormLabel>
+                      <FormLabel>{t('forms.projects.province')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.province} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'province')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -645,9 +648,9 @@ export function CreateProjectDialog({
                   name="address.country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>{t('forms.projects.country')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.country} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'country')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -658,9 +661,9 @@ export function CreateProjectDialog({
                   name="address.postalCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Postal code</FormLabel>
+                      <FormLabel>{t('forms.projects.postalCode')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder={FORM_PLACEHOLDERS.postalCode} />
+                        <Input {...field} placeholder={formPlaceholder(tCommon, 'postalCode')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -671,12 +674,12 @@ export function CreateProjectDialog({
                   name="latitude"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Latitude</FormLabel>
+                      <FormLabel>{t('forms.projects.latitude')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="any"
-                          placeholder="e.g. -26.2041"
+                          placeholder={t('forms.projects.latitudePlaceholder')}
                           {...field}
                         />
                       </FormControl>
@@ -689,12 +692,12 @@ export function CreateProjectDialog({
                   name="longitude"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Longitude</FormLabel>
+                      <FormLabel>{t('forms.projects.longitude')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="any"
-                          placeholder="e.g. 28.0473"
+                          placeholder={t('forms.projects.longitudePlaceholder')}
                           {...field}
                         />
                       </FormControl>
@@ -711,12 +714,12 @@ export function CreateProjectDialog({
                 name="requirements"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Requirements</FormLabel>
+                    <FormLabel>{t('forms.projects.requirements')}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         rows={2}
-                        placeholder="One per line or comma-separated"
+                        placeholder={t('forms.projects.requirementsPlaceholder')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -728,9 +731,9 @@ export function CreateProjectDialog({
                 name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags</FormLabel>
+                    <FormLabel>{t('forms.projects.tags')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Comma-separated tags" />
+                      <Input {...field} placeholder={t('forms.projects.tagsPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -741,9 +744,9 @@ export function CreateProjectDialog({
                 name="linkedInvoices"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Linked invoices</FormLabel>
+                    <FormLabel>{t('forms.projects.linkedInvoices')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Comma-separated invoice refs" />
+                      <Input {...field} placeholder={t('forms.projects.linkedInvoicesPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -754,9 +757,9 @@ export function CreateProjectDialog({
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t('forms.projects.notes')}</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} placeholder="Optional project notes" />
+                      <Textarea {...field} rows={3} placeholder={t('forms.projects.notesPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

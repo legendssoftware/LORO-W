@@ -94,7 +94,7 @@ export function InspectionsPanel() {
         <div className="space-y-1">
           <Label>Template</Label>
           <Select value={templateId} onValueChange={setTemplateId}>
-            <SelectTrigger><SelectValue placeholder="Pick a template" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t('chrome.merchandise.pickTemplate')} /></SelectTrigger>
             <SelectContent>
               {(templatesQuery.data ?? []).map((item) => (
                 <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
@@ -127,13 +127,13 @@ export function InspectionsPanel() {
         )}
         <div className="md:col-span-2">
           <Button type="button" onClick={() => void submit()} disabled={createMutation.isPending || scoreMutation.isPending}>
-            Score inspection
+            {t('chrome.merchandise.scoreInspection')}
           </Button>
         </div>
       </div>
       {listQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading inspections…</p> : null}
       {!listQuery.isLoading && rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No inspections yet.</p>
+        <p className="text-sm text-muted-foreground">{t('chrome.merchandise.noInspections')}</p>
       ) : null}
       {rows.length > 0 ? (
         <Table>

@@ -11,6 +11,7 @@ import {
   REPORTS_CHART_RED,
   toDonutSlices,
 } from '@/app/reports/lib/reports-dashboard-chart-helpers';
+import { useTranslation } from 'react-i18next';
 
 const MISSED_Q_PALETTE = [
   REPORTS_CHART_RED,
@@ -28,6 +29,7 @@ export function ReportsMissedQuestionsPieChart({
   questions,
   maxSlices = 5,
 }: ReportsMissedQuestionsPieChartProps) {
+  const { t } = useTranslation('screens');
   const { slices, config, total } = useMemo(() => {
     const rows = questions
       .filter((q) => q.missedCount > 0)
@@ -41,16 +43,16 @@ export function ReportsMissedQuestionsPieChart({
       .slice(maxSlices)
       .reduce((sum, q) => sum + q.missedCount, 0);
     if (rest > 0) {
-      rows.push({ name: 'Other', value: rest });
+      rows.push({ name: t('chrome.reports.cq.other'), value: rest });
     }
 
     return toDonutSlices(rows, MISSED_Q_PALETTE);
-  }, [questions, maxSlices]);
+  }, [questions, maxSlices, t]);
 
   if (total <= 0) {
     return (
       <p className="flex h-[224px] items-center justify-center text-sm text-muted-foreground">
-        No missed questions in this period
+        {t('chrome.reports.cq.noMissedQuestions')}
       </p>
     );
   }

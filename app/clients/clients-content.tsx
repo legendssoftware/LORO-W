@@ -94,7 +94,7 @@ export function ClientsContent() {
               onClick={openCreate}
             >
               <Plus className="size-4" />
-              Add client
+              {t('chrome.clients.add')}
             </Button>
           }
         />
@@ -118,7 +118,7 @@ export function ClientsContent() {
             </div>
           )}
           {!isLoading && clientRows.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No clients match your filters.</p>
+            <p className="text-center text-muted-foreground py-8">{t('chrome.clients.noMatch')}</p>
           )}
           {clientsQuery.hasNextPage ? (
             <div className="flex justify-center py-6">

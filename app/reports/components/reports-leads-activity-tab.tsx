@@ -43,6 +43,8 @@ import {
 import { ReportsDashboardToolbar } from './reports-dashboard-toolbar';
 import { ReportsChartCard } from './reports-chart-card';
 import { ReportsStackedBarChart } from './reports-stacked-bar-chart';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 type BookView = 'period' | 'lifetime';
 type SortKey = 'name' | 'periodTotal' | 'lifetimeTotal' | LeadActivityBucketKey;
@@ -62,20 +64,18 @@ function SummaryStat({ label, value, sub }: { label: string; value: string; sub?
   );
 }
 
-function bookLabel(view: BookView): string {
-  return view === 'period' ? 'This period' : 'Lifetime';
+function bookLabel(t: TFunction, view: BookView): string {
+  return view === 'period' ? t('chrome.reports.la.thisPeriod') : t('chrome.reports.la.lifetime');
 }
 
-function bookDescription(view: BookView): string {
-  if (view === 'period') {
-    return 'Leads imported in this date range. Status is where each lead stands now.';
-  }
-  return 'Every imported lead they still own. Status is where each lead stands now.';
+function bookDescription(t: TFunction, view: BookView): string {
+  if (view === 'period') return t('chrome.reports.la.periodDesc');
+  return t('chrome.reports.la.lifetimeDesc');
 }
 
-function emptyBookCopy(view: BookView): string {
-  if (view === 'period') return 'No leads were imported in this date range.';
-  return 'No imported leads for this selection.';
+function emptyBookCopy(t: TFunction, view: BookView): string {
+  if (view === 'period') return t('chrome.reports.la.emptyPeriod');
+  return t('chrome.reports.la.noImported');
 }
 
 function activeBook(row: LeadActivityUserRow, view: BookView): LeadActivityCounts {
@@ -119,6 +119,7 @@ function SortHeader({
 }
 
 export function ReportsLeadsActivityTab() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
@@ -264,9 +265,9 @@ export function ReportsLeadsActivityTab() {
   if (isError || !data || !counts) {
     return (
       <div className="space-y-3" data-tour="reports-leads-activity-tab">
-        <p className="text-sm text-destructive">Could not load lead activity.</p>
+        <p className="text-sm text-destructive">{t('chrome.reports.la.loadError')}</p>
         <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-          Try again
+          {t('actions.tryAgain')}
         </Button>
       </div>
     );
@@ -275,8 +276,8 @@ export function ReportsLeadsActivityTab() {
   const peopleInView = data.users.filter((user) => activeBook(user, view).total > 0).length;
   const chartDescription =
     peopleInView > CHART_USER_LIMIT
-      ? `${bookDescription(view)} Top ${CHART_USER_LIMIT} people by imported leads.`
-      : bookDescription(view);
+      ? `${bookDescription(t, view)} ${t('chrome.reports.la.topPeople', { count: CHART_USER_LIMIT })}`
+      : bookDescription(t, view);
 
   return (
     <div className="space-y-5 pb-8" data-tour="reports-leads-activity-tab">
@@ -302,50 +303,50 @@ export function ReportsLeadsActivityTab() {
           variant="outline"
           size="sm"
           className="shrink-0"
-          aria-label="Lead book"
+          aria-label={t('chrome.reports.la.leadBook')}
         >
           <ToggleGroupItem value="period" className="px-3">
-            This period
+            {t('chrome.reports.la.thisPeriod')}
           </ToggleGroupItem>
           <ToggleGroupItem value="lifetime" className="px-3">
-            Lifetime
+            {t('chrome.reports.la.lifetime')}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <SummaryStat label="Imported" value={counts.total.toLocaleString()} sub={bookLabel(view)} />
+        <SummaryStat label={t('chrome.reports.la.imported')} value={counts.total.toLocaleString()} sub={bookLabel(t, view)} />
         <SummaryStat
-          label="Untouched"
+          label={t('chrome.reports.la.untouched')}
           value={counts.untouched.toLocaleString()}
           sub="Still pending, and nobody has worked them"
         />
         <SummaryStat
-          label="Worked"
+          label={t('chrome.reports.la.worked')}
           value={counts.touched.toLocaleString()}
           sub="Worked since import, including discarded and deleted"
         />
-        <SummaryStat label="Discarded" value={counts.discarded.toLocaleString()} />
-        <SummaryStat label="Deleted" value={counts.deleted.toLocaleString()} />
-        <SummaryStat label="Converted" value={counts.converted.toLocaleString()} />
+        <SummaryStat label={t('chrome.reports.la.discarded')} value={counts.discarded.toLocaleString()} />
+        <SummaryStat label={t('chrome.reports.la.deleted')} value={counts.deleted.toLocaleString()} />
+        <SummaryStat label={t('chrome.reports.la.converted')} value={counts.converted.toLocaleString()} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <ReportsChartCard title="Status mix" description={bookDescription(view)}>
+        <ReportsChartCard title={t('chrome.reports.la.statusMix')} description={bookDescription(t, view)}>
           {statusMix.total > 0 ? (
             <ReportDonutChart
               config={statusMix.config}
               data={statusMix.slices}
               centerPrimary={statusMix.total.toLocaleString()}
-              centerSecondary="Imported"
+              centerSecondary={t('chrome.reports.la.imported')}
               legendMaxItems={LEAD_ACTIVITY_BUCKETS.length}
             />
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">{emptyBookCopy(view)}</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{emptyBookCopy(t, view)}</p>
           )}
         </ReportsChartCard>
         <div className="lg:col-span-2">
-          <ReportsChartCard title="By person" description={chartDescription}>
+          <ReportsChartCard title={t('chrome.reports.la.byPerson')} description={chartDescription}>
             {stackedBars.length > 0 ? (
               <ReportsStackedBarChart
                 data={stackedBars}
@@ -355,7 +356,7 @@ export function ReportsLeadsActivityTab() {
                 heightClassName="h-[320px]"
               />
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">{emptyBookCopy(view)}</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{emptyBookCopy(t, view)}</p>
             )}
           </ReportsChartCard>
         </div>
@@ -368,11 +369,11 @@ export function ReportsLeadsActivityTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="py-3 pl-4">
-                    <SortHeader label="Person" sortKey="name" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
+                    <SortHeader label={t('tables.person')} sortKey="name" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
                   </TableHead>
                   <TableHead className="py-3">
                     <SortHeader
-                      label="This period"
+                      label={t('tables.thisPeriod')}
                       sortKey="periodTotal"
                       activeKey={sortKey}
                       dir={sortDir}
@@ -381,7 +382,7 @@ export function ReportsLeadsActivityTab() {
                   </TableHead>
                   <TableHead className="py-3">
                     <SortHeader
-                      label="Lifetime"
+                      label={t('tables.lifetime')}
                       sortKey="lifetimeTotal"
                       activeKey={sortKey}
                       dir={sortDir}
@@ -408,7 +409,7 @@ export function ReportsLeadsActivityTab() {
                       colSpan={3 + LEAD_ACTIVITY_BUCKETS.length}
                       className="py-8 text-center text-sm text-muted-foreground"
                     >
-                      No imported leads for this selection.
+                      {t('chrome.reports.la.noImported')}
                     </TableCell>
                   </TableRow>
                 ) : (

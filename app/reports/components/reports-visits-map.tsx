@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { VisitListItem } from '@/api/types/visits';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
 
@@ -366,6 +367,7 @@ export function ReportsVisitsMap({
   totalVisits,
   className,
 }: ReportsVisitsMapProps) {
+  const { t } = useTranslation('screens');
   const [selected, setSelected] = useState<VisitMapPoint | null>(null);
   const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
 
@@ -450,7 +452,7 @@ export function ReportsVisitsMap({
           className
         )}
       >
-        <p className="text-sm text-muted-foreground">No mapped visits in range</p>
+        <p className="text-sm text-muted-foreground">{t('chrome.reports.map.noVisits')}</p>
         {rangeTotal > 0 ? (
           <p className="text-muted-foreground text-xs">
             {rangeTotal.toLocaleString()} visit

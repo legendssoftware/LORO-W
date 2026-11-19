@@ -60,7 +60,7 @@ export function PerformanceDailySalesTable({
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base">Daily sales performance</CardTitle>
+        <CardTitle className="text-base">{t('chrome.performance.daily.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 overflow-x-auto">
         {days.length > 0 ? (
@@ -69,12 +69,12 @@ export function PerformanceDailySalesTable({
               <TableRow>
                 <TableHead>{t('tables.date')}</TableHead>
                 <TableHead>{t('tables.day')}</TableHead>
-                <TableHead className="text-right">Baskets</TableHead>
+                <TableHead className="text-right">{t('tables.baskets')}</TableHead>
                 <TableHead className="text-right">{t('tables.client')}</TableHead>
-                <TableHead className="text-right">Basket value</TableHead>
+                <TableHead className="text-right">{t('tables.basketValue')}</TableHead>
                 <TableHead className="text-right">{t('tables.sales')}</TableHead>
-                <TableHead className="text-right">GP</TableHead>
-                <TableHead className="text-right">GP %</TableHead>
+                <TableHead className="text-right">{t('tables.gp')}</TableHead>
+                <TableHead className="text-right">{t('tables.gpPercent')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -101,7 +101,7 @@ export function PerformanceDailySalesTable({
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2}>Total</TableCell>
+                <TableCell colSpan={2}>{t('tables.total')}</TableCell>
                 <TableCell className="text-right">{formatPerformanceInteger(totals.baskets)}</TableCell>
                 <TableCell className="text-right">{formatPerformanceInteger(totals.clients)}</TableCell>
                 <TableCell className={cn('text-right', performanceAmountClassName(totals.basketValue))}>
@@ -123,7 +123,7 @@ export function PerformanceDailySalesTable({
 
         {unassigned.length > 0 ? (
           <div>
-            <h3 className="mb-2 text-sm font-medium">Unassigned invoices</h3>
+            <h3 className="mb-2 text-sm font-medium">{t('chrome.performance.daily.unassigned')}</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -131,8 +131,8 @@ export function PerformanceDailySalesTable({
                   <TableHead>{t('tables.date')}</TableHead>
                   <TableHead>{t('tables.store')}</TableHead>
                   <TableHead>{t('tables.country')}</TableHead>
-                  <TableHead className="text-right">Lines</TableHead>
-                  <TableHead className="text-right">Amount excl.</TableHead>
+                  <TableHead className="text-right">{t('tables.lines')}</TableHead>
+                  <TableHead className="text-right">{t('tables.amountExcl')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

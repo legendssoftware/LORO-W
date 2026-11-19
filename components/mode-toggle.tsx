@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function ModeToggle({
   contentClassName?: string;
 } = {}) {
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation("settings");
   const { setTheme } = useTheme();
 
   useEffect(() => setMounted(true), []);
@@ -29,12 +31,12 @@ export function ModeToggle({
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Toggle theme"
+        aria-label={t("theme.toggle")}
         disabled
         className={className}
       >
         <Sun className="size-5" />
-        <span className="sr-only">Toggle theme</span>
+        <span className="sr-only">{t("theme.toggle")}</span>
       </Button>
     );
   }
@@ -45,12 +47,12 @@ export function ModeToggle({
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Toggle theme"
+          aria-label={t("theme.toggle")}
           className={className}
         >
           <Sun className="size-5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
           <Moon className="absolute size-5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-          <span className="sr-only">Toggle theme</span>
+          <span className="sr-only">{t("theme.toggle")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -59,15 +61,15 @@ export function ModeToggle({
       >
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="size-4" />
-          Light
+          {t("theme.light")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="size-4" />
-          Dark
+          {t("theme.dark")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="size-4" />
-          System
+          {t("theme.system")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

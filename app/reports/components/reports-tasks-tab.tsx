@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { getTaskPlanningReport } from '@/api/endpoints/reports-task-planning';
@@ -119,6 +120,7 @@ function SortHeader({
 }
 
 export function ReportsTasksTab() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
@@ -199,8 +201,8 @@ export function ReportsTasksTab() {
 
   const missedDonut = useMemo(() => {
     const slices: ReportDonutSlice[] = [
-      { id: 'visited', label: 'Visited', value: data?.totals.visited ?? 0, fill: REPORTS_CHART_GREEN },
-      { id: 'missed', label: 'Missed', value: data?.totals.missed ?? 0, fill: REPORTS_CHART_RED },
+      { id: 'visited', label: t('chrome.reports.tasks.visited'), value: data?.totals.visited ?? 0, fill: REPORTS_CHART_GREEN },
+      { id: 'missed', label: t('chrome.reports.tasks.missed'), value: data?.totals.missed ?? 0, fill: REPORTS_CHART_RED },
     ].filter((slice) => slice.value > 0);
     const config: ChartConfig = {};
     for (const slice of slices) {
@@ -211,7 +213,7 @@ export function ReportsTasksTab() {
       config,
       total: slices.reduce((sum, slice) => sum + slice.value, 0),
     };
-  }, [data?.totals.missed, data?.totals.visited]);
+  }, [data?.totals.missed, data?.totals.visited, t]);
   const plannedBars = useMemo(() => toNamedBars(data?.plannedVsDone, 2), [data?.plannedVsDone]);
   const plannedPerUser = useMemo(
     () =>
@@ -253,9 +255,9 @@ export function ReportsTasksTab() {
   if (isError || !data) {
     return (
       <div className="space-y-3" data-tour="reports-tasks-tab">
-        <p className="text-sm text-destructive">Could not load tasks and planning.</p>
+        <p className="text-sm text-destructive">{t('chrome.reports.tasks.loadError')}</p>
         <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-          Try again
+          {t('actions.tryAgain')}
         </Button>
       </div>
     );
@@ -281,10 +283,10 @@ export function ReportsTasksTab() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryStat label="Planned visits" value={totals.planned.toLocaleString()} sub="Visit plans in this period" />
-        <SummaryStat label="Done visits" value={totals.done.toLocaleString()} sub="Marked completed" />
-        <SummaryStat label="Visited" value={totals.visited.toLocaleString()} sub="Completed after the visit was due" />
-        <SummaryStat label="Missed" value={totals.missed.toLocaleString()} sub="Due visits that were not completed" />
+        <SummaryStat label={t('chrome.reports.tasks.plannedVisits')} value={totals.planned.toLocaleString()} sub="Visit plans in this period" />
+        <SummaryStat label={t('chrome.reports.tasks.doneVisits')} value={totals.done.toLocaleString()} sub="Marked completed" />
+        <SummaryStat label={t('chrome.reports.tasks.visited')} value={totals.visited.toLocaleString()} sub="Completed after the visit was due" />
+        <SummaryStat label={t('chrome.reports.tasks.missed')} value={totals.missed.toLocaleString()} sub="Due visits that were not completed" />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -292,7 +294,7 @@ export function ReportsTasksTab() {
           <CardContent className="flex items-center justify-center px-2 py-4">
             <ReportsCallQualityRateRadial
               rate={visitRate}
-              label="Visit accomplishment"
+              label={t('chrome.reports.tasks.visitAccomplishment')}
               passedLabel="Done"
               failedLabel="Not done"
             />
@@ -302,14 +304,14 @@ export function ReportsTasksTab() {
           <CardContent className="flex items-center justify-center px-2 py-4">
             <ReportsCallQualityRateRadial
               rate={taskRate}
-              label="Task accomplishment"
+              label={t('chrome.reports.tasks.taskAccomplishment')}
               passedLabel="Completed"
               failedLabel="Open"
             />
           </CardContent>
         </Card>
         <SummaryStat
-          label="Time at a job"
+          label={t('chrome.reports.tasks.timeAtJob')}
           value={formatJobMinutes(totals.jobMinutesTotal)}
           sub={
             totals.jobsTimed > 0
@@ -320,7 +322,7 @@ export function ReportsTasksTab() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ReportsChartCard title="Missed vs visited" description="Visit plans whose deadline has already passed">
+        <ReportsChartCard title={t('chrome.reports.tasks.missedVsVisited')} description={t('chrome.reports.tasks.missedVsVisitedHint')}>
           {missedDonut.total > 0 ? (
             <ReportDonutChart
               config={missedDonut.config}
@@ -329,10 +331,10 @@ export function ReportsTasksTab() {
               centerSecondary="Due visits"
             />
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">No due visits in this period.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.reports.tasks.noDueVisits')}</p>
           )}
         </ReportsChartCard>
-        <ReportsChartCard title="Planned visits vs done visits" description="All visit plans in the period, including ones still ahead">
+        <ReportsChartCard title={t('chrome.reports.tasks.plannedVsDone')} description={t('chrome.reports.tasks.plannedVsDoneHint')}>
           <ReportsNamedBarChart
             data={plannedBars}
             fill={REPORTS_CHART_BLUE}
@@ -342,12 +344,12 @@ export function ReportsTasksTab() {
         </ReportsChartCard>
       </div>
 
-      <ReportsChartCard title="Planned per person" description="Visit plans assigned in this period">
+      <ReportsChartCard title={t('chrome.reports.tasks.plannedPerPerson')} description={t('chrome.reports.tasks.plannedPerPersonHint')}>
         <ReportsNamedBarChart
           data={plannedPerUser}
           fill={REPORTS_CHART_GREEN}
-          yAxisLabel="Planned visits"
-          seriesLabel="Planned visits"
+          yAxisLabel={t('chrome.reports.tasks.plannedVisits')}
+          seriesLabel={t('chrome.reports.tasks.plannedVisits')}
           heightClassName="h-[300px]"
         />
       </ReportsChartCard>
@@ -358,19 +360,19 @@ export function ReportsTasksTab() {
             <TableHeader>
               <TableRow>
                 <TableHead className="py-3 pl-4">
-                  <SortHeader label="Person" sortKey="name" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t('tables.person')} sortKey="name" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
                 </TableHead>
                 <TableHead className="py-3">
-                  <SortHeader label="Planned" sortKey="planned" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t('tables.planned')} sortKey="planned" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
                 </TableHead>
                 <TableHead className="py-3">
-                  <SortHeader label="Done" sortKey="done" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t('tables.done')} sortKey="done" activeKey={sortKey} dir={sortDir} onSort={handleSort} />
                 </TableHead>
-                <TableHead className="py-3">Missed</TableHead>
-                <TableHead className="py-3">Visited</TableHead>
+                <TableHead className="py-3">{t('tables.missed')}</TableHead>
+                <TableHead className="py-3">{t('tables.visited')}</TableHead>
                 <TableHead className="py-3">
                   <SortHeader
-                    label="Accomplishment"
+                    label={t('tables.accomplishment')}
                     sortKey="accomplishmentPct"
                     activeKey={sortKey}
                     dir={sortDir}
@@ -379,7 +381,7 @@ export function ReportsTasksTab() {
                 </TableHead>
                 <TableHead className="py-3 pr-4">
                   <SortHeader
-                    label="Time at a job"
+                    label={t('tables.timeAtJob')}
                     sortKey="jobMinutesTotal"
                     activeKey={sortKey}
                     dir={sortDir}
@@ -392,7 +394,7 @@ export function ReportsTasksTab() {
               {sortedUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                    No assigned tasks in this period.
+                    {t('chrome.reports.tasks.noAssigned')}
                   </TableCell>
                 </TableRow>
               ) : (
