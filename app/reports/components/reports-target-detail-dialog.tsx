@@ -176,20 +176,20 @@ function ImportBookSection({ row }: { row: ReportsTargetRow }) {
   const book = row.importBook;
   if (row.importBookLoading) {
     return (
-      <ModalSection title="Import book">
+      <ModalSection title={t('tables.importBook')}>
         <Skeleton className="h-24 w-full" />
       </ModalSection>
     );
   }
   if (!book || book.total === 0) {
     return (
-      <ModalSection title="Import book">
-        <p className="text-sm text-muted-foreground">No imported leads on this book.</p>
+      <ModalSection title={t('tables.importBook')}>
+        <p className="text-sm text-muted-foreground">{t('chrome.reports.td.noImportedLeads')}</p>
       </ModalSection>
     );
   }
   return (
-    <ModalSection title="Import book">
+    <ModalSection title={t('tables.importBook')}>
       <p className="mb-3 text-sm text-muted-foreground">
         {book.touched.toLocaleString()} / {book.total.toLocaleString()} touched
         {' · '}
@@ -305,6 +305,7 @@ function NamedBarChart({
   height?: number;
   yAxisLabel?: string;
 }) {
+  const { t } = useTranslation('screens');
   const config: ChartConfig = {
     [valueKey]: { label: yAxisLabel, color: ATT_CHART_HSL.c2 },
   };
@@ -312,7 +313,7 @@ function NamedBarChart({
     return (
       <section className="space-y-2">
         <h4 className="text-xs font-medium text-muted-foreground">{title}</h4>
-        <EmptyChartNote>No data for this range.</EmptyChartNote>
+        <EmptyChartNote>{t('chrome.reports.td.noDataRange')}</EmptyChartNote>
       </section>
     );
   }
@@ -649,7 +650,7 @@ export function ReportsTargetDetailDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle>{displayRow ? displayRow.name : 'Target details'}</DialogTitle>
           <DialogDescription>
-            Per-user performance report
+            {t('chrome.reports.td.perUserReport')}
             {displayRow?.periodLabel ? ` · ${displayRow.periodLabel}` : ''}.
           </DialogDescription>
         </DialogHeader>
@@ -696,7 +697,7 @@ export function ReportsTargetDetailDialog({
             ) : null}
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <ModalSection title="Sales">
+              <ModalSection title={t('tables.sales')}>
                 <MetricDetail
                   label="Sales amount"
                   cell={displayRow.sales}
@@ -704,7 +705,7 @@ export function ReportsTargetDetailDialog({
                 />
               </ModalSection>
 
-              <ModalSection title="Quotations">
+              <ModalSection title={t('chrome.reports.td.quotations')}>
                 <MetricDetail
                   label="Quotes in period"
                   cell={{
@@ -723,7 +724,7 @@ export function ReportsTargetDetailDialog({
                 </p>
               </ModalSection>
 
-              <ModalSection title="Activity, visits & leads">
+              <ModalSection title={t('chrome.reports.td.activityVisitsLeads')}>
                 <p className="mb-2 text-xs tabular-nums text-muted-foreground">
                   Telephone {formatCount(displayRow.activity.telephone)}
                   {' · '}WhatsApp {formatCount(displayRow.activity.whatsapp)}
@@ -796,7 +797,7 @@ export function ReportsTargetDetailDialog({
                 ) : null}
               </ModalSection>
 
-              <ModalSection title="Hours">
+              <ModalSection title={t('tables.hours')}>
                 <MetricDetail
                   label="Attendance hours"
                   cell={displayRow.hours}
@@ -809,15 +810,15 @@ export function ReportsTargetDetailDialog({
 
             {!hasReportRange ? (
               <p className="text-sm text-muted-foreground">
-                Select a date range in the toolbar to load visits, leads, and weekly trends.
+                {t('chrome.reports.td.selectRangeHint')}
               </p>
             ) : (
               <>
-                <ModalSection title="Weekly trend">
+                <ModalSection title={t('chrome.reports.td.weeklyTrend')}>
                   {productivityQuery.isLoading ? (
                     <Skeleton className="h-[240px] w-full" />
                   ) : weeklyTrend.length === 0 ? (
-                    <EmptyChartNote>No productivity samples in this range.</EmptyChartNote>
+                    <EmptyChartNote>{t('chrome.reports.td.noProductivity')}</EmptyChartNote>
                   ) : (
                     <ChartContainer
                       config={trendConfig}
@@ -866,7 +867,7 @@ export function ReportsTargetDetailDialog({
                   )}
                 </ModalSection>
 
-                <ModalSection title="Visits">
+                <ModalSection title={t('tables.visits')}>
                   <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>
                       Total:{' '}
@@ -883,10 +884,10 @@ export function ReportsTargetDetailDialog({
                     <Skeleton className="h-[220px] w-full" />
                   ) : (
                     <div className="grid gap-4 lg:grid-cols-3">
-                      <NamedBarChart title="By region" data={visitAgg.byRegion} />
-                      <NamedBarChart title="By type" data={visitAgg.byType} />
+                      <NamedBarChart title={t('chrome.reports.td.byRegion')} data={visitAgg.byRegion} />
+                      <NamedBarChart title={t('chrome.reports.td.byType')} data={visitAgg.byType} />
                       <NamedBarChart
-                        title="By duration"
+                        title={t('chrome.reports.td.byDuration')}
                         data={visitAgg.byDuration.map((d) => ({
                           name: d.name,
                           value: d.count,
@@ -896,7 +897,7 @@ export function ReportsTargetDetailDialog({
                   )}
                 </ModalSection>
 
-                <ModalSection title="Activity analysis">
+                <ModalSection title={t('chrome.reports.td.activityAnalysis')}>
                   <ReportsTargetActivityAnalysis
                     checkIns={visitsQuery.data?.checkIns ?? []}
                     planSlotsInRange={planSlotsInRange}
@@ -906,7 +907,7 @@ export function ReportsTargetDetailDialog({
 
                 {row ? <ImportBookSection row={row} /> : null}
 
-                <ModalSection title="Leads">
+                <ModalSection title={t('tables.leads')}>
                   <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>
                       Total:{' '}
@@ -946,23 +947,23 @@ export function ReportsTargetDetailDialog({
                     <Skeleton className="h-[220px] w-full" />
                   ) : (
                     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                      <NamedBarChart title="Result stage" data={leadStages} />
-                      <NamedBarChart title="Lead actions" data={leadActions} />
+                      <NamedBarChart title={t('chrome.reports.td.resultStage')} data={leadStages} />
+                      <NamedBarChart title={t('chrome.reports.td.leadActions')} data={leadActions} />
                       <NamedBarChart
-                        title="Lead duration (created → activity)"
+                        title={t('chrome.reports.td.leadDuration')}
                         data={leadDurations.map((d) => ({
                           name: d.name,
                           value: d.count,
                         }))}
                       />
-                      <NamedBarChart title="Leads by region" data={leadRegions} />
+                      <NamedBarChart title={t('chrome.reports.td.leadsByRegion')} data={leadRegions} />
                     </div>
                   )}
                 </ModalSection>
               </>
             )}
 
-            <ModalSection title="Financials & products">
+            <ModalSection title={t('chrome.reports.td.financials')}>
               <div className="mb-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span>
                   Sales:{' '}
@@ -1020,7 +1021,7 @@ export function ReportsTargetDetailDialog({
                   <Skeleton className="h-[220px] w-full" />
                 ) : (
                   <NamedBarChart
-                    title="Commission by group"
+                    title={t('chrome.reports.td.commissionByGroup')}
                     data={commissionBars.map((r) => ({
                       name: r.name,
                       value: r.value,
@@ -1030,19 +1031,19 @@ export function ReportsTargetDetailDialog({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <h4 className="text-xs font-medium text-muted-foreground">
-                      Most sold products
+                      {t('chrome.reports.td.mostSold')}
                     </h4>
                     {productCommissionsQuery.isLoading ? (
                       <Skeleton className="h-32 w-full" />
                     ) : mostSold.length === 0 ? (
-                      <EmptyChartNote>No product sales in target period.</EmptyChartNote>
+                      <EmptyChartNote>{t('chrome.reports.td.noProductSales')}</EmptyChartNote>
                     ) : (
                       <div className="rounded-lg border">
                         <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead>{t('tables.product')}</TableHead>
-                              <TableHead className="text-right">Units</TableHead>
+                              <TableHead className="text-right">{t('tables.units')}</TableHead>
                               <TableHead className="text-right">{t('tables.sales')}</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -1067,19 +1068,19 @@ export function ReportsTargetDetailDialog({
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xs font-medium text-muted-foreground">
-                      Least sold products
+                      {t('chrome.reports.td.leastSold')}
                     </h4>
                     {productCommissionsQuery.isLoading ? (
                       <Skeleton className="h-32 w-full" />
                     ) : leastSold.length === 0 ? (
-                      <EmptyChartNote>Not enough product variety to rank.</EmptyChartNote>
+                      <EmptyChartNote>{t('chrome.reports.td.notEnoughVariety')}</EmptyChartNote>
                     ) : (
                       <div className="rounded-lg border">
                         <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead>{t('tables.product')}</TableHead>
-                              <TableHead className="text-right">Units</TableHead>
+                              <TableHead className="text-right">{t('tables.units')}</TableHead>
                               <TableHead className="text-right">{t('tables.sales')}</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -1106,7 +1107,7 @@ export function ReportsTargetDetailDialog({
               </div>
             </ModalSection>
 
-            <ModalSection title="Warnings history">
+            <ModalSection title={t('chrome.reports.td.warningsHistory')}>
               <div className="mb-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
                 <span>
                   Issued:{' '}
@@ -1132,7 +1133,7 @@ export function ReportsTargetDetailDialog({
               </div>
               <Separator />
               {history.length === 0 ? (
-                <p className="pt-2 text-sm text-muted-foreground">No warning history.</p>
+                <p className="pt-2 text-sm text-muted-foreground">{t('chrome.reports.td.noWarnings')}</p>
               ) : (
                 <ul className="grid gap-2 pt-2 sm:grid-cols-2">
                   {[...history].reverse().map((entry, i) => (

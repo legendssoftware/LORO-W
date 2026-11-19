@@ -28,6 +28,7 @@ import { useState } from 'react';
 import { CompetitorFormDialog } from '../components/competitor-form-dialog';
 import { canDeleteCompetitors, canManageCompetitors } from '@/lib/access';
 import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
+import { useTranslation } from 'react-i18next';
 
 function Row({
   label,
@@ -47,6 +48,7 @@ function Row({
 }
 
 export function CompetitorDetailPage({ idParam }: { idParam: number }) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const { backendUserData: profile } = useSessionSync();
   const canEdit = canManageCompetitors(profile?.accessLevel);
@@ -72,7 +74,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Button variant="outline" size="icon" className="shrink-0 border-border bg-background" asChild>
-            <Link href="/competitors" aria-label="Back to competitors">
+            <Link href="/competitors" aria-label={t('chrome.competitors.backTo')}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
@@ -97,7 +99,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                 disabled={!competitor}
               >
                 <Pencil className="size-4" />
-                Edit
+                {t('actions.edit')}
               </Button>
             ) : null}
             {canDelete ? (
@@ -108,7 +110,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                 disabled={!competitor}
               >
                 <Trash2 className="size-4" />
-                Delete
+                {t('actions.delete')}
               </Button>
             ) : null}
           </div>
@@ -121,13 +123,13 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
         </div>
       )}
       {isError && (
-        <p className="py-12 text-center text-destructive">Could not load this competitor.</p>
+        <p className="py-12 text-center text-destructive">{t('chrome.competitors.loadError')}</p>
       )}
       {!isLoading && competitor && (
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Overview</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('chrome.common.overview')}</CardTitle>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {competitor.status ? (
                   <Badge variant="secondary" className="capitalize">
@@ -138,9 +140,9 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                   <Badge variant="outline">Threat {competitor.threatLevel}/5</Badge>
                 ) : null}
                 {competitor.isDirect === true ? (
-                  <Badge variant="outline">Direct</Badge>
+                  <Badge variant="outline">{t('chrome.competitors.direct')}</Badge>
                 ) : competitor.isDirect === false ? (
-                  <Badge variant="outline">Indirect</Badge>
+                  <Badge variant="outline">{t('chrome.competitors.indirect')}</Badge>
                 ) : null}
                 {competitor.industry ? <Badge variant="outline">{competitor.industry}</Badge> : null}
               </div>
@@ -197,7 +199,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                 <Row label="Coordinates" value={`${competitor.latitude}, ${competitor.longitude}`} />
               ) : null}
               <Row
-                label="Map status"
+                label={t('chrome.competitors.mapStatus')}
                 value={
                   hasStoredCoordinates(competitor.latitude, competitor.longitude)
                     ? 'On map'
@@ -209,7 +211,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                   <Button variant="outline" size="sm" className="gap-1.5" asChild>
                     <Link href="/visualiser">
                       <ExternalLink className="size-4" />
-                      View on visualiser
+                      {t('chrome.competitors.viewOnVisualiser')}
                     </Link>
                   </Button>
                 </div>
@@ -225,7 +227,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
 
           <Card className="rounded-lg border border-border bg-background md:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Intelligence</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('chrome.competitors.intelligence')}</CardTitle>
             </CardHeader>
             <CardContent>
               {competitor.description ? (
@@ -236,7 +238,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
                   <Separator className="my-3" />
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">No description yet.</p>
+                <p className="text-sm text-muted-foreground">{t('chrome.competitors.noDescription')}</p>
               )}
             </CardContent>
           </Card>
@@ -274,7 +276,7 @@ export function CompetitorDetailPage({ idParam }: { idParam: number }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();

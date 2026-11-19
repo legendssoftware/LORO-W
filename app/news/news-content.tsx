@@ -18,9 +18,9 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 const NEWS_CATEGORIES = [
-  { value: 'news', label: 'News', icon: Newspaper },
-  { value: 'event', label: 'Event', icon: Calendar },
-  { value: 'announcement', label: 'Announcement', icon: Type },
+  { value: 'news', labelKey: 'chrome.news.category.news', icon: Newspaper },
+  { value: 'event', labelKey: 'chrome.news.category.event', icon: Calendar },
+  { value: 'announcement', labelKey: 'chrome.news.category.announcement', icon: Type },
 ] as const;
 
 export function NewsContent() {
@@ -70,11 +70,11 @@ export function NewsContent() {
         tourId="news"
         title={t('pages.news.title')}
         description={t('pages.news.description')}
-        actions={<Button type="button" onClick={openNew}><Plus className="size-4" aria-hidden />New post</Button>}
+        actions={<Button type="button" onClick={openNew}><Plus className="size-4" aria-hidden />{t('chrome.news.newPost')}</Button>}
         search={
           <div className="relative w-56">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search posts" aria-label="Search posts" className={`${filterToolbarSearchInputClassName} pl-8`} />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('forms.news.search')} aria-label={t('forms.news.search')} className={`${filterToolbarSearchInputClassName} pl-8`} />
           </div>
         }
         isLoading={!ready || list.isLoading}
@@ -108,40 +108,40 @@ export function NewsContent() {
       </FeatureShell>
       <Dialog open={selected != null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Newspaper className="size-4" aria-hidden />News post</DialogTitle></DialogHeader>
-          <IconField icon={Type} label="Title">
-            <IconInput icon={Type} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Headline for the announcement" />
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Newspaper className="size-4" aria-hidden />{t('chrome.news.post')}</DialogTitle></DialogHeader>
+          <IconField icon={Type} label={t('forms.news.title')}>
+            <IconInput icon={Type} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('forms.news.titlePlaceholder')} />
           </IconField>
-          <IconField icon={Type} label="Subtitle">
-            <IconInput icon={Type} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder="Short line under the title" />
+          <IconField icon={Type} label={t('forms.news.subtitle')}>
+            <IconInput icon={Type} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder={t('forms.news.subtitlePlaceholder')} />
           </IconField>
-          <IconField icon={Newspaper} label="Body">
-            <IconTextarea icon={Newspaper} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Write the post" />
+          <IconField icon={Newspaper} label={t('forms.news.body')}>
+            <IconTextarea icon={Newspaper} value={content} onChange={(event) => setContent(event.target.value)} placeholder={t('forms.news.bodyPlaceholder')} />
           </IconField>
-          <IconField icon={Newspaper} label="Category">
+          <IconField icon={Newspaper} label={t('forms.news.category')}>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-full">
                 <Newspaper className="size-4 text-muted-foreground" aria-hidden />
-                <SelectValue placeholder="Choose a category" />
+                <SelectValue placeholder={t('forms.news.categoryPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {NEWS_CATEGORIES.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     <item.icon className="size-4" aria-hidden />
-                    {item.label}
+                    {t(item.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </IconField>
-          <IconField icon={ImageIcon} label="Cover image">
-            <IconInput icon={ImageIcon} value={coverImage} onChange={(event) => setCoverImage(event.target.value)} placeholder="https://…" />
+          <IconField icon={ImageIcon} label={t('forms.news.coverImage')}>
+            <IconInput icon={ImageIcon} value={coverImage} onChange={(event) => setCoverImage(event.target.value)} placeholder={t('forms.news.urlPlaceholder')} />
           </IconField>
-          <IconField icon={Calendar} label="Publishing date">
-            <IconInput icon={Calendar} type="datetime-local" value={publishingDate} onChange={(event) => setPublishingDate(event.target.value)} placeholder="When this goes live" />
+          <IconField icon={Calendar} label={t('forms.news.publishingDate')}>
+            <IconInput icon={Calendar} type="datetime-local" value={publishingDate} onChange={(event) => setPublishingDate(event.target.value)} placeholder={t('forms.news.publishingDatePlaceholder')} />
           </IconField>
           <DialogFooter>
-            {selected?.ref ? <Button type="button" variant="destructive" onClick={() => void deleteNews(client, selected.ref!).then(() => { toast.success('Deleted'); setSelected(null); queryClient.invalidateQueries({ queryKey: ['news'] }); })}>Delete</Button> : null}
+            {selected?.ref ? <Button type="button" variant="destructive" onClick={() => void deleteNews(client, selected.ref!).then(() => { toast.success('Deleted'); setSelected(null); queryClient.invalidateQueries({ queryKey: ['news'] }); })}>{t('actions.delete')}</Button> : null}
             <Button type="button" onClick={() => void save.mutateAsync({
               ...selected,
               title,
@@ -151,7 +151,7 @@ export function NewsContent() {
               coverImage,
               thumbnail: coverImage,
               publishingDate: publishingDate ? new Date(publishingDate).toISOString() : new Date().toISOString(),
-            }).then(() => { toast.success('Saved'); setSelected(null); }, (error: unknown) => toast.error(getQueryErrorMessage(error, 'Could not save')))}>Save</Button>
+            }).then(() => { toast.success('Saved'); setSelected(null); }, (error: unknown) => toast.error(getQueryErrorMessage(error, 'Could not save')))}>{t('actions.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

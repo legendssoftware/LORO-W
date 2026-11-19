@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon } from 'lucide-react';
 import {
@@ -72,6 +73,7 @@ export function UtcDateRangePicker({
   defaultPreset = 'today',
   commitOnSelect = false,
 }: UtcDateRangePickerProps) {
+  const { t } = useTranslation('screens');
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
     from: startDate,
@@ -95,7 +97,7 @@ export function UtcDateRangePicker({
         formatUtcYmd(endDate) === formatUtcYmd(today));
 
   const rangeLabel = useAllTime
-    ? 'All time'
+    ? t('actions.allTime')
     : formatUtcYmd(startDate) === formatUtcYmd(endDate)
       ? formatUtcCalendarLabel(startDate)
       : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
@@ -203,10 +205,10 @@ export function UtcDateRangePicker({
           className="w-full sm:w-auto"
           onClick={() => onSetUseAllTime?.(true)}
         >
-          All time
+          {t('actions.allTime')}
         </Button>
         <span className="text-xs text-muted-foreground">
-          or pick a UTC range below
+          {t('actions.pickUtcRange')}
         </span>
       </div>
     </div>
@@ -223,7 +225,7 @@ export function UtcDateRangePicker({
           className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
           onClick={shortcutToday}
         >
-          Today (UTC)
+          {t('actions.todayUtc')}
         </Button>
         <Button
           type="button"
@@ -233,7 +235,7 @@ export function UtcDateRangePicker({
           className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
           onClick={shortcutLastWeek}
         >
-          Last week (Mon–Sat)
+          {t('actions.lastWeekMonSat')}
         </Button>
         <Button
           type="button"
@@ -243,7 +245,7 @@ export function UtcDateRangePicker({
           className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
           onClick={shortcutThisMonth}
         >
-          This month (UTC)
+          {t('actions.thisMonthUtc')}
         </Button>
         <Button
           type="button"
@@ -253,7 +255,7 @@ export function UtcDateRangePicker({
           className="h-8 w-full justify-center px-2 text-xs sm:w-auto"
           onClick={shortcutWholeMonth}
         >
-          Whole month (UTC)
+          {t('actions.wholeMonthUtc')}
         </Button>
       </div>
       {!stackLayout ? (
@@ -270,7 +272,7 @@ export function UtcDateRangePicker({
             )}
             onClick={() => handleDatePopoverOpenChange(false)}
           >
-            Done
+            {t('actions.done')}
           </Button>
         </div>
       ) : null}
@@ -308,8 +310,8 @@ export function UtcDateRangePicker({
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={
                 defaultPreset === 'whole-month'
-                  ? 'Reset to this month'
-                  : 'Reset to today'
+                  ? t('actions.resetToThisMonth')
+                  : t('actions.resetToToday')
               }
             >
               <XIcon className="size-4 text-muted-foreground" />
@@ -332,7 +334,7 @@ export function UtcDateRangePicker({
             )}
             onClick={applyDraft}
           >
-            Apply date range
+            {t('actions.applyDateRange')}
           </Button>
         )}
       </div>
@@ -385,8 +387,8 @@ export function UtcDateRangePicker({
           )}
           aria-label={
             defaultPreset === 'whole-month'
-              ? 'Reset to this month'
-              : 'Reset to today'
+              ? t('actions.resetToThisMonth')
+              : t('actions.resetToToday')
           }
         >
           <XIcon className="size-4 text-muted-foreground" />

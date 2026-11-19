@@ -108,8 +108,8 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
         <Input
           value={routeSearch}
           onChange={(event) => setRouteSearch(event.target.value)}
-          placeholder="Search reps or clients…"
-          aria-label="Search routes by rep or client"
+          placeholder={t('chrome.planning.routesMap.searchPlaceholder')}
+          aria-label={t('chrome.planning.routesMap.searchAria')}
           className={cn(
             filterToolbarSearchInputClassName,
             'w-full min-w-0 sm:w-56 sm:max-w-[16rem] sm:flex-none'
@@ -120,7 +120,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             <Button variant="outline" size="sm" className="gap-1.5" asChild>
               <Link href={`/visualiser?date=${dateYmd}`}>
                 <ExternalLink className="size-4" />
-                Open visualiser
+                {t('chrome.planning.routesMap.openVisualiser')}
               </Link>
             </Button>
           ) : null}
@@ -136,7 +136,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
             ) : (
               <RefreshCw className="size-4" />
             )}
-            Recalculate routes
+            {t('chrome.planning.routesMap.recalculate')}
           </Button>
         </div>
         </div>
@@ -150,14 +150,14 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
         ) : routes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center">
             <MapPin className="size-8 text-muted-foreground" />
-            <p className="text-sm font-medium">No routes for this day</p>
+            <p className="text-sm font-medium">{t('chrome.planning.routesMap.noRoutes')}</p>
             <p className="max-w-md text-xs text-muted-foreground">{t('pages.planning.routeEmpty')}</p>
           </div>
         ) : filteredRoutes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center">
-            <p className="text-sm font-medium">No routes match that search</p>
+            <p className="text-sm font-medium">{t('chrome.planning.routesMap.noMatch')}</p>
             <p className="max-w-md text-xs text-muted-foreground">
-              Try another rep name or client.
+              {t('chrome.planning.routesMap.tryAnother')}
             </p>
           </div>
         ) : (
@@ -192,6 +192,7 @@ function RouteSummaryCard({
   onOpenTask?: (taskId: number) => void;
   showMapLink: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const km = route.totalDistance > 1000
     ? `${(route.totalDistance / 1000).toFixed(1)} km`
     : `${Math.round(route.totalDistance)} m`;
@@ -228,7 +229,7 @@ function RouteSummaryCard({
         <Button variant="outline" size="sm" className="mt-3 w-full gap-1.5" asChild>
           <Link href={`/visualiser?date=${dateYmd}&user=${route.userId}`}>
             <MapPin className="size-4" />
-            Open on map
+            {t('chrome.planning.routesMap.openOnMap')}
           </Link>
         </Button>
       ) : null}

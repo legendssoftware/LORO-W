@@ -84,7 +84,7 @@ export function TakeoffDetailContent({ uid }: { uid: number }) {
                 <TableRow>
                   <TableHead>{t('tables.code')}</TableHead>
                   <TableHead>{t('tables.description')}</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">{t('tables.qty')}</TableHead>
                   <TableHead className="text-right">{t('tables.total')}</TableHead>
                 </TableRow>
               </TableHeader>

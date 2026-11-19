@@ -27,8 +27,8 @@ import { AttendanceMonthHighlights, AttendanceStreakCalendar } from '@/component
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
-import { locationContextFailureMessage } from '@/lib/clock-in-options';
-import { getBrowserPosition, geolocationFailureMessage } from '@/lib/browser-geolocation';
+import { locationContextFailureMessageKey } from '@/lib/clock-in-options';
+import { getBrowserPosition, geolocationFailureMessageKey } from '@/lib/browser-geolocation';
 import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { ClientDashboardHome } from '@/app/client-portal/components/client-dashboard-home';
@@ -52,6 +52,7 @@ export function DashboardContent() {
   const didSyncAttendancePeriod = useRef(false);
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
+  /** i18n key (`screens` namespace) for the location failure, translated by AttendanceStatusButton. */
   const [clockInContextError, setClockInContextError] = useState<string | null>(null);
   const [pulseOpen, setPulseOpen] = useState(false);
   const [pulsePeriod, setPulsePeriod] = useState<PulsePeriod>('morning');
@@ -132,7 +133,7 @@ export function DashboardContent() {
     const position = await getBrowserPosition();
     if (!position.ok) {
       setClockInContext(null);
-      setClockInContextError(geolocationFailureMessage(position.reason));
+      setClockInContextError(geolocationFailureMessageKey(position.reason));
       setClockInContextLoading(false);
       return;
     }
@@ -153,12 +154,12 @@ export function DashboardContent() {
         setClockInContextError(null);
       } else {
         setClockInContext(null);
-        setClockInContextError(locationContextFailureMessage('missing_context'));
+        setClockInContextError(locationContextFailureMessageKey('missing_context'));
       }
       setClockInContextLoading(false);
     } catch {
       setClockInContext(null);
-      setClockInContextError(locationContextFailureMessage('api_error'));
+      setClockInContextError(locationContextFailureMessageKey('api_error'));
       setClockInContextLoading(false);
     }
   }, [apiClient]);

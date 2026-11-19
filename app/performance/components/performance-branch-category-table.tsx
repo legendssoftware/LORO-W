@@ -87,9 +87,7 @@ export function PerformanceBranchCategoryTable({
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base">
-          Branch × category performance
-        </CardTitle>
+        <CardTitle className="text-base">{t('chrome.performance.branchCategory.title')}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
@@ -101,11 +99,11 @@ export function PerformanceBranchCategoryTable({
                   {cat}
                 </TableHead>
               ))}
-              <TableHead className="text-right">Baskets</TableHead>
+              <TableHead className="text-right">{t('tables.baskets')}</TableHead>
               <TableHead className="text-right">{t('tables.client')}</TableHead>
               <TableHead className="text-right">{t('tables.sales')}</TableHead>
-              <TableHead className="text-right">GP</TableHead>
-              <TableHead className="text-right">GP %</TableHead>
+              <TableHead className="text-right">{t('tables.gp')}</TableHead>
+              <TableHead className="text-right">{t('tables.gpPercent')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -159,7 +157,14 @@ export function PerformanceBranchCategoryTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell>Total ({branches.length} branches)</TableCell>
+              <TableCell>
+                {t(
+                  branches.length === 1
+                    ? 'chrome.performance.branchCategory.totalOne'
+                    : 'chrome.performance.branchCategory.total',
+                  { count: branches.length },
+                )}
+              </TableCell>
               {categories.map((cat) => (
                 <TableCell key={cat} />
               ))}

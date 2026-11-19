@@ -28,6 +28,7 @@ import {
   type ReportsChartValueKind,
 } from '@/app/reports/lib/reports-chart-format';
 import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-tooltip';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_MAX_BAR_SIZE = 28;
 
@@ -58,6 +59,7 @@ export function ReportsGroupedBarChart({
   yAxisLabel,
   maxBarSize = DEFAULT_MAX_BAR_SIZE,
 }: ReportsGroupedBarChartProps) {
+  const { t } = useTranslation('screens');
   const config = series.reduce<ChartConfig>((acc, s) => {
     acc[s.key] = { label: s.label, color: s.color };
     return acc;
@@ -65,7 +67,7 @@ export function ReportsGroupedBarChart({
 
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>
     );
   }
 

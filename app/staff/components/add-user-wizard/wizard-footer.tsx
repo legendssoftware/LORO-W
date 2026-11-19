@@ -3,6 +3,7 @@
 import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2Icon } from '@/lib/icons';
+import { useTranslation } from 'react-i18next';
 
 export function WizardFooter({
   step,
@@ -21,6 +22,7 @@ export function WizardFooter({
   onNext: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <DialogFooter className="gap-3 sm:flex-row sm:justify-between">
       <div className="flex w-full gap-3 sm:w-auto">
@@ -32,7 +34,7 @@ export function WizardFooter({
             onClick={onBack}
             disabled={isPending}
           >
-            Back
+            {t('actions.back')}
           </Button>
         )}
         <Button
@@ -42,7 +44,7 @@ export function WizardFooter({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {t('actions.cancel')}
         </Button>
       </div>
       <div className="flex w-full gap-3 sm:w-auto sm:ml-auto">
@@ -69,7 +71,7 @@ export function WizardFooter({
             onClick={onNext}
             disabled={isPending}
           >
-            Next
+            {t('actions.next')}
           </Button>
         )}
       </div>

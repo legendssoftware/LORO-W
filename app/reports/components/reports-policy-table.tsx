@@ -187,14 +187,14 @@ export function ReportsPolicyTable({
             <TableHead className="w-8" />
             <SortableHead label={t('tables.employee')} sortKey="name" {...sortProps} />
             <SortableHead label={t('tables.status')} sortKey="status" {...sortProps} />
-            <SortableHead label="Days" sortKey="expectedDays" {...sortProps} />
+            <SortableHead label={t('tables.days')} sortKey="expectedDays" {...sortProps} />
             <SortableHead label={t('tables.visits')} sortKey="visitsPct" {...sortProps} />
             <SortableHead label={t('tables.calls')} sortKey="callsPct" {...sortProps} />
-            <SortableHead label="Activity" sortKey="activityPct" {...sortProps} />
+            <SortableHead label={t('tables.activity')} sortKey="activityPct" {...sortProps} />
             <TableHead>{t('tables.leads')}</TableHead>
             <TableHead>{t('tables.quotes')}</TableHead>
-            <SortableHead label="Flagged" sortKey="flaggedVisits" {...sortProps} />
-            {showPay ? <SortableHead label="Pay %" sortKey="payPct" {...sortProps} /> : null}
+            <SortableHead label={t('tables.flagged')} sortKey="flaggedVisits" {...sortProps} />
+            {showPay ? <SortableHead label={t('tables.payPct')} sortKey="payPct" {...sortProps} /> : null}
             <TableHead>{t('tables.signed')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -211,7 +211,7 @@ export function ReportsPolicyTable({
           {!isLoading && rows.length === 0 ? (
             <TableRow>
               <TableCell colSpan={colCount} className="py-10 text-center text-sm text-muted-foreground">
-                No employees match these filters.
+                {t('chrome.reports.pol.noEmployeesMatch')}
               </TableCell>
             </TableRow>
           ) : null}

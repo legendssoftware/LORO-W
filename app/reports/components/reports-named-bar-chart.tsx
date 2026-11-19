@@ -29,6 +29,7 @@ import {
   type ReportsChartValueKind,
 } from '@/app/reports/lib/reports-chart-format';
 import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-tooltip';
+import { useTranslation } from 'react-i18next';
 
 const BAR_PALETTE = [
   ATT_CHART_HSL.c2,
@@ -70,6 +71,7 @@ export function ReportsNamedBarChart({
   showLegend = false,
   maxBarSize = DEFAULT_MAX_BAR_SIZE,
 }: ReportsNamedBarChartProps) {
+  const { t } = useTranslation('screens');
   const axisLabel = reportsYAxisLabel(valueKind, yAxisLabel);
   const legendLabel = seriesLabel?.trim() || axisLabel;
   const config: ChartConfig = {
@@ -81,7 +83,7 @@ export function ReportsNamedBarChart({
 
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>
     );
   }
 

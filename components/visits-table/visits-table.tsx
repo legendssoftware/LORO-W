@@ -30,7 +30,7 @@ import {
   CURRENCY_OPTIONS,
 } from '@/lib/visit-form-utils';
 import { validateEditVisitFormChangedFields } from '@/lib/schemas/visit-schemas';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import {
   useUpdateVisitDetailsMutation,
   useUpdateCheckInPhotoMutation,
@@ -677,6 +677,7 @@ function VisitDetailDialog({
   onVisitUpdated?: () => void;
 }) {
   const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UpdateVisitDetailsPayload>>({});
@@ -1132,7 +1133,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactCellPhone}
                       className={fieldErrors.contactCellPhone ? 'border-destructive' : ''}
-                      placeholder={FORM_PLACEHOLDERS.phone}
+                      placeholder={formPlaceholder(tCommon, 'phone')}
                     />
                     {fieldErrors.contactCellPhone && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactCellPhone}</p>
@@ -1148,7 +1149,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactLandline}
                       className={fieldErrors.contactLandline ? 'border-destructive' : ''}
-                      placeholder={FORM_PLACEHOLDERS.landline}
+                      placeholder={formPlaceholder(tCommon, 'landline')}
                     />
                     {fieldErrors.contactLandline && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactLandline}</p>
@@ -1165,7 +1166,7 @@ function VisitDetailDialog({
                       }}
                       aria-invalid={!!fieldErrors.contactEmail}
                       className={fieldErrors.contactEmail ? 'border-destructive' : ''}
-                      placeholder={FORM_PLACEHOLDERS.email}
+                      placeholder={formPlaceholder(tCommon, 'email')}
                     />
                     {fieldErrors.contactEmail && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.contactEmail}</p>
@@ -1352,7 +1353,7 @@ function VisitDetailDialog({
                         className="flex-1"
                         value={editForm.salesValue ?? ''}
                         onChange={(e) => setEditForm((f) => ({ ...f, salesValue: e.target.value ? Number(e.target.value) : undefined }))}
-                        placeholder={FORM_PLACEHOLDERS.zero}
+                        placeholder={formPlaceholder(tCommon, 'zero')}
                       />
                     </div>
                   </div>
@@ -1384,7 +1385,7 @@ function VisitDetailDialog({
                     <Input
                       value={editForm.meetingLink ?? ''}
                       onChange={(e) => setEditForm((f) => ({ ...f, meetingLink: e.target.value }))}
-                      placeholder={FORM_PLACEHOLDERS.website}
+                      placeholder={formPlaceholder(tCommon, 'website')}
                     />
                   </div>
                   <div>

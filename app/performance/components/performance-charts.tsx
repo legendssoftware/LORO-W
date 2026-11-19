@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ReportDonutChart } from '@/components/charts/report-donut-chart';
 import {
@@ -46,6 +47,7 @@ export function PerformancePieChartCard({
   data: PerformanceChartPoint[];
   currency: string;
 }) {
+  const { t } = useTranslation('screens');
   const fullTotal = data.reduce((sum, d) => sum + (Number.isFinite(d.value) ? d.value : 0), 0);
   const visual =
     data.length > 3
@@ -61,7 +63,7 @@ export function PerformancePieChartCard({
         config={config}
         data={slices}
         centerPrimary={formatPerformanceMoney(fullTotal, currency)}
-        centerSecondary="Revenue"
+        centerSecondary={t('tables.revenue')}
         formatValue={(v) => formatPerformanceMoney(v, currency)}
       />
     </ReportsChartCard>
@@ -101,10 +103,11 @@ export function PerformanceAreaChartCard({
   isError?: boolean;
   onRetry?: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const chartData = padHourlySalesDomain(data);
   const gradientId = useId().replace(/:/g, '');
   const config: ChartConfig = {
-    value: { label: 'Revenue', color: ATT_CHART_HSL.c4 },
+    value: { label: t('tables.revenue'), color: ATT_CHART_HSL.c4 },
   };
 
   return (
@@ -116,7 +119,7 @@ export function PerformanceAreaChartCard({
       onRetry={onRetry}
     >
       {chartData.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>
       ) : (
         <ChartContainer config={config} className="aspect-auto h-[260px] w-full">
           <AreaChart data={chartData} margin={REPORTS_CHART_MARGIN}>

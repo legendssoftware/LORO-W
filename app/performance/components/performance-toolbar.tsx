@@ -1,6 +1,7 @@
 'use client';
 
 import { Filter, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -46,12 +47,13 @@ export function PerformanceToolbar({
   onClearFilters,
   onDateRangeChange,
 }: PerformanceToolbarProps) {
+  const { t } = useTranslation('screens');
   const start = parseLocalYmd(filters.dateRange?.startDate ?? getLocalTodayIsoDate());
   const end = parseLocalYmd(filters.dateRange?.endDate ?? getLocalTodayIsoDate());
   const range: DateRange = { from: start, to: end };
   const dateLabel = filters.dateRange
     ? formatDateRangeLabel(filters.dateRange.startDate, filters.dateRange.endDate)
-    : 'Select dates';
+    : t('actions.selectDates');
   const isMdUp = useIsMdUp();
 
   return (
@@ -60,7 +62,7 @@ export function PerformanceToolbar({
       data-tour="performance-toolbar"
     >
       <p className="truncate text-xs text-muted-foreground sm:text-sm">
-        {getCountriesDisplayLabel(filters.countries)}
+        {getCountriesDisplayLabel(filters.countries, t('chrome.performance.toolbar.allCountries'))}
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <Popover>
@@ -89,10 +91,10 @@ export function PerformanceToolbar({
           variant="outline"
           className="h-9 w-9 px-0 md:w-auto md:px-3"
           onClick={onToggleFilters}
-          aria-label="Filter"
+          aria-label={t('actions.filter')}
         >
           <Filter className="size-4 md:mr-1.5" />
-          <span className="hidden md:inline">Filter</span>
+          <span className="hidden md:inline">{t('actions.filter')}</span>
         </Button>
         <Button
           type="button"
@@ -101,7 +103,7 @@ export function PerformanceToolbar({
           onClick={onToggleConsolidatedView}
           data-tour="performance-consolidated-toggle"
         >
-          {showConsolidatedView ? 'Performance Report' : 'Consolidated Report'}
+          {showConsolidatedView ? t('chrome.performance.toolbar.performanceReport') : t('chrome.performance.toolbar.consolidatedReport')}
         </Button>
         <Button
           type="button"
@@ -111,11 +113,11 @@ export function PerformanceToolbar({
           disabled={isRefetching}
         >
           <RefreshCw className={cn('mr-1.5 size-4', isRefetching && 'animate-spin')} />
-          {isRefetching ? 'Refreshing…' : 'Refresh'}
+          {isRefetching ? t('actions.refreshing') : t('actions.refresh')}
         </Button>
         {hasActiveFilters ? (
           <Button type="button" variant="ghost" className="h-9" onClick={onClearFilters}>
-            Clear filters
+            {t('actions.clearFilters')}
           </Button>
         ) : null}
       </div>

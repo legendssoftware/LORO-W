@@ -22,6 +22,7 @@ import {
   formatCallQualityRate,
   formatCallSecondsPhrase,
 } from '../lib/reports-call-quality-format';
+import { useTranslation } from 'react-i18next';
 
 export type CallQualityLeaderboardSortKey =
   | 'ownerName'
@@ -88,22 +89,23 @@ export function ReportsCallQualityLeaderboard({
   onSort: (key: CallQualityLeaderboardSortKey) => void;
   canOpenCallRecordings?: boolean;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="py-3">
-            <SortHeader label="Agent" sortKey="ownerName" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            <SortHeader label={t('tables.agent')} sortKey="ownerName" activeKey={sortKey} dir={sortDir} onSort={onSort} />
           </TableHead>
           <TableHead className="py-3">
-            <SortHeader label="Branch" sortKey="branchName" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            <SortHeader label={t('tables.branch')} sortKey="branchName" activeKey={sortKey} dir={sortDir} onSort={onSort} />
           </TableHead>
           <TableHead className="py-3">
-            <SortHeader label="Calls" sortKey="callCount" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            <SortHeader label={t('tables.calls')} sortKey="callCount" activeKey={sortKey} dir={sortDir} onSort={onSort} />
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Decision makers"
+              label={t('tables.decisionMakers')}
               sortKey="decisionMakersReached"
               activeKey={sortKey}
               dir={sortDir}
@@ -112,7 +114,7 @@ export function ReportsCallQualityLeaderboard({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Quality calls"
+              label={t('tables.qualityCalls')}
               sortKey="qualityConversations"
               activeKey={sortKey}
               dir={sortDir}
@@ -121,7 +123,7 @@ export function ReportsCallQualityLeaderboard({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Opportunities"
+              label={t('tables.opportunities')}
               sortKey="opportunitiesFound"
               activeKey={sortKey}
               dir={sortDir}
@@ -129,11 +131,11 @@ export function ReportsCallQualityLeaderboard({
             />
           </TableHead>
           <TableHead className="py-3">
-            <SortHeader label="BOQs" sortKey="boqsRequested" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            <SortHeader label={t('tables.boqs')} sortKey="boqsRequested" activeKey={sortKey} dir={sortDir} onSort={onSort} />
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Follow-ups"
+              label={t('tables.followUps')}
               sortKey="followUpsBooked"
               activeKey={sortKey}
               dir={sortDir}
@@ -142,7 +144,7 @@ export function ReportsCallQualityLeaderboard({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Median duration"
+              label={t('tables.medianDuration')}
               sortKey="avgDurationSeconds"
               activeKey={sortKey}
               dir={sortDir}
@@ -151,7 +153,7 @@ export function ReportsCallQualityLeaderboard({
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Greeting"
+              label={t('tables.greeting')}
               sortKey="greetingPassRate"
               activeKey={sortKey}
               dir={sortDir}
@@ -159,11 +161,11 @@ export function ReportsCallQualityLeaderboard({
             />
           </TableHead>
           <TableHead className="py-3">
-            <SortHeader label="Avg quality" sortKey="avgScore" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            <SortHeader label={t('tables.avgQuality')} sortKey="avgScore" activeKey={sortKey} dir={sortDir} onSort={onSort} />
           </TableHead>
           <TableHead className="py-3">
             <SortHeader
-              label="Quality conversation rate"
+              label={t('tables.qualityConversationRate')}
               sortKey="qualityConversationRate"
               activeKey={sortKey}
               dir={sortDir}

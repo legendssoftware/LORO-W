@@ -1,9 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { HOME_FAQS } from '@/lib/seo';
+import { useTranslation } from 'react-i18next';
+
+/** FAQ item ids — order matches HOME_FAQS (JSON-LD stays English in lib/seo/home-faqs.ts). */
+const FAQ_IDS = [
+  'whatIs',
+  'whoFor',
+  'offline',
+  'erp',
+  'difference',
+  'enterprise',
+  'modules',
+  'getStarted',
+] as const;
 
 export function LandingFaqSection() {
+  const { t } = useTranslation('marketing');
+
   return (
     <section
       id="faq"
@@ -15,35 +29,34 @@ export function LandingFaqSection() {
           id="landing-faq-heading"
           className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl mb-3 text-center"
         >
-          Field sales software —{' '}
-          <span className="font-serif italic">common questions</span>
+          {t('landing.faq.title')}{' '}
+          <span className="font-serif italic">{t('landing.faq.titleItalic')}</span>
         </h2>
         <p className="font-body text-sm text-zinc-400 text-center mb-10">
-          Answers for teams comparing LORO with other field sales platforms in
-          South Africa.
+          {t('landing.faq.lead')}
         </p>
         <dl className="space-y-6">
-          {HOME_FAQS.map((faq) => (
+          {FAQ_IDS.map((id) => (
             <div
-              key={faq.question}
+              key={id}
               className="rounded-xl border border-white/10 bg-zinc-900/30 px-5 py-4"
             >
               <dt className="font-body text-base font-medium text-white mb-2">
-                {faq.question}
+                {t(`landing.faq.items.${id}.question`)}
               </dt>
               <dd className="font-body text-sm text-zinc-400 leading-relaxed">
-                {faq.answer}
+                {t(`landing.faq.items.${id}.answer`)}
               </dd>
             </div>
           ))}
         </dl>
         <p className="text-center mt-8 text-sm text-zinc-500">
           <Link href="/blog" className="text-purple-400 hover:text-purple-300 underline">
-            Read the field sales blog
+            {t('landing.faq.blogLink')}
           </Link>{' '}
-          or{' '}
+          {t('landing.faq.or')}{' '}
           <Link href="/compare/skynamo" className="text-purple-400 hover:text-purple-300 underline">
-            compare LORO vs Skynamo
+            {t('landing.faq.compareLink')}
           </Link>
           .
         </p>

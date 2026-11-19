@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckIcon, XIcon } from '@/lib/icons';
 import { CalendarOff, Clock } from 'lucide-react';
 import {
@@ -21,7 +22,16 @@ import {
 import { formatMinutesToDuration, parseDurationToMinutes } from '@/lib/duration';
 import { cn } from '@/lib/utils';
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** i18n keys (`screens` namespace), Monday first. */
+const DAY_LABEL_KEYS = [
+  'dashboard.attendance.days.mon',
+  'dashboard.attendance.days.tue',
+  'dashboard.attendance.days.wed',
+  'dashboard.attendance.days.thu',
+  'dashboard.attendance.days.fri',
+  'dashboard.attendance.days.sat',
+  'dashboard.attendance.days.sun',
+] as const;
 
 /** Column index when week starts Monday (0=Mon, 6=Sun). Server dayOfWeek: 0=Sun, 1=Mon, ... */
 function colIndex(dayOfWeek: number): number {
@@ -134,23 +144,24 @@ function MonthHoursHighlightCards({
   summary: MonthHoursSummary;
   payrollMinutes: number | null;
 }) {
+  const { t } = useTranslation('screens');
   const cards: Array<{ label: string; value: string; hint: string; valueClassName: string }> = [
     {
-      label: 'Missed',
+      label: t('dashboard.attendance.missed'),
       value: String(summary.missed),
-      hint: 'Weekdays with no shift',
+      hint: t('dashboard.attendance.missedHint'),
       valueClassName: 'text-destructive',
     },
     {
-      label: 'Attended',
+      label: t('dashboard.attendance.attended'),
       value: String(summary.attended),
-      hint: 'Days you clocked in',
+      hint: t('dashboard.attendance.attendedHint'),
       valueClassName: 'text-green-600 dark:text-green-500',
     },
     {
-      label: 'Remaining',
+      label: t('dashboard.attendance.remaining'),
       value: formatMinutesToDuration(summary.remainingMinutes),
-      hint: 'Hours still short this month',
+      hint: t('dashboard.attendance.remainingHint'),
       valueClassName: 'text-muted-foreground',
     },
   ];
@@ -159,19 +170,19 @@ function MonthHoursHighlightCards({
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       <Card className="gap-1 rounded border border-border py-3 shadow-none sm:py-3">
         <CardContent className="px-3 sm:px-4">
-          <p className="text-xs font-medium text-muted-foreground">Hours</p>
+          <p className="text-xs font-medium text-muted-foreground">{t('dashboard.attendance.hours')}</p>
           <div className="mt-2 space-y-2">
             <div>
               <p className="text-lg font-semibold tabular-nums text-foreground">
                 {formatMinutesToDuration(summary.workedMinutes)}
               </p>
-              <p className="text-[11px] leading-snug text-muted-foreground">This month. Calendar month.</p>
+              <p className="text-[11px] leading-snug text-muted-foreground">{t('dashboard.attendance.hoursMonthHint')}</p>
             </div>
             <div>
               <p className="text-lg font-semibold tabular-nums text-foreground">
                 {payrollMinutes == null ? '—' : formatMinutesToDuration(payrollMinutes)}
               </p>
-              <p className="text-[11px] leading-snug text-muted-foreground">This payroll. 26th to the 25th.</p>
+              <p className="text-[11px] leading-snug text-muted-foreground">{t('dashboard.attendance.hoursPayrollHint')}</p>
             </div>
           </div>
         </CardContent>
@@ -302,6 +313,7 @@ export function AttendanceStreakCalendar({
   month,
   onPeriodChange,
 }: AttendanceStreakCalendarProps) {
+  const { t, i18n } = useTranslation('screens');
   const [calendarNow, setCalendarNow] = useState(() => new Date());
   const didSyncClientDate = useRef(false);
 
@@ -323,13 +335,13 @@ export function AttendanceStreakCalendar({
     for (let i = -2; i <= 0; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       opts.push({
-        label: d.toLocaleString('default', { month: 'long', year: 'numeric' }),
+        label: d.toLocaleString(i18n.language, { month: 'long', year: 'numeric' }),
         year: d.getFullYear(),
         month: d.getMonth() + 1,
       });
     }
     return opts.reverse();
-  }, [now.getTime()]);
+  }, [now.getTime(), i18n.language]);
 
   const valueKey = `${year}-${month}`;
 
@@ -413,7 +425,7 @@ export function AttendanceStreakCalendar({
       data-tour="attendance-section"
     >
       <div className="mb-4 flex flex-col gap-3">
-            <h2 className="text-base font-semibold text-foreground">Attendance</h2>
+            <h2 className="text-base font-semibold text-foreground">{t('dashboard.attendance.title')}</h2>
             <div className="flex w-full items-stretch gap-2">
               <div
                 className={cn(
@@ -430,7 +442,7 @@ export function AttendanceStreakCalendar({
                   }}
                 >
                   <SelectTrigger className="h-9 w-full rounded border border-border bg-background">
-                    <SelectValue placeholder="Month" />
+                    <SelectValue placeholder={t('dashboard.attendance.month')} />
                   </SelectTrigger>
                   <SelectContent>
                     {monthOptions.map((opt) => {
@@ -478,17 +490,17 @@ export function AttendanceStreakCalendar({
         <>
           {isError || !data?.days?.length ? (
             <div className="flex min-h-[200px] items-center justify-center py-8">
-              <p className="text-sm text-muted-foreground">No attendance data for this month.</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.attendance.noData')}</p>
             </div>
           ) : (
             <div className="mx-auto max-w-full lg:max-w-[50%]" data-tour="monthly-attendance-list">
               <div className="grid grid-cols-7 gap-1 text-center">
-                {DAY_LABELS.map((label) => (
+                {DAY_LABEL_KEYS.map((labelKey) => (
                   <div
-                    key={label}
+                    key={labelKey}
                     className="text-xs font-medium text-muted-foreground"
                   >
-                    {label}
+                    {t(labelKey)}
                   </div>
                 ))}
                 {(() => {
@@ -528,15 +540,15 @@ export function AttendanceStreakCalendar({
               <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="size-4 rounded-full bg-emerald-500" />
-                  Attended
+                  {t('dashboard.attendance.attended')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="size-4 rounded-full bg-orange-500" />
-                  Missed
+                  {t('dashboard.attendance.missed')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="size-4 rounded-full bg-gray-200" />
-                  Future
+                  {t('dashboard.attendance.future')}
                 </span>
               </div>
             </div>

@@ -82,13 +82,13 @@ export function ReportsTargetLeadsChangedTable({
 
   if (total === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No leads changed in this range.</p>
+      <p className="text-sm text-muted-foreground">{t('chrome.reports.leadsChanged.empty')}</p>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-medium text-muted-foreground">Leads changed</h4>
+      <h4 className="text-xs font-medium text-muted-foreground">{t('chrome.reports.leadsChanged.title')}</h4>
       <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
@@ -96,9 +96,9 @@ export function ReportsTargetLeadsChangedTable({
               <TableHead>{t('tables.lead')}</TableHead>
               <TableHead>{t('tables.stage')}</TableHead>
               <TableHead>{t('tables.action')}</TableHead>
-              <TableHead className="min-w-[12rem]">Summary</TableHead>
+              <TableHead className="min-w-[12rem]">{t('tables.summary')}</TableHead>
               <TableHead>{t('tables.when')}</TableHead>
-              <TableHead className="text-right">Value</TableHead>
+              <TableHead className="text-right">{t('tables.value')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

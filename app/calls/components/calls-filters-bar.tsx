@@ -39,6 +39,7 @@ import {
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import { TRANSCRIPT_STATUS_FILTER_OPTIONS, transcriptStatusIcon } from '../call-display';
+import { useTranslation } from 'react-i18next';
 
 const selectTriggerClass = 'h-9 w-full border-border bg-background text-foreground sm:w-auto';
 
@@ -64,19 +65,6 @@ export interface CallsFiltersBarProps {
   actions?: ReactNode;
 }
 
-const DIRECTION_FILTER_OPTIONS: SearchableOptionRow[] = [
-  {
-    value: 'inbound',
-    label: 'Inbound',
-    icon: <PhoneIncoming className="size-4 shrink-0" />,
-  },
-  {
-    value: 'outbound',
-    label: 'Outbound',
-    icon: <PhoneOutgoing className="size-4 shrink-0" />,
-  },
-];
-
 function CallsDateRangePicker({
   layout,
   startDate,
@@ -94,6 +82,7 @@ function CallsDateRangePicker({
   onUseAllTimeChange: (value: boolean) => void;
   onResetDateRange: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
     from: startDate,
@@ -129,7 +118,7 @@ function CallsDateRangePicker({
     formatUtcYmd(endDate) === formatUtcYmd(mtd.end);
 
   const rangeLabel = useAllTime
-    ? 'All time'
+    ? t('actions.allTime')
     : formatUtcYmd(startDate) === formatUtcYmd(endDate)
       ? formatUtcCalendarLabel(startDate)
       : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
@@ -188,7 +177,7 @@ function CallsDateRangePicker({
                 size="sm"
                 onClick={() => onUseAllTimeChange(true)}
               >
-                All time
+                {t('actions.allTime')}
               </Button>
               <span className="text-xs text-muted-foreground">or pick a UTC range below</span>
             </div>
@@ -222,7 +211,7 @@ function CallsDateRangePicker({
                 disabled={useAllTime}
                 onClick={shortcutToday}
               >
-                Today (UTC)
+                {t('actions.todayUtc')}
               </Button>
               <Button
                 type="button"
@@ -231,7 +220,7 @@ function CallsDateRangePicker({
                 disabled={useAllTime}
                 onClick={shortcutThisMonth}
               >
-                This month (UTC)
+                {t('actions.thisMonthUtc')}
               </Button>
               <Button
                 type="button"
@@ -240,7 +229,7 @@ function CallsDateRangePicker({
                 disabled={useAllTime}
                 onClick={shortcutWholeMonth}
               >
-                Whole month (UTC)
+                {t('actions.wholeMonthUtc')}
               </Button>
             </div>
             <Button
@@ -255,7 +244,7 @@ function CallsDateRangePicker({
               )}
               onClick={() => handleOpenChange(false)}
             >
-              Done
+              {t('actions.done')}
             </Button>
           </div>
         </PopoverContent>
@@ -268,7 +257,7 @@ function CallsDateRangePicker({
             onResetDateRange();
           }}
           className="ml-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Reset to default range"
+          aria-label={t('actions.resetDefaultRange')}
         >
           <XIcon className="size-4 text-muted-foreground" />
         </button>
@@ -295,6 +284,7 @@ function CallsFilterControls({
 }: Omit<CallsFiltersBarProps, 'searchInput' | 'onSearchInputChange'> & {
   layout: 'row' | 'stack';
 }) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const pickerTriggerClass = row
     ? 'h-9 min-w-[140px] shrink-0 sm:w-[200px]'
@@ -309,12 +299,29 @@ function CallsFilterControls({
         const Icon = transcriptStatusIcon(option.value);
         return {
           ...option,
+          label: t(`chrome.calls.status.${option.value}`),
           icon: (
             <Icon className={cn('size-4 shrink-0', statusFilterIconClass(option.value))} />
           ),
         };
       }),
-    [],
+    [t],
+  );
+
+  const directionOptions = useMemo<SearchableOptionRow[]>(
+    () => [
+      {
+        value: 'inbound',
+        label: t('chrome.calls.inbound'),
+        icon: <PhoneIncoming className="size-4 shrink-0" />,
+      },
+      {
+        value: 'outbound',
+        label: t('chrome.calls.outbound'),
+        icon: <PhoneOutgoing className="size-4 shrink-0" />,
+      },
+    ],
+    [t],
   );
 
   return (
@@ -337,10 +344,10 @@ function CallsFilterControls({
           }
           onDirectionFilterChange('all');
         }}
-        options={DIRECTION_FILTER_OPTIONS}
-        placeholderLabelWhenAll="All directions"
-        searchPlaceholder="Search directions…"
-        emptyMessage="No direction found."
+        options={directionOptions}
+        placeholderLabelWhenAll={t('chrome.calls.allDirections')}
+        searchPlaceholder={t('chrome.calls.searchDirections')}
+        emptyMessage={t('chrome.calls.noDirectionFound')}
         triggerIcon={<PhoneIncoming className="size-4 shrink-0" />}
         triggerClassName={pickerTriggerClass}
       />
@@ -364,9 +371,9 @@ function CallsFilterControls({
           onStatusFilterChange(nextStatus);
         }}
         options={statusOptions}
-        placeholderLabelWhenAll="All statuses"
-        searchPlaceholder="Search statuses…"
-        emptyMessage="No status found."
+        placeholderLabelWhenAll={t('actions.allStatuses')}
+        searchPlaceholder={t('chrome.planning.searchStatuses')}
+        emptyMessage={t('actions.noStatusFound')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={pickerTriggerClass}
       />
@@ -395,6 +402,7 @@ export function CallsFiltersBar({
   onResetDateRange,
   actions,
 }: CallsFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -421,16 +429,16 @@ export function CallsFiltersBar({
         <Input
           value={searchInput}
           onChange={(event) => onSearchInputChange(event.target.value)}
-          placeholder="Search number, name, or CDR id"
+          placeholder={t('chrome.calls.searchPlaceholder')}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
-          aria-label="Search call recordings"
+          aria-label={t('chrome.calls.searchAria')}
         />
         {searchInput ? (
           <button
             type="button"
             onClick={() => onSearchInputChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -466,7 +474,7 @@ export function CallsFiltersBar({
             onClick={() => setFiltersDialogOpen(true)}
           >
             <Filter className="size-4 shrink-0" aria-hidden />
-            Filter
+            {t('actions.filter')}
           </Button>
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto">
@@ -478,9 +486,9 @@ export function CallsFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Date range, direction, branch, and transcript status for call recordings.
+              {t('chrome.calls.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <CallsFilterControls {...filterProps} layout="stack" />
@@ -494,7 +502,7 @@ export function CallsFiltersBar({
                 setFiltersDialogOpen(false);
               }}
             >
-              Reset filters
+              {t('actions.resetFilters')}
             </Button>
           </div>
         </DialogContent>

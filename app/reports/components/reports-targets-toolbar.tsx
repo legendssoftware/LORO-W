@@ -43,6 +43,7 @@ import { XIcon } from '@/lib/icons';
 import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
 import type { ReportsTargetsCurrencyView } from '@/app/reports/lib/reports-target-currency';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type ReportsTargetsSortMetric =
   | 'name'
@@ -98,24 +99,24 @@ export interface ReportsTargetsToolbarProps {
   onExcludedCustomerCategoriesChange?: (ids: string[]) => void;
 }
 
-const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; label: string }> = [
-  { value: 'name', label: 'Sort: Name' },
-  { value: 'achievement', label: 'Sort: Achievement (page)' },
-  { value: 'sales', label: 'Sort: Sales (page)' },
-  { value: 'quotations', label: 'Sort: Quotations' },
-  { value: 'calls', label: 'Sort: All Activity' },
-  { value: 'visits', label: 'Sort: Visits' },
-  { value: 'leads', label: 'Sort: Leads' },
-  { value: 'hours', label: 'Sort: Hours' },
-  { value: 'travel', label: 'Sort: Travel' },
-  { value: 'productivity', label: 'Sort: Productivity (page)' },
-  { value: 'policy', label: 'Sort: Policy activity (lowest first)' },
+const SORT_OPTIONS: Array<{ value: ReportsTargetsSortMetric; labelKey: string }> = [
+  { value: 'name', labelKey: 'chrome.reports.sort.name' },
+  { value: 'achievement', labelKey: 'chrome.reports.sort.achievement' },
+  { value: 'sales', labelKey: 'chrome.reports.sort.sales' },
+  { value: 'quotations', labelKey: 'chrome.reports.sort.quotations' },
+  { value: 'calls', labelKey: 'chrome.reports.sort.calls' },
+  { value: 'visits', labelKey: 'chrome.reports.sort.visits' },
+  { value: 'leads', labelKey: 'chrome.reports.sort.leads' },
+  { value: 'hours', labelKey: 'chrome.reports.sort.hours' },
+  { value: 'travel', labelKey: 'chrome.reports.sort.travel' },
+  { value: 'productivity', labelKey: 'chrome.reports.sort.productivity' },
+  { value: 'policy', labelKey: 'chrome.reports.sort.policy' },
 ];
 
-const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; label: string }> = [
-  { value: 'set', label: 'Currency: Target (set)' },
-  { value: 'branch', label: 'Currency: Branch (ERP)' },
-  { value: 'zar', label: 'Currency: ZAR (consolidated)' },
+const CURRENCY_VIEW_OPTIONS: Array<{ value: ReportsTargetsCurrencyView; labelKey: string }> = [
+  { value: 'set', labelKey: 'chrome.reports.currency.set' },
+  { value: 'branch', labelKey: 'chrome.reports.currency.branch' },
+  { value: 'zar', labelKey: 'chrome.reports.currency.zar' },
 ];
 
 interface ReportsTargetsFilterControlsProps
@@ -155,24 +156,25 @@ function ReportsTargetsFilterControls({
   excludedCustomerCategoryIds = [],
   onExcludedCustomerCategoriesChange,
 }: ReportsTargetsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const sortOptions: SearchableOptionRow[] = useMemo(
     () =>
       SORT_OPTIONS.filter((o) => o.value !== 'name').map((o) => ({
         value: o.value,
-        label: o.label,
+        label: t(o.labelKey),
         icon: <ArrowDownWideNarrow className="size-4 shrink-0" />,
       })),
-    []
+    [t]
   );
 
   const currencyOptions: SearchableOptionRow[] = useMemo(
     () =>
       CURRENCY_VIEW_OPTIONS.map((o) => ({
         value: o.value,
-        label: o.label,
+        label: t(o.labelKey),
         icon: <Coins className="size-4 shrink-0" />,
       })),
-    []
+    [t]
   );
 
   const usersForPicker = useMemo(() => {
@@ -241,9 +243,9 @@ function ReportsTargetsFilterControls({
             align="start"
             className={cn('w-80 p-3', reportsFilterPortalHighZ)}
           >
-            <p className="mb-2 text-sm font-medium">Customer categories</p>
+            <p className="mb-2 text-sm font-medium">{t('chrome.reports.customerCategories')}</p>
             <p className="mb-2 text-xs text-muted-foreground">
-              Uncheck a category to exclude it from sales, the same way as the performance report.
+              {t('chrome.reports.customerCategoriesHint')}
             </p>
             <ScrollArea className="h-48">
               <div className="space-y-1 pr-3">
@@ -295,8 +297,8 @@ function ReportsTargetsFilterControls({
             options={countryOptions}
             selectedValue={selectedCountry}
             onValueChange={(v) => onCountryChange?.(v)}
-            placeholderLabelWhenAll="All countries"
-            searchPlaceholder="Search countries…"
+            placeholderLabelWhenAll={t('chrome.reports.allCountries')}
+            searchPlaceholder={t('chrome.reports.searchCountries')}
             triggerClassName={pickerTriggerClass}
           />
           {selectedCountry !== 'all' ? (
@@ -359,6 +361,7 @@ export function ReportsTargetsToolbar({
   travelExportLoading = false,
   ...filterProps
 }: ReportsTargetsToolbarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -378,17 +381,17 @@ export function ReportsTargetsToolbar({
         <Input
           value={searchInput}
           onChange={(e) => onSearchInputChange(e.target.value)}
-          placeholder="Search name, email, or branch…"
+          placeholder={t('chrome.reports.searchTargetsPlaceholder')}
           className={cn(filterToolbarSearchInputClassName, searchInput ? 'pr-8' : undefined)}
           data-tour="reports-targets-search"
-          aria-label="Search targets by user"
+          aria-label={t('chrome.reports.searchTargetsByUser')}
         />
         {searchInput ? (
           <button
             type="button"
             onClick={() => onSearchInputChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -415,7 +418,7 @@ export function ReportsTargetsToolbar({
             ) : (
               <Download className="size-4" aria-hidden />
             )}
-            Export
+            {t('actions.export')}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
@@ -424,7 +427,7 @@ export function ReportsTargetsToolbar({
               disabled={exportDisabled}
               onSelect={() => onExportCsv()}
             >
-              Export CSV
+              {t('actions.exportCsv')}
             </DropdownMenuItem>
           ) : null}
           {onExportExcel ? (
@@ -432,7 +435,7 @@ export function ReportsTargetsToolbar({
               disabled={exportDisabled}
               onSelect={() => onExportExcel()}
             >
-              Export Excel
+              {t('chrome.reports.exportExcel')}
             </DropdownMenuItem>
           ) : null}
           {onExportPdf ? (
@@ -440,7 +443,7 @@ export function ReportsTargetsToolbar({
               disabled={exportDisabled}
               onSelect={() => onExportPdf()}
             >
-              Export PDF
+              {t('actions.exportPdf')}
             </DropdownMenuItem>
           ) : null}
           {onExportTravel ? (
@@ -448,7 +451,7 @@ export function ReportsTargetsToolbar({
               disabled={travelExportLoading || filterProps.useAllTime}
               onSelect={() => onExportTravel()}
             >
-              Travel report (Excel)
+              {t('chrome.reports.travelReportExcel')}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -469,7 +472,7 @@ export function ReportsTargetsToolbar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         {hasMobileActions ? (
           <div className="flex min-w-0 items-center gap-2">
@@ -482,9 +485,9 @@ export function ReportsTargetsToolbar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-x-hidden overflow-y-auto p-4 sm:max-w-md sm:p-6">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Date range, customer categories, currency, location, and sort for the targets table.
+              {t('chrome.reports.targetsFiltersDescription')}
             </DialogDescription>
           </DialogHeader>
           <ReportsTargetsFilterControls layout="stack" {...filterProps} />

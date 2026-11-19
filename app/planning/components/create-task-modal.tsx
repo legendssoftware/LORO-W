@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -96,6 +97,7 @@ export function CreateTaskModal({
   onSuccess,
   initialValues,
 }: CreateTaskModalProps) {
+  const { t } = useTranslation('screens');
   const [form, setForm] = useState(defaultForm);
   const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false);
   const [repetitionDeadlinePickerOpen, setRepetitionDeadlinePickerOpen] =
@@ -327,47 +329,46 @@ export function CreateTaskModal({
           <DetailDialogCloseButton />
         </div>
         <DialogHeader className="pr-24">
-          <DialogTitle>Create task</DialogTitle>
+          <DialogTitle>{t('chrome.planning.createTask')}</DialogTitle>
           <DialogDescription>
-            Add a new task with title, description, notes, assignees, clients, subtasks,
-            and optional repetition or attachments.
+            {t('chrome.planning.createTaskDescription')}
           </DialogDescription>
         </DialogHeader>
         <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <DetailSectionHeading title="Basic info" icon={ClipboardList} />
+            <DetailSectionHeading title={t('chrome.planning.basicInfo')} icon={ClipboardList} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="create-task-title">Title *</Label>
+                <Label htmlFor="create-task-title">{t('forms.planning.title')}</Label>
                 <Input
                   id="create-task-title"
                   value={form.title ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="Task title"
+                  placeholder={t('forms.planning.titlePlaceholder')}
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="create-task-description">Description *</Label>
+                <Label htmlFor="create-task-description">{t('forms.planning.description')}</Label>
                 <Textarea
                   id="create-task-description"
                   value={form.description ?? ''}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, description: e.target.value }))
                   }
-                  placeholder="Task description"
+                  placeholder={t('forms.planning.descriptionPlaceholder')}
                   rows={4}
                   className="resize-y"
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="create-task-notes">Notes</Label>
+                <Label htmlFor="create-task-notes">{t('forms.planning.notes')}</Label>
                 <Textarea
                   id="create-task-notes"
                   value={form.comment ?? ''}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, comment: e.target.value }))
                   }
-                  placeholder="Optional notes"
+                  placeholder={t('forms.planning.notesPlaceholder')}
                   rows={3}
                   className="resize-none"
                 />
@@ -376,10 +377,10 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <DetailSectionHeading title="Schedule" icon={CalendarClock} />
+            <DetailSectionHeading title={t('chrome.planning.schedule')} icon={CalendarClock} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label>Task type</Label>
+                <Label>{t('forms.planning.taskType')}</Label>
                 <Select
                   value={form.taskType ?? 'OTHER'}
                   onValueChange={(v) => {
@@ -391,7 +392,7 @@ export function CreateTaskModal({
                   }}
                 >
                   <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t('forms.planning.typePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent className={MODAL_SELECT_CONTENT}>
                     {TASK_TYPE_OPTIONS.map((o) => (
@@ -407,7 +408,7 @@ export function CreateTaskModal({
               </div>
               {getTemplatesForTaskType(form.taskType ?? 'OTHER').length > 0 && (
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label htmlFor="task-template">Template</Label>
+                  <Label htmlFor="task-template">{t('forms.planning.template')}</Label>
                   <Select
                     value={selectedTemplateId}
                     onValueChange={(id) => {
@@ -422,7 +423,7 @@ export function CreateTaskModal({
                     }}
                   >
                     <SelectTrigger id="task-template" className={MODAL_SELECT_TRIGGER}>
-                      <SelectValue placeholder="Apply checklist for this task type" />
+                      <SelectValue placeholder={t('forms.planning.templatePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent className={MODAL_SELECT_CONTENT}>
                       {getTemplatesForTaskType(form.taskType ?? 'OTHER').map((t) => (
@@ -435,7 +436,7 @@ export function CreateTaskModal({
                 </div>
               )}
               <div className="grid gap-2">
-                <Label>Priority</Label>
+                <Label>{t('forms.planning.priority')}</Label>
                 <Select
                   value={form.priority ?? 'MEDIUM'}
                   onValueChange={(v) =>
@@ -446,7 +447,7 @@ export function CreateTaskModal({
                   }
                 >
                   <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder={t('forms.planning.priorityPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent className={MODAL_SELECT_CONTENT}>
                     {TASK_PRIORITY_OPTIONS.map((o) => (
@@ -461,7 +462,7 @@ export function CreateTaskModal({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Deadline *</Label>
+                <Label>{t('forms.planning.deadline')}</Label>
                 <Popover
                   open={deadlinePickerOpen}
                   onOpenChange={setDeadlinePickerOpen}
@@ -500,7 +501,7 @@ export function CreateTaskModal({
                 </Popover>
               </div>
               <div className="grid gap-2">
-                <Label>Repetition</Label>
+                <Label>{t('forms.planning.repetition')}</Label>
                 <Select
                   value={form.repetitionType ?? 'NONE'}
                   onValueChange={(v) =>
@@ -512,7 +513,7 @@ export function CreateTaskModal({
                   }
                 >
                   <SelectTrigger className={MODAL_SELECT_TRIGGER}>
-                    <SelectValue placeholder="Select repetition" />
+                    <SelectValue placeholder={t('forms.planning.repetitionPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent className={MODAL_SELECT_CONTENT}>
                     {REPETITION_TYPE_OPTIONS.map((o) => (
@@ -528,7 +529,7 @@ export function CreateTaskModal({
               </div>
               {(form.repetitionType ?? 'NONE') !== 'NONE' && (
                 <div className="grid gap-2">
-                  <Label>Repetition end date *</Label>
+                  <Label>{t('forms.planning.repetitionEnd')}</Label>
                   <Popover
                     open={repetitionDeadlinePickerOpen}
                     onOpenChange={setRepetitionDeadlinePickerOpen}
@@ -578,10 +579,10 @@ export function CreateTaskModal({
           </div>
           <Separator />
           <div>
-            <DetailSectionHeading title="People & clients" icon={Users} />
+            <DetailSectionHeading title={t('chrome.planning.peopleClients')} icon={Users} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label>Assignees</Label>
+                <Label>{t('forms.planning.assignees')}</Label>
                 <Popover
                   open={assigneesPopoverOpen}
                   onOpenChange={setAssigneesPopoverOpen}
@@ -612,7 +613,7 @@ export function CreateTaskModal({
                 </Popover>
               </div>
               <div className="grid gap-2">
-                <Label>Clients</Label>
+                <Label>{t('forms.planning.clients')}</Label>
                 <Popover
                   open={clientsPopoverOpen}
                   onOpenChange={setClientsPopoverOpen}
@@ -645,30 +646,30 @@ export function CreateTaskModal({
             <DetailSectionHeading title="Other" icon={FolderOpen} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="create-task-target">Target category</Label>
+                <Label htmlFor="create-task-target">{t('forms.planning.targetCategory')}</Label>
                 <Input
                   id="create-task-target"
                   value={form.targetCategory ?? ''}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, targetCategory: e.target.value }))
                   }
-                  placeholder="e.g. enterprise"
+                  placeholder={t('forms.planning.targetCategoryPlaceholder')}
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="create-task-attachments">Attachments (URLs)</Label>
+                <Label htmlFor="create-task-attachments">{t('forms.planning.attachments')}</Label>
                 <Input
                   id="create-task-attachments"
                   value={attachmentsInput}
                   onChange={(e) => setAttachmentsInput(e.target.value)}
-                  placeholder="Comma-separated URLs"
+                  placeholder={t('forms.planning.attachmentsPlaceholder')}
                 />
               </div>
             </div>
           </div>
           <Separator />
           <div>
-            <DetailSectionHeading title="Subtasks" icon={ListTodo} />
+            <DetailSectionHeading title={t('chrome.planning.subtasks')} icon={ListTodo} />
             <div className="flex items-center justify-end mb-2">
               <Button
                 type="button"
@@ -678,7 +679,7 @@ export function CreateTaskModal({
                 onClick={addSubtask}
               >
                 <Plus className="size-4" />
-                Add subtask
+                {t('chrome.planning.addSubtask')}
               </Button>
             </div>
             <div className="space-y-2">
@@ -689,14 +690,14 @@ export function CreateTaskModal({
                 >
                   <div className="flex-1 grid gap-2 sm:grid-cols-2">
                     <Input
-                      placeholder="Subtask title"
+                      placeholder={t('forms.planning.subtaskTitlePlaceholder')}
                       value={sub.title}
                       onChange={(e) =>
                         updateSubtask(idx, 'title', e.target.value)
                       }
                     />
                     <Input
-                      placeholder="Subtask description"
+                      placeholder={t('forms.planning.subtaskDescriptionPlaceholder')}
                       value={sub.description}
                       onChange={(e) =>
                         updateSubtask(idx, 'description', e.target.value)
@@ -709,7 +710,7 @@ export function CreateTaskModal({
                     size="icon"
                     className="shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => removeSubtask(idx)}
-                    aria-label="Remove subtask"
+                    aria-label={t('chrome.planning.removeSubtask')}
                   >
                     <XIcon className="size-4" />
                   </Button>
@@ -727,7 +728,7 @@ export function CreateTaskModal({
                 onClick={() => onOpenChange(false)}
                 disabled={createMutation.isPending}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -740,7 +741,7 @@ export function CreateTaskModal({
                 ) : (
                   <Plus className="size-4 shrink-0" />
                 )}
-                Create task
+                {t('chrome.planning.createTask')}
               </Button>
             </div>
           </DialogFooter>

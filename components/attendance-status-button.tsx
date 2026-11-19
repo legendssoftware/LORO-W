@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Car, Home, Laptop, MapPin, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,11 +19,12 @@ import {
 import { Loader2Icon } from '@/lib/icons';
 import type { AttCheckInContext, ClockInOptionKey } from '@/api/types/attendance';
 import {
+  CLOCK_IN_OPTION_DISPLAY_KEYS,
   isAtOfficeOnlyContext,
   isLocationContextUnavailable,
-  LOCATION_CONTEXT_UNAVAILABLE_MESSAGE,
+  LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY,
   OPTION_KEY_TO_LABEL,
-  OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK,
+  OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY,
   remoteOptionKeysFromContext,
 } from '@/lib/clock-in-options';
 import { cn } from '@/lib/utils';
@@ -40,7 +43,7 @@ export interface AttendanceStatusButtonProps {
   clockInContext?: AttCheckInContext | null;
   /** While fetching location + status for clock-in context */
   clockInContextLoading?: boolean;
-  /** Specific message when location context could not be loaded (permission, API, etc.). */
+  /** i18n key (`screens` namespace) for why location context could not be loaded (permission, API, etc.). */
   clockInContextError?: string | null;
   /** Retry fetching GET /att/status?lat=&lng= when location context is unavailable. */
   onRetryClockInContext?: () => void;
@@ -85,16 +88,19 @@ const soloStartShiftButtonClass =
   'min-h-[4.8rem] min-w-0 rounded-2xl border-0 px-8 py-[1.6rem] text-[1rem] font-semibold outline-none ring-0 sm:min-h-[5.6rem] sm:px-[2.4rem] sm:py-[1.8rem] sm:text-[1.2rem] md:min-h-[7.2rem] md:px-[3.2rem] md:py-8 md:text-[1.5rem] lg:min-h-[8rem] lg:px-16 lg:py-[2.4rem] lg:text-[1.8rem] focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0';
 
 function clockInModalDescription(
+  t: TFunction<'screens'>,
   ctx: AttCheckInContext | null | undefined,
   loading: boolean,
-  locationError?: string | null,
+  locationErrorKey?: string | null,
 ): string {
   if (isLocationContextUnavailable(ctx, loading)) {
-    return locationError?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
+    return t(locationErrorKey?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY);
   }
-  const raw = ctx?.outsideBranchRadiusMessage?.trim() || OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK;
+  // The server message is already localized by the API when present; otherwise use the fallback copy.
+  const raw =
+    ctx?.outsideBranchRadiusMessage?.trim() || t(OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY);
   const withPeriod = /[.!?]\s*$/.test(raw) ? raw : `${raw}.`;
-  return `${withPeriod} Pick the option that applies.`;
+  return `${withPeriod} ${t('dashboard.attendance.pickOptionApplies')}`;
 }
 
 const iconStroke = 1.25 as const;
@@ -138,6 +144,7 @@ export function AttendanceStatusButton({
   breakStartTime = null,
   orgTimezone = null,
 }: AttendanceStatusButtonProps) {
+  const { t } = useTranslation('screens');
   const [currentTimer, setCurrentTimer] = useState('00:00:00');
   const [remoteModalOpen, setRemoteModalOpen] = useState(false);
 
@@ -179,7 +186,8 @@ export function AttendanceStatusButton({
 
   const renderRemoteOptionButton = (key: ClockInOptionKey, opts?: { stacked?: boolean }) => {
     const stacked = opts?.stacked ?? false;
-    const label = OPTION_KEY_TO_LABEL[key];
+    // API note payload stays English; only the rendered text is translated.
+    const apiLabel = OPTION_KEY_TO_LABEL[key];
     return (
       <Button
         key={key}
@@ -192,10 +200,10 @@ export function AttendanceStatusButton({
             ? remoteClockInModalStackedClass
             : cn(remoteClockInOptionClass, 'w-full md:flex-1 md:min-w-0'),
         )}
-        onClick={() => selectMode(label)}
+        onClick={() => selectMode(apiLabel)}
       >
         {startOptionIcon(key, !stacked)}
-        {label}
+        {t(CLOCK_IN_OPTION_DISPLAY_KEYS[key])}
       </Button>
     );
   };
@@ -223,7 +231,9 @@ export function AttendanceStatusButton({
         {!checkedIn && (
           <div className="flex w-full flex-col gap-3">
             <span className="text-center text-[0.8rem] font-medium uppercase text-foreground sm:text-[0.9rem] md:text-[1rem]">
-              {onClockInWithMode ? 'Start your shift' : 'Ready to start'}
+              {onClockInWithMode
+                ? t('dashboard.attendance.startYourShift')
+                : t('dashboard.attendance.readyToStart')}
             </span>
             {loading || clockInContextLoading ? (
               <div className="flex justify-center py-6">
@@ -246,16 +256,16 @@ export function AttendanceStatusButton({
                       strokeWidth={iconStroke}
                       aria-hidden
                     />
-                    Start Shift
+                    {t('dashboard.attendance.startShift')}
                   </Button>
                 </div>
               ) : (
                 <>
                   <p className="text-center text-[0.7rem] text-muted-foreground">
                     {locationUnavailable
-                      ? (clockInContextError?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE)
+                      ? t(clockInContextError?.trim() || LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY)
                       : clockInContext?.outsideBranchRadiusMessage?.trim() ||
-                        OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK}
+                        t(OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY)}
                   </p>
                   {locationUnavailable && onRetryClockInContext ? (
                     <button
@@ -263,7 +273,7 @@ export function AttendanceStatusButton({
                       className="text-center text-xs text-primary underline"
                       onClick={onRetryClockInContext}
                     >
-                      Retry location
+                      {t('dashboard.attendance.retryLocation')}
                     </button>
                   ) : null}
                   {/* md+: inline options */}
@@ -282,16 +292,16 @@ export function AttendanceStatusButton({
                       onClick={() => setRemoteModalOpen(true)}
                     >
                       <Play className="size-5 text-white sm:size-6" strokeWidth={iconStroke} aria-hidden />
-                      Choose how you&apos;re starting
+                      {t('dashboard.attendance.chooseHowStarting')}
                     </Button>
                     <Dialog open={remoteModalOpen} onOpenChange={setRemoteModalOpen}>
                       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
                         <DialogHeader>
                           <DialogTitle className="text-center text-base font-semibold">
-                            Start your shift
+                            {t('dashboard.attendance.startYourShift')}
                           </DialogTitle>
                           <DialogDescription className="text-center text-xs text-muted-foreground">
-                            {clockInModalDescription(clockInContext, clockInContextLoading, clockInContextError)}
+                            {clockInModalDescription(t, clockInContext, clockInContextLoading, clockInContextError)}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-2 pt-2">
@@ -311,7 +321,7 @@ export function AttendanceStatusButton({
                   onClick={onCheckIn}
                 >
                   <Play className="size-5 text-white sm:size-6" strokeWidth={iconStroke} aria-hidden />
-                  Start Shift
+                  {t('dashboard.attendance.startShift')}
                 </Button>
               </div>
             ) : null}
@@ -334,7 +344,7 @@ export function AttendanceStatusButton({
                 className={`w-full ${actionButtonClass} bg-amber-500 text-white hover:bg-amber-600`}
                 onClick={() => onEndBreak?.()}
               >
-                End My Break
+                {t('dashboard.attendance.endMyBreak')}
               </Button>
             )}
             {showBreakCounter && (
@@ -342,7 +352,9 @@ export function AttendanceStatusButton({
                 <span className="text-2xl font-semibold tabular-nums text-foreground md:text-3xl">
                   {currentTimer}
                 </span>
-                <span className="text-xs uppercase text-muted-foreground">On A Break</span>
+                <span className="text-xs uppercase text-muted-foreground">
+                  {t('dashboard.attendance.onABreak')}
+                </span>
               </div>
             )}
           </div>
@@ -365,7 +377,7 @@ export function AttendanceStatusButton({
                   className={`w-full flex-1 ${actionButtonClass} min-w-0 basis-full bg-amber-500 text-white hover:bg-amber-600 sm:basis-0`}
                   onClick={() => onStartBreak?.()}
                 >
-                  Take A Break
+                  {t('dashboard.attendance.takeABreak')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -373,12 +385,12 @@ export function AttendanceStatusButton({
                   className={`w-full flex-1 ${actionButtonClass} min-w-0 basis-full bg-destructive text-white hover:bg-destructive/90 sm:basis-0`}
                   onClick={onCheckOut}
                 >
-                  End My Shift
+                  {t('dashboard.attendance.endMyShift')}
                 </Button>
               </div>
             )}
             <span className="text-center text-xs uppercase text-muted-foreground">
-              Currently Working
+              {t('dashboard.attendance.currentlyWorking')}
             </span>
           </div>
         )}

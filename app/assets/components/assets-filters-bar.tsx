@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AssetCategory } from '@/api/types/asset';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -67,6 +68,7 @@ export function AssetsFiltersBar({
   isUserSearchLoading: boolean;
   actions?: ReactNode;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
       <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -87,21 +89,20 @@ export function AssetsFiltersBar({
             searchQuery={userSearchQuery}
             onSearchQueryChange={onUserSearchQueryChange}
             isSearchLoading={isUserSearchLoading}
-            allOptionLabel="All users"
           />
           {canManage ? (
             <Select value={scope} onValueChange={(value) => onScopeChange(value as AssetScope)}>
-              <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label="Asset scope">
+              <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label={t('pages.assets.scopeAria')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="mine">
                   <User className="size-4 text-muted-foreground" />
-                  My assets
+                  {t('pages.assets.myAssets')}
                 </SelectItem>
                 <SelectItem value="org">
                   <Building2 className="size-4 text-muted-foreground" />
-                  Organisation
+                  {t('pages.assets.organisation')}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -110,13 +111,13 @@ export function AssetsFiltersBar({
             value={category}
             onValueChange={(value) => onCategoryChange(value as AssetCategory | 'all')}
           >
-            <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label="Asset category">
+            <SelectTrigger className="h-9 w-48 shrink-0 border-border bg-background" aria-label={t('pages.assets.categoryAria')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
                 <Boxes className="size-4 text-muted-foreground" />
-                All categories
+                {t('pages.assets.allCategories')}
               </SelectItem>
               {ASSET_CATEGORY_OPTIONS.map((option) => {
                 const Icon = assetCategoryIcon(option.value);
@@ -135,9 +136,9 @@ export function AssetsFiltersBar({
         <Input
           value={searchInput}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search name, serial, owner"
+          placeholder={t('pages.assets.searchPlaceholder')}
           className={cn(filterToolbarSearchInputClassName, 'w-56 max-w-[16rem]')}
-          aria-label="Search assets"
+          aria-label={t('pages.assets.searchAria')}
         />
         {actions}
       </div>

@@ -15,6 +15,7 @@ import {
 } from '@/app/reports/lib/reports-dashboard-chart-helpers';
 import { getProgressColorClasses } from '@/app/staff/components/report-progress-bar';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ReportsSalesTargetRadialChartProps {
   target: number;
@@ -31,6 +32,7 @@ export function ReportsSalesTargetRadialChart({
   achieved,
   className,
 }: ReportsSalesTargetRadialChartProps) {
+  const { t } = useTranslation('screens');
   const safeTarget = Math.max(0, Math.round(target));
   const safeAchieved = Math.max(0, Math.round(achieved));
   const remaining = Math.max(0, safeTarget - safeAchieved);
@@ -43,7 +45,7 @@ export function ReportsSalesTargetRadialChart({
 
   if (safeTarget <= 0 && safeAchieved <= 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>
     );
   }
 

@@ -60,7 +60,6 @@ describe('activityCountsFromEngagement', () => {
   it('keeps All activity equal to the channel columns plus physical visits', () => {
     const counts = activityCountsFromEngagement({
       callCount: 7,
-      countableCallCount: 4,
       visitCount: 2,
       telephoneCount: 3,
       whatsappCount: 1,

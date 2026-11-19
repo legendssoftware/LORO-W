@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { CallPartyLabel } from '@/app/calls/components/call-party-label';
 import type { MatchedCallParty } from '@/lib/utils/call-party-match';
+import { useTranslation } from 'react-i18next';
 
 interface ReportsCoachingRecommendationDetailDialogProps {
   recommendation: string;
@@ -24,6 +25,7 @@ export function ReportsCoachingRecommendationDetailDialog({
   agentHref,
   previewMaxLength = 80,
 }: ReportsCoachingRecommendationDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const preview =
     recommendation.length > previewMaxLength
       ? `${recommendation.slice(0, previewMaxLength - 1)}…`
@@ -41,11 +43,11 @@ export function ReportsCoachingRecommendationDetailDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Coaching recommendation</DialogTitle>
+          <DialogTitle>{t('chrome.reports.cq.coachingRecommendation')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Agent</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('chrome.reports.cq.agent')}</p>
             {agentHref ? (
               <Link href={agentHref} className="inline-flex hover:underline">
                 <CallPartyLabel party={agentParty} />
@@ -56,7 +58,7 @@ export function ReportsCoachingRecommendationDetailDialog({
           </div>
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Recommendation
+              {t('chrome.reports.cq.recommendation')}
             </p>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{recommendation}</p>
           </div>

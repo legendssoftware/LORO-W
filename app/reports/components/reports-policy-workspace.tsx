@@ -27,11 +27,13 @@ import {
 import { ReportsPolicySegmentRadial } from './reports-policy-segment-radial';
 import { REPORTS_CHART_AMBER, REPORTS_CHART_GREEN, REPORTS_CHART_RED } from '../lib/reports-dashboard-chart-helpers';
 import { PolicyAgreementForm } from './policy-agreement-form';
+import { useTranslation } from 'react-i18next';
 
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
 
 /** Employee acknowledgement and optional participation signature. */
 export function PolicyAcknowledgementCard() {
+  const { t } = useTranslation('screens');
   const acknowledgement = useMyAcknowledgement();
   const agreement = useMyAgreement();
   const acknowledge = useAcknowledgePolicy();
@@ -50,7 +52,7 @@ export function PolicyAcknowledgementCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Policy acknowledgement</CardTitle>
+        <CardTitle className="text-base">{t('chrome.reports.pw.acknowledgement')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p className="text-muted-foreground">
@@ -85,7 +87,7 @@ export function PolicyAcknowledgementCard() {
                 })
               }
             >
-              Acknowledge the policy
+              {t('chrome.reports.pw.acknowledge')}
             </Button>
           </>
         )}
@@ -107,6 +109,7 @@ export function PolicyAcknowledgementCard() {
 
 /** Pending interruption reports a manager can approve or reject. */
 export function PolicyExceptionsCard({ enabled }: { enabled: boolean }) {
+  const { t } = useTranslation('screens');
   const exceptions = usePolicyExceptions(enabled);
   const decide = useDecidePolicyException();
   const items = exceptions.data ?? [];
@@ -114,7 +117,7 @@ export function PolicyExceptionsCard({ enabled }: { enabled: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Pending interruptions</CardTitle>
+        <CardTitle className="text-base">{t('chrome.reports.pw.pendingInterruptions')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {items.map((item) => (
@@ -133,7 +136,7 @@ export function PolicyExceptionsCard({ enabled }: { enabled: boolean }) {
                 disabled={decide.isPending}
                 onClick={() => decide.mutate({ uid: item.uid, outcome: 'approve', decision: 'consider_in_review' })}
               >
-                Approve
+                {t('actions.approve')}
               </Button>
               <Button
                 type="button"
@@ -142,7 +145,7 @@ export function PolicyExceptionsCard({ enabled }: { enabled: boolean }) {
                 disabled={decide.isPending}
                 onClick={() => decide.mutate({ uid: item.uid, outcome: 'reject' })}
               >
-                Reject
+                {t('actions.reject')}
               </Button>
             </div>
           </div>
@@ -154,6 +157,7 @@ export function PolicyExceptionsCard({ enabled }: { enabled: boolean }) {
 
 /** Customer locations from verified visits. */
 export function PolicyCustomerMap({ enabled }: { enabled: boolean }) {
+  const { t } = useTranslation('screens');
   const map = useCustomerMap(enabled);
   const points = (map.data?.points ?? []).filter((point) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude));
   if (!enabled) return null;
@@ -161,11 +165,11 @@ export function PolicyCustomerMap({ enabled }: { enabled: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Customer map</CardTitle>
+        <CardTitle className="text-base">{t('chrome.reports.pw.customerMap')}</CardTitle>
       </CardHeader>
       <CardContent>
         {points.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No customer locations yet.</p>
+          <p className="text-sm text-muted-foreground">{t('chrome.reports.pw.noCustomerLocations')}</p>
         ) : (
           <div className="h-80 overflow-hidden rounded-md border">
             <MapView center={center} zoom={6}>
@@ -188,6 +192,7 @@ export function PolicyCustomerMap({ enabled }: { enabled: boolean }) {
 
 /** Shelf observations rolled up by brand. */
 export function PolicyStockIntel({ enabled }: { enabled: boolean }) {
+  const { t } = useTranslation('screens');
   const stock = useMarketIntelStock(enabled);
   if (!enabled) return null;
   const totals = stock.data?.totals;
@@ -195,7 +200,7 @@ export function PolicyStockIntel({ enabled }: { enabled: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Customer stock</CardTitle>
+        <CardTitle className="text-base">{t('chrome.reports.pw.customerStock')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!totals || totals.observations === 0 ? (
@@ -240,6 +245,7 @@ export function PolicyStockIntel({ enabled }: { enabled: boolean }) {
 
 /** Weekly reviews and the case that can follow them. */
 export function PolicyReviewsPanel({ enabled, canManage }: { enabled: boolean; canManage: boolean }) {
+  const { t } = useTranslation('screens');
   const reviews = useWeeklyReviews(enabled);
   const cases = usePerformanceCases(enabled && canManage);
   const createReview = useCreateWeeklyReview();
@@ -256,7 +262,7 @@ export function PolicyReviewsPanel({ enabled, canManage }: { enabled: boolean; c
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Weekly performance reviews</CardTitle>
+        <CardTitle className="text-base">{t('chrome.reports.pw.weeklyReviews')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <p className="text-muted-foreground">
@@ -271,7 +277,7 @@ export function PolicyReviewsPanel({ enabled, canManage }: { enabled: boolean; c
               disabled={!clerkId || !weekStart || createReview.isPending}
               onClick={() => createReview.mutate({ userClerkUserId: clerkId.trim(), weekStart })}
             >
-              Start review
+              {t('chrome.reports.pw.startReview')}
             </Button>
           </div>
         ) : null}
@@ -295,7 +301,7 @@ export function PolicyReviewsPanel({ enabled, canManage }: { enabled: boolean; c
                 />
                 <PolicyAgreementForm clerkUserId={review.userClerkUserId} />
                 <Button type="button" size="sm" variant="outline" onClick={() => openCase.mutate({ userClerkUserId: review.userClerkUserId, reviewUid: review.uid })}>
-                  Open performance case
+                  {t('chrome.reports.pw.openCase')}
                 </Button>
               </>
             ) : null}

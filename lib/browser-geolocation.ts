@@ -59,17 +59,17 @@ export function getBrowserPosition(
   });
 }
 
-/** User-facing copy when browser geolocation fails before calling the API. */
-export function geolocationFailureMessage(reason: GeolocationFailureReason): string {
+/** i18n key (`screens` namespace) for user-facing copy when browser geolocation fails before calling the API. */
+export function geolocationFailureMessageKey(reason: GeolocationFailureReason): string {
   switch (reason) {
     case 'permission_denied':
-      return 'Location access is blocked. Allow location for this site in your browser settings, then retry.';
+      return 'dashboard.locationContext.geoPermissionBlocked';
     case 'timeout':
-      return 'Location timed out. Check that location services are on, then retry.';
+      return 'dashboard.locationContext.geoTimeout';
     case 'unsupported':
-      return 'This browser does not support location. Choose how you are starting your shift, or use another browser.';
+      return 'dashboard.locationContext.geoUnsupported';
     case 'position_unavailable':
-      return 'Could not read your location. Check location services, then retry.';
+      return 'dashboard.locationContext.geoPositionUnavailable';
     default: {
       const _exhaustive: never = reason;
       return _exhaustive;

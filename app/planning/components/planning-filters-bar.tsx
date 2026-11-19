@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DateRange } from 'react-day-picker';
 import { CalendarDays, CalendarIcon, Clock, Filter, LayoutGrid } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
@@ -47,6 +48,25 @@ import {
 } from '@/lib/task-form-utils';
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
+
+const TASK_STATUS_LABEL_KEYS: Record<(typeof TASK_STATUS_OPTIONS_WITH_ALL)[number]['value'], string> = {
+  all: 'actions.allStatuses',
+  PENDING: 'chrome.planning.status.pending',
+  IN_PROGRESS: 'chrome.planning.status.inProgress',
+  COMPLETED: 'chrome.planning.status.completed',
+  CANCELLED: 'chrome.planning.status.cancelled',
+  OVERDUE: 'chrome.planning.status.overdue',
+  POSTPONED: 'chrome.planning.status.postponed',
+  MISSED: 'chrome.planning.status.missed',
+};
+
+const TASK_PRIORITY_LABEL_KEYS: Record<(typeof TASK_PRIORITY_OPTIONS_WITH_ALL)[number]['value'], string> = {
+  all: 'chrome.planning.allPriorities',
+  LOW: 'chrome.planning.priority.low',
+  MEDIUM: 'chrome.planning.priority.medium',
+  HIGH: 'chrome.planning.priority.high',
+  URGENT: 'chrome.planning.priority.urgent',
+};
 
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
@@ -108,6 +128,7 @@ export function PlanningFilterControls({
   onUserSearchQueryChange,
   isUserSearchLoading = false,
 }: PlanningFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const rangeBtnWidth = row
     ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
@@ -154,16 +175,16 @@ export function PlanningFilterControls({
   }
 
   const rangeLabel = useAllTime
-    ? 'All time'
+    ? t('actions.allTime')
     : formatUtcYmd(startDate) === formatUtcYmd(endDate)
       ? formatUtcCalendarLabel(startDate)
       : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
 
   const handleShortcutToday = React.useCallback(() => {
     skipApplyOnCloseRef.current = true;
-    const t = utcToday();
+    const today = utcToday();
     onSetUseAllTime(false);
-    onRangeChange(t, t);
+    onRangeChange(today, today);
     onDateRangePopoverOpenChange(false);
   }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
 
@@ -183,27 +204,33 @@ export function PlanningFilterControls({
     onDateRangePopoverOpenChange(false);
   }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
 
-  const statusOptions = TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    icon: (
-      <opt.icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
-    ),
-    searchExtra: opt.label,
-  }));
+  const statusOptions = TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => {
+    const label = t(TASK_STATUS_LABEL_KEYS[opt.value]);
+    return {
+      value: opt.value,
+      label,
+      icon: (
+        <opt.icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
+      ),
+      searchExtra: `${label} ${opt.label}`,
+    };
+  });
 
-  const priorityOptions = TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    icon: <opt.icon className="size-4 shrink-0" />,
-    searchExtra: opt.label,
-  }));
+  const priorityOptions = TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => {
+    const label = t(TASK_PRIORITY_LABEL_KEYS[opt.value]);
+    return {
+      value: opt.value,
+      label,
+      icon: <opt.icon className="size-4 shrink-0" />,
+      searchExtra: `${label} ${opt.label}`,
+    };
+  });
 
   const deadlineOptions = React.useMemo(
     () => [
       {
         value: 'all',
-        label: 'All deadlines',
+        label: t('chrome.planning.allDeadlines'),
         icon: (
           <Clock className="size-4 shrink-0 text-muted-foreground" />
         ),
@@ -211,14 +238,14 @@ export function PlanningFilterControls({
       },
       {
         value: 'overdue',
-        label: 'Overdue only',
+        label: t('chrome.planning.overdueOnly'),
         icon: (
           <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
         ),
         searchExtra: 'overdue late',
       },
     ],
-    []
+    [t]
   );
 
   const clientOptions = React.useMemo(
@@ -263,10 +290,10 @@ export function PlanningFilterControls({
                     onDateRangePopoverOpenChange(false);
                   }}
                 >
-                  All time
+                  {t('actions.allTime')}
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  or pick a UTC range below
+                  {t('actions.pickUtcRange')}
                 </span>
               </div>
             </div>
@@ -303,7 +330,7 @@ export function PlanningFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutToday}
                 >
-                  Today (UTC)
+                  {t('actions.todayUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -312,7 +339,7 @@ export function PlanningFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutThisMonth}
                 >
-                  This month (UTC)
+                  {t('actions.thisMonthUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -321,7 +348,7 @@ export function PlanningFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutWholeMonth}
                 >
-                  Whole month (UTC)
+                  {t('actions.wholeMonthUtc')}
                 </Button>
               </div>
               <Button
@@ -336,7 +363,7 @@ export function PlanningFilterControls({
                 )}
                 onClick={() => handlePopoverOpenChange(false)}
               >
-                Done
+                {t('actions.done')}
               </Button>
             </div>
           </PopoverContent>
@@ -356,7 +383,7 @@ export function PlanningFilterControls({
               }
             }}
             className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset to default range"
+            aria-label={t('actions.resetDefaultRange')}
           >
             <XIcon className="size-4 text-red-600" />
           </span>
@@ -368,9 +395,9 @@ export function PlanningFilterControls({
         onValueChange={onSelectedStatusChange}
         options={statusOptions}
         triggerClassName={categoricalWidth}
-        placeholderLabelWhenAll="All statuses"
-        searchPlaceholder="Search statuses…"
-        emptyMessage="No status found."
+        placeholderLabelWhenAll={t('actions.allStatuses')}
+        searchPlaceholder={t('chrome.planning.searchStatuses')}
+        emptyMessage={t('actions.noStatusFound')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0 text-muted-foreground" />}
       />
 
@@ -379,9 +406,9 @@ export function PlanningFilterControls({
         onValueChange={onSelectedPriorityChange}
         options={priorityOptions}
         triggerClassName={categoricalWidth}
-        placeholderLabelWhenAll="All priorities"
-        searchPlaceholder="Search priorities…"
-        emptyMessage="No priority found."
+        placeholderLabelWhenAll={t('chrome.planning.allPriorities')}
+        searchPlaceholder={t('chrome.planning.searchPriorities')}
+        emptyMessage={t('chrome.planning.noPriorityFound')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0 text-muted-foreground" />}
       />
 
@@ -390,9 +417,9 @@ export function PlanningFilterControls({
         onValueChange={(v) => onFilterOverdueChange(v === 'overdue')}
         options={deadlineOptions}
         triggerClassName={categoricalWidth}
-        placeholderLabelWhenAll="All deadlines"
-        searchPlaceholder="Search deadlines…"
-        emptyMessage="No option found."
+        placeholderLabelWhenAll={t('chrome.planning.allDeadlines')}
+        searchPlaceholder={t('chrome.planning.searchDeadlines')}
+        emptyMessage={t('chrome.planning.noOptionFound')}
         triggerIcon={<CalendarDays className="size-4 shrink-0 text-muted-foreground" />}
       />
 
@@ -401,9 +428,9 @@ export function PlanningFilterControls({
         onValueChange={(v) => onSelectedClientIdChange(v === 'all' ? '' : v)}
         options={clientOptions}
         triggerClassName={categoricalWidth}
-        placeholderLabelWhenAll="All clients"
-        searchPlaceholder="Search clients…"
-        emptyMessage="No client found."
+        placeholderLabelWhenAll={t('chrome.planning.allClients')}
+        searchPlaceholder={t('chrome.planning.searchClients')}
+        emptyMessage={t('chrome.planning.noClientFound')}
         triggerIcon={<StoreIcon className="size-4 shrink-0 text-muted-foreground" />}
       />
 
@@ -415,8 +442,6 @@ export function PlanningFilterControls({
           onSelectedAssigneeIdChange(uid === 'all' ? '' : uid)
         }
         triggerClassName={userWidth}
-        searchPlaceholder="Search users…"
-        allOptionLabel="All users"
         searchQuery={userSearchQuery}
         onSearchQueryChange={onUserSearchQueryChange}
         isSearchLoading={isUserSearchLoading}
@@ -438,6 +463,7 @@ export function PlanningFiltersBar({
   actions,
   ...filterProps
 }: PlanningFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -454,7 +480,7 @@ export function PlanningFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
-          placeholder="Search tasks…"
+          placeholder={t('forms.planning.searchTasks')}
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
@@ -464,7 +490,7 @@ export function PlanningFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -483,7 +509,7 @@ export function PlanningFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
@@ -494,9 +520,9 @@ export function PlanningFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Date range, status, priority, deadlines, clients, and users.
+              {t('chrome.planning.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <PlanningFilterControls {...filterProps} layout="stack" />

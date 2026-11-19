@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,7 +41,7 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { COMPETITOR_MODAL_CONTENT_CLASS } from './competitor-dialog-shared';
 import { COMPETITOR_STATUS_VALUES } from '@/lib/competitor-filter-utils';
 import { cn } from '@/lib/utils';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 
 const geofenceValues = ['none', 'notify', 'alert', 'restricted'] as const;
 
@@ -219,6 +220,8 @@ export function CompetitorFormDialog({
   mode: 'create' | 'edit';
   competitorId: number | null;
 }) {
+  const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const createMutation = useCreateCompetitorMutation();
   const updateMutation = useUpdateCompetitorMutation();
   const { data: competitorDetail, isLoading: detailLoading } = useCompetitor(
@@ -266,7 +269,7 @@ export function CompetitorFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(COMPETITOR_MODAL_CONTENT_CLASS)}>
         <DialogHeader className="shrink-0 space-y-1 px-6 pt-6 pb-2 pr-12">
-          <DialogTitle>{mode === 'create' ? 'Add competitor' : 'Edit competitor'}</DialogTitle>
+          <DialogTitle>{mode === 'create' ? t('chrome.competitors.add') : t('chrome.competitors.edit')}</DialogTitle>
         </DialogHeader>
         {showSpinner ? (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-12">
@@ -285,9 +288,9 @@ export function CompetitorFormDialog({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Competitor name</FormLabel>
+                        <FormLabel>{t('forms.competitors.name')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g. BuildIt" className="border-border bg-background" />
+                          <Input {...field} placeholder={t('forms.competitors.namePlaceholder')} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -299,9 +302,9 @@ export function CompetitorFormDialog({
                       name="contactEmail"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Contact email (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.contactEmail')}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder="e.g. info@competitor.co.za" className="border-border bg-background" />
+                            <Input {...field} type="email" placeholder={t('forms.competitors.contactEmailPlaceholder')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -312,9 +315,9 @@ export function CompetitorFormDialog({
                       name="contactPhone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Contact phone (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.contactPhone')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'landline')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -326,9 +329,9 @@ export function CompetitorFormDialog({
                     name="website"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website (optional)</FormLabel>
+                        <FormLabel>{t('forms.competitors.website')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="border-border bg-background" />
+                          <Input {...field} placeholder={t('forms.competitors.urlPlaceholder')} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -340,9 +343,9 @@ export function CompetitorFormDialog({
                       name="industry"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Industry (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.industry')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. Hardware retail" className="border-border bg-background" />
+                            <Input {...field} placeholder={t('forms.competitors.industryPlaceholder')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -353,11 +356,11 @@ export function CompetitorFormDialog({
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Status</FormLabel>
+                          <FormLabel>{t('forms.competitors.status')}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
                               <SelectTrigger className="border-border bg-background">
-                                <SelectValue placeholder="Status" />
+                                <SelectValue placeholder={t('forms.competitors.status')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -379,11 +382,11 @@ export function CompetitorFormDialog({
                       name="threatLevelStr"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Threat level (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.threatLevel')}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
                               <SelectTrigger className="border-border bg-background">
-                                <SelectValue placeholder="Not set" />
+                                <SelectValue placeholder={t('forms.competitors.notSet')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -405,7 +408,7 @@ export function CompetitorFormDialog({
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">Direct competitor</FormLabel>
+                            <FormLabel className="text-base">{t('forms.competitors.directCompetitor')}</FormLabel>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -419,12 +422,12 @@ export function CompetitorFormDialog({
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (optional)</FormLabel>
+                        <FormLabel>{t('forms.competitors.description')}</FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
                             rows={3}
-                            placeholder="Brief notes about this competitor"
+                            placeholder={t('forms.competitors.descriptionPlaceholder')}
                             className="min-h-[72px] resize-y border-border bg-background"
                           />
                         </FormControl>
@@ -438,9 +441,9 @@ export function CompetitorFormDialog({
                       name="latitude"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Latitude (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.latitude')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. -26.2041" className="border-border bg-background" />
+                            <Input {...field} placeholder={t('forms.competitors.latitudePlaceholder')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -451,9 +454,9 @@ export function CompetitorFormDialog({
                       name="longitude"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Longitude (optional)</FormLabel>
+                          <FormLabel>{t('forms.competitors.longitude')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. 28.0473" className="border-border bg-background" />
+                            <Input {...field} placeholder={t('forms.competitors.longitudePlaceholder')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -465,9 +468,9 @@ export function CompetitorFormDialog({
                     name="logoUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Logo URL (optional)</FormLabel>
+                        <FormLabel>{t('forms.competitors.logoUrl')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="https://…" className="border-border bg-background" />
+                          <Input {...field} placeholder={t('forms.competitors.urlPlaceholder')} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -479,7 +482,7 @@ export function CompetitorFormDialog({
                     name="enableGeofence"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
-                        <FormLabel className="text-base">Enable geofence</FormLabel>
+                        <FormLabel className="text-base">{t('forms.competitors.enableGeofence')}</FormLabel>
                         <FormControl>
                           <Switch checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
@@ -492,7 +495,7 @@ export function CompetitorFormDialog({
                       name="geofenceType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Geofence type</FormLabel>
+                          <FormLabel>{t('forms.competitors.geofenceType')}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
                               <SelectTrigger className="border-border bg-background">
@@ -516,9 +519,9 @@ export function CompetitorFormDialog({
                       name="geofenceRadiusStr"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Radius (m)</FormLabel>
+                          <FormLabel>{t('forms.competitors.radius')}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={100} max={5000} placeholder="e.g. 500" className="border-border bg-background" />
+                            <Input {...field} type="number" min={100} max={5000} placeholder={t('forms.competitors.radiusPlaceholder')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -531,9 +534,9 @@ export function CompetitorFormDialog({
                     name="address.street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street</FormLabel>
+                        <FormLabel>{t('forms.competitors.street')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.street} className="border-border bg-background" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'street')} className="border-border bg-background" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -545,9 +548,9 @@ export function CompetitorFormDialog({
                       name="address.suburb"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Suburb</FormLabel>
+                          <FormLabel>{t('forms.competitors.suburb')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'suburb')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -558,9 +561,9 @@ export function CompetitorFormDialog({
                       name="address.city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>{t('forms.competitors.city')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.city} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'city')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -571,9 +574,9 @@ export function CompetitorFormDialog({
                       name="address.state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Province</FormLabel>
+                          <FormLabel>{t('forms.competitors.province')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.province} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'province')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -584,9 +587,9 @@ export function CompetitorFormDialog({
                       name="address.country"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Country</FormLabel>
+                          <FormLabel>{t('forms.competitors.country')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.country} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'country')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -597,9 +600,9 @@ export function CompetitorFormDialog({
                       name="address.postalCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Postal code</FormLabel>
+                          <FormLabel>{t('forms.competitors.postalCode')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.postalCode} className="border-border bg-background" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'postalCode')} className="border-border bg-background" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

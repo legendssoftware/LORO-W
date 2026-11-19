@@ -191,5 +191,230 @@
       "fieldSales": "field sales",
       "suffix": " modules for a complete outside-sales stack."
     }
+  },
+  "header": {
+    "product": "Product",
+    "solutions": "Solutions",
+    "careers": "Careers",
+    "research": "Research",
+    "myAccount": "My Account",
+    "demoCall": "DEMO CALL",
+    "connecting": "CONNECTING...",
+    "endCall": "END CALL",
+    "retryCall": "RETRY CALL",
+    "getStarted": "Get Started",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "footer": {
+    "tagline": "Field sales software for South Africa—visits, routes, and pipeline.",
+    "taglineShort": "Field sales software for South Africa.",
+    "rights": "All rights reserved.",
+    "company": "Company",
+    "about": "About",
+    "customers": "Customers",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "privacyPolicy": "Privacy Policy",
+    "privacy": "Privacy",
+    "solutions": "Solutions",
+    "fieldSales": "Field sales",
+    "visitTracking": "Visit tracking",
+    "routePlanning": "Route planning",
+    "pipeline": "Pipeline",
+    "competitorIntel": "Competitor intel",
+    "integrations": "Integrations",
+    "compare": "Compare",
+    "vsSkynamo": "vs Skynamo",
+    "vsRepsly": "vs Repsly",
+    "vsZoho": "vs Zoho CRM",
+    "getStarted": "Get started",
+    "signIn": "Sign in"
+  },
+  "shell": {
+    "navLabel": "Marketing",
+    "cta": {
+      "title": "Ready for field sales in one platform?",
+      "body": "Sign up or try the Android app—built for South African B2B teams.",
+      "backHome": "Back to home"
+    }
+  },
+  "landing": {
+    "headline": "Field sales that scales.",
+    "headlineItalic": "Visits, routes, pipeline.",
+    "subheadline": "Plan routes, prove visits, and grow pipeline in one platform—built for South African B2B teams with ERP-ready orders and live maps.",
+    "community": "Join LORO Community with 90+ members",
+    "tryAndroidApp": "Try Our Android App",
+    "myAccount": "My account",
+    "liveSync": "Live sync",
+    "statsTitle": "Built for scale.",
+    "statsTitleItalic": "Trusted by real teams.",
+    "stats": {
+      "businesses": {
+        "label": "Businesses",
+        "sub": "on the platform"
+      },
+      "partners": {
+        "label": "Partners",
+        "sub": "collaborating"
+      },
+      "fieldUsers": {
+        "label": "Field users",
+        "sub": "active daily"
+      },
+      "spaces": {
+        "label": "Spaces",
+        "sub": "enhanced"
+      }
+    },
+    "techTitle": "Technology That Works in Harmony",
+    "techBody": "Built to simplify daily operations through intelligent connected systems.",
+    "liveSalesDashboard": "Live Sales | Dashboard",
+    "quotesOrders": "Quotes & Orders",
+    "activeCount": "23 active",
+    "featuresTitle": "Powerful Features,",
+    "featuresTitleItalic": "Thoughtfully Designed",
+    "featuresBody": "Everything you need for comfort, clarity, and efficiency—in one place.",
+    "features": {
+      "smartLead": {
+        "title": "Smart Lead Management",
+        "desc": "Capture, qualify, and convert leads with AI-powered scoring. Prioritise the best opportunities and never let a hot lead go cold. Your pipeline stays full and your team stays focused."
+      },
+      "pipelineByStage": {
+        "title": "Pipeline by Stage",
+        "desc": "A visual pipeline with drag-and-drop and full deal tracking. Move opportunities through stages at a glance and see exactly where every deal stands. Perfect for team alignment and forecasting."
+      },
+      "taskProject": {
+        "title": "Task & Project Management",
+        "desc": "Smart assignment, clear priorities, and real-time progress across the team. Assign work, set due dates, and track completion so nothing slips through the cracks."
+      },
+      "liveAnalytics": {
+        "title": "Live Analytics",
+        "desc": "Real-time dashboards and ERP-backed metrics in one place. Understand performance, spot trends, and make decisions with up-to-date data—no spreadsheets required."
+      },
+      "erpIntegration": {
+        "title": "ERP Integration",
+        "desc": "Live sales and quotes with full visibility at a glance. Your existing ERP stays the source of truth while LORO keeps the field and office in sync."
+      },
+      "workflowAutomation": {
+        "title": "Workflow Automation",
+        "desc": "Schedule tasks and automate follow-ups across devices. Set rules once and let the system handle reminders, status updates, and routine steps so your team can focus on closing."
+      }
+    },
+    "controlTitle": "Every Detail,",
+    "controlTitleItalic": "Precisely Controlled",
+    "controlBody": "One platform for routing, ERP, scheduling, and a minimal interface.",
+    "radial": {
+      "smartRouting": "Smart Routing",
+      "liveErp": "Live ERP",
+      "unifiedControl": "Unified Control",
+      "smartScheduling": "Smart Scheduling",
+      "minimalInterface": "Minimal Interface",
+      "automation": "Automation"
+    },
+    "opsTitle": "A Smarter, Fairer, and More Transparent Way to Run Field Operations",
+    "opsBody": "Live sync, instant clarity, and full control—not just data.",
+    "ops": {
+      "erpSync": {
+        "title": "Live ERP Sync, Fast by Design",
+        "body": "Bulk data flows and real-time updates from your existing systems."
+      },
+      "statusClarity": {
+        "title": "Instant Status Clarity",
+        "body": "See who is where and what is due—at a glance."
+      },
+      "operationalControl": {
+        "title": "Operational Control, Not Just Data",
+        "body": "Act on quotes, orders, and schedules directly from the platform."
+      }
+    },
+    "ring": {
+      "claims": "Claims",
+      "leads": "Leads",
+      "visits": "Visits",
+      "gprTracking": "GPR Tracking"
+    },
+    "ctaTitle": "See Your Data.",
+    "ctaTitleItalic": "Control Your Operations.",
+    "ctaBody": "One app for the field and the office. Get started in minutes.",
+    "downloadApp": "Download App",
+    "imageAlt": {
+      "app": "Loro app",
+      "dashboard": "Loro dashboard",
+      "analytics": "Loro analytics",
+      "control": "Loro control",
+      "office": "Modern office"
+    },
+    "faq": {
+      "title": "Field sales software —",
+      "titleItalic": "common questions",
+      "lead": "Answers for teams comparing LORO with other field sales platforms in South Africa.",
+      "blogLink": "Read the field sales blog",
+      "or": "or",
+      "compareLink": "compare LORO vs Skynamo",
+      "items": {
+        "whatIs": {
+          "question": "What is LORO field sales software?",
+          "answer": "LORO is a South African field sales platform for visits, route planning, pipeline management, client accounts, and ERP-linked orders—on web and mobile for reps and managers."
+        },
+        "whoFor": {
+          "question": "Who is LORO built for?",
+          "answer": "Manufacturers, wholesalers, distributors, and field teams that visit B2B customers regularly and need one system for visits, quotes, tasks, and performance reporting."
+        },
+        "offline": {
+          "question": "Does LORO work offline for field reps?",
+          "answer": "The LORO mobile app is built for reps on the road. Core field workflows are designed for unreliable connectivity; sign in when online to sync visits, orders, and pipeline updates."
+        },
+        "erp": {
+          "question": "Can LORO integrate with our ERP?",
+          "answer": "Yes. LORO includes an in-house ERP integrated with field sales—product, customer, and order context without bolting on a separate back office. Optional bridges to Sage, Acumatica, or SAP are available when you run a mixed stack. See our integrations hub for details."
+        },
+        "difference": {
+          "question": "How is LORO different from Skynamo or Repsly?",
+          "answer": "LORO combines field sales execution with integrated in-house ERP, competitor mapping, and optional workforce tools—cloud-native with Clerk auth. Compare pages outline fit for team size and finance stack."
+        },
+        "enterprise": {
+          "question": "Is LORO only for large enterprises?",
+          "answer": "No. Teams from growing distributors to multi-branch operations use LORO. Start with sign-up or the Android app trial and scale users as your field program grows."
+        },
+        "modules": {
+          "question": "What modules are included?",
+          "answer": "Leads, pipeline, planning and routes, visits with evidence, client and competitor workspaces, map visualiser, reports, IoT branch hardware, and optional HR attendance—under one login."
+        },
+        "getStarted": {
+          "question": "How do we get started?",
+          "answer": "Create an account at sign-up, or download the Android app. Managers configure branches and targets; reps plan routes and log visits from day one."
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "getStarted": "Get started",
+    "back": "Back",
+    "next": "Next",
+    "createAccount": "Create account",
+    "skipToHome": "Skip to home",
+    "slides": {
+      "platform": {
+        "title": "One Platform, Everything Connected",
+        "description": "Stop juggling multiple systems. Loro combines field service management, inventory tracking, quotation system, task management, and real-time analytics in one powerful platform. Order directly from Loro — everything connected."
+      },
+      "owners": {
+        "title": "Business Owners: Complete Control",
+        "description": "Track sales live, manage your team, and make decisions instantly. Real-time insights and offline ready — all from your phone, anywhere."
+      },
+      "clients": {
+        "title": "Clients: Order Anytime, Anywhere",
+        "description": "Browse products, create quotes, and place orders instantly. Your personalized store in your pocket — quotations convert to orders seamlessly."
+      },
+      "employees": {
+        "title": "Employees: Work Made Simple",
+        "description": "Submit claims, request leave, view payslips, and track attendance. Less admin, more freedom — mobile-first with offline capabilities."
+      },
+      "start": {
+        "title": "Get Started Today",
+        "description": "Transform your business operations with LORO. Enterprise features, SME pricing. Automate what matters, control what counts."
+      }
+    }
   }
 }

@@ -42,10 +42,12 @@ import {
   merchandiseFileUrls,
   merchandiseImageUrls,
 } from '@/app/merchandise/lib/merchandise-media';
+import { useTranslation } from 'react-i18next';
 
 type PendingAction = 'publish' | 'reject' | 'delete' | null;
 
 export function MerchandiseDetailContent() {
+  const { t } = useTranslation('screens');
   const params = useParams();
   const router = useRouter();
   const uidRaw = params?.uid;
@@ -78,7 +80,7 @@ export function MerchandiseDetailContent() {
             : "The merchandise entry you're looking for doesn't exist."}
         </p>
         <Button asChild variant="link" className="mt-2 px-0">
-          <Link href="/merchandise">Back to merchandise</Link>
+          <Link href="/merchandise">{t('chrome.merchandise.backTo')}</Link>
         </Button>
       </main>
     );
@@ -119,13 +121,13 @@ export function MerchandiseDetailContent() {
         {canEdit ? (
           <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4" />
-            Edit
+            {t('actions.edit')}
           </Button>
         ) : null}
       </div>
 
       <div className="flex flex-col items-start gap-2">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Merchandise entry</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('chrome.merchandise.entry')}</p>
         <Badge variant={merchandiseStatusTone(journal.status)}>
           {merchandiseStatusLabel(journal.status)}
         </Badge>
@@ -134,7 +136,7 @@ export function MerchandiseDetailContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Details</CardTitle>
+          <CardTitle className="text-base">{t('chrome.common.details')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div>
@@ -272,15 +274,15 @@ export function MerchandiseDetailContent() {
           {canDecide ? (
             <>
               <Button type="button" variant="success" disabled={busy} onClick={() => setPendingAction('publish')}>
-                Publish
+                {t('chrome.common.publish')}
               </Button>
               <Button type="button" variant="cancel" disabled={busy} onClick={() => setPendingAction('reject')}>
-                Reject
+                {t('actions.reject')}
               </Button>
             </>
           ) : null}
           <Button type="button" variant="destructive" disabled={busy} onClick={() => setPendingAction('delete')}>
-            Delete
+            {t('actions.delete')}
           </Button>
         </div>
       ) : null}
@@ -306,10 +308,10 @@ export function MerchandiseDetailContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t('actions.cancel')}</AlertDialogCancel>
             <Button type="button" disabled={busy} onClick={confirmAction}>
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              Confirm
+              {t('actions.confirm')}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

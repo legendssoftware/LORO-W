@@ -39,6 +39,7 @@ import {
 import { resolveUserBranchUid } from '@/app/reports/lib/reports-user-branch';
 import { getCountryFlag } from '@/lib/utils/country-flags';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /** ERP country codes used by stores/products sales (ALL expands server-side). */
 export const REPORTS_OVERVIEW_ERP_COUNTRIES = [
@@ -99,6 +100,7 @@ function ReportsDashboardFilterControls({
   travelExportLoading = false,
   exportDataTour,
 }: ReportsDashboardFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
   // Draft is kept in local-picker form (what react-day-picker emits/expects) and
   // converted to UTC calendar dates only when committed.
@@ -233,12 +235,12 @@ function ReportsDashboardFilterControls({
               size="sm"
               onClick={() => {
                 skipApplyOnCloseRef.current = true;
-                const t = utcToday();
-                onRangeChange({ start: t, end: t });
+                const today = utcToday();
+                onRangeChange({ start: today, end: today });
                 setDateRangePopoverOpen(false);
               }}
             >
-              Today
+              {t('chrome.reports.today')}
             </Button>
             <Button
               type="button"
@@ -251,7 +253,7 @@ function ReportsDashboardFilterControls({
                 setDateRangePopoverOpen(false);
               }}
             >
-              Last week (Mon–Sat)
+              {t('chrome.reports.lastWeekMonSat')}
             </Button>
             <Button
               type="button"
@@ -262,7 +264,7 @@ function ReportsDashboardFilterControls({
                 setDateRangePopoverOpen(false);
               }}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button
               type="button"
@@ -274,7 +276,7 @@ function ReportsDashboardFilterControls({
                 setDateRangePopoverOpen(false);
               }}
             >
-              Apply
+              {t('actions.apply')}
             </Button>
           </div>
         </PopoverContent>
@@ -299,8 +301,8 @@ function ReportsDashboardFilterControls({
             options={countryOptions}
             selectedValue={selectedCountry}
             onValueChange={(v) => onCountryChange?.(v)}
-            placeholderLabelWhenAll="All countries"
-            searchPlaceholder="Search countries…"
+            placeholderLabelWhenAll={t('chrome.reports.allCountries')}
+            searchPlaceholder={t('chrome.reports.searchCountries')}
             triggerClassName={pickerTriggerClass}
           />
         </>
@@ -321,7 +323,7 @@ function ReportsDashboardFilterControls({
           ) : (
             <Download className="size-4" aria-hidden />
           )}
-          Travel report
+          {t('chrome.reports.travelReport')}
         </Button>
       ) : null}
     </div>
@@ -329,6 +331,7 @@ function ReportsDashboardFilterControls({
 }
 
 export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -351,7 +354,7 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         {props.onExportTravel ? (
           <Button
@@ -366,7 +369,7 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
             ) : (
               <Download className="size-4" aria-hidden />
             )}
-            Travel report
+            {t('chrome.reports.travelReport')}
           </Button>
         ) : null}
       </div>
@@ -374,9 +377,9 @@ export function ReportsDashboardToolbar(props: ReportsDashboardToolbarProps) {
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-x-hidden overflow-y-auto p-4 sm:max-w-md sm:p-6">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Date range, branch, user, and country for overview metrics.
+              {t('chrome.reports.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <ReportsDashboardFilterControls layout="stack" {...props} />

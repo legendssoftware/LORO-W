@@ -37,7 +37,6 @@ import {
 } from './components/wellbeing-country-sections';
 import { WellbeingContactFeedbackForm } from './components/wellbeing-contact-feedback-form';
 import { useTranslation } from 'react-i18next';
-import { useTranslation } from 'react-i18next';
 
 const tabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -304,11 +303,11 @@ export function WellbeingContent() {
               <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[38%] px-3 text-left">Finding</TableHead>
-                    <TableHead className="w-[12%] px-3 text-center">Delta</TableHead>
-                    <TableHead className="w-[10%] px-3 text-center">n</TableHead>
-                    <TableHead className="w-[15%] px-3 text-center">Confidence</TableHead>
-                    <TableHead className="w-[25%] px-3 text-left">Source</TableHead>
+                    <TableHead className="w-[38%] px-3 text-left">{t('tables.finding')}</TableHead>
+                    <TableHead className="w-[12%] px-3 text-center">{t('tables.delta')}</TableHead>
+                    <TableHead className="w-[10%] px-3 text-center">{t('tables.n')}</TableHead>
+                    <TableHead className="w-[15%] px-3 text-center">{t('tables.confidence')}</TableHead>
+                    <TableHead className="w-[25%] px-3 text-left">{t('tables.source')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

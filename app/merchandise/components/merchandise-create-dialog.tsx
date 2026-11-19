@@ -22,6 +22,7 @@ import {
   merchandisePhotoUploadMessage,
 } from '@/app/merchandise/lib/compress-merchandise-photo';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const primaryClass =
   'border-0 bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 [&_svg]:text-white';
@@ -54,6 +55,7 @@ export function MerchandiseCreateDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const createMutation = useCreateJournalMutation();
   const [clientRef, setClientRef] = useState('');
@@ -144,7 +146,7 @@ export function MerchandiseCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New merchandise</DialogTitle>
+          <DialogTitle>{t('chrome.merchandise.new')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -189,7 +191,7 @@ export function MerchandiseCreateDialog({
               disabled={isCompressing || pending}
             />
             {isCompressing ? (
-              <p className="text-xs text-muted-foreground">Preparing photo...</p>
+              <p className="text-xs text-muted-foreground">{t('chrome.merchandise.preparingPhoto')}</p>
             ) : null}
             {previewUrl ? (
               <img
@@ -204,11 +206,11 @@ export function MerchandiseCreateDialog({
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button type="button" className={primaryClass} onClick={handleSubmit} disabled={pending}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-            Save
+            {t('actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

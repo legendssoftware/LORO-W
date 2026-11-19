@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface PolicyRadialSegment {
   key: string;
@@ -35,9 +36,10 @@ export function ReportsPolicySegmentRadial({
   centerSub,
   className,
 }: ReportsPolicySegmentRadialProps) {
+  const { t } = useTranslation('screens');
   const total = segments.reduce((sum, segment) => sum + Math.max(0, segment.value), 0);
   if (total <= 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No data</p>;
+    return <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>;
   }
 
   const chartData = [

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import toast from 'react-hot-toast';
 
 export function EditClientProfileForm({
@@ -21,6 +21,7 @@ export function EditClientProfileForm({
   onSaved?: () => void;
 }) {
   const { t } = useTranslation('portal');
+  const { t: tCommon } = useTranslation('common');
   const mutation = useUpdateClientProfile();
   const [form, setForm] = useState<UpdateClientProfilePayload>({
     contactPerson: client.contactPerson ?? '',
@@ -55,28 +56,28 @@ export function EditClientProfileForm({
             <Input
               value={form.contactPerson ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, contactPerson: e.target.value }))}
-              placeholder={FORM_PLACEHOLDERS.fullName}
+              placeholder={formPlaceholder(tCommon, 'fullName')}
             />
           </Field>
           <Field label={t('phone')}>
             <Input
               value={form.phone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              placeholder={FORM_PLACEHOLDERS.landline}
+              placeholder={formPlaceholder(tCommon, 'landline')}
             />
           </Field>
           <Field label={t('alternativePhone')}>
             <Input
               value={form.alternativePhone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, alternativePhone: e.target.value }))}
-              placeholder={FORM_PLACEHOLDERS.phone}
+              placeholder={formPlaceholder(tCommon, 'phone')}
             />
           </Field>
           <Field label={t('website')}>
             <Input
               value={form.website ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-              placeholder={FORM_PLACEHOLDERS.website}
+              placeholder={formPlaceholder(tCommon, 'website')}
             />
           </Field>
           <Field label={t('industry')}>
@@ -103,7 +104,7 @@ export function EditClientProfileForm({
                   address: { ...f.address, street: e.target.value },
                 }))
               }
-              placeholder={FORM_PLACEHOLDERS.street}
+              placeholder={formPlaceholder(tCommon, 'street')}
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -116,7 +117,7 @@ export function EditClientProfileForm({
                     address: { ...f.address, city: e.target.value },
                   }))
                 }
-                placeholder={FORM_PLACEHOLDERS.city}
+                placeholder={formPlaceholder(tCommon, 'city')}
               />
             </Field>
             <Field label={t('postalCode')}>
@@ -128,7 +129,7 @@ export function EditClientProfileForm({
                     address: { ...f.address, postalCode: e.target.value },
                   }))
                 }
-                placeholder={FORM_PLACEHOLDERS.postalCode}
+                placeholder={formPlaceholder(tCommon, 'postalCode')}
               />
             </Field>
           </div>

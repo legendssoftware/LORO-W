@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ArrowRightIcon, CpuIcon, WifiIcon } from '@/lib/icons';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { PageTransition } from '@/components/animations/page-transition';
 import { MotionSection } from '@/components/animations/motion-section';
@@ -20,7 +21,42 @@ import { SmoothScroll } from '@/components/smooth-scroll';
 import { ANDROID_APP_URL } from '@/lib/android-app-url';
 import { getDefaultCoverSlots, getShuffledCoverPaths, COVER_FALLBACK_URLS, HERO_CENTER_IMAGE } from '@/lib/cover-images';
 
+const STAT_ITEMS = [
+  { key: 'businesses', value: '2K+' },
+  { key: 'partners', value: '120+' },
+  { key: 'fieldUsers', value: '800+' },
+  { key: 'spaces', value: '2K+' },
+] as const;
+
+const FEATURE_ITEMS = [
+  { key: 'smartLead', emoji: '📊' },
+  { key: 'pipelineByStage', emoji: '📋' },
+  { key: 'taskProject', emoji: '✅' },
+  { key: 'liveAnalytics', emoji: '📈' },
+  { key: 'erpIntegration', emoji: '🔗' },
+  { key: 'workflowAutomation', emoji: '⚙️' },
+] as const;
+
+const RADIAL_ITEMS = [
+  { key: 'smartRouting', angle: 0 },
+  { key: 'liveErp', angle: 60 },
+  { key: 'unifiedControl', angle: 120 },
+  { key: 'smartScheduling', angle: 180 },
+  { key: 'minimalInterface', angle: 240 },
+  { key: 'automation', angle: 300 },
+] as const;
+
+const OPS_BLOCKS = ['erpSync', 'statusClarity', 'operationalControl'] as const;
+
+const RING_ITEMS = [
+  { key: 'claims', angle: 0 },
+  { key: 'leads', angle: 90 },
+  { key: 'visits', angle: 180 },
+  { key: 'gprTracking', angle: 270 },
+] as const;
+
 export function LandingPage() {
+  const { t } = useTranslation('marketing');
   /** Random cover assignment for hero and feature sections (stable per session). Initial value is deterministic to avoid hydration mismatch; shuffle runs client-side after mount. */
   const [coverSlots, setCoverSlots] = useState(() => getDefaultCoverSlots());
   /** When a cover image 404s, use fallback URL for that slot. */
@@ -52,18 +88,18 @@ export function LandingPage() {
                 <StaggerContainer className="flex flex-col items-center gap-4 lg:gap-6" delay={0.2} staggerChildren={0.12}>
                   <StaggerItem>
                     <h1 className="font-body text-3xl font-normal tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
-                      Field sales that scales.{' '}
-                      <span className="font-serif italic">Visits, routes, pipeline.</span>
+                      {t('landing.headline')}{' '}
+                      <span className="font-serif italic">{t('landing.headlineItalic')}</span>
                     </h1>
                   </StaggerItem>
                   <StaggerItem>
                     <p className="font-body mx-auto max-w-[560px] text-sm text-zinc-400 md:text-base">
-                      Plan routes, prove visits, and grow pipeline in one platform—built for South African B2B teams with ERP-ready orders and live maps.
+                      {t('landing.subheadline')}
                     </p>
                   </StaggerItem>
                   <StaggerItem className="flex flex-col items-center gap-3 w-full max-w-md">
                     <p className="font-body text-xs text-zinc-400">
-                      Join LORO Community with 90+ members
+                      {t('landing.community')}
                     </p>
                     <div className="flex -space-x-2">
                       {['SM', 'JT', 'PR'].map((initials, i) => (
@@ -88,7 +124,7 @@ export function LandingPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Try Our Android App
+                      {t('landing.tryAndroidApp')}
                     </Link>
                   </Button>
                   <Button
@@ -96,12 +132,12 @@ export function LandingPage() {
                     className="font-body rounded-lg bg-purple-600 text-white hover:bg-purple-700 border-0"
                     size="lg"
                   >
-                    <Link href="/sign-in">My account</Link>
+                    <Link href="/sign-in">{t('landing.myAccount')}</Link>
                   </Button>
                 </div>
                 <div className="relative mt-4 flex items-end justify-center" style={{ minHeight: 'clamp(338px, 52vw, 494px)' }}>
                   <div className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-zinc-300">
-                    Live sync
+                    {t('landing.liveSync')}
                   </div>
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -112,7 +148,7 @@ export function LandingPage() {
                   >
                     <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
-                        <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(0)} />
+                        <Image src={useCoverSrc(0)} fill alt={t('landing.imageAlt.app')} className="object-cover" sizes="156px, 208px" onError={() => setCoverError(0)} />
                         <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                       </div>
                     </div>
@@ -125,7 +161,7 @@ export function LandingPage() {
                   >
                     <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
-                        <Image src={coverFallback[1] ? COVER_FALLBACK_URLS[1] : HERO_CENTER_IMAGE} fill alt="Loro dashboard" className="object-cover" sizes="182px, 260px" priority onError={() => setCoverError(1)} />
+                        <Image src={coverFallback[1] ? COVER_FALLBACK_URLS[1] : HERO_CENTER_IMAGE} fill alt={t('landing.imageAlt.dashboard')} className="object-cover" sizes="182px, 260px" priority onError={() => setCoverError(1)} />
                         <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                       </div>
                     </div>
@@ -139,7 +175,7 @@ export function LandingPage() {
                   >
                     <div className="overflow-hidden rounded-[2rem] shadow-xl bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                       <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
-                        <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="156px, 208px" onError={() => setCoverError(2)} />
+                        <Image src={useCoverSrc(2)} fill alt={t('landing.imageAlt.analytics')} className="object-cover" sizes="156px, 208px" onError={() => setCoverError(2)} />
                         <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                       </div>
                     </div>
@@ -153,19 +189,14 @@ export function LandingPage() {
           <section className="bg-black py-16 md:py-20" id="solutions">
             <div className="container mx-auto px-4 md:px-6">
               <h2 className="font-body text-center text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-12 md:mb-16">
-                Built for scale. <span className="font-serif italic">Trusted by real teams.</span>
+                {t('landing.statsTitle')} <span className="font-serif italic">{t('landing.statsTitleItalic')}</span>
               </h2>
               <div className="grid grid-cols-2 gap-6 gap-y-10 sm:gap-8 md:grid-cols-4 md:gap-12">
-                {[
-                  { label: 'Businesses', value: '2K+', sub: 'on the platform' },
-                  { label: 'Partners', value: '120+', sub: 'collaborating' },
-                  { label: 'Field users', value: '800+', sub: 'active daily' },
-                  { label: 'Spaces', value: '2K+', sub: 'enhanced' },
-                ].map((stat, i) => (
-                  <div key={i} className="text-center">
-                    <p className="font-body text-xs text-zinc-400 uppercase tracking-wide">{stat.label}</p>
+                {STAT_ITEMS.map((stat) => (
+                  <div key={stat.key} className="text-center">
+                    <p className="font-body text-xs text-zinc-400 uppercase tracking-wide">{t(`landing.stats.${stat.key}.label`)}</p>
                     <p className="font-body mt-1 text-3xl font-normal text-white md:text-4xl">{stat.value}</p>
-                    <p className="font-body mt-1 text-xs text-zinc-400">{stat.sub}</p>
+                    <p className="font-body mt-1 text-xs text-zinc-400">{t(`landing.stats.${stat.key}.sub`)}</p>
                   </div>
                 ))}
               </div>
@@ -177,10 +208,10 @@ export function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
               <div className="mb-12 text-center">
                 <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
-                  Technology That Works in Harmony
+                  {t('landing.techTitle')}
                 </h2>
                 <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
-                  Built to simplify daily operations through intelligent connected systems.
+                  {t('landing.techBody')}
                 </p>
               </div>
               <motion.div
@@ -192,20 +223,20 @@ export function LandingPage() {
               >
                 <Image
                   src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80"
-                  alt="Modern office"
+                  alt={t('landing.imageAlt.office')}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 1200px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute left-[8%] bottom-[20%] rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 w-[200px]">
-                  <p className="font-body text-xs text-zinc-400">Live Sales | Dashboard</p>
+                  <p className="font-body text-xs text-zinc-400">{t('landing.liveSalesDashboard')}</p>
                   <p className="font-body text-2xl font-semibold text-white mt-1">R 125,450</p>
                   <div className="mt-2 h-2 w-12 rounded-full bg-white/20" />
                 </div>
                 <div className="absolute right-[12%] bottom-[25%] rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 w-[200px]">
-                  <p className="font-body text-xs text-zinc-400">Quotes & Orders</p>
-                  <p className="font-body text-2xl font-semibold text-white mt-1">23 active</p>
+                  <p className="font-body text-xs text-zinc-400">{t('landing.quotesOrders')}</p>
+                  <p className="font-body text-2xl font-semibold text-white mt-1">{t('landing.activeCount')}</p>
                   <div className="mt-2 h-2 w-12 rounded-full bg-white/20" />
                 </div>
               </motion.div>
@@ -217,23 +248,16 @@ export function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
               <div className="mb-12 text-center">
                 <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
-                  Powerful Features, <span className="font-serif italic">Thoughtfully Designed</span>
+                  {t('landing.featuresTitle')} <span className="font-serif italic">{t('landing.featuresTitleItalic')}</span>
                 </h2>
                 <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
-                  Everything you need for comfort, clarity, and efficiency—in one place.
+                  {t('landing.featuresBody')}
                 </p>
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {[
-                  { emoji: '📊', title: 'Smart Lead Management', desc: 'Capture, qualify, and convert leads with AI-powered scoring. Prioritise the best opportunities and never let a hot lead go cold. Your pipeline stays full and your team stays focused.', visual: 'phone' },
-                  { emoji: '📋', title: 'Pipeline by Stage', desc: 'A visual pipeline with drag-and-drop and full deal tracking. Move opportunities through stages at a glance and see exactly where every deal stands. Perfect for team alignment and forecasting.', visual: 'text' },
-                  { emoji: '✅', title: 'Task & Project Management', desc: 'Smart assignment, clear priorities, and real-time progress across the team. Assign work, set due dates, and track completion so nothing slips through the cracks.', visual: 'thumb' },
-                  { emoji: '📈', title: 'Live Analytics', desc: 'Real-time dashboards and ERP-backed metrics in one place. Understand performance, spot trends, and make decisions with up-to-date data—no spreadsheets required.', visual: 'text' },
-                  { emoji: '🔗', title: 'ERP Integration', desc: 'Live sales and quotes with full visibility at a glance. Your existing ERP stays the source of truth while LORO keeps the field and office in sync.', visual: 'text' },
-                  { emoji: '⚙️', title: 'Workflow Automation', desc: 'Schedule tasks and automate follow-ups across devices. Set rules once and let the system handle reminders, status updates, and routine steps so your team can focus on closing.', visual: 'toggles' },
-                ].map((card, i) => (
+                {FEATURE_ITEMS.map((card, i) => (
                   <motion.div
-                    key={i}
+                    key={card.key}
                     className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 min-h-[220px] flex flex-col"
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -242,9 +266,9 @@ export function LandingPage() {
                   >
                     <h3 className="font-body text-lg font-normal text-zinc-100 flex items-center gap-2">
                       <span aria-hidden>{card.emoji}</span>
-                      {card.title}
+                      {t(`landing.features.${card.key}.title`)}
                     </h3>
-                    <p className="font-body mt-2 text-sm text-zinc-400 flex-1">{card.desc}</p>
+                    <p className="font-body mt-2 text-sm text-zinc-400 flex-1">{t(`landing.features.${card.key}.desc`)}</p>
                   </motion.div>
                 ))}
               </div>
@@ -257,29 +281,22 @@ export function LandingPage() {
             <div className="container relative mx-auto px-4 md:px-6">
               <div className="mb-12 text-center">
                 <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
-                  Every Detail, <span className="font-serif italic">Precisely Controlled</span>
+                  {t('landing.controlTitle')} <span className="font-serif italic">{t('landing.controlTitleItalic')}</span>
                 </h2>
                 <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
-                  One platform for routing, ERP, scheduling, and a minimal interface.
+                  {t('landing.controlBody')}
                 </p>
               </div>
               <div className="relative flex items-center justify-center min-h-[360px] sm:min-h-[420px] md:min-h-[480px]">
                 <div className="absolute inset-0 grid grid-cols-4 gap-px opacity-20 max-w-4xl mx-auto" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                {[
-                  { label: 'Smart Routing', angle: 0, pos: 'top' },
-                  { label: 'Live ERP', angle: 60, pos: 'top-right' },
-                  { label: 'Unified Control', angle: 120, pos: 'right' },
-                  { label: 'Smart Scheduling', angle: 180, pos: 'bottom' },
-                  { label: 'Minimal Interface', angle: 240, pos: 'bottom-left' },
-                  { label: 'Automation', angle: 300, pos: 'left' },
-                ].map((item, i) => {
+                {RADIAL_ITEMS.map((item, i) => {
                   const r = 130;
                   const rad = (item.angle * Math.PI) / 180;
                   const x = Math.cos(rad) * r;
                   const y = Math.sin(rad) * r;
                   return (
                     <motion.div
-                      key={i}
+                      key={item.key}
                       className="absolute z-10 flex flex-col items-center gap-2"
                       style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -290,7 +307,7 @@ export function LandingPage() {
                       <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
                         <CpuIcon size={20} className="text-zinc-300" />
                       </div>
-                      <span className="font-body text-xs text-zinc-300 whitespace-nowrap">{item.label}</span>
+                      <span className="font-body text-xs text-zinc-300 whitespace-nowrap">{t(`landing.radial.${item.key}`)}</span>
                     </motion.div>
                   );
                 })}
@@ -303,7 +320,7 @@ export function LandingPage() {
                 >
                   <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900 shadow-2xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
-                      <Image src={useCoverSrc(1)} fill alt="Loro control" className="object-cover" sizes="200px" onError={() => setCoverError(1)} />
+                      <Image src={useCoverSrc(1)} fill alt={t('landing.imageAlt.control')} className="object-cover" sizes="200px" onError={() => setCoverError(1)} />
                       <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                     </div>
                   </div>
@@ -317,22 +334,18 @@ export function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
               <div className="mb-12 text-center">
                 <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
-                  A Smarter, Fairer, and More Transparent Way to Run Field Operations
+                  {t('landing.opsTitle')}
                 </h2>
                 <p className="font-body mx-auto max-w-2xl text-sm text-zinc-400">
-                  Live sync, instant clarity, and full control—not just data.
+                  {t('landing.opsBody')}
                 </p>
               </div>
               <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto text-center md:text-left">
                 <div className="flex flex-col items-center space-y-8 md:items-start">
-                  {[
-                    { title: 'Live ERP Sync, Fast by Design', body: 'Bulk data flows and real-time updates from your existing systems.' },
-                    { title: 'Instant Status Clarity', body: 'See who is where and what is due—at a glance.' },
-                    { title: 'Operational Control, Not Just Data', body: 'Act on quotes, orders, and schedules directly from the platform.' },
-                  ].map((block, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }} className="max-w-md md:max-w-none">
-                      <h3 className="font-body text-lg font-normal text-white">{block.title}</h3>
-                      <p className="font-body mt-2 text-sm text-zinc-400">{block.body}</p>
+                  {OPS_BLOCKS.map((block) => (
+                    <motion.div key={block} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }} className="max-w-md md:max-w-none">
+                      <h3 className="font-body text-lg font-normal text-white">{t(`landing.ops.${block}.title`)}</h3>
+                      <p className="font-body mt-2 text-sm text-zinc-400">{t(`landing.ops.${block}.body`)}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -356,23 +369,18 @@ export function LandingPage() {
                         style={{ inset: `${ring * 14}%`, borderWidth: 1 }}
                       />
                     ))}
-                    {[
-                      { label: 'Claims', angle: 0 },
-                      { label: 'Leads', angle: 90 },
-                      { label: 'Visits', angle: 180 },
-                      { label: 'GPR Tracking', angle: 270 },
-                    ].map((item, i) => {
+                    {RING_ITEMS.map((item) => {
                       const r = 42;
                       const rad = (item.angle * Math.PI) / 180;
                       const x = 50 + Math.cos(rad) * r;
                       const y = 50 + Math.sin(rad) * r;
                       return (
                         <span
-                          key={i}
+                          key={item.key}
                           className="absolute font-body text-xs text-zinc-400 -translate-x-1/2 -translate-y-1/2"
                           style={{ left: `${x}%`, top: `${y}%` }}
                         >
-                          {item.label}
+                          {t(`landing.ring.${item.key}`)}
                         </span>
                       );
                     })}
@@ -387,14 +395,14 @@ export function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
               <div className="text-center mb-12">
                 <h2 className="font-body text-2xl font-normal tracking-tight text-white sm:text-3xl md:text-4xl mb-3">
-                  See Your Data. <span className="font-serif italic">Control Your Operations.</span>
+                  {t('landing.ctaTitle')} <span className="font-serif italic">{t('landing.ctaTitleItalic')}</span>
                 </h2>
                 <p className="font-body mx-auto max-w-xl text-sm text-zinc-400 mb-8">
-                  One app for the field and the office. Get started in minutes.
+                  {t('landing.ctaBody')}
                 </p>
                 <Button asChild className="font-body rounded-lg border-0 bg-transparent text-white hover:bg-purple-600 hover:text-white gap-2" size="lg">
                   <Link href={ANDROID_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
-                    Download App
+                    {t('landing.downloadApp')}
                     <ArrowRightIcon size={18} />
                   </Link>
                 </Button>
@@ -403,7 +411,7 @@ export function LandingPage() {
                 <motion.div className="absolute left-1/2 z-[1] w-[clamp(100px,18vw,150px)] origin-bottom" style={{ transform: 'translateX(-85%) rotate(-12deg)' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
                   <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
-                      <Image src={useCoverSrc(0)} fill alt="Loro app" className="object-cover" sizes="150px" onError={() => setCoverError(0)} />
+                      <Image src={useCoverSrc(0)} fill alt={t('landing.imageAlt.app')} className="object-cover" sizes="150px" onError={() => setCoverError(0)} />
                       <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                     </div>
                   </div>
@@ -411,7 +419,7 @@ export function LandingPage() {
                 <motion.div className="relative z-[2] w-[clamp(120px,22vw,180px)] shadow-2xl" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                   <div className="overflow-hidden rounded-[2.2rem] bg-zinc-900" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-zinc-800">
-                      <Image src={useCoverSrc(1)} fill alt="Loro" className="object-cover" sizes="180px" onError={() => setCoverError(1)} />
+                      <Image src={useCoverSrc(1)} fill alt={t('landing.imageAlt.dashboard')} className="object-cover" sizes="180px" onError={() => setCoverError(1)} />
                       <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2.2rem]" aria-hidden />
                     </div>
                   </div>
@@ -419,7 +427,7 @@ export function LandingPage() {
                 <motion.div className="absolute left-1/2 z-[1] w-[clamp(100px,18vw,150px)] origin-bottom" style={{ transform: 'translateX(-15%) rotate(12deg)' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
                   <div className="overflow-hidden rounded-[2rem] bg-zinc-900 shadow-xl" style={{ aspectRatio: '9/19' }}>
                     <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-zinc-800">
-                      <Image src={useCoverSrc(2)} fill alt="Loro analytics" className="object-cover" sizes="150px" onError={() => setCoverError(2)} />
+                      <Image src={useCoverSrc(2)} fill alt={t('landing.imageAlt.analytics')} className="object-cover" sizes="150px" onError={() => setCoverError(2)} />
                       <div className="absolute inset-0 bg-black/20 pointer-events-none rounded-[2rem]" aria-hidden />
                     </div>
                   </div>

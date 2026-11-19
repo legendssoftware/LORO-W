@@ -1,6 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CircleDot, Fingerprint, Layers, Package, Ruler, Shield } from 'lucide-react';
 import { IconField, IconInput, IconTextarea } from '@/components/icon-field';
 import { Button } from '@/components/ui/button';
@@ -162,6 +163,7 @@ export function ProductFormDialog({
   onArchive: () => void;
   onRestore: () => void;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
@@ -173,31 +175,31 @@ export function ProductFormDialog({
         </DialogHeader>
         <FieldGrid title="Identity" icon={Package} fields={PRODUCT_IDENTITY_FIELDS} values={values} onChange={onChange} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <IconSelect icon={CircleDot} label="Status" value={values.status} placeholder="Choose a status" options={PRODUCT_STATUSES} onChange={(value) => onChange('status', value)} />
+          <IconSelect icon={CircleDot} label={t('forms.products.status')} value={values.status} placeholder={t('forms.products.statusPlaceholder')} options={PRODUCT_STATUSES} onChange={(value) => onChange('status', value)} />
           {values.productRef ? (
-            <IconField icon={Fingerprint} label="Product reference">
-              <IconInput icon={Fingerprint} value={values.productRef} placeholder="Assigned when the product is saved" readOnly />
+            <IconField icon={Fingerprint} label={t('forms.products.productReference')}>
+              <IconInput icon={Fingerprint} value={values.productRef} placeholder={t('forms.products.productReferencePlaceholder')} readOnly />
             </IconField>
           ) : null}
         </div>
         <FieldGrid title="Pricing" icon={Package} fields={PRODUCT_PRICE_FIELDS} values={values} onChange={onChange} />
-        <ToggleRow icon={CircleDot} label="On promotion" checked={values.isOnPromotion} onChange={(checked) => onToggle('isOnPromotion', checked)} />
+        <ToggleRow icon={CircleDot} label={t('forms.products.onPromotion')} checked={values.isOnPromotion} onChange={(checked) => onToggle('isOnPromotion', checked)} />
         <FieldGrid title="Stock" icon={Package} fields={PRODUCT_STOCK_FIELDS} values={values} onChange={onChange} />
-        <ToggleRow icon={Package} label="Track stock" checked={values.trackStock} onChange={(checked) => onToggle('trackStock', checked)} />
+        <ToggleRow icon={Package} label={t('forms.products.trackStock')} checked={values.trackStock} onChange={(checked) => onToggle('trackStock', checked)} />
         <FieldGrid title="Pack" icon={Layers} fields={PRODUCT_PACK_FIELDS} values={values} onChange={onChange} />
-        <IconSelect icon={Package} label="Package unit" value={values.packageUnit} placeholder="Choose a unit" options={PACKAGE_UNITS} onChange={(value) => onChange('packageUnit', value)} />
+        <IconSelect icon={Package} label={t('forms.products.packageUnit')} value={values.packageUnit} placeholder={t('forms.products.unitPlaceholder')} options={PACKAGE_UNITS} onChange={(value) => onChange('packageUnit', value)} />
         <FieldGrid title="Pallet" icon={Layers} fields={PRODUCT_PALLET_FIELDS} values={values} onChange={onChange} />
         <div className="grid gap-2 sm:grid-cols-2">
-          <ToggleRow icon={Layers} label="Pallet available" checked={values.palletAvailable} onChange={(checked) => onToggle('palletAvailable', checked)} />
-          <ToggleRow icon={CircleDot} label="Pallet on promotion" checked={values.palletOnPromotion} onChange={(checked) => onToggle('palletOnPromotion', checked)} />
+          <ToggleRow icon={Layers} label={t('forms.products.palletAvailable')} checked={values.palletAvailable} onChange={(checked) => onToggle('palletAvailable', checked)} />
+          <ToggleRow icon={CircleDot} label={t('forms.products.palletOnPromotion')} checked={values.palletOnPromotion} onChange={(checked) => onToggle('palletOnPromotion', checked)} />
         </div>
         <FieldGrid title="Specifications" icon={Ruler} fields={PRODUCT_SPEC_FIELDS} values={values} onChange={onChange} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <IconSelect icon={Shield} label="Warranty unit" value={values.warrantyUnit} placeholder="Choose a unit" options={WARRANTY_UNITS} onChange={(value) => onChange('warrantyUnit', value)} />
+          <IconSelect icon={Shield} label={t('forms.products.warrantyUnit')} value={values.warrantyUnit} placeholder={t('forms.products.unitPlaceholder')} options={WARRANTY_UNITS} onChange={(value) => onChange('warrantyUnit', value)} />
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
-          <ToggleRow icon={Package} label="Fragile" checked={values.isFragile} onChange={(checked) => onToggle('isFragile', checked)} />
-          <ToggleRow icon={Shield} label="Special handling" checked={values.requiresSpecialHandling} onChange={(checked) => onToggle('requiresSpecialHandling', checked)} />
+          <ToggleRow icon={Package} label={t('forms.products.fragile')} checked={values.isFragile} onChange={(checked) => onToggle('isFragile', checked)} />
+          <ToggleRow icon={Shield} label={t('forms.products.specialHandling')} checked={values.requiresSpecialHandling} onChange={(checked) => onToggle('requiresSpecialHandling', checked)} />
         </div>
         <FieldGrid title="Order rules" icon={Package} fields={PRODUCT_ORDER_FIELDS} values={values} onChange={onChange} />
         <DialogFooter>

@@ -105,6 +105,7 @@ import {
   normalizeCallDirection,
   transcriptStatusVariant,
 } from '../call-display';
+import { useTranslation } from 'react-i18next';
 
 const RETRY_LEVELS = new Set(['admin', 'owner', 'manager', 'developer']);
 const CALL_DETAIL_FIELD_GRID_CLASS =
@@ -125,6 +126,7 @@ export function CallDetailDialog({
   fallback,
   matchIndex,
 }: CallDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const { backendUserData } = useSessionSync();
   const orgId = useOrgId();
   const client = useApiClient();
@@ -221,7 +223,7 @@ export function CallDetailDialog({
       >
         <DetailDialogCloseButton />
         <DialogHeader>
-          <DialogTitle>Call dialogue</DialogTitle>
+          <DialogTitle>{t('chrome.calls.dialogue')}</DialogTitle>
           <DialogDescription className="sr-only">
             {whenLabel} {headerRow?.fromName || headerRow?.fromNumber || 'unknown'} to{' '}
             {headerRow?.toName || headerRow?.toNumber || 'unknown'}
@@ -318,9 +320,9 @@ export function CallDetailDialog({
             </div>
           ) : isError ? (
             <div className="flex items-center gap-2">
-              <p className="text-sm text-destructive">Could not load this recording.</p>
+              <p className="text-sm text-destructive">{t('chrome.calls.loadError')}</p>
               <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-                Retry
+                {t('actions.retry')}
               </Button>
             </div>
           ) : (
@@ -391,6 +393,7 @@ function CallAudioPlayer({
   audioUrl: string | null | undefined;
   isDetailLoading: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const { mutate: ensureAudio, isPending: isEnsuring } = useEnsureCallAudioMutation();
   const attemptedUidRef = useRef<string | null>(null);
   const [ensureError, setEnsureError] = useState<string | null>(null);
@@ -428,7 +431,7 @@ function CallAudioPlayer({
     <div className="rounded-md border p-3">
       <p className="mb-2 flex items-center gap-1.5 text-sm font-medium">
         <AudioLines className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        Recording
+        {t('chrome.calls.recording')}
       </p>
       {audioUrl ? (
         <audio controls className="w-full" src={audioUrl} preload="metadata">
@@ -446,7 +449,7 @@ function CallAudioPlayer({
           </p>
           {uid ? (
             <Button type="button" variant="outline" size="sm" onClick={retryEnsure}>
-              Retry
+              {t('actions.retry')}
             </Button>
           ) : null}
         </div>
@@ -472,6 +475,7 @@ function CallMetadataGrid({
   agentParty: ReturnType<typeof matchAgentParty> | null;
   clientParty: ReturnType<typeof matchClientParty> | null;
 }) {
+  const { t } = useTranslation('screens');
   if (!row) return null;
   const srcExt = detail?.srcExt ?? null;
   const dstExt = detail?.dstExt ?? null;
@@ -545,7 +549,7 @@ function CallMetadataGrid({
       </div>
 
       <div>
-        <DetailSectionHeading title="PBX identifiers" icon={Fingerprint} />
+        <DetailSectionHeading title={t('chrome.calls.pbxIdentifiers')} icon={Fingerprint} />
         <div className={CALL_DETAIL_FIELD_GRID_CLASS}>
           <DetailFieldRow label="CDR id" icon={Hash} value={displayCallMeta(row.cdrUid)} />
           <DetailFieldRow
@@ -579,7 +583,7 @@ function CallMetadataGrid({
       </div>
 
       <div>
-        <DetailSectionHeading title="Transcript & audio" icon={FileAudio} />
+        <DetailSectionHeading title={t('chrome.calls.transcriptAudio')} icon={FileAudio} />
         <div className={CALL_DETAIL_FIELD_GRID_CLASS}>
           <DetailFieldRow
             label="Status"
@@ -627,11 +631,12 @@ function BranchStaffSection({
   toLoading: boolean;
   splitBranchId: number | null;
 }) {
+  const { t } = useTranslation('screens');
   if (branches.length === 0) return null;
 
   return (
     <div>
-      <DetailSectionHeading title="People at branch" icon={Users} />
+      <DetailSectionHeading title={t('chrome.calls.peopleAtBranch')} icon={Users} />
       <div className="space-y-3">
         {branches.map((branch, index) => {
           const staff = index === 0 ? fromStaff : toStaff;
@@ -697,6 +702,7 @@ function CallQualitySection({
   isRating: boolean;
   onRate: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const hasScore = scoreOverall != null && Number.isFinite(Number(scoreOverall));
   const scoringAreas = scoringCallQualityDimensions({ dimensions: scorecardDimensions });
   const band =
@@ -705,7 +711,7 @@ function CallQualitySection({
 
   return (
     <div>
-      <DetailSectionHeading title="Call quality" icon={Star} />
+      <DetailSectionHeading title={t('chrome.calls.callQuality')} icon={Star} />
       {hasScore ? (
         <div className="space-y-4 rounded-md border p-3">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,220px)_1fr] sm:items-start">
@@ -757,7 +763,7 @@ function CallQualitySection({
           ) : null}
           {scoreBreakdown?.strengths?.length ? (
             <div>
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Strengths</p>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('chrome.calls.strengths')}</p>
               <ul className="list-disc space-y-1 pl-5 text-sm">
                 {scoreBreakdown.strengths.map((item) => (
                   <li key={item}>{item}</li>
@@ -767,7 +773,7 @@ function CallQualitySection({
           ) : null}
           {scoreBreakdown?.improvements?.length ? (
             <div>
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Improvements</p>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('chrome.calls.improvements')}</p>
               <ul className="list-disc space-y-1 pl-5 text-sm">
                 {scoreBreakdown.improvements.map((item) => (
                   <li key={item}>{item}</li>
@@ -778,7 +784,7 @@ function CallQualitySection({
           <MissedOpportunitiesPanel items={scoreBreakdown?.missedOpportunities} />
           {scorecardDimensions.length > 0 && metrics ? (
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Scorecard</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('chrome.calls.scorecard')}</p>
               <CallScorecardTable dimensions={scorecardDimensions} metrics={metrics} />
             </div>
           ) : null}

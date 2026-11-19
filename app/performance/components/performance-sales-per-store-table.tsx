@@ -95,18 +95,19 @@ export function PerformanceSalesPerStoreTable({
   return (
     <Card className="shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Sales per store</CardTitle>
+        <CardTitle className="text-base">{t('chrome.performance.store.title')}</CardTitle>
         <select
           className="rounded-md border bg-background px-2 py-1 text-xs"
           value={sortBy}
+          aria-label={t('chrome.performance.store.sortAria')}
           onChange={(e) => setSortBy(e.target.value as SortField)}
         >
-          <option value="revenue">Revenue</option>
-          <option value="gp">Gross profit</option>
-          <option value="gpPercentage">GP %</option>
-          <option value="transactions">Transactions</option>
-          <option value="clients">Clients</option>
-          <option value="basketValue">Avg basket</option>
+          <option value="revenue">{t('tables.revenue')}</option>
+          <option value="gp">{t('chrome.performance.store.grossProfit')}</option>
+          <option value="gpPercentage">{t('tables.gpPercent')}</option>
+          <option value="transactions">{t('chrome.performance.store.transactions')}</option>
+          <option value="clients">{t('chrome.performance.store.clients')}</option>
+          <option value="basketValue">{t('tables.avgBasket')}</option>
         </select>
       </CardHeader>
       <CardContent className="overflow-x-auto">
@@ -116,10 +117,10 @@ export function PerformanceSalesPerStoreTable({
               <TableHead>{t('tables.store')}</TableHead>
               <TableHead className="text-right">{t('tables.invoice')}</TableHead>
               <TableHead className="text-right">{t('tables.client')}</TableHead>
-              <TableHead className="text-right">Avg basket</TableHead>
-              <TableHead className="text-right">Revenue</TableHead>
-              <TableHead className="text-right">GP</TableHead>
-              <TableHead className="text-right">GP %</TableHead>
+              <TableHead className="text-right">{t('tables.avgBasket')}</TableHead>
+              <TableHead className="text-right">{t('tables.revenue')}</TableHead>
+              <TableHead className="text-right">{t('tables.gp')}</TableHead>
+              <TableHead className="text-right">{t('tables.gpPercent')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -158,7 +159,7 @@ export function PerformanceSalesPerStoreTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell>Total</TableCell>
+              <TableCell>{t('tables.total')}</TableCell>
               <TableCell className="text-right">{formatPerformanceInteger(totals.transactions)}</TableCell>
               <TableCell className="text-right">{formatPerformanceInteger(totals.clients)}</TableCell>
               <TableCell className={cn('text-right', performanceAmountClassName(totals.avgBasket))}>

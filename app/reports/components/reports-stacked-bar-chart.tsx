@@ -20,6 +20,7 @@ import {
 } from '@/app/reports/lib/reports-chart-format';
 import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-tooltip';
 import type { GroupedBarSeries } from '@/app/reports/components/reports-grouped-bar-chart';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_MAX_BAR_SIZE = 36;
 
@@ -48,13 +49,14 @@ export function ReportsStackedBarChart({
   yAxisLabel,
   maxBarSize = DEFAULT_MAX_BAR_SIZE,
 }: ReportsStackedBarChartProps) {
+  const { t } = useTranslation('screens');
   const config = series.reduce<ChartConfig>((acc, item) => {
     acc[item.key] = { label: item.label, color: item.color };
     return acc;
   }, {});
 
   if (data.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No data</p>;
+    return <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.common.noData')}</p>;
   }
 
   const axisLabel = reportsYAxisLabel(valueKind, yAxisLabel);

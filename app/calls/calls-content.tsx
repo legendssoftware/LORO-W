@@ -379,6 +379,7 @@ function CallTableRow({
 }
 
 function CallAdminActions() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   return (
     <>
@@ -389,7 +390,7 @@ function CallAdminActions() {
         );
       }}>
         <Database className="size-4" />
-        Backfill
+        {t('chrome.calls.backfill')}
       </Button>
       <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
         void client.post('/calls/relink-leads').then(
@@ -398,7 +399,7 @@ function CallAdminActions() {
         );
       }}>
         <Link2 className="size-4" />
-        Relink leads
+        {t('chrome.calls.relinkLeads')}
       </Button>
     </>
   );

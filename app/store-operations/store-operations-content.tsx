@@ -69,13 +69,13 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const FEATURES = [
-  { title: 'GPS & Geofencing', body: 'Open and close only inside the branch radius (100 m unless a branch overrides it).' },
-  { title: 'Automatic Alerts', body: 'A late opening is raised 10 minutes after the scheduled open.' },
-  { title: 'Configurable Checklists', body: 'Opening and closing items are stored per organisation.' },
-  { title: 'Stock Take (Cycle Count)', body: 'The catalogue is split into three daily cycles.' },
-  { title: 'KPIs & Performance', body: 'Punctuality, compliance, checklist, stock take, and incidents, month to date.' },
-  { title: 'Roles & Approvals', body: 'Store staff use the mobile flow. This dashboard is for managers and above.' },
-  { title: 'Legend ERP Integration', body: 'Closing asks the team to confirm transactions were synced to ERP.' },
+  { titleKey: 'chrome.storeOps.features.gps.title', bodyKey: 'chrome.storeOps.features.gps.body' },
+  { titleKey: 'chrome.storeOps.features.alerts.title', bodyKey: 'chrome.storeOps.features.alerts.body' },
+  { titleKey: 'chrome.storeOps.features.checklists.title', bodyKey: 'chrome.storeOps.features.checklists.body' },
+  { titleKey: 'chrome.storeOps.features.stockTake.title', bodyKey: 'chrome.storeOps.features.stockTake.body' },
+  { titleKey: 'chrome.storeOps.features.kpis.title', bodyKey: 'chrome.storeOps.features.kpis.body' },
+  { titleKey: 'chrome.storeOps.features.roles.title', bodyKey: 'chrome.storeOps.features.roles.body' },
+  { titleKey: 'chrome.storeOps.features.erp.title', bodyKey: 'chrome.storeOps.features.erp.body' },
 ] as const;
 
 const STATUS_LABEL: Record<string, string> = {
@@ -251,11 +251,11 @@ export function StoreOperationsContent() {
           <TabsList className={TAB_LIST_CLASS} data-tour="store-operations-tabs">
             <TabsTrigger value="overview" className={TAB_TRIGGER_CLASS}>
               <LayoutDashboard className="size-4" aria-hidden />
-              Overview
+              {t('chrome.common.overview')}
             </TabsTrigger>
             <TabsTrigger value="details" className={TAB_TRIGGER_CLASS}>
               <List className="size-4" aria-hidden />
-              Details
+              {t('chrome.common.details')}
             </TabsTrigger>
           </TabsList>
 
@@ -268,7 +268,7 @@ export function StoreOperationsContent() {
               onClick={() => setFiltersDialogOpen(true)}
             >
               <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-              Filter
+              {t('actions.filter')}
             </Button>
             <div className="flex justify-end">
               <FeaturesButton onClick={() => setFeaturesOpen(true)} />
@@ -278,9 +278,9 @@ export function StoreOperationsContent() {
           <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Filters</DialogTitle>
+                <DialogTitle>{t('actions.filters')}</DialogTitle>
                 <DialogDescription>
-                  Narrow stores by country, region, and period.
+                  {t('chrome.storeOps.filtersDescription')}
                 </DialogDescription>
               </DialogHeader>
               <StoreOperationsFilterControls
@@ -336,40 +336,40 @@ export function StoreOperationsContent() {
             <TabsContent value="overview" className="mt-0 flex min-h-0 flex-1 flex-col outline-none">
               <section className="mb-4 grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" data-tour="store-operations-summary">
                 <SummaryCard
-                  label="Total Stores"
+                  label={t('chrome.storeOps.totalStores')}
                   value={String(data.summary.totalStores)}
                   active={cardFilter === 'all'}
                   onClick={() => selectCard('all')}
                 />
                 <SummaryCard
-                  label="Opened On Time"
+                  label={t('chrome.storeOps.openedOnTime')}
                   value={String(data.summary.openedOnTime)}
                   hint={formatPercent(data.summary.openedOnTimePercent)}
                   active={cardFilter === 'opened_on_time'}
                   onClick={() => selectCard('opened_on_time')}
                 />
                 <SummaryCard
-                  label="Late Opening"
+                  label={t('chrome.storeOps.lateOpening')}
                   value={String(data.summary.lateOpenings)}
                   hint={formatPercent(data.summary.latePercent)}
                   active={cardFilter === 'late'}
                   onClick={() => selectCard('late')}
                 />
                 <SummaryCard
-                  label="Missed Openings"
+                  label={t('chrome.storeOps.missedOpenings')}
                   value={String(data.summary.missedOpenings)}
                   active={cardFilter === 'missed'}
                   onClick={() => selectCard('missed')}
                 />
                 <SummaryCard
-                  label="Closed On Time"
+                  label={t('chrome.storeOps.closedOnTime')}
                   value={String(data.summary.closedOnTime)}
                   hint={formatPercent(data.summary.closedOnTimePercent)}
                   active={cardFilter === 'closed_on_time'}
                   onClick={() => selectCard('closed_on_time')}
                 />
                 <SummaryCard
-                  label="Checklists Completed"
+                  label={t('chrome.storeOps.checklistsCompleted')}
                   value={String(data.summary.checklistsCompleted)}
                   hint={formatPercent(data.summary.checklistsPercent)}
                   active={cardFilter === 'checklists'}
@@ -379,12 +379,12 @@ export function StoreOperationsContent() {
 
               <div className="flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card" data-tour="store-operations-stores">
                 <h2 className="shrink-0 border-b border-border px-4 py-3 text-sm font-semibold">
-                  Store Status (Real-Time)
+                  {t('chrome.storeOps.storeStatus')}
                 </h2>
                 <div className="min-h-0 flex-1 overflow-auto">
                   {stores.length === 0 ? (
                     <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      No stores match these filters.
+                      {t('chrome.storeOps.noMatch')}
                     </p>
                   ) : (
                     <Table>
@@ -445,7 +445,7 @@ export function StoreOperationsContent() {
             <TabsContent value="details" className="mt-0 flex min-h-0 flex-1 flex-col gap-4 outline-none">
               <div className="grid shrink-0 gap-4 lg:grid-cols-2">
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <h2 className="mb-3 text-sm font-semibold">Store Operations KPIs (MTD)</h2>
+                  <h2 className="mb-3 text-sm font-semibold">{t('chrome.storeOps.kpis')}</h2>
                   <div className="flex flex-col gap-3">
                     {data.kpis.map((kpi) => (
                       <div key={kpi.key}>
@@ -466,7 +466,7 @@ export function StoreOperationsContent() {
                 <section className="rounded-xl border border-border bg-card p-4">
                   <h2 className="mb-3 text-sm font-semibold">Alerts ({data.alerts.length})</h2>
                   {data.alerts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No alerts for this day.</p>
+                    <p className="text-sm text-muted-foreground">{t('chrome.storeOps.noAlerts')}</p>
                   ) : (
                     <ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
                       {data.alerts.map((alert) => (
@@ -516,6 +516,7 @@ function StoreOperationsFilterControls({
   onRegionChange: (value: string) => void;
   regions: string[];
 }) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const triggerClass = row ? FILTER_TRIGGER_CLASS : FILTER_TRIGGER_STACK;
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -549,7 +550,7 @@ function StoreOperationsFilterControls({
           triggerClassName={triggerClass}
         />
         {country !== ALL_FILTER ? (
-          <ClearFilterButton label="Clear country filter" onClick={() => onCountryChange(ALL_FILTER)} />
+          <ClearFilterButton label={t('chrome.lists.clearCountryFilter')} onClick={() => onCountryChange(ALL_FILTER)} />
         ) : null}
       </div>
 
@@ -566,7 +567,7 @@ function StoreOperationsFilterControls({
           triggerClassName={triggerClass}
         />
         {region !== ALL_FILTER ? (
-          <ClearFilterButton label="Clear region filter" onClick={() => onRegionChange(ALL_FILTER)} />
+          <ClearFilterButton label={t('chrome.lists.clearRegionFilter')} onClick={() => onRegionChange(ALL_FILTER)} />
         ) : null}
       </div>
 
@@ -594,6 +595,7 @@ function PeriodPicker({
   showClear: boolean;
   onClear: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = useState(false);
   const selected = parseFlexibleDate(value) ?? undefined;
   const range = defaultDateRange();
@@ -609,7 +611,7 @@ function PeriodPicker({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            aria-label="Period"
+            aria-label={t('chrome.storeOps.period')}
             title={triggerLabel}
             className={cn(
               reportsFilterSelectTriggerClass,
@@ -640,7 +642,7 @@ function PeriodPicker({
           />
         </PopoverContent>
       </Popover>
-      {showClear ? <ClearFilterButton label="Reset period to today" onClick={onClear} /> : null}
+      {showClear ? <ClearFilterButton label={t('chrome.storeOps.resetToToday')} onClick={onClear} /> : null}
     </div>
   );
 }
@@ -659,6 +661,7 @@ function ClearFilterButton({ label, onClick }: { label: string; onClick: () => v
 }
 
 function FeaturesButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation('screens');
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -673,7 +676,7 @@ function FeaturesButton({ onClick }: { onClick: () => void }) {
           <Info className="size-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Key features & controls</TooltipContent>
+      <TooltipContent>{t('chrome.storeOps.keyFeaturesControls')}</TooltipContent>
     </Tooltip>
   );
 }
@@ -685,20 +688,21 @@ function FeaturesDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Key Features & Controls</DialogTitle>
+          <DialogTitle>{t('chrome.storeOps.keyFeaturesControlsTitle')}</DialogTitle>
           <DialogDescription>
-            How store openings, checklists, and stock counts work.
+            {t('chrome.storeOps.keyFeaturesDescription')}
           </DialogDescription>
         </DialogHeader>
         <ul className="flex flex-col gap-3">
           {FEATURES.map((feature) => (
-            <li key={feature.title}>
-              <p className="text-sm font-medium">{feature.title}</p>
-              <p className="text-xs text-muted-foreground">{feature.body}</p>
+            <li key={feature.titleKey}>
+              <p className="text-sm font-medium">{t(feature.titleKey)}</p>
+              <p className="text-xs text-muted-foreground">{t(feature.bodyKey)}</p>
             </li>
           ))}
         </ul>

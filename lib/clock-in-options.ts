@@ -19,13 +19,23 @@ export const OPTION_KEY_TO_LABEL: Record<ClockInOptionKey, ClockInOptionLabel> =
   driving: 'Driving',
 };
 
+/**
+ * i18n keys (`screens` namespace) for clock-in UI copy. API note payloads keep the English
+ * labels above; translate with these keys only where text is rendered.
+ */
+export const CLOCK_IN_OPTION_DISPLAY_KEYS: Record<ClockInOptionKey, string> = {
+  at_office: 'dashboard.clockIn.atOffice',
+  work_from_home: 'dashboard.clockIn.workFromHome',
+  starting_from_home: 'dashboard.clockIn.startingFromHome',
+  offsite: 'dashboard.clockIn.offsite',
+  driving: 'dashboard.clockIn.driving',
+};
+
 /** When API omits outsideBranchRadiusMessage (older server). */
-export const OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK =
-  'You are outside the office check-in radius.';
+export const OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY = 'dashboard.attendance.outsideBranchRadius';
 
 /** Shown when location context could not be loaded (generic fallback). */
-export const LOCATION_CONTEXT_UNAVAILABLE_MESSAGE =
-  'Could not verify your location. Choose how you are starting your shift, or retry location.';
+export const LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY = 'dashboard.locationContext.missingContext';
 
 export type LocationContextFailureReason =
   | 'permission_denied'
@@ -34,19 +44,19 @@ export type LocationContextFailureReason =
   | 'api_error'
   | 'missing_context';
 
-/** User-facing copy when clock-in context could not be loaded. */
-export function locationContextFailureMessage(reason: LocationContextFailureReason): string {
+/** i18n key (`screens` namespace) for user-facing copy when clock-in context could not be loaded. */
+export function locationContextFailureMessageKey(reason: LocationContextFailureReason): string {
   switch (reason) {
     case 'permission_denied':
-      return 'Location access is denied. Enable location for LORO in your browser settings, then retry.';
+      return 'dashboard.locationContext.permissionDenied';
     case 'position_unavailable':
-      return 'Could not read your location. Check that location services are on, then retry.';
+      return 'dashboard.locationContext.positionUnavailable';
     case 'api_unreachable':
-      return 'Could not reach the server to verify your location. Check your connection and API URL, then retry.';
+      return 'dashboard.locationContext.apiUnreachable';
     case 'api_error':
-      return 'The server could not verify your location. Try again in a moment, or choose how you are starting.';
+      return 'dashboard.locationContext.apiError';
     case 'missing_context':
-      return LOCATION_CONTEXT_UNAVAILABLE_MESSAGE;
+      return LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY;
     default: {
       const _exhaustive: never = reason;
       return _exhaustive;

@@ -8,11 +8,11 @@ export const UI_LOCALES = ['en', 'pt', 'fr', 'es'] as const;
 export type UiLocale = (typeof UI_LOCALES)[number];
 
 export const LANGUAGE_CHOICES = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'en', label: 'English' },
-  { value: 'pt', label: 'Português' },
-  { value: 'fr', label: 'Français' },
-  { value: 'es', label: 'Español' },
+  { value: 'auto', label: 'AUTO' },
+  { value: 'en', label: 'EN' },
+  { value: 'pt', label: 'PT' },
+  { value: 'fr', label: 'FR' },
+  { value: 'es', label: 'ES' },
 ] as const;
 
 export type LanguageChoice = (typeof LANGUAGE_CHOICES)[number]['value'];

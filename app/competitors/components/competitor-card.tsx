@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDisplayName } from '@/lib/client-display';
 import { hasStoredCoordinates } from '@/lib/utils/address-map-geocode';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export function CompetitorCardSkeleton() {
   const isMobile = useIsMobile();
@@ -47,6 +48,7 @@ export function CompetitorCard({
   competitor: CompetitorListItem;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const isMobile = useIsMobile();
   const initials = competitor.name
     .split(/\s+/)
@@ -133,11 +135,11 @@ export function CompetitorCard({
           ) : null}
           {competitor.isDirect === true ? (
             <Badge variant="outline" className="text-[10px] font-normal">
-              Direct
+              {t('chrome.competitors.direct')}
             </Badge>
           ) : competitor.isDirect === false ? (
             <Badge variant="outline" className="text-[10px] font-normal">
-              Indirect
+              {t('chrome.competitors.indirect')}
             </Badge>
           ) : null}
           {industry ? (

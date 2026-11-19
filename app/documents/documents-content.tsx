@@ -83,7 +83,7 @@ export function DocumentsContent() {
         search={
           <div className="relative w-56">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Search documents" aria-label="Search documents" className={`${filterToolbarSearchInputClassName} pl-8`} />
+            <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={t('forms.documents.search')} aria-label={t('forms.documents.search')} className={`${filterToolbarSearchInputClassName} pl-8`} />
           </div>
         }
         isLoading={!ready || list.isLoading}
@@ -132,17 +132,17 @@ export function DocumentsContent() {
         <DialogContent>
           <DialogHeader><DialogTitle className="flex items-center gap-2"><FileText className="size-4" aria-hidden />Attach document</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <IconField icon={FileText} label="Title">
-              <IconInput icon={FileText} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. March contract" />
+            <IconField icon={FileText} label={t('forms.documents.title')}>
+              <IconInput icon={FileText} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('forms.documents.titlePlaceholder')} />
             </IconField>
-            <IconField icon={FileText} label="File">
-              <Input type="file" aria-label="Choose a file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+            <IconField icon={FileText} label={t('forms.documents.file')}>
+              <Input type="file" aria-label={t('forms.documents.fileAria')} onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
             </IconField>
-            <IconField icon={UserRound} label="Person">
+            <IconField icon={UserRound} label={t('forms.documents.person')}>
               <Select value={ownerUid} onValueChange={setOwnerUid}>
                 <SelectTrigger className="w-full">
                   <UserRound className="size-4 text-muted-foreground" aria-hidden />
-                  <SelectValue placeholder="Select a person" />
+                  <SelectValue placeholder={t('forms.documents.personPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {(users.data ?? []).map((user) => (

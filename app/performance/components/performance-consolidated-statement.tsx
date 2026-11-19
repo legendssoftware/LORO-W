@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Building2, Check, ChevronDown, ChevronUp, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useConsolidatedIncomeStatement } from '@/api/hooks/use-consolidated-income-statement';
 import type {
   ConsolidatedBranchData,
@@ -107,6 +108,7 @@ export function PerformanceConsolidatedStatement({
   filters,
   enabled,
 }: PerformanceConsolidatedStatementProps) {
+  const { t } = useTranslation('screens');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showInZAR, setShowInZAR] = useState(true);
   const { data, isLoading, isError, error } = useConsolidatedIncomeStatement({
@@ -144,7 +146,7 @@ export function PerformanceConsolidatedStatement({
         <CardContent className="py-12">
           <LoadingSpinner wrapperClassName="py-4" />
           <p className="mt-3 text-center text-sm text-muted-foreground">
-            Loading consolidated income statement…
+            {t('chrome.performance.consolidated.loading')}
           </p>
         </CardContent>
       </Card>
@@ -155,9 +157,9 @@ export function PerformanceConsolidatedStatement({
     return (
       <Alert variant="destructive">
         <AlertTriangle />
-        <AlertTitle>Error loading data</AlertTitle>
+        <AlertTitle>{t('chrome.performance.consolidated.errorTitle')}</AlertTitle>
         <AlertDescription>
-          {error instanceof Error ? error.message : 'Failed to fetch consolidated income statement'}
+          {error instanceof Error ? error.message : t('chrome.performance.consolidated.errorFetch')}
         </AlertDescription>
       </Alert>
     );
@@ -167,9 +169,9 @@ export function PerformanceConsolidatedStatement({
     return (
       <Card className="shadow-sm">
         <CardContent className="py-10 text-center">
-          <p className="font-medium">No data available</p>
+          <p className="font-medium">{t('chrome.performance.consolidated.noData')}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            No sales data found for the selected date range
+            {t('chrome.performance.consolidated.noDataHint')}
           </p>
         </CardContent>
       </Card>
@@ -201,10 +203,14 @@ export function PerformanceConsolidatedStatement({
             <Globe className="size-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Consolidated Statement</CardTitle>
+            <CardTitle className="text-base">{t('chrome.performance.consolidated.title')}</CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              {data.totalCountries} {data.totalCountries === 1 ? 'country' : 'countries'} · {data.totalBranches}{' '}
-              {data.totalBranches === 1 ? 'branch' : 'branches'}
+              {t(data.totalCountries === 1 ? 'chrome.performance.consolidated.countryCountOne' : 'chrome.performance.consolidated.countryCount', {
+                count: data.totalCountries,
+              })}{' · '}
+              {t(data.totalBranches === 1 ? 'chrome.performance.consolidated.branchCountOne' : 'chrome.performance.consolidated.branchCount', {
+                count: data.totalBranches,
+              })}
               {` · ${formatDateRangeLabel(startDate, endDate)}`}
             </p>
           </div>
@@ -227,12 +233,12 @@ export function PerformanceConsolidatedStatement({
         {showForexWarning ? (
           <Alert variant="destructive" className="mx-4">
             <AlertTriangle />
-            <AlertTitle>Exchange rates missing or invalid</AlertTitle>
+            <AlertTitle>{t('chrome.performance.consolidated.forexTitle')}</AlertTitle>
             <AlertDescription>
-              ZAR amounts need valid forex rates from ERP. Figures shown as ZAR may not reflect true conversion.
+              {t('chrome.performance.consolidated.forexBody')}
               {zarForexIssues.details.length > 0
                 ? ` ${zarForexIssues.details
-                    .map((d) => (d.reason === 'missing' ? `${d.code}: missing` : `${d.code}: invalid rate`))
+                    .map((d) => (d.reason === 'missing' ? t('chrome.performance.consolidated.forexMissing', { code: d.code }) : t('chrome.performance.consolidated.forexInvalid', { code: d.code })))
                     .join(' · ')}`
                 : ''}
             </AlertDescription>
@@ -267,8 +273,12 @@ export function PerformanceConsolidatedStatement({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{country.countryName}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {country.branchCount || country.branches.length}{' '}
-                      {(country.branchCount || country.branches.length) === 1 ? 'branch' : 'branches'}
+                      {t(
+                        (country.branchCount || country.branches.length) === 1
+                          ? 'chrome.performance.consolidated.branchCountOne'
+                          : 'chrome.performance.consolidated.branchCount',
+                        { count: country.branchCount || country.branches.length },
+                      )}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
@@ -277,7 +287,7 @@ export function PerformanceConsolidatedStatement({
                     </p>
                     <p className="whitespace-nowrap text-[11px] sm:text-xs">
                       <span className={performanceGpPercentClassName(totals.gpPercentage)}>
-                        Avg GP {formatPerformancePercent(totals.gpPercentage)}
+                        {t('chrome.performance.consolidated.avgGp', { percent: formatPerformancePercent(totals.gpPercentage) })}
                       </span>
                       {' — '}
                       <span className={performanceAmountClassName(totals.gp)}>
@@ -285,7 +295,7 @@ export function PerformanceConsolidatedStatement({
                       </span>
                     </p>
                     <p className="whitespace-nowrap text-[11px] text-muted-foreground">
-                      {showInZAR ? fxLine || (forexCode === 'ZAR' ? 'ZAR' : 'Rate unavailable') : country.currency.code}
+                      {showInZAR ? fxLine || (forexCode === 'ZAR' ? 'ZAR' : t('chrome.performance.consolidated.rateUnavailable')) : country.currency.code}
                     </p>
                   </div>
                   {isOpen ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}
@@ -293,7 +303,7 @@ export function PerformanceConsolidatedStatement({
                 {isOpen ? (
                   <div>
                     {country.branches.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-muted-foreground">No branch data available</p>
+                      <p className="px-4 py-3 text-sm text-muted-foreground">{t('chrome.performance.consolidated.noBranchData')}</p>
                     ) : (
                       country.branches.map((branch, index) => {
                         const branchTotals = getBranchTotals(branch, country, showInZAR, convertToZAR);
@@ -311,8 +321,12 @@ export function PerformanceConsolidatedStatement({
                                 <p className="truncate font-medium">{branch.branchName}</p>
                                 {branch.transactionCount != null ? (
                                   <p className="text-xs text-muted-foreground">
-                                    {branch.transactionCount}{' '}
-                                    {branch.transactionCount === 1 ? 'invoice' : 'invoices'}
+                                    {t(
+                                      branch.transactionCount === 1
+                                        ? 'chrome.performance.consolidated.invoiceCountOne'
+                                        : 'chrome.performance.consolidated.invoiceCount',
+                                      { count: branch.transactionCount },
+                                    )}
                                   </p>
                                 ) : null}
                               </div>
@@ -323,7 +337,7 @@ export function PerformanceConsolidatedStatement({
                               </p>
                               <p className="whitespace-nowrap text-[11px] sm:text-xs">
                                 <span className={performanceGpPercentClassName(branchTotals.gpPercentage)}>
-                                  GP {formatPerformancePercent(branchTotals.gpPercentage)}
+                                  {t('chrome.performance.consolidated.gpPercent', { percent: formatPerformancePercent(branchTotals.gpPercentage) })}
                                 </span>
                                 {' — '}
                                 <span className={performanceAmountClassName(branchTotals.gp)}>
@@ -344,11 +358,18 @@ export function PerformanceConsolidatedStatement({
 
         <div className="space-y-3 border-t bg-muted/50 p-4">
           <p className="font-semibold text-foreground">
-            Grand Total ({data.totalCountries} {data.totalCountries === 1 ? 'country' : 'countries'})
+            {t('chrome.performance.consolidated.grandTotal', {
+              countries: t(
+                data.totalCountries === 1
+                  ? 'chrome.performance.consolidated.countryCountOne'
+                  : 'chrome.performance.consolidated.countryCount',
+                { count: data.totalCountries },
+              ),
+            })}
           </p>
           {data.totalCountries > 1 ? (
             <p className={cn('text-sm font-medium', performanceAmountClassName(grandTotalZAR))}>
-              Total Revenue (ZAR): {formatPerformanceMoney(grandTotalZAR, 'R')}
+              {t('chrome.performance.consolidated.totalRevenueZar', { amount: formatPerformanceMoney(grandTotalZAR, 'R') })}
             </p>
           ) : null}
           <div
@@ -365,18 +386,17 @@ export function PerformanceConsolidatedStatement({
                 performanceAmountClassName(consolidatedGPZAR)
               )}
             >
-              Consolidated Gross Profit
+              {t('chrome.performance.consolidated.gpTitle')}
             </p>
             <p className={cn('text-lg font-bold', performanceAmountClassName(consolidatedGPZAR))}>
               {formatPerformanceMoney(consolidatedGPZAR, 'R')}
             </p>
             <p className={cn('text-xs', performanceGpPercentClassName(totalGPPercentage))}>
-              {formatPerformancePercent(totalGPPercentage)} GP Margin
+              {t('chrome.performance.consolidated.gpMargin', { percent: formatPerformancePercent(totalGPPercentage) })}
             </p>
           </div>
           <p className="text-xs text-muted-foreground">
-            Consolidated totals are in ZAR (or ZAR equivalent when multiple countries). Use the currency
-            toggle to switch the country breakdown between ZAR and local currency.
+            {t('chrome.performance.consolidated.helper')}
           </p>
         </div>
       </CardContent>

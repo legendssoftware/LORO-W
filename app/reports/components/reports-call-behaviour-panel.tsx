@@ -7,12 +7,14 @@ import {
   REPORTS_CHART_GREEN,
   REPORTS_CHART_RED,
 } from '@/app/reports/lib/reports-dashboard-chart-helpers';
+import { useTranslation } from 'react-i18next';
 
 export function ReportsCallBehaviourPanel({
   behaviour,
 }: {
   behaviour: CallQualityBehaviourRow[];
 }) {
+  const { t } = useTranslation('screens');
   if (behaviour.length === 0) return null;
 
   const bars = behaviour.map((row) => ({
@@ -29,8 +31,8 @@ export function ReportsCallBehaviourPanel({
             key={row.id}
             rate={row.passRate}
             label={row.label}
-            passedLabel="Passed"
-            failedLabel="Failed"
+            passedLabel={t('chrome.reports.cq.passed')}
+            failedLabel={t('chrome.reports.cq.failed')}
           />
         ))}
       </div>
@@ -38,8 +40,8 @@ export function ReportsCallBehaviourPanel({
         data={bars}
         categoryKey="name"
         series={[
-          { key: 'passed', label: 'Passed', color: REPORTS_CHART_GREEN },
-          { key: 'failed', label: 'Failed', color: REPORTS_CHART_RED },
+          { key: 'passed', label: t('chrome.reports.cq.passed'), color: REPORTS_CHART_GREEN },
+          { key: 'failed', label: t('chrome.reports.cq.failed'), color: REPORTS_CHART_RED },
         ]}
         yAxisLabel="Calls"
         heightClassName="h-[200px]"

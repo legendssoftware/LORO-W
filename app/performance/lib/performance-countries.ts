@@ -69,12 +69,15 @@ export function getCountryDisplayName(code: string): string {
   return COUNTRY_NAME_MAP[code] ?? code;
 }
 
-export function getCountriesDisplayLabel(countries: string[] | undefined): string {
+export function getCountriesDisplayLabel(
+  countries: string[] | undefined,
+  allCountriesLabel = 'All Countries',
+): string {
   if (!countries?.length) {
-    return `All Countries (${PERFORMANCE_COUNTRY_IDS.map(getCountryDisplayName).join(', ')})`;
+    return `${allCountriesLabel} (${PERFORMANCE_COUNTRY_IDS.map(getCountryDisplayName).join(', ')})`;
   }
   const names = countries.map(getCountryDisplayName);
-  return `All Countries (${names.join(', ')})`;
+  return `${allCountriesLabel} (${names.join(', ')})`;
 }
 
 export function stableCountriesKey(countries: string[] | undefined): string {

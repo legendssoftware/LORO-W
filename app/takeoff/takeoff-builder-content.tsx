@@ -331,8 +331,8 @@ export function TakeoffBuilderContent({ open, onSaved, onCancel }: TakeoffBuilde
                       <TableRow>
                         <TableHead>{t('tables.code')}</TableHead>
                         <TableHead>{t('tables.description')}</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Each</TableHead>
+                        <TableHead className="text-right">{t('tables.qty')}</TableHead>
+                        <TableHead className="text-right">{t('tables.each')}</TableHead>
                         <TableHead className="text-right">{t('tables.total')}</TableHead>
                       </TableRow>
                     </TableHeader>

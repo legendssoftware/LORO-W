@@ -28,6 +28,7 @@ import {
   payslipStatusLabel,
 } from '@/lib/utils/payslips-format';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 function formatIssueDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -66,6 +67,7 @@ export function PayslipDetailDialog({
   onOpenChange,
   showEmployee = false,
 }: PayslipDetailDialogProps) {
+  const { t } = useTranslation('screens');
   const hasDocument = !!(payslip?.documentUrl || payslip?.documentRef);
   const documentQuery = usePayslipDocument(payslip?.uid, {
     enabled: open && hasDocument,
@@ -94,7 +96,7 @@ export function PayslipDetailDialog({
             {payslip ? formatPayslipPeriod(payslip.period) : 'Payslip'}
           </DialogTitle>
           <DialogDescription>
-            View and download your payslip PDF.
+            {t('chrome.payslips.viewDownload')}
           </DialogDescription>
         </DialogHeader>
 
@@ -141,10 +143,10 @@ export function PayslipDetailDialog({
             </div>
 
             <div className="mt-4">
-              <DetailSectionHeading title="Document preview" icon={FileText} />
+              <DetailSectionHeading title={t('chrome.payslips.documentPreview')} icon={FileText} />
               {!hasDocument ? (
                 <p className="text-sm text-muted-foreground">
-                  No document is attached to this payslip.
+                  {t('chrome.payslips.noDocument')}
                 </p>
               ) : documentQuery.isLoading ? (
                 <div className="flex h-[50vh] items-center justify-center rounded-lg border border-border bg-muted/30">
@@ -152,7 +154,7 @@ export function PayslipDetailDialog({
                 </div>
               ) : documentQuery.isError || !previewUrl ? (
                 <p className="text-sm text-destructive">
-                  Could not load payslip document. Try again or contact support.
+                  {t('chrome.payslips.documentError')}
                 </p>
               ) : (
                 <iframe
@@ -171,7 +173,7 @@ export function PayslipDetailDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
-            Close
+            {t('actions.close')}
           </Button>
           <Button
             type="button"
@@ -180,7 +182,7 @@ export function PayslipDetailDialog({
             onClick={handleDownloadClick}
           >
             <Download className="size-4" />
-            Download PDF
+            {t('chrome.payslips.downloadPdf')}
           </Button>
         </DialogFooter>
       </DialogContent>

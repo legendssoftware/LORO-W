@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { UseFormReturn } from 'react-hook-form';
 import type { EmployeeIntakeFormValues, IntakeDocumentValues } from '@/lib/user-form/employee-intake-schema';
 import {
@@ -11,7 +12,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePickerField } from '@/components/ui/date-picker-field';
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,7 @@ export function EmployeeIntakeSteps({
   onDocumentSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveDocument: (index: number) => void;
 }) {
+  const { t: tCommon } = useTranslation('common');
   const reviewSections = collectReviewSections(values);
 
   if (step === 1) {
@@ -230,7 +232,7 @@ export function EmployeeIntakeSteps({
             <FormItem>
               <FormLabel>Street address *</FormLabel>
               <FormControl>
-                <Input {...field} autoComplete="street-address" placeholder={FORM_PLACEHOLDERS.street} />
+                <Input {...field} autoComplete="street-address" placeholder={formPlaceholder(tCommon, 'street')} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -244,7 +246,7 @@ export function EmployeeIntakeSteps({
               <FormItem>
                 <FormLabel>City *</FormLabel>
                 <FormControl>
-                  <Input {...field} autoComplete="address-level2" placeholder={FORM_PLACEHOLDERS.city} />
+                  <Input {...field} autoComplete="address-level2" placeholder={formPlaceholder(tCommon, 'city')} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -306,7 +308,7 @@ export function EmployeeIntakeSteps({
             <FormItem>
               <FormLabel>Work contact number *</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" placeholder={FORM_PLACEHOLDERS.phone} />
+                <Input {...field} type="tel" placeholder={formPlaceholder(tCommon, 'phone')} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -369,9 +371,9 @@ export function EmployeeIntakeSteps({
           <CollapsibleContent className="mt-3 grid gap-3 sm:grid-cols-2">
             {(
               [
-                ['employmentProfile.position', 'Position', FORM_PLACEHOLDERS.position],
-                ['employmentProfile.department', 'Department', FORM_PLACEHOLDERS.department],
-                ['employmentProfile.email', 'Work email', FORM_PLACEHOLDERS.workEmail],
+                ['employmentProfile.position', 'Position', formPlaceholder(tCommon, 'position')],
+                ['employmentProfile.department', 'Department', formPlaceholder(tCommon, 'department')],
+                ['employmentProfile.email', 'Work email', formPlaceholder(tCommon, 'workEmail')],
               ] as const
             ).map(([name, label, placeholder]) => (
               <FormField

@@ -2,6 +2,7 @@
 
 import type { CallQualityFunnel } from '@/api/types/reports-call-quality';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type FunnelStep = {
   label: string;
@@ -15,16 +16,17 @@ function dropOffPct(previous: number, current: number): number | null {
 }
 
 export function ReportsCallQualityFunnel({ funnel }: { funnel: CallQualityFunnel }) {
+  const { t } = useTranslation('screens');
   const steps: FunnelStep[] = [
-    { label: 'Decision-makers', value: funnel.decisionMakersReached, tone: 'good' },
-    { label: 'Quality conversations (PBX)', value: funnel.qualityConversations, tone: 'good' },
-    { label: 'Opportunities', value: funnel.immediateOpportunitiesFound, tone: 'good' },
-    { label: 'Projects', value: funnel.projectsIdentified, tone: 'good' },
-    { label: 'BOQs', value: funnel.boqsRequested, tone: 'good' },
-    { label: 'Follow-ups', value: funnel.followUpsBooked, tone: 'good' },
-    { label: 'Quotes (attributed)', value: funnel.quotesGenerated, tone: 'neutral' },
-    { label: 'Orders', value: funnel.ordersConverted, tone: 'neutral' },
-    { label: 'Missed pursuits', value: funnel.missedOpportunities ?? 0, tone: 'bad' },
+    { label: t('chrome.reports.cq.funnel.decisionMakers'), value: funnel.decisionMakersReached, tone: 'good' },
+    { label: t('chrome.reports.cq.funnel.qualityConversations'), value: funnel.qualityConversations, tone: 'good' },
+    { label: t('chrome.reports.cq.opportunities'), value: funnel.immediateOpportunitiesFound, tone: 'good' },
+    { label: t('chrome.reports.cq.funnel.projects'), value: funnel.projectsIdentified, tone: 'good' },
+    { label: t('chrome.reports.cq.funnel.boqs'), value: funnel.boqsRequested, tone: 'good' },
+    { label: t('chrome.reports.cq.funnel.followUps'), value: funnel.followUpsBooked, tone: 'good' },
+    { label: t('chrome.reports.cq.funnel.quotes'), value: funnel.quotesGenerated, tone: 'neutral' },
+    { label: t('chrome.reports.cq.funnel.orders'), value: funnel.ordersConverted, tone: 'neutral' },
+    { label: t('chrome.reports.cq.missedPursuits'), value: funnel.missedOpportunities ?? 0, tone: 'bad' },
   ];
 
   return (

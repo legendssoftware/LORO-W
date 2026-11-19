@@ -39,6 +39,7 @@ import { XIcon } from '@/lib/icons';
 import { PAYSLIP_STATUS_FILTER_OPTIONS } from '@/lib/payslips-scope';
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { useTranslation } from 'react-i18next';
 
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
@@ -85,6 +86,7 @@ function PayslipsFilterControls({
   onResetDateRange,
   onSelectedStatusChange,
 }: PayslipsFiltersBarProps & { layout: 'row' | 'stack' }) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const rangeBtnWidth = row
     ? 'h-9 min-w-[220px] shrink-0 justify-start text-left font-normal sm:min-w-[260px]'
@@ -103,14 +105,14 @@ function PayslipsFilterControls({
 
   const statusOptions: SearchableOptionRow[] = PAYSLIP_STATUS_FILTER_OPTIONS.map((o) => ({
     value: o.value,
-    label: o.label,
+    label: o.value === 'all' ? t('actions.allStatuses') : t(`chrome.payslips.status.${o.value}`),
     icon: statusIconFor(o.value),
   }));
 
   const statusVal = selectedStatus || 'all';
 
   const rangeLabel = useAllTime
-    ? 'All time'
+    ? t('actions.allTime')
     : formatUtcYmd(startDate) === formatUtcYmd(endDate)
       ? formatUtcCalendarLabel(startDate)
       : `${formatUtcCalendarLabel(startDate)} – ${formatUtcCalendarLabel(endDate)}`;
@@ -188,7 +190,7 @@ function PayslipsFilterControls({
                   size="sm"
                   onClick={() => onSetUseAllTime(true)}
                 >
-                  All time
+                  {t('actions.allTime')}
                 </Button>
                 <span className="text-xs text-muted-foreground">
                   or pick a UTC range below
@@ -228,7 +230,7 @@ function PayslipsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutToday}
                 >
-                  Today (UTC)
+                  {t('actions.todayUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -237,7 +239,7 @@ function PayslipsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutThisMonth}
                 >
-                  This month (UTC)
+                  {t('actions.thisMonthUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -246,7 +248,7 @@ function PayslipsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutWholeMonth}
                 >
-                  Whole month (UTC)
+                  {t('actions.wholeMonthUtc')}
                 </Button>
               </div>
               <Button
@@ -261,7 +263,7 @@ function PayslipsFilterControls({
                 )}
                 onClick={() => handleDatePopoverOpenChange(false)}
               >
-                Done
+                {t('actions.done')}
               </Button>
             </div>
           </PopoverContent>
@@ -271,7 +273,7 @@ function PayslipsFilterControls({
             type="button"
             onClick={onResetDateRange}
             className="ml-0.5 shrink-0 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset to all time"
+            aria-label={t('chrome.payslips.resetToAllTime')}
           >
             <XIcon className="size-4 text-red-600" />
           </button>
@@ -282,9 +284,9 @@ function PayslipsFilterControls({
         selectedValue={statusVal}
         onValueChange={onSelectedStatusChange}
         options={statusOptions}
-        placeholderLabelWhenAll="All statuses"
-        searchPlaceholder="Search statuses…"
-        emptyMessage="No status found."
+        placeholderLabelWhenAll={t('actions.allStatuses')}
+        searchPlaceholder={t('chrome.planning.searchStatuses')}
+        emptyMessage={t('actions.noStatusFound')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={cn(reportsFilterSelectTriggerClass, row ? 'w-auto' : 'w-full')}
       />
@@ -293,6 +295,7 @@ function PayslipsFilterControls({
 }
 
 export function PayslipsFiltersBar(props: PayslipsFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -315,16 +318,16 @@ export function PayslipsFiltersBar(props: PayslipsFiltersBarProps) {
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
       </div>
 
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Filter by issue date or status.
+              {t('chrome.payslips.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <PayslipsFilterControls layout="stack" {...props} />
