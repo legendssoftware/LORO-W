@@ -1,5 +1,6 @@
 'use client';
 
+import { PerformanceInsightDialog } from '@/components/performance-insight-dialog';
 import { SalesBenchmarksWelcomeDialog } from '@/components/sales-benchmarks-welcome-dialog';
 import { PerformanceWarningWelcomeDialog } from '@/components/performance-warning-welcome-dialog';
 import { useAcknowledgePaceNotice, usePaceNotice } from '@/api/hooks';
@@ -25,12 +26,12 @@ export function SalesWelcomeFlow() {
         employeeName={employeeName}
         targetWarnings={targetWarnings}
       />
-      {!isGeneralWorker && paceNotice ? (
-        <SalesBenchmarksWelcomeDialog
-          paceNotice={paceNotice}
-          onPaceAcknowledge={() => acknowledgePace.mutate()}
-          paceAcknowledging={acknowledgePace.isPending}
-          deferForPendingWarning={pendingBlockingWarning}
+      {!isGeneralWorker && paceNotice?.insight ? (
+        <PerformanceInsightDialog
+          notice={paceNotice}
+          onAcknowledge={() => acknowledgePace.mutate()}
+          acknowledging={acknowledgePace.isPending}
+          deferOpen={pendingBlockingWarning}
         />
       ) : null}
       {!isGeneralWorker && (

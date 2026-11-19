@@ -1,4 +1,4 @@
-import { enUS, esES, frFR, ptPT } from '@clerk/localizations';
+import { enUS, esES, frFR, itIT, ptPT } from '@clerk/localizations';
 import { asUiLocale } from './date-locale';
 import type { UiLocale } from './resolve-locale';
 
@@ -13,6 +13,8 @@ export function clerkLocalization(locale: string) {
       return frFR;
     case 'es':
       return esES;
+    case 'it':
+      return itIT;
     default: {
       const exhaustive: never = code;
       return exhaustive;
