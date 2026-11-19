@@ -23,14 +23,16 @@ import {
 } from '@/app/reports/lib/reports-chart-format';
 import { reportsChartTooltipFormatter } from '@/app/reports/lib/reports-chart-tooltip';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export function ReportsCallQualityTrendChart({
   daily,
 }: {
   daily: CallQualityDailyPoint[];
 }) {
+  const { t } = useTranslation('screens');
   if (daily.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">No daily series</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">{t('chrome.reports.cq.noDailySeries')}</p>;
   }
 
   const data = daily.map((row) => ({
@@ -40,8 +42,8 @@ export function ReportsCallQualityTrendChart({
   }));
 
   const config = {
-    calls: { label: 'Recordings', color: REPORTS_CHART_BLUE },
-    qualityConversations: { label: 'Quality conversations', color: REPORTS_CHART_GREEN },
+    calls: { label: t('chrome.reports.cq.recordings'), color: REPORTS_CHART_BLUE },
+    qualityConversations: { label: t('chrome.reports.cq.qualityConversations'), color: REPORTS_CHART_GREEN },
   } satisfies ChartConfig;
 
   const xLayout = getReportsCategoryAxisLayout(data.map((row) => row.name));
@@ -74,8 +76,8 @@ export function ReportsCallQualityTrendChart({
           content={
             <ChartTooltipContent
               formatter={reportsChartTooltipFormatter('count', (name) => {
-                if (name === 'calls') return 'Recordings';
-                if (name === 'qualityConversations') return 'Quality conversations';
+                if (name === 'calls') return t('chrome.reports.cq.recordings');
+                if (name === 'qualityConversations') return t('chrome.reports.cq.qualityConversations');
                 return name;
               })}
             />

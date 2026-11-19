@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { CLIENT_MODAL_CONTENT_CLASS } from './client-dialog-shared';
 import { cn } from '@/lib/utils';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 
 const addressSchema = z.object({
   street: z.string().min(5, 'Street is required (min 5 chars)'),
@@ -136,6 +137,8 @@ export function ClientFormDialog({
   mode: 'create' | 'edit';
   clientRef: number | null;
 }) {
+  const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const createMutation = useCreateClientMutation();
   const updateMutation = useUpdateClientMutation();
   const {
@@ -214,7 +217,7 @@ export function ClientFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(CLIENT_MODAL_CONTENT_CLASS)}>
         <DialogHeader className="shrink-0 space-y-1 px-6 pt-6 pb-2 pr-12">
-          <DialogTitle>{mode === 'create' ? 'Add client' : 'Edit client'}</DialogTitle>
+          <DialogTitle>{mode === 'create' ? t('chrome.clients.add') : t('chrome.clients.edit')}</DialogTitle>
         </DialogHeader>
         {showSpinner ? (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-12">
@@ -233,9 +236,9 @@ export function ClientFormDialog({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company / client name</FormLabel>
+                        <FormLabel>{t('forms.clients.companyName')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.companyName} className="bg-background border-border" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'companyName')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -246,9 +249,9 @@ export function ClientFormDialog({
                     name="contactPerson"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact person</FormLabel>
+                        <FormLabel>{t('forms.clients.contactPerson')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.fullName} className="bg-background border-border" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'fullName')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -260,9 +263,9 @@ export function ClientFormDialog({
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t('forms.clients.email')}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder={FORM_PLACEHOLDERS.email} className="bg-background border-border" />
+                            <Input {...field} type="email" placeholder={formPlaceholder(tCommon, 'email')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -273,9 +276,9 @@ export function ClientFormDialog({
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>{t('forms.clients.phone')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.landline} className="bg-background border-border" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'landline')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -287,9 +290,9 @@ export function ClientFormDialog({
                     name="alternativePhone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Alternative phone (optional)</FormLabel>
+                        <FormLabel>{t('forms.clients.altPhone')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.phone} className="bg-background border-border" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'phone')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -300,9 +303,9 @@ export function ClientFormDialog({
                     name="website"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website (optional)</FormLabel>
+                        <FormLabel>{t('forms.clients.website')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.website} className="bg-background border-border" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'website')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -314,9 +317,9 @@ export function ClientFormDialog({
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Category</FormLabel>
+                          <FormLabel>{t('forms.clients.category')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. Retail" className="bg-background border-border" />
+                            <Input {...field} placeholder={t('forms.clients.categoryPlaceholder')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -327,9 +330,9 @@ export function ClientFormDialog({
                       name="industry"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Industry (optional)</FormLabel>
+                          <FormLabel>{t('forms.clients.industry')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g. Construction" className="bg-background border-border" />
+                            <Input {...field} placeholder={t('forms.clients.industryPlaceholder')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -341,7 +344,7 @@ export function ClientFormDialog({
                     name="assignedSalesRepUid"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Assigned sales rep (optional)</FormLabel>
+                        <FormLabel>{t('forms.clients.salesRep')}</FormLabel>
                         <FormControl>
                           <SearchableUserPicker
                             users={users}
@@ -369,9 +372,9 @@ export function ClientFormDialog({
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (optional)</FormLabel>
+                        <FormLabel>{t('forms.clients.description')}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} placeholder="Brief notes about this client" className="bg-background border-border resize-y min-h-[72px]" />
+                          <Textarea {...field} rows={3} placeholder={t('forms.clients.descriptionPlaceholder')} className="bg-background border-border resize-y min-h-[72px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -383,9 +386,9 @@ export function ClientFormDialog({
                     name="address.street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street</FormLabel>
+                        <FormLabel>{t('forms.clients.street')}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={FORM_PLACEHOLDERS.street} className="bg-background border-border" />
+                          <Input {...field} placeholder={formPlaceholder(tCommon, 'street')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -397,9 +400,9 @@ export function ClientFormDialog({
                       name="address.suburb"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Suburb</FormLabel>
+                          <FormLabel>{t('forms.clients.suburb')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.suburb} className="bg-background border-border" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'suburb')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -410,9 +413,9 @@ export function ClientFormDialog({
                       name="address.city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>{t('forms.clients.city')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.city} className="bg-background border-border" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'city')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -425,9 +428,9 @@ export function ClientFormDialog({
                       name="address.state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Province / state</FormLabel>
+                          <FormLabel>{t('forms.clients.province')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.province} className="bg-background border-border" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'province')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -438,9 +441,9 @@ export function ClientFormDialog({
                       name="address.country"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Country</FormLabel>
+                          <FormLabel>{t('forms.clients.country')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={FORM_PLACEHOLDERS.country} className="bg-background border-border" />
+                            <Input {...field} placeholder={formPlaceholder(tCommon, 'country')} className="bg-background border-border" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -452,9 +455,9 @@ export function ClientFormDialog({
                     name="address.postalCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Postal code (4 digits)</FormLabel>
+                        <FormLabel>{t('forms.clients.postalCode')}</FormLabel>
                         <FormControl>
-                          <Input {...field} maxLength={4} placeholder={FORM_PLACEHOLDERS.postalCode} className="bg-background border-border" />
+                          <Input {...field} maxLength={4} placeholder={formPlaceholder(tCommon, 'postalCode')} className="bg-background border-border" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

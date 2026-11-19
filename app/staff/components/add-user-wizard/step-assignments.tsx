@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFormContext, useWatch, type Control } from 'react-hook-form';
 import {
   FormControl,
@@ -38,7 +39,7 @@ import type { BranchListItem } from '@/api/types/branch';
 import type { ClientListItem } from '@/api/types/clients';
 import { getBranchDisplayLabel } from '@/api/hooks/use-branches';
 import { cn } from '@/lib/utils';
-import { FORM_PLACEHOLDERS } from '@/lib/form-placeholders';
+import { formPlaceholder } from '@/lib/form-placeholders';
 import type { AddUserWizardValues } from '@/lib/user-form';
 import { GENDER_OPTIONS, JOB_INFORMATION_FIELDS } from '@/lib/user-form/personnel-fields';
 import {
@@ -83,6 +84,7 @@ export function StepAssignments({
   users: UserListItem[];
   clients: ClientListItem[];
 }) {
+  const { t: tCommon } = useTranslation('common');
   const [managedBranchesOpen, setManagedBranchesOpen] = useState(false);
   const [managedBranchesSearch, setManagedBranchesSearch] = useState('');
   const [managedStaffOpen, setManagedStaffOpen] = useState(false);
@@ -278,7 +280,7 @@ export function StepAssignments({
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => field.onChange(e.target.value || null)}
-                  placeholder={FORM_PLACEHOLDERS.street}
+                  placeholder={formPlaceholder(tCommon, 'street')}
                 />
               </FormControl>
               <FormMessage />
@@ -297,7 +299,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.city}
+                    placeholder={formPlaceholder(tCommon, 'city')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -315,7 +317,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.country}
+                    placeholder={formPlaceholder(tCommon, 'country')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -359,7 +361,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.branchRef}
+                    placeholder={formPlaceholder(tCommon, 'branchRef')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -377,7 +379,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.position}
+                    placeholder={formPlaceholder(tCommon, 'position')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -395,7 +397,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.department}
+                    placeholder={formPlaceholder(tCommon, 'department')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -414,7 +416,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.workEmail}
+                    placeholder={formPlaceholder(tCommon, 'workEmail')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -480,7 +482,7 @@ export function StepAssignments({
                     {...field}
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder={FORM_PLACEHOLDERS.phone}
+                    placeholder={formPlaceholder(tCommon, 'phone')}
                   />
                 </FormControl>
                 <FormMessage />

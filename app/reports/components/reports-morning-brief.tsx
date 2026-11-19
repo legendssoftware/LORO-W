@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useApiClient, useTokenReady } from '@/api/hooks';
+import { useTranslation } from 'react-i18next';
 
 type MorningBriefQueueRow = {
   checkInUid: number;
@@ -17,6 +18,7 @@ type MorningBrief = {
 };
 
 export function ReportsMorningBrief() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const query = useQuery({
@@ -36,9 +38,9 @@ export function ReportsMorningBrief() {
   return (
     <section className="rounded-lg border border-border/60 bg-muted/20 p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">This morning</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t('chrome.reports.thisMorning')}</h2>
         <Link href="/reports?tab=policy" className="text-xs text-muted-foreground underline">
-          Review queue
+          {t('chrome.reports.reviewQueue')}
         </Link>
       </div>
       <p className="mt-2 text-sm text-foreground">{summary}</p>

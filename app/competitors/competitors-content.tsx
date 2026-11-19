@@ -39,7 +39,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useTranslation } from 'react-i18next';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -115,16 +114,16 @@ export function CompetitorsContent() {
     () => [
       {
         value: 'direct',
-        label: 'Direct only',
+        label: t('chrome.competitors.directOnly'),
         icon: <Link2 className="size-4 shrink-0" />,
       },
       {
         value: 'indirect',
-        label: 'Indirect only',
+        label: t('chrome.competitors.indirectOnly'),
         icon: <Link2 className="size-4 shrink-0" />,
       },
     ],
-    []
+    [t]
   );
 
   const threatPickerOptions = useMemo<SearchableOptionRow[]>(
@@ -187,7 +186,7 @@ export function CompetitorsContent() {
                   type="button"
                   onClick={() => setStatusFilter('all')}
                   className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
-                  aria-label="Clear status filter"
+                  aria-label={t('actions.clearStatusFilter')}
                 >
                   <XIcon className="size-4 text-muted-foreground" />
                 </button>
@@ -210,7 +209,7 @@ export function CompetitorsContent() {
                   type="button"
                   onClick={() => setDirectFilter('all')}
                   className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
-                  aria-label="Clear type filter"
+                  aria-label={t('chrome.lists.clearTypeFilter')}
                 >
                   <XIcon className="size-4 text-muted-foreground" />
                 </button>
@@ -233,7 +232,7 @@ export function CompetitorsContent() {
                   type="button"
                   onClick={() => setThreatFilter('all')}
                   className="hidden h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex [&_svg]:pointer-events-auto"
-                  aria-label="Clear threat filter"
+                  aria-label={t('chrome.lists.clearThreatFilter')}
                 >
                   <XIcon className="size-4 text-muted-foreground" />
                 </button>
@@ -243,11 +242,11 @@ export function CompetitorsContent() {
           </div>
           <div className="flex shrink-0 flex-nowrap items-center gap-2">
             <Input
-              placeholder="Search by name…"
+              placeholder={t('chrome.competitors.searchPlaceholder')}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className={cn(filterToolbarSearchInputClassName, 'w-56 max-w-[16rem]')}
-              aria-label="Search competitors by name"
+              aria-label={t('chrome.competitors.searchAria')}
             />
             {canEdit ? (
               <>
@@ -259,12 +258,12 @@ export function CompetitorsContent() {
                       size="icon"
                       className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
                       onClick={() => setImportModalOpen(true)}
-                      aria-label="Import competitors"
+                      aria-label={t('chrome.competitors.import')}
                     >
                       <Upload className="size-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Import competitors</TooltipContent>
+                  <TooltipContent>{t('chrome.competitors.import')}</TooltipContent>
                 </Tooltip>
                 <Button
                   className="h-9 shrink-0 gap-2 bg-violet-600 text-white hover:bg-violet-700 [&_svg]:text-white focus-visible:ring-violet-500/40"
@@ -272,7 +271,7 @@ export function CompetitorsContent() {
                   data-tour="competitors-add"
                 >
                   <Plus className="size-4" />
-                  Add competitor
+                  {t('chrome.competitors.add')}
                 </Button>
               </>
             ) : null}
@@ -298,7 +297,7 @@ export function CompetitorsContent() {
             </div>
           )}
           {!isLoading && rows.length === 0 && (
-            <p className="py-8 text-center text-muted-foreground">No competitors match your filters.</p>
+            <p className="py-8 text-center text-muted-foreground">{t('chrome.competitors.noMatch')}</p>
           )}
           {competitorsQuery.hasNextPage ? (
             <div className="flex justify-center py-6">

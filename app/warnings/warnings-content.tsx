@@ -131,12 +131,12 @@ export function WarningsContent() {
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-[180px]">
               <CircleDot className="size-4 text-muted-foreground" aria-hidden />
-              <SelectValue placeholder="All statuses" />
+              <SelectValue placeholder={t('forms.warnings.allStatuses')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
                 <CircleDot className="size-4" aria-hidden />
-                All statuses
+                {t('forms.warnings.allStatuses')}
               </SelectItem>
               {STATUSES.map((item) => (
                 <SelectItem key={item} value={item}>{item}</SelectItem>
@@ -189,11 +189,11 @@ export function WarningsContent() {
         <DialogContent>
           <DialogHeader><DialogTitle>Issue warning</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <IconField icon={UserRound} label="Person">
+            <IconField icon={UserRound} label={t('forms.warnings.person')}>
               <Select value={form.recipientClerkId} onValueChange={(value) => setForm((current) => ({ ...current, recipientClerkId: value }))}>
                 <SelectTrigger className="w-full">
                   <UserRound className="size-4 text-muted-foreground" aria-hidden />
-                  <SelectValue placeholder="Select a person" />
+                  <SelectValue placeholder={t('forms.warnings.personPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {(usersQuery.data ?? []).filter((user) => user.clerkUserId).map((user) => (
@@ -205,11 +205,11 @@ export function WarningsContent() {
                 </SelectContent>
               </Select>
             </IconField>
-            <IconField icon={AlertTriangle} label="Severity">
+            <IconField icon={AlertTriangle} label={t('forms.warnings.severity')}>
               <Select value={form.severity} onValueChange={(value) => setForm((current) => ({ ...current, severity: value as WarningSeverity }))}>
                 <SelectTrigger className="w-full">
                   <AlertTriangle className="size-4 text-muted-foreground" aria-hidden />
-                  <SelectValue placeholder="Choose a severity" />
+                  <SelectValue placeholder={t('forms.warnings.severityPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {SEVERITIES.map((item) => (
@@ -221,11 +221,11 @@ export function WarningsContent() {
                 </SelectContent>
               </Select>
             </IconField>
-            <IconField icon={AlertTriangle} label="Reason">
-              <IconInput icon={AlertTriangle} value={form.reason} placeholder="What happened" onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} />
+            <IconField icon={AlertTriangle} label={t('forms.warnings.reason')}>
+              <IconInput icon={AlertTriangle} value={form.reason} placeholder={t('forms.warnings.reasonPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} />
             </IconField>
-            <IconField icon={CircleDot} label="Expires">
-              <IconInput icon={CircleDot} type="date" value={form.expiresAt} aria-label="Expiry date" onChange={(event) => setForm((current) => ({ ...current, expiresAt: event.target.value }))} />
+            <IconField icon={CircleDot} label={t('forms.warnings.expires')}>
+              <IconInput icon={CircleDot} type="date" value={form.expiresAt} aria-label={t('forms.warnings.expiryDate')} onChange={(event) => setForm((current) => ({ ...current, expiresAt: event.target.value }))} />
             </IconField>
           </div>
           <DialogFooter>
@@ -240,8 +240,8 @@ export function WarningsContent() {
           {selected ? (
             <div className="space-y-2 text-sm">
               <p>{personName(selected)} · {selected.severity} · {selected.status}</p>
-              <IconField icon={AlertTriangle} label="Reason">
-                <IconInput icon={AlertTriangle} value={editReason} placeholder="Update the reason" onChange={(event) => setEditReason(event.target.value)} />
+              <IconField icon={AlertTriangle} label={t('forms.warnings.reason')}>
+                <IconInput icon={AlertTriangle} value={editReason} placeholder={t('forms.warnings.reasonUpdatePlaceholder')} onChange={(event) => setEditReason(event.target.value)} />
               </IconField>
             </div>
           ) : null}

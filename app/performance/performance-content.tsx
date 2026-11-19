@@ -124,7 +124,7 @@ export function PerformanceContent() {
   const errorMessage =
     dashboardQuery.error instanceof Error
       ? dashboardQuery.error.message
-      : 'Failed to load performance data';
+      : t('chrome.performance.loadFailed');
 
   return (
     <div className={appPageScrollWrapClass} data-slot="performance-page">
@@ -164,7 +164,7 @@ export function PerformanceContent() {
         {dashboardQuery.isError && !showConsolidatedView ? (
           <Alert variant="destructive">
             <AlertTriangle />
-            <AlertTitle>Failed to load performance data</AlertTitle>
+            <AlertTitle>{t('chrome.performance.loadFailed')}</AlertTitle>
             <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
               <span>{errorMessage}</span>
               <Button
@@ -173,7 +173,7 @@ export function PerformanceContent() {
                 variant="outline"
                 onClick={() => void dashboardQuery.refetch()}
               >
-                Retry
+                {t('actions.retry')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -291,9 +291,9 @@ export function PerformanceContent() {
 
             {!hasData && !dashboardQuery.isLoading ? (
               <div className="rounded-xl border bg-card p-8 text-center">
-                <p className="font-medium">No performance data found</p>
+                <p className="font-medium">{t('chrome.performance.noData')}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Try adjusting your filters to see more results
+                  {t('chrome.performance.adjustFilters')}
                 </p>
               </div>
             ) : null}

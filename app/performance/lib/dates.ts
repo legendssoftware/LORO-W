@@ -48,8 +48,16 @@ export function addLocalDays(ymd: string, days: number): string {
   return formatLocalYmd(d);
 }
 
+export type PerformanceDatePresetId =
+  | 'today'
+  | 'yesterday'
+  | 'last7'
+  | 'last30'
+  | 'thisMonth'
+  | 'ytd';
+
 export function getPerformanceDatePresets(): Array<{
-  label: string;
+  id: PerformanceDatePresetId;
   startDate: string;
   endDate: string;
 }> {
@@ -58,11 +66,11 @@ export function getPerformanceDatePresets(): Array<{
   const monthStart = formatLocalYmd(new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
   const yearStart = formatLocalYmd(new Date(todayDate.getFullYear(), 0, 1));
   return [
-    { label: 'Today', startDate: today, endDate: today },
-    { label: 'Yesterday', startDate: addLocalDays(today, -1), endDate: addLocalDays(today, -1) },
-    { label: 'Last 7 days', startDate: addLocalDays(today, -6), endDate: today },
-    { label: 'Last 30 days', startDate: addLocalDays(today, -29), endDate: today },
-    { label: 'This month', startDate: monthStart, endDate: today },
-    { label: 'Year to date', startDate: yearStart, endDate: today },
+    { id: 'today', startDate: today, endDate: today },
+    { id: 'yesterday', startDate: addLocalDays(today, -1), endDate: addLocalDays(today, -1) },
+    { id: 'last7', startDate: addLocalDays(today, -6), endDate: today },
+    { id: 'last30', startDate: addLocalDays(today, -29), endDate: today },
+    { id: 'thisMonth', startDate: monthStart, endDate: today },
+    { id: 'ytd', startDate: yearStart, endDate: today },
   ];
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronsUpDown, User } from 'lucide-react';
 import type { UserListItem } from '@/api/endpoints/user';
 import type { BranchListItem } from '@/api/types/branch';
@@ -148,12 +149,15 @@ export function SearchableBranchPicker({
   selectedBranchId,
   onBranchChange,
   triggerClassName,
-  searchPlaceholder = 'Search branches…',
+  searchPlaceholder,
   withAllOption = true,
-  emptySelectionLabel = 'Select branch',
+  emptySelectionLabel,
   groupByProvince = false,
 }: SearchableBranchPickerProps) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = React.useState(false);
+  const allBranchesLabel = t('actions.allBranches');
+  const resolvedEmptySelectionLabel = emptySelectionLabel ?? t('actions.selectBranch');
 
   const provinceGroups = React.useMemo(
     () => (groupByProvince ? groupBranchesByProvince(branches) : []),
@@ -166,10 +170,10 @@ export function SearchableBranchPicker({
   );
 
   const triggerLabel = React.useMemo(() => {
-    if (withAllOption && selectedBranchId === 'all') return 'All branches';
+    if (withAllOption && selectedBranchId === 'all') return allBranchesLabel;
     if (selectedBranch) return getBranchDisplayLabel(selectedBranch);
-    return withAllOption ? 'All branches' : emptySelectionLabel;
-  }, [selectedBranchId, selectedBranch, withAllOption, emptySelectionLabel]);
+    return withAllOption ? allBranchesLabel : resolvedEmptySelectionLabel;
+  }, [selectedBranchId, selectedBranch, withAllOption, allBranchesLabel, resolvedEmptySelectionLabel]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -200,13 +204,13 @@ export function SearchableBranchPicker({
         align="start"
       >
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder ?? t('actions.searchBranches')} />
           <CommandList>
-            <CommandEmpty>No branch found.</CommandEmpty>
+            <CommandEmpty>{t('actions.noBranchFound')}</CommandEmpty>
             {withAllOption ? (
               <CommandGroup>
                 <CommandItem
-                  value="all branches"
+                  value={allBranchesLabel}
                   onSelect={() => {
                     onBranchChange('all');
                     setOpen(false);
@@ -219,7 +223,7 @@ export function SearchableBranchPicker({
                     )}
                   />
                   <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                    All branches
+                    {allBranchesLabel}
                   </span>
                 </CommandItem>
               </CommandGroup>
@@ -299,15 +303,18 @@ export function SearchableUserPicker({
   selectedUid,
   onUidChange,
   triggerClassName,
-  searchPlaceholder = 'Search users…',
-  allOptionLabel = 'All users',
-  emptyMessage = 'No user found.',
+  searchPlaceholder,
+  allOptionLabel,
+  emptyMessage,
   showBranchSubtitle = true,
   searchQuery: searchQueryProp,
   onSearchQueryChange,
   isSearchLoading = false,
 }: SearchableUserPickerProps) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = React.useState(false);
+  const resolvedAllOptionLabel = allOptionLabel ?? t('actions.allUsers');
+  const resolvedEmptyMessage = emptyMessage ?? t('actions.noUserFound');
   const [internalQuery, setInternalQuery] = React.useState('');
   const isSearchControlled = searchQueryProp !== undefined;
   const query = isSearchControlled ? searchQueryProp : internalQuery;
@@ -323,11 +330,11 @@ export function SearchableUserPicker({
   );
 
   const userTriggerLabel = React.useMemo(() => {
-    if (selectedUid === 'all') return allOptionLabel;
+    if (selectedUid === 'all') return resolvedAllOptionLabel;
     const u = users.find((x) => String(x.uid) === selectedUid);
-    if (!u) return allOptionLabel;
+    if (!u) return resolvedAllOptionLabel;
     return userDisplayName(u);
-  }, [selectedUid, users, allOptionLabel]);
+  }, [selectedUid, users, resolvedAllOptionLabel]);
 
   const selectedUserForTrigger = React.useMemo(
     () =>
@@ -416,7 +423,7 @@ export function SearchableUserPicker({
       >
         <Command shouldFilter={false} className="h-auto">
           <CommandInput
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t('actions.searchUsers')}
             value={query}
             onValueChange={setQuery}
           />
@@ -425,11 +432,11 @@ export function SearchableUserPicker({
             onWheel={(event) => event.stopPropagation()}
           >
             <CommandEmpty>
-              {isSearchLoading ? 'Searching…' : emptyMessage}
+              {isSearchLoading ? t('actions.searching') : resolvedEmptyMessage}
             </CommandEmpty>
             <CommandGroup>
               <CommandItem
-                value={`${allOptionLabel} all`}
+                value={`${resolvedAllOptionLabel} all`}
                 onSelect={() => {
                   onUidChange('all');
                   setOpen(false);
@@ -443,7 +450,7 @@ export function SearchableUserPicker({
                 />
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
                   <User className="size-4 shrink-0 text-muted-foreground" />
-                  {allOptionLabel}
+                  {resolvedAllOptionLabel}
                 </span>
               </CommandItem>
               {filteredUsers.map((u) => {
@@ -547,15 +554,17 @@ export function SearchableOptionListPicker({
   options,
   triggerClassName,
   placeholderLabelWhenAll,
-  searchPlaceholder = 'Search…',
-  emptyMessage = 'No results.',
+  searchPlaceholder,
+  emptyMessage,
   triggerIcon,
   disabled = false,
   includeAllOption = true,
   allOptionValue = 'all',
   compactTriggerOnMobile = false,
 }: SearchableOptionListPickerProps) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = React.useState(false);
+  const allLabel = placeholderLabelWhenAll ?? t('actions.all');
 
   const selectedRow = React.useMemo(
     () => options.find((o) => o.value === selectedValue),
@@ -564,7 +573,7 @@ export function SearchableOptionListPicker({
 
   const triggerLabel =
     selectedValue === allOptionValue || !selectedRow
-      ? (placeholderLabelWhenAll ?? 'All')
+      ? allLabel
       : selectedRow.label;
 
   const leftIcon =
@@ -635,16 +644,16 @@ export function SearchableOptionListPicker({
         onTouchMove={(event) => event.stopPropagation()}
       >
         <Command className="h-auto">
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder ?? t('actions.searchEllipsis')} />
           <CommandList
             className="max-h-[min(300px,50vh)] min-h-0 overflow-y-auto overscroll-contain"
             onWheel={(event) => event.stopPropagation()}
           >
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandEmpty>{emptyMessage ?? t('actions.noResults')}</CommandEmpty>
             <CommandGroup>
               {includeAllOption ? (
               <CommandItem
-                value={`${allOptionValue} ${placeholderLabelWhenAll ?? ''}`}
+                value={`${allOptionValue} ${allLabel}`}
                 onSelect={() => {
                   onValueChange(allOptionValue);
                   setOpen(false);
@@ -662,7 +671,7 @@ export function SearchableOptionListPicker({
                       {triggerIcon}
                     </span>
                   ) : null}
-                  {placeholderLabelWhenAll ?? 'All'}
+                  {allLabel}
                 </span>
               </CommandItem>
               ) : null}

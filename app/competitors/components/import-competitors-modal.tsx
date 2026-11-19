@@ -25,6 +25,7 @@ import {
 import { Loader2Icon } from '@/lib/icons';
 import { CircleHelp, Download, FileSpreadsheet, Upload, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export interface ImportCompetitorsModalProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function ImportCompetitorsModal({
   onOpenChange,
   onSuccess,
 }: ImportCompetitorsModalProps) {
+  const { t } = useTranslation('screens');
   const [step, setStep] = useState<Step>('form');
   const [lastResult, setLastResult] = useState<CompetitorImportResponse | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -226,12 +228,12 @@ export function ImportCompetitorsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-left">
             <Upload className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            Import competitors from CSV or Excel
+            {t('chrome.competitors.importModalTitle')}
           </DialogTitle>
           <div className="space-y-2 text-left">
             <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
               <CircleHelp className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              How this works
+              {t('chrome.competitors.howItWorks')}
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
               <li>
@@ -250,7 +252,7 @@ export function ImportCompetitorsModal({
             </ul>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
               <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                Sample files
+                {t('chrome.competitors.sampleFiles')}
               </span>
               <button
                 type="button"
@@ -258,7 +260,7 @@ export function ImportCompetitorsModal({
                 className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
               >
                 <Download className="size-4 shrink-0" aria-hidden />
-                Download sample CSV
+                {t('chrome.competitors.downloadSampleCsv')}
               </button>
               <button
                 type="button"
@@ -266,7 +268,7 @@ export function ImportCompetitorsModal({
                 className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
               >
                 <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
-                Download sample Excel (.xlsx)
+                {t('chrome.competitors.downloadSampleExcel')}
               </button>
             </div>
           </div>
@@ -277,7 +279,7 @@ export function ImportCompetitorsModal({
             <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50/80 p-4 dark:border-green-900 dark:bg-green-950/40">
               <CheckCircle2 className="size-6 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
               <div className="min-w-0 space-y-1">
-                <p className="font-semibold text-foreground">Import complete</p>
+                <p className="font-semibold text-foreground">{t('chrome.competitors.importComplete')}</p>
                 <p className="text-muted-foreground text-sm">
                   {lastResult.message ||
                     `Imported ${lastResult.imported}, updated ${lastResult.updated}${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
@@ -298,7 +300,7 @@ export function ImportCompetitorsModal({
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.updated}</p>
               </div>
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Failed rows</p>
+                <p className="text-muted-foreground text-xs">{t('chrome.competitors.failedRows')}</p>
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.failed}</p>
               </div>
             </div>
@@ -325,7 +327,7 @@ export function ImportCompetitorsModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="import-competitors-file">Spreadsheet file</Label>
+                <Label htmlFor="import-competitors-file">{t('chrome.competitors.spreadsheetFile')}</Label>
               </div>
               <input
                 id="import-competitors-file"
@@ -337,7 +339,7 @@ export function ImportCompetitorsModal({
               />
               {file ? (
                 <div className="space-y-1">
-                  <p className="text-foreground text-sm">Uploaded file</p>
+                  <p className="text-foreground text-sm">{t('chrome.competitors.uploadedFile')}</p>
                   <p className="text-sm">
                     <span className="font-bold text-purple-600">{file.name}</span>{' '}
                     <span className="text-muted-foreground">
@@ -376,12 +378,12 @@ export function ImportCompetitorsModal({
         <DialogFooter className="gap-2 sm:gap-0">
           {step === 'receipt' ? (
             <Button type="button" onClick={() => handleOpenChange(false)}>
-              Done
+              {t('actions.done')}
             </Button>
           ) : (
             <>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 type="button"

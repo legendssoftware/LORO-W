@@ -27,6 +27,7 @@ import { useState } from 'react';
 import { ClientFormDialog } from '../components/client-form-dialog';
 import { ClientActivityPanel } from '../components/client-activity-panel';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 function Row({
   label,
@@ -57,6 +58,7 @@ function formatZar(n: unknown): string {
 }
 
 export function ClientDetailPage({ refParam }: { refParam: number }) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const { data: client, isLoading, isError } = useClient(refParam);
   const deleteMutation = useDeleteClientMutation();
@@ -79,7 +81,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="outline" size="icon" className="shrink-0 bg-background border-border" asChild>
-            <Link href="/clients" aria-label="Back to clients">
+            <Link href="/clients" aria-label={t('chrome.clients.backTo')}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
@@ -102,7 +104,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             disabled={!client}
           >
             <Pencil className="size-4" />
-            Edit
+            {t('actions.edit')}
           </Button>
           <Button
             variant="destructive"
@@ -111,7 +113,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             disabled={!client}
           >
             <Trash2 className="size-4" />
-            Delete
+            {t('actions.delete')}
           </Button>
         </div>
       </div>
@@ -122,13 +124,13 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
         </div>
       )}
       {isError && (
-        <p className="text-center text-destructive py-12">Could not load this client.</p>
+        <p className="text-center text-destructive py-12">{t('chrome.clients.loadError')}</p>
       )}
       {!isLoading && client && (
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="rounded-lg border border-border bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Overview</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('chrome.common.overview')}</CardTitle>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {client.status ? (
                   <Badge variant="secondary" className="capitalize">
@@ -191,7 +193,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
 
           <Card className="rounded-lg border border-border bg-background md:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Business & financial</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('chrome.clients.businessFinancial')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-0 sm:grid-cols-2">
@@ -264,7 +266,7 @@ export function ClientDetailPage({ refParam }: { refParam: number }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();

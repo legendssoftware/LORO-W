@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   differenceInCalendarDays,
   format,
@@ -406,6 +407,7 @@ export function LeadsTable({
   onEndActiveCall,
   activityActorLookup,
 }: LeadsTableProps) {
+  const { t } = useTranslation('screens');
   const [expandedOwnerKey, setExpandedOwnerKey] = useState<string | null>(null);
   const { assigned, unassigned } = useMemo(() => splitLeadsByAssignment(leads), [leads]);
   const groupedByOwner = useMemo(
@@ -503,18 +505,18 @@ export function LeadsTable({
                       <TableHeader>
                         <TableRow>
                           <TableHead className="max-w-[200px] whitespace-nowrap md:max-w-[240px]">
-                            Name
+                            {t('tables.name')}
                           </TableHead>
                           <TableHead className="max-w-[200px] whitespace-nowrap md:max-w-[240px]">
-                            Company
+                            {t('tables.company')}
                           </TableHead>
-                          <TableHead className="whitespace-nowrap">Status</TableHead>
-                          <TableHead className="whitespace-nowrap">Source</TableHead>
-                          <TableHead className="whitespace-nowrap">Temperature</TableHead>
-                          <TableHead className="whitespace-nowrap">Priority</TableHead>
-                          <TableHead className="whitespace-nowrap">Created</TableHead>
-                          <TableHead className="whitespace-nowrap">Last updated</TableHead>
-                          <TableHead className="whitespace-nowrap">Activity</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.status')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.source')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.temperature')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.priority')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.created')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.lastUpdated')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.activity')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

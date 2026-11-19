@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks';
 import {
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
  * Client interactions feed and the communication schedules the signed-in user can edit.
  */
 export function ClientActivityPanel({ clientRef }: { clientRef: number }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
@@ -70,13 +72,13 @@ export function ClientActivityPanel({ clientRef }: { clientRef: number }) {
   return (
     <div className="mt-6 grid gap-4 lg:grid-cols-2">
       <section className="rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Interactions</h2>
+        <h2 className="text-sm font-medium">{t('chrome.clients.interactions')}</h2>
         {feed.isError ? (
           <QueryErrorBanner className="mt-2" message={getQueryErrorMessage(feed.error)} onRetry={() => void feed.refetch()} />
         ) : feed.isLoading ? (
           <p className="mt-2 text-sm text-muted-foreground">Loading interactions…</p>
         ) : rows.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No interactions yet.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('chrome.clients.noInteractions')}</p>
         ) : (
           <ul className="mt-2 space-y-2">
             {rows.map((row) => (
@@ -95,7 +97,7 @@ export function ClientActivityPanel({ clientRef }: { clientRef: number }) {
           </ul>
         )}
         <div className="mt-3 flex gap-2">
-          <Input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Add a note" />
+          <Input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={t('forms.clients.notePlaceholder')} />
           <Button
             type="button"
             disabled={!message.trim() || create.isPending}
@@ -110,13 +112,13 @@ export function ClientActivityPanel({ clientRef }: { clientRef: number }) {
         </div>
       </section>
       <section className="rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Communication schedules</h2>
+        <h2 className="text-sm font-medium">{t('chrome.clients.communicationSchedules')}</h2>
         {schedules.isError ? (
           <QueryErrorBanner className="mt-2" message={getQueryErrorMessage(schedules.error)} onRetry={() => void schedules.refetch()} />
         ) : schedules.isLoading ? (
           <p className="mt-2 text-sm text-muted-foreground">Loading schedules…</p>
         ) : scheduleRows.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No schedules for this client.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('chrome.clients.noSchedules')}</p>
         ) : (
           <ul className="mt-2 space-y-2 text-sm">
             {scheduleRows.map((row) => {

@@ -468,7 +468,9 @@ export function UserAttendanceRecordsModal({
         <div className="flex items-start justify-between gap-2 shrink-0">
           <DialogHeader className="!text-left min-w-0 flex-1 flex flex-col items-start">
             <DialogTitle className="text-base sm:text-lg leading-tight pr-8 text-left w-full">
-              {user ? `${user.name} – Attendance Records` : 'Attendance Records'}
+              {user
+                ? t('chrome.staff.userAttendanceRecords', { name: user.name })
+                : t('chrome.staff.attendanceRecords')}
             </DialogTitle>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
               {isCurrentPeriod ? 'Current payroll period' : 'Payroll period'} ({periodLabel}).{' '}
@@ -544,9 +546,9 @@ export function UserAttendanceRecordsModal({
                   <TableHead>{t('tables.distance')}</TableHead>
                   <TableHead>{t('tables.avgVisitTime')}</TableHead>
                   <TableHead title={PRODUCTIVITY_COLUMN_HINT} className="max-w-[9rem]">
-                    Productivity
+                    {t('tables.productivity')}
                   </TableHead>
-                  {canEditTimes ? <TableHead className="w-12 text-right">Edit</TableHead> : null}
+                  {canEditTimes ? <TableHead className="w-12 text-right">{t('tables.edit')}</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -1,6 +1,7 @@
 'use client';
 
 import { DollarSign } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatDateRangeLabel } from '../lib/dates';
@@ -24,15 +25,16 @@ export function PerformanceGpCard({
   currency,
   dateRange,
 }: PerformanceGpCardProps) {
+  const { t } = useTranslation('screens');
   const gpPercentage = totalRevenue > 0 ? (totalGP / totalRevenue) * 100 : 0;
 
   return (
     <Card className="shadow-sm">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-base">Gross Profit</CardTitle>
+          <CardTitle className="text-base">{t('chrome.performance.gp.title')}</CardTitle>
           <CardDescription>
-            Total profit after costs
+            {t('chrome.performance.gp.description')}
             {dateRange ? ` · ${formatDateRangeLabel(dateRange.startDate, dateRange.endDate)}` : ''}
           </CardDescription>
         </div>
@@ -47,19 +49,19 @@ export function PerformanceGpCard({
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-3">
         <div>
-          <p className="text-xs text-muted-foreground">Total Gross Profit</p>
+          <p className="text-xs text-muted-foreground">{t('chrome.performance.gp.total')}</p>
           <p className={cn('text-2xl', performanceAmountClassName(totalGP))}>
             {formatPerformanceMoney(totalGP, currency)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">GP Margin</p>
+          <p className="text-xs text-muted-foreground">{t('chrome.performance.gp.margin')}</p>
           <p className={cn('text-2xl', performanceGpPercentClassName(gpPercentage))}>
             {formatPerformancePercent(gpPercentage)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Revenue</p>
+          <p className="text-xs text-muted-foreground">{t('chrome.performance.gp.revenue')}</p>
           <p className={cn('text-2xl', performanceAmountClassName(totalRevenue))}>
             {formatPerformanceMoney(totalRevenue, currency)}
           </p>

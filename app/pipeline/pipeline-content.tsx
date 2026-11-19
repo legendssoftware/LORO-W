@@ -196,11 +196,11 @@ type MetricKey =
 /** Fixed pipeline row: four cards (matches dashboard expectations). */
 const TARGET_ROW_KEYS = ['sales', 'newLeads', 'checkIns', 'calls'] as const satisfies readonly MetricKey[];
 
-const TARGET_ROW_LABELS: Record<(typeof TARGET_ROW_KEYS)[number], string> = {
-  sales: 'Sales',
-  newLeads: 'New Leads',
-  checkIns: 'Check Ins',
-  calls: 'Calls',
+const TARGET_ROW_LABEL_KEYS: Record<(typeof TARGET_ROW_KEYS)[number], string> = {
+  sales: 'tables.sales',
+  newLeads: 'chrome.pipeline.newLeads',
+  checkIns: 'chrome.pipeline.checkIns',
+  calls: 'tables.calls',
 };
 
 function parseMetric(pt: Record<string, unknown>, key: MetricKey) {
@@ -546,7 +546,7 @@ export function PipelineContent() {
 
   if (!userRef) {
     return (
-      <p className="text-sm text-muted-foreground">Sign in and sync your profile to view pipeline.</p>
+      <p className="text-sm text-muted-foreground">{t('chrome.pipeline.signInSync')}</p>
     );
   }
 
@@ -558,7 +558,7 @@ export function PipelineContent() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {TARGET_ROW_KEYS.map((key) => {
               const m = parseMetric(personalTargets, key);
-              const title = m?.name ?? TARGET_ROW_LABELS[key];
+              const title = m?.name ?? t(TARGET_ROW_LABEL_KEYS[key]);
               return (
                 <Card key={key}>
                   <CardHeader className="pb-2">
@@ -584,7 +584,7 @@ export function PipelineContent() {
                         <p className="text-xs text-muted-foreground">{m.progressPct}% of target</p>
                       </>
                     ) : (
-                      <p className="text-sm text-muted-foreground py-1">No target set</p>
+                      <p className="text-sm text-muted-foreground py-1">{t('chrome.pipeline.noTarget')}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -605,7 +605,7 @@ export function PipelineContent() {
         </p>
         {profileQuotationsQuery.isError || shopQuotationsQuery.isError ? (
           <p className="text-sm text-destructive">
-            Could not load quotations for this period. Check ERP targets or try again.
+            {t('chrome.pipeline.quotationsLoadError')}
           </p>
         ) : profileQuotationsQuery.isLoading || shopQuotationsQuery.isLoading ? (
           <div className="flex justify-center py-12">
@@ -615,19 +615,19 @@ export function PipelineContent() {
           <div className="grid gap-4 lg:grid-cols-1">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">ERP quotations</CardTitle>
+                <CardTitle className="text-base">{t('chrome.pipeline.erpQuotations')}</CardTitle>
                 <CardDescription>
                   {profileQuotationsQuery.data?.infoMessage
                     ? profileQuotationsQuery.data.infoMessage
                     : profileQuotationsQuery.data?.salesName
                       ? profileQuotationsQuery.data.salesName
-                      : 'No ERP quotation data for this range'}
+                      : t('chrome.pipeline.noErpRange')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {erpRows.length === 0 ? (
                   !profileQuotationsQuery.data?.infoMessage ? (
-                    <p className="text-sm text-muted-foreground py-1">No ERP quotations in this period.</p>
+                    <p className="text-sm text-muted-foreground py-1">{t('chrome.pipeline.noErpQuotations')}</p>
                   ) : null
                 ) : (
                   <div className="space-y-4">
@@ -639,11 +639,11 @@ export function PipelineContent() {
                         onClick={() => setErpFiltersDialogOpen(true)}
                       >
                         <Filter className="size-4 shrink-0" aria-hidden />
-                        Filter
+                        {t('actions.filter')}
                       </Button>
                       <div className="relative w-full min-w-0">
                         <Input
-                          placeholder="Search quotations..."
+                          placeholder={t('forms.pipeline.searchQuotations')}
                           value={erpSearch}
                           onChange={(e) => setErpSearch(e.target.value)}
                           className={cn(filterToolbarSearchInputClassName, erpSearch && 'pr-8')}
@@ -653,7 +653,7 @@ export function PipelineContent() {
                             type="button"
                             onClick={() => setErpSearch('')}
                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 text-red-600"
-                            aria-label="Clear search"
+                            aria-label={t('actions.clearSearch')}
                           >
                             <XIcon className="size-4 text-red-600" />
                           </button>
@@ -664,15 +664,15 @@ export function PipelineContent() {
                     <Dialog open={erpFiltersDialogOpen} onOpenChange={setErpFiltersDialogOpen}>
                       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
                         <DialogHeader>
-                          <DialogTitle>ERP quotation filters</DialogTitle>
+                          <DialogTitle>{t('chrome.pipeline.erpFilters')}</DialogTitle>
                           <DialogDescription>
-                            Narrow ERP quotations by sale date range, store, and sales rep.
+                            {t('chrome.pipeline.erpFiltersDescription')}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-4">
                           <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
                             <div>
-                              <p className="text-sm font-medium">Start date</p>
+                              <p className="text-sm font-medium">{t('chrome.pipeline.startDate')}</p>
                               <Calendar
                                 mode="single"
                                 selected={ymdToDate(erpDateStart)}
@@ -683,7 +683,7 @@ export function PipelineContent() {
                               />
                             </div>
                             <div>
-                              <p className="text-sm font-medium">End date</p>
+                              <p className="text-sm font-medium">{t('chrome.pipeline.endDate')}</p>
                               <Calendar
                                 mode="single"
                                 selected={ymdToDate(erpDateEnd)}
@@ -705,16 +705,16 @@ export function PipelineContent() {
                                 setErpDateEnd(period.to);
                               }}
                             >
-                              Reset to profile period
+                              {t('chrome.pipeline.resetToProfilePeriod')}
                             </Button>
                           ) : null}
                           <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
                             <SelectTrigger className="h-9 w-full min-w-0 bg-background border-border text-foreground gap-2">
                               <BriefcaseIcon className="size-4 shrink-0" />
-                              <SelectValue placeholder="All stores" />
+                              <SelectValue placeholder={t('forms.pipeline.allStores')} />
                             </SelectTrigger>
                             <SelectContent className="z-[10001]">
-                              <SelectItem value="all">All stores</SelectItem>
+                              <SelectItem value="all">{t('forms.pipeline.allStores')}</SelectItem>
                               {erpStoreOptions.map((store) => (
                                 <SelectItem key={store} value={store}>
                                   {store}
@@ -725,10 +725,10 @@ export function PipelineContent() {
                           <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
                             <SelectTrigger className="h-9 w-full min-w-0 bg-background border-border text-foreground gap-2">
                               <UsersIcon className="size-4 shrink-0" />
-                              <SelectValue placeholder="All users" />
+                              <SelectValue placeholder={t('forms.pipeline.allUsers')} />
                             </SelectTrigger>
                             <SelectContent className="z-[10001]">
-                              <SelectItem value="all">All users</SelectItem>
+                              <SelectItem value="all">{t('forms.pipeline.allUsers')}</SelectItem>
                               {erpUserOptions.map((user) => (
                                 <SelectItem key={user} value={user}>
                                   {user}
@@ -767,7 +767,7 @@ export function PipelineContent() {
                                 <div className="flex flex-col gap-3 p-2">
                                   <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div>
-                                      <p className="text-sm font-medium">Start date</p>
+                                      <p className="text-sm font-medium">{t('chrome.pipeline.startDate')}</p>
                                       <Calendar
                                         mode="single"
                                         selected={ymdToDate(erpDateStart)}
@@ -778,7 +778,7 @@ export function PipelineContent() {
                                       />
                                     </div>
                                     <div>
-                                      <p className="text-sm font-medium">End date</p>
+                                      <p className="text-sm font-medium">{t('chrome.pipeline.endDate')}</p>
                                       <Calendar
                                         mode="single"
                                         selected={ymdToDate(erpDateEnd)}
@@ -801,7 +801,7 @@ export function PipelineContent() {
                                   setErpDateEnd(period.to);
                                 }}
                                 className="ml-0.5 shrink-0 rounded p-0.5 hover:bg-red-50 text-red-600"
-                                aria-label="Reset ERP date range"
+                                aria-label={t('chrome.pipeline.resetErpRange')}
                               >
                                 <XIcon className="size-4 text-red-600" />
                               </button>
@@ -811,10 +811,10 @@ export function PipelineContent() {
                           <Select value={erpSelectedStore} onValueChange={setErpSelectedStore}>
                             <SelectTrigger className="h-9 min-w-[150px] w-[200px] shrink-0 border-border bg-background text-foreground gap-2">
                               <BriefcaseIcon className="size-4 shrink-0" />
-                              <SelectValue placeholder="All stores" />
+                              <SelectValue placeholder={t('forms.pipeline.allStores')} />
                             </SelectTrigger>
                             <SelectContent className="z-[10001]">
-                              <SelectItem value="all">All stores</SelectItem>
+                              <SelectItem value="all">{t('forms.pipeline.allStores')}</SelectItem>
                               {erpStoreOptions.map((store) => (
                                 <SelectItem key={store} value={store}>
                                   {store}
@@ -826,10 +826,10 @@ export function PipelineContent() {
                           <Select value={erpSelectedUser} onValueChange={setErpSelectedUser}>
                             <SelectTrigger className="h-9 min-w-[150px] w-[220px] shrink-0 border-border bg-background text-foreground gap-2">
                               <UsersIcon className="size-4 shrink-0" />
-                              <SelectValue placeholder="All users" />
+                              <SelectValue placeholder={t('forms.pipeline.allUsers')} />
                             </SelectTrigger>
                             <SelectContent className="z-[10001]">
-                              <SelectItem value="all">All users</SelectItem>
+                              <SelectItem value="all">{t('forms.pipeline.allUsers')}</SelectItem>
                               {erpUserOptions.map((user) => (
                                 <SelectItem key={user} value={user}>
                                   {user}
@@ -842,7 +842,7 @@ export function PipelineContent() {
 
                       <div className="relative w-56 min-w-0 shrink-0 md:max-w-[16rem]">
                         <Input
-                          placeholder="Search quotations..."
+                          placeholder={t('forms.pipeline.searchQuotations')}
                           value={erpSearch}
                           onChange={(e) => setErpSearch(e.target.value)}
                           className={cn(filterToolbarSearchInputClassName, erpSearch && 'pr-8')}
@@ -852,7 +852,7 @@ export function PipelineContent() {
                             type="button"
                             onClick={() => setErpSearch('')}
                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-red-50 text-red-600"
-                            aria-label="Clear search"
+                            aria-label={t('actions.clearSearch')}
                           >
                             <XIcon className="size-4 text-red-600" />
                           </button>
@@ -862,7 +862,7 @@ export function PipelineContent() {
 
                     {groupedErpRows.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-1">
-                        No ERP quotations match the selected filters.
+                        {t('chrome.pipeline.noErpMatch')}
                       </p>
                     ) : (
                       <div className="rounded border border-border overflow-x-auto bg-card">
@@ -965,7 +965,7 @@ export function PipelineContent() {
                                               }))
                                             }
                                           >
-                                            Load more
+                                            {t('actions.loadMore')}
                                           </Button>
                                         </div>
                                       ) : null}
@@ -985,14 +985,14 @@ export function PipelineContent() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">LORO quotations</CardTitle>
+                <CardTitle className="text-base">{t('chrome.pipeline.loroQuotations')}</CardTitle>
                 <CardDescription>
                   {loroInPeriod.length} in range · created in the app
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {loroInPeriod.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-1">No LORO quotations in this period.</p>
+                  <p className="text-sm text-muted-foreground py-1">{t('chrome.pipeline.noLoroQuotations')}</p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -1001,7 +1001,7 @@ export function PipelineContent() {
                         <TableHead>{t('tables.clientTitle')}</TableHead>
                         <TableHead>{t('tables.status')}</TableHead>
                         <TableHead>{t('tables.created')}</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">{t('tables.amount')}</TableHead>
                         <TableHead>{t('tables.conversion')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1011,7 +1011,7 @@ export function PipelineContent() {
                         const amt =
                           typeof amtRaw === 'number' ? amtRaw : Number(amtRaw ?? 0);
                         const label = q.isBlankQuotation
-                          ? q.title || 'Blank quotation'
+                          ? q.title || t('chrome.pipeline.blankQuotation')
                           : q.client?.name || '—';
                         return (
                           <TableRow key={q.uid}>
@@ -1045,14 +1045,12 @@ export function PipelineContent() {
             <h2 className="text-lg font-semibold text-foreground">{t('pages.pipeline.leads')}</h2>
             {leadsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">
-                Organisation rollup for this date range. Totals follow server rules (e.g. owners with
-                performance targets).
+                {t('chrome.pipeline.orgRollup')}
               </p>
             ) : null}
             {reportQuery.isError ? (
               <p className="text-sm text-destructive">
-                Could not load lead analytics. You may not have access to leads for this org, or the
-                service is unavailable.
+                {t('chrome.pipeline.leadAnalyticsError')}
               </p>
             ) : reportQuery.isLoading ? (
               <div className="flex justify-center py-12">
@@ -1061,36 +1059,36 @@ export function PipelineContent() {
             ) : (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Summary</CardTitle>
-                  <CardDescription>Activity in range · lead values are estimates</CardDescription>
+                  <CardTitle className="text-base">{t('chrome.pipeline.summary')}</CardTitle>
+                  <CardDescription>{t('chrome.pipeline.summaryHint')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap gap-6 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Leads</p>
+                      <p className="text-muted-foreground">{t('tables.leads')}</p>
                       <p className="text-2xl font-semibold tabular-nums">
                         {reportQuery.data?.total ?? 0}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Pipeline value</p>
+                      <p className="text-muted-foreground">{t('chrome.pipeline.pipelineValue')}</p>
                       <p className="text-2xl font-semibold tabular-nums">
                         {formatCurrency(reportQuery.data?.totalEstimatedValue ?? 0, targetCurrency)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Visits</p>
+                      <p className="text-muted-foreground">{t('tables.visits')}</p>
                       <p className="text-2xl font-semibold tabular-nums">{visitStats.total}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Visits value (quotes)</p>
+                      <p className="text-muted-foreground">{t('chrome.pipeline.visitsValueQuotes')}</p>
                       <p className="text-2xl font-semibold tabular-nums">
                         {formatCurrencyMapLine(visitStats.quotationByCur)}
                       </p>
                     </div>
                     {convertedRow && (
                       <div>
-                        <p className="text-muted-foreground">Converted</p>
+                        <p className="text-muted-foreground">{t('tables.converted')}</p>
                         <p className="text-2xl font-semibold tabular-nums">{convertedRow.count}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatCurrency(convertedRow.value, targetCurrency)}
@@ -1113,8 +1111,8 @@ export function PipelineContent() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>{t('tables.status')}</TableHead>
-                          <TableHead className="text-right">Count</TableHead>
-                          <TableHead className="text-right">Est. value</TableHead>
+                          <TableHead className="text-right">{t('tables.count')}</TableHead>
+                          <TableHead className="text-right">{t('tables.estValue')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1149,11 +1147,11 @@ export function PipelineContent() {
             <h2 className="text-lg font-semibold text-foreground">{t('pages.pipeline.visits')}</h2>
             {visitsOrgWide ? (
               <p className="text-xs text-muted-foreground -mt-1">
-                All organisation check-outs in this date range.
+                {t('chrome.pipeline.visitsOrgWide')}
               </p>
             ) : null}
             {checkInsQuery.isError ? (
-              <p className="text-sm text-destructive">Could not load visits for this period.</p>
+              <p className="text-sm text-destructive">{t('chrome.pipeline.visitsLoadError')}</p>
             ) : checkInsQuery.isLoading ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner />
@@ -1161,31 +1159,31 @@ export function PipelineContent() {
             ) : (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Outcomes</CardTitle>
-                  <CardDescription>Check-outs in range</CardDescription>
+                  <CardTitle className="text-base">{t('chrome.pipeline.outcomes')}</CardTitle>
+                  <CardDescription>{t('chrome.pipeline.checkoutsInRange')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                   <ul className="grid gap-2 sm:grid-cols-2">
                     <li>
-                      <span className="text-muted-foreground">Total </span>
+                      <span className="text-muted-foreground">{t('tables.total')} </span>
                       <span className="font-semibold tabular-nums">{visitStats.total}</span>
                     </li>
                     <li>
-                      <span className="text-muted-foreground">Sale on checkout </span>
+                      <span className="text-muted-foreground">{t('chrome.pipeline.saleOnCheckout')} </span>
                       <span className="font-semibold tabular-nums">{visitStats.withSale}</span>
                     </li>
                     <li>
-                      <span className="text-muted-foreground">With quote </span>
+                      <span className="text-muted-foreground">{t('chrome.pipeline.withQuote')} </span>
                       <span className="font-semibold tabular-nums">{visitStats.withQuote}</span>
                     </li>
                     <li>
-                      <span className="text-muted-foreground">Linked lead </span>
+                      <span className="text-muted-foreground">{t('chrome.pipeline.linkedLead')} </span>
                       <span className="font-semibold tabular-nums">{visitStats.withLead}</span>
                     </li>
                   </ul>
                   {visitStats.quotationByCur.size > 0 && (
                     <div>
-                      <p className="text-muted-foreground mb-1">Quote value (linked)</p>
+                      <p className="text-muted-foreground mb-1">{t('chrome.pipeline.quoteValueLinked')}</p>
                       <ul className="space-y-1">
                         {[...visitStats.quotationByCur.entries()].map(([cur, amt]) => (
                           <li key={cur} className="tabular-nums font-medium">
@@ -1197,7 +1195,7 @@ export function PipelineContent() {
                   )}
                   {visitStats.salesByCur.size > 0 && (
                     <div>
-                      <p className="text-muted-foreground mb-1">Checkout sales</p>
+                      <p className="text-muted-foreground mb-1">{t('chrome.pipeline.checkoutSales')}</p>
                       <ul className="space-y-1">
                         {[...visitStats.salesByCur.entries()].map(([cur, amt]) => (
                           <li key={cur} className="tabular-nums font-medium">

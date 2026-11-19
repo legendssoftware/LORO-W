@@ -3,6 +3,7 @@
 import { useMyPolicyDashboard } from '@/api/hooks';
 import type { PolicyCostPackage, PolicyForecast, PolicyPaceBand } from '@/api/types/performance-policy';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 const BAND_CLASS: Record<PolicyPaceBand, string> = {
   red: 'text-red-700',
@@ -27,6 +28,7 @@ function money(value: number, currency: string): string {
 }
 
 function CostLines({ pack }: { pack: PolicyCostPackage }) {
+  const { t } = useTranslation('screens');
   const rows: Array<[string, number]> = [
     ['Base salary', pack.baseSalary],
     ['Car instalment', pack.carInstalment],
@@ -45,7 +47,7 @@ function CostLines({ pack }: { pack: PolicyCostPackage }) {
         </div>
       ))}
       <div className="col-span-2 mt-1 flex justify-between border-t pt-1 font-medium">
-        <dt>Cost package</dt>
+        <dt>{t('chrome.reports.forecast.costPackage')}</dt>
         <dd>{money(pack.totalCost, pack.currency)}</dd>
       </div>
     </dl>
@@ -53,24 +55,25 @@ function CostLines({ pack }: { pack: PolicyCostPackage }) {
 }
 
 function ForecastFigures({ forecast, currency }: { forecast: PolicyForecast; currency: string }) {
+  const { t } = useTranslation('screens');
   return (
     <div className="space-y-2">
       <p className={`text-sm font-medium uppercase ${BAND_CLASS[forecast.paceBand]}`}>{forecast.paceBand}</p>
       <dl className="grid grid-cols-2 gap-2 text-sm">
         <div>
-          <dt className="text-muted-foreground">Min Expected</dt>
+          <dt className="text-muted-foreground">{t('chrome.reports.forecast.minExpected')}</dt>
           <dd className="text-base font-medium">{money(forecast.minExpected, currency)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Projected</dt>
+          <dt className="text-muted-foreground">{t('chrome.reports.forecast.projected')}</dt>
           <dd className="text-base font-medium">{money(forecast.amount, currency)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Additional performance earnings</dt>
+          <dt className="text-muted-foreground">{t('chrome.reports.forecast.additionalEarnings')}</dt>
           <dd className="text-base font-medium">{money(forecast.additionalEarnings, currency)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Activity</dt>
+          <dt className="text-muted-foreground">{t('chrome.reports.forecast.activity')}</dt>
           <dd className="text-base font-medium">{Math.round(forecast.activityPct * 100)}%</dd>
         </div>
       </dl>
@@ -91,13 +94,14 @@ function ForecastFigures({ forecast, currency }: { forecast: PolicyForecast; cur
 
 /** Cost package beside the PRR forecast. Hidden entirely when the policy is off. */
 export function PolicyForecastCard() {
+  const { t } = useTranslation('screens');
   const query = useMyPolicyDashboard();
   if (query.isError || !query.data) return null;
   const { costPackage, forecast, forecastUnavailableReason } = query.data;
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Cost and performance forecast</CardTitle>
+        <CardTitle className="text-sm font-medium">{t('chrome.reports.forecast.title')}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-2">
         <CostLines pack={costPackage} />

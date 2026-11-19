@@ -2,26 +2,28 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { onboardingData } from '@/lib/onboarding-data';
+import { useTranslation } from 'react-i18next';
+import { ONBOARDING_SLIDE_IDS } from '@/lib/onboarding-data';
 import { Button } from '@/components/ui/button';
 import { MarketingShell } from '@/components/marketing/marketing-shell';
 
 export function OnboardingSlides() {
+  const { t } = useTranslation('marketing');
   const [index, setIndex] = useState(0);
-  const slide = onboardingData[index];
-  const isLast = index === onboardingData.length - 1;
+  const slideId = ONBOARDING_SLIDE_IDS[index];
+  const isLast = index === ONBOARDING_SLIDE_IDS.length - 1;
 
   return (
     <MarketingShell>
-      <p className="text-sm text-purple-400 mb-2">Get started</p>
+      <p className="text-sm text-purple-400 mb-2">{t('onboarding.getStarted')}</p>
       <h1 className="text-3xl font-normal tracking-tight text-white mb-2">
-        {slide.title}
+        {t(`onboarding.slides.${slideId}.title`)}
       </h1>
-      <p className="text-zinc-400 mb-8">{slide.description}</p>
+      <p className="text-zinc-400 mb-8">{t(`onboarding.slides.${slideId}.description`)}</p>
       <div className="flex gap-2 mb-8">
-        {onboardingData.map((_, i) => (
+        {ONBOARDING_SLIDE_IDS.map((id, i) => (
           <span
-            key={i}
+            key={id}
             className={`h-1.5 flex-1 rounded-full ${i === index ? 'bg-purple-500' : 'bg-zinc-700'}`}
             aria-hidden
           />
@@ -35,7 +37,7 @@ export function OnboardingSlides() {
             className="border-zinc-600"
             onClick={() => setIndex((i) => i - 1)}
           >
-            Back
+            {t('onboarding.back')}
           </Button>
         )}
         {!isLast ? (
@@ -44,15 +46,15 @@ export function OnboardingSlides() {
             className="bg-purple-600 hover:bg-purple-700 border-0"
             onClick={() => setIndex((i) => i + 1)}
           >
-            Next
+            {t('onboarding.next')}
           </Button>
         ) : (
           <Button asChild className="bg-purple-600 hover:bg-purple-700 border-0">
-            <Link href="/sign-up">Create account</Link>
+            <Link href="/sign-up">{t('onboarding.createAccount')}</Link>
           </Button>
         )}
         <Button asChild variant="ghost" className="text-zinc-400">
-          <Link href="/">Skip to home</Link>
+          <Link href="/">{t('onboarding.skipToHome')}</Link>
         </Button>
       </div>
     </MarketingShell>

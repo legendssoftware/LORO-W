@@ -30,6 +30,7 @@ import { Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { formatDisplayName, formatEmailDisplay } from '@/lib/client-display';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function ModalRow({
   label,
@@ -77,6 +78,7 @@ export function ClientDetailDialog({
   onClose: () => void;
   onEdit: (ref: number) => void;
 }) {
+  const { t } = useTranslation('screens');
   const open = !!listItem;
   const ref = listItem?.uid ?? null;
   const { data: client, isLoading, isError } = useClient(ref, { enabled: open && ref != null });
@@ -108,7 +110,7 @@ export function ClientDetailDialog({
               </DialogTitle>
               {ref != null ? (
                 <Button variant="ghost" size="icon" className="shrink-0 -mt-1" asChild>
-                  <Link href={`/clients/${ref}`} title="Open full page">
+                  <Link href={`/clients/${ref}`} title={t('chrome.common.openFullPage')}>
                     <ExternalLink className="size-4" />
                   </Link>
                 </Button>
@@ -129,7 +131,7 @@ export function ClientDetailDialog({
                 </div>
               )}
               {isError && (
-                <p className="text-sm text-destructive">Could not load client details.</p>
+                <p className="text-sm text-destructive">{t('chrome.clients.loadDetailsError')}</p>
               )}
               {!isLoading && client && (
                 <>
@@ -240,13 +242,13 @@ export function ClientDetailDialog({
           <Separator className="shrink-0" />
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-6 py-3">
             <Button variant="outline" onClick={onClose}>
-              Close
+              {t('actions.close')}
             </Button>
             {ref != null ? (
               <>
                 <Button variant="outline" className="gap-1" onClick={() => onEdit(ref)}>
                   <Pencil className="size-4" />
-                  Edit
+                  {t('actions.edit')}
                 </Button>
                 <Button
                   variant="destructive"
@@ -254,7 +256,7 @@ export function ClientDetailDialog({
                   onClick={() => setDeleteConfirmOpen(true)}
                 >
                   <Trash2 className="size-4" />
-                  Delete
+                  {t('actions.delete')}
                 </Button>
               </>
             ) : null}
@@ -271,7 +273,7 @@ export function ClientDetailDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();

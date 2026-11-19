@@ -72,17 +72,17 @@ export function GeofencesContent() {
         <DialogContent>
           <DialogHeader><DialogTitle>{selected?.uid || selected?.ref ? 'Area' : 'New area'}</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <IconField icon={MapPin} label="Name">
-              <IconInput icon={MapPin} value={form.name} disabled={!canEdit} placeholder="e.g. Johannesburg depot" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            <IconField icon={MapPin} label={t('forms.geofences.name')}>
+              <IconInput icon={MapPin} value={form.name} disabled={!canEdit} placeholder={t('forms.geofences.namePlaceholder')} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
             </IconField>
-            <IconField icon={MapPin} label="Latitude">
-              <IconInput icon={MapPin} value={form.latitude} disabled={!canEdit} placeholder="-26.2041" onChange={(event) => setForm((current) => ({ ...current, latitude: event.target.value }))} />
+            <IconField icon={MapPin} label={t('forms.geofences.latitude')}>
+              <IconInput icon={MapPin} value={form.latitude} disabled={!canEdit} placeholder={t('forms.geofences.latitudePlaceholder')} onChange={(event) => setForm((current) => ({ ...current, latitude: event.target.value }))} />
             </IconField>
-            <IconField icon={MapPin} label="Longitude">
-              <IconInput icon={MapPin} value={form.longitude} disabled={!canEdit} placeholder="28.0473" onChange={(event) => setForm((current) => ({ ...current, longitude: event.target.value }))} />
+            <IconField icon={MapPin} label={t('forms.geofences.longitude')}>
+              <IconInput icon={MapPin} value={form.longitude} disabled={!canEdit} placeholder={t('forms.geofences.longitudePlaceholder')} onChange={(event) => setForm((current) => ({ ...current, longitude: event.target.value }))} />
             </IconField>
-            <IconField icon={MapPin} label="Radius (m)">
-              <IconInput icon={MapPin} value={form.radius} disabled={!canEdit} placeholder="500" onChange={(event) => setForm((current) => ({ ...current, radius: event.target.value }))} />
+            <IconField icon={MapPin} label={t('forms.geofences.radius')}>
+              <IconInput icon={MapPin} value={form.radius} disabled={!canEdit} placeholder={t('forms.geofences.radiusPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, radius: event.target.value }))} />
             </IconField>
             <p className="text-sm text-muted-foreground">
               {events.isLoading ? 'Loading events…' : events.isError ? 'Could not load events.' : `${events.data?.length ?? 0} entry events.`}

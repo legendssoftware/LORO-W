@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PerformanceFilters, PerformanceMasterData } from '@/api/types/reports-performance';
 import { usePerformanceStoreYtd } from '@/api/hooks/use-performance-store-ytd';
 import { ReportsChartCard } from '@/app/reports/components/reports-chart-card';
@@ -22,6 +23,7 @@ export function PerformanceStoreYtdChart({
   filters,
   masterData,
 }: PerformanceStoreYtdChartProps) {
+  const { t } = useTranslation('screens');
   const stores = masterData?.branches ?? [];
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(undefined);
   const [isChartVisible, setIsChartVisible] = useState(false);
@@ -75,13 +77,13 @@ export function PerformanceStoreYtdChart({
   }));
 
   const selectedName = selectedStoreId
-    ? stores.find((s) => s.id === selectedStoreId)?.name ?? 'Store'
-    : 'All Stores';
+    ? stores.find((s) => s.id === selectedStoreId)?.name ?? t('tables.store')
+    : t('chrome.performance.ytd.allStores');
 
   return (
     <div ref={chartRef} className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">Store performance history</p>
+        <p className="text-sm font-medium">{t('chrome.performance.ytd.history')}</p>
         <Select
           value={selectedStoreId ?? 'all'}
           onValueChange={(value) => {
@@ -95,10 +97,10 @@ export function PerformanceStoreYtdChart({
           }}
         >
           <SelectTrigger className="w-[220px]" size="sm">
-            <SelectValue placeholder="Select store" />
+            <SelectValue placeholder={t('chrome.performance.ytd.selectStore')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Stores</SelectItem>
+            <SelectItem value="all">{t('chrome.performance.ytd.allStores')}</SelectItem>
             {stores.map((store) => (
               <SelectItem key={store.id} value={store.id}>
                 {store.name}
@@ -108,13 +110,13 @@ export function PerformanceStoreYtdChart({
         </Select>
       </div>
       {stores.length === 0 ? (
-        <ReportsChartCard title="Store Performance History" description="Month by month YTD">
-          <p className="py-8 text-center text-sm text-muted-foreground">No stores in filter master data</p>
+        <ReportsChartCard title={t('chrome.performance.ytd.title')} description={t('chrome.performance.ytd.description')}>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('chrome.performance.ytd.noStores')}</p>
         </ReportsChartCard>
       ) : (
         <PerformanceAreaChartCard
-          title={`Store Performance History — ${selectedName}`}
-          description="Month by month year-to-date sales"
+          title={t('chrome.performance.ytd.titleNamed', { name: selectedName })}
+          description={t('chrome.performance.ytd.descriptionLong')}
           data={chartPoints}
           isLoading={isLoading}
           isError={isError}

@@ -130,11 +130,12 @@ function QuotationsMetricCell({
   quotationCountAvailable?: boolean;
   engagementError?: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const colors = getProgressColorClasses(cell.progress);
   return (
     <div className="min-w-[7.5rem] space-y-1.5">
       {engagementError ? (
-        <p className="text-xs font-medium tabular-nums text-muted-foreground" title="Could not load quote count">
+        <p className="text-xs font-medium tabular-nums text-muted-foreground" title={t('chrome.reports.td.couldNotLoadQuoteCount')}>
           —
         </p>
       ) : quotationCountAvailable ? (
@@ -142,7 +143,7 @@ function QuotationsMetricCell({
           {formatQuoteCount(cell.current)}
         </p>
       ) : (
-        <p className="text-xs font-medium tabular-nums text-muted-foreground" title="Quote count unavailable">
+        <p className="text-xs font-medium tabular-nums text-muted-foreground" title={t('chrome.reports.td.quoteCountUnavailable')}>
           —
         </p>
       )}
@@ -613,31 +614,31 @@ export function ReportsTargetsTable({
         <TableRow>
           <TableHead className="min-w-[12rem]">{t('tables.user')}</TableHead>
           <TableHead title="Telephone + WhatsApp + Email + Landline + Other, versus the call quota. Physical visits are in the Visits column.">
-            All Activity
+            {t('tables.allActivity')}
           </TableHead>
           <TableHead title="Telephone logs that are not landline-only, including voicemail and no-answer">
-            Telephone
+            {t('tables.telephone')}
           </TableHead>
           <TableHead>{t('tables.whatsapp')}</TableHead>
           <TableHead>{t('tables.email')}</TableHead>
-          <TableHead title="Telephone logs with a landline number and no cell number">Landline</TableHead>
-          <TableHead title="Blank or unknown contact method">Other</TableHead>
+          <TableHead title="Telephone logs with a landline number and no cell number">{t('tables.landline')}</TableHead>
+          <TableHead title="Blank or unknown contact method">{t('tables.other')}</TableHead>
           <TableHead title="Physical visits to a location">{t('tables.visits')}</TableHead>
           <TableHead>{t('tables.leads')}</TableHead>
           <TableHead title="Imported leads still on this person's book. Ignores the date filter. Touched includes discarded and deleted.">
-            Import book
+            {t('tables.importBook')}
           </TableHead>
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden lg:table-cell">{t('tables.hours')}</TableHead>
           <TableHead className="hidden md:table-cell">{t('tables.travel')}</TableHead>
           <TableHead className="hidden md:table-cell" title="Priced fuel used against the prorated allowance for the selected dates. On pace and the upfront amount use the full allowance period. Internal staff show None.">
-            Fuel
+            {t('tables.fuel')}
           </TableHead>
           <TableHead
             title={PRODUCTIVITY_COLUMN_HINT}
           >
-            Productivity
+            {t('tables.productivity')}
           </TableHead>
           <TableHead>{t('tables.achievement')}</TableHead>
         </TableRow>
@@ -713,7 +714,7 @@ export function ReportsTargetsTable({
                             onRowClick?.(row);
                           }}
                         >
-                          Open profile
+                          {t('chrome.reports.td.openProfile')}
                         </button>
                       ) : null}
                     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Briefcase,
   Check,
@@ -45,12 +46,44 @@ import {
   normalizeBranchCountryCodeForGrouping,
 } from '@/lib/utils/country-flags';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
+import { CLOCK_IN_OPTION_DISPLAY_KEYS } from '@/lib/clock-in-options';
 import {
   STAFF_STATUS_FILTER_OPTIONS,
   STAFF_DIMENSION_FILTER_ALL,
+  STAFF_DIMENSION_FILTER_NONE,
 } from '@/lib/staff-filter-utils';
 import { cn } from '@/lib/utils';
 import type { StatusFilter } from '@/lib/types/staff-report-types';
+
+/** `screens` i18n key for each status filter option label. */
+const STAFF_STATUS_LABEL_KEYS: Record<StatusFilter, string> = {
+  all: 'actions.all',
+  present: 'chrome.staff.status.present',
+  absent: 'chrome.staff.status.absent',
+  late: 'chrome.staff.status.late',
+  early: 'chrome.staff.status.early',
+  behind_on_hours: 'chrome.staff.status.behindOnHours',
+  idle: 'chrome.staff.status.idle',
+  no_clock_in_gt_2: 'chrome.staff.status.noClockIn2',
+  no_clock_in_gt_7: 'chrome.staff.status.noClockIn7',
+  no_clock_in_gt_10: 'chrome.staff.status.noClockIn10',
+  at_office: CLOCK_IN_OPTION_DISPLAY_KEYS.at_office,
+  work_from_home: CLOCK_IN_OPTION_DISPLAY_KEYS.work_from_home,
+  starting_from_home: CLOCK_IN_OPTION_DISPLAY_KEYS.starting_from_home,
+  offsite: CLOCK_IN_OPTION_DISPLAY_KEYS.offsite,
+  driving: CLOCK_IN_OPTION_DISPLAY_KEYS.driving,
+  sales_warning_1: 'chrome.staff.status.warning1',
+  sales_warning_2: 'chrome.staff.status.warning2',
+  sales_warning_3: 'chrome.staff.status.warning3',
+  with_vehicle: 'chrome.staff.status.withVehicle',
+  without_vehicle: 'chrome.staff.status.withoutVehicle',
+  with_targets: 'chrome.staff.status.withTargets',
+  without_targets: 'chrome.staff.status.withoutTargets',
+  with_sales_code: 'chrome.staff.status.withSalesCode',
+  without_sales_code: 'chrome.staff.status.withoutSalesCode',
+  with_hrid: 'chrome.staff.status.withHrid',
+  without_hrid: 'chrome.staff.status.withoutHrid',
+};
 
 const selectTriggerClass =
   'h-9 w-full border-border bg-background text-foreground sm:w-auto';
@@ -142,7 +175,22 @@ export function StaffFilterControls({
   countryPickerOpen,
   onCountryPickerOpenChange,
 }: StaffFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
+  const dimensionLabel = React.useCallback(
+    (item: StaffDimensionFilterItem, allKey: string) => {
+      if (item.value === STAFF_DIMENSION_FILTER_ALL) return t(allKey);
+      if (item.value === STAFF_DIMENSION_FILTER_NONE) return t('chrome.staff.unassigned');
+      return item.label;
+    },
+    [t]
+  );
+  const branchTriggerText =
+    branchFilter === STAFF_DIMENSION_FILTER_ALL ? t('actions.allBranches') : branchFilterTriggerLabel;
+  const countryTriggerText =
+    countryFilter === STAFF_DIMENSION_FILTER_ALL
+      ? t('chrome.staff.allCountries')
+      : countryFilterTriggerLabel;
   const statusTrigger = row
     ? 'h-9 min-w-0 w-[260px] shrink-0'
     : 'h-9 w-full min-w-0';
@@ -165,7 +213,7 @@ export function StaffFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(STAFF_STATUS_LABEL_KEYS[opt.value]),
           icon: (
             <Icon
               className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))}
@@ -174,7 +222,7 @@ export function StaffFilterControls({
           ),
         };
       }),
-    []
+    [t]
   );
 
   const rolePickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -183,10 +231,10 @@ export function StaffFilterControls({
         .filter((i) => i.value !== STAFF_DIMENSION_FILTER_ALL)
         .map((opt) => ({
           value: opt.value,
-          label: opt.label,
+          label: dimensionLabel(opt, 'chrome.staff.allRoles'),
           icon: <Briefcase className="size-4 shrink-0" />,
         })),
-    [roleFilterItems]
+    [roleFilterItems, dimensionLabel]
   );
 
   const workforcePickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -195,10 +243,10 @@ export function StaffFilterControls({
         .filter((i) => i.value !== STAFF_DIMENSION_FILTER_ALL)
         .map((opt) => ({
           value: opt.value,
-          label: opt.label,
+          label: dimensionLabel(opt, 'chrome.staff.allWorkforceTypes'),
           icon: <Users className="size-4 shrink-0" />,
         })),
-    [workforceFilterItems]
+    [workforceFilterItems, dimensionLabel]
   );
 
   const wrapClass = row
@@ -212,9 +260,9 @@ export function StaffFilterControls({
           selectedValue={statusFilter}
           onValueChange={(v) => onStatusFilterChange(v as StatusFilter)}
           options={statusPickerOptions}
-          placeholderLabelWhenAll="All"
-          searchPlaceholder="Search status…"
-          emptyMessage="No status found."
+          placeholderLabelWhenAll={t('actions.all')}
+          searchPlaceholder={t('chrome.staff.searchStatus')}
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
           triggerClassName={statusTrigger}
         />
@@ -223,7 +271,7 @@ export function StaffFilterControls({
             type="button"
             onClick={() => onStatusFilterChange('all')}
             className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-            aria-label="Clear status filter"
+            aria-label={t('actions.clearStatusFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -236,9 +284,9 @@ export function StaffFilterControls({
           onValueChange={onRoleFilterChange}
           options={rolePickerOptions}
           allOptionValue={STAFF_DIMENSION_FILTER_ALL}
-          placeholderLabelWhenAll="All roles"
-          searchPlaceholder="Search roles…"
-          emptyMessage="No role found."
+          placeholderLabelWhenAll={t('chrome.staff.allRoles')}
+          searchPlaceholder={t('chrome.staff.searchRoles')}
+          emptyMessage={t('chrome.staff.noRoleFound')}
           triggerIcon={<Briefcase className="size-4 shrink-0" />}
           triggerClassName={roleTrigger}
         />
@@ -247,7 +295,7 @@ export function StaffFilterControls({
             type="button"
             onClick={() => onRoleFilterChange(STAFF_DIMENSION_FILTER_ALL)}
             className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-            aria-label="Clear role filter"
+            aria-label={t('chrome.lists.clearRoleFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -260,9 +308,9 @@ export function StaffFilterControls({
           onValueChange={onWorkforceFilterChange}
           options={workforcePickerOptions}
           allOptionValue={STAFF_DIMENSION_FILTER_ALL}
-          placeholderLabelWhenAll="All workforce types"
-          searchPlaceholder="Search workforce types…"
-          emptyMessage="No type found."
+          placeholderLabelWhenAll={t('chrome.staff.allWorkforceTypes')}
+          searchPlaceholder={t('chrome.staff.searchWorkforceTypes')}
+          emptyMessage={t('chrome.staff.noTypeFound')}
           triggerIcon={<Users className="size-4 shrink-0" />}
           triggerClassName={workforceTrigger}
         />
@@ -271,7 +319,7 @@ export function StaffFilterControls({
             type="button"
             onClick={() => onWorkforceFilterChange(STAFF_DIMENSION_FILTER_ALL)}
             className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-            aria-label="Clear workforce type filter"
+            aria-label={t('chrome.lists.clearWorkforceFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -294,7 +342,7 @@ export function StaffFilterControls({
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 <StaffBranchFlag label={branchFilterTriggerLabel} branches={branches} />
-                <span className="truncate">{branchFilterTriggerLabel}</span>
+                <span className="truncate">{branchTriggerText}</span>
               </span>
               <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
             </Button>
@@ -307,9 +355,9 @@ export function StaffFilterControls({
             align="start"
           >
             <Command>
-              <CommandInput placeholder="Search branches…" />
+              <CommandInput placeholder={t('chrome.lists.searchBranches')} />
               <CommandList>
-                <CommandEmpty>No branch found.</CommandEmpty>
+                <CommandEmpty>{t('chrome.lists.noBranchFound')}</CommandEmpty>
                 <CommandGroup>
                   {branchFilterItems.map((opt) => (
                     <CommandItem
@@ -328,7 +376,7 @@ export function StaffFilterControls({
                       />
                       <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
                         <StaffBranchFlag label={opt.label} branches={branches} />
-                        {opt.label}
+                        {dimensionLabel(opt, 'actions.allBranches')}
                       </span>
                     </CommandItem>
                   ))}
@@ -342,7 +390,7 @@ export function StaffFilterControls({
             type="button"
             onClick={() => onBranchFilterChange(STAFF_DIMENSION_FILTER_ALL)}
             className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-            aria-label="Clear branch filter"
+            aria-label={t('chrome.lists.clearBranchFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -364,7 +412,7 @@ export function StaffFilterControls({
               )}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate">{countryFilterTriggerLabel}</span>
+                <span className="truncate">{countryTriggerText}</span>
               </span>
               <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
             </Button>
@@ -377,9 +425,9 @@ export function StaffFilterControls({
             align="start"
           >
             <Command>
-              <CommandInput placeholder="Search countries…" />
+              <CommandInput placeholder={t('chrome.lists.searchCountries')} />
               <CommandList>
-                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandEmpty>{t('chrome.lists.noCountryFound')}</CommandEmpty>
                 <CommandGroup>
                   {countryFilterItems.map((opt) => (
                     <CommandItem
@@ -397,7 +445,7 @@ export function StaffFilterControls({
                         )}
                       />
                       <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                        {opt.label}
+                        {dimensionLabel(opt, 'chrome.staff.allCountries')}
                       </span>
                     </CommandItem>
                   ))}
@@ -411,7 +459,7 @@ export function StaffFilterControls({
             type="button"
             onClick={() => onCountryFilterChange(STAFF_DIMENSION_FILTER_ALL)}
             className="shrink-0 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto h-9 w-9 flex items-center justify-center"
-            aria-label="Clear country filter"
+            aria-label={t('chrome.lists.clearCountryFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -434,6 +482,7 @@ export function StaffFiltersBar({
   actions,
   ...filterProps
 }: StaffFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -450,7 +499,7 @@ export function StaffFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-72 md:max-w-[20rem] md:flex-none">
         <Input
-          placeholder="Search by name, email, or HR ID"
+          placeholder={t('chrome.staff.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
@@ -460,7 +509,7 @@ export function StaffFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -479,7 +528,7 @@ export function StaffFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
@@ -490,9 +539,9 @@ export function StaffFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
             <DialogDescription>
-              Narrow the staff list by status, role, workforce type, country, and branch.
+              {t('chrome.staff.filtersDescription')}
             </DialogDescription>
           </DialogHeader>
           <StaffFilterControls {...filterProps} layout="stack" />

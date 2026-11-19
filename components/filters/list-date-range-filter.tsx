@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DateRange } from 'react-day-picker';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,7 @@ export function ListDateRangeFilter({
   value: ListDateRangeValue;
   onChange: (value: ListDateRangeValue) => void;
 }) {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({
     from: value.startDate,
@@ -65,7 +67,7 @@ export function ListDateRangeFilter({
   const skipApplyOnCloseRef = useRef(false);
 
   const rangeLabel = value.useAllTime
-    ? 'All time'
+    ? t('actions.allTime')
     : formatUtcYmd(value.startDate) === formatUtcYmd(value.endDate)
       ? formatUtcCalendarLabel(value.startDate)
       : `${formatUtcCalendarLabel(value.startDate)} – ${formatUtcCalendarLabel(value.endDate)}`;
@@ -140,7 +142,7 @@ export function ListDateRangeFilter({
               reportsFilterSelectTriggerClass,
               'h-9 min-w-[180px] justify-start text-left font-normal'
             )}
-            aria-label="Filter by date"
+            aria-label={t('actions.filterByDate')}
           >
             <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate">{rangeLabel}</span>
@@ -149,16 +151,16 @@ export function ListDateRangeFilter({
         <PopoverContent className={cn('w-[95vw] max-w-lg p-0 sm:w-auto', reportsFilterPortalHighZ)} align="start">
           <div className="flex flex-wrap gap-2 border-b p-2">
             <Button type="button" size="sm" variant={value.useAllTime ? 'default' : 'outline'} onClick={chooseAllTime}>
-              All time
+              {t('actions.allTime')}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={chooseToday}>
-              Today
+              {t('actions.today')}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={chooseThisMonth}>
-              This month
+              {t('actions.thisMonth')}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={chooseWholeMonth}>
-              Whole month
+              {t('actions.wholeMonth')}
             </Button>
           </div>
           <Calendar
@@ -194,7 +196,7 @@ export function ListDateRangeFilter({
         <button
           type="button"
           className="ml-0.5 flex size-9 items-center justify-center rounded hover:bg-accent"
-          aria-label="Clear date filter"
+          aria-label={t('actions.clearDateFilter')}
           onClick={() => onChange({ ...createDefaultListDateRange(), useAllTime: true })}
         >
           <XIcon className="size-4 text-muted-foreground" />

@@ -46,14 +46,16 @@ export const BRANCH_STATUS_SELECT_OPTIONS: {
   { value: 'pending', label: 'Pending', Icon: Hourglass },
 ];
 
+/** `labelKey` is an i18n key in the `settings` namespace; `label` is the English fallback. */
 export const THEME_SELECT_OPTIONS: {
   value: 'light' | 'dark' | 'system';
   label: string;
+  labelKey: 'theme.light' | 'theme.dark' | 'theme.system';
   Icon: LucideIcon;
 }[] = [
-  { value: 'light', label: 'Light', Icon: Sun },
-  { value: 'dark', label: 'Dark', Icon: Moon },
-  { value: 'system', label: 'System', Icon: Monitor },
+  { value: 'light', label: 'Light', labelKey: 'theme.light', Icon: Sun },
+  { value: 'dark', label: 'Dark', labelKey: 'theme.dark', Icon: Moon },
+  { value: 'system', label: 'System', labelKey: 'theme.system', Icon: Monitor },
 ];
 
 /** Known UI values; server stores varchar — extend if product adds types. */

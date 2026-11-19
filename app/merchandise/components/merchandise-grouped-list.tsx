@@ -14,6 +14,7 @@ import {
 } from '@/app/merchandise/lib/merchandise-display';
 import { merchandiseImageUrls } from '@/app/merchandise/lib/merchandise-media';
 import { Notebook } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function MerchandiseThumb({ src, alt }: { src?: string; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -35,13 +36,14 @@ function MerchandiseThumb({ src, alt }: { src?: string; alt: string }) {
 }
 
 export function MerchandiseGroupedList({ journals }: { journals: Journal[] }) {
+  const { t } = useTranslation('screens');
   const sections = groupMerchandiseByDate(journals);
 
   if (sections.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
         <Notebook className="size-10 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">No merchandise entries as yet</p>
+        <p className="text-sm text-muted-foreground">{t('chrome.merchandise.empty')}</p>
       </div>
     );
   }

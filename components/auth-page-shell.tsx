@@ -1,6 +1,7 @@
 'use client';
 
 import { BrandMark } from '@/components/brand-mark';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 /**
  * Full-page shell for auth routes: sign-in, sign-up, forgot-password, verify-otp, new-password.
@@ -15,6 +16,9 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
         aria-hidden
       />
       <div className="fixed inset-0 bg-black/60" aria-hidden />
+      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <LanguageSwitcher id="auth-language" />
+      </div>
       <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-8">
         <BrandMark
           className="mb-6"

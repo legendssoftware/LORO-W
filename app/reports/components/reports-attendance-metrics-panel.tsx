@@ -5,6 +5,7 @@ import {
   ReportProgressBar,
   getProgressColorClasses,
 } from '@/app/staff/components/report-progress-bar';
+import { useTranslation } from 'react-i18next';
 
 export interface ReportsAttendanceHoursBuckets {
   today?: number | null;
@@ -141,23 +142,24 @@ export function ReportsAttendanceMetricsPanel({
   showLiveBuckets = false,
   className,
 }: ReportsAttendanceMetricsPanelProps) {
+  const { t } = useTranslation('screens');
   return (
     <div className={cn('space-y-4', className)}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <HoursProgressTile
-          title="Payroll period"
+          title={t('chrome.reports.attendance.payrollPeriod')}
           subtitle={payrollLabel}
           workedHours={hours.payrollHours}
           targetHours={payrollTargetHours}
         />
         <HoursProgressTile
-          title="Month to date"
+          title={t('chrome.reports.attendance.monthToDate')}
           subtitle={monthLabel}
           workedHours={hours.thisMonth}
           targetHours={monthTargetHours}
         />
         <MetricTile
-          label="Attendance rate"
+          label={t('chrome.reports.attendance.rate')}
           value={formatPct(attendanceRate)}
           hint="ACR for selected range"
           valueClassName={
@@ -167,7 +169,7 @@ export function ReportsAttendanceMetricsPanel({
           }
         />
         <MetricTile
-          label="Punctuality"
+          label={t('chrome.reports.attendance.punctuality')}
           value={formatPct(punctualityScore)}
           hint="On-time arrivals"
           valueClassName={
@@ -180,12 +182,12 @@ export function ReportsAttendanceMetricsPanel({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <MetricTile
-          label="Avg check-in"
+          label={t('chrome.reports.attendance.avgCheckIn')}
           value={formatTime(averageCheckIn)}
           hint="Attendance times"
         />
         <MetricTile
-          label="Avg check-out"
+          label={t('chrome.reports.attendance.avgCheckOut')}
           value={formatTime(averageCheckOut)}
           hint="Attendance times"
         />
@@ -194,14 +196,14 @@ export function ReportsAttendanceMetricsPanel({
       {showLiveBuckets ? (
         <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-4">
           <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Hours worked
+            {t('chrome.reports.attendance.hoursWorked')}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <MetricTile label="Today" value={formatHours(hours.today)} />
-            <MetricTile label="This week" value={formatHours(hours.thisWeek)} />
-            <MetricTile label="This month" value={formatHours(hours.thisMonth)} />
+            <MetricTile label={t('chrome.reports.attendance.today')} value={formatHours(hours.today)} />
+            <MetricTile label={t('chrome.reports.attendance.thisWeek')} value={formatHours(hours.thisWeek)} />
+            <MetricTile label={t('chrome.reports.attendance.thisMonth')} value={formatHours(hours.thisMonth)} />
             <MetricTile
-              label="Payroll"
+              label={t('chrome.reports.attendance.payroll')}
               value={formatHours(hours.payrollHours)}
               hint={payrollLabel}
             />

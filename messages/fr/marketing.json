@@ -191,5 +191,230 @@
       "fieldSales": "vente terrain",
       "suffix": " pour une suite complète de vente itinérante."
     }
+  },
+  "header": {
+    "product": "Produit",
+    "solutions": "Solutions",
+    "careers": "Carrières",
+    "research": "Recherche",
+    "myAccount": "Mon compte",
+    "demoCall": "APPEL DE DÉMO",
+    "connecting": "CONNEXION...",
+    "endCall": "FIN DE L’APPEL",
+    "retryCall": "RÉESSAYER L’APPEL",
+    "getStarted": "Commencer",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "footer": {
+    "tagline": "Logiciel de vente terrain pour l’Afrique du Sud — visites, tournées et pipeline.",
+    "taglineShort": "Logiciel de vente terrain pour l’Afrique du Sud.",
+    "rights": "Tous droits réservés.",
+    "company": "Entreprise",
+    "about": "À propos",
+    "customers": "Clients",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "privacyPolicy": "Politique de confidentialité",
+    "privacy": "Confidentialité",
+    "solutions": "Solutions",
+    "fieldSales": "Vente terrain",
+    "visitTracking": "Suivi des visites",
+    "routePlanning": "Planification des tournées",
+    "pipeline": "Pipeline",
+    "competitorIntel": "Veille concurrentielle",
+    "integrations": "Intégrations",
+    "compare": "Comparer",
+    "vsSkynamo": "vs Skynamo",
+    "vsRepsly": "vs Repsly",
+    "vsZoho": "vs Zoho CRM",
+    "getStarted": "Commencer",
+    "signIn": "Se connecter"
+  },
+  "shell": {
+    "navLabel": "Marketing",
+    "cta": {
+      "title": "Prêt pour la vente terrain sur une seule plateforme ?",
+      "body": "Inscrivez-vous ou essayez l’application Android — conçue pour les équipes B2B sud-africaines.",
+      "backHome": "Retour à l’accueil"
+    }
+  },
+  "landing": {
+    "headline": "Une vente terrain qui passe à l’échelle.",
+    "headlineItalic": "Visites, tournées, pipeline.",
+    "subheadline": "Planifiez vos tournées, prouvez vos visites et développez votre pipeline sur une seule plateforme—conçue pour les équipes B2B sud-africaines, avec des commandes prêtes pour l’ERP et des cartes en direct.",
+    "community": "Rejoignez la communauté LORO et ses plus de 90 membres",
+    "tryAndroidApp": "Essayer notre application Android",
+    "myAccount": "Mon compte",
+    "liveSync": "Synchro en direct",
+    "statsTitle": "Conçu pour grandir.",
+    "statsTitleItalic": "Adopté par de vraies équipes.",
+    "stats": {
+      "businesses": {
+        "label": "Entreprises",
+        "sub": "sur la plateforme"
+      },
+      "partners": {
+        "label": "Partenaires",
+        "sub": "en collaboration"
+      },
+      "fieldUsers": {
+        "label": "Utilisateurs terrain",
+        "sub": "actifs chaque jour"
+      },
+      "spaces": {
+        "label": "Espaces",
+        "sub": "optimisés"
+      }
+    },
+    "techTitle": "Une technologie qui fonctionne en harmonie",
+    "techBody": "Conçue pour simplifier les opérations quotidiennes grâce à des systèmes intelligents et connectés.",
+    "liveSalesDashboard": "Ventes en direct | Tableau de bord",
+    "quotesOrders": "Devis et commandes",
+    "activeCount": "23 actives",
+    "featuresTitle": "Des fonctionnalités puissantes,",
+    "featuresTitleItalic": "pensées dans les moindres détails",
+    "featuresBody": "Tout ce qu’il vous faut pour le confort, la clarté et l’efficacité—au même endroit.",
+    "features": {
+      "smartLead": {
+        "title": "Gestion intelligente des leads",
+        "desc": "Captez, qualifiez et convertissez vos leads grâce à un scoring basé sur l’IA. Priorisez les meilleures opportunités et ne laissez jamais refroidir un lead chaud. Votre pipeline reste plein et votre équipe reste concentrée."
+      },
+      "pipelineByStage": {
+        "title": "Pipeline par étape",
+        "desc": "Un pipeline visuel avec glisser-déposer et suivi complet des affaires. Faites avancer les opportunités d’un coup d’œil et voyez précisément où en est chaque affaire. Idéal pour l’alignement de l’équipe et les prévisions."
+      },
+      "taskProject": {
+        "title": "Gestion des tâches et des projets",
+        "desc": "Attribution intelligente, priorités claires et avancement en temps réel dans toute l’équipe. Assignez le travail, fixez des échéances et suivez l’achèvement pour que rien ne passe entre les mailles du filet."
+      },
+      "liveAnalytics": {
+        "title": "Analyses en direct",
+        "desc": "Tableaux de bord en temps réel et indicateurs issus de l’ERP au même endroit. Comprenez les performances, repérez les tendances et décidez avec des données à jour—sans tableur."
+      },
+      "erpIntegration": {
+        "title": "Intégration ERP",
+        "desc": "Ventes et devis en direct avec une visibilité totale d’un coup d’œil. Votre ERP actuel reste la source de vérité pendant que LORO synchronise le terrain et le bureau."
+      },
+      "workflowAutomation": {
+        "title": "Automatisation des workflows",
+        "desc": "Planifiez les tâches et automatisez les relances sur tous vos appareils. Définissez les règles une fois et laissez le système gérer rappels, mises à jour de statut et étapes routinières pour que votre équipe se concentre sur la conclusion des ventes."
+      }
+    },
+    "controlTitle": "Chaque détail,",
+    "controlTitleItalic": "parfaitement maîtrisé",
+    "controlBody": "Une plateforme pour les tournées, l’ERP, la planification et une interface épurée.",
+    "radial": {
+      "smartRouting": "Tournées intelligentes",
+      "liveErp": "ERP en direct",
+      "unifiedControl": "Contrôle unifié",
+      "smartScheduling": "Planification intelligente",
+      "minimalInterface": "Interface épurée",
+      "automation": "Automatisation"
+    },
+    "opsTitle": "Une façon plus intelligente, plus juste et plus transparente de piloter les opérations terrain",
+    "opsBody": "Synchronisation en direct, clarté immédiate et contrôle total—pas seulement des données.",
+    "ops": {
+      "erpSync": {
+        "title": "Synchro ERP en direct, rapide par conception",
+        "body": "Flux de données en masse et mises à jour en temps réel depuis vos systèmes existants."
+      },
+      "statusClarity": {
+        "title": "Clarté instantanée des statuts",
+        "body": "Voyez qui est où et ce qui est dû—d’un coup d’œil."
+      },
+      "operationalControl": {
+        "title": "Un contrôle opérationnel, pas seulement des données",
+        "body": "Agissez sur les devis, commandes et plannings directement depuis la plateforme."
+      }
+    },
+    "ring": {
+      "claims": "Notes de frais",
+      "leads": "Leads",
+      "visits": "Visites",
+      "gprTracking": "Suivi GPS"
+    },
+    "ctaTitle": "Visualisez vos données.",
+    "ctaTitleItalic": "Pilotez vos opérations.",
+    "ctaBody": "Une seule application pour le terrain et le bureau. Démarrez en quelques minutes.",
+    "downloadApp": "Télécharger l’application",
+    "imageAlt": {
+      "app": "Application Loro",
+      "dashboard": "Tableau de bord Loro",
+      "analytics": "Analyses Loro",
+      "control": "Contrôle Loro",
+      "office": "Bureau moderne"
+    },
+    "faq": {
+      "title": "Logiciel de vente terrain —",
+      "titleItalic": "questions fréquentes",
+      "lead": "Des réponses pour les équipes qui comparent LORO à d’autres plateformes de vente terrain en Afrique du Sud.",
+      "blogLink": "Lire le blog de la vente terrain",
+      "or": "ou",
+      "compareLink": "comparer LORO et Skynamo",
+      "items": {
+        "whatIs": {
+          "question": "Qu’est-ce que le logiciel de vente terrain LORO ?",
+          "answer": "LORO est une plateforme sud-africaine de vente terrain pour les visites, la planification des tournées, la gestion du pipeline, les comptes clients et les commandes liées à l’ERP—sur le web et le mobile, pour les commerciaux et les managers."
+        },
+        "whoFor": {
+          "question": "Pour qui LORO est-il conçu ?",
+          "answer": "Fabricants, grossistes, distributeurs et équipes terrain qui visitent régulièrement des clients B2B et ont besoin d’un seul système pour les visites, devis, tâches et rapports de performance."
+        },
+        "offline": {
+          "question": "LORO fonctionne-t-il hors ligne pour les commerciaux terrain ?",
+          "answer": "L’application mobile LORO est conçue pour les commerciaux en déplacement. Les parcours terrain essentiels tolèrent une connectivité instable ; connectez-vous en ligne pour synchroniser visites, commandes et mises à jour du pipeline."
+        },
+        "erp": {
+          "question": "LORO peut-il s’intégrer à notre ERP ?",
+          "answer": "Oui. LORO inclut un ERP interne intégré à la vente terrain—contexte produits, clients et commandes sans back-office séparé à greffer. Des passerelles optionnelles vers Sage, Acumatica ou SAP sont disponibles si vous utilisez un environnement mixte. Consultez notre hub d’intégrations pour plus de détails."
+        },
+        "difference": {
+          "question": "En quoi LORO diffère-t-il de Skynamo ou Repsly ?",
+          "answer": "LORO associe l’exécution de la vente terrain à un ERP interne intégré, à la cartographie de la concurrence et à des outils RH optionnels—cloud natif avec authentification Clerk. Les pages de comparaison détaillent l’adéquation selon la taille de l’équipe et l’environnement financier."
+        },
+        "enterprise": {
+          "question": "LORO est-il réservé aux grandes entreprises ?",
+          "answer": "Non. Des distributeurs en croissance aux opérations multi-sites, de nombreuses équipes utilisent LORO. Commencez par l’inscription ou l’essai de l’application Android et ajoutez des utilisateurs à mesure que votre programme terrain se développe."
+        },
+        "modules": {
+          "question": "Quels modules sont inclus ?",
+          "answer": "Leads, pipeline, planification et tournées, visites avec preuves, espaces clients et concurrents, visualiseur de cartes, rapports, matériel IoT pour les agences et présence RH optionnelle—avec une seule connexion."
+        },
+        "getStarted": {
+          "question": "Comment démarrer ?",
+          "answer": "Créez un compte via l’inscription ou téléchargez l’application Android. Les managers configurent les agences et les objectifs ; les commerciaux planifient leurs tournées et enregistrent leurs visites dès le premier jour."
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "getStarted": "Commencer",
+    "back": "Retour",
+    "next": "Suivant",
+    "createAccount": "Créer un compte",
+    "skipToHome": "Aller à l’accueil",
+    "slides": {
+      "platform": {
+        "title": "Une plateforme, tout est connecté",
+        "description": "Fini la jonglerie entre plusieurs systèmes. Loro réunit gestion des interventions terrain, suivi des stocks, devis, gestion des tâches et analyses en temps réel sur une seule plateforme puissante. Commandez directement depuis Loro — tout est connecté."
+      },
+      "owners": {
+        "title": "Dirigeants : un contrôle complet",
+        "description": "Suivez les ventes en direct, gérez votre équipe et décidez instantanément. Des informations en temps réel, utilisables hors ligne — le tout depuis votre téléphone, où que vous soyez."
+      },
+      "clients": {
+        "title": "Clients : commandez à tout moment, partout",
+        "description": "Parcourez les produits, créez des devis et passez commande instantanément. Votre boutique personnalisée dans la poche — les devis se transforment en commandes en toute fluidité."
+      },
+      "employees": {
+        "title": "Employés : le travail simplifié",
+        "description": "Soumettez vos notes de frais, demandez des congés, consultez vos fiches de paie et suivez votre présence. Moins d’administratif, plus de liberté — mobile d’abord, avec un mode hors ligne."
+      },
+      "start": {
+        "title": "Commencez dès aujourd’hui",
+        "description": "Transformez vos opérations avec LORO. Des fonctionnalités d’entreprise, des tarifs PME. Automatisez ce qui compte, maîtrisez ce qui importe."
+      }
+    }
   }
 }

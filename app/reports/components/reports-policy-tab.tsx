@@ -52,6 +52,7 @@ import {
   PolicyReviewsPanel,
   PolicyStockIntel,
 } from './reports-policy-workspace';
+import { useTranslation } from 'react-i18next';
 
 function SummaryCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -69,6 +70,7 @@ function SummaryCard({ title, children }: { title: string; children: React.React
  * with radial summaries, a sortable / pageable table, CSV export and (org-wide roles) month finalisation.
  */
 export function ReportsPolicyTab() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
@@ -212,7 +214,7 @@ export function ReportsPolicyTab() {
             setPage(1);
           }}
         >
-          This month
+          {t('chrome.reports.pol.thisMonth')}
         </Button>
         <Button
           type="button"
@@ -223,7 +225,7 @@ export function ReportsPolicyTab() {
             setPage(1);
           }}
         >
-          Last month
+          {t('chrome.reports.pol.lastMonth')}
         </Button>
         {isMultiUser ? (
           <>
@@ -239,37 +241,37 @@ export function ReportsPolicyTab() {
               setSearch(searchInput.trim());
               setPage(1);
             }}
-            placeholder="Search employees"
-            aria-label="Search employees"
-            title="Press Enter or leave the field to search"
+            placeholder={t('chrome.reports.pol.searchEmployees')}
+            aria-label={t('chrome.reports.pol.searchEmployees')}
+            title={t('chrome.reports.pol.searchHint')}
             className="h-9 w-48"
           />
           <select
             className="h-9 rounded-md border bg-background px-2 text-sm"
-            aria-label="Signature"
+            aria-label={t('chrome.reports.pol.signature')}
             value={signedFilter}
             onChange={(event) => {
               setSignedFilter(event.target.value as 'all' | 'yes' | 'no');
               setPage(1);
             }}
           >
-            <option value="all">All signatures</option>
-            <option value="no">Not signed</option>
-            <option value="yes">Signed</option>
+            <option value="all">{t('chrome.reports.pol.allSignatures')}</option>
+            <option value="no">{t('chrome.reports.pol.notSigned')}</option>
+            <option value="yes">{t('chrome.reports.pol.signed')}</option>
           </select>
           <select
             className="h-9 rounded-md border bg-background px-2 text-sm"
-            aria-label="Standard"
+            aria-label={t('chrome.reports.pol.standard')}
             value={statusFilter}
             onChange={(event) => {
               setStatusFilter(event.target.value as 'all' | 'below_standard' | 'meets_all' | 'not_measurable');
               setPage(1);
             }}
           >
-            <option value="all">All standards</option>
-            <option value="below_standard">Below standard</option>
-            <option value="meets_all">Meets standards</option>
-            <option value="not_measurable">Not measurable</option>
+            <option value="all">{t('chrome.reports.pol.allStandards')}</option>
+            <option value="below_standard">{t('chrome.reports.pol.belowStandard')}</option>
+            <option value="meets_all">{t('chrome.reports.pol.meetsStandards')}</option>
+            <option value="not_measurable">{t('chrome.reports.pol.notMeasurable')}</option>
           </select>
           </>
         ) : null}
@@ -298,14 +300,14 @@ export function ReportsPolicyTab() {
             ) : (
               <Download className="mr-1.5 size-4" aria-hidden />
             )}
-            Export CSV
+            {t('actions.exportCsv')}
           </Button>
         </div>
       </div>
 
       {tooLong ? (
         <Alert variant="destructive">
-          <AlertTitle>Range too long</AlertTitle>
+          <AlertTitle>{t('chrome.reports.pol.rangeTooLong')}</AlertTitle>
           <AlertDescription>
             Pick a calendar month or a custom range of at most {POLICY_MAX_CUSTOM_DAYS} days.
           </AlertDescription>
@@ -314,40 +316,40 @@ export function ReportsPolicyTab() {
 
       {policyDisabled ? (
         <Alert>
-          <AlertTitle>Performance policy is not enabled</AlertTitle>
+          <AlertTitle>{t('chrome.reports.pol.notEnabled')}</AlertTitle>
           <AlertDescription>
-            Turn on the sales performance policy in organisation settings to see this report.
+            {t('chrome.reports.pol.notEnabledHint')}
           </AlertDescription>
         </Alert>
       ) : null}
 
       {windowError ? (
         <Alert variant="destructive">
-          <AlertTitle>That period cannot be reported</AlertTitle>
-          <AlertDescription>The period may be in the future. Choose a month that has started.</AlertDescription>
+          <AlertTitle>{t('chrome.reports.pol.periodNotReportable')}</AlertTitle>
+          <AlertDescription>{t('chrome.reports.pol.periodNotReportableHint')}</AlertDescription>
         </Alert>
       ) : null}
 
       {data?.policy.shadowMode ? (
         <Alert>
-          <AlertTitle>Shadow mode</AlertTitle>
+          <AlertTitle>{t('chrome.reports.pol.shadowMode')}</AlertTitle>
           <AlertDescription>
-            The policy is being measured but not applied. Employees do not see pay results yet.
+            {t('chrome.reports.pol.shadowModeHint')}
           </AlertDescription>
         </Alert>
       ) : null}
 
       {report.isError && !policyDisabled && !windowError ? (
         <Alert variant="destructive">
-          <AlertTitle>Could not load the report</AlertTitle>
-          <AlertDescription>Try again in a moment.</AlertDescription>
+          <AlertTitle>{t('chrome.reports.pol.reportLoadError')}</AlertTitle>
+          <AlertDescription>{t('chrome.reports.pol.tryAgainMoment')}</AlertDescription>
         </Alert>
       ) : null}
 
       {!policyDisabled ? (
         <>
           <div className="grid gap-4 md:grid-cols-3">
-            <ReportsChartCard title="Standards" description="Employees by result">
+            <ReportsChartCard title={t('chrome.reports.pol.standards')} description={t('chrome.reports.pol.employeesByResult')}>
               {report.isLoading || !totals ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
@@ -355,14 +357,14 @@ export function ReportsPolicyTab() {
                   centerLabel={formatPolicyPct(totals.avgActivityPct)}
                   centerSub="Avg activity"
                   segments={[
-                    { key: 'meets', label: 'Meets', value: totals.meetingAllStandards, color: REPORTS_CHART_GREEN },
-                    { key: 'below', label: 'Below', value: totals.belowStandard, color: REPORTS_CHART_RED },
-                    { key: 'na', label: 'Not measurable', value: totals.notMeasurable, color: REPORTS_CHART_AMBER },
+                    { key: 'meets', label: t('chrome.reports.pol.meets'), value: totals.meetingAllStandards, color: REPORTS_CHART_GREEN },
+                    { key: 'below', label: t('chrome.reports.pol.below'), value: totals.belowStandard, color: REPORTS_CHART_RED },
+                    { key: 'na', label: t('chrome.reports.pol.notMeasurable'), value: totals.notMeasurable, color: REPORTS_CHART_AMBER },
                   ]}
                 />
               )}
             </ReportsChartCard>
-            <ReportsChartCard title="Verified visits" description="Against the expected visits">
+            <ReportsChartCard title={t('chrome.reports.pol.verifiedVisits')} description={t('chrome.reports.pol.againstExpectedVisits')}>
               {report.isLoading || !totals ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
@@ -370,10 +372,10 @@ export function ReportsPolicyTab() {
                   centerLabel={verifiedExpected > 0 ? formatPolicyPct(verifiedActual / verifiedExpected) : '—'}
                   centerSub={`${verifiedActual.toLocaleString()} / ${verifiedExpected.toLocaleString()}`}
                   segments={[
-                    { key: 'done', label: 'Verified', value: verifiedActual, color: REPORTS_CHART_GREEN },
+                    { key: 'done', label: t('chrome.reports.pol.verified'), value: verifiedActual, color: REPORTS_CHART_GREEN },
                     {
                       key: 'left',
-                      label: 'Remaining',
+                      label: t('chrome.reports.pol.remaining'),
                       value: Math.max(0, verifiedExpected - verifiedActual),
                       color: REPORTS_CHART_RED,
                     },
@@ -381,7 +383,7 @@ export function ReportsPolicyTab() {
                 />
               )}
             </ReportsChartCard>
-            <ReportsChartCard title="Qualifying calls" description="Against the expected calls">
+            <ReportsChartCard title={t('chrome.reports.pol.qualifyingCalls')} description={t('chrome.reports.pol.againstExpectedCalls')}>
               {report.isLoading || !totals ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
@@ -389,10 +391,10 @@ export function ReportsPolicyTab() {
                   centerLabel={callsExpected > 0 ? formatPolicyPct(callsActual / callsExpected) : '—'}
                   centerSub={`${callsActual.toLocaleString()} / ${callsExpected.toLocaleString()}`}
                   segments={[
-                    { key: 'done', label: 'Qualifying', value: callsActual, color: REPORTS_CHART_GREEN },
+                    { key: 'done', label: t('chrome.reports.pol.qualifying'), value: callsActual, color: REPORTS_CHART_GREEN },
                     {
                       key: 'left',
-                      label: 'Remaining',
+                      label: t('chrome.reports.pol.remaining'),
                       value: Math.max(0, callsExpected - callsActual),
                       color: REPORTS_CHART_RED,
                     },
@@ -404,16 +406,16 @@ export function ReportsPolicyTab() {
 
           {totals ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <SummaryCard title="Employees">
+              <SummaryCard title={t('chrome.reports.pol.employees')}>
                 <p className="text-2xl font-semibold tabular-nums">{totals.users.toLocaleString()}</p>
               </SummaryCard>
-              <SummaryCard title="Flagged visits">
+              <SummaryCard title={t('chrome.reports.pol.flaggedVisits')}>
                 <p className="text-2xl font-semibold tabular-nums">{totals.flaggedVisits.toLocaleString()}</p>
               </SummaryCard>
-              <SummaryCard title="Incomplete visits">
+              <SummaryCard title={t('chrome.reports.pol.incompleteVisits')}>
                 <p className="text-2xl font-semibold tabular-nums">{totals.incompleteVisits.toLocaleString()}</p>
               </SummaryCard>
-              <SummaryCard title="Pending exceptions">
+              <SummaryCard title={t('chrome.reports.pol.pendingExceptions')}>
                 <p className="text-2xl font-semibold tabular-nums">{totals.pendingExceptions.toLocaleString()}</p>
               </SummaryCard>
             </div>
@@ -422,7 +424,7 @@ export function ReportsPolicyTab() {
           {queue.data && queue.data.items.length > 0 ? (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Visits to review</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t('chrome.reports.pol.visitsToReview')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">

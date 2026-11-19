@@ -10,6 +10,7 @@ import {
   REPORTS_CHART_RED,
   toDonutSlices,
 } from '@/app/reports/lib/reports-dashboard-chart-helpers';
+import { useTranslation } from 'react-i18next';
 
 function archetypeColor(id: string): string {
   switch (id) {
@@ -34,6 +35,7 @@ export function ReportsCallArchetypeChart({
 }: {
   archetypes: CallQualityArchetypeStat[];
 }) {
+  const { t } = useTranslation('screens');
   const { slices, config, total } = useMemo(() => {
     const rows = archetypes
       .filter((row) => row.count > 0)
@@ -48,7 +50,7 @@ export function ReportsCallArchetypeChart({
   if (total <= 0) {
     return (
       <p className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
-        No recordings in this period
+        {t('chrome.reports.cq.noRecordings')}
       </p>
     );
   }
