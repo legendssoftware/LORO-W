@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useMemo, useRef, useState } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { format } from 'date-fns';
@@ -273,6 +274,7 @@ function interactionTypeForAttachment(
 }
 
 export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
+  const { t } = useTranslation('screens');
   const { userId } = useAuth();
   const { user: clerkUser } = useUser();
   const mineProfile = useMemo((): MineProfile | null => {
@@ -323,9 +325,9 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
       const res = await uploadInteractionAttachment(client, file);
       setPendingUrl(res.data.publicUrl);
       setPendingName(res.data.fileName);
-      toast.success('File ready to send');
+      toast.success(t('leads.fileReady'));
     } catch {
-      toast.error('Upload failed');
+      toast.error(t('leads.uploadFailed'));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -336,7 +338,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
   async function handleSend() {
     const text = draft.trim();
     if (!text && !pendingUrl) {
-      toast.error('Type a message or attach a file');
+      toast.error(t('leads.typeOrAttach'));
       return;
     }
     const message = text || 'Attachment';
@@ -357,15 +359,15 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
       setPendingUrl(null);
       setPendingName(null);
     } catch {
-      toast.error('Could not send message');
+      toast.error(t('leads.couldNotSend'));
     }
   }
 
   return (
     <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
       <div>
-        <h3 className="text-sm font-semibold">Team chat</h3>
-        <p className="text-xs text-muted-foreground">Visible to lead owner and assignees</p>
+        <h3 className="text-sm font-semibold">{t('leads.teamChat')}</h3>
+        <p className="text-xs text-muted-foreground">{t('leads.teamChatHint')}</p>
       </div>
 
       <div className="flex max-h-[min(420px,50vh)] min-h-[120px] flex-col overflow-hidden rounded-md border bg-background/80">
@@ -374,13 +376,9 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : listQuery.isError ? (
-          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-destructive">
-            Could not load messages.
-          </p>
+          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-destructive">{t('leads.couldNotLoadMessages')}</p>
         ) : items.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-muted-foreground">
-            No messages yet.
-          </p>
+          <p className="flex flex-1 items-center justify-center px-3 text-center text-sm text-muted-foreground">{t('leads.noMessages')}</p>
         ) : (
           <MessageScrollerProvider autoScroll defaultScrollPosition="end">
             <MessageScroller className="min-h-0 flex-1">
@@ -408,11 +406,9 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
       {pendingUrl ? (
         <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
           <span className="truncate">
-            Ready: {pendingName ?? fileLabelFromUrl(pendingUrl)}
+            {t('leads.readyFile', { name: pendingName ?? fileLabelFromUrl(pendingUrl) })}
           </span>
-          <Button type="button" variant="ghost" size="sm" onClick={() => { setPendingUrl(null); setPendingName(null); }}>
-            Remove
-          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { setPendingUrl(null); setPendingName(null); }}>{t('actions.remove')}</Button>
         </div>
       ) : null}
 
@@ -438,7 +434,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
             className="shrink-0"
             disabled={uploading || createMutation.isPending}
             onClick={() => fileInputRef.current?.click()}
-            aria-label="Attach file"
+            aria-label={t('leads.attachFile')}
           >
             {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
           </Button>
@@ -449,7 +445,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
             className="shrink-0"
             disabled={uploading || createMutation.isPending}
             onClick={() => audioInputRef.current?.click()}
-            aria-label="Attach audio"
+            aria-label={t('leads.attachAudio')}
           >
             <Mic className="size-4" />
           </Button>
@@ -457,7 +453,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
         <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Type a message…"
+          placeholder={t('leads.typeMessage')}
           className="min-h-10 flex-1"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -477,7 +473,7 @@ export function LeadTeamChat({ leadRef }: LeadTeamChatProps) {
           ) : (
             <Send className="size-4" />
           )}
-          Send
+          {t('actions.send')}
         </Button>
       </div>
     </div>

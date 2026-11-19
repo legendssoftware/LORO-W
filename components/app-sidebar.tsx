@@ -100,6 +100,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand-mark";
+import { useTranslation } from "react-i18next";
 
 const ROUTE_ICONS: Record<
   string,
@@ -193,6 +194,7 @@ function getSidebarRoutes(profile: PerformanceAccessUser | null | undefined, app
 }
 
 export function AppSidebar() {
+  const { t } = useTranslation("nav");
   const pathname = usePathname();
   const { closeSidebar } = useSidebar();
   const { isSignedIn, isLoaded } = useAuth();
@@ -264,7 +266,7 @@ export function AppSidebar() {
                           className="w-full justify-center md:justify-start"
                         >
                           {Icon && <Icon className="size-5 shrink-0" />}
-                          <span>{route.label}</span>
+                          <span>{t(route.path.replace(/^\//, ""), { defaultValue: route.label })}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -281,11 +283,11 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             className="w-full justify-center gap-3 px-3 py-2 text-center text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:justify-start md:text-left"
-            aria-label="FAQ"
+            aria-label={t("faq")}
             onClick={() => setFaqOpen(true)}
           >
             <KnowledgeIcon className="size-5 shrink-0" />
-            FAQ
+            {t("faq")}
           </Button>
           <Button
             variant="ghost"
@@ -296,22 +298,22 @@ export function AppSidebar() {
             )}
             aria-label={
               isCallActive
-                ? "End support call"
+                ? t("endSupportCall")
                 : connectionError
-                  ? "Retry support call"
-                  : "Start support call"
+                  ? t("retrySupportCall")
+                  : t("startSupportCall")
             }
             onClick={handleSupportClick}
             disabled={isCallInitializing}
           >
             <VapiSupportCallIcon className="size-5 shrink-0" />
             {isCallActive
-              ? `End call${formattedTimeRemaining ? ` (${formattedTimeRemaining})` : ""}`
+              ? `${t("endCall")}${formattedTimeRemaining ? ` (${formattedTimeRemaining})` : ""}`
               : connectionError
-                ? "Retry"
+                ? t("retrySupport")
                 : isCallInitializing
-                  ? "Connecting..."
-                  : "Support"}
+                  ? t("connecting")
+                  : t("support")}
           </Button>
         </SidebarFooter>
       </Sidebar>

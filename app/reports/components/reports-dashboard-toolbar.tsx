@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { CalendarIcon, Download, Filter, Globe2, Loader2 } from 'lucide-react';
+import { CalendarIcon, Download, Filter, Loader2 } from 'lucide-react';
 import type { BranchListItem } from '@/api/types/branch';
 import {
   reportsFilterPortalHighZ,
@@ -301,7 +301,6 @@ function ReportsDashboardFilterControls({
             onValueChange={(v) => onCountryChange?.(v)}
             placeholderLabelWhenAll="All countries"
             searchPlaceholder="Search countries…"
-            triggerIcon={<Globe2 className="size-4 shrink-0 text-muted-foreground" />}
             triggerClassName={pickerTriggerClass}
           />
         </>

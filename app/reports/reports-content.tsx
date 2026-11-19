@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getReportsDataScope } from '@/lib/access';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
-import { REPORTS_TABS, reportsSubtitle, type ReportsTabId } from './lib/reports-registry';
+import { REPORTS_TABS, type ReportsTabId } from './lib/reports-registry';
+import { useTranslation } from 'react-i18next';
 
 function ReportsTabFallback() {
   return (
@@ -79,6 +80,7 @@ const reportsTabTriggerClass = cn(
 );
 
 export function ReportsContent() {
+  const { t } = useTranslation('screens');
   const { backendUserData } = useSessionSync();
   const scope = getReportsDataScope(backendUserData?.accessLevel, backendUserData);
   const searchParams = useSearchParams();
@@ -87,6 +89,12 @@ export function ReportsContent() {
     ? (requestedTab as string)
     : REPORTS_TABS[0].id;
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const subtitleKey =
+    scope === 'org'
+      ? 'pages.reports.subtitleOrg'
+      : scope === 'team'
+        ? 'pages.reports.subtitleTeam'
+        : 'pages.reports.subtitleSelf';
 
   return (
     <div className={appPageScrollWrapClass} data-slot="reports-page">
@@ -96,10 +104,10 @@ export function ReportsContent() {
           data-tour="reports-page-header"
         >
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Reports
+            {t('pages.reports.title')}
           </h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            {reportsSubtitle(scope)}
+            {t(subtitleKey)}
           </p>
         </div>
 
@@ -119,7 +127,7 @@ export function ReportsContent() {
                   data-tour={`reports-tab-${tab.id}`}
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
-                  {tab.label}
+                  {t(`pages.reports.tabs.${tab.id}`)}
                 </TabsTrigger>
               );
             })}

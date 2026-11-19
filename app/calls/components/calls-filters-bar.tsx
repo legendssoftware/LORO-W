@@ -470,8 +470,8 @@ export function CallsFiltersBar({
           </Button>
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto">
-          {actions}
           {renderSearchField('w-full')}
+          {actions}
         </div>
       </div>
 
@@ -507,8 +507,8 @@ export function CallsFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
-          {actions}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

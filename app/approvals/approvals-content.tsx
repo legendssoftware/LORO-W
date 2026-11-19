@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useApprovals } from '@/api/hooks/use-approvals';
 import { useApiClient } from '@/api/hooks/use-api-client';
@@ -41,6 +42,7 @@ function matchesSearch(approval: Approval, query: string): boolean {
 }
 
 export function ApprovalsContent() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionSyncLoading } = useSessionSync();
@@ -93,16 +95,16 @@ export function ApprovalsContent() {
   }
 
   const listError = listQuery.error
-    ? getQueryErrorMessage(listQuery.error, 'Could not load approvals')
+    ? getQueryErrorMessage(listQuery.error, t('approvals.couldNotLoad'))
     : '';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 shrink-0" data-tour="approvals-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Approvals</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('approvals.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Review pending requests, inspect employee intake forms, and approve or reject from the web.
+            {t('approvals.description')}
           </p>
         </div>
 
@@ -117,16 +119,16 @@ export function ApprovalsContent() {
           actions={
             <>
               <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
-                void createApproval(client, { title: 'Web request', type: 'GENERAL' }).then(() => toast.success('Request created'), () => toast.error('Could not create a request'));
+                void createApproval(client, { title: 'Web request', type: 'GENERAL' }).then(() => toast.success(t('approvals.requestCreated')), () => toast.error(t('approvals.couldNotCreate')));
               }}>
                 <Plus className="size-4" />
-                New request
+                {t('approvals.newRequest')}
               </Button>
               <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-2" onClick={() => {
-                void getMyApprovalRequests(client).then(() => toast.success('My requests loaded'), () => toast.error('Could not load my requests'));
+                void getMyApprovalRequests(client).then(() => toast.success(t('approvals.myRequestsLoaded')), () => toast.error(t('approvals.couldNotLoadMine')));
               }}>
                 <Inbox className="size-4" />
-                My requests
+                {t('approvals.myRequests')}
               </Button>
             </>
           }
@@ -169,7 +171,7 @@ export function ApprovalsContent() {
           )}
           {!listQuery.isLoading && !listQuery.error && rows.length === 0 ? (
             <p className="py-10 text-center text-muted-foreground">
-              No approvals match your filters.
+              {t('approvals.empty')}
             </p>
           ) : null}
         </div>

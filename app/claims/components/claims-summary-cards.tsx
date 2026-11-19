@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatZarAmount } from '@/lib/utils/zar-fx';
@@ -7,11 +8,11 @@ import { cn } from '@/lib/utils';
 import type { ClaimsSummaryResponse } from '@/api/types/claims';
 
 const STAGE_CARDS = [
-  { key: 'all', label: 'Total', status: null as string | null },
-  { key: 'pending', label: 'Pending', status: 'pending' },
-  { key: 'approved', label: 'Approved', status: 'approved' },
-  { key: 'declined', label: 'Declined', status: 'declined' },
-  { key: 'paid', label: 'Paid', status: 'paid' },
+  { key: 'all', labelKey: 'claims.total', status: null as string | null },
+  { key: 'pending', labelKey: 'claims.pending', status: 'pending' },
+  { key: 'approved', labelKey: 'claims.approved', status: 'approved' },
+  { key: 'declined', labelKey: 'claims.declined', status: 'declined' },
+  { key: 'paid', labelKey: 'claims.paid', status: 'paid' },
 ] as const;
 
 function statusTotals(
@@ -56,6 +57,7 @@ export function ClaimsSummaryCards({
   activeStatus: string;
   onStatusChange: (status: string) => void;
 }) {
+  const { t } = useTranslation('screens');
   if (isLoading) return <ClaimsSummaryCardsSkeleton />;
 
   const unconverted = summary?.unconvertedCount ?? 0;
@@ -87,12 +89,12 @@ export function ClaimsSummaryCards({
                 )}
               >
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{card.label}</p>
+                  <p className="text-xs text-muted-foreground">{t(card.labelKey)}</p>
                   <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">
                     {formatZarAmount(totals.totalZar)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {totals.count} claim{totals.count === 1 ? '' : 's'}
+                    {totals.count === 1 ? t('claims.claimCountOne', { count: totals.count }) : t('claims.claimCount', { count: totals.count })}
                   </p>
                 </CardContent>
               </Card>
@@ -102,8 +104,7 @@ export function ClaimsSummaryCards({
       </div>
       {unconverted > 0 ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          {unconverted} claim{unconverted === 1 ? '' : 's'} could not be
-          converted to ZAR (no FX rate on the claim date).
+          {unconverted === 1 ? t('claims.unconvertedOne', { count: unconverted }) : t('claims.unconverted', { count: unconverted })}
         </p>
       ) : null}
     </div>

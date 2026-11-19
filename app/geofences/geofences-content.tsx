@@ -1,20 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import { MapPin, Plus } from 'lucide-react';
 import { useSessionSync, useTokenReady } from '@/api/hooks';
 import type { GeofenceArea } from '@/api/endpoints/geofences';
 import { useDeleteGeofenceMutation, useGeofenceEvents, useGeofences, useSaveGeofenceMutation } from '@/api/hooks/use-geofences';
 import { FeatureDenied, FeatureShell } from '@/components/feature-page';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { IconField, IconInput } from '@/components/icon-field';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { canAccessGeofences, canEditGeofences } from '@/lib/access';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export function GeofencesContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: isLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !isLoading;
@@ -27,7 +29,7 @@ export function GeofencesContent() {
   const events = useGeofenceEvents(selected?.uid ?? selected?.ref ?? null, { enabled: selected != null });
   const rows = list.data ?? [];
 
-  if (ready && !canAccessGeofences(backendUserData?.accessLevel)) return <FeatureDenied title="Geofences" />;
+  if (ready && !canAccessGeofences(backendUserData?.accessLevel)) return <FeatureDenied title={t('pages.geofences.title')} />;
 
   function openNew() {
     setForm({ name: '', latitude: '', longitude: '', radius: '500' });
@@ -38,9 +40,9 @@ export function GeofencesContent() {
     <>
       <FeatureShell
         tourId="geofences"
-        title="Geofences"
-        description="Create areas and review entry events. The same areas draw on Competitor Overview."
-        actions={canEdit ? <Button type="button" onClick={openNew}>New area</Button> : undefined}
+        title={t('pages.geofences.title')}
+        description={t('pages.geofences.description')}
+        actions={canEdit ? <Button type="button" onClick={openNew}><Plus className="size-4" aria-hidden />New area</Button> : undefined}
         isLoading={!ready || list.isLoading}
         isError={list.isError}
         error={list.error}
@@ -49,14 +51,16 @@ export function GeofencesContent() {
         emptyMessage="No geofence areas yet."
       >
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Radius</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>{t('tables.name')}</TableHead><TableHead>{t('tables.radius')}</TableHead><TableHead>{t('tables.location')}</TableHead></TableRow></TableHeader>
           <TableBody>
             {rows.map((row) => (
               <TableRow key={String(row.uid ?? row.ref ?? row.name)} className="cursor-pointer" onClick={() => {
                 setSelected(row);
                 setForm({ name: row.name, latitude: String(row.latitude), longitude: String(row.longitude), radius: String(row.radius) });
               }}>
-                <TableCell>{row.name}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" aria-hidden />{row.name}</span>
+                </TableCell>
                 <TableCell>{row.radius} m</TableCell>
                 <TableCell>{row.latitude}, {row.longitude}</TableCell>
               </TableRow>
@@ -68,14 +72,18 @@ export function GeofencesContent() {
         <DialogContent>
           <DialogHeader><DialogTitle>{selected?.uid || selected?.ref ? 'Area' : 'New area'}</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <Label htmlFor="geo-name">Name</Label>
-            <Input id="geo-name" value={form.name} disabled={!canEdit} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
-            <Label htmlFor="geo-lat">Latitude</Label>
-            <Input id="geo-lat" value={form.latitude} disabled={!canEdit} onChange={(event) => setForm((current) => ({ ...current, latitude: event.target.value }))} />
-            <Label htmlFor="geo-lng">Longitude</Label>
-            <Input id="geo-lng" value={form.longitude} disabled={!canEdit} onChange={(event) => setForm((current) => ({ ...current, longitude: event.target.value }))} />
-            <Label htmlFor="geo-radius">Radius (m)</Label>
-            <Input id="geo-radius" value={form.radius} disabled={!canEdit} onChange={(event) => setForm((current) => ({ ...current, radius: event.target.value }))} />
+            <IconField icon={MapPin} label="Name">
+              <IconInput icon={MapPin} value={form.name} disabled={!canEdit} placeholder="e.g. Johannesburg depot" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            </IconField>
+            <IconField icon={MapPin} label="Latitude">
+              <IconInput icon={MapPin} value={form.latitude} disabled={!canEdit} placeholder="-26.2041" onChange={(event) => setForm((current) => ({ ...current, latitude: event.target.value }))} />
+            </IconField>
+            <IconField icon={MapPin} label="Longitude">
+              <IconInput icon={MapPin} value={form.longitude} disabled={!canEdit} placeholder="28.0473" onChange={(event) => setForm((current) => ({ ...current, longitude: event.target.value }))} />
+            </IconField>
+            <IconField icon={MapPin} label="Radius (m)">
+              <IconInput icon={MapPin} value={form.radius} disabled={!canEdit} placeholder="500" onChange={(event) => setForm((current) => ({ ...current, radius: event.target.value }))} />
+            </IconField>
             <p className="text-sm text-muted-foreground">
               {events.isLoading ? 'Loading events…' : events.isError ? 'Could not load events.' : `${events.data?.length ?? 0} entry events.`}
             </p>

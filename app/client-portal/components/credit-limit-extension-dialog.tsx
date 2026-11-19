@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState } from 'react';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { postCreditLimitExtension } from '@/api/endpoints/client-portal';
@@ -23,6 +25,7 @@ export function CreditLimitExtensionDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('portal');
   const client = useApiClient();
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -56,29 +59,29 @@ export function CreditLimitExtensionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Apply for credit limit extension</DialogTitle>
+          <DialogTitle>{t('applyCredit')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="amount">Requested amount (ZAR)</Label>
+            <Label htmlFor="amount">{t('requestedAmount')}</Label>
             <Input
               id="amount"
               type="number"
               min={1}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="e.g. 50000"
+              placeholder={t('exampleAmount')}
               required
             />
           </div>
           <div>
-            <Label htmlFor="reason">Reason (optional)</Label>
+            <Label htmlFor="reason">{t('reasonOptional')}</Label>
             <Textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              placeholder="e.g. Seasonal stock increase"
+              placeholder={t('exampleReason')}
             />
           </div>
           <DialogFooter>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -15,6 +16,7 @@ import toast from 'react-hot-toast';
  * Planned versus completed visit plans, plus note draft and convert-to-lead.
  */
 export function VisitDispatchPanel({ from, to }: { from: string; to: string }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { backendUserData } = useSessionSync();
   const level = (backendUserData?.accessLevel ?? '').toLowerCase();
@@ -27,14 +29,14 @@ export function VisitDispatchPanel({ from, to }: { from: string; to: string }) {
     mutationFn: (id: number) => draftCheckInNote(client, id),
     onSuccess: (result) => {
       setNote(result.note);
-      toast.success(result.source === 'fallback' ? 'Drafted a fallback note' : 'Visit note drafted');
+      toast.success(result.source === 'fallback' ? t('visits.draftedFallback') : t('visits.noteDrafted'));
     },
-    onError: (error) => toast.error(getQueryErrorMessage(error, 'Could not draft a note')),
+    onError: (error) => toast.error(getQueryErrorMessage(error, t('visits.couldNotDraft'))),
   });
   const convert = useMutation({
     mutationFn: (id: number) => convertCheckInToLead(client, id),
-    onSuccess: (result) => toast.success(result.lead?.name ? `Lead created: ${result.lead.name}` : 'Check-in converted to a lead'),
-    onError: (error) => toast.error(getQueryErrorMessage(error, 'Could not convert this check-in')),
+    onSuccess: (result) => toast.success(result.lead?.name ? t('visits.leadCreatedNamed', { name: result.lead.name }) : t('visits.convertedToLead')),
+    onError: (error) => toast.error(getQueryErrorMessage(error, t('visits.couldNotConvert'))),
   });
 
   const summary = summaryQuery.data;
@@ -42,34 +44,35 @@ export function VisitDispatchPanel({ from, to }: { from: string; to: string }) {
 
   return (
     <section className="mb-4 rounded-lg border px-4 py-3">
-      <h2 className="text-sm font-medium">Dispatch</h2>
+      <h2 className="text-sm font-medium">{t('visits.dispatch')}</h2>
       {summaryQuery.isError ? (
         <QueryErrorBanner
           className="mt-2"
-          message={getQueryErrorMessage(summaryQuery.error, 'Could not load the dispatch summary')}
+          message={getQueryErrorMessage(summaryQuery.error, t('visits.couldNotLoadDispatch'))}
           onRetry={() => void summaryQuery.refetch()}
         />
       ) : (
         <p className="mt-1 text-xs text-muted-foreground">
           {summary
-            ? `${format(new Date(from), 'd MMM')}–${format(new Date(to), 'd MMM')}: ${summary.planned} planned, ${summary.completed} completed, ${summary.inProgress} in progress.`
-            : 'Loading planned and completed visits…'}
+            ? t('visits.dispatchSummary', {
+                range: `${format(new Date(from), 'd MMM')}–${format(new Date(to), 'd MMM')}`,
+                planned: summary.planned,
+                completed: summary.completed,
+                inProgress: summary.inProgress,
+              })
+            : t('visits.loadingDispatch')}
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Input
           value={checkInId}
           onChange={(event) => setCheckInId(event.target.value)}
-          placeholder="Check-in id"
+          placeholder={t('visits.checkInId')}
           className="h-8 w-36"
         />
-        <Button type="button" size="sm" variant="outline" disabled={!id || draft.isPending} onClick={() => draft.mutate(id)}>
-          Draft note
-        </Button>
+        <Button type="button" size="sm" variant="outline" disabled={!id || draft.isPending} onClick={() => draft.mutate(id)}>{t('visits.draftNote')}</Button>
         {canConvert ? (
-          <Button type="button" size="sm" disabled={!id || convert.isPending} onClick={() => convert.mutate(id)}>
-            Convert to lead
-          </Button>
+          <Button type="button" size="sm" disabled={!id || convert.isPending} onClick={() => convert.mutate(id)}>{t('visits.convertToLead')}</Button>
         ) : null}
       </div>
       {note ? <p className="mt-2 text-sm">{note}</p> : null}

@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessCompetitors } from '@/lib/access';
@@ -18,13 +20,13 @@ const SEL_ACTIONS = '[data-tour="visualiser-header-actions"]';
 const SEL_MAP = '[data-tour="visualiser-map"]';
 const REQUIRED = [SEL_HEADER, SEL_ACTIONS, SEL_MAP] as const;
 
-function buildVisualiserSteps(): DriveStep[] {
+function buildVisualiserSteps(t: TFunction): DriveStep[] {
   const steps: DriveStep[] = [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Competitor Overview',
-        description: 'Search the map or follow a rep’s route. Open Simulate to model a catchment.',
+        title: t('tours.visualiser.header.title'),
+        description: t('tours.visualiser.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -32,9 +34,8 @@ function buildVisualiserSteps(): DriveStep[] {
     {
       element: SEL_ACTIONS,
       popover: {
-        title: 'Map tools',
-        description:
-          'Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. The info icon explains the maths. Simulate opens the simulation dialog.',
+        title: t('tours.visualiser.tools.title'),
+        description: t('tours.visualiser.tools.description'),
         side: 'bottom',
         align: 'end',
       },
@@ -42,8 +43,8 @@ function buildVisualiserSteps(): DriveStep[] {
     {
       element: SEL_MAP,
       popover: {
-        title: 'The map',
-        description: 'Pins are branches, HQ, competitors, and clients.',
+        title: t('tours.visualiser.map.title'),
+        description: t('tours.visualiser.map.description'),
         side: 'top',
         align: 'center',
       },
@@ -58,6 +59,7 @@ function areVisualiserTargetsReady(): boolean {
 }
 
 export function VisualiserTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -83,7 +85,7 @@ export function VisualiserTour() {
     read: readVisualiserTourState,
     write: writeVisualiserTourState,
     areTargetsReady: areVisualiserTargetsReady,
-    getSteps: buildVisualiserSteps,
+    getSteps: () => buildVisualiserSteps(t),
   });
 
   return null;

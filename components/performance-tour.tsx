@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessPerformanceTracker } from '@/lib/access';
@@ -21,14 +23,13 @@ const SEL_CHARTS = '[data-tour="performance-charts"]';
 
 const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_CONSOLIDATED] as const;
 
-function buildPerformanceSteps(): DriveStep[] {
+function buildPerformanceSteps(t: TFunction): DriveStep[] {
   const steps: DriveStep[] = [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Performance',
-        description:
-          'Sales for the countries, branches, and dates you can see. The title switches to Consolidated Statement when that view is on.',
+        title: t('tours.performance.header.title'),
+        description: t('tours.performance.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -36,9 +37,8 @@ function buildPerformanceSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Dates and filters',
-        description:
-          'Set the date range. Open filters for country, branch, and category. Click refresh to pull the latest numbers.',
+        title: t('tours.performance.filters.title'),
+        description: t('tours.performance.filters.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -46,9 +46,8 @@ function buildPerformanceSteps(): DriveStep[] {
     {
       element: SEL_CONSOLIDATED,
       popover: {
-        title: 'Consolidated statement',
-        description:
-          'Turn this on for the income statement across countries and branches. Turn it off to return to the performance report.',
+        title: t('tours.performance.consolidated.title'),
+        description: t('tours.performance.consolidated.description'),
         side: 'bottom',
         align: 'end',
       },
@@ -59,8 +58,8 @@ function buildPerformanceSteps(): DriveStep[] {
     steps.push({
       element: SEL_SUMMARY,
       popover: {
-        title: 'Target and gross profit',
-        description: 'Revenue against target, and gross profit, for this range.',
+        title: t('tours.performance.target.title'),
+        description: t('tours.performance.target.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -71,9 +70,8 @@ function buildPerformanceSteps(): DriveStep[] {
     steps.push({
       element: SEL_CHARTS,
       popover: {
-        title: 'Charts',
-        description:
-          'Category, branch, payment mix, products, salespeople, and hourly sales for the filters you set.',
+        title: t('tours.performance.charts.title'),
+        description: t('tours.performance.charts.description'),
         side: 'top',
         align: 'center',
       },
@@ -89,6 +87,7 @@ function arePerformanceTargetsReady(): boolean {
 }
 
 export function PerformanceTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -114,7 +113,7 @@ export function PerformanceTour() {
     read: readPerformanceTourState,
     write: writePerformanceTourState,
     areTargetsReady: arePerformanceTargetsReady,
-    getSteps: buildPerformanceSteps,
+    getSteps: () => buildPerformanceSteps(t),
     maxPollCount: 80,
   });
 

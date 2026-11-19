@@ -22,6 +22,7 @@ import {
   performanceAmountClassName,
   performanceGpPercentClassName,
 } from '../lib/format';
+import { useTranslation } from 'react-i18next';
 
 interface PerformanceBranchCategoryTableProps {
   dashboardData?: PerformanceDashboardData | null;
@@ -42,6 +43,7 @@ function uniqueCategories(
 export function PerformanceBranchCategoryTable({
   dashboardData,
 }: PerformanceBranchCategoryTableProps) {
+  const { t } = useTranslation('screens');
   const currency = dashboardData?.currency?.symbol || 'R';
   const branches = dashboardData?.branchCategoryPerformance ?? [];
   const categories = useMemo(() => uniqueCategories(branches), [branches]);
@@ -93,15 +95,15 @@ export function PerformanceBranchCategoryTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Branch</TableHead>
+              <TableHead>{t('tables.branch')}</TableHead>
               {categories.map((cat) => (
                 <TableHead key={cat} className="text-right">
                   {cat}
                 </TableHead>
               ))}
               <TableHead className="text-right">Baskets</TableHead>
-              <TableHead className="text-right">Clients</TableHead>
-              <TableHead className="text-right">Sales</TableHead>
+              <TableHead className="text-right">{t('tables.client')}</TableHead>
+              <TableHead className="text-right">{t('tables.sales')}</TableHead>
               <TableHead className="text-right">GP</TableHead>
               <TableHead className="text-right">GP %</TableHead>
             </TableRow>

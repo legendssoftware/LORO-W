@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
@@ -38,6 +39,7 @@ export function ClaimCreateDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const groupsQuery = useClaimGroups({ enabled: open });
   const createMutation = useCreateClaimMutation();
@@ -158,12 +160,12 @@ export function ClaimCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New claim</DialogTitle>
+          <DialogTitle>{t('claims.newClaim')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="claim-amount">Amount</Label>
+              <Label htmlFor="claim-amount">{t('claims.amount')}</Label>
               <Input
                 id="claim-amount"
                 type="number"
@@ -172,39 +174,39 @@ export function ClaimCreateDialog({
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
+                placeholder={t('claims.amountPlaceholder')}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Currency</Label>
+              <Label>{t('claims.currency')}</Label>
               <ClaimCurrencyField value={currency} onChange={setCurrency} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Category</Label>
+            <Label>{t('claims.category')}</Label>
             <SearchableOptionListPicker
               selectedValue={category}
               onValueChange={setCategory}
               options={categoryOptions}
               includeAllOption={false}
               searchPlaceholder="Search category…"
-              emptyMessage="No category found."
+              emptyMessage={t('claims.noCategory')}
               triggerIcon={<Tag className="size-4 shrink-0" />}
               triggerClassName="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Folder (optional)</Label>
+            <Label>{t('claims.folderOptional')}</Label>
             <div className="flex gap-2">
               <SearchableOptionListPicker
                 selectedValue={folderUid}
                 onValueChange={setFolderUid}
                 options={folderOptions}
                 allOptionValue="none"
-                placeholderLabelWhenAll="No folder"
+                placeholderLabelWhenAll={t('claims.noFolderOption')}
                 searchPlaceholder="Search folders…"
-                emptyMessage="No folder found."
+                emptyMessage={t('claims.noFolderFound')}
                 triggerIcon={<FolderOpen className="size-4 shrink-0" />}
                 triggerClassName="h-9 min-w-0 flex-1"
               />
@@ -214,7 +216,7 @@ export function ClaimCreateDialog({
                 size="icon"
                 className="h-9 shrink-0"
                 onClick={() => setShowNewFolder((v) => !v)}
-                title="New folder"
+                title={t('claims.newFolder')}
               >
                 <Plus className="size-4" />
               </Button>
@@ -222,7 +224,7 @@ export function ClaimCreateDialog({
             {showNewFolder ? (
               <div className="flex gap-2 pt-1">
                 <Input
-                  placeholder="Folder name"
+                  placeholder={t('claims.folderName')}
                   value={newFolderTitle}
                   onChange={(e) => setNewFolderTitle(e.target.value)}
                 />
@@ -238,25 +240,25 @@ export function ClaimCreateDialog({
                   {createGroupMutation.isPending ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
-                    'Create'
+                    t('actions.create')
                   )}
                 </Button>
               </div>
             ) : null}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="claim-comment">Notes</Label>
+            <Label htmlFor="claim-comment">{t('claims.notes')}</Label>
             <Textarea
               id="claim-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={6}
               className="min-h-[140px]"
-              placeholder="Describe the expense…"
+              placeholder={t('claims.describe')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="claim-file">Receipt (optional)</Label>
+            <Label htmlFor="claim-file">{t('claims.receiptOptional')}</Label>
             <Input
               id="claim-file"
               type="file"
@@ -266,9 +268,7 @@ export function ClaimCreateDialog({
           </div>
           {folderUid !== 'none' ? (
             <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
-              Claims added to a folder stay in draft until you submit the folder
-              from the Claims page. No emails are sent while you keep adding
-              receipts.
+              {t('claims.folderDraftHint')}
             </p>
           ) : null}
           {submitError ? (
@@ -279,9 +279,7 @@ export function ClaimCreateDialog({
               type="button"
               variant="cancel"
               onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
+            >{t('actions.cancel')}</Button>
             <Button
               type="submit"
               className={primaryRedClass}
@@ -290,12 +288,12 @@ export function ClaimCreateDialog({
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  Submitting…
+                  {t('claims.submitting')}
                 </>
               ) : folderUid !== 'none' ? (
-                'Add to folder'
+                t('claims.addToFolder')
               ) : (
-                'Submit claim'
+                t('claims.submitClaim')
               )}
             </Button>
           </DialogFooter>

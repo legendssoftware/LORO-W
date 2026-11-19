@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
@@ -39,90 +41,91 @@ const ALL_TASKS_SELECTORS = new Set<string>([
   SEL_PAGINATION,
 ]);
 
-const TOUR_STEPS: DriveStep[] = [
-  {
-    element: SEL_HEADER,
-    popover: {
-      title: 'Planning',
-      description: 'Tasks, today’s work, and the day’s routes.',
-      side: 'bottom',
-      align: 'start',
+function buildTourSteps(t: TFunction): DriveStep[] {
+  return [
+    {
+      element: SEL_HEADER,
+      popover: {
+        title: t('tours.planning.header.title'),
+        description: t('tours.planning.header.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: SEL_CREATE,
-    popover: {
-      title: 'Create a task',
-      description: 'Click Create task, fill it in, and assign it. It shows up in All tasks.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: SEL_CREATE,
+      popover: {
+        title: t('tours.planning.create.title'),
+        description: t('tours.planning.create.description'),
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: SEL_TABS,
-    popover: {
-      title: 'All tasks, My day, Routes',
-      description: 'All tasks is the full list. My day is due today. Routes is the planned field day.',
-      side: 'bottom',
-      align: 'start',
+    {
+      element: SEL_TABS,
+      popover: {
+        title: t('tours.planning.tabs.title'),
+        description: t('tours.planning.tabs.description'),
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: SEL_ROUTE_NOTE,
-    popover: {
-      title: ROUTE_PLANNING_NOTE_TITLE,
-      description: ROUTE_PLANNING_NOTE,
-      side: 'bottom',
-      align: 'start',
+    {
+      element: SEL_ROUTE_NOTE,
+      popover: {
+        title: ROUTE_PLANNING_NOTE_TITLE,
+        description: ROUTE_PLANNING_NOTE,
+        side: 'bottom',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: SEL_REMINDERS,
-    popover: {
-      title: 'Reminders',
-      description: 'On All tasks, this is due today, overdue, and upcoming. Open an item to work it.',
-      side: 'left',
-      align: 'start',
+    {
+      element: SEL_REMINDERS,
+      popover: {
+        title: t('tours.planning.reminders.title'),
+        description: t('tours.planning.reminders.description'),
+        side: 'left',
+        align: 'start',
+      },
     },
-  },
-  {
-    element: SEL_TOOLBAR,
-    popover: {
-      title: 'Filter tasks',
-      description:
-        'Set date, status, priority, assignee, client, branch, overdue only, or search. The list below updates to match.',
-      side: 'bottom',
-      align: 'center',
+    {
+      element: SEL_TOOLBAR,
+      popover: {
+        title: t('tours.planning.filters.title'),
+        description: t('tours.planning.filters.description'),
+        side: 'bottom',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: SEL_TABLE,
-    popover: {
-      title: 'Task list',
-      description: 'Click a task to open it and update status or details.',
-      side: 'top',
-      align: 'center',
+    {
+      element: SEL_TABLE,
+      popover: {
+        title: t('tours.planning.list.title'),
+        description: t('tours.planning.list.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: SEL_PAGINATION,
-    popover: {
-      title: 'Pages',
-      description: 'Change rows per page, or move to the next page.',
-      side: 'top',
-      align: 'center',
+    {
+      element: SEL_PAGINATION,
+      popover: {
+        title: t('tours.planning.pagination.title'),
+        description: t('tours.planning.pagination.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-  {
-    element: SEL_ROUTES,
-    popover: {
-      title: 'Routes',
-      description: 'Pick the day, click Recalculate to rebuild routes, or open Competitor Overview for the map.',
-      side: 'top',
-      align: 'center',
+    {
+      element: SEL_ROUTES,
+      popover: {
+        title: t('tours.planning.routes.title'),
+        description: t('tours.planning.routes.description'),
+        side: 'top',
+        align: 'center',
+      },
     },
-  },
-];
+  ];
+}
 
 function clickPlanningTab(selector: string): void {
   const tab = document.querySelector(selector);
@@ -148,6 +151,7 @@ function areTourTargetsReady(): boolean {
 }
 
 export function PlanningTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -207,9 +211,10 @@ export function PlanningTour() {
     const cancelSchedule = scheduleTourWhenReady({
       areTargetsReady: areTourTargetsReady,
       onReady: () => {
+        const steps = buildTourSteps(t);
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
-          TOUR_STEPS.length - 1
+          steps.length - 1
         );
 
         writePlanningTourState(userId, {
@@ -226,7 +231,7 @@ export function PlanningTour() {
           nextBtnText: 'Next',
           prevBtnText: 'Previous',
           doneBtnText: 'Done',
-          steps: TOUR_STEPS,
+          steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const stepElement = activeStepElement(activeDriver);
             if (stepElement && !document.querySelector(stepElement)) {
@@ -284,7 +289,7 @@ export function PlanningTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

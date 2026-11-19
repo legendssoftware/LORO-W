@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -60,6 +61,7 @@ import {
 const SEARCH_DEBOUNCE_MS = 350;
 
 export function LeadsContent() {
+  const { t } = useTranslation('screens');
   const {
     startDate,
     endDate,
@@ -381,9 +383,9 @@ export function LeadsContent() {
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div className="mb-6 shrink-0" data-tour="leads-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Leads</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('leads.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            View, track, and manage your sales leads.
+            {t('leads.description')}
           </p>
         </div>
 
@@ -392,7 +394,7 @@ export function LeadsContent() {
             className="mb-4 shrink-0"
             message={getQueryErrorMessage(
               listError,
-              'Could not load leads. Try again.'
+              t('leads.couldNotLoad')
             )}
             onRetry={refetchLeads}
           />
@@ -443,7 +445,7 @@ export function LeadsContent() {
                   className="h-9 shrink-0"
                   onClick={() => setEngageLeadsOpen(true)}
                 >
-                  Engage leads
+                  {t('leads.engageLeads')}
                 </Button>
               ) : null}
               <Button
@@ -457,7 +459,7 @@ export function LeadsContent() {
                 onClick={() => setCreateModalOpen(true)}
               >
                 <Plus className="size-4" />
-                Create lead
+                {t('leads.createLead')}
               </Button>
             </>
           }
@@ -467,8 +469,7 @@ export function LeadsContent() {
             <div className="flex items-center gap-2 text-sm font-medium text-green-900">
               <Phone className="size-4 shrink-0" aria-hidden />
               <span>
-                Call in progress
-                {activeCallLeadName ? ` with ${activeCallLeadName}` : ''}
+                {activeCallLeadName ? t('leads.callInProgressWith', { name: activeCallLeadName }) : t('leads.callInProgress')}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -480,7 +481,7 @@ export function LeadsContent() {
                   className="border-green-600 text-green-800 hover:bg-green-100"
                   onClick={() => openLead(activeCallLead)}
                 >
-                  View lead
+                  {t('leads.viewLead')}
                 </Button>
               ) : null}
               <Button
@@ -497,7 +498,7 @@ export function LeadsContent() {
                 }}
               >
                 <Phone className="size-4" />
-                End call
+                {t('leads.endCall')}
               </Button>
             </div>
           </div>
@@ -506,11 +507,9 @@ export function LeadsContent() {
           <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Deduplicate leads?</DialogTitle>
+                <DialogTitle>{t('leads.dedupeTitle')}</DialogTitle>
                 <DialogDescription>
-                  This permanently deletes duplicate leads in your organisation. For each group with the same email
-                  or the same name and phone number, we keep the oldest lead and move interactions onto it. This
-                  cannot be undone.
+                  {t('leads.dedupeDescription')}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="gap-3">
@@ -520,7 +519,7 @@ export function LeadsContent() {
                   onClick={() => setDedupeDialogOpen(false)}
                   disabled={dedupeMutation.isPending}
                 >
-                  Cancel
+                  {t('actions.cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -546,14 +545,14 @@ export function LeadsContent() {
                             ? (err.response.data as { message: string }).message
                             : err instanceof Error
                               ? err.message
-                              : 'Dedupe failed';
+                              : t('leads.dedupeFailed');
                         toast.error(msg);
                       },
                     })
                   }
                   disabled={dedupeMutation.isPending}
                 >
-                  {dedupeMutation.isPending ? 'Running…' : 'Run dedupe'}
+                  {dedupeMutation.isPending ? t('leads.running') : t('leads.runDedupe')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -568,7 +567,7 @@ export function LeadsContent() {
               <LeadsInboxView
                 leads={leads}
                 isLoading={listLoading}
-                emptyMessage="No leads match your filters."
+                emptyMessage={t('leads.empty')}
                 selectedLeadUid={selectedLead?.uid ?? null}
                 activeCallLeadUid={hasActiveCall ? activeCallLeadUid : null}
                 activityActorLookup={activityActorLookup}
@@ -580,7 +579,7 @@ export function LeadsContent() {
               <LeadsTable
                 leads={leads}
                 isLoading={listLoading}
-                emptyMessage="No leads match your filters."
+                emptyMessage={t('leads.empty')}
                 activeCallLeadUid={hasActiveCall ? activeCallLeadUid : null}
                 activityActorLookup={activityActorLookup}
                 onLeadClick={openLead}
@@ -617,10 +616,10 @@ export function LeadsContent() {
           onOpenChange={handleListEndCallOpenChange}
           activeVisit={endCallActiveVisit}
           initialFormValues={listEndCallInitialForm}
-          title="End call"
-          description="Add call notes and outcomes."
-          submitLabel="End call"
-          successMessage="Call ended"
+          title={t('leads.endCallTitle')}
+          description={t('leads.endCallDescription')}
+          submitLabel={t('leads.endCall')}
+          successMessage={t('leads.callEnded')}
           onSuccess={() => {
             checkInStatusQuery.refetch();
             refetchLeads();

@@ -24,6 +24,8 @@ import {
 } from '@/lib/client-session-keys';
 import { isGeneralWorkerWorkforce } from '@/lib/workforce-guards';
 import { useSidebar } from '@/components/ui/sidebar';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTranslation } from 'react-i18next';
 
 export function AppHeader() {
   const { sessionId } = useAuth();
@@ -37,6 +39,7 @@ export function AppHeader() {
   const { backendUserData } = useSessionSync();
   const { toggleSidebar, open, openMobile, isMobile } = useSidebar();
   const sidebarOpen = isMobile ? openMobile : open;
+  const { t } = useTranslation(['common', 'nav']);
   const profileUser = isProfileMounted ? user : undefined;
 
   const handleSignOut = () => {
@@ -76,11 +79,11 @@ export function AppHeader() {
     sessionStorage.setItem(LORO_WELCOME_SHOWN_SESSION_KEY, '1');
     const name =
       user.fullName ?? user.firstName ?? user.primaryEmailAddress?.emailAddress ?? 'there';
-    toast(`Welcome back, ${name}! 👋`, {
+    toast(t('welcomeBack', { name, defaultValue: `Welcome back, ${name}!` }), {
       icon: '✨',
       duration: 4000,
     });
-  }, [isLoaded, isSignedIn, user, sessionId, backendUserData?.workforceType]);
+  }, [isLoaded, isSignedIn, user, sessionId, backendUserData?.workforceType, t]);
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-4 py-3">
@@ -91,7 +94,7 @@ export function AppHeader() {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Open sidebar"
+            aria-label={t('openSidebar')}
             onClick={toggleSidebar}
             className="shrink-0"
           >
@@ -101,19 +104,20 @@ export function AppHeader() {
       </SignedIn>
       <SignedOut>
         <Link href="/" className="text-xl font-bold text-foreground">
-          Home
+          {t('home')}
         </Link>
       </SignedOut>
 
       <div className="flex flex-1 items-center justify-end gap-3">
+        <LanguageSwitcher />
         <SignedOut>
           <SignInButton mode="modal">
             <Button variant="ghost" size="sm">
-              Sign in
+              {t('signIn')}
             </Button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <Button size="sm">Sign up</Button>
+            <Button size="sm">{t('signUp')}</Button>
           </SignUpButton>
         </SignedOut>
 
@@ -122,7 +126,7 @@ export function AppHeader() {
             <button
               type="button"
               onClick={() => openUserProfile?.()}
-              aria-label="Manage account"
+              aria-label={t('manageAccount')}
               className="flex min-w-0 flex-1 items-center gap-3 rounded-md transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-initial"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -133,7 +137,7 @@ export function AppHeader() {
             >
               <div className="min-w-0 max-w-[130px] shrink text-right sm:max-w-[200px] md:max-w-none">
                 <p className="truncate text-sm font-medium text-foreground" title={profileUser?.fullName ?? profileUser?.firstName ?? undefined}>
-                  {profileUser ? (profileUser.fullName ?? profileUser.firstName ?? 'User') : '\u00a0'}
+                  {profileUser ? (profileUser.fullName ?? profileUser.firstName ?? t('user')) : '\u00a0'}
                 </p>
                 <p className="truncate text-xs text-muted-foreground" title={profileUser?.primaryEmailAddress?.emailAddress ?? undefined}>
                   {profileUser?.primaryEmailAddress?.emailAddress ?? ''}
@@ -150,7 +154,7 @@ export function AppHeader() {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Sign out"
+              aria-label={t('signOut')}
               className="shrink-0 text-red-600 hover:bg-transparent hover:text-red-700 dark:hover:text-red-400"
               onClick={handleSignOut}
             >
@@ -167,7 +171,7 @@ export function AppHeader() {
           className="z-[9999] flex min-w-[280px] max-w-[calc(100%-2rem)] items-center justify-center bg-black text-white rounded-lg px-8 py-6 shadow-xl border-0 text-center left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         >
           <DialogTitle className="text-white text-lg font-medium">
-            Signing you out 👋
+            {t('signingOut')}
           </DialogTitle>
         </DialogContent>
       </Dialog>

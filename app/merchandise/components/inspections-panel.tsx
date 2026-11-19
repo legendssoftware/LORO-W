@@ -28,11 +28,13 @@ import {
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Merchandise inspections: pick a template, score items, and show the calculated rating.
  */
 export function InspectionsPanel() {
+  const { t } = useTranslation('screens');
   const templatesQuery = useInspectionTemplates();
   const listQuery = useInspections();
   const createMutation = useCreateInspectionMutation();
@@ -137,9 +139,9 @@ export function InspectionsPanel() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Score</TableHead>
+              <TableHead>{t('tables.title')}</TableHead>
+              <TableHead>{t('tables.rating')}</TableHead>
+              <TableHead>{t('tables.score')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

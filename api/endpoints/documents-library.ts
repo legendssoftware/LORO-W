@@ -6,12 +6,15 @@ export interface LibraryDocument {
   title?: string;
   fileType?: string;
   url?: string;
+  source?: 'library' | 'bucket';
   owner?: { uid?: number; name?: string };
 }
 
 export async function listDocuments(client: AxiosInstance): Promise<LibraryDocument[]> {
-  const { data } = await client.get<{ data?: LibraryDocument[] } | LibraryDocument[]>('/docs');
-  return Array.isArray(data) ? data : data.data ?? [];
+  const { data } = await client.get<{ docs?: LibraryDocument[]; data?: LibraryDocument[] } | LibraryDocument[]>('/docs');
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.docs)) return data.docs;
+  return data.data ?? [];
 }
 
 export async function createDocumentRecord(

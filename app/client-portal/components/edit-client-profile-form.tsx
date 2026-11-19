@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState } from 'react';
 import type { ClientProfileData, UpdateClientProfilePayload } from '@/api/types/client-portal';
 import { useUpdateClientProfile } from '@/api/hooks/use-update-client-profile';
@@ -18,6 +20,7 @@ export function EditClientProfileForm({
   client: ClientProfileData;
   onSaved?: () => void;
 }) {
+  const { t } = useTranslation('portal');
   const mutation = useUpdateClientProfile();
   const [form, setForm] = useState<UpdateClientProfilePayload>({
     contactPerson: client.contactPerson ?? '',
@@ -44,54 +47,54 @@ export function EditClientProfileForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Edit profile</CardTitle>
+        <CardTitle className="text-base">{t('editProfile')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="Contact person">
+          <Field label={t('contactPerson')}>
             <Input
               value={form.contactPerson ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, contactPerson: e.target.value }))}
               placeholder={FORM_PLACEHOLDERS.fullName}
             />
           </Field>
-          <Field label="Phone">
+          <Field label={t('phone')}>
             <Input
               value={form.phone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               placeholder={FORM_PLACEHOLDERS.landline}
             />
           </Field>
-          <Field label="Alternative phone">
+          <Field label={t('alternativePhone')}>
             <Input
               value={form.alternativePhone ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, alternativePhone: e.target.value }))}
               placeholder={FORM_PLACEHOLDERS.phone}
             />
           </Field>
-          <Field label="Website">
+          <Field label={t('website')}>
             <Input
               value={form.website ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
               placeholder={FORM_PLACEHOLDERS.website}
             />
           </Field>
-          <Field label="Industry">
+          <Field label={t('industry')}>
             <Input
               value={form.industry ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-              placeholder="e.g. Construction"
+              placeholder={t('exampleIndustry')}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t('description')}>
             <Textarea
               value={form.description ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
-              placeholder="Brief description of your business"
+              placeholder={t('briefDescription')}
             />
           </Field>
-          <Field label="Street">
+          <Field label={t('street')}>
             <Input
               value={form.address?.street ?? ''}
               onChange={(e) =>
@@ -104,7 +107,7 @@ export function EditClientProfileForm({
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="City">
+            <Field label={t('city')}>
               <Input
                 value={form.address?.city ?? ''}
                 onChange={(e) =>
@@ -116,7 +119,7 @@ export function EditClientProfileForm({
                 placeholder={FORM_PLACEHOLDERS.city}
               />
             </Field>
-            <Field label="Postal code">
+            <Field label={t('postalCode')}>
               <Input
                 value={form.address?.postalCode ?? ''}
                 onChange={(e) =>

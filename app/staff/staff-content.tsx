@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, parse, subDays } from 'date-fns';
 import {
   useTokenReady,
@@ -59,6 +60,7 @@ import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 
 export function StaffContent() {
+  const { t } = useTranslation('staff');
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
   const [mounted, setMounted] = useState(false);
@@ -363,10 +365,10 @@ export function StaffContent() {
         >
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Staff
+              {t('title')}
             </h1>
             <p className="text-xs text-muted-foreground mt-1 sm:text-sm">
-              View and manage staff attendance and activity.
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -376,9 +378,9 @@ export function StaffContent() {
         {canAddUser && hasPendingIntakeLinks ? (
           <section className="shrink-0 mb-6 rounded-lg border">
             <div className="px-4 py-3">
-              <h2 className="text-sm font-medium text-foreground">Pending intake links</h2>
+              <h2 className="text-sm font-medium text-foreground">{t('pendingLinks')}</h2>
               <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-                Staff who were sent a self-service onboarding link and have not finished yet.
+                {t('pendingLinksHint')}
               </p>
               <IntakeInvitationsPanel />
             </div>
@@ -469,7 +471,7 @@ export function StaffContent() {
           )}
           {!isLoading && filteredUsers.length === 0 && (
             <p className="text-center text-muted-foreground py-8">
-              No staff to show. Ensure you have access.
+              {t('empty')}
             </p>
           )}
         </div>

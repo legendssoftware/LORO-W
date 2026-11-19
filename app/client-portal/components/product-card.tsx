@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState } from 'react';
 import { useClientCartStore, type PurchaseMode, type StoreProduct } from '@/store/client-cart-store';
 import { CartQuantityControl } from '@/app/store/components/cart-quantity-control';
@@ -39,6 +41,7 @@ function modePrice(product: StoreProduct, mode: PurchaseMode): number {
 }
 
 export function ProductCard({ product }: { product: StoreProduct }) {
+  const { t } = useTranslation('portal');
   const [imageError, setImageError] = useState(false);
   const [mode, setMode] = useState<PurchaseMode>('item');
   const addItem = useClientCartStore((s) => s.addItem);
@@ -129,9 +132,9 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             value={selectedMode}
             onValueChange={(value) => setMode(value as PurchaseMode)}
             className="mt-2 gap-1.5"
-            aria-label="Buy as"
+            aria-label={t('buyAs')}
           >
-            <p className="text-[10px] font-semibold uppercase text-muted-foreground">Buy as</p>
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t('buyAs')}</p>
             {options.map((option) => (
               <div key={option.mode} className="flex items-center gap-2">
                 <RadioGroupItem value={option.mode} id={`${product.uid}-${option.mode}`} />

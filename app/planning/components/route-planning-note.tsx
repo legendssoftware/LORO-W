@@ -10,11 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ROUTE_PLANNING_NOTE, ROUTE_PLANNING_NOTE_TITLE } from '@/lib/route-planning-note';
+import { useTranslation } from 'react-i18next';
 
 /** Opens the nightly route-planning explanation. The tour targets this button. */
 export function RoutePlanningNote() {
+  const { t } = useTranslation('screens');
   const [open, setOpen] = useState(false);
+  const routeTitle = t('pages.planning.routeTitle');
 
   return (
     <>
@@ -23,7 +25,7 @@ export function RoutePlanningNote() {
         variant="ghost"
         size="icon"
         className="size-8 shrink-0 text-muted-foreground"
-        aria-label={ROUTE_PLANNING_NOTE_TITLE}
+        aria-label={routeTitle}
         data-tour="planning-route-note"
         onClick={() => setOpen(true)}
       >
@@ -32,8 +34,8 @@ export function RoutePlanningNote() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{ROUTE_PLANNING_NOTE_TITLE}</DialogTitle>
-            <DialogDescription>{ROUTE_PLANNING_NOTE}</DialogDescription>
+            <DialogTitle>{routeTitle}</DialogTitle>
+            <DialogDescription>{t('pages.planning.routeNote')}</DialogDescription>
           </DialogHeader>
         </DialogContent>
       </Dialog>

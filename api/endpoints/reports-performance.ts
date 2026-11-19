@@ -5,6 +5,8 @@ import type {
   PerformanceDashboardData,
   PerformanceFilters,
   PerformanceMasterData,
+  SalesPaceData,
+  SalesPaceGrain,
   StoreMonthlyYtdResponse,
 } from '@/api/types/reports-performance';
 import { resolveDashboardDateRange } from '@/app/performance/lib/dates';
@@ -102,6 +104,32 @@ export async function getPerformanceStoreMonthlyYtd(
         endDate: undefined,
       },
       timeout: YTD_TIMEOUT_MS,
+    }
+  );
+  return unwrapPerformanceResponse(data);
+}
+
+export async function getPerformanceSalesPace(
+  client: AxiosInstance,
+  filters: PerformanceFilters,
+  grain: SalesPaceGrain,
+  options?: { skipCache?: boolean; organisationId?: string; signal?: AbortSignal }
+): Promise<SalesPaceData> {
+  const params = buildPerformanceFilterParams(filters, {
+    skipCache: options?.skipCache,
+    organisationId: options?.organisationId,
+  });
+  const { data } = await client.get<PerformanceApiResponse<SalesPaceData>>(
+    '/reports/performance/sales-pace',
+    {
+      params: {
+        ...params,
+        startDate: undefined,
+        endDate: undefined,
+        grain,
+      },
+      timeout: YTD_TIMEOUT_MS,
+      signal: options?.signal,
     }
   );
   return unwrapPerformanceResponse(data);

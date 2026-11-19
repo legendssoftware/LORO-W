@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState, useRef, useEffect, useMemo, startTransition } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import {
@@ -99,6 +101,7 @@ export function ImportLeadsModal({
   assignedUserIds,
   onSuccess,
 }: ImportLeadsModalProps) {
+  const { t } = useTranslation('screens');
   const [step, setStep] = useState<Step>('form');
   const [lastResult, setLastResult] = useState<LeadImportResponse | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -232,11 +235,11 @@ export function ImportLeadsModal({
       const lower = selected.name.toLowerCase();
       const ok = lower.endsWith('.csv') || lower.endsWith('.xlsx');
       if (!ok) {
-        toast.error('Please select a CSV or Excel (.xlsx) file.');
+        toast.error(t('leads.selectFile'));
         return;
       }
       if (selected.size > 2 * 1024 * 1024) {
-        toast.error('File size must be under 2MB.');
+        toast.error(t('leads.fileTooLarge'));
         return;
       }
       rowCountJobRef.current += 1;
@@ -258,7 +261,7 @@ export function ImportLeadsModal({
         .catch(() => {
           if (seq !== rowCountJobRef.current) return;
           setRowCountStatus('error');
-          toast.error('Could not read row count from file.');
+          toast.error(t('leads.couldNotCountRows'));
         });
     } else {
       rowCountJobRef.current += 1;
@@ -296,16 +299,16 @@ export function ImportLeadsModal({
 
   const handleSubmit = async () => {
     if (!file) {
-      toast.error('Please select a CSV or Excel file to upload.');
+      toast.error(t('leads.selectFileToUpload'));
       return;
     }
     if (assignmentMode === 'branch') {
       if (branches.length === 0) {
-        toast.error('No branches are available to assign by branch.');
+        toast.error(t('leads.noBranches'));
         return;
       }
       if (branchPoolIds.length === 0) {
-        toast.error('Select at least one branch to assign leads to its team members.');
+        toast.error(t('leads.selectBranchPool'));
         return;
       }
     }
@@ -336,7 +339,7 @@ export function ImportLeadsModal({
         setRowCount(dataRows);
         setRowCountStatus('ready');
       } catch {
-        toast.error('Could not read rows from file. Try again or re-upload.');
+        toast.error(t('leads.couldNotReadRows'));
         return;
       }
     }
@@ -356,7 +359,7 @@ export function ImportLeadsModal({
               const errMsg =
                 result.errors?.[0]?.error ||
                 result.message ||
-                'Import failed.';
+                t('leads.importFailed');
               toast.error(errMsg);
             }
           },
@@ -364,7 +367,7 @@ export function ImportLeadsModal({
             const message =
               err && typeof err === 'object' && 'message' in err
                 ? String((err as { message: string }).message)
-                : 'Import failed.';
+                : t('leads.importFailed');
             toast.error(message);
           },
         }
@@ -385,14 +388,14 @@ export function ImportLeadsModal({
         setStep('receipt');
       } else {
         const errMsg =
-          result.errors?.[0]?.error || result.message || 'Import failed.';
+          result.errors?.[0]?.error || result.message || t('leads.importFailed');
         toast.error(errMsg);
       }
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: string }).message)
-          : 'Import failed.';
+          : t('leads.importFailed');
       toast.error(message);
     }
   };
@@ -418,12 +421,12 @@ export function ImportLeadsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-left">
             <Upload className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            Import leads from CSV or Excel
+            {t('leads.importSpreadsheetTitle')}
           </DialogTitle>
           <div className="space-y-2 text-left">
             <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
               <CircleHelp className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              How this works
+              {t('leads.howThisWorks')}
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
               <li>
@@ -444,7 +447,7 @@ export function ImportLeadsModal({
             </ul>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
               <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                Sample files
+                {t('leads.sampleFiles')}
               </span>
               <button
                 type="button"
@@ -452,7 +455,7 @@ export function ImportLeadsModal({
                 className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
               >
                 <Download className="size-4 shrink-0" aria-hidden />
-                Download sample CSV
+                {t('leads.downloadSampleCsv')}
               </button>
               <button
                 type="button"
@@ -460,7 +463,7 @@ export function ImportLeadsModal({
                 className="inline-flex items-center gap-1.5 text-left text-sm font-normal text-purple-600 underline underline-offset-2 hover:text-purple-700"
               >
                 <FileSpreadsheet className="size-4 shrink-0" aria-hidden />
-                Download sample Excel (.xlsx)
+                {t('leads.downloadSampleExcel')}
               </button>
             </div>
           </div>
@@ -470,7 +473,7 @@ export function ImportLeadsModal({
             <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50/80 p-4 dark:border-green-900 dark:bg-green-950/40">
               <CheckCircle2 className="size-6 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
               <div className="min-w-0 space-y-1">
-                <p className="font-semibold text-foreground">Import complete</p>
+                <p className="font-semibold text-foreground">{t('leads.importComplete')}</p>
                 <p className="text-muted-foreground text-sm">
                   {lastResult.message ||
                     `Imported ${lastResult.imported} leads${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
@@ -479,15 +482,15 @@ export function ImportLeadsModal({
             </div>
             <div className="grid gap-2 sm:grid-cols-3">
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Imported</p>
+                <p className="text-muted-foreground text-xs">{t('leads.imported')}</p>
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.imported}</p>
               </div>
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Failed rows</p>
+                <p className="text-muted-foreground text-xs">{t('leads.failedRows')}</p>
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.failed}</p>
               </div>
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Reminders created</p>
+                <p className="text-muted-foreground text-xs">{t('leads.remindersCreated')}</p>
                 <p className="text-2xl font-semibold tabular-nums">
                   {lastResult.remindersCreated ?? 0}
                   {(lastResult.remindersFailed ?? 0) > 0 ? (
@@ -501,13 +504,13 @@ export function ImportLeadsModal({
             </div>
             {(lastResult.assignmentSummary?.length ?? 0) > 0 ? (
               <div className="grid gap-2">
-                <p className="text-sm font-medium text-foreground">Leads per team member</p>
+                <p className="text-sm font-medium text-foreground">{t('leads.leadsPerMember')}</p>
                 <div className="max-h-[min(220px,40vh)] overflow-y-auto rounded-md border border-input">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/80">
                       <tr className="border-b border-input text-left">
-                        <th className="p-2 font-medium">Name</th>
-                        <th className="p-2 font-medium text-right">Leads</th>
+                        <th className="p-2 font-medium">{t('leads.nameColumn')}</th>
+                        <th className="p-2 font-medium text-right">{t('leads.leadsColumn')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -524,7 +527,7 @@ export function ImportLeadsModal({
             ) : null}
             {(lastResult.errors?.length ?? 0) > 0 ? (
               <div className="grid gap-2">
-                <p className="text-sm font-medium text-destructive">Row errors</p>
+                <p className="text-sm font-medium text-destructive">{t('leads.rowErrors')}</p>
                 <ScrollArea className="h-[min(120px,24vh)] rounded-md border border-destructive/30 bg-destructive/5 p-2">
                   <ul className="space-y-1 text-xs text-destructive">
                     {lastResult.errors.slice(0, 20).map((e, i) => (
@@ -545,7 +548,7 @@ export function ImportLeadsModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="import-csv-file">Spreadsheet file</Label>
+                <Label htmlFor="import-csv-file">{t('leads.spreadsheetFile')}</Label>
               </div>
               <input
                 id="import-csv-file"
@@ -557,7 +560,7 @@ export function ImportLeadsModal({
               />
               {file ? (
                 <div className="space-y-1">
-                  <p className="text-foreground text-sm">Uploaded file</p>
+                  <p className="text-foreground text-sm">{t('leads.uploadedFile')}</p>
                   <p className="text-sm">
                     <span className="font-bold text-purple-600">{file.name}</span>{' '}
                     <span className="text-muted-foreground">
@@ -592,7 +595,7 @@ export function ImportLeadsModal({
             </div>
 
             <div className="grid gap-3">
-              <Label className="text-foreground">Assignment</Label>
+              <Label className="text-foreground">{t('leads.assignment')}</Label>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -628,7 +631,7 @@ export function ImportLeadsModal({
 
             {assignmentMode === 'branch' ? (
               <div className="grid gap-2">
-                <Label id="import-branch-pool-label">Branches</Label>
+                <Label id="import-branch-pool-label">{t('leads.branches')}</Label>
                 {branches.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
                     No branches available for this organization.
@@ -694,7 +697,7 @@ export function ImportLeadsModal({
                 <div className="grid gap-2">
                   <div className="flex items-center gap-2">
                     <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                    <Label>Team members (optional)</Label>
+                    <Label>{t('leads.teamOptional')}</Label>
                   </div>
                   <Label htmlFor="import-assignee-search" className="sr-only">
                     Search team members
@@ -702,7 +705,7 @@ export function ImportLeadsModal({
                   <Input
                     id="import-assignee-search"
                     type="search"
-                    placeholder="Search team members…"
+                    placeholder={t('leads.searchTeam')}
                     value={assigneeSearch}
                     onChange={(e) => setAssigneeSearch(e.target.value)}
                     className="h-9"
@@ -768,11 +771,11 @@ export function ImportLeadsModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="import-source">Default source (optional)</Label>
+                <Label htmlFor="import-source">{t('leads.defaultSourceOptional')}</Label>
               </div>
               <Select value={source || undefined} onValueChange={setSource}>
                 <SelectTrigger id="import-source" className="w-full">
-                  <SelectValue placeholder="Use file Source column or leave blank" />
+                  <SelectValue placeholder={t('leads.sourcePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {LEAD_SOURCE_OPTIONS.map((opt) => (
@@ -807,7 +810,7 @@ export function ImportLeadsModal({
                 className="border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
               >
                 <Upload className="mr-2 size-4" aria-hidden />
-                Upload more
+                {t('leads.uploadMore')}
               </Button>
             </>
           ) : (
@@ -818,7 +821,7 @@ export function ImportLeadsModal({
                 onClick={() => handleOpenChange(false)}
                 disabled={importMutation.isPending}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 type="button"
@@ -839,10 +842,10 @@ export function ImportLeadsModal({
                 {importMutation.isPending ? (
                   <>
                     <Loader2Icon className="mr-2 size-4 animate-spin" />
-                    Importing…
+                    {t('leads.importing')}
                   </>
                 ) : (
-                  'Import'
+                  t('leads.import')
                 )}
               </Button>
             </>

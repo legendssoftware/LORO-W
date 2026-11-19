@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
@@ -14,6 +16,7 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 
 export function StoreContent({ client }: { client: ClientProfileData }) {
+  const { t } = useTranslation('portal');
   const apiClient = useApiClient();
   const [searchInput, setSearchInput] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -63,7 +66,7 @@ export function StoreContent({ client }: { client: ClientProfileData }) {
       ) : (
         <div data-tour="store-catalogue">
           {products.length === 0 ? (
-            <p className="text-center text-muted-foreground py-16">No products found.</p>
+            <p className="text-center text-muted-foreground py-16">{t('noProducts')}</p>
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

@@ -36,6 +36,8 @@ import {
   WellbeingNamedCountrySections,
 } from './components/wellbeing-country-sections';
 import { WellbeingContactFeedbackForm } from './components/wellbeing-contact-feedback-form';
+import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 const tabListClass =
   'mb-4 h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0 text-muted-foreground';
@@ -90,6 +92,7 @@ function ToneLegend() {
 }
 
 export function WellbeingContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const allowed = canAccessWellbeingDashboard(backendUserData?.accessLevel);
@@ -161,9 +164,9 @@ export function WellbeingContent() {
     <div className={appPageScrollWrapClass} data-slot="wellbeing-page">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 flex shrink-0 flex-col gap-1" data-tour="wellbeing-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Wellbeing</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.wellbeing.title')}</h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            Daily employee pulse, named follow-ups for your team, and mood vs performance estimates.
+            {t('pages.wellbeing.description')}
           </p>
         </div>
         <div data-tour="wellbeing-toolbar">

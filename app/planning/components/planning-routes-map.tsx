@@ -22,8 +22,8 @@ import {
 } from '@/components/ui/popover';
 import type { OptimizedRoute } from '@/api/types/tasks';
 import { CalendarIcon } from '@/lib/icons';
-import { ROUTE_PLANNING_EMPTY } from '@/lib/route-planning-note';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface PlanningRoutesMapProps {
   onOpenTask?: (taskId: number) => void;
@@ -41,6 +41,7 @@ function routeRepName(route: OptimizedRoute, userNameById: Map<number, string>):
  * Route planning list (no embedded map — maps live on /visualiser only).
  */
 export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
+  const { t } = useTranslation('screens');
   const { backendUserData } = useSessionSync();
   const showVisualiserLink = canAccessVisualiser(backendUserData?.accessLevel);
   const [routeDate, setRouteDate] = useState<Date>(() => utcTomorrow());
@@ -150,7 +151,7 @@ export function PlanningRoutesMap({ onOpenTask }: PlanningRoutesMapProps) {
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center">
             <MapPin className="size-8 text-muted-foreground" />
             <p className="text-sm font-medium">No routes for this day</p>
-            <p className="max-w-md text-xs text-muted-foreground">{ROUTE_PLANNING_EMPTY}</p>
+            <p className="max-w-md text-xs text-muted-foreground">{t('pages.planning.routeEmpty')}</p>
           </div>
         ) : filteredRoutes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center">

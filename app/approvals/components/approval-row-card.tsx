@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, DollarSign, FileText, User } from 'lucide-react';
 import type { Approval } from '@/api/types/approvals';
@@ -56,6 +57,7 @@ export function ApprovalRowCard({
   approval: Approval;
   onOpen: (approval: Approval) => void;
 }) {
+  const { t } = useTranslation('screens');
   const submitted = formatDate(approval.submittedAt ?? approval.createdAt);
   const deadline = formatDate(approval.deadline);
   const requester = personName(approval.requester);
@@ -114,7 +116,7 @@ export function ApprovalRowCard({
             <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
               <FileText className="size-4 shrink-0 text-blue-600" />
               <div className="min-w-0">
-                <p className="text-[11px] text-blue-700">Type</p>
+                <p className="text-[11px] text-blue-700">{t('approvals.type')}</p>
                 <p className="truncate text-sm font-medium text-foreground">
                   {formatApprovalTypeLabel(approval.type)}
                 </p>
@@ -124,7 +126,7 @@ export function ApprovalRowCard({
               <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
                 <DollarSign className="size-4 shrink-0 text-emerald-600" />
                 <div className="min-w-0">
-                  <p className="text-[11px] text-emerald-700">Amount</p>
+                  <p className="text-[11px] text-emerald-700">{t('approvals.amount')}</p>
                   <p className="truncate text-sm font-medium text-foreground">{amountLabel}</p>
                 </div>
               </div>
@@ -148,7 +150,7 @@ export function ApprovalRowCard({
                       approval.isOverdue ? 'text-red-700' : 'text-orange-700',
                     )}
                   >
-                    {approval.isOverdue ? 'Overdue' : 'Deadline'}
+                    {approval.isOverdue ? t('approvals.overdue') : t('approvals.deadline')}
                   </p>
                   <p className="truncate text-sm font-medium text-foreground">{deadline}</p>
                 </div>
@@ -175,7 +177,7 @@ export function ApprovalRowCard({
                     approval.isOverdue ? 'text-red-700' : 'text-orange-700',
                   )}
                 >
-                  {approval.isOverdue ? 'Overdue' : 'Deadline'}
+                  {approval.isOverdue ? t('approvals.overdue') : t('approvals.deadline')}
                 </p>
                 <p className="truncate text-sm font-medium text-foreground">{deadline}</p>
               </div>
@@ -188,7 +190,7 @@ export function ApprovalRowCard({
             {submitted ? (
               <p className="flex items-center gap-1.5">
                 <Calendar className="size-3.5 shrink-0" />
-                Submitted: {submitted}
+                {t('approvals.submittedOn', { date: submitted })}
               </p>
             ) : null}
             {requester ? (
@@ -200,7 +202,7 @@ export function ApprovalRowCard({
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <ApprovalSourceOpenButton href={sourceHref} entityType={sourceType} />
-            <span className="text-xs italic text-blue-600">View details</span>
+            <span className="text-xs italic text-blue-600">{t('approvals.viewDetails')}</span>
           </div>
         </div>
       </CardContent>

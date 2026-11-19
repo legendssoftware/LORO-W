@@ -13,10 +13,12 @@ import { ClientsFiltersBar } from './components/clients-filters-bar';
 import { Plus } from 'lucide-react';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
 export function ClientsContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
 
   const [searchInput, setSearchInput] = useState('');
@@ -73,9 +75,9 @@ export function ClientsContent() {
     <div className="flex flex-col h-full min-h-0">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 shrink-0" data-tour="clients-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Clients</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.clients.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Create, search, and manage organisation clients.
+            {t('pages.clients.description')}
           </p>
         </div>
 

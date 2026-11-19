@@ -1,6 +1,33 @@
-/** Repeated data-entry placeholder copy. Unique field hints stay inline. */
+/** Repeated data-entry placeholder keys under `common.placeholders`. */
 
-export const FORM_PLACEHOLDERS = {
+import type { TFunction } from 'i18next';
+
+export type FormPlaceholderKey =
+  | 'firstName'
+  | 'surname'
+  | 'fullName'
+  | 'email'
+  | 'workEmail'
+  | 'phone'
+  | 'landline'
+  | 'nationalId'
+  | 'idOrPassport'
+  | 'website'
+  | 'street'
+  | 'suburb'
+  | 'city'
+  | 'province'
+  | 'country'
+  | 'postalCode'
+  | 'companyName'
+  | 'position'
+  | 'department'
+  | 'branchRef'
+  | 'zero'
+  | 'amount';
+
+/** @deprecated Prefer `formPlaceholder(t, key)` so copy follows the active locale. */
+export const FORM_PLACEHOLDERS: Record<FormPlaceholderKey, string> = {
   firstName: 'Jane',
   surname: 'Smith',
   fullName: 'e.g. Jane Smith',
@@ -23,8 +50,29 @@ export const FORM_PLACEHOLDERS = {
   branchRef: 'e.g. BR001',
   zero: '0',
   amount: '0.00',
-} as const;
+};
 
+export function formPlaceholder(t: TFunction, key: FormPlaceholderKey): string {
+  return t(`placeholders.${key}`);
+}
+
+export function addressFieldPlaceholder(t: TFunction, field: string): string {
+  const key =
+    field === 'state' || field === 'province'
+      ? 'province'
+      : field === 'postalCode'
+        ? 'postalCode'
+        : field === 'street' ||
+            field === 'suburb' ||
+            field === 'city' ||
+            field === 'country'
+          ? (field as FormPlaceholderKey)
+          : null;
+  if (!key) return '';
+  return formPlaceholder(t, key);
+}
+
+/** @deprecated Prefer `addressFieldPlaceholder(t, field)`. */
 export const ADDRESS_FIELD_PLACEHOLDERS: Record<string, string> = {
   street: FORM_PLACEHOLDERS.street,
   suburb: FORM_PLACEHOLDERS.suburb,

@@ -38,6 +38,7 @@ import { ReportsNamedBarChart } from './reports-named-bar-chart';
 import { ReportsChartCard } from './reports-chart-card';
 import { ReportsSection } from './reports-section';
 import { ReportsMorningBrief } from './reports-morning-brief';
+import { useTranslation } from 'react-i18next';
 
 function SummaryStat({
   label,
@@ -136,6 +137,7 @@ function ClusterRow({
 }
 
 export function ReportsInsightsTab() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const client = useApiClient();
@@ -413,11 +415,11 @@ export function ReportsInsightsTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Place</TableHead>
-                    <TableHead>Calls</TableHead>
-                    <TableHead>Window</TableHead>
-                    <TableHead>Avg</TableHead>
-                    <TableHead>Flags</TableHead>
+                    <TableHead>{t('tables.place')}</TableHead>
+                    <TableHead>{t('tables.calls')}</TableHead>
+                    <TableHead>{t('tables.window')}</TableHead>
+                    <TableHead>{t('tables.avg')}</TableHead>
+                    <TableHead>{t('tables.flags')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

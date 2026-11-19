@@ -1,0 +1,7 @@
+{
+  "title": "Équipe",
+  "subtitle": "Consultez et gérez la présence et l'activité de l'équipe.",
+  "pendingLinks": "Liens d'intégration en attente",
+  "pendingLinksHint": "Personnes qui ont reçu un lien d'intégration et ne l'ont pas encore terminé.",
+  "empty": "Aucune personne à afficher. Vérifiez que vous avez accès."
+}

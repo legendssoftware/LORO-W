@@ -27,6 +27,7 @@ import { MerchandiseCreateDialog } from './components/merchandise-create-dialog'
 import { MerchandiseFiltersBar } from './components/merchandise-filters-bar';
 import { MerchandiseGroupedList } from './components/merchandise-grouped-list';
 import { InspectionsPanel } from './components/inspections-panel';
+import { useTranslation } from 'react-i18next';
 
 const primaryClass =
   'h-9 shrink-0 gap-2 border-0 bg-violet-600 px-4 text-white hover:bg-violet-700 focus-visible:ring-violet-500/40 dark:bg-violet-600 dark:text-white dark:hover:bg-violet-500 [&_svg]:text-white';
@@ -34,6 +35,7 @@ const primaryClass =
 const MERCHANDISE_PAGE_SIZE_KEY = 'loro:merchandise-page-size';
 
 export function MerchandiseContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData, isSyncing } = useSessionSync();
   const [createOpen, setCreateOpen] = useState(false);
@@ -106,10 +108,10 @@ export function MerchandiseContent() {
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div data-tour="merchandise-page-header" className="mb-6 shrink-0">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            Merchandise Management
+            {t('pages.merchandise.title')}
           </h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Track and manage merchandise inventories and transactions
+            {t('pages.merchandise.description')}
           </p>
         </div>
 

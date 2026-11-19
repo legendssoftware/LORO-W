@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { ClientProfileData, ClientProject } from '@/api/types/client-portal';
@@ -28,6 +30,7 @@ function filterProjects(
 }
 
 export function ClientProjectsContent({ client }: { client: ClientProfileData }) {
+  const { t } = useTranslation('portal');
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState<ClientProject | null>(null);
@@ -53,7 +56,7 @@ export function ClientProjectsContent({ client }: { client: ClientProfileData })
         data-tour="projects-page-header"
       >
         <div>
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Projects</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('projects')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Manage your projects, create new ones, and track their progress.
           </p>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
@@ -69,6 +70,7 @@ function getVisitMethodIcon(method: string | null | undefined) {
 }
 
 export function VisitsContent() {
+  const { t } = useTranslation('screens');
   const { isLoaded: authLoaded } = useAuth();
   const { isTokenReady } = useTokenReady();
   useSessionSync();
@@ -233,23 +235,23 @@ export function VisitsContent() {
 
   const startVisit = async () => {
     if (!selectedMethod) {
-      toast.error('Please select a method of visit');
+      toast.error(t('visits.selectMethod'));
       return;
     }
     const payload = await buildCheckInPayload(selectedMethod);
     try {
       await checkInMutation.mutateAsync(payload);
-      toast.success('Visit started');
+      toast.success(t('visits.visitStarted'));
       closeMethodModal();
       statusQuery.refetch();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to start visit');
+      toast.error(e instanceof Error ? e.message : t('visits.failedToStart'));
     }
   };
 
   const openEndVisit = () => setEndVisitOpen(true);
 
-  const exportTitle = `Visits · ${activityChannelFilterLabel(activityChannel)}`;
+  const exportTitle = t('visits.exportTitle', { channel: activityChannelFilterLabel(activityChannel) });
   const exportDisabled = filteredCheckIns.length === 0;
 
   const visitActionButton = checkedIn ? (
@@ -266,7 +268,7 @@ export function VisitsContent() {
         const Icon = getVisitMethodIcon(activeVisit?.methodOfContact);
         return <Icon className="size-4" />;
       })()}
-      End visit
+      {t('visits.endVisit')}
     </Button>
   ) : (
     <Button
@@ -279,18 +281,16 @@ export function VisitsContent() {
       data-tour="visits-visit-action"
       onClick={openMethodModal}
     >
-      <MapPin className="size-4" />
-      Start visit
-    </Button>
+      <MapPin className="size-4" />{t('visits.startVisit')}</Button>
   );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
         <div className="mb-6 shrink-0" data-tour="visits-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Visits</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('visits.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.
+            {t('visits.description')}
           </p>
         </div>
 
@@ -309,11 +309,11 @@ export function VisitsContent() {
               <DetailDialogCloseButton />
             </div>
             <DialogHeader className="pr-24">
-              <DialogTitle>Start visit</DialogTitle>
-              <DialogDescription>Choose how you are conducting this visit.</DialogDescription>
+              <DialogTitle>{t('visits.startVisit')}</DialogTitle>
+              <DialogDescription>{t('visits.chooseMethod')}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-3 py-2">
-              <p className="text-sm font-medium">Method of visit</p>
+              <p className="text-sm font-medium">{t('visits.methodOfVisit')}</p>
               <div className="grid grid-cols-2 gap-2">
                 {METHOD_OPTIONS.map((opt) => {
                   const Icon = opt.icon;
@@ -336,9 +336,7 @@ export function VisitsContent() {
                 })}
               </div>
               <DialogFooter className="gap-3">
-                <Button variant="cancel" className="rounded-full" onClick={closeMethodModal}>
-                  Cancel
-                </Button>
+                <Button variant="cancel" className="rounded-full" onClick={closeMethodModal}>{t('actions.cancel')}</Button>
                 <Button
                   variant="success"
                   className="rounded-full"
@@ -346,7 +344,7 @@ export function VisitsContent() {
                   disabled={checkInMutation.isPending || !selectedMethod}
                 >
                   {checkInMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
-                  Start visit
+                  {t('visits.startVisit')}
                 </Button>
               </DialogFooter>
             </div>
@@ -383,9 +381,7 @@ export function VisitsContent() {
                     className="h-9 shrink-0 gap-1.5"
                     disabled={exportDisabled}
                   >
-                    <Download className="size-4" aria-hidden />
-                    Export
-                  </Button>
+                    <Download className="size-4" aria-hidden />{t('actions.export')}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
@@ -393,17 +389,13 @@ export function VisitsContent() {
                     onSelect={() =>
                       exportVisits(filteredCheckIns, 'csv', 'loro-visits', exportTitle)
                     }
-                  >
-                    Export CSV
-                  </DropdownMenuItem>
+                  >{t('actions.exportCsv')}</DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={exportDisabled}
                     onSelect={() =>
                       exportVisits(filteredCheckIns, 'pdf', 'loro-visits', exportTitle)
                     }
-                  >
-                    Export PDF
-                  </DropdownMenuItem>
+                  >{t('actions.exportPdf')}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               {visitActionButton}
@@ -420,10 +412,10 @@ export function VisitsContent() {
               isLoading={checkInsQuery.isLoading}
               emptyMessage={
                 checkIns.length === 0
-                  ? 'No visits yet. Start a visit to see it here.'
+                  ? t('visits.empty')
                   : activityChannel === 'all'
-                    ? 'No activity matches your filters.'
-                    : `No ${activityChannelFilterLabel(activityChannel).toLowerCase()} match your filters.`
+                    ? t('visits.noActivityMatch')
+                    : t('visits.noChannelMatch', { channel: activityChannelFilterLabel(activityChannel).toLowerCase() })
               }
               onVisitUpdated={() => checkInsQuery.refetch()}
             />
