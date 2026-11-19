@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AlertTriangle, CircleDot, Plus, UserRound } from 'lucide-react';
 import { useSessionSync, useTokenReady, useUsers } from '@/api/hooks';
 import {
   useCreateWarningMutation,
@@ -18,8 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { IconField, IconInput } from '@/components/icon-field';
 import {
   Select,
   SelectContent,
@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/table';
 import { canAccessWarnings, canDeleteWarnings } from '@/lib/access';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const STATUSES: WarningStatus[] = ['ACTIVE', 'EXPIRED', 'REVOKED'];
 const SEVERITIES: WarningSeverity[] = ['LOW', 'MEDIUM', 'HIGH'];
@@ -48,6 +49,7 @@ function personName(row: WarningRecord): string {
 }
 
 export function WarningsContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: sessionLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !sessionLoading;
@@ -73,7 +75,7 @@ export function WarningsContent() {
   const rows = listQuery.data?.warnings ?? [];
 
   if (ready && !canAccessWarnings(backendUserData?.accessLevel)) {
-    return <FeatureDenied title="Warnings" />;
+    return <FeatureDenied title={t('pages.warnings.title')} />;
   }
 
   async function submitCreate() {
@@ -122,14 +124,20 @@ export function WarningsContent() {
     <>
       <FeatureShell
         tourId="warnings"
-        title="Warnings"
-        description="Organisation warnings. A warning created on a staff profile appears here."
-        actions={<Button type="button" onClick={() => setCreateOpen(true)}>Issue warning</Button>}
+        title={t('pages.warnings.title')}
+        description={t('pages.warnings.description')}
+        actions={<Button type="button" onClick={() => setCreateOpen(true)}><Plus className="size-4" aria-hidden />Issue warning</Button>}
         filters={
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-[180px]">
+              <CircleDot className="size-4 text-muted-foreground" aria-hidden />
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">
+                <CircleDot className="size-4" aria-hidden />
+                All statuses
+              </SelectItem>
               {STATUSES.map((item) => (
                 <SelectItem key={item} value={item}>{item}</SelectItem>
               ))}
@@ -146,10 +154,10 @@ export function WarningsContent() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Person</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Reason</TableHead>
+              <TableHead>{t('tables.person')}</TableHead>
+              <TableHead>{t('tables.severity')}</TableHead>
+              <TableHead>{t('tables.status')}</TableHead>
+              <TableHead>{t('tables.reason')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -162,7 +170,12 @@ export function WarningsContent() {
                   setEditReason(row.reason);
                 }}
               >
-                <TableCell>{personName(row)}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2">
+                    <AlertTriangle className="size-4 text-muted-foreground" aria-hidden />
+                    {personName(row)}
+                  </span>
+                </TableCell>
                 <TableCell>{row.severity}</TableCell>
                 <TableCell>{row.status}</TableCell>
                 <TableCell className="max-w-xs truncate">{row.reason}</TableCell>
@@ -176,38 +189,44 @@ export function WarningsContent() {
         <DialogContent>
           <DialogHeader><DialogTitle>Issue warning</DialogTitle></DialogHeader>
           <div className="grid gap-3">
-            <div className="space-y-1">
-              <Label>Person</Label>
+            <IconField icon={UserRound} label="Person">
               <Select value={form.recipientClerkId} onValueChange={(value) => setForm((current) => ({ ...current, recipientClerkId: value }))}>
-                <SelectTrigger><SelectValue placeholder="Select a person" /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <UserRound className="size-4 text-muted-foreground" aria-hidden />
+                  <SelectValue placeholder="Select a person" />
+                </SelectTrigger>
                 <SelectContent>
                   {(usersQuery.data ?? []).filter((user) => user.clerkUserId).map((user) => (
                     <SelectItem key={user.uid} value={user.clerkUserId!}>
+                      <UserRound className="size-4" aria-hidden />
                       {[user.name, user.surname].filter(Boolean).join(' ') || user.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Severity</Label>
+            </IconField>
+            <IconField icon={AlertTriangle} label="Severity">
               <Select value={form.severity} onValueChange={(value) => setForm((current) => ({ ...current, severity: value as WarningSeverity }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <AlertTriangle className="size-4 text-muted-foreground" aria-hidden />
+                  <SelectValue placeholder="Choose a severity" />
+                </SelectTrigger>
                 <SelectContent>
                   {SEVERITIES.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                    <SelectItem key={item} value={item}>
+                      <AlertTriangle className="size-4" aria-hidden />
+                      {item}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="warning-reason">Reason</Label>
-              <Input id="warning-reason" value={form.reason} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="warning-expires">Expires</Label>
-              <Input id="warning-expires" type="date" value={form.expiresAt} onChange={(event) => setForm((current) => ({ ...current, expiresAt: event.target.value }))} />
-            </div>
+            </IconField>
+            <IconField icon={AlertTriangle} label="Reason">
+              <IconInput icon={AlertTriangle} value={form.reason} placeholder="What happened" onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} />
+            </IconField>
+            <IconField icon={CircleDot} label="Expires">
+              <IconInput icon={CircleDot} type="date" value={form.expiresAt} aria-label="Expiry date" onChange={(event) => setForm((current) => ({ ...current, expiresAt: event.target.value }))} />
+            </IconField>
           </div>
           <DialogFooter>
             <Button type="button" onClick={() => void submitCreate()} disabled={createMutation.isPending}>Save</Button>
@@ -221,8 +240,9 @@ export function WarningsContent() {
           {selected ? (
             <div className="space-y-2 text-sm">
               <p>{personName(selected)} · {selected.severity} · {selected.status}</p>
-              <Label htmlFor="warning-edit">Reason</Label>
-              <Input id="warning-edit" value={editReason} onChange={(event) => setEditReason(event.target.value)} />
+              <IconField icon={AlertTriangle} label="Reason">
+                <IconInput icon={AlertTriangle} value={editReason} placeholder="Update the reason" onChange={(event) => setEditReason(event.target.value)} />
+              </IconField>
             </div>
           ) : null}
           <DialogFooter>

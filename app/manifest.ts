@@ -1,8 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { getSiteUrl } from '@/lib/seo';
 
 export default function manifest(): MetadataRoute.Manifest {
-  const base = getSiteUrl();
   return {
     name: 'LORO — Field sales software',
     short_name: 'LORO',
@@ -15,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'en-ZA',
     icons: [
       {
-        src: `${base}/logo.png`,
+        src: '/logo.png',
         sizes: 'any',
         type: 'image/png',
         purpose: 'any',

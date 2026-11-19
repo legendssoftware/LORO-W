@@ -6,6 +6,9 @@ export interface NewsItem {
   title: string;
   subtitle?: string;
   content?: string;
+  coverImage?: string;
+  thumbnail?: string;
+  publishingDate?: string;
   category?: string;
 }
 
@@ -27,13 +30,13 @@ export async function saveNews(
     subtitle: payload.subtitle ?? payload.title,
     content: payload.content ?? '',
     attachments: '',
-    coverImage: '',
-    thumbnail: '',
-    publishingDate: new Date().toISOString(),
+    coverImage: payload.coverImage ?? '',
+    thumbnail: payload.thumbnail ?? payload.coverImage ?? '',
+    publishingDate: payload.publishingDate ?? new Date().toISOString(),
     author: payload.author,
     branch: payload.branch,
     isDeleted: false,
-    category: payload.category ?? 'GENERAL',
+    category: payload.category ?? 'news',
   });
   return data;
 }

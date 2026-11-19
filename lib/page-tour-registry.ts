@@ -1,6 +1,7 @@
 'use client';
 
 import type { DriveStep } from 'driver.js';
+import type { TFunction } from 'i18next';
 import { createMonthlyTourStorage } from '@/lib/create-monthly-tour-storage';
 import type { TourMonthState } from '@/lib/tour-monthly-persist';
 
@@ -9,8 +10,9 @@ type PopoverAlign = 'start' | 'center' | 'end';
 
 type PageTourStep = {
   anchor: string;
-  title: string;
-  description: string;
+  /** screens catalog key, for example `tours.leave.header.title`. */
+  titleKey: string;
+  descriptionKey: string;
   side?: PopoverSide;
   align?: PopoverAlign;
   /** Included only when the anchor is in the document at start. */
@@ -50,6 +52,10 @@ function defineTour(
   };
 }
 
+function tourKey(tourId: string, slot: string, field: 'title' | 'description'): string {
+  return `tours.${tourId}.${slot}.${field}`;
+}
+
 function featureTour(
   path: string,
   tourId: string,
@@ -63,8 +69,8 @@ function featureTour(
   const steps: PageTourStep[] = [
     {
       anchor: `${tourId}-page-header`,
-      title: copy.header.title,
-      description: copy.header.description,
+      titleKey: tourKey(tourId, 'header', 'title'),
+      descriptionKey: tourKey(tourId, 'header', 'description'),
       side: 'bottom',
       align: 'start',
     },
@@ -72,8 +78,8 @@ function featureTour(
   if (copy.actions) {
     steps.push({
       anchor: `${tourId}-actions`,
-      title: copy.actions.title,
-      description: copy.actions.description,
+      titleKey: tourKey(tourId, 'actions', 'title'),
+      descriptionKey: tourKey(tourId, 'actions', 'description'),
       side: 'bottom',
       align: 'end',
       optional: true,
@@ -82,8 +88,8 @@ function featureTour(
   if (copy.filters) {
     steps.push({
       anchor: `${tourId}-filters`,
-      title: copy.filters.title,
-      description: copy.filters.description,
+      titleKey: tourKey(tourId, 'filters', 'title'),
+      descriptionKey: tourKey(tourId, 'filters', 'description'),
       side: 'bottom',
       align: 'center',
       optional: true,
@@ -91,8 +97,8 @@ function featureTour(
   }
   steps.push({
     anchor: `${tourId}-content`,
-    title: copy.content.title,
-    description: copy.content.description,
+    titleKey: tourKey(tourId, 'content', 'title'),
+    descriptionKey: tourKey(tourId, 'content', 'description'),
     side: 'top',
     align: 'center',
     optional: true,
@@ -283,38 +289,37 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'claims-page-header',
-        title: 'Claims',
-        description: 'Submit expenses, attach receipts, and track each claim from approval to payment.',
+        titleKey: 'tours.claims.header.title',
+        descriptionKey: 'tours.claims.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'claims-summary',
-        title: 'Stage totals',
-        description: 'Click Total, Pending, Approved, Declined, or Paid. The list below follows that stage.',
+        titleKey: 'tours.claims.summary.title',
+        descriptionKey: 'tours.claims.summary.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'claims-toolbar',
-        title: 'Search, export, and create',
-        description:
-          'Filter by date, group, currency, or person. Export downloads a spreadsheet. New claim starts a submission.',
+        titleKey: 'tours.claims.toolbar.title',
+        descriptionKey: 'tours.claims.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'claims-folders',
-        title: 'Claim folders',
-        description: 'Click a folder to show only the claims in that group.',
+        titleKey: 'tours.claims.folders.title',
+        descriptionKey: 'tours.claims.folders.description',
         side: 'bottom',
         align: 'start',
         optional: true,
       },
       {
         anchor: 'claims-list',
-        title: 'Open a claim',
-        description: 'Claims are grouped. Click one to follow the receipt, the decision, and the payment.',
+        titleKey: 'tours.claims.list.title',
+        descriptionKey: 'tours.claims.list.description',
         side: 'top',
         align: 'center',
       },
@@ -327,29 +332,29 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'iot-page-header',
-        title: 'IoT devices',
-        description: 'Connected hardware and access devices, organised by branch.',
+        titleKey: 'tours.iot.header.title',
+        descriptionKey: 'tours.iot.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'iot-toolbar',
-        title: 'Filter devices',
-        description: 'Filter by status, type, or branch, then search by id, tag, or location.',
+        titleKey: 'tours.iot.toolbar.title',
+        descriptionKey: 'tours.iot.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'iot-add-device',
-        title: 'Add device',
-        description: 'Click Add device. Record the hardware and the branch it belongs to.',
+        titleKey: 'tours.iot.add.title',
+        descriptionKey: 'tours.iot.add.description',
         side: 'bottom',
         align: 'end',
       },
       {
         anchor: 'iot-grid',
-        title: 'Open a device',
-        description: 'Click a card to inspect or edit that device.',
+        titleKey: 'tours.iot.grid.title',
+        descriptionKey: 'tours.iot.grid.description',
         side: 'top',
         align: 'center',
       },
@@ -362,23 +367,22 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'approvals-page-header',
-        title: 'Approvals',
-        description: 'Review pending requests, inspect employee intake forms, and approve or reject from the web.',
+        titleKey: 'tours.approvals.header.title',
+        descriptionKey: 'tours.approvals.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'approvals-toolbar',
-        title: 'Filter and file a request',
-        description:
-          'Search by title or reference, then filter by status or type. New request files a general request. My requests loads the ones you submitted.',
+        titleKey: 'tours.approvals.toolbar.title',
+        descriptionKey: 'tours.approvals.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'approvals-list',
-        title: 'Open a request',
-        description: 'Click a card to approve or reject it. Intake forms open from the same card.',
+        titleKey: 'tours.approvals.list.title',
+        descriptionKey: 'tours.approvals.list.description',
         side: 'top',
         align: 'center',
       },
@@ -394,30 +398,30 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'payslips-page-header',
-        title: 'Payslips',
-        description: 'View and download your payslip documents.',
+        titleKey: 'tours.payslips.header.title',
+        descriptionKey: 'tours.payslips.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'payslips-import',
-        title: 'Import from storage',
-        description: 'Preview the storage import, then confirm it. Only people who can import payslips see this.',
+        titleKey: 'tours.payslips.import.title',
+        descriptionKey: 'tours.payslips.import.description',
         side: 'bottom',
         align: 'center',
         optional: true,
       },
       {
         anchor: 'payslips-filters',
-        title: 'Filter payslips',
-        description: 'The list starts as all time. Switch to a date range or a status to narrow it.',
+        titleKey: 'tours.payslips.filters.title',
+        descriptionKey: 'tours.payslips.filters.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'payslips-table',
-        title: 'View or download',
-        description: 'View opens the payslip. Download saves the file. Page size under the table sets how many rows load.',
+        titleKey: 'tours.payslips.table.title',
+        descriptionKey: 'tours.payslips.table.description',
         side: 'top',
         align: 'center',
       },
@@ -430,30 +434,30 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'competitors-page-header',
-        title: 'Competitors',
-        description: 'Track rivals, threat levels, and locations alongside your clients.',
+        titleKey: 'tours.competitors.header.title',
+        descriptionKey: 'tours.competitors.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'competitors-toolbar',
-        title: 'Filter and search',
-        description: 'Filter by status, direct or indirect, and threat level. Search by name.',
+        titleKey: 'tours.competitors.toolbar.title',
+        descriptionKey: 'tours.competitors.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'competitors-add',
-        title: 'Add competitor',
-        description: 'Click Add competitor, or Import to bring in a spreadsheet. Both land in this grid.',
+        titleKey: 'tours.competitors.add.title',
+        descriptionKey: 'tours.competitors.add.description',
         side: 'bottom',
         align: 'end',
         optional: true,
       },
       {
         anchor: 'competitors-grid',
-        title: 'Open a competitor',
-        description: 'Click a card for the threat, the location, and edit or delete when you manage the list.',
+        titleKey: 'tours.competitors.grid.title',
+        descriptionKey: 'tours.competitors.grid.description',
         side: 'top',
         align: 'center',
       },
@@ -466,23 +470,22 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'takeoff-page-header',
-        title: 'System takeoff',
-        description:
-          'Measure a ceiling or partition. Quantities are calculated on the server, then issued as a quotation.',
+        titleKey: 'tours.takeoff.header.title',
+        descriptionKey: 'tours.takeoff.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'takeoff-create',
-        title: 'New takeoff',
-        description: 'Click New takeoff. Name the job and the client, then open it to measure.',
+        titleKey: 'tours.takeoff.create.title',
+        descriptionKey: 'tours.takeoff.create.description',
         side: 'bottom',
         align: 'end',
       },
       {
         anchor: 'takeoff-list',
-        title: 'Open a takeoff',
-        description: 'Click a reference to continue measuring and issue the quotation. Status and total stay on this row.',
+        titleKey: 'tours.takeoff.list.title',
+        descriptionKey: 'tours.takeoff.list.description',
         side: 'top',
         align: 'center',
       },
@@ -495,31 +498,30 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'deliveries-page-header',
-        title: 'Deliveries',
-        description:
-          'Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records the stop.',
+        titleKey: 'tours.deliveries.header.title',
+        descriptionKey: 'tours.deliveries.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'deliveries-toolbar',
-        title: 'Filter deliveries',
-        description: 'Filter by day, status, driver, or search. Page size under the table sets how many rows load.',
+        titleKey: 'tours.deliveries.toolbar.title',
+        descriptionKey: 'tours.deliveries.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'deliveries-assign',
-        title: 'Assign delivery',
-        description: 'Click Assign delivery. Pick an open sales order and the driver who will run the stop.',
+        titleKey: 'tours.deliveries.assign.title',
+        descriptionKey: 'tours.deliveries.assign.description',
         side: 'bottom',
         align: 'end',
         optional: true,
       },
       {
         anchor: 'deliveries-list',
-        title: 'Open a delivery',
-        description: 'Click a row for the route, the rating, and the signed proof of delivery.',
+        titleKey: 'tours.deliveries.list.title',
+        descriptionKey: 'tours.deliveries.list.description',
         side: 'top',
         align: 'center',
       },
@@ -532,38 +534,37 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'store-operations-page-header',
-        title: 'Store operations',
-        description: 'Live branch openings, checklists, and stock counts across every store.',
+        titleKey: 'tours.store-operations.header.title',
+        descriptionKey: 'tours.store-operations.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'store-operations-tabs',
-        title: 'Overview and details',
-        description: 'Overview is the live board. Details is the longer store-by-store list.',
+        titleKey: 'tours.store-operations.tabs.title',
+        descriptionKey: 'tours.store-operations.tabs.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'store-operations-filters',
-        title: 'Narrow the stores',
-        description: 'Filter by country, region, and period. Features opens the extra store-operations tools.',
+        titleKey: 'tours.store-operations.filters.title',
+        descriptionKey: 'tours.store-operations.filters.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'store-operations-summary',
-        title: 'Click a total',
-        description:
-          'Each card is a slice of the day: all stores, opened on time, late, missed, closed on time, or checklists completed. Click one to keep only those stores.',
+        titleKey: 'tours.store-operations.summary.title',
+        descriptionKey: 'tours.store-operations.summary.description',
         side: 'bottom',
         align: 'center',
         optional: true,
       },
       {
         anchor: 'store-operations-stores',
-        title: 'Store status',
-        description: 'Each row is a branch’s opening and checklist right now. Open it for that store’s session.',
+        titleKey: 'tours.store-operations.stores.title',
+        descriptionKey: 'tours.store-operations.stores.description',
         side: 'top',
         align: 'center',
         optional: true,
@@ -580,22 +581,22 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'store-page-header',
-        title: 'Store',
-        description: 'Browse products, add them to your cart, and submit a quotation.',
+        titleKey: 'tours.store.header.title',
+        descriptionKey: 'tours.store.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'store-toolbar',
-        title: 'Search and cart',
-        description: 'Search or filter by category. The cart holds the lines you will send as a quotation.',
+        titleKey: 'tours.store.toolbar.title',
+        descriptionKey: 'tours.store.toolbar.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'store-catalogue',
-        title: 'Add a product',
-        description: 'Click a product to add it to the cart. Load more brings the next page of the catalogue.',
+        titleKey: 'tours.store.catalogue.title',
+        descriptionKey: 'tours.store.catalogue.description',
         side: 'top',
         align: 'center',
       },
@@ -608,22 +609,22 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'orders-page-header',
-        title: 'Orders',
-        description: 'Track quotations and orders by status.',
+        titleKey: 'tours.orders.header.title',
+        descriptionKey: 'tours.orders.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'orders-new',
-        title: 'New order',
-        description: 'Click New Order. That opens the store so you can build the next quotation.',
+        titleKey: 'tours.orders.create.title',
+        descriptionKey: 'tours.orders.create.description',
         side: 'bottom',
         align: 'end',
       },
       {
         anchor: 'orders-board',
-        title: 'Open an order',
-        description: 'Columns are the quotation and order statuses. Click a card for the detail.',
+        titleKey: 'tours.orders.board.title',
+        descriptionKey: 'tours.orders.board.description',
         side: 'top',
         align: 'center',
       },
@@ -639,29 +640,29 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'projects-page-header',
-        title: 'Projects',
-        description: 'Manage your projects, create new ones, and track their progress.',
+        titleKey: 'tours.projects.header.title',
+        descriptionKey: 'tours.projects.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'projects-create',
-        title: 'Create project',
-        description: 'Click Create project. Name it, then it appears in this grid.',
+        titleKey: 'tours.projects.create.title',
+        descriptionKey: 'tours.projects.create.description',
         side: 'bottom',
         align: 'end',
       },
       {
         anchor: 'projects-filters',
-        title: 'Filter projects',
-        description: 'Search by name or description, or keep one status.',
+        titleKey: 'tours.projects.filters.title',
+        descriptionKey: 'tours.projects.filters.description',
         side: 'bottom',
         align: 'center',
       },
       {
         anchor: 'projects-grid',
-        title: 'Open a project',
-        description: 'Click a card for progress and the project detail.',
+        titleKey: 'tours.projects.grid.title',
+        descriptionKey: 'tours.projects.grid.description',
         side: 'top',
         align: 'center',
       },
@@ -674,29 +675,29 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
     [
       {
         anchor: 'account-page-header',
-        title: 'Account',
-        description: 'Your company profile, credit, and contact details.',
+        titleKey: 'tours.account.header.title',
+        descriptionKey: 'tours.account.header.description',
         side: 'bottom',
         align: 'start',
       },
       {
         anchor: 'account-edit',
-        title: 'Edit profile',
-        description: 'Click Edit profile to change the company details. View profile returns to the read-only cards.',
+        titleKey: 'tours.account.edit.title',
+        descriptionKey: 'tours.account.edit.description',
         side: 'bottom',
         align: 'end',
       },
       {
         anchor: 'account-profile',
-        title: 'Company snapshot',
-        description: 'Name, contact, address, credit limit, and the sales rep assigned to you.',
+        titleKey: 'tours.account.profile.title',
+        descriptionKey: 'tours.account.profile.description',
         side: 'top',
         align: 'center',
       },
       {
         anchor: 'account-details',
-        title: 'Company details',
-        description: 'Company, contact, and commercial fields. Edit profile turns this into the form.',
+        titleKey: 'tours.account.details.title',
+        descriptionKey: 'tours.account.details.description',
         side: 'top',
         align: 'center',
         optional: true,
@@ -724,14 +725,14 @@ export function arePageTourTargetsReady(config: PageTourConfig): boolean {
   return config.settled.some((selector) => document.querySelector(selector) !== null);
 }
 
-export function buildPageTourSteps(config: PageTourConfig): DriveStep[] {
+export function buildPageTourSteps(config: PageTourConfig, t: TFunction): DriveStep[] {
   return config.steps
     .filter((step) => !step.optional || document.querySelector(anchor(step.anchor)) !== null)
     .map((step) => ({
       element: anchor(step.anchor),
       popover: {
-        title: step.title,
-        description: step.description,
+        title: t(step.titleKey),
+        description: t(step.descriptionKey),
         side: step.side ?? 'bottom',
         align: step.align ?? 'start',
       },

@@ -407,7 +407,7 @@ const GEOFENCE_VIEW_LEVELS = new Set<string>([
 
 const GEOFENCE_EDIT_LEVELS = new Set<string>(["admin", "manager"]);
 
-const USAGE_ACCESS_LEVELS = new Set<string>(["admin", "owner", "developer", "manager"]);
+const USAGE_ACCESS_LEVELS = new Set<string>(["admin", "owner", "manager"]);
 
 const CATALOGUE_ADMIN_LEVELS = new Set<string>(["admin", "manager", "owner"]);
 

@@ -1,5 +1,7 @@
 'use client';
 
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import type { MouseEvent, ReactNode } from 'react';
 import { useMemo } from 'react';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
@@ -20,12 +22,12 @@ import {
 } from '@/components/leads-table/leads-table';
 import { formatListLastActivitySummaryLine } from '@/lib/lead-activity-display';
 
-function leadDisplayName(lead: LeadListItem): string {
-  return lead.name?.trim() || lead.companyName?.trim() || `Lead #${lead.uid}`;
+function leadDisplayName(lead: LeadListItem, translate: TFunction<'screens'>): string {
+  return lead.name?.trim() || lead.companyName?.trim() || translate('leads.leadNumber', { uid: lead.uid });
 }
 
-function leadInitials(lead: LeadListItem): string {
-  const name = leadDisplayName(lead);
+function leadInitials(lead: LeadListItem, translate: TFunction<'screens'>): string {
+  const name = leadDisplayName(lead, translate);
   const parts = name.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -41,7 +43,7 @@ function optionLabel(
   return options.find((o) => o.value === value)?.label ?? value;
 }
 
-function followUpBadge(lead: LeadListItem): ReactNode {
+function followUpBadge(lead: LeadListItem, followUpToday: string): ReactNode {
   if (!lead.nextFollowUpDate) return null;
   const d = new Date(lead.nextFollowUpDate);
   if (Number.isNaN(d.getTime())) return null;
@@ -59,7 +61,7 @@ function followUpBadge(lead: LeadListItem): ReactNode {
       )}
     >
       <CalendarClock className="size-3" aria-hidden />
-      {isToday(d) ? 'Follow up today' : format(d, 'MMM d')}
+      {isToday(d) ? followUpToday : format(d, 'MMM d')}
     </Badge>
   );
 }
@@ -82,12 +84,13 @@ export interface LeadsInboxViewProps {
 export function LeadsInboxView({
   leads,
   isLoading = false,
-  emptyMessage = 'No leads match your filters.',
+  emptyMessage,
   selectedLeadUid,
   activeCallLeadUid = null,
   onLeadClick,
   onEndActiveCall,
 }: LeadsInboxViewProps) {
+  const { t } = useTranslation('screens');
   const rows = useMemo(() => {
     return [...leads]
       .map((lead) => ({ lead, unassigned: isUnassignedLead(lead) }))
@@ -111,7 +114,7 @@ export function LeadsInboxView({
 
   if (rows.length === 0) {
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+      <p className="py-16 text-center text-sm text-muted-foreground">{emptyMessage ?? t('leads.empty')}</p>
     );
   }
 
@@ -157,26 +160,22 @@ export function LeadsInboxView({
                   <Avatar className="size-10 shrink-0 ring-2 ring-background sm:size-11">
                     {img ? <AvatarImage src={img} alt="" /> : null}
                     <AvatarFallback className="bg-violet-100 text-xs font-semibold text-violet-800 sm:text-sm">
-                      {leadInitials(lead)}
+                      {leadInitials(lead, t)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate font-semibold text-foreground">
-                        {leadDisplayName(lead)}
+                        {leadDisplayName(lead, t)}
                       </span>
                       {isActiveCall ? (
                         <Badge className="shrink-0 gap-1 border-green-600 bg-green-600 text-[10px] text-white hover:bg-green-600">
-                          <Phone className="size-3" aria-hidden />
-                          Call in progress
-                        </Badge>
+                          <Phone className="size-3" aria-hidden />{t('leads.callInProgress')}</Badge>
                       ) : null}
                       {unassigned ? (
-                        <Badge variant="secondary" className="shrink-0 text-[10px]">
-                          Unassigned
-                        </Badge>
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">{t('leads.unassigned')}</Badge>
                       ) : null}
-                      {followUpBadge(lead)}
+                      {followUpBadge(lead, t('leads.followUpToday'))}
                     </div>
                     {lead.companyName?.trim() ? (
                       <p className="truncate text-sm text-muted-foreground">
@@ -224,9 +223,7 @@ export function LeadsInboxView({
                         onEndActiveCall(lead);
                       }}
                     >
-                      <Phone className="size-3.5" />
-                      End call
-                    </Button>
+                      <Phone className="size-3.5" />{t('leads.endCall')}</Button>
                   </div>
                 ) : null}
               </div>

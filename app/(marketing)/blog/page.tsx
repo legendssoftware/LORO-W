@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getBlogPostsSorted } from '@/lib/blog';
 import { buildPageMetadata, PAGE_COPY } from '@/lib/seo';
+import { BlogIndexHeading } from './blog-index-heading';
 
 export const metadata = buildPageMetadata({
   segmentTitle: PAGE_COPY.blog.title,
@@ -14,12 +15,7 @@ export default function BlogIndexPage() {
 
   return (
     <div className="w-full text-center">
-      <h1 className="font-body text-3xl md:text-4xl font-normal tracking-tight text-white mb-4">
-        Field sales <span className="font-serif italic">blog</span>
-      </h1>
-      <p className="font-body text-zinc-400 text-lg mb-10">
-        Guides for South African field sales managers and reps.
-      </p>
+      <BlogIndexHeading />
       <ul className="w-full space-y-6 text-left">
         {posts.map((post) => (
           <li key={post.slug}>

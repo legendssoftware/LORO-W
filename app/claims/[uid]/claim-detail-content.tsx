@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -74,6 +75,7 @@ function statusBadgeVariant(
 }
 
 export function ClaimDetailContent() {
+  const { t } = useTranslation('screens');
   const params = useParams();
   const router = useRouter();
   const uidRaw = params?.uid;
@@ -149,18 +151,18 @@ export function ClaimDetailContent() {
             ? `${window.location.origin}/claims/share/${data.shareToken ?? ''}`
             : '');
         if (!link) {
-          toast.error('No share link returned');
+          toast.error(t('claims.noShareLink'));
           return;
         }
         try {
           await navigator.clipboard.writeText(link);
-          toast.success('Share link copied');
+          toast.success(t('claims.shareCopied'));
         } catch {
-          toast.error('Could not copy link');
+          toast.error(t('claims.couldNotCopy'));
         }
       },
       onError: (e) => {
-        toast.error(getQueryErrorMessage(e, 'Could not share'));
+        toast.error(getQueryErrorMessage(e, t('claims.couldNotShare')));
       },
     });
   }
@@ -186,7 +188,7 @@ export function ClaimDetailContent() {
             : 'Claim not found.'}
         </p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/claims">Back to claims</Link>
+          <Link href="/claims">{t('claims.back')}</Link>
         </Button>
       </div>
     );
@@ -221,7 +223,7 @@ export function ClaimDetailContent() {
               ) : (
                 <Share2 className="size-4" />
               )}
-              Share
+              {t('actions.share')}
             </Button>
             {canEdit ? (
               <Button
@@ -229,9 +231,7 @@ export function ClaimDetailContent() {
                 className="gap-1 bg-violet-600 text-white hover:bg-violet-700"
                 onClick={() => setEditOpen(true)}
               >
-                <Pencil className="size-4" />
-                Edit
-              </Button>
+                <Pencil className="size-4" />{t('actions.edit')}</Button>
             ) : null}
             {canActOnClaim && claim.claimGroupUid != null ? (
               <Button
@@ -240,9 +240,7 @@ export function ClaimDetailContent() {
                 className="gap-1"
                 onClick={() => setConfirm('remove')}
               >
-                <FolderMinus className="size-4" />
-                Remove from folder
-              </Button>
+                <FolderMinus className="size-4" />{t('claims.removeFromFolder')}</Button>
             ) : null}
             {canDelete ? (
               <Button
@@ -251,9 +249,7 @@ export function ClaimDetailContent() {
                 className="gap-1"
                 onClick={() => setConfirm('delete')}
               >
-                <Trash2 className="size-4" />
-                Delete
-              </Button>
+                <Trash2 className="size-4" />{t('actions.delete')}</Button>
             ) : null}
           </div>
         </div>
@@ -261,7 +257,7 @@ export function ClaimDetailContent() {
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold sm:text-2xl">
-              {claim.claimRef || `Claim #${claim.uid}`}
+              {claim.claimRef || t('claims.claimNumber', { uid: claim.uid })}
             </h1>
             <Badge variant={statusBadgeVariant(String(claim.status))}>
               {formatLabel(String(claim.status))}
@@ -277,21 +273,20 @@ export function ClaimDetailContent() {
           claim.fxRate != null &&
           claim.fxRate !== 1 ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Converted with {claim.fxCode} rate {claim.fxRate} on {claim.fxDate ?? 'claim date'}
-              {' '}(1 ZAR = {claim.fxRate} {claim.fxCode}).
+              {t('claims.fxConverted', { code: claim.fxCode, rate: claim.fxRate, date: claim.fxDate ?? t('claims.claimDate') })}
             </p>
           ) : claim.currency &&
             claim.currency !== 'ZAR' &&
             (claim.amountZar == null || !Number.isFinite(claim.amountZar)) ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              No FX rate found for {claim.currency} on the claim date.
+              {t('claims.noFx', { currency: claim.currency })}
             </p>
           ) : null}
           {claim.createdAt ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Created {format(new Date(claim.createdAt), 'MMM d, yyyy')}
+              {t('claims.createdOn', { date: format(new Date(claim.createdAt), 'MMM d, yyyy') })}
               {claim.updatedAt
-                ? ` · Updated ${format(new Date(claim.updatedAt), 'MMM d, yyyy')}`
+                ? t('claims.updatedOn', { date: format(new Date(claim.updatedAt), 'MMM d, yyyy') })
                 : ''}
             </p>
           ) : null}
@@ -301,26 +296,22 @@ export function ClaimDetailContent() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Receipt className="size-4" />
-                Details
-              </CardTitle>
+                <Receipt className="size-4" />{t('claims.details')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">Notes</p>
+                <p className="text-xs text-muted-foreground">{t('claims.notes')}</p>
                 <p className="min-h-[4.5rem] whitespace-pre-wrap text-foreground">
                   {claim.comments?.trim() ? (
                     claim.comments
                   ) : (
-                    <span className="italic text-muted-foreground">
-                      No notes saved
-                    </span>
+                    <span className="italic text-muted-foreground">{t('claims.noNotes')}</span>
                   )}
                 </p>
               </div>
               {claim.documentUrl ? (
                 <div>
-                  <p className="text-xs text-muted-foreground">Attachment</p>
+                  <p className="text-xs text-muted-foreground">{t('claims.attachment')}</p>
                   <a
                     href={claim.documentUrl}
                     target="_blank"
@@ -333,7 +324,7 @@ export function ClaimDetailContent() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={claim.documentUrl}
-                      alt="Receipt"
+                      alt={t('claims.receiptAlt')}
                       className="mt-2 max-h-64 rounded-md border object-contain"
                     />
                   ) : null}
@@ -341,7 +332,7 @@ export function ClaimDetailContent() {
               ) : null}
               {claim.claimGroup?.title ? (
                 <div>
-                  <p className="text-xs text-muted-foreground">Folder</p>
+                  <p className="text-xs text-muted-foreground">{t('claims.folder')}</p>
                   <p>{claim.claimGroup.title}</p>
                 </div>
               ) : null}
@@ -356,10 +347,10 @@ export function ClaimDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              <ClaimPersonRow label="Created by" person={claim.owner} />
+              <ClaimPersonRow label={t('claims.createdBy')} person={claim.owner} />
               {showApprover ? (
                 <ClaimPersonRow
-                  label="Approved by"
+                  label={t('claims.approvedBy')}
                   person={claim.verifiedBy}
                   className="mt-4"
                 />
@@ -391,31 +382,23 @@ export function ClaimDetailContent() {
               size="sm"
               variant="secondary"
               onClick={() => setConfirm('decline')}
-            >
-              Decline
-            </Button>
+            >{t('actions.decline')}</Button>
             <Button
               size="sm"
               className="bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={() => setConfirm('approve')}
-            >
-              Approve
-            </Button>
+            >{t('actions.approve')}</Button>
           </div>
         ) : null}
 
         {manage && st === 'approved' ? (
           <div className="mt-8 flex flex-wrap justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setConfirm('decline')}>
-              Decline
-            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setConfirm('decline')}>{t('actions.decline')}</Button>
             <Button
               size="sm"
               className="bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={() => setConfirm('paid')}
-            >
-              Mark paid
-            </Button>
+            >{t('claims.markPaid')}</Button>
           </div>
         ) : null}
 
@@ -429,18 +412,16 @@ export function ClaimDetailContent() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Approve claim?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.approveTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              The submitter will be notified that this claim was approved.
+              {t('claims.approveDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => runStatusUpdate('approved', claim.uid)}
-            >
-              Approve
-            </AlertDialogAction>
+            >{t('actions.approve')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -451,19 +432,16 @@ export function ClaimDetailContent() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Decline claim?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.declineTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This sets the claim to declined. You can add follow-up in approvals
-              if needed.
+              {t('claims.declineDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => runStatusUpdate('declined', claim.uid)}
-            >
-              Decline
-            </AlertDialogAction>
+            >{t('actions.decline')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -474,18 +452,16 @@ export function ClaimDetailContent() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark as paid?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.paidTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Confirm reimbursement was completed for this claim.
+              {t('claims.paidDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => runStatusUpdate('paid', claim.uid)}
-            >
-              Mark paid
-            </AlertDialogAction>
+            >{t('claims.markPaid')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -496,13 +472,13 @@ export function ClaimDetailContent() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from folder?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.removeTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              The claim stays in the list and is no longer grouped in this folder.
+              {t('claims.removeDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 updateMutation.mutate(
@@ -510,9 +486,7 @@ export function ClaimDetailContent() {
                   { onSuccess: () => setConfirm(null) }
                 )
               }
-            >
-              Remove
-            </AlertDialogAction>
+            >{t('actions.remove')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -523,20 +497,17 @@ export function ClaimDetailContent() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete claim?</AlertDialogTitle>
+            <AlertDialogTitle>{t('claims.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This soft-deletes the claim. You can restore it from the server if
-              your role allows.
+              {t('claims.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => runDelete(claim.uid)}
-            >
-              Delete
-            </AlertDialogAction>
+            >{t('actions.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

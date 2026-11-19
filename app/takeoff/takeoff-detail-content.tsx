@@ -20,8 +20,10 @@ import {
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { formatQty, formatTakeoffMoney } from '@/app/takeoff/format';
+import { useTranslation } from 'react-i18next';
 
 export function TakeoffDetailContent({ uid }: { uid: number }) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const query = useTakeoff(uid);
   const clientsQuery = useClients({ limit: 500 });
@@ -80,10 +82,10 @@ export function TakeoffDetailContent({ uid }: { uid: number }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>{t('tables.code')}</TableHead>
+                  <TableHead>{t('tables.description')}</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">{t('tables.total')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

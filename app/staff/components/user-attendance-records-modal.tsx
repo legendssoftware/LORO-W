@@ -42,6 +42,7 @@ import {
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { formatAttendanceClockTime } from '@/lib/attendance-time';
 import { EditAttendanceRecordDialog } from '@/app/staff/components/edit-attendance-record-dialog';
+import { useTranslation } from 'react-i18next';
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
 
@@ -87,6 +88,7 @@ export function UserAttendanceRecordsModal({
   user: ReportCardUser | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const open = !!user;
   const today = new Date();
   const todayKey = format(today, 'yyyy-MM-dd');
@@ -528,19 +530,19 @@ export function UserAttendanceRecordsModal({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Check-in</TableHead>
-                  <TableHead>Check-out</TableHead>
-                  <TableHead>Shift Duration</TableHead>
-                  <TableHead>Shift</TableHead>
-                  <TableHead>Total visits</TableHead>
-                  <TableHead>Breakdown</TableHead>
-                  <TableHead>Sales</TableHead>
-                  <TableHead>Leads</TableHead>
-                  <TableHead>Claims</TableHead>
-                  <TableHead>Distance</TableHead>
-                  <TableHead>Avg visit time</TableHead>
+                  <TableHead>{t('tables.date')}</TableHead>
+                  <TableHead>{t('tables.status')}</TableHead>
+                  <TableHead>{t('tables.checkIn')}</TableHead>
+                  <TableHead>{t('tables.checkOut')}</TableHead>
+                  <TableHead>{t('tables.shiftDuration')}</TableHead>
+                  <TableHead>{t('tables.shift')}</TableHead>
+                  <TableHead>{t('tables.totalVisits')}</TableHead>
+                  <TableHead>{t('tables.breakdown')}</TableHead>
+                  <TableHead>{t('tables.sales')}</TableHead>
+                  <TableHead>{t('tables.leads')}</TableHead>
+                  <TableHead>{t('tables.claims')}</TableHead>
+                  <TableHead>{t('tables.distance')}</TableHead>
+                  <TableHead>{t('tables.avgVisitTime')}</TableHead>
                   <TableHead title={PRODUCTIVITY_COLUMN_HINT} className="max-w-[9rem]">
                     Productivity
                   </TableHead>

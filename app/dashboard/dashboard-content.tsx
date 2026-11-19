@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -36,6 +37,7 @@ import { usePulseMe, useSubmitPulseMutation } from '@/api/hooks/use-pulse';
 import type { PulsePeriod, PulseSubmitBody } from '@/api/types/pulse';
 
 export function DashboardContent() {
+  const { t } = useTranslation('screens');
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -71,7 +73,7 @@ export function DashboardContent() {
     return {
       userId: profile.uid,
       ref: String(profile.uid),
-      name: clerkUser?.fullName ?? 'Me',
+      name: clerkUser?.fullName ?? t('dashboard.me'),
       email: clerkUser?.primaryEmailAddress?.emailAddress ?? '',
       hoursThisMonth: 0,
       progressPercent: 0,
@@ -228,7 +230,7 @@ export function DashboardContent() {
       },
       {
         onSuccess: () => {
-          showSuccessToast('Shift started', toast);
+          showSuccessToast(t('dashboard.shiftStarted'), toast);
         },
       }
     );
@@ -260,7 +262,7 @@ export function DashboardContent() {
       },
       {
         onSuccess: () => {
-          showSuccessToast('Shift ended', toast);
+          showSuccessToast(t('dashboard.shiftEnded'), toast);
         },
       }
     );
@@ -279,7 +281,7 @@ export function DashboardContent() {
       },
       {
         onSuccess: () => {
-          showSuccessToast('Break started', toast);
+          showSuccessToast(t('dashboard.breakStarted'), toast);
         },
       }
     );
@@ -298,7 +300,7 @@ export function DashboardContent() {
       },
       {
         onSuccess: () => {
-          showSuccessToast('Break ended', toast);
+          showSuccessToast(t('dashboard.breakEnded'), toast);
         },
       }
     );
@@ -319,7 +321,7 @@ export function DashboardContent() {
   function handlePulseSubmit(body: PulseSubmitBody) {
     submitPulseMutation.mutate(body, {
       onError: (error) => {
-        showErrorToast(getQueryErrorMessage(error, 'Could not save your pulse. Please try again.'), toast);
+        showErrorToast(getQueryErrorMessage(error, t('dashboard.couldNotSavePulse')), toast);
       },
       onSuccess: () => {
         setPulseOpen(false);
@@ -423,11 +425,11 @@ export function DashboardContent() {
                     type="button"
                     onClick={() => setAttendanceModalUser(currentUserForModal)}
                     className="flex h-9 min-w-0 w-full items-center justify-center gap-2 rounded border border-border bg-background px-2 text-sm text-foreground hover:bg-accent md:w-auto md:px-3"
-                    aria-label="View attendance logs"
+                    aria-label={t('dashboard.viewAttendanceLogs')}
                     data-tour="attendance-logs-button"
                   >
                     <Clock className="size-4 shrink-0" />
-                    <span>Logs</span>
+                    <span>{t('dashboard.logs')}</span>
                   </button>
                 ) : undefined
               }
@@ -450,6 +452,7 @@ function isSalesPerson(workforceType: string | null | undefined): boolean {
 }
 
 function HomeExtras() {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const { backendUserData } = useSessionSync();
   const showTip = isSalesPerson(backendUserData?.workforceType);
@@ -470,16 +473,16 @@ function HomeExtras() {
     <div className={layout === 'compact' ? 'space-y-2' : 'space-y-4'}>
       {showTip ? (
         <section className="rounded-lg border px-4 py-3">
-          <p className="text-xs font-medium text-muted-foreground">Tip of the day</p>
+          <p className="text-xs font-medium text-muted-foreground">{t('dashboard.tipOfTheDay')}</p>
           <p className="text-sm font-semibold text-foreground">
-            {tip.data?.title ?? (tip.isLoading ? 'Loading tip…' : 'No tip today.')}
+            {tip.data?.title ?? (tip.isLoading ? t('dashboard.loadingTip') : t('dashboard.noTipToday'))}
           </p>
           {tip.data?.content ? <p className="text-xs text-muted-foreground">{tip.data.content}</p> : null}
         </section>
       ) : null}
       {showBanner ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-950">
-          This site uses cookies to keep you signed in and remember your dashboard layout.
+          {t('dashboard.cookieBanner')}
         </p>
       ) : null}
     </div>

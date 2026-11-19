@@ -1,0 +1,7 @@
+{
+  "title": "Staff",
+  "subtitle": "View and manage staff attendance and activity.",
+  "pendingLinks": "Pending intake links",
+  "pendingLinksHint": "Staff who were sent a self-service onboarding link and have not finished yet.",
+  "empty": "No staff to show. Ensure you have access."
+}

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { getCurrentYearMonth, readStaffTourState, writeStaffTourState } from '@/lib/staff-tour-storage';
@@ -20,13 +22,13 @@ const SEL_TRAVEL = '[data-tour="staff-travel-export"]';
 
 const REQUIRED_SELECTORS = [SEL_HEADER, SEL_TOOLBAR, SEL_GRID] as const;
 
-function buildStaffSteps(): DriveStep[] {
+function buildStaffSteps(t: TFunction): DriveStep[] {
   const steps: DriveStep[] = [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Staff',
-        description: 'See who is present or absent today.',
+        title: t('tours.staff.header.title'),
+        description: t('tours.staff.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -37,9 +39,8 @@ function buildStaffSteps(): DriveStep[] {
     steps.push({
       element: SEL_ADD_USER,
       popover: {
-        title: 'Add a teammate',
-        description:
-          'Add user creates a staff account. Send intake link lets them finish onboarding themselves.',
+        title: t('tours.staff.add.title'),
+        description: t('tours.staff.add.description'),
         side: 'bottom',
         align: 'end',
       },
@@ -50,9 +51,8 @@ function buildStaffSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Filter and search',
-        description:
-          'Filter by status, role, workforce, branch, or country. Search by name, email, or HR ID.',
+        title: t('tours.staff.toolbar.title'),
+        description: t('tours.staff.toolbar.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -60,9 +60,8 @@ function buildStaffSteps(): DriveStep[] {
     {
       element: SEL_GRID,
       popover: {
-        title: 'Teammate cards',
-        description:
-          'Click a card for that person’s detail. Click the clock, when it is shown, for their attendance history.',
+        title: t('tours.staff.grid.title'),
+        description: t('tours.staff.grid.description'),
         side: 'top',
         align: 'center',
       },
@@ -73,9 +72,8 @@ function buildStaffSteps(): DriveStep[] {
     steps.push({
       element: SEL_TRAVEL,
       popover: {
-        title: 'Travel report',
-        description:
-          'Download that person’s Excel workbook or a day-by-day PDF for the dates you pick.',
+        title: t('tours.staff.travel.title'),
+        description: t('tours.staff.travel.description'),
         side: 'left',
         align: 'center',
       },
@@ -90,6 +88,7 @@ function areTourTargetsReady(): boolean {
 }
 
 export function StaffTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -149,7 +148,7 @@ export function StaffTour() {
     const cancelSchedule = scheduleTourWhenReady({
       areTargetsReady: areTourTargetsReady,
       onReady: () => {
-        const steps = buildStaffSteps();
+        const steps = buildStaffSteps(t);
         const boundedStartIndex = Math.min(
           Math.max(0, currentState.resumeIndex),
           steps.length - 1
@@ -220,7 +219,7 @@ export function StaffTour() {
       driverRef.current = null;
       wasCompletedRef.current = false;
     };
-  }, [shouldRun, userId, blockTours]);
+  }, [shouldRun, userId, blockTours, t]);
 
   return null;
 }

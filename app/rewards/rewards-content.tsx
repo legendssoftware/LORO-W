@@ -7,22 +7,27 @@ import { getRewardsLeaderboard, getRewardsRankings } from '@/api/endpoints/rewar
 import { FeatureDenied, FeatureShell } from '@/components/feature-page';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { canAccessRewards } from '@/lib/access';
+import { useTranslation } from 'react-i18next';
 
 const chartConfig = { xp: { label: 'XP', color: 'var(--chart-4)' } } satisfies ChartConfig;
 
 export function RewardsContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: isLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !isLoading;
   const client = useApiClient();
   const board = useQuery({ queryKey: ['rewards', 'leaderboard'], queryFn: () => getRewardsLeaderboard(client), enabled: ready });
   const rankings = useQuery({ queryKey: ['rewards', 'rankings'], queryFn: () => getRewardsRankings(client), enabled: ready });
-  const rows = board.data?.length ? board.data : rankings.data ?? [];
-  if (ready && !canAccessRewards(backendUserData?.accessLevel)) return <FeatureDenied title="Rewards" />;
+  const boardRows = Array.isArray(board.data) ? board.data : [];
+  const rankingRows = Array.isArray(rankings.data) ? rankings.data : [];
+  const rows = boardRows.length > 0 ? boardRows : rankingRows;
+  const chartRows = rows.slice(0, 8).map((row) => ({ name: row.name ?? row.reference ?? 'Person', xp: row.xp ?? 0 }));
+  if (ready && !canAccessRewards(backendUserData?.accessLevel)) return <FeatureDenied title={t('pages.rewards.title')} />;
   return (
-    <FeatureShell tourId="rewards" title="Rewards" description="Leaderboard and a person's XP." isLoading={!ready || board.isLoading} isError={board.isError && rankings.isError} error={board.error} onRetry={() => void board.refetch()} isEmpty={rows.length === 0} emptyMessage="No rankings yet.">
+    <FeatureShell tourId="rewards" title={t('pages.rewards.title')} description={t('pages.rewards.description')} isLoading={!ready || board.isLoading} isError={board.isError && rankings.isError} error={board.error} onRetry={() => void board.refetch()} isEmpty={rows.length === 0} emptyMessage="No rankings yet.">
       <ChartContainer config={chartConfig} className="h-48 w-full">
-        <BarChart data={rows.slice(0, 8).map((row) => ({ name: row.name ?? row.reference ?? 'Person', xp: row.xp ?? 0 }))}>
+        <BarChart data={chartRows}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="name" tickLine={false} axisLine={false} />
           <YAxis width={32} />

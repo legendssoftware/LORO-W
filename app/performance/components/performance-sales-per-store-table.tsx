@@ -22,6 +22,7 @@ import {
   performanceAmountClassName,
   performanceGpPercentClassName,
 } from '../lib/format';
+import { useTranslation } from 'react-i18next';
 
 type SortField = 'revenue' | 'transactions' | 'clients' | 'basketValue' | 'gp' | 'gpPercentage';
 
@@ -32,6 +33,7 @@ interface PerformanceSalesPerStoreTableProps {
 export function PerformanceSalesPerStoreTable({
   dashboardData,
 }: PerformanceSalesPerStoreTableProps) {
+  const { t } = useTranslation('screens');
   const [sortBy, setSortBy] = useState<SortField>('revenue');
   const currency = dashboardData?.currency?.symbol || 'R';
 
@@ -111,9 +113,9 @@ export function PerformanceSalesPerStoreTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Store</TableHead>
-              <TableHead className="text-right">Invoices</TableHead>
-              <TableHead className="text-right">Clients</TableHead>
+              <TableHead>{t('tables.store')}</TableHead>
+              <TableHead className="text-right">{t('tables.invoice')}</TableHead>
+              <TableHead className="text-right">{t('tables.client')}</TableHead>
               <TableHead className="text-right">Avg basket</TableHead>
               <TableHead className="text-right">Revenue</TableHead>
               <TableHead className="text-right">GP</TableHead>

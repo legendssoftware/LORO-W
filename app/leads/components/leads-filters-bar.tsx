@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 import {
@@ -140,6 +141,7 @@ export function LeadsFilterControls({
   onUserSearchQueryChange,
   isUserSearchLoading = false,
 }: LeadsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
 
   const statusVal = selectedStatus === '' ? 'all' : selectedStatus;
@@ -331,11 +333,9 @@ export function LeadsFilterControls({
                   size="sm"
                   onClick={() => onSetUseAllTime(true)}
                 >
-                  All time
+                  {t('actions.allTime')}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  or pick a UTC range below
-                </span>
+                <span className="text-xs text-muted-foreground">{t('actions.pickUtcRange')}</span>
               </div>
             </div>
             <Calendar
@@ -371,7 +371,7 @@ export function LeadsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutToday}
                 >
-                  Today (UTC)
+                  {t('actions.todayUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -380,7 +380,7 @@ export function LeadsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutThisMonth}
                 >
-                  This month (UTC)
+                  {t('actions.thisMonthUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -389,7 +389,7 @@ export function LeadsFilterControls({
                   disabled={useAllTime}
                   onClick={handleShortcutWholeMonth}
                 >
-                  Whole month (UTC)
+                  {t('actions.wholeMonthUtc')}
                 </Button>
               </div>
               <Button
@@ -404,7 +404,7 @@ export function LeadsFilterControls({
                 )}
                 onClick={() => handleDatePopoverOpenChange(false)}
               >
-                Done
+                {t('actions.done')}
               </Button>
             </div>
           </PopoverContent>
@@ -424,7 +424,7 @@ export function LeadsFilterControls({
               }
             }}
             className="ml-0.5 shrink-0 cursor-pointer rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset to default range"
+            aria-label={t('actions.resetDefaultRange')}
           >
             <XIcon className="size-4 text-red-600" />
           </span>
@@ -435,9 +435,9 @@ export function LeadsFilterControls({
         selectedValue={statusVal}
         onValueChange={onSelectedStatusChange}
         options={statusPickerOptions}
-        placeholderLabelWhenAll="All statuses"
+        placeholderLabelWhenAll={t('actions.allStatuses')}
         searchPlaceholder="Search statuses…"
-        emptyMessage="No status found."
+        emptyMessage={t('actions.noStatusFound')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={smallTrigger}
       />
@@ -446,9 +446,9 @@ export function LeadsFilterControls({
         selectedValue={sourceVal}
         onValueChange={onSelectedSourceChange}
         options={sourcePickerOptions}
-        placeholderLabelWhenAll="All sources"
+        placeholderLabelWhenAll={t('leads.allSources')}
         searchPlaceholder="Search sources…"
-        emptyMessage="No source found."
+        emptyMessage={t('leads.noSource')}
         triggerIcon={
           SourceAllIconOption ? (
             <SourceAllIconOption
@@ -464,9 +464,9 @@ export function LeadsFilterControls({
         selectedValue={entryTypeVal}
         onValueChange={onSelectedEntryTypeChange}
         options={entryTypePickerOptions}
-        placeholderLabelWhenAll="All origins"
+        placeholderLabelWhenAll={t('leads.allOrigins')}
         searchPlaceholder="Search origins…"
-        emptyMessage="No origin found."
+        emptyMessage={t('leads.noOrigin')}
         triggerIcon={<UserRound className="size-4 shrink-0" aria-hidden />}
         triggerClassName={smallTrigger}
       />
@@ -475,9 +475,9 @@ export function LeadsFilterControls({
         selectedValue={temperatureVal}
         onValueChange={onSelectedTemperatureChange}
         options={temperaturePickerOptions}
-        placeholderLabelWhenAll="All temperatures"
+        placeholderLabelWhenAll={t('leads.allTemperatures')}
         searchPlaceholder="Search temperatures…"
-        emptyMessage="No temperature found."
+        emptyMessage={t('leads.noTemperature')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={smallTrigger}
       />
@@ -486,9 +486,9 @@ export function LeadsFilterControls({
         selectedValue={priorityVal}
         onValueChange={onSelectedPriorityChange}
         options={priorityPickerOptions}
-        placeholderLabelWhenAll="All priorities"
+        placeholderLabelWhenAll={t('leads.allPriorities')}
         searchPlaceholder="Search priorities…"
-        emptyMessage="No priority found."
+        emptyMessage={t('leads.noPriority')}
         triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
         triggerClassName={smallTrigger}
       />
@@ -519,7 +519,7 @@ export function LeadsFilterControls({
         aria-pressed={unassignedOnly}
       >
         <Users className="mr-2 size-4 shrink-0" aria-hidden />
-        Un-Assigned
+        {t('leads.unassignedFilter')}
       </Button>
       ) : null}
     </div>
@@ -548,6 +548,7 @@ export function LeadsFiltersBar({
   actions,
   ...filterProps
 }: LeadsFiltersBarProps) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -564,7 +565,7 @@ export function LeadsFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
-          placeholder="Search leads…"
+          placeholder={t('leads.searchLeads')}
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(
@@ -577,7 +578,7 @@ export function LeadsFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -597,23 +598,23 @@ export function LeadsFiltersBar({
                 variant="outline"
                 size="icon"
                 className="size-9 shrink-0 border-border bg-background text-foreground hover:bg-accent"
-                aria-label="Import leads"
+                aria-label={t('leads.importLeads')}
                 data-tour="leads-import"
               >
                 <UploadIcon className="size-4" />
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>Import leads</TooltipContent>
+          <TooltipContent>{t('leads.importLeads')}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
           <DropdownMenuItem onSelect={() => onImportClick()}>
             <UploadIcon className="size-4" aria-hidden />
-            From spreadsheet
+            {t('leads.fromSpreadsheet')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onImportApifyClick()}>
             <MapPin className="size-4" aria-hidden />
-            From Google Maps
+            {t('leads.fromGoogleMaps')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -627,13 +628,13 @@ export function LeadsFiltersBar({
               className="size-9 shrink-0 border-red-200 bg-background text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40"
               onClick={onDedupeClick}
               disabled={dedupePending}
-              aria-label="Dedupe leads"
+              aria-label={t('leads.dedupeLeads')}
             >
               <CopyMinus className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Remove duplicate leads for this organisation (keeps the oldest in each group)
+            {t('leads.dedupeTooltip')}
           </TooltipContent>
         </Tooltip>
       ) : null}
@@ -650,7 +651,7 @@ export function LeadsFiltersBar({
           onClick={() => setFiltersDialogOpen(true)}
         >
           <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-          Filter
+          {t('actions.filter')}
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {renderSearchField()}
@@ -662,10 +663,8 @@ export function LeadsFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-            <DialogDescription>
-              Date range, status, source, origin, and owner for the leads list.
-            </DialogDescription>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
+            <DialogDescription>{t('leads.filtersDescription')}</DialogDescription>
           </DialogHeader>
           <LeadsFilterControls {...filterProps} layout="stack" />
         </DialogContent>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 import {
@@ -135,6 +136,7 @@ export function ClaimsFilterControls({
   onUserSearchQueryChange,
   isUserSearchLoading = false,
 }: ClaimsFilterControlsProps) {
+  const { t } = useTranslation('screens');
   const row = layout === 'row';
   const statusTrigger = row
     ? 'h-9 min-w-0 w-[150px] shrink-0'
@@ -260,7 +262,7 @@ export function ClaimsFilterControls({
               <CalendarIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
               {hasRange
                 ? formatRangeButtonLabel(rangeStart, rangeEnd)
-                : 'All dates'}
+                : t('actions.allDates')}
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -299,7 +301,7 @@ export function ClaimsFilterControls({
                   size="sm"
                   onClick={handleShortcutAllDates}
                 >
-                  All dates
+                  {t('actions.allDates')}
                 </Button>
                 <Button
                   type="button"
@@ -307,7 +309,7 @@ export function ClaimsFilterControls({
                   size="sm"
                   onClick={handleShortcutToday}
                 >
-                  Today (UTC)
+                  {t('actions.todayUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -315,7 +317,7 @@ export function ClaimsFilterControls({
                   size="sm"
                   onClick={handleShortcutThisMonth}
                 >
-                  This month (UTC)
+                  {t('actions.thisMonthUtc')}
                 </Button>
                 <Button
                   type="button"
@@ -323,7 +325,7 @@ export function ClaimsFilterControls({
                   size="sm"
                   onClick={handleShortcutWholeMonth}
                 >
-                  Whole month (UTC)
+                  {t('actions.wholeMonthUtc')}
                 </Button>
               </div>
               <Button
@@ -336,7 +338,7 @@ export function ClaimsFilterControls({
                 )}
                 onClick={() => handlePopoverOpenChange(false)}
               >
-                Done
+                {t('actions.done')}
               </Button>
             </div>
           </PopoverContent>
@@ -348,7 +350,7 @@ export function ClaimsFilterControls({
               resetClaimsDateRangeToDefault(onCreatedFromChange, onCreatedToChange)
             }
             className="ml-0.5 shrink-0 rounded p-0.5 text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset date range"
+            aria-label={t('claims.resetDate')}
           >
             <XIcon className="size-4 text-red-600" />
           </button>
@@ -360,9 +362,9 @@ export function ClaimsFilterControls({
           onValueChange={onStatusChange}
           options={statusPickerOptions}
           allOptionValue="all"
-          placeholderLabelWhenAll="All statuses"
-          searchPlaceholder="Search status…"
-          emptyMessage="No status found."
+          placeholderLabelWhenAll={t('actions.allStatuses')}
+          searchPlaceholder={t('claims.searchStatus')}
+          emptyMessage={t('actions.noStatusFound')}
           triggerIcon={<LayoutGrid className="size-4 shrink-0" />}
           triggerClassName={statusTrigger}
         />
@@ -371,7 +373,7 @@ export function ClaimsFilterControls({
             type="button"
             onClick={() => onStatusChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear status filter"
+            aria-label={t('actions.clearStatusFilter')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -384,9 +386,9 @@ export function ClaimsFilterControls({
           onValueChange={onClaimGroupChange}
           options={folderPickerOptions}
           allOptionValue="all"
-          placeholderLabelWhenAll="All folders"
-          searchPlaceholder="Search folders…"
-          emptyMessage="No folder found."
+          placeholderLabelWhenAll={t('claims.allFolders')}
+          searchPlaceholder={t('claims.searchFolders')}
+          emptyMessage={t('claims.noFolderFound')}
           triggerIcon={<FolderOpen className="size-4 shrink-0" />}
           triggerClassName={folderTrigger}
         />
@@ -395,7 +397,7 @@ export function ClaimsFilterControls({
             type="button"
             onClick={() => onClaimGroupChange('all')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-            aria-label="Clear folder filter"
+            aria-label={t('claims.clearFolder')}
           >
             <XIcon className="size-4 text-muted-foreground" />
           </button>
@@ -410,9 +412,9 @@ export function ClaimsFilterControls({
             selectedUid={userFilter === '' ? 'all' : userFilter}
             onUidChange={onUserFilterChange}
             triggerClassName={userTrigger}
-            allOptionLabel="All users"
-            searchPlaceholder="Search users…"
-            emptyMessage="No user found."
+            allOptionLabel={t('claims.allUsers')}
+            searchPlaceholder={t('actions.searchUsers')}
+            emptyMessage={t('claims.noUser')}
             searchQuery={userSearchQuery}
             onSearchQueryChange={onUserSearchQueryChange}
             isSearchLoading={isUserSearchLoading}
@@ -422,7 +424,7 @@ export function ClaimsFilterControls({
               type="button"
               onClick={() => onUserFilterChange('all')}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-auto"
-              aria-label="Clear user filter"
+              aria-label={t('claims.clearUser')}
             >
               <XIcon className="size-4 text-muted-foreground" />
             </button>
@@ -441,13 +443,13 @@ export function ClaimsFilterControls({
         variant="outline"
         size="sm"
         className={cn(row ? 'shrink-0' : 'w-full')}
-        aria-label="Amount currency"
+        aria-label={t('claims.amountCurrency')}
       >
         <ToggleGroupItem value="original" className="px-3">
-          Original
+          {t('claims.original')}
         </ToggleGroupItem>
         <ToggleGroupItem value="zar" className="px-3">
-          ZAR
+          {t('claims.zar')}
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -507,6 +509,7 @@ export function ClaimsFiltersBar({
   onViewModeChange: (mode: ClaimsPageViewMode) => void;
   actions?: React.ReactNode;
 }) {
+  const { t } = useTranslation('screens');
   const [filtersDialogOpen, setFiltersDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -538,12 +541,12 @@ export function ClaimsFiltersBar({
         variant="outline"
         size="sm"
         className="shrink-0"
-        aria-label="Claims layout"
+        aria-label={t('claims.layout')}
       >
-        <ToggleGroupItem value="grid" aria-label="Folder grid" className="px-2.5">
+        <ToggleGroupItem value="grid" aria-label={t('claims.folderGrid')} className="px-2.5">
           <LayoutGrid className="size-4" />
         </ToggleGroupItem>
-        <ToggleGroupItem value="list" aria-label="User list" className="px-2.5">
+        <ToggleGroupItem value="list" aria-label={t('claims.userList')} className="px-2.5">
           <List className="size-4" />
         </ToggleGroupItem>
       </ToggleGroup>
@@ -554,7 +557,7 @@ export function ClaimsFiltersBar({
     return (
       <div className="relative min-w-0 flex-1 md:w-56 md:max-w-[16rem] md:flex-none">
         <Input
-          placeholder="Ref, category, owner…"
+          placeholder={t('claims.search')}
           value={searchInput}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, searchInput && 'pr-8')}
@@ -564,7 +567,7 @@ export function ClaimsFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -610,7 +613,7 @@ export function ClaimsFiltersBar({
             onClick={() => setFiltersDialogOpen(true)}
           >
             <Filter className="mr-2 size-4 shrink-0" aria-hidden />
-            Filter
+            {t('actions.filter')}
           </Button>
           {renderViewToggle()}
         </div>
@@ -623,10 +626,8 @@ export function ClaimsFiltersBar({
       <Dialog open={filtersDialogOpen} onOpenChange={setFiltersDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-            <DialogDescription>
-              Narrow claims by status, created date, folder, and user.
-            </DialogDescription>
+            <DialogTitle>{t('actions.filters')}</DialogTitle>
+            <DialogDescription>{t('claims.filtersDescription')}</DialogDescription>
           </DialogHeader>
           <ClaimsFilterControls {...filterProps} layout="stack" />
           <div className="pt-2">
@@ -639,7 +640,7 @@ export function ClaimsFiltersBar({
                 setFiltersDialogOpen(false);
               }}
             >
-              Reset filters
+              {t('actions.resetFilters')}
             </Button>
           </div>
         </DialogContent>
@@ -656,7 +657,7 @@ export function ClaimsFiltersBar({
               className="h-9 shrink-0"
               onClick={resetAll}
             >
-              Reset filters
+              {t('actions.resetFilters')}
             </Button>
           </div>
         </div>

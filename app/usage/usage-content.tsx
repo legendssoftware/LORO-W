@@ -1,20 +1,23 @@
 'use client';
 
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { useSessionSync, useTokenReady } from '@/api/hooks';
 import { getLicenseUsage, getUsageAnalytics, getUsageSummaries } from '@/api/endpoints/usage-tracking';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useQuery } from '@tanstack/react-query';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { FeatureDenied, FeatureShell } from '@/components/feature-page';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { canAccessUsage } from '@/lib/access';
+import { useTranslation } from 'react-i18next';
 
-const chartConfig = { value: { label: 'Requests', color: 'var(--chart-3)' } } satisfies ChartConfig;
+const chartConfig = { count: { label: 'Requests', color: 'var(--chart-3)' } } satisfies ChartConfig;
 
 export function UsageContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { isSyncing: isLoading, backendUserData } = useSessionSync();
   const ready = isTokenReady && !isLoading;
+  const allowed = canAccessUsage(backendUserData?.accessLevel);
   const client = useApiClient();
   const end = new Date().toISOString().slice(0, 10);
   const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -22,44 +25,40 @@ export function UsageContent() {
   const analytics = useQuery({
     queryKey: ['usage', 'analytics', start, end],
     queryFn: () => getUsageAnalytics(client, start, end),
-    enabled: ready,
+    enabled: ready && allowed,
   });
   const summaries = useQuery({
     queryKey: ['usage', 'summaries', start, end],
     queryFn: () => getUsageSummaries(client, start, end),
-    enabled: ready,
+    enabled: ready && allowed,
   });
   const license = useQuery({
     queryKey: ['usage', 'license', orgRef, start, end],
     queryFn: () => getLicenseUsage(client, orgRef, start, end),
-    enabled: ready && Boolean(orgRef),
+    enabled: ready && Boolean(orgRef) && allowed,
   });
-  const trends = analytics.data?.data?.trends ?? [];
-  const series = trends.map((point) => ({
-    name: point.date.slice(0, 10),
-    value: Number(point.requests) || 0,
-  }));
   const summaryRows = (summaries.data?.data ?? []).map((row) => ({
     endpoint: row.endpoint ?? 'Endpoint',
     count: row.totalRequests ?? 0,
   }));
-  const endpointRows = summaryRows.length > 0
+  const endpointRows = (summaryRows.length > 0
     ? summaryRows
     : (analytics.data?.data?.topEndpoints ?? []).map((row) => ({
         endpoint: row.endpoint || 'Endpoint',
         count: Number(row.requests) || 0,
-      }));
+      }))
+  ).filter((row) => row.count > 0);
   const licenseSummary = license.data?.data;
-  const hasUsage = series.some((point) => point.value > 0) || endpointRows.some((row) => row.count > 0) || (licenseSummary?.totalRequests ?? 0) > 0;
+  const hasUsage = endpointRows.length > 0 || (licenseSummary?.totalRequests ?? 0) > 0;
   const failed = analytics.isError || summaries.isError || license.isError;
 
-  if (ready && !canAccessUsage(backendUserData?.accessLevel)) return <FeatureDenied title="Usage" />;
+  if (ready && !allowed) return <FeatureDenied title={t('pages.usage.title')} />;
 
   return (
     <FeatureShell
       tourId="usage"
-      title="Usage"
-      description="Analytics, summaries, and license usage. The server records events itself."
+      title={t('pages.usage.title')}
+      description={t('pages.usage.description')}
       isLoading={!ready || analytics.isLoading || summaries.isLoading || license.isLoading}
       isError={failed}
       error={analytics.error ?? summaries.error ?? license.error}
@@ -71,14 +70,14 @@ export function UsageContent() {
       isEmpty={!hasUsage}
       emptyMessage="No usage in the last 30 days."
     >
-      {series.length > 0 ? (
-        <ChartContainer config={chartConfig} className="h-48 w-full">
-          <BarChart data={series}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis allowDecimals={false} width={32} />
+      {endpointRows.length > 0 ? (
+        <ChartContainer config={chartConfig} className="h-80 w-full">
+          <BarChart data={endpointRows.slice(0, 20)} layout="vertical" margin={{ left: 8 }}>
+            <CartesianGrid horizontal={false} />
+            <XAxis type="number" allowDecimals={false} />
+            <YAxis type="category" dataKey="endpoint" width={220} tickLine={false} axisLine={false} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+            <Bar dataKey="count" fill="var(--color-count)" radius={4} />
           </BarChart>
         </ChartContainer>
       ) : null}
@@ -87,11 +86,6 @@ export function UsageContent() {
           {licenseSummary.totalRequests} requests · {licenseSummary.errorRate}% errors · {licenseSummary.licenseUsage?.totalQuotaConsumed ?? 0} license quota
         </p>
       ) : null}
-      <ul className="space-y-1 text-sm">
-        {endpointRows.map((row, index) => (
-          <li key={`${row.endpoint}-${index}`}>{row.endpoint} · {row.count}</li>
-        ))}
-      </ul>
     </FeatureShell>
   );
 }

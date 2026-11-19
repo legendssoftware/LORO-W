@@ -1,8 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Sunrise, Sunset, UserX } from 'lucide-react';
+import { ChevronDown, Sunrise, Sunset, UserX } from 'lucide-react';
 import { useApiClient, useSessionSync } from '@/api/hooks';
 import {
   sendAbsenceAttendanceReport,
@@ -10,9 +9,18 @@ import {
   sendMorningAttendanceReport,
 } from '@/api/endpoints/attendance';
 import type { DailyOverviewResponse } from '@/api/types';
+import { reportsFilterPortalHighZ } from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { canSendAttendanceReports } from '@/lib/access';
 import toast from 'react-hot-toast';
+
+type ApiClient = ReturnType<typeof useApiClient>;
 
 /**
  * Daily attendance totals. Clock-in stays on the phone app.
@@ -31,73 +39,83 @@ export function AttendanceReportOverview({
   );
 }
 
-/** Morning, evening, and absence sends. Place these on the staff filter row. */
+/**
+ * Sends a morning, evening, or absence attendance report and toasts the result.
+ */
+function useReportSend(
+  send: (client: ApiClient) => Promise<{ message: string }>,
+  client: ApiClient,
+  successLabel: string,
+  errorLabel: string,
+) {
+  return useMutation({
+    mutationFn: () => send(client),
+    onSuccess: (result) => toast.success(result.message || successLabel),
+    onError: () => toast.error(errorLabel),
+  });
+}
+
+/** Morning, evening, and absence sends. Place this on the staff filter row. */
 export function AttendanceReportButtons() {
   const client = useApiClient();
   const { backendUserData } = useSessionSync();
+  const morning = useReportSend(
+    sendMorningAttendanceReport,
+    client,
+    'Morning report sent',
+    'Could not send the morning report',
+  );
+  const evening = useReportSend(
+    sendEveningAttendanceReport,
+    client,
+    'Evening report sent',
+    'Could not send the evening report',
+  );
+  const absence = useReportSend(
+    sendAbsenceAttendanceReport,
+    client,
+    'Absence report sent',
+    'Could not send the absence report',
+  );
+
   if (!canSendAttendanceReports(backendUserData?.accessLevel)) return null;
 
   return (
-    <>
-      <ReportButton
-        label="Morning"
-        icon={<Sunrise className="size-4" />}
-        send={sendMorningAttendanceReport}
-        client={client}
-        pendingLabel="Could not send the morning report"
-        successLabel="Morning report sent"
-      />
-      <ReportButton
-        label="Evening"
-        icon={<Sunset className="size-4" />}
-        send={sendEveningAttendanceReport}
-        client={client}
-        pendingLabel="Could not send the evening report"
-        successLabel="Evening report sent"
-      />
-      <ReportButton
-        label="Absence"
-        icon={<UserX className="size-4" />}
-        send={sendAbsenceAttendanceReport}
-        client={client}
-        pendingLabel="Could not send the absence report"
-        successLabel="Absence report sent"
-      />
-    </>
-  );
-}
-
-function ReportButton({
-  label,
-  icon,
-  send,
-  client,
-  successLabel,
-  pendingLabel,
-}: {
-  label: string;
-  icon: ReactNode;
-  send: (client: ReturnType<typeof useApiClient>) => Promise<{ message: string }>;
-  client: ReturnType<typeof useApiClient>;
-  successLabel: string;
-  pendingLabel: string;
-}) {
-  const mutation = useMutation({
-    mutationFn: () => send(client),
-    onSuccess: (result) => toast.success(result.message || successLabel),
-    onError: () => toast.error(pendingLabel),
-  });
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      className="h-9 shrink-0 gap-2"
-      disabled={mutation.isPending}
-      onClick={() => mutation.mutate()}
-    >
-      {icon}
-      {label}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-9 shrink-0 gap-2"
+        >
+          Reports
+          <ChevronDown className="size-4" aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className={reportsFilterPortalHighZ}>
+        <DropdownMenuItem
+          disabled={morning.isPending}
+          onSelect={() => morning.mutate()}
+        >
+          <Sunrise className="size-4" aria-hidden />
+          Morning
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={evening.isPending}
+          onSelect={() => evening.mutate()}
+        >
+          <Sunset className="size-4" aria-hidden />
+          Evening
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={absence.isPending}
+          onSelect={() => absence.mutate()}
+        >
+          <UserX className="size-4" aria-hidden />
+          Absence
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

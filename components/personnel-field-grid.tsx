@@ -1,6 +1,7 @@
 'use client';
 
 import type { Control, FieldPath, FieldValues } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   FormControl,
   FormField,
@@ -18,9 +19,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { PersonnelFieldSpec } from '@/lib/user-form/personnel-fields';
+import { FORM_PLACEHOLDERS, formPlaceholder, type FormPlaceholderKey } from '@/lib/form-placeholders';
 import { savedFieldPlaceholder } from '@/lib/user-form/field-placeholder';
 
 const EMPTY_SELECT_VALUE = '__empty__';
+
+const FORM_PLACEHOLDER_BY_VALUE = new Map<string, FormPlaceholderKey>(
+  (Object.entries(FORM_PLACEHOLDERS) as [FormPlaceholderKey, string][]).map(
+    ([key, value]) => [value, key],
+  ),
+);
+
+function resolvePersonnelPlaceholder(
+  t: (key: string, options?: { defaultValue?: string }) => string,
+  raw: string | undefined,
+): string {
+  if (!raw) return '';
+  const key = FORM_PLACEHOLDER_BY_VALUE.get(raw);
+  if (key) return formPlaceholder(t as never, key);
+  return raw;
+}
 
 export function PersonnelFieldGrid<T extends FieldValues>({
   control,
@@ -31,10 +49,13 @@ export function PersonnelFieldGrid<T extends FieldValues>({
   prefix: 'profile' | 'employmentProfile';
   fields: PersonnelFieldSpec[];
 }) {
+  const { t } = useTranslation('common');
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {fields.map((spec) => {
         const name = `${prefix}.${spec.name}` as FieldPath<T>;
+        const label = t(`personnel.labels.${spec.name}`, { defaultValue: spec.label });
         return (
           <FormField
             key={name}
@@ -42,8 +63,8 @@ export function PersonnelFieldGrid<T extends FieldValues>({
             name={name}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{spec.label}</FormLabel>
-                <PersonnelFieldControl spec={spec} field={field} />
+                <FormLabel>{label}</FormLabel>
+                <PersonnelFieldControl spec={spec} field={field} label={label} />
                 <FormMessage />
               </FormItem>
             )}
@@ -57,14 +78,18 @@ export function PersonnelFieldGrid<T extends FieldValues>({
 function PersonnelFieldControl({
   spec,
   field,
+  label,
 }: {
   spec: PersonnelFieldSpec;
   field: {
     value: unknown;
     onChange: (value: unknown) => void;
   };
+  label: string;
 }) {
-  const placeholder = savedFieldPlaceholder(field.value, spec.placeholder ?? '');
+  const { t } = useTranslation('common');
+  const translatedPlaceholder = resolvePersonnelPlaceholder(t, spec.placeholder);
+  const placeholder = savedFieldPlaceholder(field.value, translatedPlaceholder);
   switch (spec.kind) {
     case 'date':
       return (
@@ -72,8 +97,8 @@ function PersonnelFieldControl({
           <DatePickerField
             value={(field.value as string | null | undefined) ?? undefined}
             onChange={(value) => field.onChange(value || null)}
-            aria-label={spec.label}
-            placeholder={placeholder || 'DD/MM/YYYY'}
+            aria-label={label}
+            placeholder={placeholder || t('personnel.datePlaceholder')}
             preset={spec.datePreset ?? 'default'}
           />
         </FormControl>
@@ -85,7 +110,7 @@ function PersonnelFieldControl({
             type="number"
             min={0}
             step="1"
-            placeholder={placeholder || spec.placeholder}
+            placeholder={placeholder || translatedPlaceholder}
             value={typeof field.value === 'number' ? field.value : ''}
             onChange={(event) => {
               const raw = event.target.value;
@@ -103,14 +128,20 @@ function PersonnelFieldControl({
         >
           <FormControl>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={placeholder || spec.placeholder || `Select ${spec.label.toLowerCase()}`} />
+              <SelectValue
+                placeholder={
+                  placeholder ||
+                  translatedPlaceholder ||
+                  t('personnel.selectLabel', { label: label.toLowerCase() })
+                }
+              />
             </SelectTrigger>
           </FormControl>
           <SelectContent>
-            <SelectItem value={EMPTY_SELECT_VALUE}>Not specified</SelectItem>
+            <SelectItem value={EMPTY_SELECT_VALUE}>{t('personnel.notSpecified')}</SelectItem>
             {(spec.options ?? []).map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {t(`personnel.options.${option.value}`, { defaultValue: option.label })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -123,7 +154,7 @@ function PersonnelFieldControl({
         <FormControl>
           <Input
             type={spec.kind === 'tel' ? 'tel' : 'text'}
-            placeholder={placeholder || spec.placeholder}
+            placeholder={placeholder || translatedPlaceholder}
             value={(field.value as string | number | null | undefined) ?? ''}
             onChange={(event) => field.onChange(event.target.value || null)}
           />

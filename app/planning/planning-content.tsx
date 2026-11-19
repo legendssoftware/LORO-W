@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/api/types/tasks';
+import { useTranslation } from 'react-i18next';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -55,6 +56,7 @@ function filterTasksBySearch(tasks: Task[], query: string): Task[] {
 }
 
 export function PlanningContent() {
+  const { t } = useTranslation('screens');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [planningTab, setPlanningTab] = useState<PlanningTab>('all');
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -268,9 +270,9 @@ export function PlanningContent() {
         >
           <div className="flex items-start gap-2">
             <div>
-              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Planning</h1>
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.planning.title')}</h1>
               <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                Plan field work, routes, and follow-ups in one place.
+                {t('pages.planning.description')}
               </p>
             </div>
             <RoutePlanningNote />

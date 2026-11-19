@@ -48,6 +48,7 @@ import {
   resolveHardwareBrand,
 } from '@/lib/site-opportunity/compute/brands';
 import type { HardwareBrandKey } from '@/api/types/site-opportunity';
+import { useTranslation } from 'react-i18next';
 import { getMarkerCountryKey } from '@/lib/utils/marker-geo-resolve';
 import { getCountryFlag, normalizeCountryToken } from '@/lib/utils/country-flags';
 import {
@@ -220,6 +221,7 @@ export function MapSummaryModal({
   points,
   counts,
 }: MapSummaryModalProps) {
+  const { t } = useTranslation('screens');
   const total = points.length;
   const missingQuery = useCompetitorsMissingGeocode({ enabled: open });
 
@@ -725,7 +727,7 @@ export function MapSummaryModal({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Layer</TableHead>
+                    <TableHead>{t('tables.layer')}</TableHead>
                     <TableHead className="text-right">Count</TableHead>
                     <TableHead className="text-right">Share</TableHead>
                     <TableHead className="text-right">With revenue</TableHead>

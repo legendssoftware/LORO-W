@@ -172,6 +172,42 @@ export interface StoreMonthlyYtdResponse {
   months: StoreMonthlyYtdMonthRow[];
 }
 
+export type SalesPaceGrain = 'month' | 'year';
+
+export interface SalesPacePoint {
+  label: string;
+  date: string;
+  actual: number | null;
+  projected: number | null;
+}
+
+export interface SalesPaceSummary {
+  salesToDate: number;
+  daysElapsed: number;
+  daysInPeriod: number;
+  dailyRate: number;
+  projectedClose: number;
+  target: number;
+  targetLabel: string;
+  variance: number;
+  earlyPace: boolean;
+}
+
+export interface SalesPaceData {
+  grain: SalesPaceGrain;
+  periodStart: string;
+  periodEnd: string;
+  asOf: string;
+  currency: {
+    code: string;
+    symbol: string;
+    locale: string;
+    name: string;
+  };
+  points: SalesPacePoint[];
+  summary: SalesPaceSummary;
+}
+
 export interface ConsolidatedBranchData {
   branchId: string;
   branchName: string;

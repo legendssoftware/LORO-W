@@ -8,7 +8,6 @@ import {
   Filter,
   LayoutGrid,
   Users,
-  Globe,
 } from 'lucide-react';
 import {
   SearchableOptionListPicker,
@@ -365,7 +364,6 @@ export function StaffFilterControls({
               )}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Globe className="size-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{countryFilterTriggerLabel}</span>
               </span>
               <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
@@ -399,7 +397,6 @@ export function StaffFilterControls({
                         )}
                       />
                       <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                        <Globe className="size-4 shrink-0" />
                         {opt.label}
                       </span>
                     </CommandItem>
@@ -485,8 +482,8 @@ export function StaffFiltersBar({
           Filter
         </Button>
         <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {actions}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
 
@@ -509,8 +506,8 @@ export function StaffFiltersBar({
           </div>
         </div>
         <div className="flex shrink-0 flex-nowrap items-center gap-2">
-          {actions}
           {renderSearchField()}
+          {actions}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import type { LeadListItem } from '@/api/types/leads';
 import {
@@ -41,6 +42,7 @@ export function LeadStatusChangeDialog({
   newStatus,
   onConfirm,
 }: LeadStatusChangeDialogProps) {
+  const { t } = useTranslation('screens');
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,39 +88,39 @@ export function LeadStatusChangeDialog({
             <button
               type="button"
               className="inline-flex size-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="Close"
+              aria-label={t('leads.closeAria')}
             >
               <XIcon className="size-5" />
             </button>
           </DialogClose>
         </div>
         <DialogHeader className="pr-12">
-          <DialogTitle>Set status to {newStatusLabel}</DialogTitle>
+          <DialogTitle>{t('leads.setStatusTo', { status: newStatusLabel })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <div className="rounded-md border bg-muted/30 p-3 space-y-1">
             <p className="font-medium text-foreground">
-              {lead.name?.trim() || 'Lead'} · {lead.companyName?.trim() || '-'}
+              {lead.name?.trim() || t('leads.fallbackName')} · {lead.companyName?.trim() || '-'}
             </p>
             <p className="text-muted-foreground">
-              Current status: <span className="font-medium text-foreground">{currentStatusLabel}</span>
+              {t('leads.currentStatus', { status: currentStatusLabel })}
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="lead-status-reason">Reason (optional)</Label>
+            <Label htmlFor="lead-status-reason">{t('leads.reasonOptional')}</Label>
             <Input
               id="lead-status-reason"
-              placeholder="e.g. Customer requested callback"
+              placeholder={t('leads.reasonPlaceholder')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="rounded-md"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="lead-status-description">Description (optional)</Label>
+            <Label htmlFor="lead-status-description">{t('leads.descriptionOptional')}</Label>
             <Textarea
               id="lead-status-description"
-              placeholder="Additional notes"
+              placeholder={t('leads.notesPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
@@ -132,9 +134,7 @@ export function LeadStatusChangeDialog({
             variant="cancel"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
+          >{t('actions.cancel')}</Button>
           <Button
             type="button"
             variant="success"
@@ -143,9 +143,7 @@ export function LeadStatusChangeDialog({
           >
             {isSubmitting ? (
               <>
-                <Loader2Icon className="size-4 animate-spin mr-2" />
-                Confirm
-              </>
+                <Loader2Icon className="size-4 animate-spin mr-2" />{t('actions.confirm')}</>
             ) : (
               'Confirm'
             )}

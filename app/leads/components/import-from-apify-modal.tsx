@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState, useEffect, useMemo, useRef, startTransition } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import {
@@ -120,6 +122,7 @@ export function ImportFromApifyModal({
   assignedUserIds,
   onSuccess,
 }: ImportFromApifyModalProps) {
+  const { t } = useTranslation('screens');
   const [step, setStep] = useState<Step>('form');
   const [lastResult, setLastResult] = useState<LeadImportResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -321,14 +324,14 @@ export function ImportFromApifyModal({
         setStep('receipt');
       } else {
         const errMsg =
-          result.errors?.[0]?.error || result.message || 'Import failed.';
+          result.errors?.[0]?.error || result.message || t('leads.importFailed');
         setErrorMessage(errMsg);
         setLastResult(result);
         setStep('error');
         toast.error(errMsg);
       }
     } catch (err: unknown) {
-      const msg = apiErrorMessage(err, 'Import failed.');
+      const msg = apiErrorMessage(err, t('leads.importFailed'));
       setErrorMessage(msg);
       setStep('error');
       toast.error(msg);
@@ -361,20 +364,20 @@ export function ImportFromApifyModal({
 
   const handleSubmit = async () => {
     if (searchTerms.length === 0) {
-      toast.error('Enter at least one Google Maps search term.');
+      toast.error(t('leads.enterSearchTerm'));
       return;
     }
     if (!locationQuery.trim()) {
-      toast.error('Enter a location (e.g. Johannesburg, South Africa).');
+      toast.error(t('leads.enterLocation'));
       return;
     }
     if (assignmentMode === 'branch') {
       if (branches.length === 0) {
-        toast.error('No branches are available to assign by branch.');
+        toast.error(t('leads.noBranches'));
         return;
       }
       if (branchPoolIds.length === 0) {
-        toast.error('Select at least one branch to assign leads to its team members.');
+        toast.error(t('leads.selectBranchPool'));
         return;
       }
     }
@@ -401,7 +404,7 @@ export function ImportFromApifyModal({
       });
       setStep('scraping');
     } catch (err: unknown) {
-      toast.error(apiErrorMessage(err, 'Could not start Google Maps scrape.'));
+      toast.error(apiErrorMessage(err, t('leads.couldNotStartScrape')));
     }
   };
 
@@ -414,12 +417,12 @@ export function ImportFromApifyModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-left">
             <MapPin className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            Import leads from Google Maps
+            {t('leads.importMapsTitle')}
           </DialogTitle>
           <div className="space-y-2 text-left">
             <h3 className="text-foreground flex items-center gap-2 text-base font-semibold">
               <CircleHelp className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              How this works
+              {t('leads.howThisWorks')}
             </h3>
             <ul className="text-muted-foreground list-disc space-y-1.5 pl-4 text-sm">
               <li>
@@ -443,7 +446,7 @@ export function ImportFromApifyModal({
             <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50/80 p-4 dark:border-green-900 dark:bg-green-950/40">
               <CheckCircle2 className="size-6 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
               <div className="min-w-0 space-y-1">
-                <p className="font-semibold text-foreground">Import complete</p>
+                <p className="font-semibold text-foreground">{t('leads.importComplete')}</p>
                 <p className="text-muted-foreground text-sm">
                   {lastResult.message ||
                     `Imported ${lastResult.imported} leads${lastResult.failed > 0 ? `, ${lastResult.failed} failed` : ''}.`}
@@ -452,15 +455,15 @@ export function ImportFromApifyModal({
             </div>
             <div className="grid gap-2 sm:grid-cols-3">
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Imported</p>
+                <p className="text-muted-foreground text-xs">{t('leads.imported')}</p>
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.imported}</p>
               </div>
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Failed rows</p>
+                <p className="text-muted-foreground text-xs">{t('leads.failedRows')}</p>
                 <p className="text-2xl font-semibold tabular-nums">{lastResult.failed}</p>
               </div>
               <div className="rounded-md border border-input bg-muted/30 p-3">
-                <p className="text-muted-foreground text-xs">Skipped duplicates</p>
+                <p className="text-muted-foreground text-xs">{t('leads.skippedDuplicates')}</p>
                 <p className="text-2xl font-semibold tabular-nums">
                   {lastResult.skippedDuplicates ?? 0}
                 </p>
@@ -468,13 +471,13 @@ export function ImportFromApifyModal({
             </div>
             {(lastResult.assignmentSummary?.length ?? 0) > 0 ? (
               <div className="grid gap-2">
-                <p className="text-sm font-medium text-foreground">Leads per team member</p>
+                <p className="text-sm font-medium text-foreground">{t('leads.leadsPerMember')}</p>
                 <div className="max-h-[min(220px,40vh)] overflow-y-auto rounded-md border border-input">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/80">
                       <tr className="border-b border-input text-left">
-                        <th className="p-2 font-medium">Name</th>
-                        <th className="p-2 font-medium text-right">Leads</th>
+                        <th className="p-2 font-medium">{t('leads.nameColumn')}</th>
+                        <th className="p-2 font-medium text-right">{t('leads.leadsColumn')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -506,7 +509,7 @@ export function ImportFromApifyModal({
           </div>
         ) : step === 'error' ? (
           <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto py-2">
-            <p className="text-destructive text-sm">{errorMessage || 'The scrape or import failed.'}</p>
+            <p className="text-destructive text-sm">{errorMessage || t('leads.scrapeFailed')}</p>
             {(lastResult?.errors?.length ?? 0) > 0 ? (
               <ScrollArea className="h-[min(160px,30vh)] rounded-md border border-destructive/30 bg-destructive/5 p-2">
                 <ul className="space-y-1 text-xs text-destructive">
@@ -529,17 +532,17 @@ export function ImportFromApifyModal({
               maxTerms={MAX_SEARCH_TERMS}
             />
             <div className="grid gap-2">
-              <Label htmlFor="apify-location">Location</Label>
+              <Label htmlFor="apify-location">{t('leads.location')}</Label>
               <Input
                 id="apify-location"
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="Johannesburg, South Africa"
+                placeholder={t('leads.locationPlaceholder')}
               />
             </div>
             <div className="grid gap-2 sm:grid-cols-2 sm:items-end">
               <div className="grid gap-2">
-                <Label htmlFor="apify-max-places">Max places per search</Label>
+                <Label htmlFor="apify-max-places">{t('leads.maxPlaces')}</Label>
                 <Input
                   id="apify-max-places"
                   type="number"
@@ -572,7 +575,7 @@ export function ImportFromApifyModal({
             </label>
 
             <div className="grid gap-3">
-              <Label className="text-foreground">Assignment</Label>
+              <Label className="text-foreground">{t('leads.assignment')}</Label>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -608,7 +611,7 @@ export function ImportFromApifyModal({
 
             {assignmentMode === 'branch' ? (
               <div className="grid gap-2">
-                <Label id="apify-branch-pool-label">Branches</Label>
+                <Label id="apify-branch-pool-label">{t('leads.branches')}</Label>
                 {branches.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
                     No branches available for this organization.
@@ -654,11 +657,11 @@ export function ImportFromApifyModal({
               <div className="grid gap-2">
                 <div className="flex items-center gap-2">
                   <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <Label>Team members (optional)</Label>
+                  <Label>{t('leads.teamOptional')}</Label>
                 </div>
                 <Input
                   type="search"
-                  placeholder="Search team members…"
+                  placeholder={t('leads.searchTeam')}
                   value={assigneeSearch}
                   onChange={(e) => setAssigneeSearch(e.target.value)}
                   className="h-9"
@@ -666,9 +669,9 @@ export function ImportFromApifyModal({
                 <ScrollArea className="h-[min(200px,32vh)] rounded-md border border-input">
                   <div className="space-y-0 p-2">
                     {isAssigneeSearchLoading && filteredUsers.length === 0 ? (
-                      <p className="text-muted-foreground px-2 py-3 text-sm">Searching…</p>
+                      <p className="text-muted-foreground px-2 py-3 text-sm">{t('leads.searching')}</p>
                     ) : filteredUsers.length === 0 ? (
-                      <p className="text-muted-foreground px-2 py-3 text-sm">No matches.</p>
+                      <p className="text-muted-foreground px-2 py-3 text-sm">{t('leads.noMatches')}</p>
                     ) : (
                       filteredUsers.map((u) => {
                         const fullName =
@@ -711,11 +714,11 @@ export function ImportFromApifyModal({
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
                 <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Label htmlFor="apify-source">Default source</Label>
+                <Label htmlFor="apify-source">{t('leads.defaultSource')}</Label>
               </div>
               <Select value={source || undefined} onValueChange={setSource}>
                 <SelectTrigger id="apify-source" className="w-full">
-                  <SelectValue placeholder="Lead source" />
+                  <SelectValue placeholder={t('leads.leadSource')} />
                 </SelectTrigger>
                 <SelectContent>
                   {LEAD_SOURCE_OPTIONS.map((opt) => (
@@ -732,20 +735,20 @@ export function ImportFromApifyModal({
           {showReceipt ? (
             <>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Close
+                {t('actions.close')}
               </Button>
               <Button
                 type="button"
                 onClick={resetForm}
                 className="border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white focus-visible:ring-purple-600/50"
               >
-                Scrape more
+                {t('leads.scrapeMore')}
               </Button>
             </>
           ) : step === 'error' ? (
             <>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Close
+                {t('actions.close')}
               </Button>
               <Button
                 type="button"
@@ -756,7 +759,7 @@ export function ImportFromApifyModal({
                 }}
                 className="border-0 bg-purple-600 text-white hover:bg-purple-700 hover:text-white"
               >
-                Try again
+                {t('actions.tryAgain')}
               </Button>
             </>
           ) : (
@@ -767,7 +770,7 @@ export function ImportFromApifyModal({
                 onClick={() => handleOpenChange(false)}
                 disabled={step === 'importing'}
               >
-                {step === 'scraping' ? 'Close' : 'Cancel'}
+                {step === 'scraping' ? t('actions.close') : t('actions.cancel')}
               </Button>
               {step === 'form' ? (
                 <Button
@@ -788,10 +791,10 @@ export function ImportFromApifyModal({
                   {startMutation.isPending ? (
                     <>
                       <Loader2Icon className="mr-2 size-4 animate-spin" />
-                      Starting…
+                      {t('leads.starting')}
                     </>
                   ) : (
-                    'Start scrape'
+                    t('leads.startScrape')
                   )}
                 </Button>
               ) : null}

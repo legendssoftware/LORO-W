@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Download, Loader2 } from 'lucide-react';
@@ -45,6 +46,7 @@ export function ClaimExportDialog({
   exporting: boolean;
   onExport: (range: ClaimExportRange) => void;
 }) {
+  const { t } = useTranslation('screens');
   const [allDates, setAllDates] = useState(true);
   const [draft, setDraft] = useState<DateRange | undefined>();
 
@@ -99,20 +101,20 @@ export function ClaimExportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export claims</DialogTitle>
+          <DialogTitle>{t('claims.exportTitle')}</DialogTitle>
           <DialogDescription>
-            Choose the dates to include. Status, folder, person, and search stay as they are on the page.
+            {t('claims.exportDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant={allDates ? 'default' : 'outline'} onClick={() => applyPreset('all')}>
-            All dates
+            {t('actions.allDates')}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => applyPreset('today')}>
-            Today
+            {t('actions.today')}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => applyPreset('month')}>
-            This month
+            {t('actions.thisMonth')}
           </Button>
         </div>
         <Calendar
@@ -127,7 +129,7 @@ export function ClaimExportDialog({
         />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             type="button"
@@ -136,7 +138,7 @@ export function ClaimExportDialog({
             onClick={handleExport}
           >
             {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-            Export
+            {t('actions.export')}
           </Button>
         </DialogFooter>
       </DialogContent>

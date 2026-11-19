@@ -8,7 +8,6 @@ import {
   ChevronsUpDown,
   Clock3,
   Filter,
-  Globe,
   Info,
   LayoutDashboard,
   List,
@@ -67,6 +66,7 @@ import {
 import { getCountryFlag, normalizeBranchCountryCodeForGrouping } from '@/lib/utils/country-flags';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const FEATURES = [
   { title: 'GPS & Geofencing', body: 'Open and close only inside the branch radius (100 m unless a branch overrides it).' },
@@ -155,6 +155,7 @@ const TAB_TRIGGER_CLASS = cn(
 );
 
 export function StoreOperationsContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData, isSyncing } = useSessionSync();
   const accessLevel = typeof backendUserData?.accessLevel === 'string' ? backendUserData.accessLevel : undefined;
@@ -206,9 +207,9 @@ export function StoreOperationsContent() {
   if (!allowed) {
     return (
       <main className={appPageMainClass}>
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Store operations</h1>
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.storeOperations.title')}</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-          You do not have access to the store operations dashboard.
+          {t('pages.storeOperations.denied')}
         </p>
       </main>
     );
@@ -234,10 +235,10 @@ export function StoreOperationsContent() {
         <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" data-tour="store-operations-page-header">
           <div>
             <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-              Store Operations Dashboard – All Stores
+              {t('pages.storeOperations.title')}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              Live branch openings, checklists, and stock counts.
+              {t('pages.storeOperations.description')}
             </p>
           </div>
         </div>
@@ -389,13 +390,13 @@ export function StoreOperationsContent() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="whitespace-nowrap">Store</TableHead>
-                          <TableHead className="whitespace-nowrap">Scheduled Open</TableHead>
-                          <TableHead className="whitespace-nowrap">Actual Open</TableHead>
-                          <TableHead className="whitespace-nowrap">Scheduled Close</TableHead>
-                          <TableHead className="whitespace-nowrap">Actual Close</TableHead>
-                          <TableHead className="whitespace-nowrap">Status</TableHead>
-                          <TableHead className="whitespace-nowrap">Checklist</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.store')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.scheduledOpen')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.actualOpen')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.scheduledClose')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.actualClose')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.status')}</TableHead>
+                          <TableHead className="whitespace-nowrap">{t('tables.checklist')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -522,7 +523,6 @@ function StoreOperationsFilterControls({
     () => countries.map((value) => ({
       value,
       label: value,
-      icon: <Globe className="size-4 shrink-0" />,
     })),
     [countries],
   );
@@ -546,7 +546,6 @@ function StoreOperationsFilterControls({
           placeholderLabelWhenAll="All countries"
           searchPlaceholder="Search countries…"
           emptyMessage="No country found."
-          triggerIcon={<Globe className="size-4 shrink-0" />}
           triggerClassName={triggerClass}
         />
         {country !== ALL_FILTER ? (

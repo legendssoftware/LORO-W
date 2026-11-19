@@ -32,6 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const COL_COUNT = 17;
 
@@ -577,6 +578,7 @@ export function ReportsTargetsTable({
   quotationCountAvailable = true,
   teamMembersByLeaderId,
 }: ReportsTargetsTableProps) {
+  const { t } = useTranslation('screens');
   const [expandedLeaderIds, setExpandedLeaderIds] = useState<Set<number>>(() => new Set());
 
   function teamFor(row: ReportsTargetRow): ReportsTargetRow[] {
@@ -609,26 +611,26 @@ export function ReportsTargetsTable({
     <Table data-tour="reports-targets-table">
       <TableHeader>
         <TableRow>
-          <TableHead className="min-w-[12rem]">User</TableHead>
+          <TableHead className="min-w-[12rem]">{t('tables.user')}</TableHead>
           <TableHead title="Telephone + WhatsApp + Email + Landline + Other, versus the call quota. Physical visits are in the Visits column.">
             All Activity
           </TableHead>
           <TableHead title="Telephone logs that are not landline-only, including voicemail and no-answer">
             Telephone
           </TableHead>
-          <TableHead>WhatsApp</TableHead>
-          <TableHead>Email</TableHead>
+          <TableHead>{t('tables.whatsapp')}</TableHead>
+          <TableHead>{t('tables.email')}</TableHead>
           <TableHead title="Telephone logs with a landline number and no cell number">Landline</TableHead>
           <TableHead title="Blank or unknown contact method">Other</TableHead>
-          <TableHead title="Physical visits to a location">Visits</TableHead>
-          <TableHead>Leads</TableHead>
+          <TableHead title="Physical visits to a location">{t('tables.visits')}</TableHead>
+          <TableHead>{t('tables.leads')}</TableHead>
           <TableHead title="Imported leads still on this person's book. Ignores the date filter. Touched includes discarded and deleted.">
             Import book
           </TableHead>
           <TableHead className="hidden md:table-cell">{quotationsColumnLabel(currencyView)}</TableHead>
           <TableHead className="hidden md:table-cell">{salesColumnLabel(currencyView)}</TableHead>
-          <TableHead className="hidden lg:table-cell">Hours</TableHead>
-          <TableHead className="hidden md:table-cell">Travel</TableHead>
+          <TableHead className="hidden lg:table-cell">{t('tables.hours')}</TableHead>
+          <TableHead className="hidden md:table-cell">{t('tables.travel')}</TableHead>
           <TableHead className="hidden md:table-cell" title="Priced fuel used against the prorated allowance for the selected dates. On pace and the upfront amount use the full allowance period. Internal staff show None.">
             Fuel
           </TableHead>
@@ -637,7 +639,7 @@ export function ReportsTargetsTable({
           >
             Productivity
           </TableHead>
-          <TableHead>Achievement</TableHead>
+          <TableHead>{t('tables.achievement')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

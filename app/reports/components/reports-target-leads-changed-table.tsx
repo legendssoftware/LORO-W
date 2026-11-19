@@ -23,6 +23,7 @@ import {
 } from '@/lib/lead-activity-display';
 import { humanizeReportLabel } from '@/lib/utils/report-labels';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 function formatLeadWhen(raw: string | undefined): string {
   if (!raw) return '—';
@@ -74,6 +75,7 @@ export function ReportsTargetLeadsChangedTable({
   onPageChange,
   onPageSizeChange,
 }: ReportsTargetLeadsChangedTableProps) {
+  const { t } = useTranslation('screens');
   if (isLoading) {
     return <Skeleton className="h-48 w-full" />;
   }
@@ -91,11 +93,11 @@ export function ReportsTargetLeadsChangedTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Lead</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Action</TableHead>
+              <TableHead>{t('tables.lead')}</TableHead>
+              <TableHead>{t('tables.stage')}</TableHead>
+              <TableHead>{t('tables.action')}</TableHead>
               <TableHead className="min-w-[12rem]">Summary</TableHead>
-              <TableHead>When</TableHead>
+              <TableHead>{t('tables.when')}</TableHead>
               <TableHead className="text-right">Value</TableHead>
             </TableRow>
           </TableHeader>

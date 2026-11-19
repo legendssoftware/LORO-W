@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useState, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import type { ClientProfileData, ClientQuotation } from '@/api/types/client-portal';
@@ -98,6 +100,7 @@ export function QuotationDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('portal');
   if (!quotation) return null;
 
   const items = Array.isArray(quotation.quotationItems)
@@ -130,10 +133,10 @@ export function QuotationDetailDialog({
               {formatQuotationStatusLabel(quotation.status)}
             </Badge>
             {quotation.isClientPlaced && (
-              <Badge variant="outline">Client placed</Badge>
+              <Badge variant="outline">{t('clientPlaced')}</Badge>
             )}
             {quotation.isConverted && (
-              <Badge variant="outline">Converted to order</Badge>
+              <Badge variant="outline">{t('convertedToOrder')}</Badge>
             )}
             <QuotationConversionActions
               quotationRef={quotation.uid}
@@ -142,18 +145,18 @@ export function QuotationDetailDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <MetadataRow label="Quotation #" value={quotation.quotationNumber} />
-            <MetadataRow label="Order #" value={quotation.orderNumber} />
+            <MetadataRow label={t('quotationNumber')} value={quotation.quotationNumber} />
+            <MetadataRow label={t('orderNumber')} value={quotation.orderNumber} />
             <MetadataRow
-              label="Status"
+              label={t('status')}
               value={formatQuotationStatusLabel(quotation.status)}
             />
             <MetadataRow
-              label="Total"
+              label={t('total')}
               value={formatZar(parseQuotationAmount(quotation.totalAmount))}
             />
             <MetadataRow
-              label="Items"
+              label={t('items')}
               value={
                 quotation.totalItems != null
                   ? String(quotation.totalItems)
@@ -162,42 +165,42 @@ export function QuotationDetailDialog({
                     : null
               }
             />
-            <MetadataRow label="Currency" value={quotation.currency ?? 'ZAR'} />
-            <MetadataRow label="Created" value={formatDate(quotation.createdAt)} />
-            <MetadataRow label="Updated" value={formatDate(quotation.updatedAt)} />
-            <MetadataRow label="Valid until" value={formatDate(quotation.validUntil)} />
+            <MetadataRow label={t('currency')} value={quotation.currency ?? 'ZAR'} />
+            <MetadataRow label={t('created')} value={formatDate(quotation.createdAt)} />
+            <MetadataRow label={t('updated')} value={formatDate(quotation.updatedAt)} />
+            <MetadataRow label={t('validUntil')} value={formatDate(quotation.validUntil)} />
             <MetadataRow
-              label="Client"
+              label={t('client')}
               value={quotation.client?.name ?? client.name}
             />
-            <MetadataRow label="Placed by" value={placedByName} />
+            <MetadataRow label={t('placedBy')} value={placedByName} />
             <MetadataRow
-              label="Converted"
+              label={t('converted')}
               value={
                 quotation.isConverted
                   ? formatDate(quotation.convertedAt as string) ?? 'Yes'
                   : null
               }
             />
-            <MetadataRow label="Title" value={quotation.title} />
-            <MetadataRow label="Description" value={quotation.description} />
-            <MetadataRow label="Shipping method" value={quotation.shippingMethod} />
+            <MetadataRow label={t('title')} value={quotation.title} />
+            <MetadataRow label={t('description')} value={quotation.description} />
+            <MetadataRow label={t('shippingMethod')} value={quotation.shippingMethod} />
             <MetadataRow
-              label="Shipping instructions"
+              label={t('shippingInstructions')}
               value={quotation.shippingInstructions}
             />
             <MetadataRow
-              label="Packaging"
+              label={t('packaging')}
               value={quotation.packagingRequirements}
             />
-            <MetadataRow label="Promo code" value={quotation.promoCode} />
-            <MetadataRow label="Price list" value={quotation.priceListType} />
-            <MetadataRow label="Branch" value={getBranchDisplayLabel(quotation.branch) || undefined} />
-            <MetadataRow label="Organisation" value={quotation.organisation?.name} />
-            <MetadataRow label="Notes" value={quotation.notes} />
+            <MetadataRow label={t('promoCode')} value={quotation.promoCode} />
+            <MetadataRow label={t('priceList')} value={quotation.priceListType} />
+            <MetadataRow label={t('branch')} value={getBranchDisplayLabel(quotation.branch) || undefined} />
+            <MetadataRow label={t('organisation')} value={quotation.organisation?.name} />
+            <MetadataRow label={t('notes')} value={quotation.notes} />
             {quotation.pdfURL && (
               <MetadataRow
-                label="PDF"
+                label={t('pdf')}
                 value={
                   <a
                     href={String(quotation.pdfURL)}
@@ -214,7 +217,7 @@ export function QuotationDetailDialog({
 
           {items.length > 0 ? (
             <div>
-              <p className="font-medium mb-2">Line items</p>
+              <p className="font-medium mb-2">{t('lineItems')}</p>
               <ul className="space-y-2">
                 {items.map((item) => (
                   <QuotationLineItemRow key={item.id} {...item} />
@@ -222,7 +225,7 @@ export function QuotationDetailDialog({
               </ul>
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm">No line items on this quotation.</p>
+            <p className="text-muted-foreground text-sm">{t('noLineItems')}</p>
           )}
         </div>
       </DialogContent>

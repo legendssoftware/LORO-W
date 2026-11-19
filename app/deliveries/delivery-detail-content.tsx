@@ -31,6 +31,7 @@ import {
   formatDeliveryStatus,
   formatDeliveryTimestamp,
 } from '@/app/deliveries/format';
+import { useTranslation } from 'react-i18next';
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -49,6 +50,7 @@ export function DeliveryDetailContent({
   /** When set, Back and a successful cancel close the host dialog instead of leaving the page. */
   onClose?: () => void;
 }) {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const embedded = onClose != null;
   const query = useDelivery(uid);
@@ -174,7 +176,7 @@ export function DeliveryDetailContent({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Item</TableHead>
+                  <TableHead>{t('tables.item')}</TableHead>
                   <TableHead className="text-right">Ordered</TableHead>
                   <TableHead className="text-right">Delivered</TableHead>
                 </TableRow>

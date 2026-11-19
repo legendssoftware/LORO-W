@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep, Driver } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessReports } from '@/lib/access';
@@ -39,14 +41,13 @@ function revealReportsStep(stepElement: string, activeDriver: Driver): void {
   }, 320);
 }
 
-function buildReportsSteps(): DriveStep[] {
+function buildReportsSteps(t: TFunction): DriveStep[] {
   return [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Reports',
-        description:
-          'Targets, policy, call quality, tasks, leads activity, and activity for the period your access allows.',
+        title: t('tours.reports.header.title'),
+        description: t('tours.reports.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -54,9 +55,8 @@ function buildReportsSteps(): DriveStep[] {
     {
       element: SEL_TABS,
       popover: {
-        title: 'Report tabs',
-        description:
-          'Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done. Leads activity is imported leads by status for each person.',
+        title: t('tours.reports.tabs.title'),
+        description: t('tours.reports.tabs.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -64,8 +64,8 @@ function buildReportsSteps(): DriveStep[] {
     {
       element: SEL_QUALITY,
       popover: {
-        title: 'Call quality',
-        description: 'Leaderboard, funnel, and coaching notes for scored calls in this range.',
+        title: t('tours.reports.callQuality.title'),
+        description: t('tours.reports.callQuality.description'),
         side: 'top',
         align: 'center',
       },
@@ -73,8 +73,8 @@ function buildReportsSteps(): DriveStep[] {
     {
       element: SEL_INSIGHTS,
       popover: {
-        title: 'Insights',
-        description: 'Clusters of work, flags, and where time went for the same range.',
+        title: t('tours.reports.insights.title'),
+        description: t('tours.reports.insights.description'),
         side: 'top',
         align: 'center',
       },
@@ -87,6 +87,7 @@ function areReportsTargetsReady(): boolean {
 }
 
 export function ReportsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -107,7 +108,7 @@ export function ReportsTour() {
     read: readReportsTourState,
     write: writeReportsTourState,
     areTargetsReady: areReportsTargetsReady,
-    getSteps: buildReportsSteps,
+    getSteps: () => buildReportsSteps(t),
     onHighlight: revealReportsStep,
   });
 

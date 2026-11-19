@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep, Driver } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessWellbeingDashboard } from '@/lib/access';
@@ -33,13 +35,13 @@ function revealWellbeingStep(stepElement: string, activeDriver: Driver): void {
   }, 320);
 }
 
-function buildWellbeingSteps(): DriveStep[] {
+function buildWellbeingSteps(t: TFunction): DriveStep[] {
   return [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Wellbeing',
-        description: 'Mood check-ins, follow-ups, and how mood lines up with performance.',
+        title: t('tours.wellbeing.header.title'),
+        description: t('tours.wellbeing.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -47,9 +49,8 @@ function buildWellbeingSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Date and branch',
-        description:
-          'Insights, Executive, and Correlations use this date range and branch. Today ignores the range.',
+        title: t('tours.wellbeing.filters.title'),
+        description: t('tours.wellbeing.filters.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -57,9 +58,8 @@ function buildWellbeingSteps(): DriveStep[] {
     {
       element: SEL_TABS,
       popover: {
-        title: 'Today, Insights, Executive, Correlations',
-        description:
-          'Today is live check-ins. Insights summarises the range. Executive is the index charts. Correlations compares mood with performance. These are estimates, not causes.',
+        title: t('tours.wellbeing.tabs.title'),
+        description: t('tours.wellbeing.tabs.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -67,8 +67,8 @@ function buildWellbeingSteps(): DriveStep[] {
     {
       element: SEL_TODAY,
       popover: {
-        title: 'Today',
-        description: 'KPIs, branch comparison, and named lists of people who need support or a follow-up.',
+        title: t('tours.wellbeing.today.title'),
+        description: t('tours.wellbeing.today.description'),
         side: 'top',
         align: 'center',
       },
@@ -76,8 +76,8 @@ function buildWellbeingSteps(): DriveStep[] {
     {
       element: SEL_RADIAL,
       popover: {
-        title: 'Executive index',
-        description: 'Each chart is one rolled-up index for the range and branch you set.',
+        title: t('tours.wellbeing.executive.title'),
+        description: t('tours.wellbeing.executive.description'),
         side: 'top',
         align: 'center',
       },
@@ -90,6 +90,7 @@ function areWellbeingTargetsReady(): boolean {
 }
 
 export function WellbeingTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -115,7 +116,7 @@ export function WellbeingTour() {
     read: readWellbeingTourState,
     write: writeWellbeingTourState,
     areTargetsReady: areWellbeingTargetsReady,
-    getSteps: buildWellbeingSteps,
+    getSteps: () => buildWellbeingSteps(t),
     onHighlight: revealWellbeingStep,
   });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import type { Claim, ClaimGroup, ClaimGroupTotal, ClaimOwnerTotal } from '@/api/types/claims';
 import { useSubmitClaimGroupMutation } from '@/api/hooks/use-claims';
@@ -33,7 +34,8 @@ function buildSections(
   claims: Claim[],
   groups: ClaimGroup[],
   byGroup: ClaimGroupTotal[] | undefined,
-  activeGroupUid: string
+  activeGroupUid: string,
+  noFolderLabel: string
 ): FolderSection[] {
   const claimsByGroup = new Map<number | 'none', Claim[]>();
   for (const claim of claims) {
@@ -68,7 +70,7 @@ function buildSections(
       uid == null ? false : (group?.isDraft ?? group?.submittedAt == null);
     sections.push({
       claimGroupUid: uid,
-      title: summary?.title ?? group?.title ?? 'No folder',
+      title: summary?.title ?? group?.title ?? noFolderLabel,
       count: summary?.count ?? loaded.length,
       totalZar: summary?.totalZar ?? loadedZar,
       isDraft,
@@ -120,7 +122,7 @@ function ownerSectionKey(claim: Claim): string {
 }
 
 function ownerInitials(title: string): string {
-  if (title === 'Unknown user') return '?';
+  if (!/[A-Za-zÀ-ÿ]/.test(title.split(/\s+/)[0] ?? '')) return '?';
   return title
     .split(/\s+/)
     .map((part) => part[0])
@@ -130,7 +132,7 @@ function ownerInitials(title: string): string {
 }
 
 /** One folder per claim owner. Used when the viewer can see every org claim. */
-function buildOwnerSections(claims: Claim[], byOwner?: ClaimOwnerTotal[]): OwnerSection[] {
+function buildOwnerSections(claims: Claim[], byOwner: ClaimOwnerTotal[] | undefined, unknownUser: string): OwnerSection[] {
   const map = new Map<string, OwnerSection>();
   for (const claim of claims) {
     const key = ownerSectionKey(claim);
@@ -148,7 +150,7 @@ function buildOwnerSections(claims: Claim[], byOwner?: ClaimOwnerTotal[]): Owner
     const name = claimPersonDisplayName(claim.owner);
     map.set(key, {
       key,
-      title: name === '—' ? 'Unknown user' : name,
+      title: name === '—' ? unknownUser : name,
       photoURL: claim.owner?.photoURL,
       count: 1,
       totalZar: zar,
@@ -185,6 +187,7 @@ function OwnerClaimFolders({
   branchByUid: Map<number, BranchListItem>;
   currencyView: ClaimsCurrencyView;
 }) {
+  const { t } = useTranslation('screens');
   const onlyOne = sections.length === 1;
   const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
 
@@ -224,7 +227,7 @@ function OwnerClaimFolders({
                     {section.title}
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    {section.count} claim{section.count === 1 ? '' : 's'}
+                    {section.count === 1 ? t('claims.claimCountOne', { count: section.count }) : t('claims.claimCount', { count: section.count })}
                     {section.totalZar > 0
                       ? ` · ${formatZarAmount(section.totalZar)}`
                       : ''}
@@ -289,17 +292,18 @@ export function ClaimsGroupedList({
   /** Admin, owner, and manager: one collapsible folder per claim owner. */
   groupByOwner?: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const submitMutation = useSubmitClaimGroupMutation();
-  const ownerSections = groupByOwner ? buildOwnerSections(claims, byOwner) : [];
+  const ownerSections = groupByOwner ? buildOwnerSections(claims, byOwner, t('claims.unknownUser')) : [];
   const sections = groupByOwner
     ? []
-    : buildSections(claims, groups, byGroup, activeGroupUid);
+    : buildSections(claims, groups, byGroup, activeGroupUid, t('claims.noFolder'));
 
   if (groupByOwner) {
     if (ownerSections.length === 0) {
       return (
         <p className="py-10 text-center text-muted-foreground">
-          No claims match your filters.
+          {t('claims.empty')}
         </p>
       );
     }
@@ -315,7 +319,7 @@ export function ClaimsGroupedList({
   if (sections.length === 0) {
     return (
       <p className="py-10 text-center text-muted-foreground">
-        No claims match your filters.
+        {t('claims.empty')}
       </p>
     );
   }
@@ -332,16 +336,16 @@ export function ClaimsGroupedList({
             {section.claimGroupUid != null ? (
               section.isDraft ? (
                 <Badge variant="secondary" className="text-[10px]">
-                  Draft
+                  {t('claims.draft')}
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-[10px]">
-                  Submitted
+                  {t('claims.submitted')}
                 </Badge>
               )
             ) : null}
             <p className="text-xs text-muted-foreground">
-              {section.count} claim{section.count === 1 ? '' : 's'}
+              {section.count === 1 ? t('claims.claimCountOne', { count: section.count }) : t('claims.claimCount', { count: section.count })}
               {` · ${formatZarAmount(section.totalZar)}`}
             </p>
             <div className="ml-auto flex flex-wrap items-center gap-1">
@@ -363,7 +367,7 @@ export function ClaimsGroupedList({
                   ) : (
                     <Send className="size-3.5" />
                   )}
-                  Submit folder
+                  {t('claims.submitFolder')}
                 </Button>
               ) : null}
             </div>

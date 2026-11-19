@@ -27,6 +27,7 @@ import {
   competitorThreatFilterToNumber,
 } from '@/lib/competitor-filter-utils';
 import { canDeleteCompetitors, canManageCompetitors } from '@/lib/access';
+import { useTranslation } from 'react-i18next';
 import { CompetitorCard, CompetitorCardSkeleton } from './components/competitor-card';
 import { CompetitorDetailDialog } from './components/competitor-detail-dialog';
 import { CompetitorFormDialog } from './components/competitor-form-dialog';
@@ -38,10 +39,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
 export function CompetitorsContent() {
+  const { t } = useTranslation('screens');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isTokenReady } = useTokenReady();
@@ -52,8 +55,8 @@ export function CompetitorsContent() {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
   }, [searchInput]);
 
   const [statusFilter, setStatusFilter] = useState<CompetitorStatusFilterValue>('all');
@@ -158,9 +161,9 @@ export function CompetitorsContent() {
     <div className="flex h-full min-h-0 flex-col">
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="mb-6 shrink-0" data-tour="competitors-page-header">
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Competitors</h1>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{t('pages.competitors.title')}</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Track rivals, threat levels and locations alongside your clients.
+            {t('pages.competitors.description')}
           </p>
         </div>
 

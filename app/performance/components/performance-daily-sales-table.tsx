@@ -24,6 +24,7 @@ import {
   performanceAmountClassName,
   performanceGpPercentClassName,
 } from '../lib/format';
+import { useTranslation } from 'react-i18next';
 
 interface PerformanceDailySalesTableProps {
   dashboardData?: PerformanceDashboardData | null;
@@ -33,6 +34,7 @@ interface PerformanceDailySalesTableProps {
 export function PerformanceDailySalesTable({
   dashboardData,
 }: PerformanceDailySalesTableProps) {
+  const { t } = useTranslation('screens');
   const currency = dashboardData?.currency?.symbol || 'R';
   const days = dashboardData?.dailySalesPerformance ?? [];
   const unassigned = dashboardData?.unassignedSales ?? [];
@@ -65,12 +67,12 @@ export function PerformanceDailySalesTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Day</TableHead>
+                <TableHead>{t('tables.date')}</TableHead>
+                <TableHead>{t('tables.day')}</TableHead>
                 <TableHead className="text-right">Baskets</TableHead>
-                <TableHead className="text-right">Clients</TableHead>
+                <TableHead className="text-right">{t('tables.client')}</TableHead>
                 <TableHead className="text-right">Basket value</TableHead>
-                <TableHead className="text-right">Sales</TableHead>
+                <TableHead className="text-right">{t('tables.sales')}</TableHead>
                 <TableHead className="text-right">GP</TableHead>
                 <TableHead className="text-right">GP %</TableHead>
               </TableRow>
@@ -125,10 +127,10 @@ export function PerformanceDailySalesTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Doc</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Store</TableHead>
-                  <TableHead>Country</TableHead>
+                  <TableHead>{t('tables.doc')}</TableHead>
+                  <TableHead>{t('tables.date')}</TableHead>
+                  <TableHead>{t('tables.store')}</TableHead>
+                  <TableHead>{t('tables.country')}</TableHead>
                   <TableHead className="text-right">Lines</TableHead>
                   <TableHead className="text-right">Amount excl.</TableHead>
                 </TableRow>

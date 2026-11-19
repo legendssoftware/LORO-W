@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
@@ -61,6 +62,7 @@ export function ClaimEditDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const groupsQuery = useClaimGroups({ enabled: open && !!claim });
   const updateMutation = useUpdateClaimMutation();
@@ -153,12 +155,12 @@ export function ClaimEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit claim</DialogTitle>
+          <DialogTitle>{t('claims.editClaim')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-amount">Amount</Label>
+              <Label htmlFor="edit-amount">{t('claims.amount')}</Label>
               <Input
                 id="edit-amount"
                 type="number"
@@ -166,55 +168,55 @@ export function ClaimEditDialog({
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
+                placeholder={t('claims.amountPlaceholder')}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Currency</Label>
+              <Label>{t('claims.currency')}</Label>
               <ClaimCurrencyField value={currency} onChange={setCurrency} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Category</Label>
+            <Label>{t('claims.category')}</Label>
             <SearchableOptionListPicker
               selectedValue={category}
               onValueChange={setCategory}
               options={categoryOptions}
               includeAllOption={false}
               searchPlaceholder="Search category…"
-              emptyMessage="No category found."
+              emptyMessage={t('claims.noCategory')}
               triggerIcon={<Tag className="size-4 shrink-0" />}
               triggerClassName="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Folder</Label>
+            <Label>{t('claims.folder')}</Label>
             <SearchableOptionListPicker
               selectedValue={folderUid}
               onValueChange={setFolderUid}
               options={folderOptions}
               allOptionValue="none"
-              placeholderLabelWhenAll="No folder"
+              placeholderLabelWhenAll={t('claims.noFolderOption')}
               searchPlaceholder="Search folders…"
-              emptyMessage="No folder found."
+              emptyMessage={t('claims.noFolderFound')}
               triggerIcon={<FolderOpen className="size-4 shrink-0" />}
               triggerClassName="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="edit-comment">Notes</Label>
+            <Label htmlFor="edit-comment">{t('claims.notes')}</Label>
             <Textarea
               id="edit-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={6}
               className="min-h-[140px]"
-              placeholder="Describe the expense…"
+              placeholder={t('claims.describe')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="edit-file">Replace receipt (optional)</Label>
+            <Label htmlFor="edit-file">{t('claims.replaceReceipt')}</Label>
             <Input
               id="edit-file"
               type="file"
@@ -230,9 +232,7 @@ export function ClaimEditDialog({
               type="button"
               variant="cancel"
               onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
+            >{t('actions.cancel')}</Button>
             <Button
               type="submit"
               className={primaryRedClass}
@@ -241,7 +241,7 @@ export function ClaimEditDialog({
               {updateMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                'Save'
+                t('actions.save')
               )}
             </Button>
           </DialogFooter>

@@ -25,6 +25,7 @@ import { ChevronDownIcon, MapPinIcon, StoreIcon, XIcon } from '@/lib/icons';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { cn } from '@/lib/utils';
 import { formatQty, formatTakeoffMoney, formatTakeoffUnit } from '@/app/takeoff/format';
+import { useTranslation } from 'react-i18next';
 
 interface DraftSection {
   key: string;
@@ -65,6 +66,7 @@ function sectionInputs(section: DraftSection): Record<string, number> {
 }
 
 export function TakeoffBuilderContent({ open, onSaved, onCancel }: TakeoffBuilderContentProps) {
+  const { t } = useTranslation('screens');
   const systemsQuery = useTakeoffSystems(open);
   const clientsQuery = useClients({ limit: 500, enabled: open });
   const calculate = useTakeoffBatchMutation();
@@ -327,11 +329,11 @@ export function TakeoffBuilderContent({ open, onSaved, onCancel }: TakeoffBuilde
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead>{t('tables.code')}</TableHead>
+                        <TableHead>{t('tables.description')}</TableHead>
                         <TableHead className="text-right">Qty</TableHead>
                         <TableHead className="text-right">Each</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">{t('tables.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

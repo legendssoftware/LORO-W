@@ -26,6 +26,7 @@ import {
   policyStatusLabel,
   POLICY_STANDARD_LABEL,
 } from '../lib/reports-policy-format';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_BADGE: Record<PolicyStatus, string> = {
   meets_all: 'bg-green-100 text-green-800 border-green-200/80',
@@ -163,6 +164,7 @@ export function ReportsPolicyTable({
   onSortChange,
   showPay,
 }: ReportsPolicyTableProps) {
+  const { t } = useTranslation('screens');
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
   function toggle(clerkUserId: string) {
@@ -183,17 +185,17 @@ export function ReportsPolicyTable({
         <TableHeader>
           <TableRow>
             <TableHead className="w-8" />
-            <SortableHead label="Employee" sortKey="name" {...sortProps} />
-            <SortableHead label="Status" sortKey="status" {...sortProps} />
+            <SortableHead label={t('tables.employee')} sortKey="name" {...sortProps} />
+            <SortableHead label={t('tables.status')} sortKey="status" {...sortProps} />
             <SortableHead label="Days" sortKey="expectedDays" {...sortProps} />
-            <SortableHead label="Visits" sortKey="visitsPct" {...sortProps} />
-            <SortableHead label="Calls" sortKey="callsPct" {...sortProps} />
+            <SortableHead label={t('tables.visits')} sortKey="visitsPct" {...sortProps} />
+            <SortableHead label={t('tables.calls')} sortKey="callsPct" {...sortProps} />
             <SortableHead label="Activity" sortKey="activityPct" {...sortProps} />
-            <TableHead>Leads</TableHead>
-            <TableHead>Quotes</TableHead>
+            <TableHead>{t('tables.leads')}</TableHead>
+            <TableHead>{t('tables.quotes')}</TableHead>
             <SortableHead label="Flagged" sortKey="flaggedVisits" {...sortProps} />
             {showPay ? <SortableHead label="Pay %" sortKey="payPct" {...sortProps} /> : null}
-            <TableHead>Signed</TableHead>
+            <TableHead>{t('tables.signed')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

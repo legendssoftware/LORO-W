@@ -19,8 +19,10 @@ import {
   IotFiltersBar,
 } from '@/app/iot/components/iot-filters-bar';
 import { IotDeviceDialog } from '@/app/iot/components/iot-device-dialog';
+import { useTranslation } from 'react-i18next';
 
 export function IotContent() {
+  const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
   const { backendUserData: profile } = useSessionSync();
   const [mounted, setMounted] = useState(false);
@@ -87,7 +89,7 @@ export function IotContent() {
     return (
       <div className={appPageMainClass}>
         <p className="text-center text-muted-foreground py-12">
-          IoT management is available to staff only.
+          {t('pages.iot.staffOnly')}
         </p>
       </div>
     );
@@ -98,10 +100,10 @@ export function IotContent() {
       <main className={cn(appPageMainClass, 'flex min-h-0 flex-1 flex-col')}>
         <div className="shrink-0 mb-6" data-tour="iot-page-header">
           <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
-            IoT devices
+            {t('pages.iot.title')}
           </h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Manage connected hardware and access devices per branch.
+            {t('pages.iot.description')}
           </p>
         </div>
 

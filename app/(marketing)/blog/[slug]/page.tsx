@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAllBlogSlugs, getBlogPost } from '@/lib/blog';
 import { MarkdownBody } from '@/components/marketing/markdown-body';
 import { MarketingCta } from '@/components/marketing/marketing-shell';
 import { buildPageMetadata, getSiteUrl, PAGE_COPY, safeJsonLd } from '@/lib/seo';
+import { BlogBackLink } from './blog-back-link';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -54,12 +54,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }}
       />
-      <Link
-        href="/blog"
-        className="font-body text-sm text-purple-400 hover:text-purple-300 mb-6 inline-block"
-      >
-        ← Blog
-      </Link>
+      <BlogBackLink />
       <article>
         <time dateTime={post.publishedAt} className="font-body text-xs text-zinc-500">
           {post.publishedAt}

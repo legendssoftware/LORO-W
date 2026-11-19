@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
@@ -86,6 +88,7 @@ function isHttpUrl(value: string): boolean {
 }
 
 function IntakeValue({ row }: { row: IntakeFormRow }) {
+  const { t } = useTranslation('screens');
   if (isPhotoRow(row) && isHttpUrl(row.value)) {
     return (
       <a href={row.value} target="_blank" rel="noreferrer" className="inline-block">
@@ -93,7 +96,7 @@ function IntakeValue({ row }: { row: IntakeFormRow }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={row.value}
-          alt="Employee photo"
+          alt={t('approvals.employeePhoto')}
           className="size-16 rounded-md object-cover"
         />
       </a>
@@ -114,14 +117,14 @@ function IntakeValue({ row }: { row: IntakeFormRow }) {
   return row.value;
 }
 
-function sourceSectionTitle(sourceItem?: ApprovalSourceItem): string {
+function sourceSectionTitle(sourceItem: ApprovalSourceItem | undefined, translate: TFunction): string {
   const type = String(sourceItem?.entityType ?? '').toLowerCase();
-  if (type === 'claim') return 'Claim';
-  if (type === 'leave') return 'Leave';
+  if (type === 'claim') return translate('approvals.sourceClaim');
+  if (type === 'leave') return translate('approvals.sourceLeave');
   if (type === 'client_profile' || type === 'client_credit_limit' || type === 'client') {
-    return 'Client';
+    return translate('approvals.sourceClient');
   }
-  return sourceItem?.label || 'Source';
+  return sourceItem?.label || translate('approvals.sourceFallback');
 }
 
 export function ApprovalDetailDialog({
@@ -135,6 +138,7 @@ export function ApprovalDetailDialog({
   onOpenChange: (open: boolean) => void;
   canAct: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const detailQuery = useApproval(approval?.uid ?? null, {
     enabled: open && approval?.uid != null,
   });
@@ -161,9 +165,9 @@ export function ApprovalDetailDialog({
         ? []
         : collectRecordFieldSections({
             record: record?.sourceRecord,
-            detailsTitle: sourceSectionTitle(sourceItem),
+            detailsTitle: sourceSectionTitle(sourceItem, t),
           }),
-    [intakeForm, record?.sourceRecord, sourceItem],
+    [intakeForm, record?.sourceRecord, sourceItem, t],
   );
   const payloadSections = useMemo(() => {
     const sourceKeys = record?.sourceRecord ? Object.keys(record.sourceRecord) : [];
@@ -210,7 +214,7 @@ export function ApprovalDetailDialog({
       <DialogContent className={APPROVAL_DETAIL_DIALOG_CONTENT_CLASS} showCloseButton={false}>
         <DetailDialogCloseButton />
         <DialogHeader>
-          <DialogTitle>Approval details</DialogTitle>
+          <DialogTitle>{t('approvals.details')}</DialogTitle>
           <DialogDescription>
             {record?.approvalReference || (record ? `APR-${record.uid}` : 'Loading…')}
           </DialogDescription>
@@ -250,7 +254,7 @@ export function ApprovalDetailDialog({
 
             <section>
               <DetailSectionHeading
-                title="Request"
+                title={t('approvals.request')}
                 icon={FileText}
                 action={
                   intakeSections.length === 0 && sourceSections.length === 0
@@ -259,38 +263,38 @@ export function ApprovalDetailDialog({
                 }
               />
               <div className={APPROVAL_DETAIL_FIELD_GRID_CLASS}>
-                <DetailFieldRow label="Title" value={record.title} icon={FileText} />
+                <DetailFieldRow label={t('approvals.fieldTitle')} value={record.title} icon={FileText} />
                 <DetailFieldRow
-                  label="Type"
+                  label={t('approvals.type')}
                   value={formatApprovalTypeLabel(record.type)}
                   icon={FileText}
                 />
                 <DetailFieldRow
-                  label="Submitted by"
+                  label={t('approvals.submittedBy')}
                   value={personName(record.requester)}
                   icon={User}
                 />
                 <DetailFieldRow
-                  label="Submitted"
+                  label={t('approvals.submitted')}
                   value={formatDateTime(record.submittedAt ?? record.createdAt)}
                   icon={Calendar}
                 />
                 {record.approver ? (
                   <DetailFieldRow
-                    label="Approver"
+                    label={t('approvals.approver')}
                     value={personName(record.approver)}
                     icon={Shield}
                   />
                 ) : null}
                 {deadlineLabel ? (
-                  <DetailFieldRow label="Deadline" value={deadlineLabel} icon={Clock} />
+                  <DetailFieldRow label={t('approvals.deadline')} value={deadlineLabel} icon={Clock} />
                 ) : null}
                 {amountLabel ? (
-                  <DetailFieldRow label="Amount" value={amountLabel} icon={DollarSign} />
+                  <DetailFieldRow label={t('approvals.amount')} value={amountLabel} icon={DollarSign} />
                 ) : null}
                 {record.requestSource ? (
                   <DetailFieldRow
-                    label="Request source"
+                    label={t('approvals.requestSource')}
                     value={record.requestSource}
                     icon={FileText}
                   />
@@ -343,7 +347,7 @@ export function ApprovalDetailDialog({
 
             {intakeForm?.documents?.length ? (
               <section>
-                <DetailSectionHeading title="Submitted documents" icon={Paperclip} />
+                <DetailSectionHeading title={t('approvals.documents')} icon={Paperclip} />
                 <ul className="space-y-2">
                   {intakeForm.documents.map((doc) => (
                     <li key={doc.url}>
@@ -380,13 +384,13 @@ export function ApprovalDetailDialog({
             {isActionable ? (
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="approval-decline-reason">
-                  Reason for decline (optional)
+                  {t('approvals.declineReason')}
                 </label>
                 <Textarea
                   id="approval-decline-reason"
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  placeholder="Enter reason for decline (optional)…"
+                  placeholder={t('approvals.declinePlaceholder')}
                 />
               </div>
             ) : null}
@@ -408,7 +412,7 @@ export function ApprovalDetailDialog({
               ) : (
                 <X className="size-4" />
               )}
-              Reject
+              {t('actions.reject')}
             </Button>
             <Button
               type="button"
@@ -421,7 +425,7 @@ export function ApprovalDetailDialog({
               ) : (
                 <Check className="size-4" />
               )}
-              Approve
+              {t('actions.approve')}
             </Button>
           </DialogFooter>
         ) : null}
@@ -431,24 +435,25 @@ export function ApprovalDetailDialog({
 }
 
 function ApprovalLifecycleActions({ approvalId }: { approvalId: number }) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   async function run(label: string, task: () => Promise<unknown>) {
     try {
       const result = await task();
       toast.success(typeof result === 'object' && result && 'message' in result ? String((result as { message?: string }).message) : label);
     } catch {
-      toast.error(`Could not ${label.toLowerCase()}`);
+      toast.error(t('approvals.couldNotAction', { action: label }));
     }
   }
   return (
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Submitted', () => submitApproval(client, approvalId))}>Submit</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Signed', () => signApproval(client, approvalId))}>Sign</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Withdrawn', () => withdrawApproval(client, approvalId))}>Withdraw</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Archived', () => archiveApproval(client, approvalId))}>Archive</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('History loaded', () => getApprovalHistory(client, approvalId))}>History</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Signatures loaded', () => getApprovalSignatures(client, approvalId))}>Signatures</Button>
-      <Button type="button" size="sm" variant="outline" onClick={() => void run('Bulk action sent', () => bulkApprovalAction(client, [approvalId], 'approve'))}>Bulk approve</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.submittedDone'), () => submitApproval(client, approvalId))}>{t('actions.submit')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.signedDone'), () => signApproval(client, approvalId))}>{t('approvals.sign')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.withdrawnDone'), () => withdrawApproval(client, approvalId))}>{t('approvals.withdraw')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.archivedDone'), () => archiveApproval(client, approvalId))}>{t('approvals.archive')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.historyLoaded'), () => getApprovalHistory(client, approvalId))}>{t('approvals.history')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.signaturesLoaded'), () => getApprovalSignatures(client, approvalId))}>{t('approvals.signatures')}</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => void run(t('approvals.bulkSent'), () => bulkApprovalAction(client, [approvalId], 'approve'))}>{t('approvals.bulkApprove')}</Button>
     </div>
   );
 }

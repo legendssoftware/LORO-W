@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { INDUSTRY_OPTIONS } from '@/lib/lead-form-utils';
 import {
   ENGAGE_INTENT_OPTIONS,
@@ -46,13 +47,14 @@ export function EngageDraftControls({
   onIndustryChange,
   onNeedChange,
 }: EngageDraftControlsProps) {
+  const { t } = useTranslation('screens');
   const industryValue = industry || (allowMixedIndustry ? ENGAGE_MIXED_INDUSTRY : '__none__');
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs">Intent</Label>
+          <Label className="text-xs">{t('leads.intent')}</Label>
           <Select value={intent} onValueChange={(value) => onIntentChange(value as EngageIntent)}>
             <SelectTrigger className="mt-1 h-8 text-sm">
               <SelectValue />
@@ -67,7 +69,7 @@ export function EngageDraftControls({
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Tone</Label>
+          <Label className="text-xs">{t('leads.tone')}</Label>
           <Select value={tone} onValueChange={(value) => onToneChange(value as EngageTone)}>
             <SelectTrigger className="mt-1 h-8 text-sm">
               <SelectValue />
@@ -83,7 +85,7 @@ export function EngageDraftControls({
         </div>
       </div>
       <div>
-        <Label className="text-xs">Industry</Label>
+        <Label className="text-xs">{t('leads.industry')}</Label>
         <Select
           value={industryValue}
           onValueChange={(value) =>
@@ -95,9 +97,9 @@ export function EngageDraftControls({
           </SelectTrigger>
           <SelectContent>
             {allowMixedIndustry ? (
-              <SelectItem value={ENGAGE_MIXED_INDUSTRY}>Use each lead&apos;s industry</SelectItem>
+              <SelectItem value={ENGAGE_MIXED_INDUSTRY}>{t('leads.useEachIndustry')}</SelectItem>
             ) : (
-              <SelectItem value="__none__">Not set</SelectItem>
+              <SelectItem value="__none__">{t('leads.notSet')}</SelectItem>
             )}
             {INDUSTRY_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
@@ -108,12 +110,12 @@ export function EngageDraftControls({
         </Select>
       </div>
       <div>
-        <Label className="text-xs">Need</Label>
+        <Label className="text-xs">{t('leads.need')}</Label>
         <Input
           value={need}
           onChange={(event) => onNeedChange(event.target.value.slice(0, 160))}
           className="mt-1 h-8 text-sm"
-          placeholder="What they need, or the offer to mention"
+          placeholder={t('leads.needPlaceholder')}
           maxLength={160}
         />
       </div>

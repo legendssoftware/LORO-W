@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
@@ -64,6 +65,7 @@ export function ClaimCurrencyPickerDialog({
   selectedValue: string;
   onSelect: (code: string) => void;
 }) {
+  const { t } = useTranslation('screens');
   const [searchQuery, setSearchQuery] = useState('');
   const rows = useMemo(() => buildClaimCurrencyPickerRows(), []);
 
@@ -87,14 +89,14 @@ export function ClaimCurrencyPickerDialog({
         )}
       >
         <DialogHeader>
-          <DialogTitle>Select currency</DialogTitle>
+          <DialogTitle>{t('claims.selectCurrency')}</DialogTitle>
         </DialogHeader>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by country or currency…"
+            placeholder={t('claims.searchCurrency')}
             className="pl-9"
             autoCapitalize="none"
             autoCorrect="off"
@@ -104,7 +106,7 @@ export function ClaimCurrencyPickerDialog({
           {filteredRows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-sm text-muted-foreground">
               <Search className="size-5 opacity-50" />
-              No currency found
+              {t('claims.noCurrency')}
             </div>
           ) : (
             <ul className="divide-y divide-gray-100">

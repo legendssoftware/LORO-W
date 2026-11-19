@@ -1,0 +1,1698 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "export": "Export",
+    "exportCsv": "Export CSV",
+    "exportPdf": "Export PDF",
+    "filter": "Filter",
+    "filters": "Filters",
+    "resetFilters": "Reset filters",
+    "next": "Next",
+    "prev": "Prev",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "totalCount": " · {{count}} total",
+    "pageNumber": "Page {{page}}",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "approve": "Approve",
+    "reject": "Reject",
+    "decline": "Decline",
+    "yes": "Yes",
+    "no": "No",
+    "done": "Done",
+    "send": "Send",
+    "share": "Share",
+    "back": "Back",
+    "loading": "Loading…",
+    "loadMore": "Load more",
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "remove": "Remove",
+    "tryAgain": "Try again",
+    "allTime": "All time",
+    "todayUtc": "Today (UTC)",
+    "thisMonthUtc": "This month (UTC)",
+    "wholeMonthUtc": "Whole month (UTC)",
+    "pickUtcRange": "or pick a UTC range below",
+    "resetDefaultRange": "Reset to default range",
+    "allDates": "All dates",
+    "today": "Today",
+    "thisMonth": "This month",
+    "searchUsers": "Search users…",
+    "allStatuses": "All statuses",
+    "noStatusFound": "No status found.",
+    "clearStatusFilter": "Clear status filter"
+  },
+  "dashboard": {
+    "logs": "Logs",
+    "viewAttendanceLogs": "View attendance logs",
+    "tipOfTheDay": "Tip of the day",
+    "loadingTip": "Loading tip…",
+    "noTipToday": "No tip today.",
+    "cookieBanner": "This site uses cookies to keep you signed in and remember your dashboard layout.",
+    "me": "Me",
+    "shiftStarted": "Shift started",
+    "shiftEnded": "Shift ended",
+    "breakStarted": "Break started",
+    "breakEnded": "Break ended",
+    "couldNotSavePulse": "Could not save your pulse. Please try again."
+  },
+  "visits": {
+    "title": "Visits",
+    "description": "All activity is listed by default. Use the activity filter to focus on physical visits, telephone, WhatsApp, email, or landline.",
+    "startVisit": "Start visit",
+    "endVisit": "End visit",
+    "chooseMethod": "Choose how you are conducting this visit.",
+    "methodOfVisit": "Method of visit",
+    "selectMethod": "Please select a method of visit",
+    "visitStarted": "Visit started",
+    "failedToStart": "Failed to start visit",
+    "empty": "No visits yet. Start a visit to see it here.",
+    "noActivityMatch": "No activity matches your filters.",
+    "noChannelMatch": "No {{channel}} match your filters.",
+    "exportTitle": "Visits · {{channel}}",
+    "dispatch": "Dispatch",
+    "draftedFallback": "Drafted a fallback note",
+    "noteDrafted": "Visit note drafted",
+    "couldNotDraft": "Could not draft a note",
+    "leadCreatedNamed": "Lead created: {{name}}",
+    "convertedToLead": "Check-in converted to a lead",
+    "couldNotConvert": "Could not convert this check-in",
+    "couldNotLoadDispatch": "Could not load the dispatch summary",
+    "dispatchSummary": "{{range}}: {{planned}} planned, {{completed}} completed, {{inProgress}} in progress.",
+    "loadingDispatch": "Loading planned and completed visits…",
+    "checkInId": "Check-in id",
+    "draftNote": "Draft note",
+    "convertToLead": "Convert to lead"
+  },
+  "visitsTable": {
+    "openInNewTab": "Open in new tab",
+    "view": "View",
+    "viewFile": "View file",
+    "fileCount": "{{count}} files",
+    "fileCountOne": "{{count}} file",
+    "phoneLine": "Phone: {{value}}",
+    "branchLine": "Branch: {{value}}",
+    "roleLine": "Role: {{value}}",
+    "inAddress": "In: {{address}}",
+    "outAddress": "Out: {{address}}",
+    "openLink": "Open link",
+    "unknown": "Unknown",
+    "visitCount": "{{count}} visits",
+    "visitCountOne": "{{count}} visit",
+    "emptyDefault": "No visits yet. Start a visit to see it here.",
+    "noChanges": "No changes to save",
+    "visitUpdated": "Visit updated",
+    "failedToUpdate": "Failed to update visit",
+    "failedToLinkLead": "Failed to link lead to visit",
+    "convertToLead": "Convert to Lead",
+    "visitDetails": "Visit Details – #{{uid}}",
+    "timing": "Timing",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "duration": "Duration",
+    "location": "Location",
+    "in": "In",
+    "out": "Out",
+    "details": "Details",
+    "noClient": "No client",
+    "noClientsFound": "No clients found",
+    "notes": "Notes",
+    "addNotes": "Add notes",
+    "resolution": "Resolution",
+    "outcome": "What was the outcome of this call or visit?",
+    "contactName": "Contact name",
+    "personContacted": "Person contacted",
+    "company": "Company",
+    "cell": "Cell",
+    "landline": "Landline",
+    "contactEmail": "Contact email",
+    "address": "Address",
+    "street": "Street",
+    "suburb": "Suburb",
+    "city": "City",
+    "province": "Province / State",
+    "country": "Country",
+    "postalCode": "Postal code",
+    "select": "Select",
+    "optional": "Optional",
+    "personSeenPosition": "Person seen position",
+    "followUp": "Follow-up",
+    "followUpHint": "Check-out with this follow-up date creates a task for the visit owner (visible in Planning).",
+    "quotationNumber": "Quotation number",
+    "quoteNumber": "Quote number",
+    "quotationStatus": "Quotation status",
+    "salesValue": "Sales value",
+    "valueExVat": "Value (ex-VAT)",
+    "methodOfContact": "Method of contact",
+    "method": "Method",
+    "meetingLink": "Meeting link",
+    "buildingType": "Building type",
+    "businessType": "Business type",
+    "contactMade": "Contact made",
+    "contact": "Contact",
+    "contactAddress": "Contact address",
+    "lead": "Lead",
+    "client": "Client",
+    "branch": "Branch",
+    "expanded": "Expanded",
+    "wordCount": "{{count}} / {{max}} words",
+    "dateFilterDescription": "Date range, region, business type, and user for visit history.",
+    "regionFilterDescription": "Region and business type for the map.",
+    "mapFilterDescription": "Country and province for the map and suggested areas.",
+    "allActivity": "All activity",
+    "noActivityType": "No activity type found.",
+    "allRegions": "All regions",
+    "noRegion": "No region found.",
+    "allBusinessTypes": "All business types",
+    "noBusinessType": "No business type found.",
+    "searchVisits": "Search visits…",
+    "columns": {
+      "salesPerson": "Sales Person",
+      "date": "Date and time",
+      "location": "Check-in / Check-out location",
+      "method": "Method",
+      "buildingType": "Building type",
+      "contactMade": "Contact made",
+      "companyName": "Company",
+      "businessType": "Business type",
+      "personSeenPosition": "Person seen position",
+      "contactFullName": "Contact name",
+      "contactImage": "Contact image",
+      "contactCellPhone": "Cell",
+      "contactLandline": "Landline",
+      "contactEmail": "Contact email",
+      "contactAddress": "Contact address",
+      "meetingLink": "Meeting link",
+      "notes": "Notes",
+      "resolution": "Resolution",
+      "followUp": "Follow Up",
+      "quoteNumber": "Quote Number",
+      "quotationStatus": "Quotation status",
+      "value": "Value - ex-VAT",
+      "lead": "Lead",
+      "client": "Client",
+      "branch": "Branch"
+    }
+  },
+  "leads": {
+    "title": "Leads",
+    "description": "View, track, and manage your sales leads.",
+    "couldNotLoad": "Could not load leads. Try again.",
+    "engageLeads": "Engage leads",
+    "createLead": "Create lead",
+    "creating": "Creating…",
+    "createDescription": "Add a new sales lead. At least one of name, email, or phone is required.",
+    "leadCreated": "Lead created successfully",
+    "needContact": "Please provide at least one of: name, email, or phone.",
+    "selectBranch": "Please select a branch.",
+    "callInProgress": "Call in progress",
+    "callInProgressWith": "Call in progress with {{name}}",
+    "viewLead": "View lead",
+    "endCall": "End call",
+    "startCall": "Start Call",
+    "endCallTitle": "End call",
+    "endCallDescription": "Add call notes and outcomes.",
+    "callEnded": "Call ended",
+    "dedupeTitle": "Deduplicate leads?",
+    "dedupeDescription": "This permanently deletes duplicate leads in your organisation. For each group with the same email or the same name and phone number, we keep the oldest lead and move interactions onto it. This cannot be undone.",
+    "running": "Running…",
+    "runDedupe": "Run dedupe",
+    "dedupeFailed": "Dedupe failed",
+    "empty": "No leads match your filters.",
+    "followUpToday": "Follow up today",
+    "unassigned": "Unassigned",
+    "leadNumber": "Lead #{{uid}}",
+    "fallbackName": "Lead",
+    "filtersDescription": "Date range, status, source, origin, and owner for the leads list.",
+    "allSources": "All sources",
+    "noSource": "No source found.",
+    "allOrigins": "All origins",
+    "noOrigin": "No origin found.",
+    "allTemperatures": "All temperatures",
+    "noTemperature": "No temperature found.",
+    "allPriorities": "All priorities",
+    "noPriority": "No priority found.",
+    "searchLeads": "Search leads…",
+    "importLeads": "Import leads",
+    "fromSpreadsheet": "From spreadsheet",
+    "fromGoogleMaps": "From Google Maps",
+    "dedupeLeads": "Dedupe leads",
+    "dedupeTooltip": "Remove duplicate leads for this organisation (keeps the oldest in each group)",
+    "unassignedFilter": "Un-Assigned",
+    "searchTeam": "Search team members…",
+    "searching": "Searching…",
+    "noMatches": "No matches.",
+    "setStatusTo": "Set status to {{status}}",
+    "currentStatus": "Current status: {{status}}",
+    "reasonOptional": "Reason (optional)",
+    "descriptionOptional": "Description (optional)",
+    "reasonPlaceholder": "e.g. Customer requested callback",
+    "notesPlaceholder": "Additional notes",
+    "closeAria": "Close",
+    "intent": "Intent",
+    "tone": "Tone",
+    "industry": "Industry",
+    "useEachIndustry": "Use each lead's industry",
+    "notSet": "Not set",
+    "need": "Need",
+    "needPlaceholder": "What they need, or the offer to mention",
+    "message": "Message",
+    "messagePlaceholder": "Type the message, or let AI write a draft you can edit…",
+    "nameTokenHint": "Use {{token}} where the lead’s name should appear.",
+    "smsSplit": " This SMS is longer than 160 characters and may be split.",
+    "whatsAppCount": " WhatsApp {{count}}/{{max}}.",
+    "shortenWhatsApp": " Shorten the WhatsApp message before sending.",
+    "shortenBeforeSend": ". Shorten the message before sending.",
+    "matchFilters": "{{count}} leads match the current filters.",
+    "matchFiltersOne": "{{count}} lead matches the current filters.",
+    "matchSkipped": "{{count}} leads match the current filters. Leads without {{contact}} are skipped.",
+    "matchSkippedOne": "{{count}} lead matches the current filters. Leads without {{contact}} are skipped.",
+    "narrowFilters": " Narrow the filters to {{max}} or fewer before sending.",
+    "atMost": " At most {{max}} leads can be sent at once.",
+    "confirmSend": "Send this {{channel}} message to up to {{count}} leads matching your current filters?",
+    "back": "Back",
+    "writeWithAi": "Write with AI",
+    "noLeadsMatch": "No leads match these filters",
+    "engageResult": "Sent {{sent}}. Skipped {{skipped}}. Failed {{failed}}.",
+    "email": "Email",
+    "sms": "SMS",
+    "whatsapp": "WhatsApp",
+    "missingEmail": "an email address",
+    "missingPhone": "a phone number",
+    "missingWhatsApp": "a WhatsApp or phone number",
+    "chat": "Chat",
+    "closeChat": "Close chat",
+    "engageLead": "Engage lead",
+    "scheduleFollowUp": "Schedule follow-up",
+    "transferLead": "Transfer lead",
+    "closeTransfer": "Close transfer",
+    "reactivate": "Reactivate",
+    "changeStatus": "Change status",
+    "leadActions": "Lead actions",
+    "convertToClient": "Convert to client",
+    "setTo": "Set to {{status}}",
+    "discardThisLead": "Discard this lead",
+    "editLead": "Edit lead",
+    "deleteLead": "Delete lead?",
+    "deleteLeadDescription": "This will soft-delete the lead. You can restore it later if needed.",
+    "discardTitle": "Discard this lead?",
+    "discardDescription": "The lead will be marked as discarded. You can reactivate it later from this dialog, like declined or cancelled leads.",
+    "discardLead": "Discard lead",
+    "transferHelp": "Select a team member to own this lead. Interactions and history stay on the lead.",
+    "draft": "Draft",
+    "editOutreach": "Edit outreach message before sending…",
+    "copy": "Copy to clipboard",
+    "regenerate": "Regenerate",
+    "contact": "Contact",
+    "name": "Name",
+    "phone": "Phone",
+    "secondaryPhone": "Secondary phone",
+    "company": "Company",
+    "status": "Status",
+    "source": "Source",
+    "temperature": "Temperature",
+    "priority": "Priority",
+    "stage": "Stage",
+    "form": {
+      "leadImage": "Lead image",
+      "leadPreview": "Lead preview",
+      "noImage": "No image selected",
+      "changeImage": "Change image",
+      "fromGallery": "From gallery",
+      "name": "Name *",
+      "namePlaceholder": "e.g. John Doe",
+      "company": "Company",
+      "companyPlaceholder": "e.g. Acme Inc.",
+      "email": "Email",
+      "emailPlaceholder": "e.g. john@example.com",
+      "phone": "Phone",
+      "phonePlaceholder": "e.g. +27 12 345 6789",
+      "secondaryPhone": "Secondary phone",
+      "optional": "Optional",
+      "whatsapp": "WhatsApp",
+      "form": "Form",
+      "formPlaceholder": "e.g. Contact form",
+      "channel": "Channel",
+      "channelPlaceholder": "e.g. email",
+      "labels": "Labels",
+      "labelsPlaceholder": "Comma-separated, e.g. VIP, Hot",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes",
+      "lastContact": "Last contact date",
+      "nextFollowUp": "Next follow-up date",
+      "companyDetails": "Company details",
+      "jobTitle": "Job title",
+      "jobTitlePlaceholder": "e.g. Marketing Manager",
+      "industry": "Industry",
+      "businessSize": "Business size",
+      "decisionMaker": "Decision maker role",
+      "qualification": "Lead qualification",
+      "intent": "Intent",
+      "temperature": "Temperature",
+      "priority": "Priority",
+      "source": "Source",
+      "lifecycle": "Lifecycle stage",
+      "quality": "Quality rating (1-5)",
+      "status": "Status",
+      "financial": "Financial information",
+      "budget": "Budget range",
+      "currency": "Currency",
+      "estimatedValue": "Estimated value",
+      "valuePlaceholder": "e.g. 50000",
+      "timeline": "Purchase timeline",
+      "communication": "Communication preferences",
+      "preferred": "Preferred communication",
+      "timezone": "Timezone",
+      "bestTime": "Best contact time",
+      "additional": "Additional information",
+      "painPoints": "Pain points",
+      "painPlaceholder": "List main pain points...",
+      "referral": "Referral source",
+      "referralPlaceholder": "Who referred this lead?",
+      "competitor": "Competitor info",
+      "competitorPlaceholder": "Current solutions they use",
+      "marketing": "Marketing information",
+      "campaign": "Campaign name",
+      "campaignPlaceholder": "e.g. Summer2024",
+      "landing": "Landing page",
+      "landingPlaceholder": "https://...",
+      "utmSource": "UTM source",
+      "utmMedium": "UTM medium",
+      "utmCampaign": "UTM campaign",
+      "utmTerm": "UTM term",
+      "utmTermPlaceholder": "e.g. drywall supplies",
+      "utmContent": "UTM content",
+      "utmContentPlaceholder": "e.g. banner-ad",
+      "attachments": "File attachments",
+      "attachmentError": "Attachments must be documents or photos under 5 MB.",
+      "addFiles": "Add files (PDF, images, documents)",
+      "branchRequired": "Branch (required)",
+      "selectBranch": "Select branch",
+      "branchFallback": "Branch {{uid}}"
+    },
+    "channel": "Channel",
+    "labels": "Labels",
+    "scoring": "Scoring & value",
+    "leadScore": "Lead score",
+    "estimatedValue": "Estimated value",
+    "dates": "Dates",
+    "created": "Created",
+    "updated": "Updated",
+    "lastContact": "Last contact",
+    "nextFollowUp": "Next follow-up",
+    "commercialSnapshot": "Last commercial snapshot",
+    "callScore": "Call score",
+    "qualityConversation": "Quality conversation",
+    "boqAsked": "BOQ asked",
+    "followUpBooked": "Follow-up booked",
+    "missedPursuit": "Missed pursuit",
+    "nextAction": "Next action",
+    "loggedInteractions": "Logged interactions",
+    "companyCalls": "Company calls",
+    "loadingCompanyCalls": "Loading company calls…",
+    "noCompanyCalls": "No company-line calls matched this lead's phone yet.",
+    "history": "History",
+    "loadingActivity": "Loading activity…",
+    "noActivity": "No recorded activity yet.",
+    "people": "People",
+    "owner": "Owner",
+    "assignees": "Assignees",
+    "notes": "Notes",
+    "attachments": "Attachments",
+    "missed": "Missed:",
+    "systemName": "LORO",
+    "leadUpdated": "Lead updated",
+    "failedToUpdate": "Failed to update lead",
+    "leadDeleted": "Lead deleted",
+    "failedToDelete": "Failed to delete lead",
+    "leadReactivated": "Lead reactivated",
+    "failedToReactivate": "Failed to reactivate lead",
+    "leadDiscarded": "Lead discarded",
+    "failedToDiscard": "Failed to discard lead",
+    "leadConverted": "Lead converted to client",
+    "failedToConvert": "Failed to convert lead",
+    "chooseDifferentOwner": "Choose a different user than the current owner",
+    "leadTransferred": "Lead transferred",
+    "aiDraftFallback": "AI draft unavailable; using template.",
+    "copied": "Copied to clipboard",
+    "failedToCopy": "Failed to copy",
+    "sentVia": "Sent via {{channel}}",
+    "openedToSend": "Opened {{channel}} to complete sending",
+    "openedEmail": "Opened your email app",
+    "openedWhatsApp": "Opened WhatsApp",
+    "smtpFallback": "SMTP unavailable — opened your email app instead",
+    "openedWhatsAppSend": "Opened WhatsApp to send the message",
+    "failedToSend": "Failed to send via {{channel}}",
+    "statusUpdated": "Status updated",
+    "failedToUpdateStatus": "Failed to update status",
+    "callAlreadyInProgress": "Call already in progress — use End call when you are ready",
+    "endVisitFirst": "End your current visit before starting a call",
+    "noPhone": "This lead has no phone number",
+    "callStarted": "Call started",
+    "failedToStartCall": "Failed to start call",
+    "teamChat": "Team chat",
+    "teamChatHint": "Visible to lead owner and assignees",
+    "couldNotLoadMessages": "Could not load messages.",
+    "noMessages": "No messages yet.",
+    "readyFile": "Ready: {{name}}",
+    "attachFile": "Attach file",
+    "attachAudio": "Attach audio",
+    "typeMessage": "Type a message…",
+    "fileReady": "File ready to send",
+    "uploadFailed": "Upload failed",
+    "typeOrAttach": "Type a message or attach a file",
+    "couldNotSend": "Could not send message",
+    "importSpreadsheetTitle": "Import leads from CSV or Excel",
+    "importMapsTitle": "Import leads from Google Maps",
+    "howThisWorks": "How this works",
+    "importComplete": "Import complete",
+    "imported": "Imported",
+    "failedRows": "Failed rows",
+    "remindersCreated": "Reminders created",
+    "skippedDuplicates": "Skipped duplicates",
+    "leadsPerMember": "Leads per team member",
+    "nameColumn": "Name",
+    "leadsColumn": "Leads",
+    "rowErrors": "Row errors",
+    "spreadsheetFile": "Spreadsheet file",
+    "uploadedFile": "Uploaded file",
+    "assignment": "Assignment",
+    "selectedMembers": "Selected team members",
+    "assignByBranch": "Assign by branch",
+    "branches": "Branches",
+    "teamOptional": "Team members (optional)",
+    "defaultSourceOptional": "Default source (optional)",
+    "sourcePlaceholder": "Use file Source column or leave blank",
+    "uploadMore": "Upload more",
+    "import": "Import",
+    "importing": "Importing…",
+    "location": "Location",
+    "locationPlaceholder": "Johannesburg, South Africa",
+    "maxPlaces": "Max places per search",
+    "defaultSource": "Default source",
+    "leadSource": "Lead source",
+    "scrapeMore": "Scrape more",
+    "importingPlaces": "Importing places as leads…",
+    "scrapingMaps": "Scraping Google Maps…",
+    "scrapeFailed": "The scrape or import failed.",
+    "couldNotStartScrape": "Could not start Google Maps scrape.",
+    "importFailed": "Import failed.",
+    "importedSummary": "Imported {{imported}} leads.",
+    "importedSummaryFailed": "Imported {{imported}} leads. {{failed}} failed.",
+    "importedWithFailedInline": "Imported {{imported}} leads, {{failed}} failed.",
+    "selectFile": "Please select a CSV or Excel (.xlsx) file.",
+    "fileTooLarge": "File size must be under 2MB.",
+    "couldNotCountRows": "Could not read row count from file.",
+    "selectFileToUpload": "Please select a CSV or Excel file to upload.",
+    "noBranches": "No branches are available to assign by branch.",
+    "selectBranchPool": "Select at least one branch to assign leads to its team members.",
+    "couldNotReadRows": "Could not read rows from file. Try again or re-upload.",
+    "enterSearchTerm": "Enter at least one Google Maps search term.",
+    "enterLocation": "Enter a location (e.g. Johannesburg, South Africa).",
+    "starting": "Starting…",
+    "startScrape": "Start scrape",
+    "sampleFiles": "Sample files",
+    "downloadSampleCsv": "Download sample CSV",
+    "downloadSampleExcel": "Download sample Excel (.xlsx)"
+  },
+  "claims": {
+    "title": "Claims",
+    "description": "Submit expenses, attach receipts, and track approvals to payment.",
+    "couldNotLoad": "Could not load claims",
+    "featureHint": "Your organisation may need the claims feature enabled.",
+    "export": "Export",
+    "newClaim": "New claim",
+    "loadMore": "Load more",
+    "noClaimsExport": "No claims to export",
+    "couldNotExport": "Could not export claims",
+    "total": "Total",
+    "pending": "Pending",
+    "approved": "Approved",
+    "declined": "Declined",
+    "paid": "Paid",
+    "claimCount": "{{count}} claims",
+    "claimCountOne": "{{count}} claim",
+    "unconverted": "{{count}} claims could not be converted to ZAR (no FX rate on the claim date).",
+    "unconvertedOne": "{{count}} claim could not be converted to ZAR (no FX rate on the claim date).",
+    "folders": "Claim folders",
+    "newFolder": "New folder",
+    "showAll": "Show all claims",
+    "folderName": "Folder name",
+    "noFolders": "No claim folders yet. Create a folder to group receipts before sending them for approval.",
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "noFolder": "No folder",
+    "unknownUser": "Unknown user",
+    "empty": "No claims match your filters.",
+    "submitFolder": "Submit folder",
+    "filtersDescription": "Narrow claims by status, created date, folder, and user.",
+    "allFolders": "All folders",
+    "noFolderFound": "No folder found.",
+    "clearFolder": "Clear folder filter",
+    "noUser": "No user found.",
+    "clearUser": "Clear user filter",
+    "allUsers": "All users",
+    "searchFolders": "Search folders…",
+    "searchStatus": "Search status…",
+    "amountCurrency": "Amount currency",
+    "original": "Original",
+    "zar": "ZAR",
+    "layout": "Claims layout",
+    "folderGrid": "Folder grid",
+    "userList": "User list",
+    "search": "Ref, category, owner…",
+    "resetDate": "Reset date range",
+    "exportTitle": "Export claims",
+    "exportDescription": "Choose the dates to include. Status, folder, person, and search stay as they are on the page.",
+    "renameFolder": "Rename folder",
+    "deleteFolder": "Delete folder?",
+    "deleteFolderDescription": "Claims in “{{title}}” stay in the list and move out of this folder.",
+    "deleteFolderAction": "Delete folder",
+    "editClaim": "Edit claim",
+    "amount": "Amount",
+    "amountPlaceholder": "0.00",
+    "currency": "Currency",
+    "category": "Category",
+    "noCategory": "No category found.",
+    "folder": "Folder",
+    "folderOptional": "Folder (optional)",
+    "noFolderOption": "No folder",
+    "notes": "Notes",
+    "describe": "Describe the expense…",
+    "replaceReceipt": "Replace receipt (optional)",
+    "receiptOptional": "Receipt (optional)",
+    "addToFolder": "Add to folder",
+    "submitClaim": "Submit claim",
+    "submitting": "Submitting…",
+    "folderDraftHint": "Claims added to a folder stay in draft until you submit the folder from the Claims page. No emails are sent while you keep adding receipts.",
+    "selectCurrency": "Select currency",
+    "searchCurrency": "Search by country or currency…",
+    "noCurrency": "No currency found",
+    "back": "Back to claims",
+    "shareCopied": "Share link copied",
+    "couldNotCopy": "Could not copy link",
+    "noShareLink": "No share link returned",
+    "couldNotShare": "Could not share",
+    "claimNumber": "Claim #{{uid}}",
+    "removeFromFolder": "Remove from folder",
+    "details": "Details",
+    "noNotes": "No notes saved",
+    "attachment": "Attachment",
+    "receiptAlt": "Receipt",
+    "createdBy": "Created by",
+    "approvedBy": "Approved by",
+    "fxConverted": "Converted with {{code}} rate {{rate}} on {{date}} (1 ZAR = {{rate}} {{code}}).",
+    "claimDate": "claim date",
+    "noFx": "No FX rate found for {{currency}} on the claim date.",
+    "createdOn": "Created {{date}}",
+    "updatedOn": " · Updated {{date}}",
+    "approveTitle": "Approve claim?",
+    "approveDescription": "The submitter will be notified that this claim was approved.",
+    "declineTitle": "Decline claim?",
+    "declineDescription": "This sets the claim to declined. You can add follow-up in approvals if needed.",
+    "paidTitle": "Mark as paid?",
+    "markPaid": "Mark paid",
+    "removeTitle": "Remove from folder?",
+    "removeDescription": "The claim stays in the list and is no longer grouped in this folder.",
+    "deleteTitle": "Delete claim?",
+    "deleteDescription": "This soft-deletes the claim. You can restore it from the server if your role allows.",
+    "csvUser": "User",
+    "csvEmail": "Email",
+    "csvRef": "Claim ref",
+    "csvCategory": "Category",
+    "csvStatus": "Status",
+    "csvAmount": "Amount",
+    "csvCurrency": "Currency",
+    "csvAmountZar": "Amount ZAR",
+    "csvCreated": "Created",
+    "csvFolder": "Folder",
+    "csvBranch": "Branch",
+    "paidDescription": "Confirm reimbursement was completed for this claim."
+  },
+  "leave": {
+    "title": "Leave",
+    "description": "Request leave, filter the inbox, and approve, reject, or cancel a request.",
+    "request": "Request leave",
+    "allPeople": "All people",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "empty": "No leave requests match these filters.",
+    "requests": "Requests",
+    "person": "Person",
+    "type": "Type",
+    "dates": "Dates",
+    "status": "Status",
+    "chooseType": "Choose a leave type",
+    "start": "Start",
+    "end": "End",
+    "startDate": "Leave start date",
+    "endDate": "Leave end date",
+    "motivation": "Motivation",
+    "motivationPlaceholder": "Why you need the leave",
+    "dialogTitle": "Leave request",
+    "reason": "Reason",
+    "reasonPlaceholder": "Required when you reject",
+    "cancelRequest": "Cancel request",
+    "datesRequired": "Start and end dates are required",
+    "requested": "Leave requested",
+    "couldNotRequest": "Could not request leave",
+    "reasonRequired": "A rejection reason is required",
+    "updated": "Leave updated",
+    "couldNotUpdate": "Could not update leave",
+    "cancelled": "Cancelled"
+  },
+  "approvals": {
+    "title": "Approvals",
+    "description": "Review pending requests, inspect employee intake forms, and approve or reject from the web.",
+    "couldNotLoad": "Could not load approvals",
+    "newRequest": "New request",
+    "requestCreated": "Request created",
+    "couldNotCreate": "Could not create a request",
+    "myRequests": "My requests",
+    "myRequestsLoaded": "My requests loaded",
+    "couldNotLoadMine": "Could not load my requests",
+    "empty": "No approvals match your filters.",
+    "filtersDescription": "Narrow approvals by status and type.",
+    "allTypes": "All types",
+    "noType": "No type found.",
+    "clearType": "Clear type filter",
+    "search": "Search title, reference, or hire…",
+    "searchAria": "Search approvals",
+    "type": "Type",
+    "amount": "Amount",
+    "overdue": "Overdue",
+    "deadline": "Deadline",
+    "submittedOn": "Submitted: {{date}}",
+    "viewDetails": "View details",
+    "openEmployee": "Open employee record",
+    "openClaim": "Open claim",
+    "openClient": "Open client",
+    "openSource": "Open source record",
+    "details": "Approval details",
+    "request": "Request",
+    "fieldTitle": "Title",
+    "submittedBy": "Submitted by",
+    "submitted": "Submitted",
+    "approver": "Approver",
+    "requestSource": "Request source",
+    "documents": "Submitted documents",
+    "declineReason": "Reason for decline (optional)",
+    "declinePlaceholder": "Enter reason for decline (optional)…",
+    "sign": "Sign",
+    "withdraw": "Withdraw",
+    "archive": "Archive",
+    "history": "History",
+    "signatures": "Signatures",
+    "bulkApprove": "Bulk approve",
+    "submittedDone": "Submitted",
+    "signedDone": "Signed",
+    "withdrawnDone": "Withdrawn",
+    "archivedDone": "Archived",
+    "historyLoaded": "History loaded",
+    "signaturesLoaded": "Signatures loaded",
+    "bulkSent": "Bulk action sent",
+    "couldNotAction": "Could not {{action}}",
+    "sourceClaim": "Claim",
+    "sourceLeave": "Leave",
+    "sourceClient": "Client",
+    "sourceFallback": "Source",
+    "employeePhoto": "Employee photo"
+  },
+  "pages": {
+    "denied": "You do not have access to this page.",
+    "products": {
+      "title": "Products",
+      "description": "LORO catalogue products and ERP items used in the store."
+    },
+    "warnings": {
+      "title": "Warnings",
+      "description": "Organisation warnings. A warning created on a staff profile appears here."
+    },
+    "documents": {
+      "title": "Documents",
+      "description": "Files saved in the library and in the organisation bucket."
+    },
+    "feedback": {
+      "title": "Feedback",
+      "description": "Inbox, counts, and status updates. Token expiry stays on Settings."
+    },
+    "geofences": {
+      "title": "Geofences",
+      "description": "Create areas and review entry events. The same areas draw on Competitor Overview."
+    },
+    "usage": {
+      "title": "Usage",
+      "description": "Requests per endpoint. The server records events itself."
+    },
+    "news": {
+      "title": "News",
+      "description": "Organisation announcements."
+    },
+    "salesTips": {
+      "title": "Sales tips",
+      "description": "Edit the catalogue. Home still shows the tip of the day."
+    },
+    "resellers": {
+      "title": "Resellers",
+      "description": "Add, edit, archive, and restore reseller records."
+    },
+    "rewards": {
+      "title": "Rewards",
+      "description": "Leaderboard and a person's XP."
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "description": "Profiles, reward catalogue, and claim history."
+    },
+    "clients": {
+      "title": "Clients",
+      "description": "Create, search, and manage organisation clients."
+    },
+    "planning": {
+      "title": "Planning",
+      "description": "Plan field work, routes, and follow-ups in one place.",
+      "routeTitle": "How route planning works",
+      "routeNote": "Each night the ERP import matches customers to the rep with the same sales code, then books weekday visits for the next four weeks. Each day stays in one nearby area (about 40 km), up to 10 clients, in driving order. A fuller area continues the next day before a farther area starts. Clients who already have a visit from today through that window stay as they are. Clients without a map address are skipped. All tasks includes those upcoming days. Open Routes and pick the day the visits were planned.",
+      "routeEmpty": "No routes for this day. Pick the day the visits were planned. Each rep needs a branch with coordinates, and that day’s stops are saved as one route."
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "subtitleOrg": "Organisation pipeline for the selected period.",
+      "subtitleTeam": "Targets, leads, and visits for your team.",
+      "subtitleSelf": "Targets, leads, and visits for your period—scoped to you.",
+      "targets": "Targets & progress",
+      "quotations": "Quotations (ERP & LORO)",
+      "leads": "Lead pipeline",
+      "visits": "Visits"
+    },
+    "assets": {
+      "title": "Assets",
+      "descriptionManage": "Your linked assets, or the full organisation inventory. You can add, edit, and reassign assets.",
+      "descriptionOwn": "Add and manage assets you own. You can also view equipment and vehicles linked to you."
+    },
+    "calls": {
+      "title": "Call recordings",
+      "description": "Company-line PBX audio, transcribed into a speaker-labelled dialogue. In-app calls were started from LORO; company phone calls were dialled from Linkus or a desk handset.",
+      "denied": "You do not have access to call recordings."
+    },
+    "merchandise": {
+      "title": "Merchandise Management",
+      "description": "Track and manage merchandise inventories and transactions"
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitleOrg": "Org performance targets, policy, call quality, tasks and planning, leads activity, and activity intelligence.",
+      "subtitleTeam": "Your team performance targets, policy, call quality, tasks and planning, leads activity, and activity intelligence.",
+      "subtitleSelf": "Your performance targets, policy, tasks and planning, leads activity, and activity intelligence for the selected period.",
+      "tabs": {
+        "targets": "Targets",
+        "policy": "Policy",
+        "call-quality": "Call quality",
+        "insights": "Insights",
+        "tasks": "Tasks & planning",
+        "leads-activity": "Leads activity"
+      }
+    },
+    "performance": {
+      "title": "Performance Tracker",
+      "consolidated": "Consolidated Statement",
+      "subtitle": "Analytics and insights dashboard",
+      "consolidatedSubtitle": "Sales data across all countries and branches",
+      "denied": "You do not have access to sales performance tracking.",
+      "salesByCategory": "Sales by Category",
+      "salesByCategoryHint": "Revenue distribution across product categories",
+      "topBranch": "Top Branch Performance",
+      "topBranchHint": "Revenue by branch",
+      "paymentMethods": "Payment Methods",
+      "paymentMethodsHint": "Sales distribution by payment type",
+      "salesPerProduct": "Sales Per Product",
+      "salesPerProductHint": "Total amounts sold by product",
+      "salesPerPerson": "Sales Per Salesperson",
+      "salesPerPersonHint": "Total sales amounts by salesperson",
+      "hourly": "Hourly Sales Pattern",
+      "hourlyHint": "Sales figures per hour (07:00 - 17:00)",
+      "gpTrend": "Gross Profit Trend",
+      "gpTrendHint": "Gross profit over time",
+      "dailySales": "Daily sales performance",
+      "unassignedInvoices": "Unassigned invoices",
+      "branchCategory": "Branch × category performance"
+    },
+    "competitors": {
+      "title": "Competitors",
+      "description": "Track rivals, threat levels and locations alongside your clients."
+    },
+    "visualiser": {
+      "title": "Competitor Overview",
+      "descriptionLimited": "Map branches, HQ, competitors, and clients, plus your planned visit route for the selected day.",
+      "descriptionFull": "Map branches, HQ, competitors, and clients — search and track a sales rep’s route on the map, or open Simulate to model catchments and turnover."
+    },
+    "wellbeing": {
+      "title": "Wellbeing",
+      "description": "Daily employee pulse, named follow-ups for your team, and mood vs performance estimates."
+    },
+    "iot": {
+      "title": "IoT devices",
+      "description": "Manage connected hardware and access devices per branch.",
+      "staffOnly": "IoT management is available to staff only."
+    },
+    "deliveries": {
+      "title": "Deliveries",
+      "description": "Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records the stop."
+    },
+    "takeoff": {
+      "title": "System takeoff",
+      "description": "Measure a ceiling or partition. Quantities are calculated on the server, then issued as a quotation."
+    },
+    "storeOperations": {
+      "title": "Store Operations Dashboard – All Stores",
+      "description": "Live branch openings, checklists, and stock counts.",
+      "denied": "You do not have access to the store operations dashboard."
+    },
+    "payslips": {
+      "title": "Payslips",
+      "description": "View and download your payslip documents."
+    },
+    "orders": {
+      "title": "Orders",
+      "description": "Track quotations and orders by status"
+    },
+    "store": {
+      "title": "Store",
+      "description": "Browse products, add to your cart, and submit a quotation.",
+      "clientOnly": "Store is available for client portal users."
+    },
+    "intake": {
+      "unable": "Unable to open form",
+      "submitted": "Profile submitted",
+      "submittedBody": "We saved the profile for {{email}}. A manager will review it on the phone. You will get an email when you can sign in — please wait for that approval.",
+      "profile": "Employee profile",
+      "goSignIn": "Go to sign in",
+      "loading": "Loading intake form"
+    }
+  },
+  "tours": {
+    "leave": {
+      "header": {
+        "title": "Leave",
+        "description": "Request time off, filter the inbox, and approve, reject, or cancel a request."
+      },
+      "actions": {
+        "title": "Request leave",
+        "description": "Click Request leave. Choose the type, the dates, and send it for a decision."
+      },
+      "filters": {
+        "title": "Filter the inbox",
+        "description": "Narrow by status, person, and date range. Your own requests stay in view when you only see your leave."
+      },
+      "content": {
+        "title": "Open a request",
+        "description": "The chart counts requests by status. Click a row to approve, reject, or cancel it."
+      }
+    },
+    "warnings": {
+      "header": {
+        "title": "Warnings",
+        "description": "Organisation warnings. A warning created on a staff profile also appears here."
+      },
+      "actions": {
+        "title": "Issue warning",
+        "description": "Click Issue warning. Record the person, the reason, and the status."
+      },
+      "filters": {
+        "title": "Filter by status",
+        "description": "Show every warning, or only one status."
+      },
+      "content": {
+        "title": "Review a warning",
+        "description": "Click a row to read it or remove it."
+      }
+    },
+    "documents": {
+      "header": {
+        "title": "Documents",
+        "description": "List, download, and attach documents to a person."
+      },
+      "actions": {
+        "title": "Attach document",
+        "description": "Click Attach document. Upload the file and link it to a person."
+      },
+      "filters": {
+        "title": "Filter by title",
+        "description": "Type part of a title to shorten the list."
+      },
+      "content": {
+        "title": "Download a file",
+        "description": "Each row is a document. Download it from the row."
+      }
+    },
+    "feedback": {
+      "header": {
+        "title": "Feedback",
+        "description": "The inbox, counts by status, and status updates. Token expiry stays on Settings."
+      },
+      "filters": {
+        "title": "Filter by status",
+        "description": "Show all feedback, or only New, In review, Resolved, or Closed."
+      },
+      "content": {
+        "title": "Resolve feedback",
+        "description": "The chart counts each status. Click Resolve on a row to mark it resolved."
+      }
+    },
+    "geofences": {
+      "header": {
+        "title": "Geofences",
+        "description": "Create areas and review entry events. The same areas draw on Competitor Overview."
+      },
+      "actions": {
+        "title": "New area",
+        "description": "Click New area. Set the name, latitude, longitude, and radius in metres."
+      },
+      "content": {
+        "title": "Open an area",
+        "description": "Click a row to edit the area or see how many entry events it recorded."
+      }
+    },
+    "usage": {
+      "header": {
+        "title": "Usage",
+        "description": "Analytics, summaries, and license usage. The server records the events itself."
+      },
+      "content": {
+        "title": "Read the last 30 days",
+        "description": "The chart is request volume. Under it, the license line shows errors and quota, and the list is requests by endpoint."
+      }
+    },
+    "products": {
+      "header": {
+        "title": "Products",
+        "description": "Create, edit, archive, restore, and review catalogue prices."
+      },
+      "actions": {
+        "title": "New product",
+        "description": "Click New product. Enter the name and price, then save it to the catalogue."
+      },
+      "content": {
+        "title": "Edit a product",
+        "description": "Click a row to change the name or price. Save current prices writes the prices on screen."
+      }
+    },
+    "news": {
+      "header": {
+        "title": "News",
+        "description": "Organisation announcements."
+      },
+      "actions": {
+        "title": "New post",
+        "description": "Click New post. Write the title and the announcement, then save it."
+      },
+      "content": {
+        "title": "Edit a post",
+        "description": "Click a row to change that announcement."
+      }
+    },
+    "sales-tips": {
+      "header": {
+        "title": "Sales tips",
+        "description": "Edit the catalogue. Home still shows the tip of the day."
+      },
+      "actions": {
+        "title": "New tip",
+        "description": "Click New tip. Add a title and the tip text."
+      },
+      "content": {
+        "title": "Edit a tip",
+        "description": "Click a row to update that tip."
+      }
+    },
+    "resellers": {
+      "header": {
+        "title": "Resellers",
+        "description": "Add, edit, archive, and restore reseller records."
+      },
+      "actions": {
+        "title": "New reseller",
+        "description": "Click New reseller. Start the record with a name, then save the details."
+      },
+      "content": {
+        "title": "Open a reseller",
+        "description": "Click a row to edit, archive, or restore that reseller."
+      }
+    },
+    "rewards": {
+      "header": {
+        "title": "Rewards",
+        "description": "The XP leaderboard and a person’s standing."
+      },
+      "content": {
+        "title": "Read the board",
+        "description": "The chart is the top of the board. The list under it is each person’s XP."
+      }
+    },
+    "loyalty": {
+      "header": {
+        "title": "Loyalty",
+        "description": "Profiles, the reward catalogue, and claim history."
+      },
+      "content": {
+        "title": "Add and claim rewards",
+        "description": "Type a reward name and click Add reward. Claim uses a catalogue reward. The line under the list is transaction and broadcast history."
+      }
+    },
+    "claims": {
+      "header": {
+        "title": "Claims",
+        "description": "Submit expenses, attach receipts, and track each claim from approval to payment."
+      },
+      "summary": {
+        "title": "Stage totals",
+        "description": "Click Total, Pending, Approved, Declined, or Paid. The list below follows that stage."
+      },
+      "toolbar": {
+        "title": "Search, export, and create",
+        "description": "Filter by date, group, currency, or person. Export downloads a spreadsheet. New claim starts a submission."
+      },
+      "folders": {
+        "title": "Claim folders",
+        "description": "Click a folder to show only the claims in that group."
+      },
+      "list": {
+        "title": "Open a claim",
+        "description": "Claims are grouped. Click one to follow the receipt, the decision, and the payment."
+      }
+    },
+    "iot": {
+      "header": {
+        "title": "IoT devices",
+        "description": "Connected hardware and access devices, organised by branch."
+      },
+      "toolbar": {
+        "title": "Filter devices",
+        "description": "Filter by status, type, or branch, then search by id, tag, or location."
+      },
+      "add": {
+        "title": "Add device",
+        "description": "Click Add device. Record the hardware and the branch it belongs to."
+      },
+      "grid": {
+        "title": "Open a device",
+        "description": "Click a card to inspect or edit that device."
+      }
+    },
+    "approvals": {
+      "header": {
+        "title": "Approvals",
+        "description": "Review pending requests, inspect employee intake forms, and approve or reject from the web."
+      },
+      "toolbar": {
+        "title": "Filter and file a request",
+        "description": "Search by title or reference, then filter by status or type. New request files a general request. My requests loads the ones you submitted."
+      },
+      "list": {
+        "title": "Open a request",
+        "description": "Click a card to approve or reject it. Intake forms open from the same card."
+      }
+    },
+    "payslips": {
+      "header": {
+        "title": "Payslips",
+        "description": "View and download your payslip documents."
+      },
+      "import": {
+        "title": "Import from storage",
+        "description": "Preview the storage import, then confirm it. Only people who can import payslips see this."
+      },
+      "filters": {
+        "title": "Filter payslips",
+        "description": "The list starts as all time. Switch to a date range or a status to narrow it."
+      },
+      "table": {
+        "title": "View or download",
+        "description": "View opens the payslip. Download saves the file. Page size under the table sets how many rows load."
+      }
+    },
+    "competitors": {
+      "header": {
+        "title": "Competitors",
+        "description": "Track rivals, threat levels, and locations alongside your clients."
+      },
+      "toolbar": {
+        "title": "Filter and search",
+        "description": "Filter by status, direct or indirect, and threat level. Search by name."
+      },
+      "add": {
+        "title": "Add competitor",
+        "description": "Click Add competitor, or Import to bring in a spreadsheet. Both land in this grid."
+      },
+      "grid": {
+        "title": "Open a competitor",
+        "description": "Click a card for the threat, the location, and edit or delete when you manage the list."
+      }
+    },
+    "takeoff": {
+      "header": {
+        "title": "System takeoff",
+        "description": "Measure a ceiling or partition. Quantities are calculated on the server, then issued as a quotation."
+      },
+      "create": {
+        "title": "New takeoff",
+        "description": "Click New takeoff. Name the job and the client, then open it to measure."
+      },
+      "list": {
+        "title": "Open a takeoff",
+        "description": "Click a reference to continue measuring and issue the quotation. Status and total stay on this row."
+      }
+    },
+    "deliveries": {
+      "header": {
+        "title": "Deliveries",
+        "description": "Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records the stop."
+      },
+      "toolbar": {
+        "title": "Filter deliveries",
+        "description": "Filter by day, status, driver, or search. Page size under the table sets how many rows load."
+      },
+      "assign": {
+        "title": "Assign delivery",
+        "description": "Click Assign delivery. Pick an open sales order and the driver who will run the stop."
+      },
+      "list": {
+        "title": "Open a delivery",
+        "description": "Click a row for the route, the rating, and the signed proof of delivery."
+      }
+    },
+    "store-operations": {
+      "header": {
+        "title": "Store operations",
+        "description": "Live branch openings, checklists, and stock counts across every store."
+      },
+      "tabs": {
+        "title": "Overview and details",
+        "description": "Overview is the live board. Details is the longer store-by-store list."
+      },
+      "filters": {
+        "title": "Narrow the stores",
+        "description": "Filter by country, region, and period. Features opens the extra store-operations tools."
+      },
+      "summary": {
+        "title": "Click a total",
+        "description": "Each card is a slice of the day: all stores, opened on time, late, missed, closed on time, or checklists completed. Click one to keep only those stores."
+      },
+      "stores": {
+        "title": "Store status",
+        "description": "Each row is a branch’s opening and checklist right now. Open it for that store’s session."
+      }
+    },
+    "store": {
+      "header": {
+        "title": "Store",
+        "description": "Browse products, add them to your cart, and submit a quotation."
+      },
+      "toolbar": {
+        "title": "Search and cart",
+        "description": "Search or filter by category. The cart holds the lines you will send as a quotation."
+      },
+      "catalogue": {
+        "title": "Add a product",
+        "description": "Click a product to add it to the cart. Load more brings the next page of the catalogue."
+      }
+    },
+    "orders": {
+      "header": {
+        "title": "Orders",
+        "description": "Track quotations and orders by status."
+      },
+      "create": {
+        "title": "New order",
+        "description": "Click New Order. That opens the store so you can build the next quotation."
+      },
+      "board": {
+        "title": "Open an order",
+        "description": "Columns are the quotation and order statuses. Click a card for the detail."
+      }
+    },
+    "projects": {
+      "header": {
+        "title": "Projects",
+        "description": "Manage your projects, create new ones, and track their progress."
+      },
+      "create": {
+        "title": "Create project",
+        "description": "Click Create project. Name it, then it appears in this grid."
+      },
+      "filters": {
+        "title": "Filter projects",
+        "description": "Search by name or description, or keep one status."
+      },
+      "grid": {
+        "title": "Open a project",
+        "description": "Click a card for progress and the project detail."
+      }
+    },
+    "account": {
+      "header": {
+        "title": "Account",
+        "description": "Your company profile, credit, and contact details."
+      },
+      "edit": {
+        "title": "Edit profile",
+        "description": "Click Edit profile to change the company details. View profile returns to the read-only cards."
+      },
+      "profile": {
+        "title": "Company snapshot",
+        "description": "Name, contact, address, credit limit, and the sales rep assigned to you."
+      },
+      "details": {
+        "title": "Company details",
+        "description": "Company, contact, and commercial fields. Edit profile turns this into the form."
+      }
+    },
+    "visits": {
+      "header": {
+        "title": "Visits",
+        "description": "Review visits you already logged. Scored recordings are under Call recordings."
+      },
+      "visit-action": {
+        "title": "Start or end a visit",
+        "description": "Click Start visit and choose in person or phone. While a visit is running, click the red End visit to add notes and the outcome."
+      },
+      "toolbar": {
+        "title": "Filter history",
+        "description": "The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Start or end a visit from this row."
+      },
+      "history-content": {
+        "title": "List or map",
+        "description": "Click a row to update that visit. Switch to the map to see where visits happened."
+      }
+    },
+    "clients": {
+      "header": {
+        "title": "Clients",
+        "description": "Click Add client to register a client for the organisation."
+      },
+      "toolbar": {
+        "title": "Filter and search",
+        "description": "Filter by status and category. Search by name, email, or phone. Click X on a filter to clear it."
+      },
+      "grid": {
+        "title": "Client cards",
+        "description": "Click a card for the full record. Click Load more to fetch the next page."
+      }
+    },
+    "settings": {
+      "header": {
+        "title": "Settings",
+        "description": "Organisation profile, appearance, hours, branches, calendar, scraping, notices, banners, and call quality."
+      },
+      "tab-nav": {
+        "title": "Sections",
+        "description": "Click a tab to edit that section. This tour stays on the tab you already have open."
+      },
+      "active-panel": {
+        "title": "This section",
+        "description": "Edit the fields for the open tab. Nothing is saved until you click Save changes."
+      },
+      "panel-actions": {
+        "title": "Save or cancel",
+        "description": "Save changes keeps this section. Cancel drops unsaved edits."
+      }
+    },
+    "leads": {
+      "header": {
+        "title": "Leads",
+        "description": "Create a lead, search the list, and open a person to follow up."
+      },
+      "create": {
+        "title": "Create lead",
+        "description": "Click Create lead, fill the form, and the new lead appears in the list."
+      },
+      "toolbar": {
+        "title": "Filter and search",
+        "description": "The date range starts as this month. Change dates, filters, or search to show a different set of leads."
+      },
+      "import": {
+        "title": "Import leads",
+        "description": "Click Import to add leads from a spreadsheet or Google Maps. For Maps, review the places and assign owners before they show in this list."
+      },
+      "list": {
+        "title": "Lead list",
+        "description": "Leads are grouped by owner, or Unassigned. Click a person to expand them. Click a lead to open it."
+      },
+      "expand": {
+        "title": "Expand a group",
+        "description": "Click this row. Every lead in that group opens underneath."
+      },
+      "open": {
+        "title": "Open a lead",
+        "description": "Click this row. The lead detail opens."
+      },
+      "detail": {
+        "title": "Lead detail",
+        "description": "Start or end a call, message them on WhatsApp, email, or SMS, and read the call score. Close the dialog to return to the list."
+      }
+    },
+    "staff": {
+      "header": {
+        "title": "Staff",
+        "description": "See who is present or absent today."
+      },
+      "add": {
+        "title": "Add a teammate",
+        "description": "Add user creates a staff account. Send intake link lets them finish onboarding themselves."
+      },
+      "toolbar": {
+        "title": "Filter and search",
+        "description": "Filter by status, role, workforce, branch, or country. Search by name, email, or HR ID."
+      },
+      "grid": {
+        "title": "Teammate cards",
+        "description": "Click a card for that person’s detail. Click the clock, when it is shown, for their attendance history."
+      },
+      "travel": {
+        "title": "Travel report",
+        "description": "Download that person’s Excel workbook or a day-by-day PDF for the dates you pick."
+      }
+    },
+    "planning": {
+      "header": {
+        "title": "Planning",
+        "description": "Tasks, today’s work, and the day’s routes."
+      },
+      "create": {
+        "title": "Create a task",
+        "description": "Click Create task, fill it in, and assign it. It shows up in All tasks."
+      },
+      "tabs": {
+        "title": "All tasks, My day, Routes",
+        "description": "All tasks is the full list. My day is due today. Routes is the planned field day."
+      },
+      "reminders": {
+        "title": "Reminders",
+        "description": "On All tasks, this is due today, overdue, and upcoming. Open an item to work it."
+      },
+      "filters": {
+        "title": "Filter tasks",
+        "description": "Set date, status, priority, assignee, client, branch, overdue only, or search. The list below updates to match."
+      },
+      "list": {
+        "title": "Task list",
+        "description": "Click a task to open it and update status or details."
+      },
+      "pagination": {
+        "title": "Pages",
+        "description": "Change rows per page, or move to the next page."
+      },
+      "routes": {
+        "title": "Routes",
+        "description": "Pick the day, click Recalculate to rebuild routes, or open Competitor Overview for the map."
+      }
+    },
+    "pipeline": {
+      "header": {
+        "title": "Pipeline",
+        "description": "Targets, quotations, leads, and visit outcomes for the period you can see."
+      },
+      "targets": {
+        "title": "Targets",
+        "description": "Progress on sales, leads, check-ins, and calls for the current target period."
+      },
+      "quotations": {
+        "title": "Quotations",
+        "description": "Change the ERP date window to load quotation lines. Compare them with LORO quotations in the same period."
+      },
+      "leads": {
+        "title": "Leads",
+        "description": "Counts, pipeline value, and quote value from visits. Open a status to see the breakdown for this range."
+      },
+      "visits": {
+        "title": "Visits",
+        "description": "Check-out totals for this range: visits, sales, quotes, and values."
+      }
+    },
+    "dashboard-attendance": {
+      "clock": {
+        "title": "Clock in and out",
+        "description": "Click here to start your shift, take a break, or end it. Clock-in asks office or work from home. Pulse may ask a short check-in after you clock in or out."
+      },
+      "variablePay": {
+        "title": "Variable pay",
+        "description": "Extra pay on top of commission this month. It shows which gates are open, how close you are to the maximum, and what is still left."
+      },
+      "bonus": {
+        "title": "Year-end bonus",
+        "description": "Your year-end bonus status for the current cycle."
+      },
+      "month": {
+        "title": "Change month",
+        "description": "Open this menu to switch among the last three months."
+      },
+      "logs": {
+        "title": "View logs",
+        "description": "Click View logs for the day-by-day attendance record."
+      },
+      "list": {
+        "title": "This month",
+        "description": "Each day is marked attended, missed, or still ahead."
+      }
+    },
+    "calls": {
+      "header": {
+        "title": "Call recordings",
+        "description": "PBX calls (Linkus or a desk phone) and in-app LORO calls are listed here with score and transcript status. Visits stay on the Visits page."
+      },
+      "filters": {
+        "title": "Filter recordings",
+        "description": "The range is this month through today. Change date, status, direction, branch, or search to narrow the list."
+      },
+      "list": {
+        "title": "Open a recording",
+        "description": "Click a row for the transcript, score, and audio."
+      }
+    },
+    "reports": {
+      "header": {
+        "title": "Reports",
+        "description": "Targets, policy, call quality, tasks, leads activity, and activity for the period your access allows."
+      },
+      "tabs": {
+        "title": "Report tabs",
+        "description": "Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done. Leads activity is imported leads by status for each person."
+      },
+      "callQuality": {
+        "title": "Call quality",
+        "description": "Leaderboard, funnel, and coaching notes for scored calls in this range."
+      },
+      "insights": {
+        "title": "Insights",
+        "description": "Clusters of work, flags, and where time went for the same range."
+      }
+    },
+    "merchandise": {
+      "header": {
+        "title": "Merchandise",
+        "description": "Field photos and notes, with review status on each log."
+      },
+      "create": {
+        "title": "New merchandise",
+        "description": "Click New merchandise. Attach a photo, name the client, and add comments. The log stays in review until it is published."
+      },
+      "filters": {
+        "title": "Filter logs",
+        "description": "Filter by date, page size, branch, teammate, status, or search."
+      },
+      "list": {
+        "title": "Open a log",
+        "description": "Click a row for the full photo and review actions."
+      }
+    },
+    "assets": {
+      "header": {
+        "title": "Assets",
+        "description": "Your linked equipment and vehicles, or the whole organisation inventory if you manage it. Managers switch that scope in the filters."
+      },
+      "add": {
+        "title": "Add an asset",
+        "description": "Click Add asset. Record the item, who owns it, and which branch it belongs to."
+      },
+      "filters": {
+        "title": "Filter the inventory",
+        "description": "Filter by date, branch, owner, category, or search. Page size under the grid sets how many cards load."
+      },
+      "list": {
+        "title": "Open an asset",
+        "description": "Click a card for purchase and insurance details, or to edit and delete it."
+      }
+    },
+    "performance": {
+      "header": {
+        "title": "Performance",
+        "description": "Sales for the countries, branches, and dates you can see. The title switches to Consolidated Statement when that view is on."
+      },
+      "filters": {
+        "title": "Dates and filters",
+        "description": "Set the date range. Open filters for country, branch, and category. Click refresh to pull the latest numbers."
+      },
+      "consolidated": {
+        "title": "Consolidated statement",
+        "description": "Turn this on for the income statement across countries and branches. Turn it off to return to the performance report."
+      },
+      "target": {
+        "title": "Target and gross profit",
+        "description": "Revenue against target, and gross profit, for this range."
+      },
+      "charts": {
+        "title": "Charts",
+        "description": "Category, branch, payment mix, products, salespeople, and hourly sales for the filters you set."
+      }
+    },
+    "wellbeing": {
+      "header": {
+        "title": "Wellbeing",
+        "description": "Mood check-ins, follow-ups, and how mood lines up with performance."
+      },
+      "filters": {
+        "title": "Date and branch",
+        "description": "Insights, Executive, and Correlations use this date range and branch. Today ignores the range."
+      },
+      "tabs": {
+        "title": "Today, Insights, Executive, Correlations",
+        "description": "Today is live check-ins. Insights summarises the range. Executive is the index charts. Correlations compares mood with performance. These are estimates, not causes."
+      },
+      "today": {
+        "title": "Today",
+        "description": "KPIs, branch comparison, and named lists of people who need support or a follow-up."
+      },
+      "executive": {
+        "title": "Executive index",
+        "description": "Each chart is one rolled-up index for the range and branch you set."
+      }
+    },
+    "visualiser": {
+      "header": {
+        "title": "Competitor Overview",
+        "description": "Search the map or follow a rep’s route. Open Simulate to model a catchment."
+      },
+      "tools": {
+        "title": "Map tools",
+        "description": "Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. The info icon explains the maths. Simulate opens the simulation dialog."
+      },
+      "map": {
+        "title": "The map",
+        "description": "Pins are branches, HQ, competitors, and clients."
+      }
+    }
+  },
+  "tables": {
+    "name": "Name",
+    "sku": "SKU",
+    "category": "Category",
+    "source": "Source",
+    "price": "Price",
+    "person": "Person",
+    "severity": "Severity",
+    "status": "Status",
+    "reason": "Reason",
+    "radius": "Radius",
+    "location": "Location",
+    "title": "Title",
+    "type": "Type",
+    "email": "Email",
+    "period": "Period",
+    "issueDate": "Issue date",
+    "payslipNumber": "Payslip #",
+    "gross": "Gross",
+    "net": "Net",
+    "employee": "Employee",
+    "actions": "Actions",
+    "store": "Store",
+    "scheduledOpen": "Scheduled Open",
+    "actualOpen": "Actual Open",
+    "scheduledClose": "Scheduled Close",
+    "actualClose": "Actual Close",
+    "checklist": "Checklist",
+    "when": "When",
+    "origin": "Origin",
+    "direction": "Direction",
+    "agent": "Agent",
+    "client": "Client",
+    "numbers": "Numbers",
+    "duration": "Duration",
+    "score": "Score",
+    "transcript": "Transcript",
+    "delivery": "Delivery",
+    "invoice": "Invoice",
+    "route": "Route",
+    "rating": "Rating",
+    "items": "Items",
+    "reference": "Reference",
+    "quotation": "Quotation",
+    "code": "Code",
+    "description": "Description",
+    "document": "Document",
+    "date": "Date",
+    "number": "Number",
+    "clientTitle": "Client / title",
+    "created": "Created",
+    "conversion": "Conversion",
+    "user": "User",
+    "whatsapp": "WhatsApp",
+    "leads": "Leads",
+    "visits": "Visits",
+    "hours": "Hours",
+    "travel": "Travel",
+    "achievement": "Achievement",
+    "product": "Product",
+    "branch": "Branch",
+    "day": "Day",
+    "doc": "Doc",
+    "country": "Country",
+    "uploader": "Uploader",
+    "total": "Total",
+    "touched": "Touched",
+    "untouched": "Untouched",
+    "pending": "Pending",
+    "review": "Review",
+    "approved": "Approved",
+    "converted": "Converted",
+    "declined": "Declined",
+    "cancelled": "Cancelled",
+    "discarded": "Discarded",
+    "deleted": "Deleted",
+    "quotes": "Quotes",
+    "signed": "Signed",
+    "place": "Place",
+    "calls": "Calls",
+    "window": "Window",
+    "avg": "Avg",
+    "flags": "Flags",
+    "layer": "Layer",
+    "start": "Start",
+    "end": "End",
+    "contact": "Contact",
+    "outcome": "Outcome",
+    "followUp": "Follow-up",
+    "lead": "Lead",
+    "stage": "Stage",
+    "action": "Action",
+    "item": "Item",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "shiftDuration": "Shift Duration",
+    "shift": "Shift",
+    "totalVisits": "Total visits",
+    "breakdown": "Breakdown",
+    "sales": "Sales",
+    "claims": "Claims",
+    "distance": "Distance",
+    "avgVisitTime": "Avg visit time"
+  }
+}

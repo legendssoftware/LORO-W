@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DriveStep } from 'driver.js';
 import { useSessionSync } from '@/api/hooks/use-session-sync';
 import { canAccessCallRecordings } from '@/lib/access';
@@ -16,14 +18,13 @@ const SEL_TABLE = '[data-tour="calls-table"]';
 
 const REQUIRED = [SEL_HEADER, SEL_TOOLBAR, SEL_TABLE] as const;
 
-function buildCallsSteps(): DriveStep[] {
+function buildCallsSteps(t: TFunction): DriveStep[] {
   return [
     {
       element: SEL_HEADER,
       popover: {
-        title: 'Call recordings',
-        description:
-          'PBX calls (Linkus or a desk phone) and in-app LORO calls are listed here with score and transcript status. Visits stay on the Visits page.',
+        title: t('tours.calls.header.title'),
+        description: t('tours.calls.header.description'),
         side: 'bottom',
         align: 'start',
       },
@@ -31,9 +32,8 @@ function buildCallsSteps(): DriveStep[] {
     {
       element: SEL_TOOLBAR,
       popover: {
-        title: 'Filter recordings',
-        description:
-          'The range is this month through today. Change date, status, direction, branch, or search to narrow the list.',
+        title: t('tours.calls.filters.title'),
+        description: t('tours.calls.filters.description'),
         side: 'bottom',
         align: 'center',
       },
@@ -41,8 +41,8 @@ function buildCallsSteps(): DriveStep[] {
     {
       element: SEL_TABLE,
       popover: {
-        title: 'Open a recording',
-        description: 'Click a row for the transcript, score, and audio.',
+        title: t('tours.calls.list.title'),
+        description: t('tours.calls.list.description'),
         side: 'top',
         align: 'center',
       },
@@ -55,6 +55,7 @@ function areCallsTargetsReady(): boolean {
 }
 
 export function CallsTour() {
+  const { t } = useTranslation('screens');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { backendUserData } = useSessionSync();
@@ -75,7 +76,7 @@ export function CallsTour() {
     read: readCallsTourState,
     write: writeCallsTourState,
     areTargetsReady: areCallsTargetsReady,
-    getSteps: buildCallsSteps,
+    getSteps: () => buildCallsSteps(t),
   });
 
   return null;

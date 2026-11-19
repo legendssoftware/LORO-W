@@ -1,0 +1,66 @@
+{
+  "pageTitle": "Paramètres",
+  "pageDescription": "Gérez le profil de l’organisation, l’apparence, les paramètres régionaux, les horaires, les agences, le scrapping, les avis et les bannières de l’application.",
+  "pageDescriptionCalendarOnly": "Connectez Outlook ou Google Calendar avec l’e-mail de votre compte LORO.",
+  "yourLanguage": "Votre langue",
+  "yourLanguageDescription": "Ce choix est le vôtre. Auto suit la langue ou le pays de l'appareil. Il ne change pas la locale de l'organisation ci-dessous.",
+  "saved": "Vos préférences ont été enregistrées.",
+  "saveFailed": "Impossible d'enregistrer vos préférences. Réessayez.",
+  "unableToSave": "Impossible d'enregistrer les préférences. Reconnectez-vous.",
+  "unknownError": "Une erreur inconnue s'est produite",
+  "language": {
+    "label": "Langue",
+    "description": "Suit la langue ou le pays de l'appareil lorsqu'Auto est sélectionné."
+  },
+  "theme": {
+    "label": "Thème",
+    "description": "Jeu de couleurs de l'application",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
+  "timezone": {
+    "label": "Fuseau horaire",
+    "description": "Fuseau IANA pour les dates et les heures"
+  },
+  "notifications": {
+    "label": "Autoriser les notifications",
+    "description": "Recevoir des notifications push pour les mises à jour importantes"
+  },
+  "notificationFrequency": {
+    "label": "Fréquence des notifications",
+    "description": "Fréquence d'envoi des résumés qui ne sont pas des push",
+    "real_time": "Temps réel",
+    "hourly": "Toutes les heures",
+    "daily": "Chaque jour",
+    "weekly": "Chaque semaine",
+    "disabled": "Désactivé"
+  },
+  "emailNotifications": {
+    "label": "Notifications par e-mail",
+    "description": "Recevoir des mises à jour par e-mail lorsque l'organisation l'autorise"
+  },
+  "smsNotifications": {
+    "label": "Notifications SMS",
+    "description": "Recevoir des alertes SMS lorsque l'organisation l'autorise"
+  },
+  "shiftAutoEnd": {
+    "label": "Dépointage automatique en fin de poste",
+    "description": "Les postes se ferment automatiquement après la fin définie par l'organisation",
+    "delay": "Les postes se ferment automatiquement {{minutes}} minutes après la fin de poste de l'organisation."
+  },
+  "dateFormat": {
+    "label": "Format de date",
+    "description": "Affichage des dates dans l'application"
+  },
+  "timeFormat": {
+    "label": "Format de l'heure",
+    "description": "Horloge sur 12 ou 24 heures",
+    "12h": "12 heures",
+    "24h": "24 heures"
+  },
+  "advancedFeatures": {
+    "label": "Fonctions avancées",
+    "description": "Afficher l'interface expérimentale ou avancée lorsqu'elle existe"
+  }
+}
