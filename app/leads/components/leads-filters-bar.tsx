@@ -202,7 +202,7 @@ export function LeadsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(opt.labelKey),
           icon: (
             <Icon
               className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))}
@@ -211,7 +211,7 @@ export function LeadsFilterControls({
           ),
         };
       }),
-    []
+    [t]
   );
 
   const sourcePickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -220,11 +220,11 @@ export function LeadsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(opt.labelKey),
           icon: <Icon className="size-4 shrink-0" size={16} />,
         };
       }),
-    []
+    [t]
   );
 
   const entryTypePickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -248,11 +248,11 @@ export function LeadsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(opt.labelKey),
           icon: <Icon className="size-4 shrink-0" size={16} />,
         };
       }),
-    []
+    [t]
   );
 
   const priorityPickerOptions = React.useMemo<SearchableOptionRow[]>(
@@ -261,11 +261,11 @@ export function LeadsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: opt.label,
+          label: t(opt.labelKey),
           icon: <Icon className="size-4 shrink-0" size={16} />,
         };
       }),
-    []
+    [t]
   );
 
   const rangeLabel = useAllTime

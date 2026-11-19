@@ -22,18 +22,18 @@ function person(overrides: Partial<PulseNamedPerson>): PulseNamedPerson {
 
 describe('describeTrend', () => {
   it('reports missing data as neutral instead of flat', () => {
-    expect(describeTrend(8, null)).toMatchObject({ label: 'Awaiting evening check-in', tone: 'neutral' });
-    expect(describeTrend(null, 8)).toMatchObject({ label: 'No morning check-in', tone: 'neutral' });
-    expect(describeTrend(null, null)).toMatchObject({ label: 'No check-ins yet', tone: 'neutral' });
+    expect(describeTrend(8, null)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.awaitingEvening', tone: 'neutral' });
+    expect(describeTrend(null, 8)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.noMorning', tone: 'neutral' });
+    expect(describeTrend(null, null)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.noCheckIns', tone: 'neutral' });
   });
 
   it('classifies changes at the band boundaries', () => {
-    expect(describeTrend(6, 8)).toMatchObject({ label: 'Much better by evening', tone: 'good' });
-    expect(describeTrend(6, 6.3)).toMatchObject({ label: 'Improving through the day', tone: 'good' });
-    expect(describeTrend(6, 6.2)).toMatchObject({ label: 'Steady', tone: 'warn' });
-    expect(describeTrend(6, 5.8)).toMatchObject({ label: 'Steady', tone: 'warn' });
-    expect(describeTrend(6, 5.7)).toMatchObject({ label: 'Dipping through the day', tone: 'bad' });
-    expect(describeTrend(8, 6)).toMatchObject({ label: 'Sharp drop', tone: 'bad' });
+    expect(describeTrend(6, 8)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.muchBetter', tone: 'good' });
+    expect(describeTrend(6, 6.3)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.improving', tone: 'good' });
+    expect(describeTrend(6, 6.2)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.steady', tone: 'warn' });
+    expect(describeTrend(6, 5.8)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.steady', tone: 'warn' });
+    expect(describeTrend(6, 5.7)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.dipping', tone: 'bad' });
+    expect(describeTrend(8, 6)).toMatchObject({ labelKey: 'chrome.wellbeing.trend.sharpDrop', tone: 'bad' });
   });
 
   it('includes the numbers in the detail', () => {
@@ -49,21 +49,21 @@ describe('describePersonStatus', () => {
 
   it('treats a one-step mood dip as a dip, not a sharp drop', () => {
     expect(describePersonStatus(person({ morningMood: 'good', eveningMood: 'okay' }))).toMatchObject({
-      label: 'Dipping through the day',
+      labelKey: 'chrome.wellbeing.trend.dipping',
       tone: 'bad',
     });
   });
 
   it('marks an improved day green', () => {
     expect(describePersonStatus(person({ morningMood: 'okay', eveningMood: 'good' }))).toMatchObject({
-      label: 'Improving through the day',
+      labelKey: 'chrome.wellbeing.trend.improving',
       tone: 'good',
     });
   });
 
   it('shows support requests as amber unless the day also dropped', () => {
     expect(describePersonStatus(person({ riskReason: 'support', morningMood: 'good' }))).toMatchObject({
-      label: 'Asked for support',
+      labelKey: 'chrome.wellbeing.personStatus.askedForSupport',
       tone: 'warn',
     });
     expect(

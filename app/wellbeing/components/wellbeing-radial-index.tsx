@@ -4,12 +4,16 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
 import { PULSE_TONE_STYLES, getIndexTone, isHigherWorseIndex } from '../lib/pulse-tone';
+import { useTranslation } from 'react-i18next';
 
 interface WellbeingRadialIndexProps {
+  /** Display label (already translated). */
   label: string;
   value: number;
   unit?: string;
   className?: string;
+  /** Original English server label used for tone / invert rules. */
+  toneLabel?: string;
 }
 
 export function WellbeingRadialIndex({
@@ -17,21 +21,27 @@ export function WellbeingRadialIndex({
   value,
   unit = '%',
   className,
+  toneLabel,
 }: WellbeingRadialIndexProps) {
+  const { t } = useTranslation('screens');
+  const toneSource = toneLabel ?? label;
   const safe = Math.max(0, Math.min(100, Math.round(value)));
   const chartData = [{ name: label, value: safe, remaining: Math.max(0, 100 - safe) }];
-  const tone = getIndexTone(label, safe);
+  const tone = getIndexTone(toneSource, safe);
   const style = PULSE_TONE_STYLES[tone];
+  const caption = t(style.captionKey);
   const config: ChartConfig = {
     value: { label, color: style.chart },
-    remaining: { label: 'Remaining', color: 'hsl(var(--muted))' },
+    remaining: { label: t('chrome.wellbeing.remaining'), color: 'hsl(var(--muted))' },
   };
 
   return (
     <div
       className={cn('flex flex-col items-center gap-1', className)}
       role="img"
-      aria-label={`${label}: ${safe}${unit}, ${style.caption}${isHigherWorseIndex(label) ? ' (lower is better)' : ''}`}
+      aria-label={`${label}: ${safe}${unit}, ${caption}${
+        isHigherWorseIndex(toneSource) ? ` (${t('chrome.wellbeing.lowerIsBetter')})` : ''
+      }`}
     >
       <ChartContainer config={config} className="mx-auto aspect-square w-full max-w-[180px]">
         <RadialBarChart data={chartData} startAngle={180} endAngle={0} innerRadius={52} outerRadius={80}>
@@ -63,7 +73,7 @@ export function WellbeingRadialIndex({
       </ChartContainer>
       <p className="text-center text-xs font-medium text-muted-foreground">{label}</p>
       <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-medium', style.badge)}>
-        {style.caption}
+        {caption}
       </span>
     </div>
   );

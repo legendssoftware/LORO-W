@@ -31,8 +31,9 @@ export interface LeadStatusChangeDialogProps {
   }) => Promise<void>;
 }
 
-function statusLabel(status: string): string {
-  return LEAD_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status ?? '-';
+function statusLabel(status: string, translate: (key: string) => string): string {
+  const match = LEAD_STATUS_OPTIONS.find((o) => o.value === status);
+  return match ? translate(match.labelKey) : status ?? '-';
 }
 
 export function LeadStatusChangeDialog({
@@ -73,8 +74,8 @@ export function LeadStatusChangeDialog({
 
   if (!lead) return null;
 
-  const currentStatusLabel = statusLabel(lead.status);
-  const newStatusLabel = statusLabel(newStatus);
+  const currentStatusLabel = statusLabel(lead.status, t);
+  const newStatusLabel = statusLabel(newStatus, t);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

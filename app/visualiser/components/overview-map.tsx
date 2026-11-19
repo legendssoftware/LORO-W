@@ -49,6 +49,7 @@ import {
   type VisualiserLayerId,
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
+import { useTranslation } from 'react-i18next';
 import type { OptimizedRoute } from '@/api/types/tasks';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import { useBranches, useCheckIns, useSearchableUsersList } from '@/api/hooks';
@@ -520,6 +521,7 @@ export function OverviewMap({
   showRepTracking = true,
   plannedRoute = null,
 }: OverviewMapProps) {
+  const { t } = useTranslation('screens');
   const plannedRouteLine = useMemo(
     () => (plannedRoute ? plannedRouteCoordinates(plannedRoute) : []),
     [plannedRoute]
@@ -1607,16 +1609,19 @@ export function OverviewMap({
       </Map>
 
       <div className="bg-background/90 text-muted-foreground absolute right-3 bottom-3 z-10 hidden rounded-md border px-2 py-1 text-[10px] backdrop-blur sm:block">
-        {visiblePoints.length} mapped ·{' '}
-        {isActive ? 'simulation on · ' : ''}
-        {journeyRoutes.length > 0 ? 'trail on · ' : ''}
+        {t('chrome.visualiser.mappedCount', { count: visiblePoints.length })}
+        {isActive ? ` · ${t('chrome.visualiser.simulationOn')}` : ''}
+        {journeyRoutes.length > 0 ? ` · ${t('chrome.visualiser.trailOn')}` : ''}
         {primaryJourneyRoute && visitActions.length > 0
-          ? `${visitActions.length} visits · `
+          ? ` · ${t('chrome.visualiser.visitsCount', { count: visitActions.length })}`
           : ''}
         {Object.entries(LAYER_META)
           .filter(([id]) => visibility[id as VisualiserLayerId])
-          .map(([id, meta]) => `${meta.label} ${counts[id as VisualiserLayerId]}`)
-          .join(' · ')}
+          .map(
+            ([id, meta]) =>
+              ` · ${t(meta.labelKey)} ${counts[id as VisualiserLayerId]}`
+          )
+          .join('')}
       </div>
     </div>
   );

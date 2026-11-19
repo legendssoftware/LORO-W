@@ -28,28 +28,28 @@ export type ClientStatusFilterValue = (typeof CLIENT_STATUS_VALUES)[number];
 
 export const CLIENT_STATUS_FILTER_OPTIONS: {
   value: ClientStatusFilterValue;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
 }[] = [
-  { value: 'all', label: 'All statuses', icon: CircleDot },
-  { value: 'active', label: 'Active', icon: CheckCircle2 },
-  { value: 'inactive', label: 'Inactive', icon: CircleOff },
-  { value: 'pending', label: 'Pending', icon: Clock },
-  { value: 'converted', label: 'Converted', icon: CheckCircle2 },
-  { value: 'approved', label: 'Approved', icon: CheckCircle2 },
-  { value: 'rejected', label: 'Rejected', icon: XCircle },
-  { value: 'banned', label: 'Banned', icon: Ban },
-  { value: 'deactivated', label: 'Deactivated', icon: ShieldAlert },
-  { value: 'expired', label: 'Expired', icon: Clock },
-  { value: 'deleted', label: 'Deleted', icon: CircleOff },
+  { value: 'all', labelKey: 'actions.allStatuses', icon: CircleDot },
+  { value: 'active', labelKey: 'enums.clients.status.active', icon: CheckCircle2 },
+  { value: 'inactive', labelKey: 'enums.clients.status.inactive', icon: CircleOff },
+  { value: 'pending', labelKey: 'enums.clients.status.pending', icon: Clock },
+  { value: 'converted', labelKey: 'enums.clients.status.converted', icon: CheckCircle2 },
+  { value: 'approved', labelKey: 'enums.clients.status.approved', icon: CheckCircle2 },
+  { value: 'rejected', labelKey: 'enums.clients.status.rejected', icon: XCircle },
+  { value: 'banned', labelKey: 'enums.clients.status.banned', icon: Ban },
+  { value: 'deactivated', labelKey: 'enums.clients.status.deactivated', icon: ShieldAlert },
+  { value: 'expired', labelKey: 'enums.clients.status.expired', icon: Clock },
+  { value: 'deleted', labelKey: 'enums.clients.status.deleted', icon: CircleOff },
 ];
 
 export const CLIENT_CATEGORY_PRESETS = [
-  { value: 'all', label: 'All categories' },
-  { value: 'enterprise', label: 'Enterprise' },
-  { value: 'sme', label: 'SME' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'individual', label: 'Individual' },
+  { value: 'all', labelKey: 'enums.clients.category.all' },
+  { value: 'enterprise', labelKey: 'enums.clients.category.enterprise' },
+  { value: 'sme', labelKey: 'enums.clients.category.sme' },
+  { value: 'contract', labelKey: 'enums.clients.category.contract' },
+  { value: 'individual', labelKey: 'enums.clients.category.individual' },
 ] as const;
 
 export type ClientCategoryFilterValue = (typeof CLIENT_CATEGORY_PRESETS)[number]['value'];

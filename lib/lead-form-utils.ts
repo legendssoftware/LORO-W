@@ -3,6 +3,9 @@
  * Values match server LeadStatus, LeadSource, LeadTemperature, LeadPriority enums.
  * Each option includes an icon component for dropdown display.
  * Icons are varied per list to avoid repetition (per agent transcript d965da67).
+ *
+ * Options carry `labelKey` (i18n key under `screens` namespace) instead of a
+ * hard-coded English string.  Render sites call `t(o.labelKey)`.
  */
 
 import type { ComponentType } from 'react';
@@ -96,188 +99,194 @@ import {
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
 
-export const LEAD_STATUS_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'PENDING', label: 'Pending', icon: CircleIcon },
-  { value: 'APPROVED', label: 'Approved', icon: CheckSquareIcon },
-  { value: 'REVIEW', label: 'Review', icon: Loader2Icon },
-  { value: 'DECLINED', label: 'Declined', icon: XCircle },
-  { value: 'CONVERTED', label: 'Converted', icon: CheckCircle },
-  { value: 'CANCELLED', label: 'Cancelled', icon: Ban },
-  { value: 'DISCARDED', label: 'Discarded', icon: Archive },
+export interface LeadOption {
+  value: string;
+  labelKey: string;
+  icon: IconComponent;
+}
+
+export const LEAD_STATUS_OPTIONS: LeadOption[] = [
+  { value: 'PENDING', labelKey: 'enums.leads.status.pending', icon: CircleIcon },
+  { value: 'APPROVED', labelKey: 'enums.leads.status.approved', icon: CheckSquareIcon },
+  { value: 'REVIEW', labelKey: 'enums.leads.status.review', icon: Loader2Icon },
+  { value: 'DECLINED', labelKey: 'enums.leads.status.declined', icon: XCircle },
+  { value: 'CONVERTED', labelKey: 'enums.leads.status.converted', icon: CheckCircle },
+  { value: 'CANCELLED', labelKey: 'enums.leads.status.cancelled', icon: Ban },
+  { value: 'DISCARDED', labelKey: 'enums.leads.status.discarded', icon: Archive },
 ];
 
-export const LEAD_STATUS_OPTIONS_WITH_ALL: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'all', label: 'All statuses', icon: LayoutGrid },
+export const LEAD_STATUS_OPTIONS_WITH_ALL: LeadOption[] = [
+  { value: 'all', labelKey: 'actions.allStatuses', icon: LayoutGrid },
   ...LEAD_STATUS_OPTIONS,
 ];
 
-export const LEAD_SOURCE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'WEBSITE', label: 'Website', icon: GlobeIcon },
-  { value: 'REFERRAL', label: 'Referral', icon: UsersIcon },
-  { value: 'COLD_CALL', label: 'Cold call', icon: PhoneCallIcon },
-  { value: 'SOCIAL_MEDIA', label: 'Social media', icon: MessageSquareIcon },
-  { value: 'EMAIL_CAMPAIGN', label: 'Email campaign', icon: MailIcon },
-  { value: 'TRADE_SHOW', label: 'Trade show', icon: StoreIcon },
-  { value: 'ADVERTISING', label: 'Advertising', icon: BarChart3Icon },
-  { value: 'OTHER', label: 'Other', icon: LightbulbIcon },
+export const LEAD_SOURCE_OPTIONS: LeadOption[] = [
+  { value: 'WEBSITE', labelKey: 'enums.leads.source.website', icon: GlobeIcon },
+  { value: 'REFERRAL', labelKey: 'enums.leads.source.referral', icon: UsersIcon },
+  { value: 'COLD_CALL', labelKey: 'enums.leads.source.coldCall', icon: PhoneCallIcon },
+  { value: 'SOCIAL_MEDIA', labelKey: 'enums.leads.source.socialMedia', icon: MessageSquareIcon },
+  { value: 'EMAIL_CAMPAIGN', labelKey: 'enums.leads.source.emailCampaign', icon: MailIcon },
+  { value: 'TRADE_SHOW', labelKey: 'enums.leads.source.tradeShow', icon: StoreIcon },
+  { value: 'ADVERTISING', labelKey: 'enums.leads.source.advertising', icon: BarChart3Icon },
+  { value: 'OTHER', labelKey: 'enums.leads.source.other', icon: LightbulbIcon },
 ];
 
-export const LEAD_SOURCE_OPTIONS_WITH_ALL: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'all', label: 'All sources', icon: GlobeIcon },
+export const LEAD_SOURCE_OPTIONS_WITH_ALL: LeadOption[] = [
+  { value: 'all', labelKey: 'leads.allSources', icon: GlobeIcon },
   ...LEAD_SOURCE_OPTIONS,
 ];
 
-export const LEAD_TEMPERATURE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'HOT', label: 'Hot', icon: FlameIcon },
-  { value: 'WARM', label: 'Warm', icon: SunIcon },
-  { value: 'COLD', label: 'Cold', icon: CircleIcon },
-  { value: 'FROZEN', label: 'Frozen', icon: SnowflakeIcon },
+export const LEAD_TEMPERATURE_OPTIONS: LeadOption[] = [
+  { value: 'HOT', labelKey: 'enums.leads.temperature.hot', icon: FlameIcon },
+  { value: 'WARM', labelKey: 'enums.leads.temperature.warm', icon: SunIcon },
+  { value: 'COLD', labelKey: 'enums.leads.temperature.cold', icon: CircleIcon },
+  { value: 'FROZEN', labelKey: 'enums.leads.temperature.frozen', icon: SnowflakeIcon },
 ];
 
-export const LEAD_TEMPERATURE_OPTIONS_WITH_ALL: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'all', label: 'All temperatures', icon: TargetIcon },
+export const LEAD_TEMPERATURE_OPTIONS_WITH_ALL: LeadOption[] = [
+  { value: 'all', labelKey: 'leads.allTemperatures', icon: TargetIcon },
   ...LEAD_TEMPERATURE_OPTIONS,
 ];
 
-export const LEAD_PRIORITY_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'CRITICAL', label: 'Critical', icon: AlertCircleIcon },
-  { value: 'HIGH', label: 'High', icon: ArrowUpIcon },
-  { value: 'MEDIUM', label: 'Medium', icon: MinusIcon },
-  { value: 'LOW', label: 'Low', icon: ArrowDownIcon },
+export const LEAD_PRIORITY_OPTIONS: LeadOption[] = [
+  { value: 'CRITICAL', labelKey: 'enums.leads.priority.critical', icon: AlertCircleIcon },
+  { value: 'HIGH', labelKey: 'enums.leads.priority.high', icon: ArrowUpIcon },
+  { value: 'MEDIUM', labelKey: 'enums.leads.priority.medium', icon: MinusIcon },
+  { value: 'LOW', labelKey: 'enums.leads.priority.low', icon: ArrowDownIcon },
 ];
 
 /** Industry (server Industry enum). Varied icons per visit-form-utils pattern. */
-export const INDUSTRY_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'HARDWARE', label: 'Hardware', icon: Wrench },
-  { value: 'CONTRACTOR', label: 'Contractor', icon: HardHat },
-  { value: 'HOME_OWNER', label: 'Home owner', icon: Home },
-  { value: 'TECHNOLOGY', label: 'Technology', icon: Cpu },
-  { value: 'HEALTHCARE', label: 'Healthcare', icon: HeartPulse },
-  { value: 'FINANCE', label: 'Finance', icon: Landmark },
-  { value: 'RETAIL', label: 'Retail', icon: StoreIcon },
-  { value: 'MANUFACTURING', label: 'Manufacturing', icon: Factory },
-  { value: 'EDUCATION', label: 'Education', icon: GraduationCap },
-  { value: 'CONSTRUCTION', label: 'Construction', icon: Construction },
-  { value: 'REAL_ESTATE', label: 'Real estate', icon: Building2 },
-  { value: 'AUTOMOTIVE', label: 'Automotive', icon: Car },
-  { value: 'AGRICULTURE', label: 'Agriculture', icon: Wheat },
-  { value: 'ENERGY', label: 'Energy', icon: Zap },
-  { value: 'TELECOMMUNICATIONS', label: 'Telecommunications', icon: Radio },
-  { value: 'ENTERTAINMENT', label: 'Entertainment', icon: Film },
-  { value: 'HOSPITALITY', label: 'Hospitality', icon: UtensilsCrossed },
-  { value: 'TRANSPORTATION', label: 'Transportation', icon: Truck },
-  { value: 'GOVERNMENT', label: 'Government', icon: Building },
-  { value: 'NON_PROFIT', label: 'Non-profit', icon: HeartHandshake },
-  { value: 'CONSULTING', label: 'Consulting', icon: LightbulbIcon },
-  { value: 'MARKETING', label: 'Marketing', icon: Megaphone },
-  { value: 'LEGAL', label: 'Legal', icon: Scale },
-  { value: 'UPHOLSTERY', label: 'Upholstery', icon: BedDouble },
-  { value: 'SHOP_FITTERS', label: 'Shop fitters', icon: HardHat },
-  { value: 'OTHER', label: 'Other', icon: MoreHorizontal },
+export const INDUSTRY_OPTIONS: LeadOption[] = [
+  { value: 'HARDWARE', labelKey: 'enums.leads.industry.hardware', icon: Wrench },
+  { value: 'CONTRACTOR', labelKey: 'enums.leads.industry.contractor', icon: HardHat },
+  { value: 'HOME_OWNER', labelKey: 'enums.leads.industry.homeOwner', icon: Home },
+  { value: 'TECHNOLOGY', labelKey: 'enums.leads.industry.technology', icon: Cpu },
+  { value: 'HEALTHCARE', labelKey: 'enums.leads.industry.healthcare', icon: HeartPulse },
+  { value: 'FINANCE', labelKey: 'enums.leads.industry.finance', icon: Landmark },
+  { value: 'RETAIL', labelKey: 'enums.leads.industry.retail', icon: StoreIcon },
+  { value: 'MANUFACTURING', labelKey: 'enums.leads.industry.manufacturing', icon: Factory },
+  { value: 'EDUCATION', labelKey: 'enums.leads.industry.education', icon: GraduationCap },
+  { value: 'CONSTRUCTION', labelKey: 'enums.leads.industry.construction', icon: Construction },
+  { value: 'REAL_ESTATE', labelKey: 'enums.leads.industry.realEstate', icon: Building2 },
+  { value: 'AUTOMOTIVE', labelKey: 'enums.leads.industry.automotive', icon: Car },
+  { value: 'AGRICULTURE', labelKey: 'enums.leads.industry.agriculture', icon: Wheat },
+  { value: 'ENERGY', labelKey: 'enums.leads.industry.energy', icon: Zap },
+  { value: 'TELECOMMUNICATIONS', labelKey: 'enums.leads.industry.telecommunications', icon: Radio },
+  { value: 'ENTERTAINMENT', labelKey: 'enums.leads.industry.entertainment', icon: Film },
+  { value: 'HOSPITALITY', labelKey: 'enums.leads.industry.hospitality', icon: UtensilsCrossed },
+  { value: 'TRANSPORTATION', labelKey: 'enums.leads.industry.transportation', icon: Truck },
+  { value: 'GOVERNMENT', labelKey: 'enums.leads.industry.government', icon: Building },
+  { value: 'NON_PROFIT', labelKey: 'enums.leads.industry.nonProfit', icon: HeartHandshake },
+  { value: 'CONSULTING', labelKey: 'enums.leads.industry.consulting', icon: LightbulbIcon },
+  { value: 'MARKETING', labelKey: 'enums.leads.industry.marketing', icon: Megaphone },
+  { value: 'LEGAL', labelKey: 'enums.leads.industry.legal', icon: Scale },
+  { value: 'UPHOLSTERY', labelKey: 'enums.leads.industry.upholstery', icon: BedDouble },
+  { value: 'SHOP_FITTERS', labelKey: 'enums.leads.industry.shopFitters', icon: HardHat },
+  { value: 'OTHER', labelKey: 'enums.leads.industry.other', icon: MoreHorizontal },
 ];
 
 /** Business size (server BusinessSize enum). */
-export const BUSINESS_SIZE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'STARTUP', label: 'Startup (1-10)', icon: TrendingUp },
-  { value: 'SMALL', label: 'Small (11-50)', icon: UsersIcon },
-  { value: 'MEDIUM', label: 'Medium (51-200)', icon: Building2 },
-  { value: 'LARGE', label: 'Large (201-1000)', icon: Factory },
-  { value: 'ENTERPRISE', label: 'Enterprise (1000+)', icon: Building },
-  { value: 'UNKNOWN', label: 'Unknown', icon: HelpCircle },
+export const BUSINESS_SIZE_OPTIONS: LeadOption[] = [
+  { value: 'STARTUP', labelKey: 'enums.leads.businessSize.startup', icon: TrendingUp },
+  { value: 'SMALL', labelKey: 'enums.leads.businessSize.small', icon: UsersIcon },
+  { value: 'MEDIUM', labelKey: 'enums.leads.businessSize.medium', icon: Building2 },
+  { value: 'LARGE', labelKey: 'enums.leads.businessSize.large', icon: Factory },
+  { value: 'ENTERPRISE', labelKey: 'enums.leads.businessSize.enterprise', icon: Building },
+  { value: 'UNKNOWN', labelKey: 'enums.leads.businessSize.unknown', icon: HelpCircle },
 ];
 
 /** Decision maker role (server DecisionMakerRole enum). */
-export const DECISION_MAKER_ROLE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'CEO', label: 'CEO', icon: Crown },
-  { value: 'CTO', label: 'CTO', icon: Cpu },
-  { value: 'CFO', label: 'CFO', icon: Landmark },
-  { value: 'CMO', label: 'CMO', icon: Megaphone },
-  { value: 'DIRECTOR', label: 'Director', icon: Briefcase },
-  { value: 'MANAGER', label: 'Manager', icon: Settings },
-  { value: 'SUPERVISOR', label: 'Supervisor', icon: ClipboardList },
-  { value: 'ANALYST', label: 'Analyst', icon: BarChart3Icon },
-  { value: 'COORDINATOR', label: 'Coordinator', icon: TargetIcon },
-  { value: 'SPECIALIST', label: 'Specialist', icon: Award },
-  { value: 'CONSULTANT', label: 'Consultant', icon: UsersIcon },
-  { value: 'OWNER', label: 'Owner', icon: Star },
-  { value: 'PARTNER', label: 'Partner', icon: Handshake },
-  { value: 'OTHER', label: 'Other', icon: MoreHorizontal },
-  { value: 'UNKNOWN', label: 'Unknown', icon: HelpCircle },
+export const DECISION_MAKER_ROLE_OPTIONS: LeadOption[] = [
+  { value: 'CEO', labelKey: 'enums.leads.decisionMaker.ceo', icon: Crown },
+  { value: 'CTO', labelKey: 'enums.leads.decisionMaker.cto', icon: Cpu },
+  { value: 'CFO', labelKey: 'enums.leads.decisionMaker.cfo', icon: Landmark },
+  { value: 'CMO', labelKey: 'enums.leads.decisionMaker.cmo', icon: Megaphone },
+  { value: 'DIRECTOR', labelKey: 'enums.leads.decisionMaker.director', icon: Briefcase },
+  { value: 'MANAGER', labelKey: 'enums.leads.decisionMaker.manager', icon: Settings },
+  { value: 'SUPERVISOR', labelKey: 'enums.leads.decisionMaker.supervisor', icon: ClipboardList },
+  { value: 'ANALYST', labelKey: 'enums.leads.decisionMaker.analyst', icon: BarChart3Icon },
+  { value: 'COORDINATOR', labelKey: 'enums.leads.decisionMaker.coordinator', icon: TargetIcon },
+  { value: 'SPECIALIST', labelKey: 'enums.leads.decisionMaker.specialist', icon: Award },
+  { value: 'CONSULTANT', labelKey: 'enums.leads.decisionMaker.consultant', icon: UsersIcon },
+  { value: 'OWNER', labelKey: 'enums.leads.decisionMaker.owner', icon: Star },
+  { value: 'PARTNER', labelKey: 'enums.leads.decisionMaker.partner', icon: Handshake },
+  { value: 'OTHER', labelKey: 'enums.leads.decisionMaker.other', icon: MoreHorizontal },
+  { value: 'UNKNOWN', labelKey: 'enums.leads.decisionMaker.unknown', icon: HelpCircle },
 ];
 
 /** Lead intent (server LeadIntent enum). Subset for form. */
-export const LEAD_INTENT_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'PURCHASE', label: 'Purchase', icon: ShoppingCart },
-  { value: 'ENQUIRY', label: 'Enquiry', icon: MessageCircle },
-  { value: 'SERVICES', label: 'Services', icon: Wrench },
-  { value: 'CONSULTATION', label: 'Consultation', icon: UsersIcon },
-  { value: 'QUOTE_REQUEST', label: 'Quote request', icon: FileText },
-  { value: 'DEMO_REQUEST', label: 'Demo request', icon: Presentation },
-  { value: 'TRIAL', label: 'Trial', icon: TestTube },
-  { value: 'REFERRAL', label: 'Referral', icon: UserPlus },
-  { value: 'UNKNOWN', label: 'Unknown', icon: HelpCircle },
+export const LEAD_INTENT_OPTIONS: LeadOption[] = [
+  { value: 'PURCHASE', labelKey: 'enums.leads.intent.purchase', icon: ShoppingCart },
+  { value: 'ENQUIRY', labelKey: 'enums.leads.intent.enquiry', icon: MessageCircle },
+  { value: 'SERVICES', labelKey: 'enums.leads.intent.services', icon: Wrench },
+  { value: 'CONSULTATION', labelKey: 'enums.leads.intent.consultation', icon: UsersIcon },
+  { value: 'QUOTE_REQUEST', labelKey: 'enums.leads.intent.quoteRequest', icon: FileText },
+  { value: 'DEMO_REQUEST', labelKey: 'enums.leads.intent.demoRequest', icon: Presentation },
+  { value: 'TRIAL', labelKey: 'enums.leads.intent.trial', icon: TestTube },
+  { value: 'REFERRAL', labelKey: 'enums.leads.intent.referral', icon: UserPlus },
+  { value: 'UNKNOWN', labelKey: 'enums.leads.intent.unknown', icon: HelpCircle },
 ];
 
 /** Lifecycle stage (server LeadLifecycleStage enum). */
-export const LIFECYCLE_STAGE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'SUBSCRIBER', label: 'Subscriber', icon: Bell },
-  { value: 'LEAD', label: 'Lead', icon: Crosshair },
-  { value: 'MARKETING_QUALIFIED_LEAD', label: 'Marketing qualified', icon: Megaphone },
-  { value: 'SALES_QUALIFIED_LEAD', label: 'Sales qualified', icon: TrendingUp },
-  { value: 'OPPORTUNITY', label: 'Opportunity', icon: TargetIcon },
-  { value: 'CUSTOMER', label: 'Customer', icon: CheckCircle },
-  { value: 'EVANGELIST', label: 'Evangelist', icon: Heart },
+export const LIFECYCLE_STAGE_OPTIONS: LeadOption[] = [
+  { value: 'SUBSCRIBER', labelKey: 'enums.leads.lifecycle.subscriber', icon: Bell },
+  { value: 'LEAD', labelKey: 'enums.leads.lifecycle.lead', icon: Crosshair },
+  { value: 'MARKETING_QUALIFIED_LEAD', labelKey: 'enums.leads.lifecycle.marketingQualified', icon: Megaphone },
+  { value: 'SALES_QUALIFIED_LEAD', labelKey: 'enums.leads.lifecycle.salesQualified', icon: TrendingUp },
+  { value: 'OPPORTUNITY', labelKey: 'enums.leads.lifecycle.opportunity', icon: TargetIcon },
+  { value: 'CUSTOMER', labelKey: 'enums.leads.lifecycle.customer', icon: CheckCircle },
+  { value: 'EVANGELIST', labelKey: 'enums.leads.lifecycle.evangelist', icon: Heart },
 ];
 
 /** Budget range (server BudgetRange enum). */
-export const BUDGET_RANGE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'UNDER_1K', label: 'Under R1k', icon: Coins },
-  { value: 'R1K_5K', label: 'R1k - R5k', icon: BanknoteIcon },
-  { value: 'R5K_10K', label: 'R5k - R10k', icon: DollarSign },
-  { value: 'R10K_25K', label: 'R10k - R25k', icon: Wallet },
-  { value: 'R25K_50K', label: 'R25k - R50k', icon: CreditCard },
-  { value: 'R50K_100K', label: 'R50k - R100k', icon: PiggyBank },
-  { value: 'R100K_250K', label: 'R100k - R250k', icon: Landmark },
-  { value: 'OVER_1M', label: 'Over R1M', icon: TrendingUp },
-  { value: 'UNKNOWN', label: 'Unknown', icon: HelpCircle },
+export const BUDGET_RANGE_OPTIONS: LeadOption[] = [
+  { value: 'UNDER_1K', labelKey: 'enums.leads.budget.under1k', icon: Coins },
+  { value: 'R1K_5K', labelKey: 'enums.leads.budget.r1k5k', icon: BanknoteIcon },
+  { value: 'R5K_10K', labelKey: 'enums.leads.budget.r5k10k', icon: DollarSign },
+  { value: 'R10K_25K', labelKey: 'enums.leads.budget.r10k25k', icon: Wallet },
+  { value: 'R25K_50K', labelKey: 'enums.leads.budget.r25k50k', icon: CreditCard },
+  { value: 'R50K_100K', labelKey: 'enums.leads.budget.r50k100k', icon: PiggyBank },
+  { value: 'R100K_250K', labelKey: 'enums.leads.budget.r100k250k', icon: Landmark },
+  { value: 'OVER_1M', labelKey: 'enums.leads.budget.over1m', icon: TrendingUp },
+  { value: 'UNKNOWN', labelKey: 'enums.leads.budget.unknown', icon: HelpCircle },
 ];
 
 /** Purchase timeline (server Timeline enum). */
-export const TIMELINE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'IMMEDIATE', label: 'Immediate', icon: Zap },
-  { value: 'SHORT_TERM', label: 'Short term (1-4 weeks)', icon: CalendarDays },
-  { value: 'MEDIUM_TERM', label: 'Medium term (1-3 months)', icon: Calendar },
-  { value: 'LONG_TERM', label: 'Long term (3-6 months)', icon: CalendarRange },
-  { value: 'FUTURE', label: 'Future (6+ months)', icon: CalendarClock },
-  { value: 'UNKNOWN', label: 'Unknown', icon: HelpCircle },
+export const TIMELINE_OPTIONS: LeadOption[] = [
+  { value: 'IMMEDIATE', labelKey: 'enums.leads.timeline.immediate', icon: Zap },
+  { value: 'SHORT_TERM', labelKey: 'enums.leads.timeline.shortTerm', icon: CalendarDays },
+  { value: 'MEDIUM_TERM', labelKey: 'enums.leads.timeline.mediumTerm', icon: Calendar },
+  { value: 'LONG_TERM', labelKey: 'enums.leads.timeline.longTerm', icon: CalendarRange },
+  { value: 'FUTURE', labelKey: 'enums.leads.timeline.future', icon: CalendarClock },
+  { value: 'UNKNOWN', labelKey: 'enums.leads.timeline.unknown', icon: HelpCircle },
 ];
 
 /** Communication preference (server CommunicationPreference enum). */
-export const COMMUNICATION_PREFERENCE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'EMAIL', label: 'Email', icon: MailIcon },
-  { value: 'PHONE', label: 'Phone', icon: PhoneCallIcon },
-  { value: 'SMS', label: 'SMS', icon: MessageSquareIcon },
-  { value: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle },
-  { value: 'IN_PERSON', label: 'In person', icon: MapPinIcon },
-  { value: 'VIDEO_CALL', label: 'Video call', icon: VideoIcon },
-  { value: 'SOCIAL_MEDIA', label: 'Social media', icon: Share2 },
+export const COMMUNICATION_PREFERENCE_OPTIONS: LeadOption[] = [
+  { value: 'EMAIL', labelKey: 'enums.leads.communication.email', icon: MailIcon },
+  { value: 'PHONE', labelKey: 'enums.leads.communication.phone', icon: PhoneCallIcon },
+  { value: 'SMS', labelKey: 'enums.leads.communication.sms', icon: MessageSquareIcon },
+  { value: 'WHATSAPP', labelKey: 'enums.leads.communication.whatsapp', icon: MessageCircle },
+  { value: 'IN_PERSON', labelKey: 'enums.leads.communication.inPerson', icon: MapPinIcon },
+  { value: 'VIDEO_CALL', labelKey: 'enums.leads.communication.videoCall', icon: VideoIcon },
+  { value: 'SOCIAL_MEDIA', labelKey: 'enums.leads.communication.socialMedia', icon: Share2 },
 ];
 
 /** Timezone options (APK-style). */
-export const TIMEZONE_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'Africa/Johannesburg', label: 'Africa/Johannesburg', icon: Globe },
-  { value: 'Africa/Cairo', label: 'Africa/Cairo', icon: MapPinIcon },
-  { value: 'Europe/London', label: 'Europe/London', icon: Clock },
-  { value: 'America/New_York', label: 'America/New York', icon: Building2 },
-  { value: 'UTC', label: 'UTC', icon: HelpCircle },
+export const TIMEZONE_OPTIONS: LeadOption[] = [
+  { value: 'Africa/Johannesburg', labelKey: 'enums.leads.timezone.johannesburg', icon: Globe },
+  { value: 'Africa/Cairo', labelKey: 'enums.leads.timezone.cairo', icon: MapPinIcon },
+  { value: 'Europe/London', labelKey: 'enums.leads.timezone.london', icon: Clock },
+  { value: 'America/New_York', labelKey: 'enums.leads.timezone.newYork', icon: Building2 },
+  { value: 'UTC', labelKey: 'enums.leads.timezone.utc', icon: HelpCircle },
 ];
 
 /** Best contact time (APK-style). */
-export const BEST_CONTACT_TIME_OPTIONS: { value: string; label: string; icon: IconComponent }[] = [
-  { value: 'business_hours', label: 'Business hours', icon: Clock },
-  { value: 'morning', label: 'Morning', icon: Sunrise },
-  { value: 'afternoon', label: 'Afternoon', icon: SunIcon },
-  { value: 'evening', label: 'Evening', icon: Moon },
+export const BEST_CONTACT_TIME_OPTIONS: LeadOption[] = [
+  { value: 'business_hours', labelKey: 'enums.leads.contactTime.businessHours', icon: Clock },
+  { value: 'morning', labelKey: 'enums.leads.contactTime.morning', icon: Sunrise },
+  { value: 'afternoon', labelKey: 'enums.leads.contactTime.afternoon', icon: SunIcon },
+  { value: 'evening', labelKey: 'enums.leads.contactTime.evening', icon: Moon },
 ];
 
 /** Re-export currency options for lead form (from visit-form-utils). */

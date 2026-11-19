@@ -26,17 +26,7 @@ import { MERCHANDISE_STATUS_OPTIONS } from '@/app/merchandise/lib/merchandise-di
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
 import { cn } from '@/lib/utils';
 
-const MERCHANDISE_STATUS_LABEL_KEYS: Record<
-  (typeof MERCHANDISE_STATUS_OPTIONS)[number]['value'],
-  string
-> = {
-  all: 'actions.allStatuses',
-  PENDING_REVIEW: 'chrome.merchandise.status.pendingReview',
-  PUBLISHED: 'chrome.merchandise.status.published',
-  REJECTED: 'chrome.merchandise.status.rejected',
-  DRAFT: 'chrome.merchandise.status.draft',
-  ARCHIVED: 'chrome.merchandise.status.archived',
-};
+/** @deprecated Label keys now live on MERCHANDISE_STATUS_OPTIONS[].labelKey. */
 
 function merchandiseStatusIcon(status: string): LucideIcon {
   switch (status) {
@@ -127,7 +117,7 @@ export function MerchandiseFiltersBar({
                 return (
                   <SelectItem key={option.value} value={option.value}>
                     <Icon className={cn('size-4', statusFilterIconClass(option.value))} />
-                    {t(MERCHANDISE_STATUS_LABEL_KEYS[option.value])}
+                    {t(option.labelKey)}
                   </SelectItem>
                 );
               })}

@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PulseBranchRow, PulseNamedPerson, PulsePersonHistory } from '@/api/types/pulse';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,10 @@ const UNASSIGNED = 'UNASSIGNED';
  * alignment classes on header and body cells keep columns aligned across all tables.
  */
 const BRANCH_COLUMNS = [
-  { key: 'branch', label: 'Branch', className: 'w-[34%] text-left' },
-  { key: 'morning', label: 'Morning', className: 'w-[18%] text-center tabular-nums' },
-  { key: 'evening', label: 'Evening', className: 'w-[18%] text-center tabular-nums' },
-  { key: 'trend', label: 'Trend', className: 'w-[30%] text-left' },
+  { key: 'branch', labelKey: 'chrome.wellbeing.columns.branch', className: 'w-[34%] text-left' },
+  { key: 'morning', labelKey: 'chrome.wellbeing.columns.morning', className: 'w-[18%] text-center tabular-nums' },
+  { key: 'evening', labelKey: 'chrome.wellbeing.columns.evening', className: 'w-[18%] text-center tabular-nums' },
+  { key: 'trend', labelKey: 'chrome.wellbeing.columns.trend', className: 'w-[30%] text-left' },
 ] as const;
 
 function average(values: Array<number | null | undefined>): number | null {
@@ -61,8 +62,11 @@ function groupByCountry<T extends { countryCode: string | null }>(rows: T[]): { 
   }));
 }
 
-function countryHeading(countryCode: string): { flag: string; name: string } {
-  if (countryCode === UNASSIGNED) return { flag: '🌍', name: 'Unassigned' };
+function countryHeading(
+  countryCode: string,
+  unassignedLabel: string,
+): { flag: string; name: string } {
+  if (countryCode === UNASSIGNED) return { flag: '🌍', name: unassignedLabel };
   const info = getCountryFlag(countryCode);
   return { flag: info.flag, name: info.name };
 }
@@ -124,7 +128,8 @@ function CountryHeader({
   open: boolean;
   onToggle: () => void;
 }) {
-  const heading = countryHeading(countryCode);
+  const { t } = useTranslation('screens');
+  const heading = countryHeading(countryCode, t('chrome.wellbeing.unassigned'));
   return (
     <button
       type="button"
@@ -149,13 +154,14 @@ export function WellbeingBranchCountrySections({
   rows: PulseBranchRow[];
   people?: PulsePersonHistory[];
 }) {
+  const { t } = useTranslation('screens');
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
   const [openBranches, setOpenBranches] = useState<Set<string>>(() => new Set());
   const [historyPerson, setHistoryPerson] = useState<PulsePersonHistory | null>(null);
 
   if (!rows.length) {
-    return <p className="text-sm text-muted-foreground">No branch pulse data for this filter.</p>;
+    return <p className="text-sm text-muted-foreground">{t('chrome.wellbeing.noBranchPulse')}</p>;
   }
 
   return (
@@ -170,10 +176,10 @@ export function WellbeingBranchCountrySections({
           <div key={group.countryCode}>
             <CountryHeader
               countryCode={group.countryCode}
-              countLabel={`${count} ${count === 1 ? 'branch' : 'branches'}`}
+              countLabel={t('chrome.wellbeing.branchesCount', { count })}
               detail={
                 <>
-                  Morning <ScoreText score={morning} /> · Evening <ScoreText score={evening} />
+                  {t('chrome.wellbeing.columns.morning')} <ScoreText score={morning} /> · {t('chrome.wellbeing.columns.evening')} <ScoreText score={evening} />
                 </>
               }
               open={open}
@@ -192,7 +198,7 @@ export function WellbeingBranchCountrySections({
                   <TableRow>
                     {BRANCH_COLUMNS.map((col) => (
                       <TableHead key={col.key} className={cn(col.className, 'px-3')}>
-                        {col.label}
+                        {t(col.labelKey)}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -233,9 +239,9 @@ export function WellbeingBranchCountrySections({
                         className={cn(BRANCH_COLUMNS[3].className, 'whitespace-normal px-3')}
                         title={trend.detail}
                       >
-                        <span className="inline-flex items-center gap-1.5" aria-label={`${trend.label}. ${trend.detail}`}>
+                        <span className="inline-flex items-center gap-1.5" aria-label={`${t(trend.labelKey)}. ${trend.detail}`}>
                           <span className={cn('size-2 shrink-0 rounded-full', trendStyle.dot)} aria-hidden />
-                          <span className={cn('text-xs font-medium', trendStyle.text)}>{trend.label}</span>
+                          <span className={cn('text-xs font-medium', trendStyle.text)}>{t(trend.labelKey)}</span>
                         </span>
                       </TableCell>
                     </TableRow>
@@ -243,7 +249,7 @@ export function WellbeingBranchCountrySections({
                       <TableRow>
                         <TableCell colSpan={BRANCH_COLUMNS.length} className="bg-muted/20 px-3 py-3">
                           {branchPeople.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No ratings in this period.</p>
+                            <p className="text-sm text-muted-foreground">{t('chrome.wellbeing.noRatings')}</p>
                           ) : (
                             <ul className="space-y-1">
                               {branchPeople.map((person) => {
@@ -259,13 +265,13 @@ export function WellbeingBranchCountrySections({
                                       <PersonFace name={person.name} photoUrl={person.photoUrl} />
                                       <span className="min-w-0 flex-1 truncate text-sm font-medium">{person.name}</span>
                                       <span className="shrink-0 text-xs text-muted-foreground">
-                                        Morning <ScoreText score={person.morningScore} />
+                                        {t('chrome.wellbeing.columns.morning')} <ScoreText score={person.morningScore} />
                                       </span>
                                       <span className="shrink-0 text-xs text-muted-foreground">
-                                        Evening <ScoreText score={person.eveningScore} />
+                                        {t('chrome.wellbeing.columns.evening')} <ScoreText score={person.eveningScore} />
                                       </span>
                                       <span className={cn('hidden shrink-0 text-xs font-medium sm:inline', personTrendStyle.text)}>
-                                        {personTrend.label}
+                                        {t(personTrend.labelKey)}
                                       </span>
                                     </button>
                                   </li>
@@ -311,6 +317,7 @@ function PersonCard({
   cardId?: string;
   highlighted?: boolean;
 }) {
+  const { t } = useTranslation('screens');
   const status = describePersonStatus(person);
   const style = PULSE_TONE_STYLES[status.tone];
   return (
@@ -330,11 +337,11 @@ function PersonCard({
           {person.branchName ? ` · ${person.branchName}` : ''}
         </p>
         <p className={cn('text-xs font-medium', style.text)} title={status.detail}>
-          {status.label}
+          {t(status.labelKey)}
           {status.detail ? <span className="font-normal text-muted-foreground"> · {status.detail}</span> : null}
         </p>
         <p className="text-xs text-muted-foreground">
-          Morning: {moodLabel(person.morningMood)} · Evening: {moodLabel(person.eveningMood)}
+          {t('chrome.wellbeing.columns.morning')}: {moodLabel(person.morningMood)} · {t('chrome.wellbeing.columns.evening')}: {moodLabel(person.eveningMood)}
           {person.riskReason ? ` · ${person.riskReason.replaceAll('_', ' ')}` : ''}
         </p>
         {person.comments ? <p className="mt-1 text-xs">{person.comments}</p> : null}
@@ -345,8 +352,8 @@ function PersonCard({
           size="icon-sm"
           className="-my-1 -mr-1"
           onClick={() => onExplain(person)}
-          aria-label={`Explain summary for ${person.name}`}
-          title="What does this mean?"
+          aria-label={t('chrome.wellbeing.explainSummary', { name: person.name })}
+          title={t('chrome.wellbeing.whatDoesThisMean')}
         >
           <Info className="size-4" />
         </Button>
@@ -369,6 +376,7 @@ export function WellbeingNamedCountrySections({
   highlightOwnerUid?: number | null;
   cardIdFor?: (person: PulseNamedPerson) => string;
 }) {
+  const { t } = useTranslation('screens');
   const groups = useMemo(() => groupByCountry(rows), [rows]);
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
   const [selectedPerson, setSelectedPerson] = useState<PulseNamedPerson | null>(null);
@@ -388,7 +396,7 @@ export function WellbeingNamedCountrySections({
             <div key={group.countryCode}>
               <CountryHeader
                 countryCode={group.countryCode}
-                countLabel={`${count} ${count === 1 ? 'person' : 'people'}`}
+                countLabel={t('chrome.wellbeing.peopleCount', { count })}
                 open={open}
                 onToggle={() =>
                   setClosed((prev) => {

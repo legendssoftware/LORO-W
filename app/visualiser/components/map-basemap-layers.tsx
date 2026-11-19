@@ -24,11 +24,11 @@ export const DEFAULT_BASEMAP_VISIBILITY: BasemapLayerVisibility = {
   buildings3d: false,
 };
 
-export const BASEMAP_LAYERS: { id: BasemapLayerId; label: string }[] = [
-  { id: 'satellite', label: 'Satellite' },
-  { id: 'terrain', label: 'Terrain' },
-  { id: 'hillshade', label: 'Hillshade' },
-  { id: 'buildings3d', label: '3D buildings' },
+export const BASEMAP_LAYERS: { id: BasemapLayerId; labelKey: string }[] = [
+  { id: 'satellite', labelKey: 'chrome.visualiser.basemap.satellite' },
+  { id: 'terrain', labelKey: 'chrome.visualiser.basemap.terrain' },
+  { id: 'hillshade', labelKey: 'chrome.visualiser.basemap.hillshade' },
+  { id: 'buildings3d', labelKey: 'chrome.visualiser.basemap.buildings3d' },
 ];
 
 const DEM_SOURCE = 'visualiser-terrain-dem';

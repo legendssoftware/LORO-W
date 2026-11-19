@@ -347,7 +347,7 @@ export function MapSummaryModal({
         }, 0);
         return {
           id,
-          label: LAYER_META[id].label,
+          label: t(LAYER_META[id].labelKey),
           count: counts[id],
           share: total > 0 ? (counts[id] / total) * 100 : 0,
           withRevenue: layerPoints.filter((p) => Boolean(p.metricValue)).length,
@@ -356,7 +356,7 @@ export function MapSummaryModal({
           withAddress: layerPoints.filter((p) => Boolean(p.address)).length,
         };
       }),
-    [competitorMonthlyTotal, counts, points, total],
+    [competitorMonthlyTotal, counts, points, t, total],
   );
 
   const comparisonTotals = useMemo(() => {

@@ -379,31 +379,31 @@ export function pointsToGeoJSON(
 
 export const LAYER_META: Record<
   VisualiserLayerId,
-  { label: string; color: string; description: string }
+  { labelKey: string; color: string; descriptionKey: string }
 > = {
   branches: {
-    label: 'Branches',
+    labelKey: 'chrome.visualiser.layers.branches',
     color: '#0d9488',
-    description: 'Company branch locations',
+    descriptionKey: 'chrome.visualiser.layers.branchesDesc',
   },
   hq: {
-    label: 'HQ',
+    labelKey: 'chrome.visualiser.layers.hq',
     color: '#b45309',
-    description: 'Headquarters (branch logo + green border)',
+    descriptionKey: 'chrome.visualiser.layers.hqDesc',
   },
   clients: {
-    label: 'Clients',
+    labelKey: 'chrome.visualiser.layers.clients',
     color: '#2563eb',
-    description: 'Client locations (handshake icons)',
+    descriptionKey: 'chrome.visualiser.layers.clientsDesc',
   },
   competitors: {
-    label: 'Competitors',
+    labelKey: 'chrome.visualiser.layers.competitors',
     color: '#dc2626',
-    description: 'Competitor store locations (brand logos)',
+    descriptionKey: 'chrome.visualiser.layers.competitorsDesc',
   },
   reps: {
-    label: 'Sales reps',
+    labelKey: 'chrome.visualiser.layers.reps',
     color: '#7c3aed',
-    description: 'Last known phone GPS (profile avatar)',
+    descriptionKey: 'chrome.visualiser.layers.repsDesc',
   },
 };

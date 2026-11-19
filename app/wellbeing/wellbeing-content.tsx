@@ -30,7 +30,7 @@ import { ReportsDashboardToolbar } from '@/app/reports/components/reports-dashbo
 import { useReportsDateRange } from '@/app/reports/lib/use-reports-date-range';
 import { normalizeBranchCountryCodeForGrouping } from '@/lib/utils/country-flags';
 import { WellbeingRadialIndex } from './components/wellbeing-radial-index';
-import { PULSE_TONE_STYLES } from './lib/pulse-tone';
+import { indexLabelKey, PULSE_TONE_STYLES } from './lib/pulse-tone';
 import {
   WellbeingBranchCountrySections,
   WellbeingNamedCountrySections,
@@ -77,17 +77,27 @@ function KpiCard({ label, value }: { label: string; value: string }) {
 const LEGEND_TONES = ['good', 'warn', 'bad'] as const;
 
 function ToneLegend() {
+  const { t } = useTranslation('screens');
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {LEGEND_TONES.map((tone) => (
         <span key={tone} className="inline-flex items-center gap-1.5">
           <span className={cn('size-2 rounded-full', PULSE_TONE_STYLES[tone].dot)} />
-          {PULSE_TONE_STYLES[tone].caption}
+          {t(PULSE_TONE_STYLES[tone].captionKey)}
         </span>
       ))}
-      <span>Burnout Risk is inverted: a lower percentage is better.</span>
+      <span>{t('chrome.wellbeing.burnoutInvertedNote')}</span>
     </div>
   );
+}
+
+function translateBurnoutRisk(value: string | undefined, t: (key: string) => string): string {
+  if (!value) return t('chrome.wellbeing.riskLow');
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'low') return t('chrome.wellbeing.riskLow');
+  if (normalized === 'medium') return t('chrome.wellbeing.riskMedium');
+  if (normalized === 'high') return t('chrome.wellbeing.riskHigh');
+  return value;
 }
 
 export function WellbeingContent() {
@@ -153,7 +163,7 @@ export function WellbeingContent() {
     return (
       <div className={appPageScrollWrapClass}>
         <main className={appPageMainClass}>
-          <p className="text-sm text-muted-foreground">Wellbeing is limited to managers, HR, and executives.</p>
+          <p className="text-sm text-muted-foreground">{t('chrome.wellbeing.accessDenied')}</p>
         </main>
       </div>
     );
@@ -184,19 +194,19 @@ export function WellbeingContent() {
         <Tabs value={tab} onValueChange={setTab} className="mt-4 flex min-h-0 flex-1 flex-col">
           <TabsList className={tabListClass} data-tour="wellbeing-tabs">
             <TabsTrigger value="today" className={tabTriggerClass}>
-              <LayoutDashboard className="size-4" /> Today
+              <LayoutDashboard className="size-4" /> {t('chrome.wellbeing.tabs.today')}
             </TabsTrigger>
             <TabsTrigger value="insights" className={tabTriggerClass}>
-              <Sparkles className="size-4" /> Insights
+              <Sparkles className="size-4" /> {t('chrome.wellbeing.tabs.insights')}
             </TabsTrigger>
             <TabsTrigger value="executive" className={tabTriggerClass} data-tour="wellbeing-tab-executive">
-              <HeartPulse className="size-4" /> Executive
+              <HeartPulse className="size-4" /> {t('chrome.wellbeing.tabs.executive')}
             </TabsTrigger>
             <TabsTrigger value="correlations" className={tabTriggerClass}>
-              <TrendingUp className="size-4" /> Correlations
+              <TrendingUp className="size-4" /> {t('chrome.wellbeing.tabs.correlations')}
             </TabsTrigger>
             <TabsTrigger value="admin" className={tabTriggerClass}>
-              <ClipboardCheck className="size-4" /> Admin
+              <ClipboardCheck className="size-4" /> {t('chrome.wellbeing.tabs.admin')}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="today" className="space-y-6" data-tour="wellbeing-today">
@@ -205,37 +215,52 @@ export function WellbeingContent() {
             ) : (
               <>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <KpiCard label="Employees checked in" value={String(daily.data?.kpis.employeesCheckedIn ?? 0)} />
                   <KpiCard
-                    label="Morning mood"
+                    label={t('chrome.wellbeing.kpis.employeesCheckedIn')}
+                    value={String(daily.data?.kpis.employeesCheckedIn ?? 0)}
+                  />
+                  <KpiCard
+                    label={t('chrome.wellbeing.kpis.morningMood')}
                     value={daily.data?.kpis.morningMoodScore != null ? `${daily.data.kpis.morningMoodScore} / 10` : '—'}
                   />
                   <KpiCard
-                    label="Evening mood"
+                    label={t('chrome.wellbeing.kpis.eveningMood')}
                     value={daily.data?.kpis.eveningMoodScore != null ? `${daily.data.kpis.eveningMoodScore} / 10` : '—'}
                   />
                   <KpiCard
-                    label="Daily change"
+                    label={t('chrome.wellbeing.kpis.dailyChange')}
                     value={daily.data?.kpis.dailyChange != null ? String(daily.data.kpis.dailyChange) : '—'}
                   />
-                  <KpiCard label="Support requests" value={String(daily.data?.kpis.supportRequests ?? 0)} />
-                  <KpiCard label="High risk" value={String(daily.data?.kpis.highRiskEmployees ?? 0)} />
-                  <KpiCard label="Burnout risk" value={daily.data?.kpis.burnoutRisk ?? 'Low'} />
                   <KpiCard
-                    label="Confidential (count)"
+                    label={t('chrome.wellbeing.kpis.supportRequests')}
+                    value={String(daily.data?.kpis.supportRequests ?? 0)}
+                  />
+                  <KpiCard
+                    label={t('chrome.wellbeing.kpis.highRisk')}
+                    value={String(daily.data?.kpis.highRiskEmployees ?? 0)}
+                  />
+                  <KpiCard
+                    label={t('chrome.wellbeing.kpis.burnoutRisk')}
+                    value={translateBurnoutRisk(daily.data?.kpis.burnoutRisk, t)}
+                  />
+                  <KpiCard
+                    label={t('chrome.wellbeing.kpis.confidentialCount')}
                     value={String(daily.data?.confidentialSupportCount ?? 0)}
                   />
                 </div>
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold">Branch comparison</h3>
+                  <h3 className="text-sm font-semibold">{t('chrome.wellbeing.branchComparison')}</h3>
                   <WellbeingBranchCountrySections
                     rows={daily.data?.branches ?? []}
                     people={roster.data?.people ?? []}
                   />
                 </section>
-                <WellbeingNamedCountrySections title="Support queue" rows={daily.data?.supportQueue ?? []} />
                 <WellbeingNamedCountrySections
-                  title="Action required"
+                  title={t('chrome.wellbeing.supportQueue')}
+                  rows={daily.data?.supportQueue ?? []}
+                />
+                <WellbeingNamedCountrySections
+                  title={t('chrome.wellbeing.actionRequired')}
                   rows={daily.data?.highRisk ?? []}
                   renderFooter={(person) => (
                     <Button
@@ -248,7 +273,7 @@ export function WellbeingContent() {
                         setTab('admin');
                       }}
                     >
-                      Record outcome
+                      {t('chrome.wellbeing.recordOutcome')}
                     </Button>
                   )}
                 />
@@ -261,7 +286,11 @@ export function WellbeingContent() {
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">{insights.data?.disclaimer}</p>
-                <Badge variant="outline">{insights.data?.source === 'gemini' ? 'AI insights' : 'Deterministic'}</Badge>
+                <Badge variant="outline">
+                  {insights.data?.source === 'gemini'
+                    ? t('chrome.wellbeing.aiInsights')
+                    : t('chrome.wellbeing.deterministic')}
+                </Badge>
                 {(insights.data?.items ?? []).map((item) => (
                   <div
                     key={item.title}
@@ -286,16 +315,26 @@ export function WellbeingContent() {
               <div className="space-y-4">
                 <ToneLegend />
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-tour="wellbeing-radial">
-                  {(executive.data?.indices ?? []).map((index) => (
-                    <WellbeingRadialIndex key={index.label} label={index.label} value={index.value} unit={index.unit} />
-                  ))}
+                  {(executive.data?.indices ?? []).map((index) => {
+                    const key = indexLabelKey(index.label);
+                    const label = key.startsWith('chrome.') ? t(key) : index.label;
+                    return (
+                      <WellbeingRadialIndex
+                        key={index.label}
+                        label={label}
+                        value={index.value}
+                        unit={index.unit}
+                        toneLabel={index.label}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}
           </TabsContent>
           <TabsContent value="correlations" className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Estimates from live joins in this window. Not causal. Rows with small samples are omitted. Safety incidents are not tracked yet.
+              {t('chrome.wellbeing.correlationsHint')}
             </p>
             {correlations.isLoading ? (
               <Skeleton className="h-40 w-full" />
@@ -328,15 +367,15 @@ export function WellbeingContent() {
           </TabsContent>
           <TabsContent value="admin" className="space-y-3" data-tour="wellbeing-admin">
             <p className="text-xs text-muted-foreground">
-              After the responsible manager makes contact, record whether it is resolved and add a comment.
+              {t('chrome.wellbeing.adminHint')}
             </p>
             {daily.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : adminPeople.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No one needs a recorded outcome for this day.</p>
+              <p className="text-sm text-muted-foreground">{t('chrome.wellbeing.noAdminPeople')}</p>
             ) : (
               <WellbeingNamedCountrySections
-                title="Contact feedback"
+                title={t('chrome.wellbeing.contactFeedback')}
                 rows={adminPeople}
                 highlightOwnerUid={focusOwnerUid}
                 cardIdFor={(person) => `wellbeing-admin-person-${person.ownerUid}`}

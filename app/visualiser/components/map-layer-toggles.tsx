@@ -36,6 +36,7 @@ import {
   type VisualiserLayerId,
   type VisualiserMapPoint,
 } from '@/lib/utils/visualiser-map-points';
+import { useTranslation } from 'react-i18next';
 
 const LAYER_ORDER: VisualiserLayerId[] = [
   'hq',
@@ -120,6 +121,7 @@ export function MapLayerToggles({
   hideReps = false,
   className,
 }: MapLayerTogglesProps) {
+  const { t } = useTranslation('screens');
   const [repsExpanded, setRepsExpanded] = useState(false);
   const liveRepCount = countLivePlottedReps(repPoints);
   const repsMeta = LAYER_META.reps;
@@ -133,7 +135,7 @@ export function MapLayerToggles({
       )}
     >
       <p className="text-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-        Layers
+        {t('chrome.visualiser.layersTitle')}
       </p>
       <ul className="space-y-2">
         {LAYER_ORDER.filter((layer) => !(hideReps && layer === 'reps')).map((layer) => {
@@ -150,8 +152,8 @@ export function MapLayerToggles({
                           aria-expanded={repsExpanded}
                           aria-label={
                             repsExpanded
-                              ? 'Collapse sales reps list'
-                              : 'Expand sales reps list'
+                              ? t('chrome.visualiser.collapseReps')
+                              : t('chrome.visualiser.expandReps')
                           }
                         >
                           <ChevronDown
@@ -168,13 +170,13 @@ export function MapLayerToggles({
                           type="button"
                           className="min-w-0 flex-1 truncate text-left text-sm font-normal"
                         >
-                          {repsMeta.label}
+                          {t(repsMeta.labelKey)}
                           <span className="text-muted-foreground ml-1 tabular-nums">
                             ({counts.reps})
                           </span>
                           {liveRepCount > 0 ? (
                             <span className="text-emerald-600 dark:text-emerald-400 ml-1 text-[10px] font-medium tabular-nums">
-                              · {liveRepCount} live
+                              · {t('chrome.visualiser.liveCount', { count: liveRepCount })}
                             </span>
                           ) : null}
                         </button>
@@ -210,7 +212,7 @@ export function MapLayerToggles({
               <div className="flex min-w-0 items-center gap-2">
                 <LayerIcon layer={layer} meta={meta} />
                 <Label htmlFor={id} className="truncate text-sm font-normal">
-                  {meta.label}
+                  {t(meta.labelKey)}
                   <span className="text-muted-foreground ml-1 tabular-nums">
                     ({counts[layer]})
                   </span>
@@ -230,7 +232,7 @@ export function MapLayerToggles({
       {basemap && onBasemapChange ? (
         <div className="mt-3 border-t pt-3">
           <p className="text-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-            Basemap
+            {t('chrome.visualiser.basemapTitle')}
           </p>
           <ul className="space-y-2">
             {BASEMAP_LAYERS.map((layer) => {
@@ -244,7 +246,7 @@ export function MapLayerToggles({
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="text-muted-foreground size-3.5 shrink-0" />
                     <Label htmlFor={id} className="truncate text-sm font-normal">
-                      {layer.label}
+                      {t(layer.labelKey)}
                     </Label>
                   </div>
                   <Switch

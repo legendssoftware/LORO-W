@@ -14,21 +14,24 @@ import {
 import type { Journal } from '@/api/types/journal';
 
 export const MERCHANDISE_STATUS_OPTIONS = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'PENDING_REVIEW', label: 'Pending review' },
-  { value: 'PUBLISHED', label: 'Published' },
-  { value: 'REJECTED', label: 'Rejected' },
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'ARCHIVED', label: 'Archived' },
+  { value: 'all', labelKey: 'actions.allStatuses' },
+  { value: 'PENDING_REVIEW', labelKey: 'chrome.merchandise.status.pendingReview' },
+  { value: 'PUBLISHED', labelKey: 'chrome.merchandise.status.published' },
+  { value: 'REJECTED', labelKey: 'chrome.merchandise.status.rejected' },
+  { value: 'DRAFT', labelKey: 'chrome.merchandise.status.draft' },
+  { value: 'ARCHIVED', labelKey: 'chrome.merchandise.status.archived' },
 ] as const;
 
 const LOCKED_STATUSES = new Set(['PUBLISHED', 'ARCHIVED']);
 
-/** Human label for a journal status enum value. */
-export function merchandiseStatusLabel(status: string | null | undefined): string {
+/** Human label for a journal status enum value. Accepts a `t` function for i18n. */
+export function merchandiseStatusLabel(
+  status: string | null | undefined,
+  t?: (key: string) => string,
+): string {
   const match = MERCHANDISE_STATUS_OPTIONS.find((option) => option.value === status);
-  if (match) return match.label;
-  if (!status) return 'Pending review';
+  if (match) return t ? t(match.labelKey) : match.labelKey;
+  if (!status) return t ? t('chrome.merchandise.status.pendingReview') : 'Pending review';
   return status
     .replace(/_/g, ' ')
     .toLowerCase()

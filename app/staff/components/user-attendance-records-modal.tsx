@@ -78,7 +78,7 @@ interface DayMetrics {
   claimsCount: number;
 }
 
-const PRODUCTIVITY_COLUMN_HINT =
+const PRODUCTIVITY_COLUMN_HINT_EN =
   'Target-based score (0–100) from your HR targets and ERP activity. Not the same as Utilization % on the main dashboard.';
 
 export function UserAttendanceRecordsModal({
@@ -89,6 +89,7 @@ export function UserAttendanceRecordsModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation('screens');
+  const PRODUCTIVITY_COLUMN_HINT = t('chrome.staff.attendance.productivityColumnHint');
   const open = !!user;
   const today = new Date();
   const todayKey = format(today, 'yyyy-MM-dd');
@@ -337,22 +338,22 @@ export function UserAttendanceRecordsModal({
 
   const formatProductivityTooltip = (date: string): string | undefined => {
     if (productivityQuery.isError) {
-      return 'Productivity could not be loaded. Try again later.';
+      return t('chrome.staff.attendance.productivityCouldNotLoadTooltip');
     }
     const row = productivityQuery.data?.days?.find((d) => d.date === date);
     if (row && row.score == null) {
-      return `${PRODUCTIVITY_COLUMN_HINT} No score: day outside your target period, or no applicable targets (sales, visits, calls, leads).`;
+      return `${PRODUCTIVITY_COLUMN_HINT} ${t('chrome.staff.attendance.productivityNoScore')}`;
     }
     const c = row?.components;
     if (!c || Object.keys(c).length === 0) {
       return row?.score != null ? PRODUCTIVITY_COLUMN_HINT : undefined;
     }
     const parts: string[] = [];
-    if (c.salesPct != null) parts.push(`Sales ${c.salesPct}%`);
-    if (c.invoicesPct != null) parts.push(`Invoices ${c.invoicesPct}%`);
-    if (c.visitsPct != null) parts.push(`Visits ${c.visitsPct}%`);
-    if (c.callsPct != null) parts.push(`Calls ${c.callsPct}%`);
-    if (c.leadsPct != null) parts.push(`Leads ${c.leadsPct}%`);
+    if (c.salesPct != null) parts.push(`${t('chrome.staff.attendance.compSales')} ${c.salesPct}%`);
+    if (c.invoicesPct != null) parts.push(`${t('chrome.staff.attendance.compInvoices')} ${c.invoicesPct}%`);
+    if (c.visitsPct != null) parts.push(`${t('chrome.staff.attendance.compVisits')} ${c.visitsPct}%`);
+    if (c.callsPct != null) parts.push(`${t('chrome.staff.attendance.compCalls')} ${c.callsPct}%`);
+    if (c.leadsPct != null) parts.push(`${t('chrome.staff.attendance.compLeads')} ${c.leadsPct}%`);
     const breakdown = parts.length > 0 ? parts.join(' · ') : '';
     return [PRODUCTIVITY_COLUMN_HINT, breakdown].filter(Boolean).join(' ');
   };
@@ -391,15 +392,15 @@ export function UserAttendanceRecordsModal({
   const getStatusLabel = (status: RowStatus): string => {
     switch (status) {
       case 'missed':
-        return 'Missed';
+        return t('chrome.staff.attendance.missed');
       case 'incomplete':
-        return 'Incomplete';
+        return t('chrome.staff.attendance.incomplete');
       case 'late':
-        return 'Late';
+        return t('chrome.staff.attendance.late');
       case 'weekend':
-        return 'Weekend';
+        return t('chrome.staff.attendance.weekend');
       case 'present':
-        return 'Present';
+        return t('chrome.staff.attendance.present');
       default: {
         const _exhaustive: never = status;
         throw new Error(`Unhandled attendance row status: ${_exhaustive}`);
@@ -473,9 +474,12 @@ export function UserAttendanceRecordsModal({
                 : t('chrome.staff.attendanceRecords')}
             </DialogTitle>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 text-left w-full">
-              {isCurrentPeriod ? 'Current payroll period' : 'Payroll period'} ({periodLabel}).{' '}
+              {isCurrentPeriod
+                ? t('chrome.staff.attendance.currentPayrollPeriod')
+                : t('chrome.staff.attendance.payrollPeriod')}{' '}
+              ({periodLabel}).{' '}
               <span className="block sm:inline sm:before:content-['·_'] sm:before:mx-1">
-                Productivity is a target-based 0–100 score (HR targets + ERP); it is not the Utilization % shown on the dashboard card.
+                {t('chrome.staff.attendance.productivityBlurb')}
               </span>
             </p>
           </DialogHeader>
@@ -486,7 +490,7 @@ export function UserAttendanceRecordsModal({
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Previous payroll period"
+            aria-label={t('chrome.staff.attendance.previousPayrollPeriod')}
             disabled={periodOffset <= -MAX_PAYROLL_PERIOD_LOOKBACK}
             onClick={() =>
               setPeriodOffset((current) => Math.max(-MAX_PAYROLL_PERIOD_LOOKBACK, current - 1))
@@ -499,7 +503,7 @@ export function UserAttendanceRecordsModal({
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Next payroll period"
+            aria-label={t('chrome.staff.attendance.nextPayrollPeriod')}
             disabled={periodOffset >= 0}
             onClick={() => setPeriodOffset((current) => Math.min(0, current + 1))}
           >
@@ -511,9 +515,9 @@ export function UserAttendanceRecordsModal({
           {productivityQuery.isError ? (
             <Alert variant="destructive" className="mb-3">
               <AlertCircle aria-hidden />
-              <AlertTitle>Productivity could not be loaded</AlertTitle>
+              <AlertTitle>{t('chrome.staff.attendance.productivityCouldNotLoad')}</AlertTitle>
               <AlertDescription>
-                Daily scores are unavailable. You can still review attendance; try closing and reopening this dialog.
+                {t('chrome.staff.attendance.productivityUnavailableDesc')}
                 {productivityQuery.error instanceof Error
                   ? ` (${productivityQuery.error.message})`
                   : ''}
@@ -522,11 +526,11 @@ export function UserAttendanceRecordsModal({
           ) : null}
           {isLoading ? (
             <p className="text-sm text-muted-foreground py-8">
-              Loading attendance records…
+              {t('chrome.staff.attendance.loadingAttendanceRecords')}
             </p>
           ) : records.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8">
-              No attendance records for {periodLabel}.
+              {t('chrome.staff.attendance.noAttendanceRecordsForPeriod', { period: periodLabel })}
             </p>
           ) : (
             <Table>
@@ -585,11 +589,11 @@ export function UserAttendanceRecordsModal({
                     </TableCell>
                     <TableCell>
                       {r.shiftType === 'same_day'
-                        ? 'Same day'
+                        ? t('chrome.staff.attendance.sameDayShift')
                         : r.shiftType === 'next_day_clockout'
                           ? (
                               <span className="font-medium text-destructive">
-                                Next day clockout
+                                {t('chrome.staff.attendance.nextDayClockout')}
                               </span>
                             )
                           : '—'}
@@ -697,19 +701,19 @@ export function UserAttendanceRecordsModal({
         {!isLoading && records.length > 0 && (
           <div className="shrink-0 border-t border-border py-3 px-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-base">
             <span>
-              <span className="font-medium text-destructive">Missed:</span>{' '}
+              <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryMissed')}:</span>{' '}
               <span className="tabular-nums font-semibold text-destructive">{summary.missed}</span>
             </span>
             <span>
-              <span className="font-medium text-green-600 dark:text-green-500">Attended:</span>{' '}
+              <span className="font-medium text-green-600 dark:text-green-500">{t('chrome.staff.attendance.summaryAttended')}:</span>{' '}
               <span className="tabular-nums font-semibold text-green-600 dark:text-green-500">{summary.attended}</span>
             </span>
             <span>
-              <span className="font-medium text-muted-foreground">Remaining:</span>{' '}
+              <span className="font-medium text-muted-foreground">{t('chrome.staff.attendance.summaryRemaining')}:</span>{' '}
               <span className="tabular-nums font-semibold text-muted-foreground">{summary.remaining}</span>
             </span>
             <span>
-              <span className="font-medium text-destructive">Forgotten outs:</span>{' '}
+              <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryForgottenOuts')}:</span>{' '}
               <span className="tabular-nums font-semibold text-destructive">{summary.forgottenOuts}</span>
             </span>
           </div>

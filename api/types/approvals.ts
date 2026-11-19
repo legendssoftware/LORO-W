@@ -102,11 +102,11 @@ export type ApprovalsListResponse = {
 };
 
 export const APPROVAL_STATUS_FILTERS = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'under_review', label: 'Under review' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'all', labelKey: 'actions.allStatuses' },
+  { value: 'pending', labelKey: 'enums.approvals.status.pending' },
+  { value: 'under_review', labelKey: 'enums.approvals.status.underReview' },
+  { value: 'approved', labelKey: 'enums.approvals.status.approved' },
+  { value: 'rejected', labelKey: 'enums.approvals.status.rejected' },
 ] as const;
 
 const approvalTypeFilterOptions = APPROVAL_TYPE_GROUPS.flatMap((group) => group.types).filter(
