@@ -9,6 +9,7 @@ import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
 import { buildSimulationExportDocument } from '@/lib/site-opportunity/build-simulation-export-document';
 import { downloadSimulationExportPdf } from '@/lib/site-opportunity/simulation-export-pdf';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ExportSimulationButtonProps {
   disabled?: boolean;
@@ -25,6 +26,7 @@ export function ExportSimulationButton({
   className,
   compactOnMobile = false,
 }: ExportSimulationButtonProps) {
+  const { t } = useTranslation('screens');
   const orgName = useOrgName();
   const {
     result,
@@ -54,10 +56,10 @@ export function ExportSimulationButton({
         erpError,
       });
       downloadSimulationExportPdf(document);
-      toast.success('Simulation PDF downloaded');
+      toast.success(t('chrome.visualiser.pdfDownloaded'));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Could not export simulation PDF';
+        error instanceof Error ? error.message : t('chrome.visualiser.pdfExportFailed');
       toast.error(message);
     } finally {
       setIsExporting(false);
@@ -72,11 +74,11 @@ export function ExportSimulationButton({
       className={cn(className)}
       disabled={isDisabled}
       onClick={() => void handleExport()}
-      aria-label={isExporting ? 'Exporting…' : 'Export PDF'}
+      aria-label={isExporting ? t('actions.exporting') : t('actions.exportPdf')}
       title={
         isActive
-          ? 'Download a PDF briefing of this simulation'
-          : 'Run a simulation first to export a PDF'
+          ? t('chrome.visualiser.pdfDownloadHint')
+          : t('chrome.visualiser.pdfRunFirst')
       }
     >
       {isExporting ? (
@@ -85,7 +87,7 @@ export function ExportSimulationButton({
         <Download className="size-4" />
       )}
       <span className={cn(compactOnMobile && 'hidden md:inline')}>
-        {isExporting ? 'Exporting…' : 'Export PDF'}
+        {isExporting ? t('actions.exporting') : t('actions.exportPdf')}
       </span>
     </Button>
   );

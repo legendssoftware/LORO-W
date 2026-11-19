@@ -53,20 +53,20 @@ import {
 import toast from 'react-hot-toast';
 
 const LEAD_SOURCE_OPTIONS = [
-  { value: 'WEBSITE', label: 'Website' },
-  { value: 'SOCIAL_MEDIA', label: 'Social Media' },
-  { value: 'REFERRAL', label: 'Referral' },
-  { value: 'COLD_CALL', label: 'Cold Call' },
-  { value: 'EMAIL_CAMPAIGN', label: 'Email Campaign' },
-  { value: 'TRADE_SHOW', label: 'Trade Show' },
-  { value: 'ADVERTISING', label: 'Advertising' },
-  { value: 'DIRECT_MAIL', label: 'Direct Mail' },
-  { value: 'PARTNER', label: 'Partner' },
-  { value: 'ORGANIC_SEARCH', label: 'Organic Search' },
-  { value: 'PAID_SEARCH', label: 'Paid Search' },
-  { value: 'CONTENT_MARKETING', label: 'Content Marketing' },
-  { value: 'WEBINAR', label: 'Webinar' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'WEBSITE', labelKey: 'enums.leads.source.website' },
+  { value: 'SOCIAL_MEDIA', labelKey: 'enums.leads.source.socialMedia' },
+  { value: 'REFERRAL', labelKey: 'enums.leads.source.referral' },
+  { value: 'COLD_CALL', labelKey: 'enums.leads.source.coldCall' },
+  { value: 'EMAIL_CAMPAIGN', labelKey: 'enums.leads.source.emailCampaign' },
+  { value: 'TRADE_SHOW', labelKey: 'enums.leads.source.tradeShow' },
+  { value: 'ADVERTISING', labelKey: 'enums.leads.source.advertising' },
+  { value: 'DIRECT_MAIL', labelKey: 'enums.leads.source.directMail' },
+  { value: 'PARTNER', labelKey: 'enums.leads.source.partner' },
+  { value: 'ORGANIC_SEARCH', labelKey: 'enums.leads.source.organicSearch' },
+  { value: 'PAID_SEARCH', labelKey: 'enums.leads.source.paidSearch' },
+  { value: 'CONTENT_MARKETING', labelKey: 'enums.leads.source.contentMarketing' },
+  { value: 'WEBINAR', labelKey: 'enums.leads.source.webinar' },
+  { value: 'OTHER', labelKey: 'enums.leads.source.other' },
 ] as const;
 
 const MAX_SEARCH_TERMS = 5;
@@ -723,7 +723,7 @@ export function ImportFromApifyModal({
                 <SelectContent>
                   {LEAD_SOURCE_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
+                      {t(opt.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>

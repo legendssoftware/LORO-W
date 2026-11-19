@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
@@ -15,11 +17,13 @@ import {
 } from '@/lib/task-form-utils';
 
 function optionLabel(
-  options: { value: string; label: string }[],
-  value: string | undefined
+  options: { value: string; labelKey: string }[],
+  value: string | undefined,
+  translate: (key: string) => string,
 ): string | undefined {
   if (!value) return undefined;
-  return options.find((o) => o.value === value)?.label ?? value;
+  const match = options.find((o) => o.value === value);
+  return match ? translate(match.labelKey) : value;
 }
 
 function taskPersonName(
@@ -111,6 +115,7 @@ export function PlanningInboxView({
   selectedTaskUid,
   onTaskClick,
 }: PlanningInboxViewProps) {
+  const { t } = useTranslation('screens');
   const rows = useMemo(() => {
     return [...tasks].sort((a, b) => effectiveTaskSortDate(b) - effectiveTaskSortDate(a));
   }, [tasks]);
@@ -182,19 +187,19 @@ export function PlanningInboxView({
                     <p className="truncate text-sm text-muted-foreground">{clients}</p>
                   ) : null}
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                    {optionLabel(TASK_STATUS_OPTIONS, task.status) ? (
-                      <span>{optionLabel(TASK_STATUS_OPTIONS, task.status)}</span>
+                    {optionLabel(TASK_STATUS_OPTIONS, task.status, t) ? (
+                      <span>{optionLabel(TASK_STATUS_OPTIONS, task.status, t)}</span>
                     ) : null}
-                    {optionLabel(TASK_PRIORITY_OPTIONS, task.priority) ? (
+                    {optionLabel(TASK_PRIORITY_OPTIONS, task.priority, t) ? (
                       <>
                         <span aria-hidden>·</span>
-                        <span>{optionLabel(TASK_PRIORITY_OPTIONS, task.priority)}</span>
+                        <span>{optionLabel(TASK_PRIORITY_OPTIONS, task.priority, t)}</span>
                       </>
                     ) : null}
-                    {optionLabel(TASK_TYPE_OPTIONS, task.taskType) ? (
+                    {optionLabel(TASK_TYPE_OPTIONS, task.taskType, t) ? (
                       <>
                         <span aria-hidden>·</span>
-                        <span>{optionLabel(TASK_TYPE_OPTIONS, task.taskType)}</span>
+                        <span>{optionLabel(TASK_TYPE_OPTIONS, task.taskType, t)}</span>
                       </>
                     ) : null}
                   </div>

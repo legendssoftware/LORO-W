@@ -72,7 +72,7 @@ export function MerchandiseGroupedList({ journals }: { journals: Journal[] }) {
                           {journal.clientRef || 'No client reference'}
                         </p>
                         <Badge variant={merchandiseStatusTone(journal.status)}>
-                          {merchandiseStatusLabel(journal.status)}
+                          {merchandiseStatusLabel(journal.status, t)}
                         </Badge>
                       </div>
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

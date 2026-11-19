@@ -59,7 +59,7 @@ export function ClientsFilterControls({
         const Icon = opt.icon;
         return {
           value: opt.value,
-          label: t(`chrome.clients.status.${opt.value}`),
+          label: t(opt.labelKey),
           icon: (
             <Icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
           ),
@@ -72,7 +72,7 @@ export function ClientsFilterControls({
     () =>
       CLIENT_CATEGORY_PRESETS.filter((o) => o.value !== 'all').map((opt) => ({
         value: opt.value,
-        label: t(`chrome.clients.category.${opt.value}`),
+        label: t(opt.labelKey),
         icon: <Layers className="size-4 shrink-0" />,
       })),
     [t]

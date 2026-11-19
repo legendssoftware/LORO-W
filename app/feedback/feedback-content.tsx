@@ -43,13 +43,13 @@ export function FeedbackContent() {
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-[180px]">
             <CircleDot className="size-4 text-muted-foreground" aria-hidden />
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={t('actions.allStatuses')} />
           </SelectTrigger>
           <SelectContent>
-            {['all', 'NEW', 'IN_REVIEW', 'RESOLVED', 'CLOSED'].map((item) => (
+            {(['all', 'NEW', 'IN_REVIEW', 'RESOLVED', 'CLOSED'] as const).map((item) => (
               <SelectItem key={item} value={item}>
                 <CircleDot className="size-4" aria-hidden />
-                {item === 'all' ? 'All statuses' : item}
+                {item === 'all' ? t('actions.allStatuses') : t(`chrome.feedback.status.${item}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -60,7 +60,7 @@ export function FeedbackContent() {
       error={list.error}
       onRetry={() => void list.refetch()}
       isEmpty={rows.length === 0}
-      emptyMessage="No feedback matches this filter."
+      emptyMessage={t('chrome.feedback.noMatch')}
     >
       {chart.length > 0 ? (
         <ChartContainer config={chartConfig} className="h-40 w-full">
@@ -83,17 +83,17 @@ export function FeedbackContent() {
                 <TableCell>
                   <span className="flex items-center gap-2">
                     <MessageSquare className="size-4 text-muted-foreground" aria-hidden />
-                    {row.title ?? row.comments ?? 'Feedback'}
+                    {row.title ?? row.comments ?? t('chrome.feedback.fallbackTitle')}
                   </span>
                 </TableCell>
-                <TableCell>{row.status ?? '—'}</TableCell>
+                <TableCell>{row.status ? t(`chrome.feedback.status.${row.status}`, { defaultValue: row.status }) : '—'}</TableCell>
                 <TableCell>
                   <Button type="button" size="sm" variant="outline" onClick={() => {
                     void update.mutateAsync({ id, status: 'RESOLVED' }).then(
-                      () => toast.success('Marked resolved'),
-                      (error: unknown) => toast.error(getQueryErrorMessage(error, 'Could not update'))
+                      () => toast.success(t('chrome.feedback.markedResolved')),
+                      (error: unknown) => toast.error(getQueryErrorMessage(error, t('chrome.feedback.couldNotUpdate')))
                     );
-                  }}>Resolve</Button>
+                  }}>{t('chrome.feedback.resolve')}</Button>
                 </TableCell>
               </TableRow>
             );

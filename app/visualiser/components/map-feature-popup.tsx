@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CompetitorRevenueEditor } from '@/app/visualiser/components/competitor-revenue-editor';
 import type { RepJourneyRange } from '@/api/types/tracking';
+import { useTranslation } from 'react-i18next';
 
 function Row({
   icon,
@@ -26,11 +27,11 @@ function Row({
   );
 }
 
-const TRACE_RANGES: { range: RepJourneyRange; label: string }[] = [
-  { range: 'hour', label: 'Hour' },
-  { range: 'today', label: 'Today' },
-  { range: 'day', label: 'Day' },
-  { range: 'week', label: 'Week' },
+const TRACE_RANGES: { range: RepJourneyRange; labelKey: string }[] = [
+  { range: 'hour', labelKey: 'chrome.visualiser.range.hour' },
+  { range: 'today', labelKey: 'actions.today' },
+  { range: 'day', labelKey: 'chrome.visualiser.range.day' },
+  { range: 'week', labelKey: 'chrome.visualiser.range.week' },
 ];
 
 export type MapFeaturePopupContentProps = {
@@ -52,6 +53,7 @@ export function MapFeaturePopupContent({
   onTraceRoute,
   onClearRoute,
 }: MapFeaturePopupContentProps) {
+  const { t } = useTranslation('screens');
   const meta = LAYER_META[point.layer];
   const recorded =
     point.recordedAt &&
@@ -97,7 +99,7 @@ export function MapFeaturePopupContent({
         )}
         <div className="min-w-0 flex-1">
           <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
-            {meta.label}
+            {t(meta.labelKey)}
           </p>
           <h3 className="text-foreground leading-snug font-semibold">
             {point.name}
@@ -145,10 +147,10 @@ export function MapFeaturePopupContent({
         <div className="space-y-1.5 border-t border-border/40 pt-2">
           <p className="text-muted-foreground flex items-center gap-1 text-[10px] font-medium tracking-wide uppercase">
             <Route className="size-3" />
-            Trace route
+            {t('chrome.visualiser.traceRoute')}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {TRACE_RANGES.map(({ range, label }) => (
+            {TRACE_RANGES.map(({ range, labelKey }) => (
               <Button
                 key={range}
                 type="button"
@@ -157,7 +159,7 @@ export function MapFeaturePopupContent({
                 disabled={isTracing}
                 onClick={() => onTraceRoute?.(point.repUid as number, range)}
               >
-                {label}
+                {t(labelKey)}
               </Button>
             ))}
             {activeTraceRange ? (
@@ -168,7 +170,7 @@ export function MapFeaturePopupContent({
                 disabled={isTracing}
                 onClick={() => onClearRoute?.()}
               >
-                Clear
+                {t('actions.clear')}
               </Button>
             ) : null}
           </div>
@@ -177,7 +179,7 @@ export function MapFeaturePopupContent({
 
       {point.status ? (
         <p className="text-muted-foreground text-[11px]">
-          Status:{' '}
+          {t('tables.status')}:{' '}
           <span className="text-foreground font-medium capitalize">
             {point.status}
           </span>
@@ -186,7 +188,7 @@ export function MapFeaturePopupContent({
 
       {recorded ? (
         <p className={cn('text-muted-foreground text-[11px]')}>
-          Last seen: {recorded}
+          {t('chrome.visualiser.lastSeen', { time: recorded })}
         </p>
       ) : null}
     </div>

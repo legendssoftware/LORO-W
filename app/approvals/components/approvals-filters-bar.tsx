@@ -63,11 +63,11 @@ export function ApprovalsFilterControls({
       APPROVAL_STATUS_FILTERS.filter((option) => option.value !== 'all').map(
         (option) => ({
           value: option.value,
-          label: option.label,
+          label: t(option.labelKey),
           icon: approvalStatusIcon(option.value),
         })
       ),
-    []
+    [t]
   );
 
   const typeOptions = React.useMemo<SearchableOptionRow[]>(
@@ -75,7 +75,7 @@ export function ApprovalsFilterControls({
       APPROVAL_TYPE_FILTERS.filter((option) => option.value !== 'all').map(
         (option) => ({
           value: option.value,
-          label: option.label,
+          label: option.label as string,
           icon: <Tags className="size-4 shrink-0" />,
         })
       ),

@@ -49,25 +49,6 @@ import {
 import { cn } from '@/lib/utils';
 import { statusFilterIconClass } from '@/lib/status-filter-icon';
 
-const TASK_STATUS_LABEL_KEYS: Record<(typeof TASK_STATUS_OPTIONS_WITH_ALL)[number]['value'], string> = {
-  all: 'actions.allStatuses',
-  PENDING: 'chrome.planning.status.pending',
-  IN_PROGRESS: 'chrome.planning.status.inProgress',
-  COMPLETED: 'chrome.planning.status.completed',
-  CANCELLED: 'chrome.planning.status.cancelled',
-  OVERDUE: 'chrome.planning.status.overdue',
-  POSTPONED: 'chrome.planning.status.postponed',
-  MISSED: 'chrome.planning.status.missed',
-};
-
-const TASK_PRIORITY_LABEL_KEYS: Record<(typeof TASK_PRIORITY_OPTIONS_WITH_ALL)[number]['value'], string> = {
-  all: 'chrome.planning.allPriorities',
-  LOW: 'chrome.planning.priority.low',
-  MEDIUM: 'chrome.planning.priority.medium',
-  HIGH: 'chrome.planning.priority.high',
-  URGENT: 'chrome.planning.priority.urgent',
-};
-
 const selectTriggerClass =
   'h-9 border-border bg-background text-foreground sm:w-auto';
 
@@ -205,24 +186,24 @@ export function PlanningFilterControls({
   }, [onDateRangePopoverOpenChange, onRangeChange, onSetUseAllTime]);
 
   const statusOptions = TASK_STATUS_OPTIONS_WITH_ALL.map((opt) => {
-    const label = t(TASK_STATUS_LABEL_KEYS[opt.value]);
+    const label = t(opt.labelKey);
     return {
       value: opt.value,
       label,
       icon: (
         <opt.icon className={cn('size-4 shrink-0', statusFilterIconClass(opt.value))} />
       ),
-      searchExtra: `${label} ${opt.label}`,
+      searchExtra: label,
     };
   });
 
   const priorityOptions = TASK_PRIORITY_OPTIONS_WITH_ALL.map((opt) => {
-    const label = t(TASK_PRIORITY_LABEL_KEYS[opt.value]);
+    const label = t(opt.labelKey);
     return {
       value: opt.value,
       label,
       icon: <opt.icon className="size-4 shrink-0" />,
-      searchExtra: `${label} ${opt.label}`,
+      searchExtra: label,
     };
   });
 

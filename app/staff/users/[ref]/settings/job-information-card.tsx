@@ -1,6 +1,7 @@
 'use client';
 
 import type { Control } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   FormControl,
   FormField,
@@ -18,10 +19,11 @@ import { PersonnelFieldGrid } from '@/components/personnel-field-grid';
 import { CollapsibleFormSection } from '@/components/collapsible-form-section';
 
 export function JobInformationCard({ control }: { control: Control<UserFormValues> }) {
+  const { t } = useTranslation('screens');
   return (
     <CollapsibleFormSection
-      title="Job information"
-      description="HR-assigned role, reporting line, leave entitlement, and wage schedule. Salary amount stays on Targets."
+      title={t('chrome.staff.settings.sections.jobInformation')}
+      description={t('chrome.staff.settings.sections.jobInformationDesc')}
       contentClassName="space-y-3 sm:space-y-4"
     >
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -30,7 +32,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.branchref"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Branch ref</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.branchRef')}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. BR001')} />
                 </FormControl>
@@ -43,7 +45,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.position"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Position</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.position')}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. Sales Representative')} />
                 </FormControl>
@@ -56,7 +58,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.department"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Department</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.department')}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'e.g. Sales')} />
                 </FormControl>
@@ -69,7 +71,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.startDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Start date</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.startDate')}</FormLabel>
                 <FormControl>
                   <DatePickerField value={field.value} onChange={field.onChange} placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')} />
                 </FormControl>
@@ -82,7 +84,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.endDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>End date</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.endDate')}</FormLabel>
                 <FormControl>
                   <DatePickerField value={field.value} onChange={field.onChange} placeholder={savedFieldPlaceholder(field.value, 'DD/MM/YYYY')} />
                 </FormControl>
@@ -98,7 +100,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
                 <FormControl>
                   <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
                 </FormControl>
-                <FormLabel className="font-normal">Currently employed</FormLabel>
+                <FormLabel className="font-normal">{t('chrome.staff.settings.currentlyEmployed')}</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -108,7 +110,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Work email</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.workEmail')}</FormLabel>
                 <FormControl>
                   <Input type="email" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, 'work@company.com')} />
                 </FormControl>
@@ -121,7 +123,7 @@ export function JobInformationCard({ control }: { control: Control<UserFormValue
             name="employmentProfile.contactNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact number</FormLabel>
+                <FormLabel>{t('chrome.staff.settings.contactNumber')}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || null)} placeholder={savedFieldPlaceholder(field.value, '+27 64 123 4567')} />
                 </FormControl>

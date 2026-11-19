@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -288,6 +290,7 @@ type ApifyLeadJobsSectionProps = {
 };
 
 export function ApifyLeadJobsSection({ orgTimezone }: ApifyLeadJobsSectionProps) {
+  const { t } = useTranslation('screens');
   const client = useApiClient();
   const queryClient = useQueryClient();
   const { isTokenReady } = useTokenReady();
@@ -929,7 +932,7 @@ export function ApifyLeadJobsSection({ orgTimezone }: ApifyLeadJobsSectionProps)
                   <SelectContent>
                     {LEAD_SOURCE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1038,7 +1041,7 @@ export function ApifyLeadJobsSection({ orgTimezone }: ApifyLeadJobsSectionProps)
                     <SelectContent>
                       {LEAD_SOURCE_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
+                          {t(opt.labelKey)}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -153,12 +153,14 @@ import { buildLeadCallCheckInPayload, leadToEndVisitInitialForm, parseActiveCall
 import { buildTelUrl } from '@/components/visits-table/visits-table-utils';
 import { EndVisitDialog } from '@/components/visits/end-visit-dialog';
 
-function getOptionLabel(
-  options: { value: string; label: string }[],
-  value: string | undefined
+function getOptionLabelKey(
+  options: { value: string; labelKey: string }[],
+  value: string | undefined,
+  t: (key: string) => string,
 ): string {
   if (!value) return '-';
-  return options.find((o) => o.value === value)?.label ?? value;
+  const match = options.find((o) => o.value === value);
+  return match ? t(match.labelKey) : value;
 }
 
 /** Status pills in this dialog; discarded uses the dedicated “Discard this lead” action instead. */
@@ -587,8 +589,8 @@ export function LeadDetailDialog({
   /** Local fallback when the engage-draft API fails. First contact does not mention a proposal. */
   const buildEngageDraft = (channel: 'email' | 'sms' | 'whatsapp') => {
     const name = lead?.name?.trim() || lead?.companyName?.trim() || 'there';
-    const industryLabel =
-      INDUSTRY_OPTIONS.find((option) => option.value === engageIndustry)?.label ?? '';
+    const industryMatch = INDUSTRY_OPTIONS.find((option) => option.value === engageIndustry);
+    const industryLabel = industryMatch ? t(industryMatch.labelKey) : '';
     const industry = industryLabel ? ` in ${industryLabel}` : '';
     const need = engageNeed.trim() ? ` about ${engageNeed.trim()}` : '';
     if (engageIntent === 'first_contact') {
@@ -1203,22 +1205,22 @@ export function LeadDetailDialog({
               <dl className={DETAIL_FIELD_GRID_CLASS}>
                 <DetailFieldRow
                   label={t('leads.status')}
-                  value={getOptionLabel(LEAD_STATUS_OPTIONS, lead.status)}
+                  value={getOptionLabelKey(LEAD_STATUS_OPTIONS, lead.status, t)}
                   icon={BadgeCheck}
                 />
                 <DetailFieldRow
                   label={t('leads.source')}
-                  value={getOptionLabel(LEAD_SOURCE_OPTIONS, lead.source)}
+                  value={getOptionLabelKey(LEAD_SOURCE_OPTIONS, lead.source, t)}
                   icon={Share2}
                 />
                 <DetailFieldRow
                   label={t('leads.temperature')}
-                  value={getOptionLabel(LEAD_TEMPERATURE_OPTIONS, lead.temperature)}
+                  value={getOptionLabelKey(LEAD_TEMPERATURE_OPTIONS, lead.temperature, t)}
                   icon={Thermometer}
                 />
                 <DetailFieldRow
                   label={t('leads.priority')}
-                  value={getOptionLabel(LEAD_PRIORITY_OPTIONS, lead.priority)}
+                  value={getOptionLabelKey(LEAD_PRIORITY_OPTIONS, lead.priority, t)}
                   icon={ListOrdered}
                 />
                 <DetailFieldRow
@@ -1574,7 +1576,7 @@ export function LeadDetailDialog({
                   }
                   onClick={() => openStatusChange(opt.value)}
                 >
-                  Set to {opt.label}
+                  {t('leads.setTo', { status: t(opt.labelKey) })}
                 </Button>
               ))}
               <Button
@@ -1747,7 +1749,7 @@ export function LeadDetailDialog({
             <DialogTitle>
               Set status to{' '}
               {statusChangeTarget
-                ? getOptionLabel(LEAD_STATUS_OPTIONS, statusChangeTarget)
+                ? getOptionLabelKey(LEAD_STATUS_OPTIONS, statusChangeTarget, t)
                 : ''}
             </DialogTitle>
           </DialogHeader>

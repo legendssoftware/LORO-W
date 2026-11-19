@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { PulseMood, PulseNamedPerson, PulsePersonDay } from '@/api/types/pulse';
 import {
   Dialog,
@@ -11,9 +12,9 @@ import {
 import {
   MOOD_EXPLANATIONS,
   RISK_REASON_EXPLANATIONS,
-  TALK_TO_LABELS,
-  buildPersonSummary,
-  contributorLabel,
+  TALK_TO_KEYS,
+  buildPersonSummaryKeys,
+  contributorKey,
   describePersonStatus,
   moodLabel,
 } from '../lib/pulse-explain';
@@ -28,11 +29,12 @@ interface WellbeingPersonInfoModalProps {
 }
 
 function MoodRow({ period, mood }: { period: string; mood: PulseMood | null }) {
+  const { t } = useTranslation('screens');
   if (!mood) {
     return (
       <li>
-        <span className="text-foreground font-medium">{period}: —</span> The check-in has not been
-        submitted yet.
+        <span className="text-foreground font-medium">{period}: —</span>{' '}
+        {t('chrome.wellbeing.modal.checkInNotSubmitted')}
       </li>
     );
   }
@@ -40,9 +42,9 @@ function MoodRow({ period, mood }: { period: string; mood: PulseMood | null }) {
   return (
     <li>
       <span className={cn('font-medium', PULSE_TONE_STYLES[getScoreTone(info.score)].text)}>
-        {period}: {info.label} ({info.score}/10)
+        {period}: {t(info.labelKey)} ({info.score}/10)
       </span>{' '}
-      {info.plainText}
+      {t(info.plainTextKey)}
     </li>
   );
 }
@@ -57,6 +59,7 @@ export function WellbeingPersonInfoModal({
   open,
   onOpenChange,
 }: WellbeingPersonInfoModalProps) {
+  const { t } = useTranslation('screens');
   const reason = person?.riskReason ? RISK_REASON_EXPLANATIONS[person.riskReason] : null;
   const status = person ? describePersonStatus(person) : null;
   const statusStyle = status ? PULSE_TONE_STYLES[status.tone] : null;
@@ -66,18 +69,22 @@ export function WellbeingPersonInfoModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] w-[90vw] max-w-xl flex-col overflow-hidden sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{person ? `About ${person.name}'s summary` : 'Summary'}</DialogTitle>
+          <DialogTitle>
+            {person
+              ? t('chrome.wellbeing.modal.aboutSummary', { name: person.name })
+              : t('chrome.wellbeing.modal.summary')}
+          </DialogTitle>
           <DialogDescription>
             {history?.length
-              ? 'Morning and evening mood for each day in the selected period.'
-              : 'What the short line on the card means, in plain words.'}
+              ? t('chrome.wellbeing.modal.historyDesc')
+              : t('chrome.wellbeing.modal.explanationDesc')}
           </DialogDescription>
         </DialogHeader>
 
         {person ? (
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm leading-relaxed">
             <section className="space-y-2">
-              <h3 className="font-semibold">In plain words</h3>
+              <h3 className="font-semibold">{t('chrome.wellbeing.modal.inPlainWords')}</h3>
               {status && statusStyle ? (
                 <span
                   className={cn(
@@ -86,17 +93,21 @@ export function WellbeingPersonInfoModal({
                   )}
                 >
                   <span className={cn('size-2 rounded-full', statusStyle.dot)} aria-hidden />
-                  {status.label}
+                  {t(status.labelKey)}
                 </span>
               ) : null}
-              <p className="text-muted-foreground">{buildPersonSummary(person)}</p>
+              <p className="text-muted-foreground">
+                {buildPersonSummaryKeys(person)
+                  .map((part) => (part.params ? t(part.key, part.params) : t(part.key)))
+                  .join(' ')}
+              </p>
             </section>
 
             <section className="space-y-2">
-              <h3 className="font-semibold">What the summary line means</h3>
+              <h3 className="font-semibold">{t('chrome.wellbeing.modal.whatSummaryMeans')}</h3>
               <ul className="text-muted-foreground list-disc space-y-1.5 pl-5">
-                <MoodRow period="Morning" mood={person.morningMood} />
-                <MoodRow period="Evening" mood={person.eveningMood} />
+                <MoodRow period={t('chrome.wellbeing.columns.morning')} mood={person.morningMood} />
+                <MoodRow period={t('chrome.wellbeing.columns.evening')} mood={person.eveningMood} />
                 {reason ? (
                   <li>
                     <span
@@ -105,49 +116,55 @@ export function WellbeingPersonInfoModal({
                         PULSE_TONE_STYLES[person.riskReason === 'support' ? 'warn' : 'bad'].text,
                       )}
                     >
-                      {reason.label}:
+                      {t(reason.labelKey)}:
                     </span>{' '}
-                    {reason.plainText}
+                    {t(reason.plainTextKey)}
                   </li>
                 ) : null}
               </ul>
               <p className="text-muted-foreground text-xs">
-                A dash (—) means that check-in has not been submitted today. Mood is scored from 2
-                (not feeling well) to 10 (excellent).
+                {t('chrome.wellbeing.modal.dashMeaning')}
               </p>
             </section>
 
             <section className="space-y-2">
-              <h3 className="font-semibold">What they shared</h3>
+              <h3 className="font-semibold">{t('chrome.wellbeing.modal.whatTheyShared')}</h3>
               <ul className="text-muted-foreground list-disc space-y-1.5 pl-5">
                 <li>
                   {askedToTalk
-                    ? `Asked to speak to ${TALK_TO_LABELS[person.talkTo]}.`
-                    : 'Did not ask to speak to anyone.'}
+                    ? t('chrome.wellbeing.askedToSpeak', { who: t(TALK_TO_KEYS[person.talkTo]) })
+                    : t('chrome.wellbeing.didNotAsk')}
                 </li>
-                <li>{person.followUpRequested ? 'Asked for a follow-up.' : 'No follow-up requested.'}</li>
+                <li>
+                  {person.followUpRequested
+                    ? t('chrome.wellbeing.askedFollowUp')
+                    : t('chrome.wellbeing.modal.noFollowUp')}
+                </li>
                 {person.contributors.length ? (
                   <li>
-                    What affected their mood: {person.contributors.map(contributorLabel).join(', ')}.
+                    {t('chrome.wellbeing.modal.affectedMood')}:{' '}
+                    {person.contributors.map((tag) => t(contributorKey(tag))).join(', ')}.
                   </li>
                 ) : null}
-                {person.comments ? <li>Their comment: &ldquo;{person.comments}&rdquo;</li> : null}
+                {person.comments ? (
+                  <li>{t('chrome.wellbeing.modal.theirComment')}: &ldquo;{person.comments}&rdquo;</li>
+                ) : null}
               </ul>
             </section>
 
             {history?.length ? (
               <section className="space-y-2">
-                <h3 className="font-semibold">Wellness over time</h3>
+                <h3 className="font-semibold">{t('chrome.wellbeing.modal.wellnessOverTime')}</h3>
                 <ul className="text-muted-foreground space-y-1.5">
                   {history.map((day) => (
                     <li key={day.date} className="flex flex-wrap gap-x-3 gap-y-0.5">
                       <span className="w-24 shrink-0 font-medium text-foreground">{day.date}</span>
                       <span>
-                        Morning {moodLabel(day.morningMood)}
+                        {t('chrome.wellbeing.columns.morning')} {moodLabel(day.morningMood)}
                         {day.morningScore != null ? ` (${day.morningScore}/10)` : ''}
                       </span>
                       <span>
-                        Evening {moodLabel(day.eveningMood)}
+                        {t('chrome.wellbeing.columns.evening')} {moodLabel(day.eveningMood)}
                         {day.eveningScore != null ? ` (${day.eveningScore}/10)` : ''}
                       </span>
                     </li>
@@ -158,19 +175,16 @@ export function WellbeingPersonInfoModal({
 
             {reason ? (
               <section className="space-y-2">
-                <h3 className="font-semibold">Suggested next step</h3>
-                <p className="text-muted-foreground">{reason.suggestedAction}</p>
+                <h3 className="font-semibold">{t('chrome.wellbeing.modal.suggestedNextStep')}</h3>
+                <p className="text-muted-foreground">{t(reason.suggestedActionKey)}</p>
               </section>
             ) : null}
 
             <section className="space-y-2">
-              <h3 className="font-semibold">Keep in mind</h3>
+              <h3 className="font-semibold">{t('chrome.wellbeing.modal.keepInMind')}</h3>
               <ul className="text-muted-foreground list-disc space-y-1.5 pl-5">
-                <li>
-                  A check-in is how someone felt at that moment. It is not a diagnosis or a
-                  performance rating.
-                </li>
-                <li>Treat this information confidentially and share it only with people who need it.</li>
+                <li>{t('chrome.wellbeing.modal.checkInDisclaimer')}</li>
+                <li>{t('chrome.wellbeing.modal.confidentialityNote')}</li>
               </ul>
             </section>
           </div>

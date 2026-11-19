@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import type { BranchListItem } from '@/api/types/branch';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import type { DeviceStatus, DeviceType } from '@/api/types/iot';
+import { useTranslation } from 'react-i18next';
 
 export const IOT_FILTER_ALL = '__all__';
 
@@ -187,11 +188,13 @@ export function IotFiltersBar({
   branches,
   onAddDevice,
 }: IotFiltersBarProps) {
+  const { t } = useTranslation('screens');
+
   function renderSearchField() {
     return (
       <div className="relative w-full min-w-0 shrink-0 md:w-56 md:max-w-[16rem]">
         <Input
-          placeholder="Search ID, tag, or location"
+          placeholder={t('chrome.iot.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className={cn(filterToolbarSearchInputClassName, search && 'pr-8')}
@@ -201,7 +204,7 @@ export function IotFiltersBar({
             type="button"
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-            aria-label="Clear search"
+            aria-label={t('actions.clearSearch')}
           >
             <XIcon className="size-4" />
           </button>
@@ -223,9 +226,9 @@ export function IotFiltersBar({
         <div className="flex w-max max-w-full flex-nowrap items-center gap-2">
           <IotToolbarEnumPicker
             Icon={Activity}
-            allLabel="All statuses"
-            searchPlaceholder="Search statuses…"
-            emptyMessage="No status found."
+            allLabel={t('actions.allStatuses')}
+            searchPlaceholder={t('chrome.iot.searchStatuses')}
+            emptyMessage={t('actions.noStatusFound')}
             triggerWidthClass="h-9 w-full sm:w-[160px]"
             selected={statusFilter}
             allSentinel={IOT_FILTER_ALL}
@@ -237,9 +240,9 @@ export function IotFiltersBar({
 
           <IotToolbarEnumPicker
             Icon={Boxes}
-            allLabel="All types"
-            searchPlaceholder="Search types…"
-            emptyMessage="No type found."
+            allLabel={t('chrome.iot.allTypes')}
+            searchPlaceholder={t('chrome.iot.searchTypes')}
+            emptyMessage={t('chrome.iot.noTypeFound')}
             triggerWidthClass="h-9 w-full sm:w-[180px]"
             selected={typeFilter}
             allSentinel={IOT_FILTER_ALL}
@@ -276,7 +279,7 @@ export function IotFiltersBar({
             data-tour="iot-add-device"
           >
             <Plus className="size-4" aria-hidden />
-            Add device
+            {t('chrome.iot.addDevice')}
           </Button>
         </div>
       </div>
