@@ -85,6 +85,7 @@ export function useSessionSync() {
     retry: defaultQueryRetry,
     retryDelay: defaultQueryRetryDelay,
     refetchOnMount: false,
+    // Focus/reconnect only — do not also listen for visibilitychange (that double-fired sync-clerk).
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -142,16 +143,6 @@ export function useSessionSync() {
   useEffect(() => {
     signOutAfterSyncHandledRef.current = false;
   }, [sessionId, isSignedIn]);
-
-  useEffect(() => {
-    function refetchIfStale() {
-      if (!isSignedIn || !isTokenReady) return;
-      if (document.visibilityState !== 'visible') return;
-      void queryClient.refetchQueries({ queryKey });
-    }
-    document.addEventListener('visibilitychange', refetchIfStale);
-    return () => document.removeEventListener('visibilitychange', refetchIfStale);
-  }, [isSignedIn, isTokenReady, queryClient, queryKey]);
 
   useEffect(() => {
     const syncErr = error ?? forceSyncMutation.error;
