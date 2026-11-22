@@ -6,10 +6,11 @@ import {
   filterDeliveries,
   useDeliveries,
   useDeliveryDrivers,
+  useMarkRouteReadyMutation,
   useSessionSync,
   useTokenReady,
 } from '@/api/hooks';
-import type { DeliveryStatus } from '@/api/types/epod';
+import type { DeliveryStatus, DeliverySummary } from '@/api/types/epod';
 import { canDispatchDeliveries, canViewOrganisationDeliveries } from '@/lib/access';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
-import { deliveryStatusClassName, formatDeliveryStatus } from '@/app/deliveries/format';
+import { deliveryStatusClassName, formatArrivalWindow, formatDeliveryStatus } from '@/app/deliveries/format';
 import {
   VisitsListPagination,
   readStoredPageSize,
@@ -38,6 +39,16 @@ import { useTranslation } from 'react-i18next';
 
 const ANY_VALUE = 'all';
 const DELIVERIES_PAGE_SIZE_KEY = 'loro:deliveries-page-size';
+
+/** Open stops with a driver, day, and route can be marked ready from the row. */
+function canMarkDeliveryReady(row: DeliverySummary): boolean {
+  return (
+    (row.status === 'assigned' || row.status === 'in_progress') &&
+    row.routeCode.trim().length > 0 &&
+    row.driverUid > 0 &&
+    row.scheduledDate.trim().length > 0
+  );
+}
 
 export function DeliveriesListContent() {
   const { t } = useTranslation('screens');
@@ -54,6 +65,8 @@ export function DeliveriesListContent() {
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredPageSize(DELIVERIES_PAGE_SIZE_KEY));
+  const [readyRouteCode, setReadyRouteCode] = useState<string | null>(null);
+  const markReady = useMarkRouteReadyMutation();
 
   const query = useDeliveries(
     {
@@ -167,9 +180,11 @@ export function DeliveriesListContent() {
                   <TableHead>{t('tables.invoice')}</TableHead>
                   <TableHead>{t('tables.client')}</TableHead>
                   <TableHead>{t('tables.route')}</TableHead>
+                  <TableHead>Arrival</TableHead>
                   <TableHead>{t('tables.status')}</TableHead>
                   <TableHead>{t('tables.rating')}</TableHead>
                   <TableHead>{t('tables.items')}</TableHead>
+                  {canDispatch ? <TableHead>Loading</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -198,7 +213,15 @@ export function DeliveriesListContent() {
                         <span className="text-muted-foreground block text-xs">{row.clientAddress}</span>
                       ) : null}
                     </TableCell>
-                    <TableCell>{row.routeCode || '—'}</TableCell>
+                    <TableCell>
+                      {row.routeCode || '—'}
+                      {row.stopSequence != null ? (
+                        <span className="text-muted-foreground block text-xs">Stop {row.stopSequence}</span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatArrivalWindow(row.estimatedWindowStart, row.estimatedWindowEnd, row.scheduledDate)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={deliveryStatusClassName(row.status)}>
                         {formatDeliveryStatus(row.status)}
@@ -206,6 +229,37 @@ export function DeliveriesListContent() {
                     </TableCell>
                     <TableCell>{row.ratingScore == null ? '—' : `${row.ratingScore}/5`}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
+                    {canDispatch ? (
+                      <TableCell>
+                        {row.routeReady ? (
+                          <span className="text-muted-foreground text-sm">Marked ready</span>
+                        ) : canMarkDeliveryReady(row) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-9"
+                            disabled={markReady.isPending}
+                            aria-label="Mark as ready"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setReadyRouteCode(row.routeCode);
+                              void markReady.mutate({
+                                driverUid: row.driverUid,
+                                routeCode: row.routeCode,
+                                scheduledDate: row.scheduledDate,
+                              });
+                            }}
+                          >
+                            Mark as ready
+                          </Button>
+                        ) : (
+                          '—'
+                        )}
+                        {markReady.isError && readyRouteCode === row.routeCode ? (
+                          <p className="text-destructive mt-1 text-xs">{getQueryErrorMessage(markReady.error)}</p>
+                        ) : null}
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>

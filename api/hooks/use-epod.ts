@@ -10,6 +10,7 @@ import {
   listAssignableOrders,
   listDeliveries,
   listDrivers,
+  markRouteReady,
 } from '@/api/endpoints/epod';
 import type {
   AssignableOrder,
@@ -17,6 +18,7 @@ import type {
   DeliveryListQuery,
   DeliveryStatus,
   DeliverySummary,
+  ReadyRouteBody,
 } from '@/api/types/epod';
 
 export const EPOD_QUERY_KEY = ['epod'] as const;
@@ -120,6 +122,19 @@ export function useAssignDeliveryMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'assignable-orders'] });
+    },
+  });
+}
+
+/** Marks one driver route ready and sends the arrival window once. */
+export function useMarkRouteReadyMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ReadyRouteBody) => markRouteReady(client, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });
     },
   });
 }

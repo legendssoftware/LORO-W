@@ -73,6 +73,11 @@ function delivery(
     exception: null,
     pdfUrl: null,
     ratingScore: null,
+    stopSequence: null,
+    estimatedWindowStart: null,
+    estimatedWindowEnd: null,
+    routeReady: false,
+    routeDeparted: false,
   };
 }
 
