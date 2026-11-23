@@ -1,10 +1,13 @@
 import {
   TRAVEL_ANALYSIS_DISCLAIMER,
   type TravelAnalysisArea,
+  type TravelAnalysisClientRow,
   type TravelAnalysisDailyRow,
   type TravelAnalysisDocument,
   type TravelAnalysisPayload,
   type TravelAnalysisStopRow,
+  type TravelAnalysisVisitLine,
+  type TravelAnalysisVisitRow,
 } from '@/lib/travel-analysis/travel-analysis-types';
 
 const COMMON_AREA_CAP = 12;
@@ -186,6 +189,169 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function named(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? '';
+  if (trimmed === '' || trimmed === '-') return '';
+  return trimmed;
+}
+
+function finitePair(lat: string, lng: string): { lat: number; lng: number } | null {
+  if (lat.trim() === '-' || lng.trim() === '-' || lat.trim() === '' || lng.trim() === '') return null;
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  return { lat: latitude, lng: longitude };
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[mid] ?? null;
+  const left = sorted[mid - 1];
+  const right = sorted[mid];
+  if (left == null || right == null) return null;
+  return (left + right) / 2;
+}
+
+/** Straight-line kilometres between two WGS84 points. */
+function haversineKm(fromLat: number, fromLng: number, toLat: number, toLng: number): number {
+  const toRad = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = toRad(toLat - fromLat);
+  const dLng = toRad(toLng - fromLng);
+  const lat1 = toRad(fromLat);
+  const lat2 = toRad(toLat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+type VisitDraft = TravelAnalysisVisitLine & {
+  minutes: number;
+  lat: string;
+  lng: string;
+  place: string;
+};
+
+function visitDrafts(visits: TravelAnalysisVisitRow[]): VisitDraft[] {
+  return visits
+    .map((visit) => {
+      const siteName = named(visit.siteName);
+      const client = named(visit.client) || siteName || EM_DASH;
+      const minutes = Math.max(0, Math.round(visit.minutes || 0));
+      return {
+        date: visit.date,
+        time: named(visit.time) || EM_DASH,
+        client,
+        siteName: siteName || EM_DASH,
+        area: normalizeStopArea({ place: visit.place, lat: visit.lat, lng: visit.lng }),
+        method: named(visit.method) || 'Other',
+        minutes,
+        timeLabel: formatHoursMinutes(minutes),
+        lat: visit.lat,
+        lng: visit.lng,
+        place: visit.place ?? '',
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.time.localeCompare(b.time) ||
+        a.client.localeCompare(b.client),
+    );
+}
+
+function homePoint(
+  daily: TravelAnalysisDailyRow[],
+  stops: TravelAnalysisStopRow[],
+  visits: VisitDraft[],
+): { lat: number; lng: number } | null {
+  const start = mostFrequentPlace(daily.map((row) => row.startPlace));
+  if (start === EM_DASH) return null;
+  const homeArea = normalizeStopArea({ place: start, lat: '-', lng: '-' });
+  const latitudes: number[] = [];
+  const longitudes: number[] = [];
+  const push = (place: string, lat: string, lng: string) => {
+    const coords = finitePair(lat, lng);
+    if (!coords) return;
+    const samePlace = place.trim() === start;
+    const sameArea = normalizeStopArea({ place, lat, lng }) === homeArea;
+    if (!samePlace && !sameArea) return;
+    latitudes.push(coords.lat);
+    longitudes.push(coords.lng);
+  };
+  for (const stop of stops) push(stop.place, stop.lat, stop.lng);
+  for (const visit of visits) push(visit.place, visit.lat, visit.lng);
+  const lat = median(latitudes);
+  const lng = median(longitudes);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
+function mostCommonArea(visits: VisitDraft[]): string {
+  const counts = new Map<string, number>();
+  for (const visit of visits) {
+    counts.set(visit.area, (counts.get(visit.area) ?? 0) + 1);
+  }
+  let best = EM_DASH;
+  let bestCount = 0;
+  for (const [area, count] of counts) {
+    if (count > bestCount || (count === bestCount && area.localeCompare(best) < 0)) {
+      best = area;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
+ * One row per client and recorded site. Km from home is straight-line distance
+ * from the most common daily start place.
+ */
+function clientRows(visits: VisitDraft[], home: { lat: number; lng: number } | null): TravelAnalysisClientRow[] {
+  const groups = new Map<string, VisitDraft[]>();
+  for (const visit of visits) {
+    const key = `${visit.client}\u0000${visit.siteName}`;
+    const list = groups.get(key) ?? [];
+    list.push(visit);
+    groups.set(key, list);
+  }
+  return [...groups.values()]
+    .map((group) => {
+      const first = group[0];
+      const minutes = group.reduce((sum, visit) => sum + visit.minutes, 0);
+      const latitudes: number[] = [];
+      const longitudes: number[] = [];
+      for (const visit of group) {
+        const coords = finitePair(visit.lat, visit.lng);
+        if (!coords) continue;
+        latitudes.push(coords.lat);
+        longitudes.push(coords.lng);
+      }
+      const lat = median(latitudes);
+      const lng = median(longitudes);
+      const km =
+        home && lat != null && lng != null ? round1(haversineKm(home.lat, home.lng, lat, lng)) : null;
+      return {
+        client: first?.client ?? EM_DASH,
+        siteName: first?.siteName ?? EM_DASH,
+        area: mostCommonArea(group),
+        visits: group.length,
+        timeLabel: formatHoursMinutes(minutes),
+        whatsApp: group.filter((visit) => visit.method === 'WhatsApp').length,
+        kmFromHome: km,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.visits - a.visits ||
+        a.client.localeCompare(b.client) ||
+        a.siteName.localeCompare(b.siteName),
+    );
+}
+
 export function buildTravelAnalysisFilename(fromYmd: string, toYmd: string): string {
   return `travel-analysis-${fromYmd}-to-${toYmd}.pdf`;
 }
@@ -201,6 +367,12 @@ export function buildTravelAnalysisDocument(
   const userName = summary?.user?.trim() || userNameFallback.trim() || 'Staff member';
   const daily = payload.daily ?? [];
   const stops = payload.stops ?? [];
+  const draftedVisits = visitDrafts(payload.visits ?? []);
+  const visitsByDate = new Map<string, number>();
+  for (const visit of draftedVisits) {
+    visitsByDate.set(visit.date, (visitsByDate.get(visit.date) ?? 0) + 1);
+  }
+  const home = homePoint(daily, stops, draftedVisits);
 
   const travelMin = summary?.travelMin ?? daily.reduce((sum, row) => sum + row.travelMin, 0);
   const stopMin = summary?.stopMin ?? daily.reduce((sum, row) => sum + row.stopMin, 0);
@@ -278,6 +450,7 @@ export function buildTravelAnalysisDocument(
       billableKm: row.distanceKm,
       travelLabel: formatHoursMinutes(row.travelMin),
       stopLabel: formatHoursMinutes(row.stopMin),
+      visitCount: visitsByDate.get(row.date) ?? 0,
       start: displayPlace(row.startPlace),
       end: displayPlace(row.endPlace),
       region: provinceLabel(row.region),
@@ -286,6 +459,16 @@ export function buildTravelAnalysisDocument(
       fuelRand: displayCell(row.fuelRand),
     })),
     areas: clusterCommonAreas(stops),
+    visits: draftedVisits.map((visit) => ({
+      date: visit.date,
+      time: visit.time,
+      client: visit.client,
+      siteName: visit.siteName,
+      area: visit.area,
+      method: visit.method,
+      timeLabel: visit.timeLabel,
+    })),
+    clients: clientRows(draftedVisits, home),
     patterns: {
       travelMin,
       stopMin,

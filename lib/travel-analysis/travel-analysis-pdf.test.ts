@@ -84,17 +84,18 @@ function samplePayload(): TravelAnalysisPayload {
 }
 
 describe('travel analysis table heads', () => {
-  it('drops start and end and keeps fuel price beside litres and rand', () => {
+  it('names travelled distance and fuel usage, and counts the day’s visits', () => {
     expect(DAY_BY_DAY_HEAD).not.toContain('Start → end');
     expect(DAY_BY_DAY_HEAD).toEqual([
       'Date',
-      'Recorded',
+      'Travelled',
       'Billable',
       'Travel',
       'Stop',
+      'Visits',
       'Region',
       'Price',
-      'Fuel L',
+      'Usage',
       'Fuel R',
     ]);
     expect(FUEL_TABLE_HEAD).toEqual(['Date', 'Price', 'Litres', 'Estimated R']);

@@ -279,17 +279,24 @@ function addCover(ctx: PdfCursor, document: TravelAnalysisDocument): void {
 /** Day-by-day columns. Widths sum to the A4 content width so fuel stays under its header. */
 export const DAY_BY_DAY_HEAD = [
   'Date',
-  'Recorded',
+  'Travelled',
   'Billable',
   'Travel',
   'Stop',
+  'Visits',
   'Region',
   'Price',
-  'Fuel L',
+  'Usage',
   'Fuel R',
 ] as const;
 
-const DAY_COLUMN_WIDTHS = [22, 20, 20, 16, 14, 26, 22, 16, 22];
+const DAY_COLUMN_WIDTHS = [18, 18, 16, 14, 12, 14, 22, 20, 16, 28];
+
+const VISIT_TABLE_HEAD = ['Date', 'Client', 'Site', 'Area', 'Method', 'Time'] as const;
+const VISIT_COLUMN_WIDTHS = [32, 34, 30, 40, 22, 20];
+
+const CLIENT_TABLE_HEAD = ['Client', 'Site', 'Area', 'Visits', 'Time', 'WhatsApp', 'From home'] as const;
+const CLIENT_COLUMN_WIDTHS = [32, 28, 38, 16, 18, 22, 24];
 
 /** Fuel-page columns. Fixed widths so litres and rand sit on the header, not the page edge. */
 export const FUEL_TABLE_HEAD = ['Date', 'Price', 'Litres', 'Estimated R'] as const;
@@ -335,6 +342,7 @@ function addDayByDay(ctx: PdfCursor, document: TravelAnalysisDocument): void {
       formatKm(row.billableKm),
       row.travelLabel,
       row.stopLabel,
+      String(row.visitCount),
       row.region,
       row.fuelPrice,
       row.fuelLitres,
@@ -343,10 +351,14 @@ function addDayByDay(ctx: PdfCursor, document: TravelAnalysisDocument): void {
     tableWidth: CONTENT_W,
     styles: { fontSize: 7, cellPadding: 1.1 },
     headStyles: { fontSize: 6.5, fillColor: COLOR_HEAD, fontStyle: 'bold' },
-    columnStyles: columnStyles(DAY_COLUMN_WIDTHS, [1, 2, 3, 4, 6, 7, 8]),
-    didParseCell: alignHeadRight([1, 2, 3, 4, 6, 7, 8]),
+    columnStyles: columnStyles(DAY_COLUMN_WIDTHS, [1, 2, 3, 4, 5, 7, 8, 9]),
+    didParseCell: alignHeadRight([1, 2, 3, 4, 5, 7, 8, 9]),
   });
   ctx.continuationTitle = null;
+  addParagraph(
+    ctx,
+    'Travelled is recorded GPS km. Usage is estimated fuel litres. Visits counts every check-in that day. The cover total counts physical visits only.',
+  );
 }
 
 function addCommonAreas(ctx: PdfCursor, document: TravelAnalysisDocument): void {
@@ -374,6 +386,64 @@ function addCommonAreas(ctx: PdfCursor, document: TravelAnalysisDocument): void 
       3: { cellWidth: 26, halign: 'right' },
     },
   });
+}
+
+function addVisits(ctx: PdfCursor, document: TravelAnalysisDocument): void {
+  addSectionTitle(ctx, 'Visits');
+  if (document.visits.length === 0) {
+    addParagraph(ctx, 'No visits in this range.');
+    return;
+  }
+  addParagraph(ctx, 'Every check-in in the range, including telephone and WhatsApp.');
+  ctx.continuationTitle = 'Visits (continued)';
+  addTable(ctx, {
+    head: [VISIT_TABLE_HEAD],
+    body: document.visits.map((row) => [
+      row.time === EM_DASH ? row.date : `${row.date} ${row.time}`,
+      row.client,
+      row.siteName,
+      row.area,
+      row.method,
+      row.timeLabel,
+    ]),
+    tableWidth: CONTENT_W,
+    styles: { fontSize: 7, cellPadding: 1.1 },
+    headStyles: { fontSize: 6.5, fillColor: COLOR_HEAD, fontStyle: 'bold' },
+    columnStyles: columnStyles(VISIT_COLUMN_WIDTHS, [5]),
+    didParseCell: alignHeadRight([5]),
+  });
+  ctx.continuationTitle = null;
+}
+
+function addClients(ctx: PdfCursor, document: TravelAnalysisDocument): void {
+  addSectionTitle(ctx, 'Clients');
+  if (document.clients.length === 0) {
+    addParagraph(ctx, 'No clients in this range.');
+    return;
+  }
+  addParagraph(
+    ctx,
+    'One row per client and site. Km from home is straight-line distance from the most common start place, not a road distance.',
+  );
+  ctx.continuationTitle = 'Clients (continued)';
+  addTable(ctx, {
+    head: [CLIENT_TABLE_HEAD],
+    body: document.clients.map((row) => [
+      row.client,
+      row.siteName,
+      row.area,
+      String(row.visits),
+      row.timeLabel,
+      String(row.whatsApp),
+      formatKm(row.kmFromHome),
+    ]),
+    tableWidth: CONTENT_W,
+    styles: { fontSize: 7, cellPadding: 1.1 },
+    headStyles: { fontSize: 6.5, fillColor: COLOR_HEAD, fontStyle: 'bold' },
+    columnStyles: columnStyles(CLIENT_COLUMN_WIDTHS, [3, 4, 5, 6]),
+    didParseCell: alignHeadRight([3, 4, 5, 6]),
+  });
+  ctx.continuationTitle = null;
 }
 
 function addDrivingPatterns(ctx: PdfCursor, document: TravelAnalysisDocument): void {
@@ -448,6 +518,8 @@ export function downloadTravelAnalysisPdf(document: TravelAnalysisDocument): voi
   addCover(ctx, document);
   addDayByDay(ctx, document);
   addCommonAreas(ctx, document);
+  addVisits(ctx, document);
+  addClients(ctx, document);
   addDrivingPatterns(ctx, document);
   addFuelUsage(ctx, document);
 
