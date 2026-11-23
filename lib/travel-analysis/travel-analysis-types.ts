@@ -66,6 +66,7 @@ export type TravelAnalysisPayload = {
   summary: TravelAnalysisSummary | null;
   daily: TravelAnalysisDailyRow[];
   stops: TravelAnalysisStopRow[];
+  visits?: TravelAnalysisVisitRow[];
   visitCount: number;
   movingSampleCount: number;
   stoppedSampleCount: number;
@@ -84,12 +85,45 @@ export type TravelAnalysisDayRow = {
   billableKm: number;
   travelLabel: string;
   stopLabel: string;
+  visitCount: number;
   start: string;
   end: string;
   region: string;
   fuelPrice: string;
   fuelLitres: string;
   fuelRand: string;
+};
+
+export type TravelAnalysisVisitRow = {
+  date: string;
+  time: string;
+  client: string;
+  siteName: string;
+  place: string;
+  method: string;
+  minutes: number;
+  lat: string;
+  lng: string;
+};
+
+export type TravelAnalysisVisitLine = {
+  date: string;
+  time: string;
+  client: string;
+  siteName: string;
+  area: string;
+  method: string;
+  timeLabel: string;
+};
+
+export type TravelAnalysisClientRow = {
+  client: string;
+  siteName: string;
+  area: string;
+  visits: number;
+  timeLabel: string;
+  whatsApp: number;
+  kmFromHome: number | null;
 };
 
 export type TravelAnalysisFuelDay = {
@@ -138,6 +172,8 @@ export type TravelAnalysisDocument = {
   };
   days: TravelAnalysisDayRow[];
   areas: TravelAnalysisArea[];
+  visits: TravelAnalysisVisitLine[];
+  clients: TravelAnalysisClientRow[];
   patterns: {
     travelMin: number;
     stopMin: number;
