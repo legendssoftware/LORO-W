@@ -3,6 +3,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CircleDot, Fingerprint, Layers, Package, Ruler, Shield } from 'lucide-react';
+import { ProductImageUploadField } from '@/app/products/product-image-upload-field';
 import { IconField, IconInput, IconTextarea } from '@/components/icon-field';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -174,6 +175,12 @@ export function ProductFormDialog({
           </DialogTitle>
         </DialogHeader>
         <FieldGrid title="Identity" icon={Package} fields={PRODUCT_IDENTITY_FIELDS} values={values} onChange={onChange} />
+        <ProductImageUploadField
+          label="Product image"
+          value={values.imageUrl}
+          onChange={(url) => onChange('imageUrl', url)}
+          disabled={saving}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <IconSelect icon={CircleDot} label={t('forms.products.status')} value={values.status} placeholder={t('forms.products.statusPlaceholder')} options={PRODUCT_STATUSES} onChange={(value) => onChange('status', value)} />
           {values.productRef ? (
@@ -189,6 +196,12 @@ export function ProductFormDialog({
         <FieldGrid title="Pack" icon={Layers} fields={PRODUCT_PACK_FIELDS} values={values} onChange={onChange} />
         <IconSelect icon={Package} label={t('forms.products.packageUnit')} value={values.packageUnit} placeholder={t('forms.products.unitPlaceholder')} options={PACKAGE_UNITS} onChange={(value) => onChange('packageUnit', value)} />
         <FieldGrid title="Pallet" icon={Layers} fields={PRODUCT_PALLET_FIELDS} values={values} onChange={onChange} />
+        <ProductImageUploadField
+          label="Pallet image"
+          value={values.palletImageUrl}
+          onChange={(url) => onChange('palletImageUrl', url)}
+          disabled={saving}
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           <ToggleRow icon={Layers} label={t('forms.products.palletAvailable')} checked={values.palletAvailable} onChange={(checked) => onToggle('palletAvailable', checked)} />
           <ToggleRow icon={CircleDot} label={t('forms.products.palletOnPromotion')} checked={values.palletOnPromotion} onChange={(checked) => onToggle('palletOnPromotion', checked)} />

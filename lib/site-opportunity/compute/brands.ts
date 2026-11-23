@@ -14,8 +14,10 @@ export const HARDWARE_TURNOVER_ZAR: Record<HardwareBrandKey, number> = {
 	EST: 3_200_000,
 	'BOXER BUILD': 2_400_000,
 	'FB MART': 4_200_000,
-	'SOLID CEILING': 3_166_667,
-	OWA: 4_666_667,
+	/** Excel SUMMARY: 9_500_000 ÷ 3 */
+	'SOLID CEILING': 9_500_000 / 3,
+	/** Excel SUMMARY: 14_000_000 ÷ 3 */
+	OWA: 14_000_000 / 3,
 	PELICAN: 3_250_000,
 	CAPCO: 4_250_000,
 	CDS: 1_500_000,

@@ -114,6 +114,10 @@ export interface CompetitorMissingGeocodeItem {
   addressLine: string | null;
   missingCoords: boolean;
   missingAddress: boolean;
+  isDirect?: boolean;
+  accountName?: string | null;
+  LegalEntity?: string | null;
+  TradingName?: string | null;
 }
 
 /**

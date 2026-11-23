@@ -176,6 +176,12 @@ export interface PolicyRecovery {
   newLeads: number;
   quotations: number;
   remainingWorkingDays: number;
+  challenge?: {
+    calls: number;
+    newLeads: number;
+    quotations: number;
+    windowWorkingDays: number;
+  } | null;
 }
 
 export type PolicyPaceBand = 'red' | 'yellow' | 'green';

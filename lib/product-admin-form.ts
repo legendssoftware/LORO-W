@@ -10,7 +10,6 @@ import {
   Factory,
   FolderTree,
   Hash,
-  ImageIcon,
   Layers,
   Link2,
   MapPin,
@@ -151,7 +150,6 @@ export const PRODUCT_IDENTITY_FIELDS: ProductField[] = [
   { key: 'productReferenceCode', label: 'ERP item code', placeholder: 'Pastel item code, leave blank for a LORO product', icon: Link2, kind: 'text' },
   { key: 'barcode', label: 'Barcode', placeholder: 'e.g. 6001234567890', icon: Barcode, kind: 'text' },
   { key: 'brand', label: 'Brand', placeholder: 'e.g. LORO', icon: Award, kind: 'text' },
-  { key: 'imageUrl', label: 'Image URL', placeholder: 'https://…', icon: ImageIcon, kind: 'text' },
 ];
 
 export const PRODUCT_PRICE_FIELDS: ProductField[] = [
@@ -192,7 +190,6 @@ export const PRODUCT_PALLET_FIELDS: ProductField[] = [
   { key: 'palletPromotionStartDate', label: 'Pallet promotion starts', placeholder: 'Start date', icon: Calendar, kind: 'datetime' },
   { key: 'palletPromotionEndDate', label: 'Pallet promotion ends', placeholder: 'End date', icon: Calendar, kind: 'datetime' },
   { key: 'palletDescription', label: 'Pallet description', placeholder: 'How the pallet is sold', icon: Package, kind: 'textarea' },
-  { key: 'palletImageUrl', label: 'Pallet image URL', placeholder: 'https://…', icon: ImageIcon, kind: 'text' },
   { key: 'minimumPalletOrderQuantity', label: 'Minimum pallet order', placeholder: '1', icon: Boxes, kind: 'number' },
   { key: 'palletBulkDiscountPercentage', label: 'Pallet bulk discount %', placeholder: '0', icon: Percent, kind: 'number' },
   { key: 'palletBulkDiscountMinQty', label: 'Pallet bulk minimum', placeholder: '3', icon: Layers, kind: 'number' },
