@@ -5,11 +5,19 @@ export type PaceNoticeTheme = 'alert' | 'policy' | 'success';
 
 export type PerformanceInsightNextStep = 'calls' | 'leads' | 'quotations';
 
+export type PerformanceInsightRecoveryChallenge = {
+  calls: number;
+  newLeads: number;
+  quotations: number;
+  windowWorkingDays: number;
+};
+
 export type PerformanceInsightRecovery = {
   calls: number;
   newLeads: number;
   quotations: number;
   remainingWorkingDays: number;
+  challenge?: PerformanceInsightRecoveryChallenge | null;
 };
 
 /** Flyer fields for the Performance Insight dialog. */
