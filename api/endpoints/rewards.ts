@@ -21,6 +21,15 @@ function asRankings(payload: unknown): RewardRanking[] {
   return [];
 }
 
+function personDisplayName(
+  person: { name?: string; surname?: string; username?: string } | undefined,
+): string {
+  if (!person) return '';
+  const full = [person.name, person.surname].filter(Boolean).join(' ').trim();
+  if (full) return full;
+  return person.username?.trim() ?? '';
+}
+
 function normalizeRanking(row: unknown): RewardRanking {
   if (!row || typeof row !== 'object') return {};
   const item = row as {
@@ -30,13 +39,18 @@ function normalizeRanking(row: unknown): RewardRanking {
     points?: number;
     rank?: number;
     position?: number;
-    owner?: { name?: string; surname?: string };
+    owner?: { name?: string; surname?: string; username?: string };
+    user?: { name?: string; surname?: string; username?: string; uid?: number };
   };
   const xpValue = typeof item.xp === 'number' ? item.xp : item.xp?.totalXP ?? item.points ?? 0;
-  const ownerName = [item.owner?.name, item.owner?.surname].filter(Boolean).join(' ');
+  const displayName =
+    item.name?.trim() ||
+    personDisplayName(item.user) ||
+    personDisplayName(item.owner) ||
+    undefined;
   return {
-    reference: item.reference,
-    name: item.name || ownerName || undefined,
+    reference: item.reference ?? (item.user?.uid != null ? String(item.user.uid) : undefined),
+    name: displayName,
     xp: xpValue,
     rank: item.rank ?? item.position,
   };

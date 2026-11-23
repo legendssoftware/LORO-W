@@ -22,15 +22,27 @@ export function RewardsContent() {
   const boardRows = Array.isArray(board.data) ? board.data : [];
   const rankingRows = Array.isArray(rankings.data) ? rankings.data : [];
   const rows = boardRows.length > 0 ? boardRows : rankingRows;
-  const chartRows = rows.slice(0, 8).map((row) => ({ name: row.name ?? row.reference ?? 'Person', xp: row.xp ?? 0 }));
+  const chartRows = rows.slice(0, 8).map((row, index) => ({
+    name: row.name?.trim() || row.reference || `#${row.rank ?? index + 1}`,
+    xp: row.xp ?? 0,
+  }));
   if (ready && !canAccessRewards(backendUserData?.accessLevel)) return <FeatureDenied title={t('pages.rewards.title')} />;
   return (
     <FeatureShell tourId="rewards" title={t('pages.rewards.title')} description={t('pages.rewards.description')} isLoading={!ready || board.isLoading} isError={board.isError && rankings.isError} error={board.error} onRetry={() => void board.refetch()} isEmpty={rows.length === 0} emptyMessage="No rankings yet.">
-      <ChartContainer config={chartConfig} className="h-48 w-full">
-        <BarChart data={chartRows}>
+      <ChartContainer config={chartConfig} className="h-56 w-full">
+        <BarChart data={chartRows} margin={{ bottom: 28 }}>
           <CartesianGrid vertical={false} />
-          <XAxis dataKey="name" tickLine={false} axisLine={false} />
-          <YAxis width={32} />
+          <XAxis
+            dataKey="name"
+            tickLine={false}
+            axisLine={false}
+            interval={0}
+            angle={-25}
+            textAnchor="end"
+            height={56}
+            tick={{ fontSize: 11 }}
+          />
+          <YAxis width={36} />
           <ChartTooltip content={<ChartTooltipContent />} />
           <Bar dataKey="xp" fill="var(--color-xp)" radius={4} />
         </BarChart>

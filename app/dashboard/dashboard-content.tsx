@@ -24,6 +24,7 @@ import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { AttendanceMonthHighlights, AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
+import { HomePrrBenefits } from '@/components/home-prr-benefits';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
@@ -435,6 +436,7 @@ export function DashboardContent() {
                 ) : undefined
               }
             />
+            <HomePrrBenefits />
             <UserAttendanceRecordsModal
               user={attendanceModalUser}
               onClose={() => setAttendanceModalUser(null)}
