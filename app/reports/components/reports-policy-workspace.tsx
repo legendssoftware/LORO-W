@@ -3,23 +3,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Map as MapView, MapControls, MapMarker, MarkerContent } from '@/components/ui/map';
 import {
-  useAcknowledgePolicy,
   useAdvancePerformanceCase,
   useCreateWeeklyReview,
   useCustomerMap,
   useDecidePolicyException,
   useMarketIntelStock,
-  useMyAcknowledgement,
-  useMyAgreement,
   useOpenPerformanceCase,
   usePerformanceCases,
   usePolicyExceptions,
-  useSignMyAgreement,
   useSignWeeklyReview,
   useUpdateWeeklyReview,
   useWeeklyReviews,
@@ -31,80 +25,9 @@ import { useTranslation } from 'react-i18next';
 
 const FALLBACK_CENTER: [number, number] = [28.0473, -26.2041];
 
-/** Employee acknowledgement and optional participation signature. */
+/** Policy acknowledgement is closed; the form is no longer shown. */
 export function PolicyAcknowledgementCard() {
-  const { t } = useTranslation('screens');
-  const acknowledgement = useMyAcknowledgement();
-  const agreement = useMyAgreement();
-  const acknowledge = useAcknowledgePolicy();
-  const sign = useSignMyAgreement();
-  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
-  const [typedName, setTypedName] = useState('');
-  const data = acknowledgement.data;
-
-  if (acknowledgement.isError || !data?.required) return null;
-
-  const minimums = data.minimums;
-  const minimumText = minimums
-    ? `${minimums.callsPerDay} qualifying calls a day${minimums.visitsPerDay != null ? ` and ${minimums.visitsPerDay} verified visits a day` : ''}.`
-    : 'The minimums for your position are on the policy report.';
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t('chrome.reports.pw.acknowledgement')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <p className="text-muted-foreground">
-          Your position minimum is {minimumText} Not taking part in performance pay does not reduce your current salary.
-        </p>
-        {data.acknowledged ? (
-          <p>You acknowledged this policy{data.acknowledgedAt ? ` on ${data.acknowledgedAt.slice(0, 10)}` : ''}.</p>
-        ) : (
-          <>
-            <ul className="space-y-2">
-              {data.statements.map((statement) => (
-                <li key={statement.key} className="flex items-start gap-2">
-                  <Checkbox
-                    id={statement.key}
-                    checked={accepted[statement.key] === true}
-                    onCheckedChange={(checked) => setAccepted((prev) => ({ ...prev, [statement.key]: checked === true }))}
-                  />
-                  <Label htmlFor={statement.key} className="font-normal leading-snug">
-                    {statement.text}
-                  </Label>
-                </li>
-              ))}
-            </ul>
-            <Input placeholder="Type your full name" value={typedName} onChange={(event) => setTypedName(event.target.value)} />
-            <Button
-              type="button"
-              disabled={acknowledge.isPending}
-              onClick={() =>
-                acknowledge.mutate({
-                  typedName,
-                  itemsAccepted: data.statements.filter((statement) => accepted[statement.key]).map((statement) => statement.key),
-                })
-              }
-            >
-              {t('chrome.reports.pw.acknowledge')}
-            </Button>
-          </>
-        )}
-        {agreement.data?.participates && !agreement.data.signedAt && data.acknowledged ? (
-          <div className="space-y-2 rounded-md border p-3">
-            <p>
-              You can take part at {agreement.data.currency} {agreement.data.prr} a month when you meet the standard
-              (75% to 125%). This is separate from your current salary.
-            </p>
-            <Button type="button" disabled={sign.isPending} onClick={() => sign.mutate()}>
-              I agree to take part
-            </Button>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
+  return null;
 }
 
 /** Pending interruption reports a manager can approve or reject. */

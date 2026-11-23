@@ -209,7 +209,10 @@ describe('buildTravelAnalysisDocument', () => {
     expect(document.vehicleBasis.fuelGrade).toBe('Diesel (national avg)');
     expect(document.vehicleBasis.isFleetDefault).toBe(true);
     expect(document.days).toHaveLength(2);
+    expect(document.days[0]?.visitCount).toBe(0);
     expect(document.days[1]?.fuelLitres).toBe('—');
+    expect(document.visits).toEqual([]);
+    expect(document.clients).toEqual([]);
     expect(document.areas[0]?.area).toBe('Sandton City, Sandton');
     expect(document.patterns.daysWithMovement).toBe(2);
     expect(document.patterns.dwellBrief).toBe(1);
@@ -241,7 +244,105 @@ describe('buildTravelAnalysisDocument', () => {
     expect(document.kpis.billableKm).toBe(0);
     expect(document.days).toEqual([]);
     expect(document.areas).toEqual([]);
+    expect(document.visits).toEqual([]);
+    expect(document.clients).toEqual([]);
     expect(document.kpis.claimsLabel).toBe('—');
+  });
+
+  it('lists every visit, counts WhatsApp, and measures km from the usual start', () => {
+    const document = buildTravelAnalysisDocument(
+      samplePayload({
+        daily: [
+          {
+            user: 'Kheu Mokganedi',
+            date: '2026-09-15',
+            recordedDistanceKm: 80,
+            commuteDeductedKm: 20,
+            travelMin: 120,
+            stopMin: 40,
+            startPlace: '12 Main Rd, Sandton',
+            endPlace: 'Midrand, Gauteng',
+            country: 'South Africa',
+            region: 'Gauteng (inland)',
+            fuelTypeLabel: 'Diesel',
+            ratedKmPerLitre: '12 km/L',
+            fuelPricePerLitre: 'R 23.00/L',
+            fuelLitres: '5.0 L',
+            fuelRand: 'R 115.00',
+            minBattery: '80',
+            avgBattery: '72',
+            distanceKm: 60,
+          },
+        ],
+        stops: [
+          stop({
+            place: '12 Main Rd, Sandton',
+            lat: '-26.1',
+            lng: '28.05',
+            dwellMin: 20,
+          }),
+        ],
+        visits: [
+          {
+            date: '2026-09-15',
+            time: '10:00',
+            client: 'Acme',
+            siteName: 'Acme Yard',
+            place: '9 Kroep St, Rustenburg, North West',
+            method: 'WhatsApp',
+            minutes: 30,
+            lat: '-25.7',
+            lng: '27.2',
+          },
+          {
+            date: '2026-09-15',
+            time: '09:00',
+            client: 'Acme',
+            siteName: 'Acme Yard',
+            place: '9 Kroep St, Rustenburg, North West',
+            method: 'Physical',
+            minutes: 15,
+            lat: '-25.7',
+            lng: '27.2',
+          },
+          {
+            date: '2026-09-15',
+            time: '11:00',
+            client: '',
+            siteName: 'Phone Only',
+            place: '-',
+            method: 'Telephone',
+            minutes: 5,
+            lat: '-',
+            lng: '-',
+          },
+        ],
+      }),
+      'Fallback',
+    );
+
+    expect(document.days[0]?.visitCount).toBe(3);
+    expect(document.kpis.visits).toBe(6);
+    expect(document.visits.map((visit) => visit.time)).toEqual(['09:00', '10:00', '11:00']);
+    expect(document.visits[0]).toMatchObject({
+      client: 'Acme',
+      siteName: 'Acme Yard',
+      area: '9 Kroep St, Rustenburg',
+      method: 'Physical',
+      timeLabel: '15m',
+    });
+    const acme = document.clients.find((row) => row.client === 'Acme');
+    expect(acme).toMatchObject({
+      siteName: 'Acme Yard',
+      area: '9 Kroep St, Rustenburg',
+      visits: 2,
+      timeLabel: '45m',
+      whatsApp: 1,
+    });
+    expect(acme?.kmFromHome).toBeCloseTo(96, 0);
+    const phone = document.clients.find((row) => row.siteName === 'Phone Only');
+    expect(phone?.client).toBe('Phone Only');
+    expect(phone?.kmFromHome).toBeNull();
   });
 });
 
