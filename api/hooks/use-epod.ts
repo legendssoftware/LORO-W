@@ -14,6 +14,7 @@ import {
 } from '@/api/endpoints/epod';
 import type {
   AssignableOrder,
+  CancelDeliveryBody,
   CreateDeliveryBody,
   DeliveryListQuery,
   DeliveryStatus,
@@ -53,6 +54,8 @@ export function filterDeliveries(
       delivery.orderNumber,
       delivery.deliveryNumber,
       delivery.driverName,
+      delivery.dispatcherName,
+      delivery.salesPersonName,
       delivery.truckRegistration,
       delivery.clientName,
     ].some((value) => (value ?? '').toLowerCase().includes(term)),
@@ -143,7 +146,7 @@ export function useCancelDeliveryMutation(uid: number) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => cancelDelivery(client, uid),
+    mutationFn: (body: CancelDeliveryBody) => cancelDelivery(client, uid, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail', uid] });

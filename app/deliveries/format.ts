@@ -1,4 +1,9 @@
-import type { DeliveryException, DeliveryStatus } from '@/api/types/epod';
+import type {
+  DeliveryCancellationReason,
+  DeliveryCancellationSide,
+  DeliveryException,
+  DeliveryStatus,
+} from '@/api/types/epod';
 
 const STATUS_LABELS: Record<DeliveryStatus, string> = {
   assigned: 'Assigned',
@@ -14,6 +19,24 @@ const EXCEPTION_LABELS: Record<DeliveryException, string> = {
   customer_rejected: 'Customer rejected',
 };
 
+const CANCELLATION_SIDE_LABELS: Record<DeliveryCancellationSide, string> = {
+  customer: 'Customer',
+  driver: 'Driver',
+};
+
+const CANCELLATION_REASON_LABELS: Record<DeliveryCancellationReason, string> = {
+  customer_not_available: 'Customer not available',
+  customer_refused: 'Customer refused delivery',
+  customer_wrong_address: 'Wrong or incomplete address',
+  customer_rescheduled: 'Customer asked to reschedule',
+  customer_other: 'Other (type reason)',
+  driver_vehicle_issue: 'Vehicle or breakdown issue',
+  driver_safety: 'Site or safety concern',
+  driver_time_constraint: 'Could not complete in time',
+  driver_goods_issue: 'Goods missing, damaged, or incomplete',
+  driver_other: 'Other (type reason)',
+};
+
 export function formatDeliveryStatus(status: DeliveryStatus): string {
   return STATUS_LABELS[status] ?? status;
 }
@@ -21,6 +44,14 @@ export function formatDeliveryStatus(status: DeliveryStatus): string {
 export function formatDeliveryException(exception: DeliveryException | null): string {
   if (!exception) return '—';
   return EXCEPTION_LABELS[exception] ?? exception;
+}
+
+export function formatCancellationSide(side: DeliveryCancellationSide): string {
+  return CANCELLATION_SIDE_LABELS[side] ?? side;
+}
+
+export function formatCancellationReason(reason: DeliveryCancellationReason): string {
+  return CANCELLATION_REASON_LABELS[reason] ?? reason;
 }
 
 /** Arrival window in the branch timezone, or the scheduled day when no clock time exists. */

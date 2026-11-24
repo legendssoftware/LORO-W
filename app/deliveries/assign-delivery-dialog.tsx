@@ -145,7 +145,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
             Assign delivery
           </DialogTitle>
           <DialogDescription>
-            Pick an open ERP sales order and a driver whose workforce type is driver. The customer is not texted until this route is marked ready.
+            Pick an open ERP sales order and a driver whose workforce type is driver. Assign texts the customer; Mark loaded texts them again when the order is loaded and ready.
           </DialogDescription>
         </DialogHeader>
 

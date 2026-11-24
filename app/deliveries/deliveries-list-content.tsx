@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { PackagePlus } from 'lucide-react';
+import { CheckCircle2, PackageCheck, PackagePlus } from 'lucide-react';
 import {
   filterDeliveries,
   useDeliveries,
@@ -40,13 +40,26 @@ import { useTranslation } from 'react-i18next';
 const ANY_VALUE = 'all';
 const DELIVERIES_PAGE_SIZE_KEY = 'loro:deliveries-page-size';
 
-/** Open stops with a driver, day, and route can be marked ready from the row. */
+/** Open stops with a driver, day, and route can be Mark loaded from the row. */
 function canMarkDeliveryReady(row: DeliverySummary): boolean {
   return (
     (row.status === 'assigned' || row.status === 'in_progress') &&
     row.routeCode.trim().length > 0 &&
     row.driverUid > 0 &&
     row.scheduledDate.trim().length > 0
+  );
+}
+
+/** True when this row is the exact route the mark-ready mutation targeted. */
+function isMarkReadyTarget(
+  row: DeliverySummary,
+  target: { driverUid: number; routeCode: string; scheduledDate: string } | undefined,
+): boolean {
+  if (!target) return false;
+  return (
+    target.driverUid === row.driverUid &&
+    target.routeCode === row.routeCode &&
+    target.scheduledDate === row.scheduledDate
   );
 }
 
@@ -65,7 +78,6 @@ export function DeliveriesListContent() {
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredPageSize(DELIVERIES_PAGE_SIZE_KEY));
-  const [readyRouteCode, setReadyRouteCode] = useState<string | null>(null);
   const markReady = useMarkRouteReadyMutation();
 
   const query = useDeliveries(
@@ -184,7 +196,7 @@ export function DeliveriesListContent() {
                   <TableHead>{t('tables.status')}</TableHead>
                   <TableHead>{t('tables.rating')}</TableHead>
                   <TableHead>{t('tables.items')}</TableHead>
-                  {canDispatch ? <TableHead>Loading</TableHead> : null}
+                  {canDispatch ? <TableHead>Loaded</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,17 +244,20 @@ export function DeliveriesListContent() {
                     {canDispatch ? (
                       <TableCell>
                         {row.routeReady ? (
-                          <span className="text-muted-foreground text-sm">Marked ready</span>
+                          <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
+                            <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+                            Loaded
+                          </span>
                         ) : canMarkDeliveryReady(row) ? (
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-9"
-                            disabled={markReady.isPending}
-                            aria-label="Mark as ready"
+                            className="h-9 gap-1.5"
+                            disabled={markReady.isPending && isMarkReadyTarget(row, markReady.variables)}
+                            aria-label="Mark loaded — warehouse load acknowledgment"
+                            title="Marks the warehouse load as loaded and ready, then texts the customer and driver"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setReadyRouteCode(row.routeCode);
                               void markReady.mutate({
                                 driverUid: row.driverUid,
                                 routeCode: row.routeCode,
@@ -250,12 +265,13 @@ export function DeliveriesListContent() {
                               });
                             }}
                           >
-                            Mark as ready
+                            <PackageCheck className="size-4 shrink-0" aria-hidden />
+                            Mark loaded
                           </Button>
                         ) : (
                           '—'
                         )}
-                        {markReady.isError && readyRouteCode === row.routeCode ? (
+                        {markReady.isError && isMarkReadyTarget(row, markReady.variables) ? (
                           <p className="text-destructive mt-1 text-xs">{getQueryErrorMessage(markReady.error)}</p>
                         ) : null}
                       </TableCell>

@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import type {
   AssignableOrder,
+  CancelDeliveryBody,
   CreateDeliveryBody,
   DeliveryDetail,
   DeliveryListQuery,
@@ -56,9 +57,13 @@ export async function markRouteReady(
   return data ?? { deliveries: [] };
 }
 
-/** POST /epod/deliveries/:uid/cancel — dispatchers only, and only before the proof is recorded. */
-export async function cancelDelivery(client: AxiosInstance, uid: number): Promise<DeliveryDetail> {
-  const { data } = await client.post<DeliveryDetail>(`/epod/deliveries/${uid}/cancel`, {});
+/** POST /epod/deliveries/:uid/cancel — open stops only; requires customer or driver reason. */
+export async function cancelDelivery(
+  client: AxiosInstance,
+  uid: number,
+  body: CancelDeliveryBody,
+): Promise<DeliveryDetail> {
+  const { data } = await client.post<DeliveryDetail>(`/epod/deliveries/${uid}/cancel`, body);
   return data;
 }
 

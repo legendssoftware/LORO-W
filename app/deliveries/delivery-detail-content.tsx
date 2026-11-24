@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, FileText } from 'lucide-react';
+import { CheckCircle2, ExternalLink, FileText, PackageCheck } from 'lucide-react';
 import {
   canCancelDelivery,
   useCancelDeliveryMutation,
@@ -12,6 +12,7 @@ import {
   useSessionSync,
 } from '@/api/hooks';
 import { canDispatchDeliveries } from '@/lib/access';
+import type { CancelDeliveryBody } from '@/api/types/epod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,8 +26,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { CancelDeliveryForm } from '@/app/deliveries/cancel-delivery-form';
 import {
   deliveryStatusClassName,
+  formatCancellationReason,
   formatCoordinates,
   formatDeliveryException,
   formatDeliveryStatus,
@@ -87,8 +90,8 @@ export function DeliveryDetailContent({
     delivery.scheduledDate.trim().length > 0;
   const pdfUrl = delivery.pdfUrl ?? pdf.data?.url ?? null;
 
-  async function onCancel() {
-    await cancel.mutateAsync();
+  async function onCancel(body: CancelDeliveryBody) {
+    await cancel.mutateAsync(body);
     if (onClose) {
       onClose();
       return;
@@ -112,13 +115,18 @@ export function DeliveryDetailContent({
             {formatDeliveryStatus(delivery.status)}
           </Badge>
           {delivery.routeReady ? (
-            <span className="text-muted-foreground px-1 text-sm">Marked ready</span>
+            <span className="text-muted-foreground inline-flex items-center gap-1.5 px-1 text-sm">
+              <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+              Loaded
+            </span>
           ) : showReady ? (
             <Button
               type="button"
               variant="outline"
+              className="gap-1.5"
               disabled={markReady.isPending}
-              aria-label="Mark as ready"
+              aria-label="Mark loaded — warehouse load acknowledgment"
+              title="Marks the warehouse load as loaded and ready, then texts the customer and driver"
               onClick={() =>
                 void markReady.mutate({
                   driverUid: delivery.driverUid,
@@ -127,7 +135,8 @@ export function DeliveryDetailContent({
                 })
               }
             >
-              Mark as ready
+              <PackageCheck className="size-4 shrink-0" aria-hidden />
+              Mark loaded
             </Button>
           ) : null}
           {onClose ? (
@@ -162,6 +171,24 @@ export function DeliveryDetailContent({
             <CardTitle className="text-base">Proof</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            <DetailRow
+              label="Loaded"
+              value={delivery.routeReady ? 'Loaded (dispatch ready)' : 'Not loaded'}
+            />
+            <DetailRow
+              label="Driver pickup"
+              value={delivery.routePickupAcknowledged ? 'Signed' : 'Not signed'}
+            />
+            <DetailRow
+              label="Delivery signatures"
+              value={
+                delivery.steps.signed
+                  ? 'Client & driver signed'
+                  : delivery.steps.clientSigned || delivery.steps.driverSigned
+                    ? 'Partial'
+                    : '—'
+              }
+            />
             <DetailRow label="Exception" value={formatDeliveryException(delivery.exception)} />
             <DetailRow label="Packaging" value={delivery.packagingCondition || '—'} />
             <DetailRow label="Receiver" value={delivery.receiverName || '—'} />
@@ -274,19 +301,14 @@ export function DeliveryDetailContent({
         </CardContent>
       </Card>
 
-      {showCancel ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={cancel.isPending}
-            onClick={() => void onCancel()}
-            aria-label="Cancel this delivery"
-          >
-            {cancel.isPending ? 'Cancelling…' : 'Cancel delivery'}
-          </Button>
-        </div>
+      {delivery.status === 'cancelled' && delivery.cancellationReason ? (
+        <p className="text-destructive text-sm">
+          Cancelled: {formatCancellationReason(delivery.cancellationReason)}
+          {delivery.cancellationNote ? ` — ${delivery.cancellationNote}` : ''}
+        </p>
       ) : null}
+
+      {showCancel ? <CancelDeliveryForm isPending={cancel.isPending} onCancel={onCancel} /> : null}
 
       {markReady.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(markReady.error)}</p> : null}
       {cancel.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(cancel.error)}</p> : null}
