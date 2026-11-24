@@ -97,6 +97,55 @@ function mapAddImage(
   }
 }
 
+function mapHasLayer(m: MapLibreMap, id: string): boolean {
+  try {
+    return isMapStyleReady(m) && !!m.getLayer(id);
+  } catch {
+    return false;
+  }
+}
+
+function mapHasSource(m: MapLibreMap, id: string): boolean {
+  try {
+    return isMapStyleReady(m) && !!m.getSource(id);
+  } catch {
+    return false;
+  }
+}
+
+/** Load via <img> so data:/blob: URLs use img-src (not connect-src / fetch). */
+function loadHtmlImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (!url.startsWith('data:') && !url.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${url.slice(0, 64)}`));
+    img.src = url;
+  });
+}
+
+async function loadDrawable(
+  url: string,
+): Promise<{ source: CanvasImageSource; width: number; height: number; close?: () => void }> {
+  // data: fetch() is blocked by connect-src CSP; img-src already allows data:.
+  if (url.startsWith('data:') || url.startsWith('blob:')) {
+    const img = await loadHtmlImage(url);
+    return { source: img, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
+  }
+  const res = await fetch(url, { mode: 'cors' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  const bitmap = await createImageBitmap(blob);
+  return {
+    source: bitmap,
+    width: bitmap.width,
+    height: bitmap.height,
+    close: () => bitmap.close(),
+  };
+}
+
 /** Composite pin bitmaps for MapLibre — preserves aspect ratio, no upscaling. */
 async function loadPinBitmap(
   url: string,
@@ -107,16 +156,13 @@ async function loadPinBitmap(
     const pixelRatio = getPinPixelRatio();
     const physicalSize = Math.round(size * pixelRatio);
 
-    const res = await fetch(url, { mode: 'cors' });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    const bitmap = await createImageBitmap(blob);
+    const drawable = await loadDrawable(url);
     const canvas = document.createElement('canvas');
     canvas.width = physicalSize;
     canvas.height = physicalSize;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      bitmap.close();
+      drawable.close?.();
       return null;
     }
     ctx.scale(pixelRatio, pixelRatio);
@@ -128,16 +174,16 @@ async function loadPinBitmap(
       ctx.clip();
     }
 
-    const fitScale = Math.min(size / bitmap.width, size / bitmap.height, 1);
-    const drawW = bitmap.width * fitScale;
-    const drawH = bitmap.height * fitScale;
+    const fitScale = Math.min(size / drawable.width, size / drawable.height, 1);
+    const drawW = drawable.width * fitScale;
+    const drawH = drawable.height * fitScale;
     const drawX = (size - drawW) / 2;
     const drawY = (size - drawH) / 2;
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(bitmap, drawX, drawY, drawW, drawH);
-    bitmap.close();
+    ctx.drawImage(drawable.source, drawX, drawY, drawW, drawH);
+    drawable.close?.();
 
     if (options?.borderColor || options?.circular) {
       ctx.beginPath();
@@ -354,7 +400,7 @@ export function LogoClusterLayer({
 
     void ensureImages().then(() => {
       if (cancelled || !isMapStyleReady(map)) return;
-      if (map.getSource(sourceId)) {
+      if (mapHasSource(map, sourceId)) {
         if (!cancelled) setLayersReady(true);
         return;
       }
@@ -447,11 +493,11 @@ export function LogoClusterLayer({
       setLayersReady(false);
       if (!isMapStyleReady(map)) return;
       try {
-        if (map.getLayer(unclusteredSymbolId)) map.removeLayer(unclusteredSymbolId);
-        if (map.getLayer(unclusteredCircleId)) map.removeLayer(unclusteredCircleId);
-        if (map.getLayer(clusterCountId)) map.removeLayer(clusterCountId);
-        if (map.getLayer(clusterLayerId)) map.removeLayer(clusterLayerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        if (mapHasLayer(map, unclusteredSymbolId)) map.removeLayer(unclusteredSymbolId);
+        if (mapHasLayer(map, unclusteredCircleId)) map.removeLayer(unclusteredCircleId);
+        if (mapHasLayer(map, clusterCountId)) map.removeLayer(clusterCountId);
+        if (mapHasLayer(map, clusterLayerId)) map.removeLayer(clusterLayerId);
+        if (mapHasSource(map, sourceId)) map.removeSource(sourceId);
       } catch {
         // ignore
       }
@@ -460,7 +506,8 @@ export function LogoClusterLayer({
   }, [isLoaded, map, sourceId]);
 
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!isLoaded || !map || !isMapStyleReady(map)) return;
+    if (!mapHasSource(map, sourceId)) return;
     const source = map.getSource(sourceId) as GeoJSONSource | undefined;
     if (source) source.setData(data);
   }, [isLoaded, map, data, sourceId]);
@@ -482,7 +529,7 @@ export function LogoClusterLayer({
         if (cancelled || !loaded || !isMapStyleReady(map)) continue;
         mapAddImage(map, imageId, loaded.bitmap, loaded.pixelRatio);
       }
-      if (!cancelled && isMapStyleReady(map)) {
+      if (!cancelled && isMapStyleReady(map) && mapHasSource(map, sourceId)) {
         const source = map.getSource(sourceId) as GeoJSONSource | undefined;
         source?.setData(data);
       }
@@ -493,30 +540,34 @@ export function LogoClusterLayer({
   }, [isLoaded, map, points, useLogoIcons, layerId, sourceId, data]);
 
   useEffect(() => {
-    if (!isLoaded || !map) return;
-    if (map.getLayer(clusterLayerId)) {
-      map.setPaintProperty(clusterLayerId, 'circle-color', clusterColor);
-    }
-    if (map.getLayer(unclusteredCircleId)) {
-      map.setPaintProperty(unclusteredCircleId, 'circle-color', pointColor);
+    if (!isLoaded || !map || !isMapStyleReady(map)) return;
+    try {
+      if (mapHasLayer(map, clusterLayerId)) {
+        map.setPaintProperty(clusterLayerId, 'circle-color', clusterColor);
+      }
+      if (mapHasLayer(map, unclusteredCircleId)) {
+        map.setPaintProperty(unclusteredCircleId, 'circle-color', pointColor);
+      }
+    } catch {
+      // style torn down mid-update
     }
   }, [isLoaded, map, clusterLayerId, unclusteredCircleId, clusterColor, pointColor]);
 
   useEffect(() => {
     if (!isLoaded || !map || !layersReady) return;
     const raise = () => {
+      if (!isMapStyleReady(map)) return;
       for (const id of [
         clusterLayerId,
         clusterCountId,
         unclusteredCircleId,
         unclusteredSymbolId,
       ]) {
-        if (map.getLayer(id)) {
-          try {
-            map.moveLayer(id);
-          } catch {
-            // ignore
-          }
+        if (!mapHasLayer(map, id)) continue;
+        try {
+          map.moveLayer(id);
+        } catch {
+          // ignore
         }
       }
     };
@@ -536,12 +587,13 @@ export function LogoClusterLayer({
   ]);
 
   useEffect(() => {
-    if (!isLoaded || !map || !layersReady) return;
+    if (!isLoaded || !map || !layersReady || !isMapStyleReady(map)) return;
 
     const clickable = [clusterLayerId, unclusteredCircleId, unclusteredSymbolId];
 
     const handleClick = async (e: MapMouseEvent) => {
-      const layerIds = clickable.filter((id) => map.getLayer(id));
+      if (!isMapStyleReady(map)) return;
+      const layerIds = clickable.filter((id) => mapHasLayer(map, id));
       if (!layerIds.length) return;
       const features = map.queryRenderedFeatures(e.point, { layers: layerIds });
       if (!features.length) return;
@@ -554,6 +606,7 @@ export function LogoClusterLayer({
       ];
 
       if (feature.properties?.cluster) {
+        if (!mapHasSource(map, sourceId)) return;
         const clusterId = feature.properties.cluster_id as number;
         const source = map.getSource(sourceId) as GeoJSONSource;
         const zoom = await source.getClusterExpansionZoom(clusterId);
@@ -587,7 +640,7 @@ export function LogoClusterLayer({
     };
 
     for (const id of clickable) {
-      if (!map.getLayer(id)) continue;
+      if (!mapHasLayer(map, id)) continue;
       map.on('click', id, handleClick);
       map.on('mouseenter', id, handleEnter);
       map.on('mouseleave', id, handleLeave);
@@ -597,7 +650,7 @@ export function LogoClusterLayer({
       if (!map) return;
       for (const id of clickable) {
         try {
-          if (!map.getLayer(id)) continue;
+          if (!mapHasLayer(map, id)) continue;
           map.off('click', id, handleClick);
           map.off('mouseenter', id, handleEnter);
           map.off('mouseleave', id, handleLeave);
