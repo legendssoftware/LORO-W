@@ -69,6 +69,14 @@ export interface DeliverySummary {
   pdfUrl: string | null;
   /** Customer score from 1 to 5. Null until the public link is rated. */
   ratingScore: number | null;
+  /** Dispatcher stop number. Null when Google will order the route. */
+  stopSequence: number | null;
+  estimatedWindowStart: string | null;
+  estimatedWindowEnd: string | null;
+  /** True after dispatch marks the route ready. */
+  routeReady: boolean;
+  /** True after the driver starts the route. */
+  routeDeparted: boolean;
 }
 
 export interface DeliveryDetail extends DeliverySummary {
@@ -101,6 +109,9 @@ export interface PublicDelivery {
   longitude: number | null;
   arrivalLat: number | null;
   arrivalLng: number | null;
+  scheduledDate: string;
+  estimatedWindowStart: string | null;
+  estimatedWindowEnd: string | null;
 }
 
 export interface SubmitDeliveryRatingBody {
@@ -145,6 +156,14 @@ export interface AssignableOrder {
 export interface CreateDeliveryBody {
   docNumber: string;
   store: string;
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  /** Stop number on the route. Omit it to let Google order the stops. */
+  stopSequence?: number;
+}
+
+export interface ReadyRouteBody {
   driverUid: number;
   routeCode: string;
   scheduledDate: string;

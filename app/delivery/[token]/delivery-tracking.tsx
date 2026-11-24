@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Check, Star } from 'lucide-react';
 import { getPublicDelivery, submitPublicDeliveryRating } from '@/api/endpoints/epod';
 import type { PublicDelivery } from '@/api/types/epod';
-import { deliveryStatusClassName } from '@/app/deliveries/format';
+import { deliveryStatusClassName, formatArrivalWindow } from '@/app/deliveries/format';
 import { BrandMark } from '@/components/brand-mark';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Badge } from '@/components/ui/badge';
@@ -129,6 +129,14 @@ export function DeliveryTracking({ token }: DeliveryTrackingProps) {
                 <DetailRow label="Driver" value={delivery.driverFirstName} />
                 <DetailRow label="Invoice No." value={delivery.invoiceNumber} />
                 <DetailRow label="Customer" value={delivery.clientName || '—'} />
+                <DetailRow
+                  label="Estimated arrival"
+                  value={formatArrivalWindow(
+                    delivery.estimatedWindowStart,
+                    delivery.estimatedWindowEnd,
+                    delivery.scheduledDate,
+                  )}
+                />
               </CardContent>
             </Card>
 

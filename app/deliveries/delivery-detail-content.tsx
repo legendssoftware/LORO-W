@@ -8,6 +8,7 @@ import {
   useCancelDeliveryMutation,
   useDelivery,
   useDeliveryPdfMutation,
+  useMarkRouteReadyMutation,
   useSessionSync,
 } from '@/api/hooks';
 import { canDispatchDeliveries } from '@/lib/access';
@@ -58,6 +59,7 @@ export function DeliveryDetailContent({
   const canDispatch = canDispatchDeliveries(backendUserData);
   const cancel = useCancelDeliveryMutation(uid);
   const pdf = useDeliveryPdfMutation(uid);
+  const markReady = useMarkRouteReadyMutation();
 
   if (query.isLoading) {
     return (
@@ -77,6 +79,12 @@ export function DeliveryDetailContent({
 
   const delivery = query.data;
   const showCancel = canDispatch && canCancelDelivery(delivery.status);
+  const showReady =
+    canDispatch &&
+    (delivery.status === 'assigned' || delivery.status === 'in_progress') &&
+    delivery.routeCode.trim().length > 0 &&
+    delivery.driverUid > 0 &&
+    delivery.scheduledDate.trim().length > 0;
   const pdfUrl = delivery.pdfUrl ?? pdf.data?.url ?? null;
 
   async function onCancel() {
@@ -103,6 +111,25 @@ export function DeliveryDetailContent({
           <Badge variant="outline" className={deliveryStatusClassName(delivery.status)}>
             {formatDeliveryStatus(delivery.status)}
           </Badge>
+          {delivery.routeReady ? (
+            <span className="text-muted-foreground px-1 text-sm">Marked ready</span>
+          ) : showReady ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={markReady.isPending}
+              aria-label="Mark as ready"
+              onClick={() =>
+                void markReady.mutate({
+                  driverUid: delivery.driverUid,
+                  routeCode: delivery.routeCode,
+                  scheduledDate: delivery.scheduledDate,
+                })
+              }
+            >
+              Mark as ready
+            </Button>
+          ) : null}
           {onClose ? (
             <Button type="button" variant="outline" onClick={onClose}>
               Back
@@ -261,6 +288,7 @@ export function DeliveryDetailContent({
         </div>
       ) : null}
 
+      {markReady.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(markReady.error)}</p> : null}
       {cancel.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(cancel.error)}</p> : null}
     </div>
   );

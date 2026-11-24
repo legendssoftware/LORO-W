@@ -9,6 +9,7 @@ import type {
   DriverOption,
   PublicDelivery,
   PublicRatingResponse,
+  ReadyRouteBody,
   SubmitDeliveryRatingBody,
 } from '@/api/types/epod';
 
@@ -44,6 +45,15 @@ export async function createDelivery(
 ): Promise<DeliveryDetail> {
   const { data } = await client.post<DeliveryDetail>('/epod/deliveries', body);
   return data;
+}
+
+/** POST /epod/routes/ready — calculates the arrival window and texts each customer once. */
+export async function markRouteReady(
+  client: AxiosInstance,
+  body: ReadyRouteBody,
+): Promise<DeliveryListResponse> {
+  const { data } = await client.post<DeliveryListResponse>('/epod/routes/ready', body);
+  return data ?? { deliveries: [] };
 }
 
 /** POST /epod/deliveries/:uid/cancel — dispatchers only, and only before the proof is recorded. */

@@ -23,6 +23,30 @@ export function formatDeliveryException(exception: DeliveryException | null): st
   return EXCEPTION_LABELS[exception] ?? exception;
 }
 
+/** Arrival window in the branch timezone, or the scheduled day when no clock time exists. */
+export function formatArrivalWindow(
+  start: string | null | undefined,
+  end: string | null | undefined,
+  scheduledDate: string,
+): string {
+  if (!start || !end) return scheduledDate || '—';
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return scheduledDate || '—';
+  const day = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Johannesburg',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(startDate);
+  const clock = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Johannesburg',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${day}, ${clock.format(startDate)} - ${clock.format(endDate)}`;
+}
+
 /** Pill colors that stay readable on the dark deliveries table. */
 export function deliveryStatusClassName(status: DeliveryStatus): string {
   switch (status) {
