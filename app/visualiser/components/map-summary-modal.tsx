@@ -29,6 +29,7 @@ import {
   buildMarketAnalysisSummary,
   formatMarketAnalysisNumber,
   formatMarketAnalysisPercent,
+  formatMarketAnalysisZar,
   type MarketAnalysisBrandRow,
   type MarketAnalysisSection,
 } from '@/lib/site-opportunity/market-analysis-summary';
@@ -137,22 +138,22 @@ function BrandRow({
         {formatMarketAnalysisNumber(row.qty)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.turnoverAll)}
+        {formatMarketAnalysisZar(row.turnoverAll)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.monthlyAverage)}
+        {formatMarketAnalysisZar(row.monthlyAverage)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.monthly5)}
+        {formatMarketAnalysisZar(row.monthly5)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.monthly20)}
+        {formatMarketAnalysisZar(row.monthly20)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.fullYear5)}
+        {formatMarketAnalysisZar(row.fullYear5)}
       </TableCell>
       <TableCell className={`text-right text-xs tabular-nums ${weight}`}>
-        {formatMarketAnalysisNumber(row.fullYear20)}
+        {formatMarketAnalysisZar(row.fullYear20)}
       </TableCell>
     </TableRow>
   );
@@ -281,9 +282,7 @@ export function MapSummaryModal({
                           {formatMarketAnalysisNumber(analysis.rollup.scd.qty)}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
-                          {formatMarketAnalysisNumber(
-                            analysis.rollup.scd.amount,
-                          )}
+                          {formatMarketAnalysisZar(analysis.rollup.scd.amount)}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
                           {formatMarketAnalysisPercent(
@@ -294,12 +293,12 @@ export function MapSummaryModal({
                           {analysis.rollup.months}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
-                          {formatMarketAnalysisNumber(
+                          {formatMarketAnalysisZar(
                             analysis.rollup.hardwaresFullYear5,
                           )}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
-                          {formatMarketAnalysisNumber(
+                          {formatMarketAnalysisZar(
                             analysis.rollup.hardwaresFullYear20,
                           )}
                         </TableCell>
@@ -314,7 +313,7 @@ export function MapSummaryModal({
                           )}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
-                          {formatMarketAnalysisNumber(
+                          {formatMarketAnalysisZar(
                             analysis.rollup.hardwares.amount,
                           )}
                         </TableCell>
@@ -345,7 +344,7 @@ export function MapSummaryModal({
                           )}
                         </TableCell>
                         <TableCell className="text-right text-xs font-semibold tabular-nums">
-                          {formatMarketAnalysisNumber(
+                          {formatMarketAnalysisZar(
                             analysis.rollup.totals.amount,
                           )}
                         </TableCell>

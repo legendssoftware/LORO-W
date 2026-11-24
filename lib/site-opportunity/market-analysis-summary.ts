@@ -282,6 +282,12 @@ export function formatMarketAnalysisNumber(value: number, digits = 0): string {
   return frac != null ? `${withSpaces}.${frac}` : withSpaces;
 }
 
+/** ZAR amount with R prefix (e.g. "R 4 200 000"). */
+export function formatMarketAnalysisZar(value: number, digits = 0): string {
+  if (!Number.isFinite(value)) return '—';
+  return `R ${formatMarketAnalysisNumber(value, digits)}`;
+}
+
 export function formatMarketAnalysisPercent(share: number): string {
   if (!Number.isFinite(share)) return '0%';
   return `${Math.round(share * 100)}%`;
