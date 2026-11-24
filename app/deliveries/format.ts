@@ -96,6 +96,14 @@ export function deliveryStatusClassName(status: DeliveryStatus): string {
   }
 }
 
+/** Amber outline for the Mark loaded action (warehouse load still needed). */
+export const markLoadedButtonClassName =
+  'gap-1.5 border-amber-500/50 bg-amber-500/15 text-amber-950 hover:bg-amber-500/25 hover:text-amber-950 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-100 dark:hover:bg-amber-500/30 dark:hover:text-amber-50';
+
+/** Green disabled button once dispatch has Marked loaded. */
+export const loadedReadyButtonClassName =
+  'gap-1.5 border-emerald-500/50 bg-emerald-500/15 text-emerald-800 opacity-100 disabled:opacity-100 disabled:border-emerald-500/50 disabled:bg-emerald-500/15 disabled:text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-200 dark:disabled:border-emerald-400/40 dark:disabled:bg-emerald-500/20 dark:disabled:text-emerald-200';
+
 /** `-25.995, 28.123` for a captured GPS pair, or an em dash when the stop has none. */
 export function formatCoordinates(lat: number | null, lng: number | null): string {
   if (lat == null || lng == null) return '—';

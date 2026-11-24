@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, PackageCheck, PackagePlus } from 'lucide-react';
+import { PackageCheck, PackagePlus } from 'lucide-react';
 import {
   filterDeliveries,
   useDeliveries,
@@ -29,7 +29,13 @@ import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
-import { deliveryStatusClassName, formatArrivalWindow, formatDeliveryStatus } from '@/app/deliveries/format';
+import {
+  deliveryStatusClassName,
+  formatArrivalWindow,
+  formatDeliveryStatus,
+  loadedReadyButtonClassName,
+  markLoadedButtonClassName,
+} from '@/app/deliveries/format';
 import {
   VisitsListPagination,
   readStoredPageSize,
@@ -244,15 +250,22 @@ export function DeliveriesListContent() {
                     {canDispatch ? (
                       <TableCell>
                         {row.routeReady ? (
-                          <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
-                            <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={cn('h-9', loadedReadyButtonClassName)}
+                            disabled
+                            aria-label="Loaded — warehouse load already acknowledged"
+                            title="Warehouse load is marked loaded and ready"
+                          >
+                            <PackageCheck className="size-4 shrink-0" aria-hidden />
                             Loaded
-                          </span>
+                          </Button>
                         ) : canMarkDeliveryReady(row) ? (
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-9 gap-1.5"
+                            className={cn('h-9', markLoadedButtonClassName)}
                             disabled={markReady.isPending && isMarkReadyTarget(row, markReady.variables)}
                             aria-label="Mark loaded — warehouse load acknowledgment"
                             title="Marks the warehouse load as loaded and ready, then texts the customer and driver"

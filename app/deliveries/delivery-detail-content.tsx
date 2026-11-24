@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ExternalLink, FileText, PackageCheck } from 'lucide-react';
+import { ExternalLink, FileText, PackageCheck } from 'lucide-react';
 import {
   canCancelDelivery,
   useCancelDeliveryMutation,
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { cn } from '@/lib/utils';
 import { CancelDeliveryForm } from '@/app/deliveries/cancel-delivery-form';
 import {
   deliveryStatusClassName,
@@ -34,6 +35,8 @@ import {
   formatDeliveryException,
   formatDeliveryStatus,
   formatDeliveryTimestamp,
+  loadedReadyButtonClassName,
+  markLoadedButtonClassName,
 } from '@/app/deliveries/format';
 import { useTranslation } from 'react-i18next';
 
@@ -115,15 +118,22 @@ export function DeliveryDetailContent({
             {formatDeliveryStatus(delivery.status)}
           </Badge>
           {delivery.routeReady ? (
-            <span className="text-muted-foreground inline-flex items-center gap-1.5 px-1 text-sm">
-              <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(loadedReadyButtonClassName)}
+              disabled
+              aria-label="Loaded — warehouse load already acknowledged"
+              title="Warehouse load is marked loaded and ready"
+            >
+              <PackageCheck className="size-4 shrink-0" aria-hidden />
               Loaded
-            </span>
+            </Button>
           ) : showReady ? (
             <Button
               type="button"
               variant="outline"
-              className="gap-1.5"
+              className={cn(markLoadedButtonClassName)}
               disabled={markReady.isPending}
               aria-label="Mark loaded — warehouse load acknowledgment"
               title="Marks the warehouse load as loaded and ready, then texts the customer and driver"
