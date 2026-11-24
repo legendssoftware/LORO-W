@@ -3,6 +3,7 @@ import {
   buildMarketAnalysisSummary,
   formatMarketAnalysisNumber,
   formatMarketAnalysisPercent,
+  formatMarketAnalysisZar,
 } from '@/lib/site-opportunity/market-analysis-summary';
 
 function expand(
@@ -69,5 +70,10 @@ describe('buildMarketAnalysisSummary', () => {
   it('formats numbers with space thousands separators', () => {
     expect(formatMarketAnalysisNumber(4_200_000)).toBe('4 200 000');
     expect(formatMarketAnalysisNumber(8_591_300_000)).toBe('8 591 300 000');
+  });
+
+  it('formats ZAR amounts with an R prefix', () => {
+    expect(formatMarketAnalysisZar(4_200_000)).toBe('R 4 200 000');
+    expect(formatMarketAnalysisZar(Number.NaN)).toBe('—');
   });
 });
