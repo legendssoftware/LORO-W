@@ -20,7 +20,8 @@ import type {
  */
 export async function getTasks(
   client: AxiosInstance,
-  params: GetTasksParams = {}
+  params: GetTasksParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<PaginatedTasksResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -35,7 +36,9 @@ export async function getTasks(
   if (params.isOverdue === false) search.set('isOverdue', 'false');
   if (params.search?.trim()) search.set('search', params.search.trim());
   const qs = search.toString();
-  const { data } = await client.get<PaginatedTasksResponse>(`/tasks${qs ? `?${qs}` : ''}`);
+  const { data } = await client.get<PaginatedTasksResponse>(`/tasks${qs ? `?${qs}` : ''}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 
@@ -44,9 +47,12 @@ export async function getTasks(
  */
 export async function getTask(
   client: AxiosInstance,
-  ref: number
+  ref: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<TaskDetailResponse> {
-  const { data } = await client.get<TaskDetailResponse>(`/tasks/${ref}`);
+  const { data } = await client.get<TaskDetailResponse>(`/tasks/${ref}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 
@@ -55,10 +61,12 @@ export async function getTask(
  */
 export async function getTasksForUser(
   client: AxiosInstance,
-  userRef: number
+  userRef: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<TasksForUserResponse> {
   const { data } = await client.get<TasksForUserResponse & { data?: Task[] }>(
-    `/tasks/for/${userRef}`
+    `/tasks/for/${userRef}`,
+    { signal: opts?.signal }
   );
   const tasks = Array.isArray(data.tasks)
     ? data.tasks

@@ -1,6 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import toast from 'react-hot-toast';
 import { ApiError } from '@/api/types';
+import { reportWebApiErrorToSentry } from '@/lib/sentry/report-api-error';
 import { showErrorToast } from '@/lib/utils/toast-helpers';
 
 /** Message for network/connection failures; used internally. No toast or console log. */
@@ -43,6 +44,14 @@ function nestResponseMessage(data: unknown): string | null {
   return null;
 }
 
+function correlationIdFromBody(data: unknown): string | undefined {
+  if (data && typeof data === 'object' && 'correlationId' in data) {
+    const id = (data as { correlationId: unknown }).correlationId;
+    return typeof id === 'string' && id.trim() ? id.trim() : undefined;
+  }
+  return undefined;
+}
+
 function normalizeError(err: unknown): ApiError {
   if (err && typeof err === 'object' && 'response' in err) {
     const res = (err as { response?: { data?: unknown; status?: number } }).response;
@@ -62,6 +71,7 @@ function normalizeError(err: unknown): ApiError {
         message,
         status: res.status,
         code: data && typeof data === 'object' && 'code' in data ? String((data as { code: unknown }).code) : undefined,
+        correlationId: correlationIdFromBody(data),
       };
     }
   }
@@ -93,6 +103,9 @@ export function applyErrorInterceptors(axiosInstance: AxiosInstance): void {
     (error) => {
       const apiError = normalizeError(error);
       const isNetwork = apiError.message === NETWORK_ERROR_MESSAGE;
+
+      // Report network / 5xx / 409 / 422 after normalize. Never attach bodies/headers.
+      reportWebApiErrorToSentry(apiError);
 
       if (!isNetwork) {
         const skipToast = (error.config as { meta?: { skipErrorToast?: boolean } })?.meta?.skipErrorToast;

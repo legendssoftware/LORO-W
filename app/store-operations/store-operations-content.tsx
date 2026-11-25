@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
+  Boxes,
   CalendarIcon,
   ChevronsUpDown,
   Clock3,
@@ -54,6 +55,7 @@ import {
   LeadsListPagination,
   type LeadsPageSize,
 } from '@/app/leads/components/leads-list-pagination';
+import { StockTakeTab } from '@/app/store-operations/stock-take-tab';
 import { canAccessStoreOperations } from '@/lib/access';
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { XIcon } from '@/lib/icons';
@@ -257,6 +259,10 @@ export function StoreOperationsContent() {
               <List className="size-4" aria-hidden />
               {t('chrome.common.details')}
             </TabsTrigger>
+            <TabsTrigger value="stock-take" className={TAB_TRIGGER_CLASS}>
+              <Boxes className="size-4" aria-hidden />
+              Stock Take
+            </TabsTrigger>
           </TabsList>
 
         <div className="mb-4 flex shrink-0 flex-col gap-3" data-tour="store-operations-filters">
@@ -321,7 +327,7 @@ export function StoreOperationsContent() {
 
         {query.isError || data ? <span className="sr-only" data-tour="store-operations-settled" /> : null}
 
-        {query.isError ? (
+        {tab !== 'stock-take' && query.isError ? (
           <QueryErrorBanner
             className="mb-4 shrink-0"
             message={getQueryErrorMessage(query.error)}
@@ -329,7 +335,7 @@ export function StoreOperationsContent() {
           />
         ) : null}
 
-        {query.isLoading ? <LoadingSpinner wrapperClassName="py-16" /> : null}
+        {tab !== 'stock-take' && query.isLoading ? <LoadingSpinner wrapperClassName="py-16" /> : null}
 
         {data ? (
           <>
@@ -489,6 +495,15 @@ export function StoreOperationsContent() {
             </TabsContent>
           </>
         ) : null}
+
+        <TabsContent value="stock-take" className="mt-0 flex min-h-0 flex-1 flex-col outline-none">
+          <StockTakeTab
+            date={date}
+            country={country}
+            region={region}
+            enabled={isTokenReady && allowed && tab === 'stock-take'}
+          />
+        </TabsContent>
         </Tabs>
       </main>
     </div>

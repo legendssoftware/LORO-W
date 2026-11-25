@@ -62,6 +62,10 @@ function delivery(
     invoiceNumber,
     driverUid: 4,
     driverName: extras.driverName ?? null,
+    dispatcherUid: 2,
+    dispatcherName: 'Pat Dispatch',
+    salesPersonCode: 'SP01',
+    salesPersonName: 'Lebo Sales',
     truckRegistration: extras.truckRegistration ?? null,
     clientName: extras.clientName ?? 'ABC',
     clientAddress: '123 Road',
@@ -73,6 +77,12 @@ function delivery(
     exception: null,
     pdfUrl: null,
     ratingScore: null,
+    stopSequence: null,
+    estimatedWindowStart: null,
+    estimatedWindowEnd: null,
+    routeReady: false,
+    routeDeparted: false,
+    routePickupAcknowledged: false,
   };
 }
 

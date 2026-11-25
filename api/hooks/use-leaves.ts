@@ -25,8 +25,8 @@ export function useLeaves(clerkUserId: string | null | undefined, options?: { en
   const client = useApiClient();
   return useQuery({
     queryKey: [...QUERY_KEY, clerkUserId ?? 'none'],
-    queryFn: async () => {
-      const res = await getLeavesByUser(client, clerkUserId!);
+    queryFn: async ({ signal }) => {
+      const res = await getLeavesByUser(client, clerkUserId!, { signal });
       return res.leaves as LeaveRecord[];
     },
     enabled: (options?.enabled !== false) && !!clerkUserId,
@@ -41,7 +41,7 @@ export function useLeaveInbox(params: LeaveListFilters, options?: { enabled?: bo
   const client = useApiClient();
   return useQuery({
     queryKey: [...LEAVE_INBOX_QUERY_KEY, params],
-    queryFn: () => getLeaveInbox(client, params),
+    queryFn: ({ signal }) => getLeaveInbox(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
   });
@@ -51,7 +51,7 @@ export function useLeaveReport(from: string, to: string, options?: { enabled?: b
   const client = useApiClient();
   return useQuery({
     queryKey: [...LEAVE_INBOX_QUERY_KEY, 'report', from, to],
-    queryFn: () => getLeaveReport(client, from, to),
+    queryFn: ({ signal }) => getLeaveReport(client, from, to, { signal }),
     enabled: options?.enabled !== false && Boolean(from && to),
     staleTime: 60 * 1000,
   });

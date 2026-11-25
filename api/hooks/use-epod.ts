@@ -10,13 +10,16 @@ import {
   listAssignableOrders,
   listDeliveries,
   listDrivers,
+  markRouteReady,
 } from '@/api/endpoints/epod';
 import type {
   AssignableOrder,
+  CancelDeliveryBody,
   CreateDeliveryBody,
   DeliveryListQuery,
   DeliveryStatus,
   DeliverySummary,
+  ReadyRouteBody,
 } from '@/api/types/epod';
 
 export const EPOD_QUERY_KEY = ['epod'] as const;
@@ -51,6 +54,8 @@ export function filterDeliveries(
       delivery.orderNumber,
       delivery.deliveryNumber,
       delivery.driverName,
+      delivery.dispatcherName,
+      delivery.salesPersonName,
       delivery.truckRegistration,
       delivery.clientName,
     ].some((value) => (value ?? '').toLowerCase().includes(term)),
@@ -124,11 +129,24 @@ export function useAssignDeliveryMutation() {
   });
 }
 
+/** Marks one driver route ready and sends the arrival window once. */
+export function useMarkRouteReadyMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ReadyRouteBody) => markRouteReady(client, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });
+    },
+  });
+}
+
 export function useCancelDeliveryMutation(uid: number) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => cancelDelivery(client, uid),
+    mutationFn: (body: CancelDeliveryBody) => cancelDelivery(client, uid, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail', uid] });

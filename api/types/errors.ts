@@ -6,4 +6,6 @@ export interface ApiError {
   message: string;
   status?: number;
   code?: string;
+  /** Server correlation id for matching support screenshots to logs / Sentry. */
+  correlationId?: string;
 }

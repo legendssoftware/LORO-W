@@ -11,7 +11,7 @@ export function useCalls(params: GetCallsParams = {}, options?: { enabled?: bool
   const client = useApiClient();
   return useQuery({
     queryKey: [...CALLS_QUERY_KEY_PREFIX, 'list', params],
-    queryFn: () => getCalls(client, params),
+    queryFn: ({ signal }) => getCalls(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 30 * 1000,
     placeholderData: (previousData) => previousData,
@@ -29,7 +29,7 @@ export function useCall(
   const client = useApiClient();
   return useQuery<CallRecordingDetailResponse>({
     queryKey: [...CALLS_QUERY_KEY_PREFIX, 'detail', uid],
-    queryFn: () => getCall(client, uid as string),
+    queryFn: ({ signal }) => getCall(client, uid as string, { signal }),
     enabled: Boolean(uid) && options?.enabled !== false,
     staleTime: 15 * 1000,
     refetchInterval: (query) => {

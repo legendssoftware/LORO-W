@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 import { fileURLToPath } from "url";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { contentSecurityPolicy } from "./lib/content-security-policy";
 
 /** Next app root (directory containing this file). Never use process.cwd() — it breaks resolution when dev runs from the repo root. */
@@ -26,10 +27,14 @@ const nextConfig: NextConfig = {
   // Next.js 16 requires turbopack.root and outputFileTracingRoot to be the same absolute path.
   turbopack: { root: appRoot },
   outputFileTracingRoot: appRoot,
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts'],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -46,6 +51,11 @@ const nextConfig: NextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
     ],
   },
   webpack: (config) => {
@@ -58,4 +68,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Source map upload runs only when SENTRY_AUTH_TOKEN (+ org/project) are set in CI.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});
