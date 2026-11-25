@@ -3,15 +3,10 @@
  * Strips URL query strings and redacts sensitive keys.
  */
 
+import type { Breadcrumb, BreadcrumbHint } from '@sentry/nextjs';
+
 const SENSITIVE_KEY =
 	/authorization|token|password|secret|cookie|pin|otp|refresh|apikey/i;
-
-export type ScrubbableBreadcrumb = {
-	category?: string;
-	message?: string;
-	data?: Record<string, unknown>;
-	[key: string]: unknown;
-};
 
 function stripUrlQuery(value: string): string {
 	const q = value.indexOf('?');
@@ -43,11 +38,13 @@ function redactSensitiveData(
 
 /**
  * Sentry `beforeBreadcrumb` scrubber for the Next.js app.
+ * Signature matches `@sentry/nextjs` CoreOptions.beforeBreadcrumb.
  */
-export function scrubSentryBreadcrumb<T extends ScrubbableBreadcrumb>(
-	breadcrumb: T,
-): T | null {
-	const next = { ...breadcrumb } as T;
+export function scrubSentryBreadcrumb(
+	breadcrumb: Breadcrumb,
+	_hint?: BreadcrumbHint,
+): Breadcrumb | null {
+	const next: Breadcrumb = { ...breadcrumb };
 	if (typeof next.message === 'string' && next.message.includes('?')) {
 		next.message = stripUrlQuery(next.message);
 	}
