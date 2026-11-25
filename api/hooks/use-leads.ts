@@ -119,7 +119,7 @@ export function useLeads(
   const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'list', params],
-    queryFn: async () => getLeads(client, params, listOpts),
+    queryFn: async ({ signal }) => getLeads(client, params, { ...listOpts, signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -138,7 +138,7 @@ export function useUnassignedLeads(
   const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'unassigned', params],
-    queryFn: async () => getUnassignedLeads(client, params, listOpts),
+    queryFn: async ({ signal }) => getUnassignedLeads(client, params, { ...listOpts, signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -161,8 +161,8 @@ export function useLeadsInfinite(
   const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useInfiniteQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'list', 'infinite', listParams],
-    queryFn: async ({ pageParam }) =>
-      getLeads(client, { ...listParams, page: pageParam as number }, listOpts),
+    queryFn: async ({ pageParam, signal }) =>
+      getLeads(client, { ...listParams, page: pageParam as number }, { ...listOpts, signal }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
     enabled: options?.enabled !== false,
@@ -186,8 +186,8 @@ export function useUnassignedLeadsInfinite(
   const listOpts = options?.skipErrorToast ? { skipErrorToast: true as const } : undefined;
   return useInfiniteQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'unassigned', 'infinite', listParams],
-    queryFn: async ({ pageParam }) =>
-      getUnassignedLeads(client, { ...listParams, page: pageParam as number }, listOpts),
+    queryFn: async ({ pageParam, signal }) =>
+      getUnassignedLeads(client, { ...listParams, page: pageParam as number }, { ...listOpts, signal }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => getNextLeadsPageParam(lastPage),
     enabled: options?.enabled !== false,
@@ -206,7 +206,7 @@ export function useLeadsForUser(
   const client = useApiClient();
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'for', params],
-    queryFn: async () => getLeadsForUser(client, params),
+    queryFn: async ({ signal }) => getLeadsForUser(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -242,7 +242,7 @@ export function useLeadsReport(
   const keepPreviousData = options?.keepPreviousData !== false;
   return useQuery({
     queryKey: leadsReportQueryKey(params),
-    queryFn: async () => getLeadsReport(client, params),
+    queryFn: async ({ signal }) => getLeadsReport(client, params, { signal }),
     enabled: (options?.enabled !== false) && !!params.from && !!params.to,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -260,7 +260,7 @@ export function useLead(ref: number | null | undefined, options?: { enabled?: bo
   const client = useApiClient();
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'detail', ref ?? 'none'],
-    queryFn: async () => getLead(client, ref!),
+    queryFn: async ({ signal }) => getLead(client, ref!, { signal }),
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -274,7 +274,7 @@ export function useLeadCalls(ref: number | null | undefined, options?: { enabled
   const client = useApiClient();
   return useQuery({
     queryKey: [...QUERY_KEY_PREFIX, 'calls', ref ?? 'none'],
-    queryFn: async () => getLeadCalls(client, ref!),
+    queryFn: async ({ signal }) => getLeadCalls(client, ref!, { signal }),
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

@@ -8,9 +8,61 @@ export const DELIVERY_EXCEPTIONS = ['none', 'short_quantity', 'damaged', 'custom
 
 export type DeliveryException = (typeof DELIVERY_EXCEPTIONS)[number];
 
-export const DELIVERY_MEDIA_KINDS = ['goods', 'document', 'receiver', 'signature'] as const;
+export const DELIVERY_MEDIA_KINDS = [
+  'goods',
+  'document',
+  'receiver',
+  'signature',
+  'driver_delivery_signature',
+  'driver_pickup_signature',
+] as const;
 
 export type DeliveryMediaKind = (typeof DELIVERY_MEDIA_KINDS)[number];
+
+export const DELIVERY_CANCELLATION_SIDES = ['customer', 'driver'] as const;
+
+export type DeliveryCancellationSide = (typeof DELIVERY_CANCELLATION_SIDES)[number];
+
+export const DELIVERY_CANCELLATION_REASONS = [
+  'customer_not_available',
+  'customer_refused',
+  'customer_wrong_address',
+  'customer_rescheduled',
+  'customer_other',
+  'driver_vehicle_issue',
+  'driver_safety',
+  'driver_time_constraint',
+  'driver_goods_issue',
+  'driver_other',
+] as const;
+
+export type DeliveryCancellationReason = (typeof DELIVERY_CANCELLATION_REASONS)[number];
+
+export const CUSTOMER_CANCELLATION_REASONS: readonly DeliveryCancellationReason[] = [
+  'customer_not_available',
+  'customer_refused',
+  'customer_wrong_address',
+  'customer_rescheduled',
+  'customer_other',
+];
+
+export const DRIVER_CANCELLATION_REASONS: readonly DeliveryCancellationReason[] = [
+  'driver_vehicle_issue',
+  'driver_safety',
+  'driver_time_constraint',
+  'driver_goods_issue',
+  'driver_other',
+];
+
+export function cancellationReasonsForSide(
+  side: DeliveryCancellationSide,
+): readonly DeliveryCancellationReason[] {
+  return side === 'customer' ? CUSTOMER_CANCELLATION_REASONS : DRIVER_CANCELLATION_REASONS;
+}
+
+export function cancellationReasonNeedsNote(reason: DeliveryCancellationReason): boolean {
+  return reason === 'customer_other' || reason === 'driver_other';
+}
 
 /** Order statuses the server will accept for POST /epod/deliveries. */
 export const ASSIGNABLE_ORDER_STATUSES = [
@@ -24,6 +76,8 @@ export const ASSIGNABLE_ORDER_STATUSES = [
 export interface DeliveryItem {
   uid: number;
   orderItemUid: number | null;
+  /** ERP item_code when the line came from a sales order. */
+  itemCode: string | null;
   name: string;
   orderedQty: number;
   deliveredQty: number;
@@ -40,6 +94,8 @@ export interface DeliverySteps {
   goodsChecked: boolean;
   documentCaptured: boolean;
   receiverPhoto: boolean;
+  clientSigned: boolean;
+  driverSigned: boolean;
   signed: boolean;
 }
 
@@ -51,11 +107,19 @@ export interface DeliverySummary {
   scheduledDate: string;
   orderUid: number | null;
   orderNumber: string | null;
-  /** ERP invoice number from the linked shop order. Null when the order has none. */
+  /** Invoice / ERP document number. Null when none was captured. */
   invoiceNumber: string | null;
   driverUid: number;
-  /** Driver first name and surname. Null when the list did not load the driver. */
+  /** Assigned PROM driver first name and surname. Null when the list did not load the driver. */
   driverName: string | null;
+  /** Web dispatcher who created the stop. Null on older deliveries. */
+  dispatcherUid: number | null;
+  /** Dispatcher first name and surname. */
+  dispatcherName: string | null;
+  /** ERP sales_code snapped at assign. */
+  salesPersonCode: string | null;
+  /** ERP salesperson name snapped at assign. */
+  salesPersonName: string | null;
   /** Registration plates of the driver's vehicles. Null when none are assigned. */
   truckRegistration: string | null;
   clientName: string;
@@ -69,6 +133,19 @@ export interface DeliverySummary {
   pdfUrl: string | null;
   /** Customer score from 1 to 5. Null until the public link is rated. */
   ratingScore: number | null;
+  /** Dispatcher stop number. Null when Google will order the route. */
+  stopSequence: number | null;
+  estimatedWindowStart: string | null;
+  estimatedWindowEnd: string | null;
+  /** True after dispatch Marks loaded (warehouse load ack). */
+  routeReady: boolean;
+  /** True after the driver starts the route. */
+  routeDeparted: boolean;
+  /** True after the driver signed for pickup at the warehouse. */
+  routePickupAcknowledged: boolean;
+  routeReadyAt?: string | null;
+  routePickupAcknowledgedAt?: string | null;
+  routePickupSignatureUrl?: string | null;
 }
 
 export interface DeliveryDetail extends DeliverySummary {
@@ -88,6 +165,17 @@ export interface DeliveryDetail extends DeliverySummary {
   clientSubmissionId: string | null;
   ratingComment: string | null;
   ratedAt: string | null;
+  cancellationSide: DeliveryCancellationSide | null;
+  cancellationReason: DeliveryCancellationReason | null;
+  cancellationNote: string | null;
+  cancelledAt: string | null;
+  cancelledByUid: number | null;
+}
+
+export interface CancelDeliveryBody {
+  side: DeliveryCancellationSide;
+  reason: DeliveryCancellationReason;
+  note?: string;
 }
 
 export interface PublicDelivery {
@@ -101,6 +189,9 @@ export interface PublicDelivery {
   longitude: number | null;
   arrivalLat: number | null;
   arrivalLng: number | null;
+  scheduledDate: string;
+  estimatedWindowStart: string | null;
+  estimatedWindowEnd: string | null;
 }
 
 export interface SubmitDeliveryRatingBody {
@@ -145,6 +236,14 @@ export interface AssignableOrder {
 export interface CreateDeliveryBody {
   docNumber: string;
   store: string;
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  /** Stop number on the route. Omit it to let Google order the stops. */
+  stopSequence?: number;
+}
+
+export interface ReadyRouteBody {
   driverUid: number;
   routeCode: string;
   scheduledDate: string;

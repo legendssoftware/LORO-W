@@ -31,6 +31,7 @@ import type { LeadsReportResponse } from '@/api/types/reports';
 export type LeadsListRequestOpts = {
   /** When true, Axios error interceptor skips toast (use inline query error UI). */
   skipErrorToast?: boolean;
+  signal?: AbortSignal;
 };
 
 /**
@@ -61,7 +62,10 @@ export async function getLeads(
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(
     `/leads${qs ? `?${qs}` : ''}`,
-    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+    {
+      ...(opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : {}),
+      signal: opts?.signal,
+    }
   );
   return data;
 }
@@ -91,7 +95,10 @@ export async function getUnassignedLeads(
   const qs = search.toString();
   const { data } = await client.get<LeadsListResponse>(
     `/leads/unassigned${qs ? `?${qs}` : ''}`,
-    opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : undefined
+    {
+      ...(opts?.skipErrorToast ? { meta: { skipErrorToast: true } } : {}),
+      signal: opts?.signal,
+    }
   );
   return data;
 }
@@ -113,14 +120,16 @@ export async function reassignLeads(
  */
 export async function getLeadsForUser(
   client: AxiosInstance,
-  params: GetLeadsForUserParams = {}
+  params: GetLeadsForUserParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<LeadsForUserResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
   if (params.limit != null) search.set('limit', String(params.limit));
   const qs = search.toString();
   const { data } = await client.get<LeadsForUserResponse>(
-    `/leads/for${qs ? `?${qs}` : ''}`
+    `/leads/for${qs ? `?${qs}` : ''}`,
+    { signal: opts?.signal }
   );
   return data;
 }
@@ -130,7 +139,8 @@ export async function getLeadsForUser(
  */
 export async function getLeadsReport(
   client: AxiosInstance,
-  params: GetLeadsReportParams
+  params: GetLeadsReportParams,
+  opts?: { signal?: AbortSignal }
 ): Promise<LeadsReportResponse> {
   const search = new URLSearchParams({
     from: params.from,
@@ -144,7 +154,8 @@ export async function getLeadsReport(
   if (params.search) search.set('search', params.search);
   if (params.dateBasis) search.set('dateBasis', params.dateBasis);
   const { data } = await client.get<LeadsReportResponse>(
-    `/leads/report?${search.toString()}`
+    `/leads/report?${search.toString()}`,
+    { signal: opts?.signal }
   );
   return data;
 }
@@ -154,9 +165,12 @@ export async function getLeadsReport(
  */
 export async function getLead(
   client: AxiosInstance,
-  ref: number
+  ref: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<LeadDetailResponse> {
-  const { data } = await client.get<LeadDetailResponse>(`/leads/${ref}`);
+  const { data } = await client.get<LeadDetailResponse>(`/leads/${ref}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 
@@ -165,9 +179,12 @@ export async function getLead(
  */
 export async function getLeadCalls(
   client: AxiosInstance,
-  ref: number
+  ref: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<LeadCompanyCallsResponse> {
-  const { data } = await client.get<LeadCompanyCallsResponse>(`/leads/${ref}/calls`);
+  const { data } = await client.get<LeadCompanyCallsResponse>(`/leads/${ref}/calls`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 

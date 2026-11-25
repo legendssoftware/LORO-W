@@ -20,28 +20,11 @@ import { defaultMetadata } from '@/lib/seo';
 import { buildSiteVerificationMetadata } from '@/lib/seo/site-verification';
 import './globals.css';
 
-/** Self-hosted so `next build` does not depend on fonts.googleapis.com. */
+/** Self-hosted so `next build` does not depend on fonts.googleapis.com. Lora loads only in the marketing layout. */
 const urbanist = localFont({
   src: './fonts/urbanist-latin-var.woff2',
   variable: '--font-urbanist',
   weight: '300 700',
-  display: 'swap',
-});
-
-const lora = localFont({
-  src: [
-    {
-      path: './fonts/lora-latin-var.woff2',
-      weight: '400 700',
-      style: 'normal',
-    },
-    {
-      path: './fonts/lora-latin-italic-var.woff2',
-      weight: '400 700',
-      style: 'italic',
-    },
-  ],
-  variable: '--font-lora',
   display: 'swap',
 });
 
@@ -91,7 +74,7 @@ export default async function RootLayout({
       localization={clerkLocalization(lang)}
     >
       <html lang={lang} suppressHydrationWarning>
-        <body className={`${urbanist.variable} ${lora.variable} font-sans antialiased`}>
+        <body className={`${urbanist.variable} font-sans antialiased`}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

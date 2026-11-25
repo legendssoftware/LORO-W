@@ -48,7 +48,7 @@ export function useTasks(
   const client = useApiClient();
   return useQuery({
     queryKey: [...TASKS_LIST_QUERY_KEY, 'list', params],
-    queryFn: async () => getTasks(client, params),
+    queryFn: async ({ signal }) => getTasks(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -66,7 +66,7 @@ export function useTask(
   const client = useApiClient();
   return useQuery({
     queryKey: [...TASKS_LIST_QUERY_KEY, 'detail', ref ?? 'none'],
-    queryFn: async () => getTask(client, ref!),
+    queryFn: async ({ signal }) => getTask(client, ref!, { signal }),
     enabled: (options?.enabled !== false) && ref != null && ref > 0,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -83,7 +83,7 @@ export function useTasksForUser(
   const client = useApiClient();
   return useQuery({
     queryKey: [...TASKS_LIST_QUERY_KEY, 'for-user', userRef ?? 'none'],
-    queryFn: async () => getTasksForUser(client, userRef!),
+    queryFn: async ({ signal }) => getTasksForUser(client, userRef!, { signal }),
     enabled:
       (options?.enabled !== false) &&
       userRef != null &&

@@ -68,7 +68,8 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
   const [orderKey, setOrderKey] = useState(EMPTY_VALUE);
   const [driverUid, setDriverUid] = useState(EMPTY_VALUE);
   const [routeCode, setRouteCode] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<string | null>(todayDateString);
+  const [stopSequence, setStopSequence] = useState('');
+  const [scheduledDate, setScheduledDate] = useState<string | null>(todayDateString());
 
   const orders = ordersQuery.data ?? [];
 
@@ -105,6 +106,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     setOrderKey(EMPTY_VALUE);
     setDriverUid(EMPTY_VALUE);
     setRouteCode('');
+    setStopSequence('');
     setScheduledDate(todayDateString());
     assign.reset();
   }
@@ -124,6 +126,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
         driverUid: Number(driverUid),
         routeCode: routeCode.trim(),
         scheduledDate,
+        ...(stopSequence.trim() ? { stopSequence: Number(stopSequence) } : {}),
       })
       .then(() => handleOpenChange(false));
   }
@@ -142,7 +145,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
             Assign delivery
           </DialogTitle>
           <DialogDescription>
-            Pick an open ERP sales order and a driver whose workforce type is driver.
+            Pick an open ERP sales order and a driver whose workforce type is driver. Assign texts the customer; Mark loaded texts them again when the order is loaded and ready.
           </DialogDescription>
         </DialogHeader>
 
@@ -226,6 +229,19 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                   onChange={setScheduledDate}
                   aria-label="Scheduled day"
                   className="w-full"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="assign-stop">Stop number</Label>
+                <Input
+                  id="assign-stop"
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={stopSequence}
+                  onChange={(event) => setStopSequence(event.target.value)}
+                  placeholder="Optional"
+                  aria-label="Stop number"
                 />
               </div>
             </div>

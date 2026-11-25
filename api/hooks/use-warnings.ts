@@ -48,9 +48,9 @@ export function useUserWarnings(
   const client = useApiClient();
   return useQuery({
     queryKey: userWarningsQueryKey(userRef ?? 'none'),
-    queryFn: async (): Promise<WarningRecord[]> => {
+    queryFn: async ({ signal }): Promise<WarningRecord[]> => {
       try {
-        const res = await getUserWarnings(client, userRef!);
+        const res = await getUserWarnings(client, userRef!, { signal });
         return normalizeWarningsList(res);
       } catch (err) {
         if (isFeatureAccessError(err)) return [];
@@ -157,7 +157,7 @@ export function useWarningsInbox(params: GetWarningsParams, options?: { enabled?
   const client = useApiClient();
   return useQuery({
     queryKey: [...WARNINGS_INBOX_QUERY_KEY, params],
-    queryFn: () => getWarnings(client, params),
+    queryFn: ({ signal }) => getWarnings(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
   });

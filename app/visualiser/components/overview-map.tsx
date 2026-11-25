@@ -1523,7 +1523,7 @@ export function OverviewMap({
           <MapMarker longitude={longitude} latitude={latitude}>
             <MarkerContent>
               <span className="relative flex h-4 w-4 items-center justify-center">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-60" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-60 [animation-iteration-count:2]" />
                 <span className="relative size-3 rounded-full border-2 border-white bg-blue-500 shadow-lg" />
               </span>
               <MarkerLabel position="top">You</MarkerLabel>

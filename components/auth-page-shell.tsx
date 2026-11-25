@@ -1,18 +1,23 @@
 'use client';
 
+import Image from 'next/image';
 import { BrandMark } from '@/components/brand-mark';
 import { LanguageSwitcher } from '@/components/language-switcher';
 
 /**
  * Full-page shell for auth routes: sign-in, sign-up, forgot-password, verify-otp, new-password.
- * Uses auth.jpg as full-viewport background with 0.6 black overlay; centers content on x and y.
+ * Optimized auth background via next/image; centers content on x and y.
  */
 export function AuthPageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen w-full">
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/images/covers/auth.webp)' }}
+      <Image
+        src="/images/covers/auth.webp"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
         aria-hidden
       />
       <div className="fixed inset-0 bg-black/60" aria-hidden />
