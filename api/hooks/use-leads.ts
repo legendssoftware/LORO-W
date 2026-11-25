@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  keepPreviousData,
   useQuery,
   useInfiniteQuery,
   useMutation,
@@ -239,16 +240,13 @@ export function useLeadsReport(
   options?: { enabled?: boolean; keepPreviousData?: boolean }
 ) {
   const client = useApiClient();
-  const keepPreviousData = options?.keepPreviousData !== false;
   return useQuery({
     queryKey: leadsReportQueryKey(params),
     queryFn: async ({ signal }) => getLeadsReport(client, params, { signal }),
     enabled: (options?.enabled !== false) && !!params.from && !!params.to,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    ...(keepPreviousData
-      ? { placeholderData: (previousData: Awaited<ReturnType<typeof getLeadsReport>> | undefined) => previousData }
-      : {}),
+    placeholderData: options?.keepPreviousData !== false ? keepPreviousData : undefined,
   });
 }
 
