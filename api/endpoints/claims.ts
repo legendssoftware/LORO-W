@@ -31,7 +31,8 @@ export interface GetClaimsParams {
  */
 export async function getClaims(
   client: AxiosInstance,
-  params: GetClaimsParams = {}
+  params: GetClaimsParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<ClaimsListResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -44,7 +45,8 @@ export async function getClaims(
   if (params.ownerUid != null) search.set('ownerUid', String(params.ownerUid));
   const qs = search.toString();
   const { data } = await client.get<ClaimsListResponse>(
-    `/claims${qs ? `?${qs}` : ''}`
+    `/claims${qs ? `?${qs}` : ''}`,
+    { signal: opts?.signal }
   );
   return data;
 }
@@ -69,9 +71,12 @@ export function normalizeClaimsMeResponse(
 }
 
 export async function getClaimsMe(
-  client: AxiosInstance
+  client: AxiosInstance,
+  opts?: { signal?: AbortSignal }
 ): Promise<ClaimsListResponse> {
-  const { data } = await client.get<ClaimsMeResponse>('/claims/me');
+  const { data } = await client.get<ClaimsMeResponse>('/claims/me', {
+    signal: opts?.signal,
+  });
   return normalizeClaimsMeResponse(data);
 }
 
@@ -89,7 +94,8 @@ export interface GetClaimsSummaryParams {
  */
 export async function getClaimsSummary(
   client: AxiosInstance,
-  params: GetClaimsSummaryParams = {}
+  params: GetClaimsSummaryParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<ClaimsSummaryResponse> {
   const search = new URLSearchParams();
   if (params.createdFrom) search.set('createdFrom', params.createdFrom);
@@ -100,16 +106,20 @@ export async function getClaimsSummary(
   if (params.status && params.status !== 'all') search.set('status', params.status);
   const qs = search.toString();
   const { data } = await client.get<ClaimsSummaryResponse>(
-    `/claims/summary${qs ? `?${qs}` : ''}`
+    `/claims/summary${qs ? `?${qs}` : ''}`,
+    { signal: opts?.signal }
   );
   return data;
 }
 
 export async function getClaim(
   client: AxiosInstance,
-  ref: number
+  ref: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<ClaimDetailResponse> {
-  const { data } = await client.get<ClaimDetailResponse>(`/claims/${ref}`);
+  const { data } = await client.get<ClaimDetailResponse>(`/claims/${ref}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 

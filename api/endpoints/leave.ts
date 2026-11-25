@@ -43,7 +43,8 @@ export async function getLeaveList(
 /** GET /leave — organisation inbox. */
 export async function getLeaveInbox(
   client: AxiosInstance,
-  params: LeaveListFilters = {}
+  params: LeaveListFilters = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<LeaveListResult> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -54,7 +55,9 @@ export async function getLeaveInbox(
   if (params.leaveType) search.set('leaveType', params.leaveType);
   if (params.ownerUid != null) search.set('ownerUid', String(params.ownerUid));
   const qs = search.toString();
-  const { data } = await client.get<LeaveListResult>(`/leave${qs ? `?${qs}` : ''}`);
+  const { data } = await client.get<LeaveListResult>(`/leave${qs ? `?${qs}` : ''}`, {
+    signal: opts?.signal,
+  });
   return {
     ...data,
     data: Array.isArray(data.data) ? data.data : [],
@@ -65,9 +68,13 @@ export async function getLeaveInbox(
 export async function getLeaveReport(
   client: AxiosInstance,
   from: string,
-  to: string
+  to: string,
+  opts?: { signal?: AbortSignal }
 ): Promise<LeaveReport> {
-  const { data } = await client.get<LeaveReport>('/leave/report', { params: { from, to } });
+  const { data } = await client.get<LeaveReport>('/leave/report', {
+    params: { from, to },
+    signal: opts?.signal,
+  });
   return data;
 }
 
@@ -131,8 +138,11 @@ export async function deleteLeave(client: AxiosInstance, ref: number): Promise<{
 
 export async function getLeavesByUser(
   client: AxiosInstance,
-  clerkUserId: string
+  clerkUserId: string,
+  opts?: { signal?: AbortSignal }
 ): Promise<LeavesByUserResponse> {
-  const { data } = await client.get<LeavesByUserResponse>(`/leave/user/${clerkUserId}`);
+  const { data } = await client.get<LeavesByUserResponse>(`/leave/user/${clerkUserId}`, {
+    signal: opts?.signal,
+  });
   return data;
 }

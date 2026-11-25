@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { getOptimizedDuration, prefersReducedMotion } from '@/lib/utils/animations';
 
 interface FadeInProps {
   children: React.ReactNode;
@@ -15,11 +16,19 @@ export function FadeIn({
   delay = 0,
   duration = 0.5,
 }: FadeInProps) {
+  if (prefersReducedMotion()) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration, delay, ease: 'easeOut' }}
+      transition={{
+        duration: getOptimizedDuration(duration),
+        delay: getOptimizedDuration(delay),
+        ease: 'easeOut',
+      }}
       className={className}
     >
       {children}

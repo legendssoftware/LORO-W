@@ -4,7 +4,6 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeft, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { MODAL_OVERLAY_CLASS } from "@/lib/modal-overlay";
@@ -204,54 +203,39 @@ function Sidebar({
       data-side={side}
       data-slot="sidebar"
     >
-      {/* Overlay when sidebar is open: dims main content, click to close */}
-      <AnimatePresence>
-        {state === "expanded" && (
-          <motion.button
-            type="button"
-            aria-label="Close sidebar"
-            onClick={closeSidebar}
-            className={cn(
-              "fixed inset-0 cursor-pointer md:block",
-              zAboveLeafletFullscreen,
-              MODAL_OVERLAY_CLASS,
-            )}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Overlay when sidebar is open: dims main content, click to close (CSS only — no framer-motion on app chrome) */}
+      {state === "expanded" ? (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={closeSidebar}
+          className={cn(
+            "fixed inset-0 cursor-pointer md:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200",
+            zAboveLeafletFullscreen,
+            MODAL_OVERLAY_CLASS,
+          )}
+        />
+      ) : null}
       {/* No gap: sidebar overlays content, never cuts page width */}
       <div
         data-slot="sidebar-gap"
         className="relative w-0 shrink-0 bg-transparent"
         aria-hidden
       />
-      <motion.div
+      <div
         data-slot="sidebar-container"
         className={cn(
           "fixed inset-y-0 hidden h-svh flex-col p-2 md:flex",
+          "transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
           zAboveLeafletFullscreenPanel,
           side === "left" ? "left-0" : "right-0",
+          state === "collapsed" &&
+            collapsible === "offcanvas" &&
+            (side === "left" ? "-translate-x-full" : "translate-x-full"),
           className
         )}
         style={{
           width: "var(--sidebar-width)",
-        }}
-        initial={false}
-        animate={{
-          x:
-            state === "collapsed" && collapsible === "offcanvas"
-              ? side === "left"
-                ? "-100%"
-                : "100%"
-              : 0,
-        }}
-        transition={{
-          duration: 0.2,
-          ease: [0.32, 0.72, 0, 1],
         }}
       >
         <div
@@ -261,7 +245,7 @@ function Sidebar({
         >
           {children}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

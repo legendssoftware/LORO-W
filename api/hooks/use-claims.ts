@@ -83,7 +83,7 @@ export function useClaims(
   const client = useApiClient();
   return useQuery({
     queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'list', params],
-    queryFn: async () => getClaims(client, params),
+    queryFn: async ({ signal }) => getClaims(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -175,16 +175,20 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       claimGroupUid ?? '',
       ownerUid ?? '',
     ],
-    queryFn: async ({ pageParam }) => {
-      const result = await getClaims(client, {
-        page: pageParam,
-        limit: LIST_PAGE_SIZE,
-        status,
-        createdFrom,
-        createdTo,
-        claimGroupUid,
-        ownerUid,
-      });
+    queryFn: async ({ pageParam, signal }) => {
+      const result = await getClaims(
+        client,
+        {
+          page: pageParam,
+          limit: LIST_PAGE_SIZE,
+          status,
+          createdFrom,
+          createdTo,
+          claimGroupUid,
+          ownerUid,
+        },
+        { signal },
+      );
       if (typeof console !== 'undefined') {
         console.debug('[Claims] GET /claims', {
           page: pageParam,
@@ -222,8 +226,8 @@ export function useClaimsInfinite(filters?: ClaimsInfiniteFilters) {
       claimGroupUid ?? '',
       ownerUid ?? '',
     ],
-    queryFn: async () => {
-      const result = await getClaimsMe(client);
+    queryFn: async ({ signal }) => {
+      const result = await getClaimsMe(client, { signal });
       if (typeof console !== 'undefined') {
         console.debug('[Claims] GET /claims/me', {
           count: result?.data?.length ?? 0,
@@ -265,7 +269,7 @@ export function useClaim(ref: number | null, options?: { enabled?: boolean }) {
 
   return useQuery({
     queryKey: [...CLAIMS_QUERY_KEY_PREFIX, 'detail', ref],
-    queryFn: async () => getClaim(client, ref!),
+    queryFn: async ({ signal }) => getClaim(client, ref!, { signal }),
     enabled,
     staleTime: 30 * 1000,
   });
@@ -286,7 +290,7 @@ export function useClaimsSummary(
       params.ownerUid ?? '',
       params.status ?? '',
     ],
-    queryFn: () => getClaimsSummary(client, params),
+    queryFn: ({ signal }) => getClaimsSummary(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

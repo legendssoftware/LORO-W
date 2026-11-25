@@ -11,6 +11,7 @@ import type {
 export async function getCalls(
   client: AxiosInstance,
   params: GetCallsParams = {},
+  opts?: { signal?: AbortSignal },
 ): Promise<CallRecordingListResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -24,15 +25,20 @@ export async function getCalls(
   if (params.endDate) search.set('endDate', params.endDate);
   if (params.branchId != null) search.set('branchId', String(params.branchId));
   const qs = search.toString();
-  const { data } = await client.get<CallRecordingListResponse>(`/calls${qs ? `?${qs}` : ''}`);
+  const { data } = await client.get<CallRecordingListResponse>(`/calls${qs ? `?${qs}` : ''}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 
 export async function getCall(
   client: AxiosInstance,
   uid: string,
+  opts?: { signal?: AbortSignal },
 ): Promise<CallRecordingDetailResponse> {
-  const { data } = await client.get<CallRecordingDetailResponse>(`/calls/${uid}`);
+  const { data } = await client.get<CallRecordingDetailResponse>(`/calls/${uid}`, {
+    signal: opts?.signal,
+  });
   return data;
 }
 

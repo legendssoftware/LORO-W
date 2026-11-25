@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { prefersReducedMotion } from '@/lib/utils/animations';
 
 const pageVariants: Variants = {
   initial: { opacity: 0 },
@@ -38,6 +39,10 @@ export function PageTransition({
   children,
   type = 'fade',
 }: PageTransitionProps) {
+  if (prefersReducedMotion()) {
+    return <div className="w-full">{children}</div>;
+  }
+
   const variants = type === 'slide-up' ? slideUpVariants : pageVariants;
   return (
     <motion.div

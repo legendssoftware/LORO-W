@@ -544,7 +544,7 @@ export function ClaimsFiltersBar({
         aria-label={t('claims.layout')}
       >
         <ToggleGroupItem value="grid" aria-label={t('claims.folderGrid')} className="px-2.5">
-          <LayoutGrid className="size-4" />
+          <FolderOpen className="size-4" />
         </ToggleGroupItem>
         <ToggleGroupItem value="list" aria-label={t('claims.userList')} className="px-2.5">
           <List className="size-4" />

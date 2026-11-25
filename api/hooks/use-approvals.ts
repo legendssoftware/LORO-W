@@ -38,7 +38,7 @@ export function useApprovals(
   const client = useApiClient();
   return useQuery({
     queryKey: [...APPROVALS_QUERY_KEY_PREFIX, 'list', params],
-    queryFn: () => getApprovals(client, params),
+    queryFn: ({ signal }) => getApprovals(client, params, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 30 * 1000,
   });
@@ -48,7 +48,7 @@ export function useApproval(uid: number | null, options?: { enabled?: boolean })
   const client = useApiClient();
   return useQuery({
     queryKey: [...APPROVALS_QUERY_KEY_PREFIX, 'detail', uid],
-    queryFn: () => getApproval(client, uid as number),
+    queryFn: ({ signal }) => getApproval(client, uid as number, { signal }),
     enabled: options?.enabled !== false && uid != null,
     staleTime: 15 * 1000,
   });
@@ -58,7 +58,7 @@ export function useApprovalStats(options?: { enabled?: boolean }) {
   const client = useApiClient();
   return useQuery({
     queryKey: [...APPROVALS_QUERY_KEY_PREFIX, 'stats'],
-    queryFn: () => getApprovalStats(client),
+    queryFn: ({ signal }) => getApprovalStats(client, { signal }),
     enabled: options?.enabled !== false,
     staleTime: 30 * 1000,
   });

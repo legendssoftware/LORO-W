@@ -24,7 +24,6 @@ import {
 import { ClaimCreateDialog } from '@/app/claims/components/claim-create-dialog';
 import { ClaimExportDialog } from '@/app/claims/components/claim-export-dialog';
 import { ClaimFoldersPanel } from '@/app/claims/components/claim-folders-panel';
-import { ClaimsSummaryCards } from '@/app/claims/components/claims-summary-cards';
 import {
   ClaimsGroupedList,
   ClaimsGroupedListSkeleton,
@@ -215,6 +214,11 @@ export function ClaimsContent() {
     if (uid !== 'all') setViewMode('list');
   }
 
+  function handleOpenGroupClaims(uid: string) {
+    setGroupFilter(uid);
+    setViewMode('list');
+  }
+
   if (!isTokenReady || sessionSyncLoading) {
     return <LoadingSpinner wrapperClassName="py-12" />;
   }
@@ -232,15 +236,6 @@ export function ClaimsContent() {
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             {t('claims.description')}
           </p>
-        </div>
-
-        <div className="mb-6" data-tour="claims-summary">
-          <ClaimsSummaryCards
-            summary={summaryQuery.data}
-            isLoading={summaryQuery.isLoading}
-            activeStatus={statusFilter}
-            onStatusChange={setStatusFilter}
-          />
         </div>
 
         <ClaimsFiltersBar
@@ -301,15 +296,17 @@ export function ClaimsContent() {
           }
         />
 
-        <div data-tour="claims-folders">
-          <ClaimFoldersPanel
-            groups={groups}
-            byGroup={summaryQuery.data?.byGroup}
-            isLoading={groupsQuery.isLoading}
-            activeGroupUid={groupFilter}
-            onSelectGroup={handleSelectGroup}
-          />
-        </div>
+        {viewMode === 'grid' ? (
+          <div data-tour="claims-folders">
+            <ClaimFoldersPanel
+              groups={groups}
+              byGroup={summaryQuery.data?.byGroup}
+              isLoading={groupsQuery.isLoading}
+              activeGroupUid={groupFilter}
+              onSelectGroup={handleOpenGroupClaims}
+            />
+          </div>
+        ) : null}
 
         {statusCode === 403 ? (
           <p className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

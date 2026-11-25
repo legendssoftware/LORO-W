@@ -17,7 +17,8 @@ export interface GetApprovalsParams {
 
 export async function getApprovals(
   client: AxiosInstance,
-  params: GetApprovalsParams = {}
+  params: GetApprovalsParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<ApprovalsListResponse> {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
@@ -30,26 +31,30 @@ export async function getApprovals(
   const qs = search.toString();
   const { data } = await client.get<ApprovalsListResponse>(
     `/approvals${qs ? `?${qs}` : ''}`,
-    { meta: { skipErrorToast: true } }
+    { meta: { skipErrorToast: true }, signal: opts?.signal }
   );
   return data;
 }
 
 export async function getApproval(
   client: AxiosInstance,
-  uid: number
+  uid: number,
+  opts?: { signal?: AbortSignal }
 ): Promise<Approval> {
   const { data } = await client.get<Approval>(`/approvals/${uid}`, {
     meta: { skipErrorToast: true },
+    signal: opts?.signal,
   });
   return data;
 }
 
 export async function getApprovalStats(
-  client: AxiosInstance
+  client: AxiosInstance,
+  opts?: { signal?: AbortSignal }
 ): Promise<ApprovalStatsResponse> {
   const { data } = await client.get<ApprovalStatsResponse>('/approvals/stats', {
     meta: { skipErrorToast: true },
+    signal: opts?.signal,
   });
   return data;
 }

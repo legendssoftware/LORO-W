@@ -21,22 +21,59 @@ import { FALLBACK_COUNTRY_NAMES } from './lib/constants';
 import { selectHasActiveFilters } from './lib/performance-filters';
 import { usePerformanceFilters } from './lib/use-performance-filters';
 import { mapSalespersonChartNames } from './lib/salesperson-names';
+import dynamic from 'next/dynamic';
 import { PerformanceToolbar } from './components/performance-toolbar';
 import { PerformanceFiltersDialog } from './components/performance-filters-dialog';
 import { PerformanceTargetCard } from './components/performance-target-card';
 import { PerformanceGpCard } from './components/performance-gp-card';
-import {
-  PerformanceAreaChartCard,
-  PerformanceBarChartCard,
-  PerformancePieChartCard,
-} from './components/performance-charts';
-import { PerformanceStoreYtdChart } from './components/performance-store-ytd-chart';
-import { PerformanceSalesPaceChart } from './components/performance-sales-pace-chart';
-import { PerformanceSalesPerStoreTable } from './components/performance-sales-per-store-table';
-import { PerformanceDailySalesTable } from './components/performance-daily-sales-table';
-import { PerformanceBranchCategoryTable } from './components/performance-branch-category-table';
-import { PerformanceConsolidatedStatement } from './components/performance-consolidated-statement';
 import { useTranslation } from 'react-i18next';
+
+const PerformanceAreaChartCard = dynamic(
+  () => import('./components/performance-charts').then((m) => m.PerformanceAreaChartCard),
+  { ssr: false },
+);
+const PerformanceBarChartCard = dynamic(
+  () => import('./components/performance-charts').then((m) => m.PerformanceBarChartCard),
+  { ssr: false },
+);
+const PerformancePieChartCard = dynamic(
+  () => import('./components/performance-charts').then((m) => m.PerformancePieChartCard),
+  { ssr: false },
+);
+const PerformanceStoreYtdChart = dynamic(
+  () => import('./components/performance-store-ytd-chart').then((m) => m.PerformanceStoreYtdChart),
+  { ssr: false },
+);
+const PerformanceSalesPaceChart = dynamic(
+  () => import('./components/performance-sales-pace-chart').then((m) => m.PerformanceSalesPaceChart),
+  { ssr: false },
+);
+const PerformanceSalesPerStoreTable = dynamic(
+  () =>
+    import('./components/performance-sales-per-store-table').then(
+      (m) => m.PerformanceSalesPerStoreTable,
+    ),
+  { ssr: false },
+);
+const PerformanceDailySalesTable = dynamic(
+  () =>
+    import('./components/performance-daily-sales-table').then((m) => m.PerformanceDailySalesTable),
+  { ssr: false },
+);
+const PerformanceBranchCategoryTable = dynamic(
+  () =>
+    import('./components/performance-branch-category-table').then(
+      (m) => m.PerformanceBranchCategoryTable,
+    ),
+  { ssr: false },
+);
+const PerformanceConsolidatedStatement = dynamic(
+  () =>
+    import('./components/performance-consolidated-statement').then(
+      (m) => m.PerformanceConsolidatedStatement,
+    ),
+  { ssr: false },
+);
 
 export function PerformanceContent() {
   const { t } = useTranslation('screens');

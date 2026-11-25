@@ -295,13 +295,6 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
         align: 'start',
       },
       {
-        anchor: 'claims-summary',
-        titleKey: 'tours.claims.summary.title',
-        descriptionKey: 'tours.claims.summary.description',
-        side: 'bottom',
-        align: 'center',
-      },
-      {
         anchor: 'claims-toolbar',
         titleKey: 'tours.claims.toolbar.title',
         descriptionKey: 'tours.claims.toolbar.description',
@@ -324,7 +317,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
         align: 'center',
       },
     ],
-    { required: ['claims-page-header', 'claims-summary', 'claims-toolbar', 'claims-list'] },
+    { required: ['claims-page-header', 'claims-toolbar', 'claims-list'] },
   ),
   '/iot': defineTour(
     '/iot',

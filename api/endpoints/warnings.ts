@@ -13,10 +13,12 @@ import type {
  */
 export async function getUserWarnings(
   client: AxiosInstance,
-  userRef: string | number
+  userRef: string | number,
+  opts?: { signal?: AbortSignal }
 ): Promise<UserWarningsResponse> {
   const { data } = await client.get<UserWarningsResponse>(
-    `/warnings/user/${userRef}`
+    `/warnings/user/${userRef}`,
+    { signal: opts?.signal }
   );
   return data;
 }
@@ -80,7 +82,8 @@ export interface GetWarningsParams {
 /** GET /warnings — organisation inbox. */
 export async function getWarnings(
   client: AxiosInstance,
-  params: GetWarningsParams = {}
+  params: GetWarningsParams = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<{ warnings: WarningRecord[]; message?: string }> {
   const search = new URLSearchParams();
   if (params.status) search.set('status', params.status);
@@ -92,7 +95,7 @@ export async function getWarnings(
   const { data } = await client.get<
     | WarningRecord[]
     | { warnings?: WarningRecord[]; data?: WarningRecord[] | { warnings?: WarningRecord[] } }
-  >(`/warnings${qs ? `?${qs}` : ''}`);
+  >(`/warnings${qs ? `?${qs}` : ''}`, { signal: opts?.signal });
   return { warnings: normalizeWarningsList(data as UserWarningsResponse) };
 }
 
