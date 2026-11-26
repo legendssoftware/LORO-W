@@ -106,3 +106,15 @@ export function formatAttendanceClockTime12h(
   const zone = orgTimezone?.trim() || DEFAULT_ORG_TIMEZONE;
   return formatInTimeZone(instant, zone, 'h:mm a');
 }
+
+/** Format check-in/out date in org wall clock using a date-fns pattern (e.g. "yyyy-MM-dd"). */
+export function formatAttendanceClockDate(
+  value: string | Date | null | undefined,
+  pattern: string,
+  orgTimezone?: string | null,
+): string {
+  const instant = parseAttendanceInstant(value, orgTimezone);
+  if (!instant) return '';
+  const zone = orgTimezone?.trim() || DEFAULT_ORG_TIMEZONE;
+  return formatInTimeZone(instant, zone, pattern);
+}

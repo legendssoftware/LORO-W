@@ -6,9 +6,27 @@ export type VehicleSizeClass =
   | 'suv'
   | 'bakkie'
   | 'van'
+  | 'truck'
   | 'other';
 
 export type FuelType = 'petrol' | 'diesel';
+
+export type VehicleDesignation =
+  | 'local_delivery'
+  | 'hauling'
+  | 'cross_border'
+  | 'inter_branch'
+  | 'collection'
+  | 'other';
+
+export const VEHICLE_DESIGNATION_LABELS: Record<VehicleDesignation, string> = {
+  local_delivery: 'Local delivery',
+  hauling: 'Hauling',
+  cross_border: 'Cross-border',
+  inter_branch: 'Inter-branch',
+  collection: 'Collection',
+  other: 'Other',
+};
 
 export interface AssetRecord {
   uid: number;
@@ -22,6 +40,20 @@ export interface AssetRecord {
   fuelType?: FuelType | null;
   ratedKmPerLitre?: number | null;
   tankCapacityLitres?: number | null;
+  /** Rated payload capacity in kilograms (delivery trucks). */
+  tonnageKg?: number | null;
+  /** Operational designation for fleet vehicles (local_delivery, hauling, cross_border, etc.). */
+  vehicleDesignation?: VehicleDesignation | null;
+  /** Unladen / tare weight in kg. */
+  tareWeightKg?: number | null;
+  /** Gross vehicle mass (GVM) in kg. */
+  grossVehicleMassKg?: number | null;
+  /** Usable cargo deck volume in cubic metres. */
+  cargoVolumeM3?: number | null;
+  /** Maximum standard pallets. */
+  maxPalletCapacity?: number | null;
+  /** Number of axles. */
+  axleCount?: number | null;
   registrationPlate?: string | null;
   purchaseDate?: string;
   hasInsurance?: boolean;
@@ -60,6 +92,13 @@ export interface CreateAssetPayload {
   fuelType?: FuelType;
   ratedKmPerLitre?: number;
   tankCapacityLitres?: number;
+  tonnageKg?: number;
+  vehicleDesignation?: VehicleDesignation;
+  tareWeightKg?: number;
+  grossVehicleMassKg?: number;
+  cargoVolumeM3?: number;
+  maxPalletCapacity?: number;
+  axleCount?: number;
   registrationPlate?: string;
   purchaseDate: string;
   hasInsurance: boolean;

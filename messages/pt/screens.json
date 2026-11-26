@@ -91,6 +91,7 @@
     "breakStarted": "Pausa iniciada",
     "breakEnded": "Pausa terminada",
     "couldNotSavePulse": "Não foi possível guardar o pulso. Tente novamente.",
+    "couldNotStartShift": "Não foi possível iniciar o turno. Tente novamente.",
     "attendance": {
       "startYourShift": "Inicie o seu turno",
       "readyToStart": "Pronto para começar",
@@ -104,6 +105,7 @@
       "retryLocation": "Tentar localização novamente",
       "pickOptionApplies": "Escolha a opção aplicável.",
       "outsideBranchRadius": "Está fora do raio de registo de entrada do escritório.",
+      "offsiteNotAllowed": "Não está autorizado a trabalhar a partir de casa. Tem de ir ao escritório para iniciar o turno.",
       "title": "Assiduidade",
       "month": "Mês",
       "noData": "Sem dados de assiduidade para este mês.",
@@ -992,11 +994,11 @@
     "leave": {
       "header": {
         "title": "Férias",
-        "description": "Peça tempo de folga, filtre a caixa de entrada e aprove, rejeite ou cancele um pedido."
+        "description": "Peça tempo de folga, filtre a caixa de entrada e depois aprove, rejeite ou cancele um pedido."
       },
       "actions": {
         "title": "Pedir férias",
-        "description": "Clique em Pedir férias. Escolha o tipo, as datas e envie para decisão."
+        "description": "Clique em Pedir férias. Escolha o tipo e as datas e envie para decisão."
       },
       "filters": {
         "title": "Filtrar a caixa de entrada",
@@ -1200,15 +1202,15 @@
     "approvals": {
       "header": {
         "title": "Aprovações",
-        "description": "Reveja pedidos pendentes, inspecione formulários de admissão e aprove ou rejeite na web."
+        "description": "Filtre por estado ou tipo, registe um pedido geral com Novo pedido e abra um cartão para aprovar ou rejeitar. Os formulários de admissão abrem no mesmo cartão; ao aprovar, disparam-se webhooks de saída."
       },
       "toolbar": {
-        "title": "Filtrar e registar um pedido",
-        "description": "Pesquise por título ou referência e filtre por estado ou tipo. Novo pedido cria um pedido geral. Os meus pedidos carrega os que submeteu."
+        "title": "Filtrar e Novo pedido",
+        "description": "Filtre por estado ou tipo. Novo pedido cria uma aprovação geral. Os meus pedidos mostra os que submeteu."
       },
       "list": {
-        "title": "Abrir um pedido",
-        "description": "Clique num cartão para o aprovar ou rejeitar. Os formulários de admissão abrem no mesmo cartão."
+        "title": "Abrir um cartão",
+        "description": "Abra um cartão para aprovar ou rejeitar. Os formulários de admissão abrem no mesmo cartão. Ao aprovar, disparam-se webhooks de saída."
       }
     },
     "payslips": {
@@ -1264,7 +1266,7 @@
     "deliveries": {
       "header": {
         "title": "Entregas",
-        "description": "Atribua uma encomenda de vendas ERP aberta a um motorista. A prova de entrega assinada aparece aqui quando o motorista regista a paragem."
+        "description": "Atribua uma encomenda de vendas ERP aberta a um motorista, filtre a lista e abra uma linha para a rota e a prova de entrega."
       },
       "toolbar": {
         "title": "Filtrar entregas",
@@ -1272,11 +1274,11 @@
       },
       "assign": {
         "title": "Atribuir entrega",
-        "description": "Clique em Atribuir entrega. Escolha uma encomenda de vendas aberta e o motorista que fará a paragem."
+        "description": "Clique em Atribuir entrega. Escolha uma encomenda de vendas ERP aberta e o motorista que fará a paragem."
       },
       "list": {
         "title": "Abrir uma entrega",
-        "description": "Clique numa linha para a rota, a avaliação e a prova de entrega assinada."
+        "description": "Clique numa linha para a rota e a prova de entrega assinada (POD)."
       }
     },
     "store-operations": {
@@ -2677,6 +2679,19 @@
         "summaryAttended": "Presentes",
         "summaryRemaining": "Restantes",
         "summaryForgottenOuts": "Saídas esquecidas",
+        "exportExcel": "Exportar Excel",
+        "exportExcelNoRows": "Sem entradas para exportar neste período.",
+        "exportExcelFailed": "Não foi possível exportar a assiduidade para Excel.",
+        "exportExcelSuccess": "{{count}} turnos exportados para Excel.",
+        "exportSheetName": "Assiduidade",
+        "exportEmployee": "Colaborador",
+        "exportBranch": "Filial",
+        "exportDate": "Data",
+        "exportClockInTime": "Hora de entrada",
+        "exportClockInLocation": "Local de entrada",
+        "exportClockOutTime": "Hora de saída",
+        "exportClockOutLocation": "Local de saída",
+        "exportShiftDuration": "Duração do turno",
         "dailyOverview": "Resumo diário {{date}}: {{present}} presentes, {{absent}} ausentes, {{rate}}% de assiduidade.",
         "dailyOverviewLoading": "O resumo diário carrega com a lista de pessoal.",
         "reports": "Relatórios",

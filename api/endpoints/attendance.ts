@@ -121,7 +121,8 @@ export async function checkIn(
     client: AxiosInstance,
     body: CheckInBody
 ): Promise<unknown> {
-    const { data } = await client.post("/att/in", body);
+    // The dashboard shows its own (translated) error toast, so skip the generic one.
+    const { data } = await client.post("/att/in", body, { meta: { skipErrorToast: true } });
     return data;
 }
 

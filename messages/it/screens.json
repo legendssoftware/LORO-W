@@ -91,6 +91,7 @@
     "breakStarted": "Pausa iniziata",
     "breakEnded": "Pausa terminata",
     "couldNotSavePulse": "Impossibile salvare il tuo stato. Riprova.",
+    "couldNotStartShift": "Impossibile iniziare il turno. Riprova.",
     "attendance": {
       "startYourShift": "Inizia il tuo turno",
       "readyToStart": "Pronto per iniziare",
@@ -104,6 +105,7 @@
       "retryLocation": "Riprova posizione",
       "pickOptionApplies": "Scegli l'opzione appropriata.",
       "outsideBranchRadius": "Ti trovi fuori dal raggio di check-in dell'ufficio.",
+      "offsiteNotAllowed": "Non ti è consentito lavorare da casa. Devi recarti in ufficio per iniziare il turno.",
       "title": "Presenze",
       "month": "Mese",
       "noData": "Nessun dato di presenze per questo mese.",
@@ -992,11 +994,11 @@
     "leave": {
       "header": {
         "title": "Ferie",
-        "description": "Richiedi ferie, filtra la posta in arrivo e approva, rifiuta o annulla una richiesta."
+        "description": "Richiedi ferie, filtra la posta in arrivo, poi approva, rifiuta o annulla una richiesta."
       },
       "actions": {
         "title": "Richiedi ferie",
-        "description": "Clicca Richiedi ferie. Scegli il tipo, le date e invia per una decisione."
+        "description": "Clicca Richiedi ferie. Scegli il tipo e le date, poi invia per una decisione."
       },
       "filters": {
         "title": "Filtra la posta in arrivo",
@@ -1200,15 +1202,15 @@
     "approvals": {
       "header": {
         "title": "Approvazioni",
-        "description": "Rivedi le richieste in sospeso, esamina i moduli di assunzione e approva o rifiuta dal web."
+        "description": "Filtra per stato o tipo, presenta una richiesta generica con Nuova richiesta, poi apri una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda; all'approvazione partono i webhook in uscita."
       },
       "toolbar": {
-        "title": "Filtra e presenta una richiesta",
-        "description": "Cerca per titolo o riferimento, poi filtra per stato o tipo. Nuova richiesta presenta una richiesta generica. Le mie richieste carica quelle che hai inviato."
+        "title": "Filtra e Nuova richiesta",
+        "description": "Filtra per stato o tipo. Nuova richiesta presenta un'approvazione generica. Le mie richieste mostra quelle che hai inviato."
       },
       "list": {
-        "title": "Apri una richiesta",
-        "description": "Clicca una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda."
+        "title": "Apri una scheda",
+        "description": "Apri una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda. All'approvazione partono i webhook in uscita."
       }
     },
     "payslips": {
@@ -1264,7 +1266,7 @@
     "deliveries": {
       "header": {
         "title": "Consegne",
-        "description": "Assegna un ordine di vendita ERP aperto a un autista. La prova di consegna firmata appare qui una volta che l'autista registra la fermata."
+        "description": "Assegna un ordine di vendita ERP aperto a un autista, filtra l'elenco, poi apri una riga per il percorso e la prova di consegna."
       },
       "toolbar": {
         "title": "Filtra consegne",
@@ -1272,11 +1274,11 @@
       },
       "assign": {
         "title": "Assegna consegna",
-        "description": "Clicca Assegna consegna. Scegli un ordine di vendita aperto e l'autista che effettuerà la fermata."
+        "description": "Clicca Assegna consegna. Scegli un ordine di vendita ERP aperto e l'autista che effettuerà la fermata."
       },
       "list": {
         "title": "Apri una consegna",
-        "description": "Clicca una riga per il percorso, la valutazione e la prova di consegna firmata."
+        "description": "Clicca una riga per il percorso e la prova di consegna firmata (POD)."
       }
     },
     "store-operations": {
@@ -2677,6 +2679,19 @@
         "summaryAttended": "Presenti",
         "summaryRemaining": "Rimanenti",
         "summaryForgottenOuts": "Uscite dimenticate",
+        "exportExcel": "Esporta Excel",
+        "exportExcelNoRows": "Nessuna entrata da esportare per questo periodo.",
+        "exportExcelFailed": "Impossibile esportare le presenze in Excel.",
+        "exportExcelSuccess": "{{count}} turni esportati in Excel.",
+        "exportSheetName": "Presenze",
+        "exportEmployee": "Dipendente",
+        "exportBranch": "Filiale",
+        "exportDate": "Data",
+        "exportClockInTime": "Ora di entrata",
+        "exportClockInLocation": "Luogo di entrata",
+        "exportClockOutTime": "Ora di uscita",
+        "exportClockOutLocation": "Luogo di uscita",
+        "exportShiftDuration": "Durata del turno",
         "dailyOverview": "Riepilogo giornaliero {{date}}: {{present}} presenti, {{absent}} assenti, {{rate}}% di presenza.",
         "dailyOverviewLoading": "Il riepilogo giornaliero si carica con l elenco del personale.",
         "reports": "Report",

@@ -91,4 +91,40 @@ describe('greenfield opportunity labels', () => {
     expect(zones).toHaveLength(1);
     expect(zones[0]?.label).toBe('Opportunity 1');
   });
+
+  it('returns opportunity zones when ignoreBranchSeparation is enabled near an existing branch', () => {
+    const branch: MapMarkerBase = {
+      id: 'branch-mafikeng',
+      name: 'Mahikeng Branch',
+      position: [-25.856, 25.64],
+      latitude: -25.856,
+      longitude: 25.64,
+      markerType: 'branch',
+      address: { city: 'Mahikeng' },
+    };
+    const competitors = [
+      competitor('m1', -25.862, 25.642, { city: 'Mahikeng' }),
+      competitor('m2', -25.865, 25.644, { city: 'Mahikeng' }),
+    ];
+    const strictSettings = {
+      ...DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+      minBranchSeparationKm: 10,
+    };
+
+    expect(
+      computeGreenfieldZones([branch], competitors, [], strictSettings),
+    ).toHaveLength(0);
+
+    const relaxed = computeGreenfieldZones(
+      [branch],
+      competitors,
+      [],
+      strictSettings,
+      undefined,
+      undefined,
+      { ignoreBranchSeparation: true },
+    );
+    expect(relaxed).toHaveLength(1);
+    expect(relaxed[0]?.label).toBe('Mahikeng New Branch');
+  });
 });

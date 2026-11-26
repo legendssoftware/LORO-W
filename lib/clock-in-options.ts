@@ -34,6 +34,12 @@ export const CLOCK_IN_OPTION_DISPLAY_KEYS: Record<ClockInOptionKey, string> = {
 /** When API omits outsideBranchRadiusMessage (older server). */
 export const OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY = 'dashboard.attendance.outsideBranchRadius';
 
+/** Error code returned by POST /att/in when a restricted user picks a remote clock-in mode. */
+export const OFFSITE_NOT_ALLOWED_CODE = 'OFFSITE_NOT_ALLOWED';
+
+/** Fallback copy (i18n key) when the server omits the message for an offsite-blocked user. */
+export const OFFSITE_NOT_ALLOWED_MESSAGE_KEY = 'dashboard.attendance.offsiteNotAllowed';
+
 /** Shown when location context could not be loaded (generic fallback). */
 export const LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY = 'dashboard.locationContext.missingContext';
 
@@ -79,6 +85,39 @@ export function isLocationContextUnavailable(
   return !loading && ctx == null;
 }
 
+/** Mirrors server `canClockInOffsite`; the server remains the source of truth. */
+const OFFSITE_ACCESS_LEVELS: ReadonlySet<string> = new Set([
+  'owner',
+  'admin',
+  'manager',
+  'executive',
+  'developer',
+  'support',
+  'hr',
+]);
+const OFFSITE_WORKFORCE_TYPES: ReadonlySet<string> = new Set([
+  'driver',
+  'field_employee',
+  'external_sales',
+  'security',
+]);
+
+export function canClockInOffsite(
+  user: { accessLevel?: string | null; workforceType?: string | null } | null | undefined,
+): boolean {
+  if (!user) return false;
+  const level = user.accessLevel?.toLowerCase().trim() ?? '';
+  const workforce = user.workforceType?.toLowerCase().trim() ?? '';
+  return OFFSITE_ACCESS_LEVELS.has(level) || OFFSITE_WORKFORCE_TYPES.has(workforce);
+}
+
+/** User is outside the office radius and not allowed to work remotely: hide buttons, show message. */
+export function isOffsiteBlockedContext(
+  ctx: { offsiteClockInBlocked?: boolean } | null | undefined,
+): boolean {
+  return ctx?.offsiteClockInBlocked === true;
+}
+
 export function isAtOfficeOnlyContext(
   ctx: { availableClockInOptions?: ClockInOptionKey[] } | null | undefined,
 ): boolean {
@@ -87,11 +126,14 @@ export function isAtOfficeOnlyContext(
 }
 
 export function remoteOptionKeysFromContext(
-  ctx: { availableClockInOptions?: ClockInOptionKey[] } | null | undefined,
+  ctx: { availableClockInOptions?: ClockInOptionKey[]; offsiteClockInBlocked?: boolean } | null | undefined,
+  /** Whether the fallback remote list may be shown when context is unavailable (exempt users only). */
+  allowFallback = true,
 ): ClockInOptionKey[] {
+  if (isOffsiteBlockedContext(ctx)) return [];
   const fromServer = (ctx?.availableClockInOptions ?? []).filter((k) => k !== 'at_office');
   if (fromServer.length > 0) return fromServer;
-  if (ctx == null) return [...FALLBACK_REMOTE_CLOCK_IN_OPTION_KEYS];
+  if (ctx == null && allowFallback) return [...FALLBACK_REMOTE_CLOCK_IN_OPTION_KEYS];
   return [];
 }
 

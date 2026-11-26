@@ -21,14 +21,19 @@ import { getOrganisationSettings } from '@/api/endpoints/organisation';
 import type { AttCheckInContext } from '@/api/types/attendance';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { showErrorToast, showSuccessToast } from '@/lib/utils/toast-helpers';
-import { getQueryErrorMessage } from '@/lib/api/query-error';
+import { getApiError, getQueryErrorMessage } from '@/lib/api/query-error';
 import { AttendanceStatusButton } from '@/components/attendance-status-button';
 import { AttendanceMonthHighlights, AttendanceStreakCalendar } from '@/components/attendance-streak-calendar';
 import { HomePrrBenefits } from '@/components/home-prr-benefits';
 import { UserAttendanceRecordsModal } from '@/app/staff/components/user-attendance-records-modal';
 import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
-import { locationContextFailureMessageKey } from '@/lib/clock-in-options';
+import {
+  canClockInOffsite,
+  locationContextFailureMessageKey,
+  OFFSITE_NOT_ALLOWED_CODE,
+  OFFSITE_NOT_ALLOWED_MESSAGE_KEY,
+} from '@/lib/clock-in-options';
 import { getBrowserPosition, geolocationFailureMessageKey } from '@/lib/browser-geolocation';
 import { isClientMode } from '@/lib/user-mode';
 import { appPageMainClass, appPageScrollWrapClass } from '@/lib/page-shell';
@@ -144,13 +149,14 @@ export function DashboardContent() {
         lng: position.lng,
       });
       const ctx = data.checkInContext;
-      if (ctx?.availableClockInOptions?.length) {
+      if (ctx?.availableClockInOptions?.length || ctx?.offsiteClockInBlocked) {
         setClockInContext({
           withinBranchRadius: ctx.withinBranchRadius,
-          availableClockInOptions: ctx.availableClockInOptions,
+          availableClockInOptions: ctx.availableClockInOptions ?? [],
           radiusMeters: ctx.radiusMeters ?? 50,
           distanceFromBranchMeters: ctx.distanceFromBranchMeters ?? null,
           outsideBranchRadiusMessage: ctx.outsideBranchRadiusMessage ?? null,
+          offsiteClockInBlocked: ctx.offsiteClockInBlocked === true,
         });
         setClockInContextError(null);
       } else {
@@ -233,6 +239,14 @@ export function DashboardContent() {
       {
         onSuccess: () => {
           showSuccessToast(t('dashboard.shiftStarted'), toast);
+        },
+        onError: (error) => {
+          // The server sends this rule in English; show the user's language instead.
+          const message =
+            getApiError(error)?.code === OFFSITE_NOT_ALLOWED_CODE
+              ? t(OFFSITE_NOT_ALLOWED_MESSAGE_KEY)
+              : getQueryErrorMessage(error, t('dashboard.couldNotStartShift'));
+          showErrorToast(message, toast);
         },
       }
     );
@@ -394,6 +408,7 @@ export function DashboardContent() {
               clockInContextLoading={clockInContextLoading}
               clockInContextError={clockInContextError}
               onRetryClockInContext={() => void refreshClockInContext()}
+              allowFallbackRemoteOptions={canClockInOffsite(profile)}
               onCheckOut={handleCheckOut}
               onStartBreak={handleStartBreak}
               onEndBreak={handleEndBreak}

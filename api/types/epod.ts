@@ -4,6 +4,17 @@ export const DELIVERY_STATUSES = ['assigned', 'in_progress', 'recorded', 'cancel
 
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
 
+export const DELIVERY_KINDS = [
+  'branch_to_branch',
+  'branch_to_customer',
+  'hq_to_customer',
+  'branch_to_hq',
+  'customer_to_branch',
+  'customer_to_hq',
+] as const;
+
+export type DeliveryKind = (typeof DELIVERY_KINDS)[number];
+
 export const DELIVERY_EXCEPTIONS = ['none', 'short_quantity', 'damaged', 'customer_rejected'] as const;
 
 export type DeliveryException = (typeof DELIVERY_EXCEPTIONS)[number];
@@ -81,6 +92,8 @@ export interface DeliveryItem {
   name: string;
   orderedQty: number;
   deliveredQty: number;
+  unitWeightKg?: number | null;
+  lineWeightKg?: number | null;
 }
 
 export interface DeliveryMedia {
@@ -120,8 +133,12 @@ export interface DeliverySummary {
   salesPersonCode: string | null;
   /** ERP salesperson name snapped at assign. */
   salesPersonName: string | null;
-  /** Registration plates of the driver's vehicles. Null when none are assigned. */
+  /** Registration plates of the assigned truck (or driver vehicles). Null when none. */
   truckRegistration: string | null;
+  /** Fleet vehicle asset uid assigned at dispatch. Null on older deliveries. */
+  vehicleAssetUid: number | null;
+  /** Litres filled when the truck left / was dispatched. Null on older deliveries. */
+  departureFuelLitres: number | null;
   clientName: string;
   clientAddress: string;
   contactName: string;
@@ -137,13 +154,32 @@ export interface DeliverySummary {
   stopSequence: number | null;
   estimatedWindowStart: string | null;
   estimatedWindowEnd: string | null;
+  /** True after dispatch checked this invoice on the warehouse load checklist. */
+  loadedChecked: boolean;
+  /** GL code for China invoices that need delivery with GL. */
+  glCode: string | null;
+  /** Transfer type: branch_to_branch | branch_to_customer | hq_to_customer | branch_to_hq | customer_to_branch | customer_to_hq */
+  deliveryKind: DeliveryKind;
+  /** Total invoice / delivery weight in kg. */
+  totalWeightKg?: number | null;
+  /** True when BIT disclaimer was accepted at assign. */
+  bitDisclaimerAccepted: boolean;
+  /** True when customs-to-BIT was flagged at assign. */
+  customsToBit: boolean;
+  /** True after warehouse confirmed credit note passed. */
+  creditNotePassed: boolean;
+  /** True after warehouse confirmed GRV done. */
+  grvDone: boolean;
   /** True after dispatch Marks loaded (warehouse load ack). */
   routeReady: boolean;
+  /** True after dispatch accepted a planned route stop order. */
+  routePlanned?: boolean;
   /** True after the driver starts the route. */
   routeDeparted: boolean;
   /** True after the driver signed for pickup at the warehouse. */
   routePickupAcknowledged: boolean;
   routeReadyAt?: string | null;
+  routePlannedAt?: string | null;
   routePickupAcknowledgedAt?: string | null;
   routePickupSignatureUrl?: string | null;
 }
@@ -178,6 +214,24 @@ export interface CancelDeliveryBody {
   note?: string;
 }
 
+/** PATCH /epod/deliveries/:uid/reassign — moves one open invoice to another truck/driver/route. */
+export interface ReassignDeliveryBody {
+  vehicleAssetUid: number;
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  departureFuelLitres?: number;
+  stopSequence?: number;
+}
+
+/** Anonymized pin on the public tracking map. No client name or address. */
+export interface PublicRouteStop {
+  stopNumber: number;
+  latitude: number;
+  longitude: number;
+  isCurrent: boolean;
+}
+
 export interface PublicDelivery {
   status: DeliveryStatus;
   statusLabel: string;
@@ -192,6 +246,8 @@ export interface PublicDelivery {
   scheduledDate: string;
   estimatedWindowStart: string | null;
   estimatedWindowEnd: string | null;
+  /** Numbered route pins. Other stops have no client identity. */
+  routeStops: PublicRouteStop[];
 }
 
 export interface SubmitDeliveryRatingBody {
@@ -231,22 +287,120 @@ export interface AssignableOrder {
   status: string;
   clientName: string;
   itemCount: number;
+  weightKg?: number | null;
+  glCode?: string | null;
+  assignedDeliveryUid?: number | null;
+  assignedDeliveryNumber?: string | null;
+  assignedTruckRegistration?: string | null;
+  assignedRouteCode?: string | null;
 }
 
 export interface CreateDeliveryBody {
   docNumber: string;
   store: string;
+  /** Fleet vehicle (asset) uid for this delivery truck. */
+  vehicleAssetUid: number;
+  /** Litres of fuel filled when the truck left / was dispatched. */
+  departureFuelLitres: number;
   driverUid: number;
   routeCode: string;
   scheduledDate: string;
   /** Stop number on the route. Omit it to let Google order the stops. */
   stopSequence?: number;
+  /** GL code for China invoices that need delivery with GL. */
+  glCode?: string;
+  /** standard | ibt | bit. Defaults to standard. */
+  deliveryKind?: DeliveryKind;
+  /** Required when deliveryKind is bit. */
+  bitDisclaimerAccepted?: boolean;
+  /** Optional when deliveryKind is bit. */
+  customsToBit?: boolean;
+}
+
+export interface CreateDeliveryOrderRef {
+  docNumber: string;
+  store: string;
+  stopSequence?: number;
+  glCode?: string;
+  deliveryKind?: DeliveryKind;
+  bitDisclaimerAccepted?: boolean;
+  customsToBit?: boolean;
+}
+
+/** POST /epod/deliveries/batch — up to 20 orders on one truck/route. */
+export interface CreateDeliveriesBatchBody {
+  orders: CreateDeliveryOrderRef[];
+  vehicleAssetUid: number;
+  departureFuelLitres: number;
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  glCode?: string;
+  deliveryKind?: DeliveryKind;
+  bitDisclaimerAccepted?: boolean;
+  customsToBit?: boolean;
+}
+
+export interface CreateDeliveriesBatchResponse {
+  deliveries: DeliveryDetail[];
+  truckTonnageKg: number | null;
+  routeStopCount: number;
+}
+
+/** Soft max matching server MAX_ORDERS_PER_ROUTE. */
+export const MAX_ORDERS_PER_ROUTE = 20;
+
+export interface ReadyRouteDeliveryFlags {
+  uid: number;
+  creditNotePassed?: boolean;
+  grvDone?: boolean;
 }
 
 export interface ReadyRouteBody {
   driverUid: number;
   routeCode: string;
   scheduledDate: string;
+  /** Checked invoice/stop uids. When sent, every open stop must be included or already loadedChecked. */
+  deliveryUids?: number[];
+  /** Route-level: set creditNotePassed on scoped stops. */
+  creditNotePassed?: boolean;
+  /** Route-level: set grvDone on scoped stops. */
+  grvDone?: boolean;
+  /** Per-invoice credit-note / GRV overrides. */
+  deliveryFlags?: ReadyRouteDeliveryFlags[];
+}
+
+/** POST /epod/routes/plan — Google Directions optimize preview. */
+export interface PlanRouteBody {
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+}
+
+export interface PlannedRouteStop {
+  deliveryUid: number;
+  stopSequence: number;
+  clientName: string;
+  clientAddress: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface PlannedRouteResponse {
+  stops: PlannedRouteStop[];
+}
+
+export interface AcceptRoutePlanStop {
+  deliveryUid: number;
+  stopSequence: number;
+}
+
+/** POST /epod/routes/plan/accept — persist stopSequence from a proposed plan. */
+export interface AcceptRoutePlanBody {
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  stops: AcceptRoutePlanStop[];
 }
 
 export interface DeliveryPdfResponse {

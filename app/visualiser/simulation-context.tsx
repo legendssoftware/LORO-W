@@ -26,6 +26,16 @@ export interface SimulationRunFilters {
   areaLabel?: string;
 }
 
+export interface SimulationRegionFocus {
+  /** Geographic bounds [[minLng, minLat], [maxLng, maxLat]] when markers exist in the area. */
+  bounds?: [[number, number], [number, number]];
+  /** Fallback center [lng, lat] when focusing a single point or geocoded place. */
+  center?: [number, number];
+  zoom?: number;
+  label: string;
+  focusKey: string;
+}
+
 export interface VisualiserSimulationState {
   result: SiteOpportunityResult | null;
   selectedZoneId: string | null;
@@ -41,6 +51,8 @@ export interface VisualiserSimulationState {
   runFilters: SimulationRunFilters | null;
   /** Brand turnover overrides applied on the last successful run. */
   runTurnoverOverrides: TurnoverOverrideSettings | null;
+  /** Region viewport requested by typing/selecting an area in the simulation modal. */
+  regionFocus: SimulationRegionFocus | null;
 }
 
 interface VisualiserSimulationContextValue extends VisualiserSimulationState {
@@ -55,6 +67,7 @@ interface VisualiserSimulationContextValue extends VisualiserSimulationState {
     },
   ) => void;
   selectZone: (zoneId: string | null) => void;
+  focusRegion: (target: SimulationRegionFocus | null) => void;
   clearSimulation: () => void;
   openPanel: (mode?: SimulationPanelMode) => void;
   closePanel: () => void;
@@ -78,6 +91,7 @@ const EMPTY: VisualiserSimulationState = {
   runMarkers: [],
   runFilters: null,
   runTurnoverOverrides: null,
+  regionFocus: null,
 };
 
 export function VisualiserSimulationProvider({ children }: { children: ReactNode }) {
@@ -121,6 +135,10 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
     setState((prev) => ({ ...prev, selectedZoneId: zoneId }));
   }, []);
 
+  const focusRegion = useCallback((target: SimulationRegionFocus | null) => {
+    setState((prev) => ({ ...prev, regionFocus: target }));
+  }, []);
+
   const clearSimulation = useCallback(() => {
     setState((prev) => ({
       ...EMPTY,
@@ -130,11 +148,11 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
   }, []);
 
   const openPanel = useCallback((_mode: SimulationPanelMode = 'configure') => {
-    setState((prev) => ({
-      ...prev,
+    setState({
+      ...EMPTY,
       panelOpen: true,
       panelMode: 'configure',
-    }));
+    });
   }, []);
 
   const closePanel = useCallback(() => {
@@ -160,6 +178,7 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
       ...state,
       setSimulationResult,
       selectZone,
+      focusRegion,
       clearSimulation,
       openPanel,
       closePanel,
@@ -171,6 +190,7 @@ export function VisualiserSimulationProvider({ children }: { children: ReactNode
       state,
       setSimulationResult,
       selectZone,
+      focusRegion,
       clearSimulation,
       openPanel,
       closePanel,

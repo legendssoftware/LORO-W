@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -42,15 +49,16 @@ import { useTokenReady } from '@/api/hooks/use-token-ready';
 import { geocodePlace } from '@/api/endpoints/geocode-place';
 import { patchUserPreferences } from '@/api/endpoints/user';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  useCompetitorsMapData,
-  useCompetitorsMissingGeocode,
-} from '@/api/hooks/use-competitors-map-data';
+import { useCompetitorsMapData } from '@/api/hooks/use-competitors-map-data';
+import { useBulkUpdateCompetitorsMutation } from '@/api/hooks/use-competitors';
 import { useStoresSales } from '@/api/hooks/use-stores-sales';
-import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
+import {
+  useVisualiserSimulation,
+  type SimulationRegionFocus,
+} from '@/app/visualiser/simulation-context';
+import type { MapMarkerBase } from '@/api/types/map';
 import { CompetitorsBreakdownChart } from '@/app/visualiser/components/competitors-breakdown-chart';
 import { CompetitorsDetailModalButton } from '@/app/visualiser/components/competitors-detail-modal';
-import { MissingCompetitorsList } from '@/app/visualiser/components/missing-competitors-list';
 import { SimulationTrendChart } from '@/app/visualiser/components/simulation-trend-chart';
 import { ZoneExplainAiButton } from '@/app/visualiser/components/zone-explain-ai-button';
 import { StoreFormatSuggestionCard } from '@/app/visualiser/components/store-format-suggestion';
@@ -58,6 +66,8 @@ import { ExportSimulationButton } from '@/app/visualiser/components/export-simul
 import { SimulationAreaInput } from '@/app/visualiser/components/simulation-area-input';
 import {
   DEFAULT_SITE_OPPORTUNITY_SETTINGS,
+  type BranchCatchmentOpportunity,
+  type GreenfieldOpportunityZone,
   type HardwareBrandKey,
   type SiteOpportunityMode,
   type SiteOpportunitySettings,
@@ -65,13 +75,25 @@ import {
   type TurnoverOverrideSettings,
 } from '@/api/types/site-opportunity';
 import { getSiteOpportunities } from '@/api/endpoints/reports-site-opportunities';
+import {
+  computeSiteOpportunities,
+  dedupeNearbyGreenfield,
+} from '@/lib/site-opportunity/compute/engine';
+import {
+  haversineMeters,
+  markerToPoint,
+} from '@/lib/site-opportunity/compute/geo';
+import {
+  SA_PROVINCES,
+  parseCountryAllowlist,
+} from '@/lib/utils/marker-geo-resolve';
 import { buildOpportunityMarkers } from '@/lib/site-opportunity/build-opportunity-markers';
 import { enrichCatchmentsWithDashboardRevenue } from '@/lib/site-opportunity/enrich-catchment-revenue';
 import { applyTurnoverOverridesToZone } from '@/lib/site-opportunity/apply-turnover-overrides';
 import {
-  AREA_GEOCODE_RADIUS_KM,
   filterMarkersByArea,
   filterMarkersNearPoint,
+  filterZonesNearPoint,
   getAreaSuggestions,
 } from '@/lib/site-opportunity/map-marker-filters';
 import {
@@ -96,7 +118,10 @@ import {
   suggestBitDrywallStoreFormat,
 } from '@/lib/site-opportunity/bitdrywall-store-formats';
 import { matureShareByCompetition } from '@/lib/site-opportunity/compute/capture-phases';
-import { HARDWARE_TURNOVER_ZAR } from '@/lib/site-opportunity/compute/brands';
+import {
+  HARDWARE_TURNOVER_ZAR,
+  resolveHardwareBrand,
+} from '@/lib/site-opportunity/compute/brands';
 import { listCompetitorsInZone } from '@/lib/site-opportunity/zone-competitors';
 import {
   resolveVisualiserPreferences,
@@ -166,6 +191,115 @@ function formatVariancePct(pct: number | null | undefined): string {
   if (pct == null || !Number.isFinite(pct)) return '—';
   const sign = pct > 0 ? '+' : '';
   return `${sign}${pct.toFixed(0)}%`;
+}
+
+function isBroadAdminRegion(area: string): boolean {
+  const trimmed = area.trim();
+  if (!trimmed) return false;
+  if (parseCountryAllowlist(trimmed)) return true;
+  const lower = trimmed.toLowerCase();
+  return SA_PROVINCES.some((province) => province.toLowerCase() === lower);
+}
+
+function buildRegionFocusFromCenterRadius(
+  center: { lat: number; lng: number },
+  radiusMeters: number,
+  label: string,
+): SimulationRegionFocus {
+  const effectiveRadius = Math.max(1_000, radiusMeters);
+  const dLat = effectiveRadius / 111_320;
+  const cosLat = Math.cos((center.lat * Math.PI) / 180);
+  const dLng = effectiveRadius / (111_320 * Math.max(0.2, cosLat));
+  return {
+    bounds: [
+      [center.lng - dLng, center.lat - dLat],
+      [center.lng + dLng, center.lat + dLat],
+    ],
+    center: [center.lng, center.lat],
+    label,
+    focusKey: `${label.toLowerCase()}-${Date.now()}`,
+  };
+}
+
+function buildRegionFocusFromMarkers(
+  markers: MapMarkerBase[],
+  label: string,
+): SimulationRegionFocus | null {
+  const points = markers
+    .map((m) => markerToPoint(m))
+    .filter((p): p is { lat: number; lng: number } => p != null);
+  if (points.length === 0) return null;
+
+  const focusKey = `${label.toLowerCase()}-${Date.now()}`;
+  if (points.length === 1) {
+    return {
+      center: [points[0]!.lng, points[0]!.lat],
+      zoom: 12,
+      label,
+      focusKey,
+    };
+  }
+
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  for (const p of points) {
+    if (p.lng < minLng) minLng = p.lng;
+    if (p.lng > maxLng) maxLng = p.lng;
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+  }
+
+  if (Math.abs(maxLng - minLng) < 1e-4 && Math.abs(maxLat - minLat) < 1e-4) {
+    return {
+      center: [minLng, minLat],
+      zoom: 12,
+      label,
+      focusKey,
+    };
+  }
+
+  return {
+    bounds: [
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ],
+    label,
+    focusKey,
+  };
+}
+
+function rerankCatchments(
+  zones: BranchCatchmentOpportunity[],
+): BranchCatchmentOpportunity[] {
+  return [...zones]
+    .sort((a, b) => {
+      const gapA = a.revenueGapZAR;
+      const gapB = b.revenueGapZAR;
+      if (gapA != null && gapB != null && gapA !== gapB) return gapB - gapA;
+      if (gapA != null && gapB == null) return -1;
+      if (gapA == null && gapB != null) return 1;
+      return b.addressablePoolZAR - a.addressablePoolZAR;
+    })
+    .map((z, i) => ({ ...z, rank: i + 1 }));
+}
+
+function rerankGreenfield(
+  zones: GreenfieldOpportunityZone[],
+): GreenfieldOpportunityZone[] {
+  return [...zones]
+    .sort((a, b) => {
+      if (b.opportunityScore !== a.opportunityScore) {
+        return b.opportunityScore - a.opportunityScore;
+      }
+      if (b.addressablePoolZAR !== a.addressablePoolZAR) {
+        return b.addressablePoolZAR - a.addressablePoolZAR;
+      }
+      if (b.clientCount !== a.clientCount) return b.clientCount - a.clientCount;
+      return (b.nearestBranchKm ?? 0) - (a.nearestBranchKm ?? 0);
+    })
+    .map((z, i) => ({ ...z, rank: i + 1 }));
 }
 
 function ZoneDetailBody({
@@ -626,6 +760,7 @@ export function SimulationSidePanel() {
     isActive,
     selectedZoneId,
     selectZone,
+    focusRegion,
     setSimulationResult,
     clearSimulation,
     erpMatchedStores,
@@ -656,6 +791,9 @@ export function SimulationSidePanel() {
       queryClient.invalidateQueries({ queryKey: ['user', 'preferences'] });
     },
   });
+  const bulkUpdateCompetitors = useBulkUpdateCompetitorsMutation({
+    silentSuccess: true,
+  });
 
   const [isRunning, setIsRunning] = useState(false);
   const [settings, setSettings] = useState<SiteOpportunitySettings>(
@@ -664,6 +802,8 @@ export function SimulationSidePanel() {
   const [brandTurnovers, setBrandTurnovers] = useState(() =>
     seedBrandTurnovers(),
   );
+  const dirtyBrandsRef = useRef<Set<HardwareBrandKey>>(new Set());
+  const lastFocusedAreaRef = useRef<string>('');
   const [mode, setMode] = useState<SiteOpportunityMode>('both');
   const [selectedArea, setSelectedArea] = useState('');
 
@@ -671,9 +811,6 @@ export function SimulationSidePanel() {
   const branchesQuery = useBranches({ enabled: simulationDataEnabled });
   const competitorsQuery = useCompetitorsMapData({
     enabled: simulationDataEnabled,
-  });
-  const missingGeocodeQuery = useCompetitorsMissingGeocode({
-    enabled: isActive,
   });
   const clientsQuery = useClientsMapData({ enabled: simulationDataEnabled });
   const storesSalesQuery = useStoresSales(undefined, {
@@ -725,6 +862,8 @@ export function SimulationSidePanel() {
       ...prefs.opportunitySettings,
     });
     setBrandTurnovers(seedBrandTurnovers(prefs.turnoverOverrides));
+    dirtyBrandsRef.current = new Set();
+    lastFocusedAreaRef.current = '';
     setMode(prefs.opportunityMode);
     const cityPref = prefs.selectedCity?.trim() ?? '';
     const provincePref = prefs.selectedProvince?.trim() ?? '';
@@ -743,6 +882,54 @@ export function SimulationSidePanel() {
     prefsData?.preferences?.visualiser,
   ]);
 
+  const focusMapOnArea = useCallback(
+    async (
+      areaRaw: string,
+      options?: { allowGeocode?: boolean; force?: boolean },
+    ) => {
+      const trimmed = areaRaw.trim();
+      if (!trimmed) return;
+      const key = trimmed.toLowerCase();
+      if (!options?.force && lastFocusedAreaRef.current === key) return;
+
+      const matched = filterMarkersByArea(allMarkersForFilters, trimmed);
+      if (matched.length > 0) {
+        const target = buildRegionFocusFromMarkers(matched, trimmed);
+        if (target) {
+          lastFocusedAreaRef.current = key;
+          focusRegion(target);
+        }
+        return;
+      }
+
+      if (!options?.allowGeocode) return;
+
+      try {
+        const place = await geocodePlace(client, trimmed);
+        lastFocusedAreaRef.current = key;
+        focusRegion({
+          center: [place.longitude, place.latitude],
+          zoom: 10,
+          label: place.formattedAddress || trimmed,
+          focusKey: `${key}-${Date.now()}`,
+        });
+      } catch {
+        // Non-blocking preview focus — handleRunSimulation surfaces invalid area errors
+      }
+    },
+    [allMarkersForFilters, client, focusRegion],
+  );
+
+  useEffect(() => {
+    if (!panelOpen) return;
+    const trimmed = selectedArea.trim();
+    if (trimmed.length < 3) return;
+    const timer = setTimeout(() => {
+      void focusMapOnArea(trimmed, { allowGeocode: false });
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [panelOpen, selectedArea, focusMapOnArea]);
+
   const monthRange = monthlyDateRange();
   const monthLabel = currentMonthLabel();
 
@@ -752,6 +939,59 @@ export function SimulationSidePanel() {
         EDITABLE_BRANDS.map((brand) => [brand, brandTurnovers[brand]]),
       ) as Partial<Record<HardwareBrandKey, number>>,
     };
+  }
+
+  /**
+   * Apply edited brand monthly turnover values to every store in each changed brand group.
+   */
+  async function syncBrandTurnoversToGroup(
+    targetTurnovers: Record<HardwareBrandKey, number>,
+    explicitBrands?: HardwareBrandKey[],
+  ): Promise<{ updatedStores: number; brandCount: number }> {
+    const brands =
+      explicitBrands ?? Array.from(dirtyBrandsRef.current);
+    if (brands.length === 0) return { updatedStores: 0, brandCount: 0 };
+
+    const brandSet = new Set<HardwareBrandKey>(brands);
+    const competitors = competitorsQuery.data ?? [];
+    const updates: Array<{
+      ref: number;
+      data: { estimatedAnnualRevenue: number };
+    }> = [];
+
+    for (const competitor of competitors) {
+      const brand = resolveHardwareBrand({
+        name: competitor.name,
+        accountName: competitor.accountName ?? undefined,
+        LegalEntity: competitor.LegalEntity ?? undefined,
+      });
+      if (!brandSet.has(brand)) continue;
+      const nextValue = Math.round(targetTurnovers[brand]);
+      if (!Number.isFinite(nextValue) || nextValue <= 0) continue;
+      if (
+        competitor.estimatedAnnualRevenue != null &&
+        Math.round(Number(competitor.estimatedAnnualRevenue)) === nextValue
+      ) {
+        continue;
+      }
+      updates.push({
+        ref: competitor.id,
+        data: { estimatedAnnualRevenue: nextValue },
+      });
+    }
+
+    if (updates.length === 0) {
+      for (const brand of brands) dirtyBrandsRef.current.delete(brand);
+      return { updatedStores: 0, brandCount: brands.length };
+    }
+
+    const res = await bulkUpdateCompetitors.mutateAsync({ updates });
+    for (const brand of brands) dirtyBrandsRef.current.delete(brand);
+    const updatedStores =
+      res.successCount ??
+      res.results?.filter((r) => r.success).length ??
+      updates.length;
+    return { updatedStores, brandCount: brands.length };
   }
 
   function persistLocalAndBuildPayload() {
@@ -776,15 +1016,25 @@ export function SimulationSidePanel() {
     const visualiser = persistLocalAndBuildPayload();
     try {
       await savePrefsMutation.mutateAsync({ visualiser });
-      toast.success('Simulation settings saved to your profile');
+      const { updatedStores } = await syncBrandTurnoversToGroup(brandTurnovers);
+      toast.success(
+        updatedStores > 0
+          ? `Settings saved and applied to ${updatedStores} store${updatedStores === 1 ? '' : 's'}`
+          : 'Simulation settings saved to your profile',
+      );
     } catch {
       toast.error('Could not save settings to your profile');
     }
   }
 
   function resetDefaults() {
+    const defaults = seedBrandTurnovers();
+    const changedBrands = EDITABLE_BRANDS.filter(
+      (brand) => Math.round(brandTurnovers[brand]) !== Math.round(defaults[brand]),
+    );
     setSettings({ ...DEFAULT_SITE_OPPORTUNITY_SETTINGS });
-    setBrandTurnovers(seedBrandTurnovers());
+    setBrandTurnovers(defaults);
+    dirtyBrandsRef.current = new Set();
     setMode('both');
     setSelectedArea('');
     const visualiser = toVisualiserUserPreferencePayload({
@@ -796,6 +1046,11 @@ export function SimulationSidePanel() {
       selectedCity: '',
     });
     saveVisualiserPreferences(visualiser);
+    if (changedBrands.length > 0) {
+      void syncBrandTurnoversToGroup(defaults, changedBrands).catch(() => {
+        /* toast handled by mutation */
+      });
+    }
     if (userRef) {
       savePrefsMutation.mutate(
         { visualiser },
@@ -908,6 +1163,17 @@ export function SimulationSidePanel() {
         });
       }
 
+      if (dirtyBrandsRef.current.size > 0) {
+        toast.loading('Applying brand turnovers to store groups…', {
+          id: 'map-simulate',
+        });
+        try {
+          await syncBrandTurnoversToGroup(brandTurnovers);
+        } catch {
+          /* continue simulation with local overrides; mutation displays toast */
+        }
+      }
+
       toast.loading('Counting hardwares in catchments…', { id: 'map-simulate' });
       await new Promise((r) => setTimeout(r, 40));
 
@@ -917,42 +1183,86 @@ export function SimulationSidePanel() {
         clients,
       });
 
-      let filteredMarkers = markers;
+      let areaMatchedMarkers = markers;
       let areaLabel = 'Whole map';
+      let geocodedPlace: Awaited<ReturnType<typeof geocodePlace>> | null = null;
       if (area) {
-        const matched = filterMarkersByArea(markers, area);
-        if (matched.length > 0) {
-          filteredMarkers = matched;
+        if (isBroadAdminRegion(area)) {
+          const matched = filterMarkersByArea(markers, area);
+          if (matched.length === 0) {
+            toast.error(`No geocoded stores found in “${area}”.`, {
+              id: 'map-simulate',
+            });
+            return;
+          }
+          areaMatchedMarkers = matched;
           areaLabel = area;
         } else {
           toast.loading(`Looking up “${area}”…`, { id: 'map-simulate' });
-          let place: Awaited<ReturnType<typeof geocodePlace>>;
+          let place: Awaited<ReturnType<typeof geocodePlace>> | null = null;
           try {
             place = await geocodePlace(client, area);
           } catch {
-            toast.error(
-              `Could not find “${area}”. Try a city, suburb, or region name.`,
-              { id: 'map-simulate' },
-            );
-            return;
+            place = null;
           }
-          filteredMarkers = filterMarkersNearPoint(
-            markers,
-            { lat: place.latitude, lng: place.longitude },
-            AREA_GEOCODE_RADIUS_KM,
-          );
-          areaLabel = `${place.formattedAddress} — stores within ${AREA_GEOCODE_RADIUS_KM} km`;
-          if (filteredMarkers.length === 0) {
-            toast.error(
-              `No geocoded stores within ${AREA_GEOCODE_RADIUS_KM} km of ${place.formattedAddress}.`,
-              { id: 'map-simulate' },
+
+          if (place) {
+            geocodedPlace = place;
+            const areaRadiusKm = Math.max(1, settings.radiusMeters / 1000);
+            const centerPoint = { lat: place.latitude, lng: place.longitude };
+            const nearMarkers = filterMarkersNearPoint(
+              markers,
+              centerPoint,
+              areaRadiusKm,
             );
-            return;
+            const maxTextDistanceM = Math.max(areaRadiusKm * 1.5, 15) * 1000;
+            const nearbyTextMatched = filterMarkersByArea(markers, area).filter(
+              (marker) => {
+                const pt = markerToPoint(marker);
+                if (!pt) return false;
+                return haversineMeters(pt, centerPoint) <= maxTextDistanceM;
+              },
+            );
+            const seen = new Set<string>();
+            const merged: MapMarkerBase[] = [];
+            for (const marker of [...nearMarkers, ...nearbyTextMatched]) {
+              const key = `${marker.markerType ?? ''}:${String(marker.id)}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              merged.push(marker);
+            }
+            areaMatchedMarkers = merged;
+            areaLabel = `${area} — within ${areaRadiusKm} km`;
+            if (areaMatchedMarkers.length === 0) {
+              focusRegion(
+                buildRegionFocusFromCenterRadius(
+                  centerPoint,
+                  settings.radiusMeters,
+                  place.formattedAddress || area,
+                ),
+              );
+              toast.error(
+                `No geocoded stores within ${areaRadiusKm} km of ${place.formattedAddress}.`,
+                { id: 'map-simulate' },
+              );
+              return;
+            }
+          } else {
+            const matched = filterMarkersByArea(markers, area);
+            if (matched.length === 0) {
+              toast.error(
+                `Could not find “${area}”. Try a city, suburb, or region name.`,
+                { id: 'map-simulate' },
+              );
+              return;
+            }
+            areaMatchedMarkers = matched;
+            areaLabel = area;
           }
         }
       }
 
-      if (filteredMarkers.length === 0) {
+      if (markers.length === 0) {
         toast.error(
           'No geocoded sites on the map. Geocode map data, then run again.',
           { id: 'map-simulate' },
@@ -960,32 +1270,126 @@ export function SimulationSidePanel() {
         return;
       }
 
-      toast.loading('Loading opportunity zones from the server…', { id: 'map-simulate' });
-      let computed = await getSiteOpportunities(client, {
-        mode,
-        radiusMeters: settings.radiusMeters,
-        topN: settings.topN,
-        minBranchSeparationKm: settings.minBranchSeparationKm,
-        captureLowPct: settings.captureLowPct,
-        captureHighPct: settings.captureHighPct,
-      });
+      let computed: Awaited<ReturnType<typeof getSiteOpportunities>>;
+      if (area) {
+        toast.loading(`Computing opportunity zones in ${areaLabel}…`, {
+          id: 'map-simulate',
+        });
+        // Keep ALL competitors, clients, and branches in the computation pool so
+        // catchments and opportunities in the typed area never lose nearby stores
+        // across suburb/radius boundaries; scope only the resulting zones to the area.
+        const areaBranchIds = new Set(
+          areaMatchedMarkers
+            .filter((m) => m.markerType === 'branch')
+            .map((m) => String(m.id)),
+        );
+        const areaPoints = areaMatchedMarkers
+          .map((m) => markerToPoint(m))
+          .filter((pt): pt is { lat: number; lng: number } => pt != null);
+        const zoneFilterRadiusM = Math.max(settings.radiusMeters * 1.5, 15_000);
+        const geocodeCenter = geocodedPlace
+          ? { lat: geocodedPlace.latitude, lng: geocodedPlace.longitude }
+          : null;
 
+        const scopeCatchments = (
+          zones: BranchCatchmentOpportunity[],
+        ): BranchCatchmentOpportunity[] => {
+          if (geocodeCenter) {
+            return zones.filter(
+              (z) =>
+                areaBranchIds.has(String(z.branchId)) ||
+                haversineMeters({ lat: z.lat, lng: z.lng }, geocodeCenter) <=
+                  zoneFilterRadiusM,
+            );
+          }
+          return zones.filter((z) => areaBranchIds.has(String(z.branchId)));
+        };
+
+        const scopeGreenfield = (
+          zones: GreenfieldOpportunityZone[],
+        ): GreenfieldOpportunityZone[] => {
+          const deduped = dedupeNearbyGreenfield(zones);
+          const inArea = geocodeCenter
+            ? filterZonesNearPoint(deduped, geocodeCenter, zoneFilterRadiusM)
+            : deduped.filter((z) =>
+                areaPoints.some(
+                  (pt) =>
+                    haversineMeters({ lat: z.lat, lng: z.lng }, pt) <=
+                    z.radiusMeters,
+                ),
+              );
+          return inArea.slice(0, settings.topN);
+        };
+
+        const fullSettings = { ...settings, topN: Number.MAX_SAFE_INTEGER };
+        const localComputed = computeSiteOpportunities(markers, {
+          mode,
+          settings: fullSettings,
+        });
+        const scopedCatchments = scopeCatchments(localComputed.catchments);
+        let scopedGreenfield = scopeGreenfield(localComputed.greenfield);
+
+        if (
+          mode !== 'catchment' &&
+          scopedGreenfield.length === 0 &&
+          areaMatchedMarkers.some((m) => m.markerType === 'competitor')
+        ) {
+          // An explicit typed area (e.g. Mahikeng) may already have a branch within
+          // minBranchSeparationKm; relax separation so opportunity data still renders.
+          const relaxedComputed = computeSiteOpportunities(markers, {
+            mode: 'greenfield',
+            settings: fullSettings,
+            ignoreBranchSeparation: true,
+          });
+          scopedGreenfield = scopeGreenfield(relaxedComputed.greenfield);
+        }
+
+        computed = {
+          ...localComputed,
+          catchments: scopedCatchments,
+          greenfield: scopedGreenfield,
+        };
+      } else {
+        toast.loading('Loading opportunity zones from the server…', {
+          id: 'map-simulate',
+        });
+        computed = await getSiteOpportunities(client, {
+          mode,
+          radiusMeters: settings.radiusMeters,
+          topN: settings.topN,
+          minBranchSeparationKm: settings.minBranchSeparationKm,
+          captureLowPct: settings.captureLowPct,
+          captureHighPct: settings.captureHighPct,
+          startDate: monthRange.startDate,
+          endDate: monthRange.endDate,
+        });
+      }
+
+      const overrideOptions = {
+        revenuePerSqmMonthlyZAR: settings.revenuePerSqmMonthlyZAR,
+      };
       computed = {
         ...computed,
-        catchments: computed.catchments.map((z) =>
-          applyTurnoverOverridesToZone(
-            z,
-            settings.captureLowPct,
-            settings.captureHighPct,
-            turnoverOverrides,
+        catchments: rerankCatchments(
+          computed.catchments.map((z) =>
+            applyTurnoverOverridesToZone(
+              z,
+              settings.captureLowPct,
+              settings.captureHighPct,
+              turnoverOverrides,
+              overrideOptions,
+            ),
           ),
         ),
-        greenfield: computed.greenfield.map((z) =>
-          applyTurnoverOverridesToZone(
-            z,
-            settings.captureLowPct,
-            settings.captureHighPct,
-            turnoverOverrides,
+        greenfield: rerankGreenfield(
+          computed.greenfield.map((z) =>
+            applyTurnoverOverridesToZone(
+              z,
+              settings.captureLowPct,
+              settings.captureHighPct,
+              turnoverOverrides,
+              overrideOptions,
+            ),
           ),
         ),
       };
@@ -1004,17 +1408,19 @@ export function SimulationSidePanel() {
       }
 
       if (dashboard?.salesPerStore?.length) {
-        const enriched = enrichCatchmentsWithDashboardRevenue(
-          computed.catchments,
-          branches,
-          {
-            salesPerStore: dashboard.salesPerStore,
-            masterData: dashboard.masterData,
-          },
-          {
-            startDate: dashboard.startDate ?? monthRange.startDate,
-            endDate: dashboard.endDate ?? monthRange.endDate,
-          },
+        const enriched = rerankCatchments(
+          enrichCatchmentsWithDashboardRevenue(
+            computed.catchments,
+            branches,
+            {
+              salesPerStore: dashboard.salesPerStore,
+              masterData: dashboard.masterData,
+            },
+            {
+              startDate: dashboard.startDate ?? monthRange.startDate,
+              endDate: dashboard.endDate ?? monthRange.endDate,
+            },
+          ),
         );
         matched = enriched.filter(
           (c) => c.actualRevenueZAR != null && c.actualRevenueZAR > 0,
@@ -1039,7 +1445,7 @@ export function SimulationSidePanel() {
       setSimulationResult(computed, {
         erpMatchedStores: matched,
         erpError: erpErr,
-        markers: filteredMarkers,
+        markers,
         filters: {
           country: '',
           province: '',
@@ -1049,6 +1455,19 @@ export function SimulationSidePanel() {
         },
         turnoverOverrides,
       });
+
+      if (area) {
+        const target = geocodedPlace
+          ? buildRegionFocusFromCenterRadius(
+              { lat: geocodedPlace.latitude, lng: geocodedPlace.longitude },
+              settings.radiusMeters,
+              geocodedPlace.formattedAddress || area,
+            )
+          : buildRegionFocusFromMarkers(areaMatchedMarkers, area);
+        if (target) focusRegion(target);
+      } else {
+        focusRegion(null);
+      }
 
       const scopeLabel = areaLabel;
 
@@ -1143,6 +1562,12 @@ export function SimulationSidePanel() {
                   value={selectedArea}
                   suggestions={areaSuggestions}
                   onChange={setSelectedArea}
+                  onCommit={(committed) => {
+                    void focusMapOnArea(committed, {
+                      allowGeocode: true,
+                      force: true,
+                    });
+                  }}
                 />
                 <p className="text-muted-foreground text-[10px] leading-snug">
                   Type any area. Suggestions are places already on the map.
@@ -1178,7 +1603,7 @@ export function SimulationSidePanel() {
                 <GroupedNumberInput
                   id="sim-sep"
                   value={settings.minBranchSeparationKm}
-                  min={5}
+                  min={0}
                   max={50}
                   onValueChange={(v) => {
                     setSettings((s) => ({ ...s, minBranchSeparationKm: v }));
@@ -1386,25 +1811,6 @@ export function SimulationSidePanel() {
                     <li key={w}>{w}</li>
                   ))}
                 </ul>
-                {missingGeocodeQuery.data &&
-                missingGeocodeQuery.data.length > 0 ? (
-                  <div className="mt-2 border-t border-amber-500/20 pt-2">
-                    <MissingCompetitorsList
-                      items={missingGeocodeQuery.data}
-                      compact
-                      maxVisible={8}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : missingGeocodeQuery.data &&
-              missingGeocodeQuery.data.length > 0 ? (
-              <div className="rounded-md border border-amber-500/30 bg-amber-50/50 px-2.5 py-2 text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
-                <MissingCompetitorsList
-                  items={missingGeocodeQuery.data}
-                  compact
-                  maxVisible={8}
-                />
               </div>
             ) : null}
 

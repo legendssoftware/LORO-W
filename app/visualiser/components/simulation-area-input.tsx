@@ -12,6 +12,7 @@ interface SimulationAreaInputProps {
   value: string;
   suggestions: string[];
   onChange: (area: string) => void;
+  onCommit?: (area: string) => void;
 }
 
 /**
@@ -21,6 +22,7 @@ export function SimulationAreaInput({
   value,
   suggestions,
   onChange,
+  onCommit,
 }: SimulationAreaInputProps) {
   const [open, setOpen] = useState(false);
 
@@ -46,6 +48,19 @@ export function SimulationAreaInput({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          onBlur={() => {
+            setOpen(false);
+            const trimmed = value.trim();
+            if (trimmed) onCommit?.(trimmed);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              setOpen(false);
+              const trimmed = value.trim();
+              if (trimmed) onCommit?.(trimmed);
+            }
+          }}
         />
       </PopoverAnchor>
       <PopoverContent
@@ -63,6 +78,7 @@ export function SimulationAreaInput({
                 onMouseDown={(event) => {
                   event.preventDefault();
                   onChange(place);
+                  onCommit?.(place);
                   setOpen(false);
                 }}
               >

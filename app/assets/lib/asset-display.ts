@@ -4,7 +4,7 @@ import type { AssetCategory, AssetRecord } from '@/api/types/asset';
 
 export const ASSET_CATEGORY_OPTIONS: { value: AssetCategory; label: string }[] = [
   { value: 'IT_EQUIPMENT', label: 'IT equipment' },
-  { value: 'VEHICLE', label: 'Vehicle' },
+  { value: 'VEHICLE', label: 'Vehicle / truck' },
   { value: 'OFFICE', label: 'Office' },
   { value: 'OTHER', label: 'Other' },
 ];

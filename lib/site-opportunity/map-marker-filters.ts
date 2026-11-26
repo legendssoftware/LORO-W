@@ -75,7 +75,7 @@ export function filterMapMarkers(
 export const AREA_GEOCODE_RADIUS_KM = 30;
 
 /**
- * Case-insensitive match on city, suburb, province, or country.
+ * Case-insensitive match on city, suburb, province, or country (plus branch name/alias).
  * Empty query matches every marker.
  */
 export function markerMatchesArea(
@@ -90,7 +90,12 @@ export function markerMatchesArea(
   const country = getMarkerCountryKey(marker).trim().toLowerCase();
   if (province && province !== unmapped && province === query) return true;
   if (country && country !== unmapped && country === query) return true;
-  return [parts.city, parts.suburb].some((place) => {
+  const placeCandidates = [parts.city, parts.suburb];
+  if (marker.markerType === 'branch') {
+    if (typeof marker.name === 'string') placeCandidates.push(marker.name);
+    if (typeof marker.alias === 'string') placeCandidates.push(marker.alias);
+  }
+  return placeCandidates.some((place) => {
     const label = place.trim().toLowerCase();
     if (!label) return false;
     return label === query || (query.length >= 3 && label.includes(query));
@@ -119,6 +124,17 @@ export function filterMarkersNearPoint(
     if (!point) return false;
     return haversineMeters(point, center) <= radiusMeters;
   });
+}
+
+/** Keep simulation zones (catchments or greenfield) whose center lies within `radiusMeters` of `center`. */
+export function filterZonesNearPoint<T extends { lat: number; lng: number }>(
+  zones: T[],
+  center: GeoPoint,
+  radiusMeters: number,
+): T[] {
+  return zones.filter(
+    (zone) => haversineMeters({ lat: zone.lat, lng: zone.lng }, center) <= radiusMeters,
+  );
 }
 
 /** Cities, suburbs, provinces, and countries a user can pick while typing an area. */

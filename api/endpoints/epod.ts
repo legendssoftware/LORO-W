@@ -1,16 +1,22 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  AcceptRoutePlanBody,
   AssignableOrder,
   CancelDeliveryBody,
+  CreateDeliveriesBatchBody,
+  CreateDeliveriesBatchResponse,
   CreateDeliveryBody,
   DeliveryDetail,
   DeliveryListQuery,
   DeliveryListResponse,
   DeliveryPdfResponse,
   DriverOption,
+  PlanRouteBody,
+  PlannedRouteResponse,
   PublicDelivery,
   PublicRatingResponse,
   ReadyRouteBody,
+  ReassignDeliveryBody,
   SubmitDeliveryRatingBody,
 } from '@/api/types/epod';
 
@@ -39,12 +45,21 @@ export async function getDelivery(client: AxiosInstance, uid: number): Promise<D
   return data;
 }
 
-/** POST /epod/deliveries — assigns an ERP sales order to a workforce-type driver. */
+/** POST /epod/deliveries — assigns an ERP sales order to a truck, departure fuel, and driver. */
 export async function createDelivery(
   client: AxiosInstance,
   body: CreateDeliveryBody,
 ): Promise<DeliveryDetail> {
   const { data } = await client.post<DeliveryDetail>('/epod/deliveries', body);
+  return data;
+}
+
+/** POST /epod/deliveries/batch — assigns up to 20 ERP sales orders to one truck and route. */
+export async function createDeliveriesBatch(
+  client: AxiosInstance,
+  body: CreateDeliveriesBatchBody,
+): Promise<CreateDeliveriesBatchResponse> {
+  const { data } = await client.post<CreateDeliveriesBatchResponse>('/epod/deliveries/batch', body);
   return data;
 }
 
@@ -57,6 +72,24 @@ export async function markRouteReady(
   return data ?? { deliveries: [] };
 }
 
+/** POST /epod/routes/plan — Google-optimized stop order preview (not persisted). */
+export async function planRoute(
+  client: AxiosInstance,
+  body: PlanRouteBody,
+): Promise<PlannedRouteResponse> {
+  const { data } = await client.post<PlannedRouteResponse>('/epod/routes/plan', body);
+  return data ?? { stops: [] };
+}
+
+/** POST /epod/routes/plan/accept — writes stopSequence; recalculates ETA when ready. */
+export async function acceptRoutePlan(
+  client: AxiosInstance,
+  body: AcceptRoutePlanBody,
+): Promise<DeliveryListResponse> {
+  const { data } = await client.post<DeliveryListResponse>('/epod/routes/plan/accept', body);
+  return data ?? { deliveries: [] };
+}
+
 /** POST /epod/deliveries/:uid/cancel — open stops only; requires customer or driver reason. */
 export async function cancelDelivery(
   client: AxiosInstance,
@@ -64,6 +97,16 @@ export async function cancelDelivery(
   body: CancelDeliveryBody,
 ): Promise<DeliveryDetail> {
   const { data } = await client.post<DeliveryDetail>(`/epod/deliveries/${uid}/cancel`, body);
+  return data;
+}
+
+/** PATCH /epod/deliveries/:uid/reassign — moves one open invoice to another truck, driver, or route. */
+export async function reassignDelivery(
+  client: AxiosInstance,
+  uid: number,
+  body: ReassignDeliveryBody,
+): Promise<DeliveryDetail> {
+  const { data } = await client.patch<DeliveryDetail>(`/epod/deliveries/${uid}/reassign`, body);
   return data;
 }
 

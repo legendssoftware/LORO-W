@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { format, startOfDay, endOfDay, eachDayOfInterval, getDay, addDays, isSameDay } from 'date-fns';
-import { AlertCircle, Car, Building2, Users, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, Car, Building2, Users, Pencil, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   useMonthlyAttendance,
   useCheckIns,
@@ -42,6 +43,7 @@ import {
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { formatAttendanceClockTime } from '@/lib/attendance-time';
 import { EditAttendanceRecordDialog } from '@/app/staff/components/edit-attendance-record-dialog';
+import { exportAttendanceRecordsToExcel } from '@/app/staff/lib/attendance-records-export';
 import { useTranslation } from 'react-i18next';
 
 type RowStatus = 'present' | 'late' | 'incomplete' | 'missed' | 'weekend';
@@ -448,6 +450,38 @@ export function UserAttendanceRecordsModal({
     return { missed, attended, remaining, forgottenOuts };
   }, [records, todayKey, periodEndFull]);
 
+  const hasExportableRows = records.some((r) => !!r.attendanceRecord?.checkIn);
+
+  /** Download the shown payroll period's clocked shifts as an Excel file. */
+  const handleExportExcel = () => {
+    if (!user || !hasExportableRows) {
+      toast.error(t('chrome.staff.attendance.exportExcelNoRows'));
+      return;
+    }
+    try {
+      const count = exportAttendanceRecordsToExcel({
+        userName: user.name,
+        userBranch: user.branch,
+        periodLabel,
+        records,
+        labels: {
+          employee: t('chrome.staff.attendance.exportEmployee'),
+          branch: t('chrome.staff.attendance.exportBranch'),
+          date: t('chrome.staff.attendance.exportDate'),
+          clockInTime: t('chrome.staff.attendance.exportClockInTime'),
+          clockInLocation: t('chrome.staff.attendance.exportClockInLocation'),
+          clockOutTime: t('chrome.staff.attendance.exportClockOutTime'),
+          clockOutLocation: t('chrome.staff.attendance.exportClockOutLocation'),
+          shiftDuration: t('chrome.staff.attendance.exportShiftDuration'),
+          sheetName: t('chrome.staff.attendance.exportSheetName'),
+        },
+      });
+      toast.success(t('chrome.staff.attendance.exportExcelSuccess', { count }));
+    } catch {
+      toast.error(t('chrome.staff.attendance.exportExcelFailed'));
+    }
+  };
+
   return (
     <>
     <Dialog
@@ -508,6 +542,17 @@ export function UserAttendanceRecordsModal({
             onClick={() => setPeriodOffset((current) => Math.min(0, current + 1))}
           >
             <ChevronRight />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={isLoading || !hasExportableRows}
+            onClick={handleExportExcel}
+          >
+            <Download aria-hidden />
+            {t('chrome.staff.attendance.exportExcel')}
           </Button>
         </div>
 

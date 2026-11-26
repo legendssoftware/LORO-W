@@ -22,7 +22,9 @@ import {
   CLOCK_IN_OPTION_DISPLAY_KEYS,
   isAtOfficeOnlyContext,
   isLocationContextUnavailable,
+  isOffsiteBlockedContext,
   LOCATION_CONTEXT_UNAVAILABLE_MESSAGE_KEY,
+  OFFSITE_NOT_ALLOWED_MESSAGE_KEY,
   OPTION_KEY_TO_LABEL,
   OUTSIDE_BRANCH_RADIUS_MESSAGE_FALLBACK_KEY,
   remoteOptionKeysFromContext,
@@ -47,6 +49,11 @@ export interface AttendanceStatusButtonProps {
   clockInContextError?: string | null;
   /** Retry fetching GET /att/status?lat=&lng= when location context is unavailable. */
   onRetryClockInContext?: () => void;
+  /**
+   * Whether the fallback remote options (shown when location context cannot be loaded) may appear.
+   * Only users allowed to work offsite should get them.
+   */
+  allowFallbackRemoteOptions?: boolean;
   onCheckOut: () => void;
   /** When true, user is on break; show End My Break only. */
   onBreak?: boolean;
@@ -137,6 +144,7 @@ export function AttendanceStatusButton({
   clockInContextLoading = false,
   clockInContextError = null,
   onRetryClockInContext,
+  allowFallbackRemoteOptions = true,
   onCheckOut,
   onStartBreak,
   onEndBreak,
@@ -182,7 +190,9 @@ export function AttendanceStatusButton({
 
   const atOfficeOnly = isAtOfficeOnlyContext(clockInContext);
   const locationUnavailable = isLocationContextUnavailable(clockInContext, clockInContextLoading);
-  const remoteKeys = remoteOptionKeysFromContext(clockInContext);
+  const offsiteBlocked = isOffsiteBlockedContext(clockInContext);
+  const remoteKeys = remoteOptionKeysFromContext(clockInContext, allowFallbackRemoteOptions);
+  const hasRemoteOptions = remoteKeys.length > 0;
 
   const renderRemoteOptionButton = (key: ClockInOptionKey, opts?: { stacked?: boolean }) => {
     const stacked = opts?.stacked ?? false;
@@ -243,7 +253,14 @@ export function AttendanceStatusButton({
                 />
               </div>
             ) : onClockInWithMode ? (
-              atOfficeOnly ? (
+              offsiteBlocked ? (
+                <p
+                  role="alert"
+                  className="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-center text-sm font-medium text-destructive"
+                >
+                  {t(OFFSITE_NOT_ALLOWED_MESSAGE_KEY)}
+                </p>
+              ) : atOfficeOnly ? (
                 <div className="flex justify-center">
                   <Button
                     variant="secondary"
@@ -277,9 +294,9 @@ export function AttendanceStatusButton({
                     </button>
                   ) : null}
                   {/* md+: inline options */}
-                  <div className="hidden md:block">{remoteGrid}</div>
+                  {hasRemoteOptions ? <div className="hidden md:block">{remoteGrid}</div> : null}
                   {/* Mobile: open modal */}
-                  <div className="md:hidden">
+                  <div className={cn('md:hidden', !hasRemoteOptions && 'hidden')}>
                     <Button
                       type="button"
                       variant="secondary"

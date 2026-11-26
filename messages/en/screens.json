@@ -91,6 +91,7 @@
     "breakStarted": "Break started",
     "breakEnded": "Break ended",
     "couldNotSavePulse": "Could not save your pulse. Please try again.",
+    "couldNotStartShift": "Could not start your shift. Please try again.",
     "attendance": {
       "startYourShift": "Start your shift",
       "readyToStart": "Ready to start",
@@ -104,6 +105,7 @@
       "retryLocation": "Retry location",
       "pickOptionApplies": "Pick the option that applies.",
       "outsideBranchRadius": "You are outside the office check-in radius.",
+      "offsiteNotAllowed": "You are not allowed to work from home. You must go and start your shift at the office.",
       "title": "Attendance",
       "month": "Month",
       "noData": "No attendance data for this month.",
@@ -992,11 +994,11 @@
     "leave": {
       "header": {
         "title": "Leave",
-        "description": "Request time off, filter the inbox, and approve, reject, or cancel a request."
+        "description": "Request time off, filter the inbox, then approve, reject, or cancel a request."
       },
       "actions": {
         "title": "Request leave",
-        "description": "Click Request leave. Choose the type, the dates, and send it for a decision."
+        "description": "Click Request leave. Choose the type and dates, then send it for a decision."
       },
       "filters": {
         "title": "Filter the inbox",
@@ -1200,15 +1202,15 @@
     "approvals": {
       "header": {
         "title": "Approvals",
-        "description": "Review pending requests, inspect employee intake forms, and approve or reject from the web."
+        "description": "Filter by status or type, file a general request with New request, then open a card to approve or reject. Intake forms open from the same card; outbound webhooks fire when approved."
       },
       "toolbar": {
-        "title": "Filter and file a request",
-        "description": "Search by title or reference, then filter by status or type. New request files a general request. My requests loads the ones you submitted."
+        "title": "Filter and New request",
+        "description": "Filter by status or type. New request files a general approval. My requests shows the ones you submitted."
       },
       "list": {
-        "title": "Open a request",
-        "description": "Click a card to approve or reject it. Intake forms open from the same card."
+        "title": "Open a card",
+        "description": "Open a card to approve or reject. Intake forms open from the same card. When approved, outbound webhooks fire."
       }
     },
     "payslips": {
@@ -1264,7 +1266,7 @@
     "deliveries": {
       "header": {
         "title": "Deliveries",
-        "description": "Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records the stop."
+        "description": "Assign an open ERP sales order to a driver, filter the list, then open a row for the route and proof of delivery."
       },
       "toolbar": {
         "title": "Filter deliveries",
@@ -1272,11 +1274,11 @@
       },
       "assign": {
         "title": "Assign delivery",
-        "description": "Click Assign delivery. Pick an open sales order and the driver who will run the stop."
+        "description": "Click Assign delivery. Pick an open ERP sales order and the driver who will run the stop."
       },
       "list": {
         "title": "Open a delivery",
-        "description": "Click a row for the route, the rating, and the signed proof of delivery."
+        "description": "Click a row for the route and the signed proof of delivery (POD)."
       }
     },
     "store-operations": {
@@ -2677,6 +2679,19 @@
         "summaryAttended": "Attended",
         "summaryRemaining": "Remaining",
         "summaryForgottenOuts": "Forgotten outs",
+        "exportExcel": "Export Excel",
+        "exportExcelNoRows": "No clock-ins to export for this period.",
+        "exportExcelFailed": "Could not export attendance to Excel.",
+        "exportExcelSuccess": "Exported {{count}} shifts to Excel.",
+        "exportSheetName": "Attendance",
+        "exportEmployee": "Employee",
+        "exportBranch": "Branch",
+        "exportDate": "Date",
+        "exportClockInTime": "Clock-in time",
+        "exportClockInLocation": "Clock-in location",
+        "exportClockOutTime": "Clock-out time",
+        "exportClockOutLocation": "Clock-out location",
+        "exportShiftDuration": "Shift duration",
         "dailyOverview": "Daily overview {{date}}: {{present}} present, {{absent}} absent, {{rate}}% attendance.",
         "dailyOverviewLoading": "Daily overview loads with the staff list.",
         "reports": "Reports",
@@ -3118,7 +3133,7 @@
         "reps": "Sales reps",
         "branchesDesc": "Company branch locations",
         "hqDesc": "Headquarters (branch logo + green border)",
-        "clientsDesc": "Client locations (handshake icons)",
+        "clientsDesc": "Client locations",
         "competitorsDesc": "Competitor store locations (brand logos)",
         "repsDesc": "Last known phone GPS (profile avatar)"
       },

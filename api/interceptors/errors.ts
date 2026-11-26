@@ -52,6 +52,17 @@ function correlationIdFromBody(data: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * Machine-readable code from the body: explicit `code`, else an UPPER_SNAKE `error` field
+ * (e.g. OFFSITE_NOT_ALLOWED) so clients can show their own translated copy.
+ */
+function errorCodeFromBody(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object') return undefined;
+  if ('code' in data) return String((data as { code: unknown }).code);
+  const error = (data as { error?: unknown }).error;
+  return typeof error === 'string' && /^[A-Z][A-Z0-9_]+$/.test(error) ? error : undefined;
+}
+
 function normalizeError(err: unknown): ApiError {
   if (err && typeof err === 'object' && 'response' in err) {
     const res = (err as { response?: { data?: unknown; status?: number } }).response;
@@ -70,7 +81,7 @@ function normalizeError(err: unknown): ApiError {
       return {
         message,
         status: res.status,
-        code: data && typeof data === 'object' && 'code' in data ? String((data as { code: unknown }).code) : undefined,
+        code: errorCodeFromBody(data),
         correlationId: correlationIdFromBody(data),
       };
     }
