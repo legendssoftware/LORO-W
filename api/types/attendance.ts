@@ -147,6 +147,12 @@ export interface MonthlyCalendarAttendanceRecord {
     lateMinutes?: number | null;
     /** Kilometres travelled for the shift; null if unknown. */
     distanceTravelledKm?: number | null;
+    /** Branch the shift was clocked into; null when the record has no branch. */
+    branchName?: string | null;
+    /** Clock-in location (formatted address, else "lat, lng"). */
+    checkInLocation?: string | null;
+    /** Clock-out location (formatted address, else "lat, lng"). */
+    checkOutLocation?: string | null;
 }
 
 /** Single day in monthly attendance (GET /att/user/:ref/monthly) */

@@ -426,6 +426,7 @@ export function computeGreenfieldZones(
 	settings: SiteOpportunitySettings,
 	_mapConfig?: MapConfigType,
 	onProgress?: SiteOpportunityProgressFn,
+	options?: { ignoreBranchSeparation?: boolean },
 ): GreenfieldOpportunityZone[] {
 	const geoCompetitors = geolocatedMarkers(competitors);
 	const geoClients = geolocatedMarkers(clients);
@@ -442,6 +443,9 @@ export function computeGreenfieldZones(
 		);
 	}
 
+	const ignoreBranchSeparation =
+		options?.ignoreBranchSeparation === true ||
+		settings.minBranchSeparationKm <= 0;
 	const minSepM = settings.minBranchSeparationKm * 1000;
 	const scored: Array<
 		GreenfieldOpportunityZone & { _nearestM: number | null; _place: string | null }
@@ -471,12 +475,14 @@ export function computeGreenfieldZones(
 
 			const nearestM = nearestDistanceMeters(center, branchPoints);
 			const nearestBranchKm = kmFromMeters(nearestM);
-			if (nearestM != null && nearestM < minSepM * 0.5) continue;
-			if (
-				nearestBranchKm != null &&
-				nearestBranchKm < settings.minBranchSeparationKm
-			) {
-				continue;
+			if (!ignoreBranchSeparation) {
+				if (nearestM != null && nearestM < minSepM * 0.5) continue;
+				if (
+					nearestBranchKm != null &&
+					nearestBranchKm < settings.minBranchSeparationKm
+				) {
+					continue;
+				}
 			}
 
 			const score = compositeGreenfieldScore(cell, nearestBranchKm, settings);
@@ -545,6 +551,7 @@ export function computeSiteOpportunities(
 		branchRevenueById?: Map<string, number>;
 		geocodingSummary?: MapGeocodingSummary | null;
 		onProgress?: SiteOpportunityProgressFn;
+		ignoreBranchSeparation?: boolean;
 	},
 ): SiteOpportunityResult {
 	const settings: SiteOpportunitySettings = {
@@ -580,6 +587,7 @@ export function computeSiteOpportunities(
 					settings,
 					options?.mapConfig,
 					options?.onProgress,
+					{ ignoreBranchSeparation: options?.ignoreBranchSeparation },
 				);
 
 	return {

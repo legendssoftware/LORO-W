@@ -15,6 +15,8 @@ export type ExportToExcelOptions = {
   sheetName?: string;
   /** Freeze the header row when scrolling. */
   freezeHeader?: boolean;
+  /** Per-column widths in characters; falls back to the default width for missing entries. */
+  columnWidths?: number[];
 };
 
 /**
@@ -36,7 +38,9 @@ export function exportToExcel(
   const wsData = [safeHeaders, ...safeRows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const columnCount = safeHeaders.length;
-  ws['!cols'] = Array.from({ length: columnCount }, () => ({ wch: EXCEL_COLUMN_WIDTH }));
+  ws['!cols'] = Array.from({ length: columnCount }, (_, i) => ({
+    wch: options?.columnWidths?.[i] ?? EXCEL_COLUMN_WIDTH,
+  }));
 
   if (options?.boldHeader) {
     for (let c = 0; c < columnCount; c++) {

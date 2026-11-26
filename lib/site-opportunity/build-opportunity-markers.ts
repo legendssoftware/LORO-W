@@ -25,21 +25,22 @@ export function buildOpportunityMarkers(input: {
     const lng = Number(branch.longitude);
     const name =
       getBranchDisplayLabel(branch) || branch.name || `Branch #${branch.uid}`;
+    const branchAddr =
+      branch.address && typeof branch.address === 'object'
+        ? branch.address
+        : null;
     markers.push({
       id: `branch-${branch.uid}`,
       name,
       alias: branch.alias ?? undefined,
       ref: branch.ref ?? undefined,
-      country: branch.country ?? undefined,
+      country: branch.country ?? branchAddr?.country ?? undefined,
       position: [lat, lng],
       latitude: lat,
       longitude: lng,
       markerType: 'branch',
-      address: formatAddressLine(branch.address),
-      state:
-        typeof branch.address === 'object' && branch.address
-          ? (branch.address as { state?: string }).state
-          : undefined,
+      address: branchAddr ?? formatAddressLine(branch.address),
+      state: branchAddr?.state ?? undefined,
       floorSizeSqm:
         branch.floorSizeSqm != null && Number.isFinite(Number(branch.floorSizeSqm))
           ? Number(branch.floorSizeSqm)
@@ -96,7 +97,7 @@ export function buildOpportunityMarkers(input: {
       latitude: Number(lat),
       longitude: Number(lng),
       markerType: 'client',
-      address: formatAddressLine(client.address),
+      address: addr ?? formatAddressLine(client.address),
       category: client.category ?? undefined,
       annualRevenue: client.annualRevenue,
       lifetimeValue: client.lifetimeValue,

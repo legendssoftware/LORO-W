@@ -1,13 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type * as GeoJSON from 'geojson';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { useMap } from '@/components/ui/map';
 import { useGeofenceAreas } from '@/api/hooks/use-geofences';
 import { useTokenReady } from '@/api/hooks/use-token-ready';
 
 const SOURCE = 'org-geofence-areas';
 const LAYER = 'org-geofence-areas-fill';
+
+function isMapStyleReady(map: MapLibreMap | null | undefined): map is MapLibreMap {
+  try {
+    return !!map?.getStyle();
+  } catch {
+    return false;
+  }
+}
 
 function circlePolygon(lat: number, lng: number, radiusMeters: number): GeoJSON.Polygon {
   const steps = 48;
@@ -36,8 +45,7 @@ export function GeofenceAreasLayer() {
   const { isTokenReady } = useTokenReady();
   const areas = useGeofenceAreas({ enabled: isTokenReady });
 
-  useEffect(() => {
-    if (!map || !isLoaded) return;
+  const collection = useMemo<GeoJSON.FeatureCollection>(() => {
     const features: GeoJSON.Feature[] = (areas.data ?? [])
       .filter((area) => Number.isFinite(area.latitude) && Number.isFinite(area.longitude))
       .map((area) => ({
@@ -45,24 +53,50 @@ export function GeofenceAreasLayer() {
         properties: { name: area.name },
         geometry: circlePolygon(area.latitude, area.longitude, area.radius || 500),
       }));
-    const collection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
-    const existing = map.getSource(SOURCE) as { setData?: (data: GeoJSON.FeatureCollection) => void } | undefined;
-    if (existing?.setData) {
-      existing.setData(collection);
-      return;
+    return { type: 'FeatureCollection', features };
+  }, [areas.data]);
+
+  useEffect(() => {
+    if (!isLoaded || !isMapStyleReady(map)) return;
+
+    try {
+      if (!map.getSource(SOURCE)) {
+        map.addSource(SOURCE, { type: 'geojson', data: collection });
+      }
+      if (!map.getLayer(LAYER)) {
+        map.addLayer({
+          id: LAYER,
+          type: 'fill',
+          source: SOURCE,
+          paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.15 },
+        });
+      }
+    } catch {
+      // Style may be reloading or torn down mid-mount.
     }
-    map.addSource(SOURCE, { type: 'geojson', data: collection });
-    map.addLayer({
-      id: LAYER,
-      type: 'fill',
-      source: SOURCE,
-      paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.15 },
-    });
+
     return () => {
-      if (map.getLayer(LAYER)) map.removeLayer(LAYER);
-      if (map.getSource(SOURCE)) map.removeSource(SOURCE);
+      if (!isMapStyleReady(map)) return;
+      try {
+        if (map.getLayer(LAYER)) map.removeLayer(LAYER);
+        if (map.getSource(SOURCE)) map.removeSource(SOURCE);
+      } catch {
+        // Map or style was already removed during unmount/navigation.
+      }
     };
-  }, [areas.data, isLoaded, map]);
+    // Mount once per map/style load; data updates via the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, map]);
+
+  useEffect(() => {
+    if (!isLoaded || !isMapStyleReady(map)) return;
+    try {
+      const existing = map.getSource(SOURCE) as GeoJSONSource | undefined;
+      existing?.setData(collection);
+    } catch {
+      // Ignore if map style was torn down.
+    }
+  }, [collection, isLoaded, map]);
 
   return null;
 }

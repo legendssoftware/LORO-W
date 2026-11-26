@@ -12,6 +12,52 @@ export interface MasterBranchRow {
   id: string;
   code?: string;
   name: string;
+  countryCode?: string;
+}
+
+const COUNTRY_NAME_TO_ERP_CODE: Record<string, string> = {
+  sa: 'SA',
+  za: 'SA',
+  rsa: 'SA',
+  'south africa': 'SA',
+  bot: 'BOT',
+  bw: 'BOT',
+  botswana: 'BOT',
+  zam: 'ZAM',
+  zm: 'ZAM',
+  zambia: 'ZAM',
+  moz: 'MOZ',
+  mz: 'MOZ',
+  mozambique: 'MOZ',
+  zw: 'ZW',
+  zim: 'ZW',
+  zimbabwe: 'ZW',
+  zwi: 'ZWI',
+  'zim (incognito)': 'ZWI',
+  'zimbabwe incognito': 'ZWI',
+  mal: 'MAL',
+  mw: 'MAL',
+  malawi: 'MAL',
+  con: 'CON',
+  cd: 'CON',
+  drc: 'CON',
+  congo: 'CON',
+  tan: 'TAN',
+  tz: 'TAN',
+  tanzania: 'TAN',
+};
+
+/** Normalize branch country name/ISO code to canonical ERP country code (e.g. SA, BOT, ZAM). */
+export function normalizeErpCountryCode(raw: string | null | undefined): string | undefined {
+  const key = raw?.trim().toLowerCase();
+  if (!key) return undefined;
+  return COUNTRY_NAME_TO_ERP_CODE[key] ?? raw?.trim().toUpperCase();
+}
+
+/** Unique key for a salesPerStore row scoped by countryCode + normalized storeId. */
+export function salesPerStoreKey(store: Pick<SalesPerStoreRow, 'storeId' | 'countryCode'>): string {
+  const cc = normalizeErpCountryCode(store.countryCode) ?? '';
+  return `${cc}:${normalizeStoreCode(store.storeId)}`;
 }
 
 /** Strip BitDrywall "Bit" prefix and non-alphanumerics for ERP name matching. */
@@ -40,7 +86,7 @@ export function storeCodesMatch(a: string, b: string): boolean {
 }
 
 function getStoreCodesForBranch(
-  branch: Pick<BranchListItem, 'ref' | 'alias' | 'name'>,
+  branch: Pick<BranchListItem, 'ref' | 'alias' | 'name' | 'country' | 'address'>,
   masterBranches?: MasterBranchRow[],
 ): string[] {
   const codes: string[] = [];
@@ -50,12 +96,19 @@ function getStoreCodesForBranch(
     codes.push(normalizeStoreCode(branch.ref.trim()));
   }
 
+  const branchCountry = normalizeErpCountryCode(branch.country ?? branch.address?.country);
+
   if (masterBranches?.length) {
-    const match = masterBranches.find(
-      (b) =>
+    const match = masterBranches.find((b) => {
+      const masterCountry = normalizeErpCountryCode(b.countryCode);
+      if (branchCountry && masterCountry && branchCountry !== masterCountry) {
+        return false;
+      }
+      return (
         branchNamesMatchStrict(branch.name ?? '', b.name) ||
-        (branch.alias != null && branchNamesMatchStrict(branch.alias, b.name)),
-    );
+        (branch.alias != null && branchNamesMatchStrict(branch.alias, b.name))
+      );
+    });
     if (match) {
       const code = match.code?.trim() || match.id?.trim();
       if (code) codes.push(normalizeStoreCode(code));
@@ -65,27 +118,38 @@ function getStoreCodesForBranch(
   return [...new Set(codes)];
 }
 
-/** Match a CRM branch to its ERP salesPerStore row (store code first, then strict name). */
+/** Match a CRM branch to its ERP salesPerStore row (country-scoped store code first, then strict name). */
 export function findSalesPerStoreForBranch(
-  branch: Pick<BranchListItem, 'uid' | 'ref' | 'alias' | 'name'>,
+  branch: Pick<BranchListItem, 'uid' | 'ref' | 'alias' | 'name' | 'country' | 'address'>,
   salesPerStore: SalesPerStoreRow[],
   masterBranches?: MasterBranchRow[],
-  usedStoreIds?: Set<string>,
+  usedStoreKeys?: Set<string>,
 ): SalesPerStoreRow | undefined {
   const storeCodes = getStoreCodesForBranch(branch, masterBranches);
+  const branchCountry = normalizeErpCountryCode(branch.country ?? branch.address?.country);
   const namesToMatch = [branch.name, branch.alias].filter(
     (n): n is string => typeof n === 'string' && n.trim().length > 0,
   );
 
+  const isCountryCompatible = (store: SalesPerStoreRow): boolean => {
+    const storeCountry = normalizeErpCountryCode(store.countryCode);
+    if (branchCountry && storeCountry) {
+      return branchCountry === storeCountry;
+    }
+    return true;
+  };
+
   for (const store of salesPerStore) {
-    if (usedStoreIds?.has(normalizeStoreCode(store.storeId))) continue;
+    if (usedStoreKeys?.has(salesPerStoreKey(store))) continue;
+    if (!isCountryCompatible(store)) continue;
     if (storeCodes.length > 0 && storeCodes.some((c) => storeCodesMatch(store.storeId, c))) {
       return store;
     }
   }
 
   for (const store of salesPerStore) {
-    if (usedStoreIds?.has(normalizeStoreCode(store.storeId))) continue;
+    if (usedStoreKeys?.has(salesPerStoreKey(store))) continue;
+    if (!isCountryCompatible(store)) continue;
     const storeName = store.storeName || store.storeId;
     for (const name of namesToMatch) {
       if (branchNamesMatchStrict(name, storeName)) return store;
@@ -137,14 +201,13 @@ export function ytdDateRange(): { startDate: string; endDate: string } {
   return { startDate, endDate };
 }
 
-/** Current calendar month (1st → today) — matches Performance Tracker monthly comparison. */
+/** Current calendar month (1st → local today) — matches Performance Tracker monthly comparison. */
 export function monthlyDateRange(): { startDate: string; endDate: string } {
   const end = new Date();
-  const endDate = end.toISOString().split('T')[0]!;
   const y = end.getFullYear();
   const m = String(end.getMonth() + 1).padStart(2, '0');
-  const startDate = `${y}-${m}-01`;
-  return { startDate, endDate };
+  const d = String(end.getDate()).padStart(2, '0');
+  return { startDate: `${y}-${m}-01`, endDate: `${y}-${m}-${d}` };
 }
 
 /** Short label for the current month (e.g. "Jul 2026"). */

@@ -5,7 +5,6 @@ import {
   Building,
   Building2,
   ChevronDown,
-  Handshake,
   Mountain,
   Satellite,
   Store,
@@ -46,14 +45,15 @@ const LAYER_ORDER: VisualiserLayerId[] = [
   'reps',
 ];
 
-const LAYER_ICONS: Record<
-  VisualiserLayerId,
-  ComponentType<{ className?: string; style?: CSSProperties }>
+const LAYER_ICONS: Partial<
+  Record<
+    VisualiserLayerId,
+    ComponentType<{ className?: string; style?: CSSProperties }>
+  >
 > = {
   hq: Building2,
   branches: Store,
   competitors: Swords,
-  clients: Handshake,
   reps: UserRound,
 };
 
@@ -89,6 +89,15 @@ function LayerIcon({
   meta: (typeof LAYER_META)[VisualiserLayerId];
 }) {
   const Icon = LAYER_ICONS[layer];
+  if (!Icon) {
+    return (
+      <span
+        className="size-5 shrink-0 rounded-full"
+        style={{ backgroundColor: meta.color }}
+        aria-hidden
+      />
+    );
+  }
   return (
     <span
       className={cn(
@@ -96,11 +105,8 @@ function LayerIcon({
         layer === 'hq' && 'ring-2 ring-green-500 ring-offset-1',
       )}
       style={{
-        backgroundColor:
-          layer === 'clients' || layer === 'reps'
-            ? meta.color
-            : `${meta.color}22`,
-        color: layer === 'clients' || layer === 'reps' ? '#fff' : meta.color,
+        backgroundColor: layer === 'reps' ? meta.color : `${meta.color}22`,
+        color: layer === 'reps' ? '#fff' : meta.color,
       }}
       aria-hidden
     >
