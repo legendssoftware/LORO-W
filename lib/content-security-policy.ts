@@ -9,6 +9,9 @@ const PRODUCTION_CLERK_ORIGINS = [
   "https://accounts.loro.co.za",
 ] as const;
 
+/** Origins that serve documents embedded in iframes (ePOD proof-of-delivery PDFs). */
+export const PDF_FRAME_SOURCES = ["https://storage.googleapis.com"] as const;
+
 function decodeClerkFrontendHost(publishableKey: string | undefined): string | null {
   const key = publishableKey?.trim();
   if (!key) return null;
@@ -107,7 +110,8 @@ export function contentSecurityPolicy(env: {
     `connect-src ${connectSrc}`,
     "worker-src 'self' blob:",
     "child-src 'self' blob:",
-    `frame-src 'self' ${clerkHttps} https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com https://appleid.apple.com`,
+    // storage.googleapis.com hosts the ePOD PDFs (StorageService publicUrl) shown in the proof-of-delivery iframe.
+    `frame-src 'self' ${clerkHttps} https://challenges.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com https://appleid.apple.com ${PDF_FRAME_SOURCES.join(" ")}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
