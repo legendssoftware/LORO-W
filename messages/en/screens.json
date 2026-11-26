@@ -91,6 +91,7 @@
     "breakStarted": "Break started",
     "breakEnded": "Break ended",
     "couldNotSavePulse": "Could not save your pulse. Please try again.",
+    "couldNotStartShift": "Could not start your shift. Please try again.",
     "attendance": {
       "startYourShift": "Start your shift",
       "readyToStart": "Ready to start",
@@ -104,6 +105,7 @@
       "retryLocation": "Retry location",
       "pickOptionApplies": "Pick the option that applies.",
       "outsideBranchRadius": "You are outside the office check-in radius.",
+      "offsiteNotAllowed": "You are not allowed to work from home. You must go and start your shift at the office.",
       "title": "Attendance",
       "month": "Month",
       "noData": "No attendance data for this month.",

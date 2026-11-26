@@ -91,6 +91,7 @@
     "breakStarted": "Pause commencée",
     "breakEnded": "Pause terminée",
     "couldNotSavePulse": "Impossible d’enregistrer votre point. Veuillez réessayer.",
+    "couldNotStartShift": "Impossible de démarrer votre service. Veuillez réessayer.",
     "attendance": {
       "startYourShift": "Démarrez votre service",
       "readyToStart": "Prêt à démarrer",
@@ -104,6 +105,7 @@
       "retryLocation": "Réessayer la localisation",
       "pickOptionApplies": "Choisissez l’option qui s’applique.",
       "outsideBranchRadius": "Vous êtes en dehors du rayon de pointage du bureau.",
+      "offsiteNotAllowed": "Vous n'êtes pas autorisé à travailler depuis chez vous. Vous devez vous rendre au bureau pour démarrer votre service.",
       "title": "Présence",
       "month": "Mois",
       "noData": "Aucune donnée de présence pour ce mois.",

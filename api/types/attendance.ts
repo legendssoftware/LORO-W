@@ -20,6 +20,8 @@ export interface AttCheckInContext {
     distanceFromBranchMeters: number | null;
     /** Server-built copy when user is outside branch radius; prefer over composing text client-side */
     outsideBranchRadiusMessage?: string | null;
+    /** True when the user is outside the radius and must start at the office (no remote options). */
+    offsiteClockInBlocked?: boolean;
 }
 
 export interface AttStatusResponse {

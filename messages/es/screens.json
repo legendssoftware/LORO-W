@@ -91,6 +91,7 @@
     "breakStarted": "Descanso iniciado",
     "breakEnded": "Descanso finalizado",
     "couldNotSavePulse": "No se pudo guardar su pulso. Inténtelo de nuevo.",
+    "couldNotStartShift": "No se pudo iniciar su turno. Inténtelo de nuevo.",
     "attendance": {
       "startYourShift": "Inicie su turno",
       "readyToStart": "Listo para empezar",
@@ -104,6 +105,7 @@
       "retryLocation": "Reintentar ubicación",
       "pickOptionApplies": "Elija la opción que corresponda.",
       "outsideBranchRadius": "Está fuera del radio de registro de la oficina.",
+      "offsiteNotAllowed": "No se le permite trabajar desde casa. Debe ir a la oficina para iniciar su turno.",
       "title": "Asistencia",
       "month": "Mes",
       "noData": "No hay datos de asistencia para este mes.",

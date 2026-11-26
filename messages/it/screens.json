@@ -91,6 +91,7 @@
     "breakStarted": "Pausa iniziata",
     "breakEnded": "Pausa terminata",
     "couldNotSavePulse": "Impossibile salvare il tuo stato. Riprova.",
+    "couldNotStartShift": "Impossibile iniziare il turno. Riprova.",
     "attendance": {
       "startYourShift": "Inizia il tuo turno",
       "readyToStart": "Pronto per iniziare",
@@ -104,6 +105,7 @@
       "retryLocation": "Riprova posizione",
       "pickOptionApplies": "Scegli l'opzione appropriata.",
       "outsideBranchRadius": "Ti trovi fuori dal raggio di check-in dell'ufficio.",
+      "offsiteNotAllowed": "Non ti è consentito lavorare da casa. Devi recarti in ufficio per iniziare il turno.",
       "title": "Presenze",
       "month": "Mese",
       "noData": "Nessun dato di presenze per questo mese.",

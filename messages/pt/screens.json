@@ -91,6 +91,7 @@
     "breakStarted": "Pausa iniciada",
     "breakEnded": "Pausa terminada",
     "couldNotSavePulse": "Não foi possível guardar o pulso. Tente novamente.",
+    "couldNotStartShift": "Não foi possível iniciar o turno. Tente novamente.",
     "attendance": {
       "startYourShift": "Inicie o seu turno",
       "readyToStart": "Pronto para começar",
@@ -104,6 +105,7 @@
       "retryLocation": "Tentar localização novamente",
       "pickOptionApplies": "Escolha a opção aplicável.",
       "outsideBranchRadius": "Está fora do raio de registo de entrada do escritório.",
+      "offsiteNotAllowed": "Não está autorizado a trabalhar a partir de casa. Tem de ir ao escritório para iniciar o turno.",
       "title": "Assiduidade",
       "month": "Mês",
       "noData": "Sem dados de assiduidade para este mês.",
